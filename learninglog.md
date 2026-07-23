@@ -4,7 +4,7 @@
 
 Execute Microsoft's released Universal Verifier from the pinned `microsoft/fara`
 repository against at least one frozen CUAVerifierBench trajectory. This is an
-end-to-end execution smoke test, not a paper-level benchmark reproduction.
+end-to-end execution smoke test.
 
 ## Log
 
@@ -113,7 +113,7 @@ configuration directory containing a multimodal judge and an action/rubric
 judge, plus a usable credential method (for example an authenticated Azure CLI
 session, managed identity with deployment access, or approved environment-based
 credentials). Then rerun the exact official command recorded in
-`ms-paper-execution/commands/commands_run.sh`; a real `mmrubric_*.json` must be
+`ms-paper-execution/commands/day0_smoke_test.sh`; a real `mmrubric_*.json` must be
 created before claiming end-to-end execution.
 
 ### 2026-07-21 — OpenAI-only retry prepared
@@ -141,11 +141,40 @@ created before claiming end-to-end execution.
 ### 2026-07-21 — Final Day 1 smoke-test status
 
 - Confirmed the saved official score JSON at
-  `ms-paper-execution/outputs/day1/scores/mmrubric_0.8-5-3.json` and copied it
-  from the trajectory's `scores/` directory into the Day 1 artifact bundle.
+  `ms-paper-execution/results/day0_smoke_test/scores/mmrubric_0.8-5-3.json` and copied it
+  from the trajectory's `scores/` directory into the Day 0 artifact bundle.
 - Final verifier result: process rubric success (`10.0/11.0 = 0.9091`), outcome
   success `false`, top-level outcome score `0`, first failure step `1`.
 - The OpenAI-backed Day 1 execution goal is complete: the released verifier
   code consumed a real frozen trajectory and generated a real Universal
   Verifier score file. This remains a one-trajectory smoke test, not a full
   benchmark reproduction.
+
+### 2026-07-22 — Full-run programme scaffolded
+
+- Preserved the completed Day 1 smoke-test paths and added a stage-based project
+  layout for the full-split execution.
+- Created the frozen E0 configuration for all 106 `fara7b_om2w_browserbase`
+  trajectories, including the label-safe input allow-list and the documented
+  local model substitution (`gpt-4o` for both verifier roles).
+- Created the run state file with E0 marked
+  `setup_complete_waiting_for_validation`.
+- This was structure-only work. No full-run trajectory was materialized, no
+  judge-model call was made, and no benchmark label or metric was accessed.
+
+### 2026-07-22 — E0 setup completed; execution remains blocked
+
+- Added a machine-readable experiment registry for E0 with
+  `run_authorized: false`.
+- Added `scripts/experiment_guard.py`; its validation test correctly refused
+  E0 because setup validation and explicit user authorization have not yet been
+  recorded.
+- No execution, trajectory materialization, human-label access, metric
+  calculation, or background job was started during this setup work.
+
+### 2026-07-23 - Scope cleanup
+
+- User cancelled all later ablation and benchmark-reporting work.
+- Removed the obsolete future-phase configuration and planning files.
+- The repo now retains Day 0 smoke-test artifacts and Day 1 full-trajectory
+  execution artifacts only.
