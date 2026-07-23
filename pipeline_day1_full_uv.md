@@ -345,7 +345,93 @@ follows `outcome_success`, not `rubric_is_success`.
 The action-only and final multimodal criterion fields must not be confused.
 Final per-criterion reports use `post_image_earned_points`.
 
-## 9. Retry behavior
+## 9. LLM call volume and why one trajectory uses many calls
+
+The full 106-trajectory run made 4,816 judge create calls.
+
+| Stage | Trajectories | `gpt-5.2` calls | `o4-mini` calls | Total calls | Avg calls / trajectory |
+|---|---:|---:|---:|---:|---:|
+| Three-task preflight | 3 | 167 | 9 | 176 | 58.7 |
+| Fresh 10-task batch | 10 | 540 | 30 | 570 | 57.0 |
+| Remaining 93-task batch | 93 | 3,790 | 280 | 4,070 | 43.8 |
+| Full run | 106 | 4,497 | 319 | 4,816 | 45.4 |
+
+The verifier does not make one judge call per trajectory. It decomposes each
+trajectory into rubric criteria, actions, screenshots, and outcome checks, then
+uses model calls at those smaller evidence units.
+
+For one trajectory, calls are used for:
+
+- generating a task-specific rubric;
+- scoring action-only evidence against each rubric criterion;
+- loading and judging screenshot relevance;
+- selecting the most relevant screenshots for each criterion;
+- extracting visual evidence from selected screenshots;
+- rescoring criteria with multimodal evidence;
+- checking whether the final task outcome succeeded;
+- identifying the first point of failure;
+- checking ambiguity and task validity;
+- retrying transport or schema-format failures when the official verifier can
+  recover internally.
+
+Call count therefore varies by trajectory. Longer trajectories and tasks with
+more screenshots or more rubric criteria generally require more calls. The
+observed full-run average was 45.4 calls per trajectory.
+
+The model roles were kept separate throughout:
+
+- `gpt-5.2`: 4,497 calls for main rubric-generation and multimodal judging;
+- `o4-mini`: 319 calls for action/rubric support and validity-style checks.
+
+## 10. Aggregate scoring results
+
+The final results are stored at:
+
+```text
+results/day1_full_uv/predictions/process_outcome_results.jsonl
+```
+
+Aggregate process and outcome summary:
+
+| Metric | Result |
+|---|---:|
+| Total trajectories | 106 |
+| Process-success trajectories, `rubric_is_success = true` | 38 |
+| Process-failure trajectories, `rubric_is_success = false` | 68 |
+| Outcome-success trajectories, `outcome_success = true` | 26 |
+| Outcome-failure trajectories, `outcome_success = false` | 80 |
+| Top-level successes, because `--success outcome` | 26 |
+| Average final rubric score | 0.6171 |
+| Median final rubric score | 0.6548 |
+| Minimum final rubric score | 0.0000 |
+| Maximum final rubric score | 1.0000 |
+| Trajectories with final rubric score `>= 0.8` | 38 |
+
+Process and outcome agreement:
+
+| Process result | Outcome result | Trajectories | Interpretation |
+|---|---|---:|---|
+| Success | Success | 22 | The trajectory satisfied the rubric and achieved the final outcome. |
+| Success | Failure | 16 | The process looked strong by rubric, but the final outcome still failed. |
+| Failure | Success | 4 | The final outcome succeeded despite weak or incomplete process evidence. |
+| Failure | Failure | 64 | Both rubric process and final outcome failed. |
+
+Because the experiment used:
+
+```bash
+--success outcome
+```
+
+the official top-level success result follows `outcome_success`. This is why the
+run has 26 top-level successes even though 38 trajectories reached the rubric
+threshold.
+
+The average final rubric score among outcome-success trajectories was 0.9273.
+The average final rubric score among outcome-failure trajectories was 0.5162.
+This shows that the process rubric and final outcome are related, but not
+identical measurements.
+
+## 11. Retry behavior
 
 The released OpenAI client performed transparent transport retries when a
 request did not complete on its first attempt. The verifier also retried some
@@ -355,7 +441,7 @@ All such retries resolved inside the official execution. No trajectory-level
 retry batch was required, and the fixed verifier configuration was never
 changed.
 
-## 10. Final artifact freeze
+## 12. Final artifact freeze
 
 The three fresh stages were combined as follows:
 
