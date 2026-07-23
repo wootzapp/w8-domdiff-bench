@@ -151,16 +151,16 @@ were not recorded in the terminal logs.
 
 ## Generated artifacts
 
-The main verifier result is stored in the generated score JSON:
-
-```text
-data/materialized/custom/manual_python_creator/run_inputs/single/ManualWikipediaPython--0001/scores/mmrubric_0.8-5-3.json
-```
-
-The one-line run report is stored in:
+The main retained first-run result summary is stored in:
 
 ```text
 outputs/custom/manual_python_creator/reports/verify_report.jsonl
+```
+
+The first-run terminal log is stored in:
+
+```text
+outputs/custom/manual_python_creator/logs/verifier_run.log
 ```
 
 Verifier report:
@@ -175,7 +175,7 @@ Terminal log:
 outputs/custom/manual_python_creator/logs/verifier_run.log
 ```
 
-Generated score JSON:
+Verifier score JSON runtime path:
 
 ```text
 data/materialized/custom/manual_python_creator/run_inputs/single/ManualWikipediaPython--0001/scores/mmrubric_0.8-5-3.json
