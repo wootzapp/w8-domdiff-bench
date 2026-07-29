@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://microsoft.github.io/fara/schemas/dom_trajectory_manifest_v2.schema.json",
+  "title": "Fara DOM trajectory manifest v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_format",
+    "canonicalizer_version",
+    "created_at",
+    "browser",
+    "initial_snapshot",
+    "frames",
+    "capture_errors"
+  ],
+  "properties": {
+    "schema_version": {"const": "dom-trajectory-manifest/v2"},
+    "evidence_format": {"const": "semantic-dom"},
+    "canonicalizer_version": {"type": "string"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "browser": {"type": "object"},
+    "initial_snapshot": {"type": ["string", "null"]},
+    "frames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema_version",
+          "action_ordinal",
+          "action_id",
+          "before_snapshot",
+          "after_snapshot",
+          "diff",
+          "capture_status",
+          "coverage_status"
+        ],
+        "properties": {
+          "schema_version": {"const": "dom-evidence-frame/v1"},
+          "action_ordinal": {"type": "integer", "minimum": 1},
+          "action_id": {"type": "string"},
+          "before_snapshot": {"type": ["string", "null"]},
+          "after_snapshot": {"type": ["string", "null"]},
+          "diff": {"type": ["string", "null"]},
+          "capture_status": {"enum": ["complete", "partial", "failed"]},
+          "coverage_status": {
+            "enum": ["complete", "partial", "truncated", "failed"]
+          }
+        }
+      }
+    },
+    "capture_errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ordinal", "error"],
+        "properties": {
+          "ordinal": {"type": "integer", "minimum": 0},
+          "error": {"type": "string"}
+        }
+      }
+    }
+  }
+}

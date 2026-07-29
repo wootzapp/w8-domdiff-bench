@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://microsoft.github.io/fara/schemas/dom_diff_v1.schema.json",
+  "title": "Fara semantic DOM diff v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "canonicalizer_version",
+    "diff_id",
+    "from_snapshot_id",
+    "to_snapshot_id",
+    "from_hash",
+    "to_hash",
+    "added",
+    "removed",
+    "updated",
+    "unchanged_count"
+  ],
+  "properties": {
+    "schema_version": {"const": "semantic-dom-diff/v1"},
+    "canonicalizer_version": {"type": "string"},
+    "diff_id": {"type": "string", "pattern": "^diff-[0-9]{4,}$"},
+    "from_snapshot_id": {"type": "string"},
+    "to_snapshot_id": {"type": "string"},
+    "from_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "to_hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "added": {"type": "array", "items": {"type": "object"}},
+    "removed": {"type": "array", "items": {"type": "object"}},
+    "updated": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "changes"],
+        "properties": {
+          "key": {"type": "string"},
+          "changes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["before", "after"],
+              "properties": {
+                "before": {},
+                "after": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "unchanged_count": {"type": "integer", "minimum": 0}
+  }
+}
