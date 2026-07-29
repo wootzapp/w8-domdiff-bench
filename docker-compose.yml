@@ -1,0 +1,30 @@
+name: wootzapp-desktop-recorder
+
+services:
+  wootz-desktop:
+    image: ${IMAGE:-wootz-runtime:wootz-chrome}
+    container_name: ${CONTAINER_NAME:-wootz-desktop-browser-replay-001}
+    shm_size: "2gb"
+    ports:
+      - "127.0.0.1:${CDP_HOST_PORT:-49325}:9226"
+      - "127.0.0.1:${NOVNC_HOST_PORT:-16181}:6080"
+      - "127.0.0.1:${VNC_HOST_PORT:-15901}:5900"
+    environment:
+      NOVNC_PORT: "6080"
+      VNC_PORT: "5900"
+      VNC_SCREEN: ${VNC_SCREEN:-1365x768x24}
+      TZ: ${TZ:-Europe/Berlin}
+      CDP_PORT: "9225"
+      CDP_PROXY_PORT: "9226"
+      START_URL: ${START_URL:-about:blank}
+    volumes:
+      - ./scripts/container-start.sh:/usr/local/bin/wootz-desktop-start:ro
+    command: ["/usr/local/bin/wootz-desktop-start"]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "curl -fsS http://127.0.0.1:9226/json/version >/dev/null"
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
