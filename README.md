@@ -13,7 +13,7 @@ VNC:        127.0.0.1:15901
 ```
 
 
-## Related containers
+<!-- ## Related containers
 
 | Use | Container | CDP | noVNC | VNC |
 | --- | --- | ---: | ---: | ---: |
@@ -21,14 +21,17 @@ VNC:        127.0.0.1:15901
 | Desktop authoring | `wootz-runtime` | `9225` | `16081` | `15900` |
 | Desktop automated recorder | `wootz-desktop-browser-replay-001` | `49325` | `16181` | `15901` |
 
-Use `wootz-desktop-browser-replay-001` for automated DOM recording.
+Use `wootz-desktop-browser-replay-001` for automated DOM recording. -->
 
 ## What this runner does
 
 The automated runner is in:
 
-```text
+<!-- ```text
 /data/aayush/task-recorder/agent_browser/desktop_agent.py
+``` -->
+```text
+desktop_agent.py
 ```
 
 It controls the desktop Wootz browser through CDP and records verifier artifacts through ChromiumRL.
@@ -106,7 +109,7 @@ Open:
 http://[::1]:39081/vnc.html?resize=scale&autoconnect=1
 ```
 
-If the local port is blocked, change only the first port:
+<!-- If the local port is blocked, change only the first port:
 
 ```powershell
 ssh -N -L "[::1]:49181:127.0.0.1:16181" ubuntu@static.235.31.55.162.clients.your-server.de
@@ -118,7 +121,7 @@ Then open:
 http://[::1]:49181/vnc.html?resize=scale&autoconnect=1
 ```
 
-Do not change the server-side port `16181`.
+Do not change the server-side port `16181`. -->
 
 ## Run a new automated task
 
@@ -187,7 +190,7 @@ For longer tasks:
 ./scripts/run-agent-browser.sh task1 "Same task prompt as before." --resume --max-steps 120
 ```
 
-Input events use a separate short timeout so a stuck mouse/keyboard CDP command does not block for the full DOM-capture timeout:
+<!-- Input events use a separate short timeout so a stuck mouse/keyboard CDP command does not block for the full DOM-capture timeout:
 
 ```bash
 ./scripts/run-agent-browser.sh task2 "Enter the task." --input-timeout 8
@@ -197,7 +200,7 @@ If CDP mouse-wheel scrolling times out, the runner reconnects CDP and performs a
 
 ```json
 "_execution_method": "runtime_scroll_fallback"
-```
+``` -->
 
 ## Output structure
 
