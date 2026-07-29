@@ -1,6 +1,6 @@
 # Desktop agent-browser task recorder
 
-This folder is for automated desktop Wootz browser tasks only.
+This readme has steps for automated desktop Wootz browser tasks using agent-browser.
 
 It uses a separate desktop recorder container:
 
@@ -12,7 +12,6 @@ noVNC:      127.0.0.1:16181
 VNC:        127.0.0.1:15901
 ```
 
-Manual recording is not kept here. Use the Android recorder folder for manual task recording.
 
 ## Related containers
 
@@ -22,7 +21,7 @@ Manual recording is not kept here. Use the Android recorder folder for manual ta
 | Desktop authoring | `wootz-runtime` | `9225` | `16081` | `15900` |
 | Desktop automated recorder | `wootz-desktop-browser-replay-001` | `49325` | `16181` | `15901` |
 
-Use `wootz-desktop-browser-replay-001` for automated DOM recording. Do not use the desktop authoring container for recorder runs.
+Use `wootz-desktop-browser-replay-001` for automated DOM recording.
 
 ## What this runner does
 
@@ -32,8 +31,7 @@ The automated runner is in:
 /data/aayush/task-recorder/agent_browser/desktop_agent.py
 ```
 
-It controls the desktop Wootz browser through CDP and records verifier artifacts through ChromiumRL. The model does not generate DOM files.
-
+It controls the desktop Wootz browser through CDP and records verifier artifacts through ChromiumRL.
 Implemented browser actions:
 
 - `snapshot()` semantic, ref-based page view for the model.
@@ -74,7 +72,6 @@ negative pixels = scroll up
 Edit `.env`:
 
 ```bash
-cd /data/aayush/task-recorder
 nano .env
 ```
 
@@ -86,16 +83,9 @@ AGENT_BROWSER_MODEL=gpt-4.1-mini
 OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-Use a stronger model if needed:
-
-```text
-AGENT_BROWSER_MODEL=gpt-4.1
-```
-
 ## Start browser and check CDP
 
 ```bash
-cd /data/aayush/task-recorder
 docker compose up -d
 ./scripts/doctor.sh
 ```
@@ -133,7 +123,6 @@ Do not change the server-side port `16181`.
 ## Run a new automated task
 
 ```bash
-cd /data/aayush/task-recorder
 ./scripts/run-agent-browser.sh task2 "Enter the task."
 ```
 
@@ -171,7 +160,6 @@ Run without approvals only when you trust the model for that task:
 ## Resume an existing task
 
 ```bash
-cd /data/aayush/task-recorder
 ./scripts/run-agent-browser.sh task1 "Same task prompt as before." --resume
 ```
 
