@@ -10,6 +10,8 @@ export CDP_PROXY_PORT="${CDP_PROXY_PORT:-9226}"
 export CDP_ADDRESS="${CDP_ADDRESS:-127.0.0.1}"
 export START_URL="${START_URL:-about:blank}"
 export WTZ_USER_DATA_DIR="${WTZ_USER_DATA_DIR:-/home/wootz/wootz-browser-sessions/default}"
+export BROWSER_LANG="${BROWSER_LANG:-en-US}"
+export BROWSER_ACCEPT_LANGUAGE="${BROWSER_ACCEPT_LANGUAGE:-en-US,en;q=0.9}"
 
 if [[ ! -x /opt/wootz/chrome/chrome ]]; then
   echo "Wootz browser is missing at /opt/wootz/chrome/chrome" >&2
@@ -31,6 +33,8 @@ su -s /bin/bash wootz -c \
     --remote-debugging-address='$CDP_ADDRESS' \
     --remote-debugging-port='$CDP_PORT' \
     --user-data-dir='$WTZ_USER_DATA_DIR' \
+    --lang='$BROWSER_LANG' \
+    --accept-lang='$BROWSER_ACCEPT_LANGUAGE' \
     --no-first-run \
     --disable-first-run-ui \
     --window-size=1365,768 \

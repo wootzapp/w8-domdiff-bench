@@ -95,6 +95,28 @@ docker compose up -d
 
 `doctor.sh` checks CDP and ChromiumRL availability.
 
+The desktop recorder defaults the browser language to English:
+
+```text
+BROWSER_LANG=en-US
+BROWSER_ACCEPT_LANGUAGE=en-US,en;q=0.9
+RECORDER_LANG=en_US.UTF-8
+RECORDER_LC_ALL=en_US.UTF-8
+```
+
+If the container was already running before this setting was added, restart only
+the desktop recorder container:
+
+```bash
+docker compose up -d --force-recreate wootz-desktop
+./scripts/doctor.sh
+```
+
+This does not change the Android recorder or the desktop authoring container.
+Some websites may still route by server IP, for example to a `.de` domain, but
+the browser will request English content and the runner also applies CDP
+language overrides before capturing and acting.
+
 ## Open noVNC
 
 From Windows PowerShell:
@@ -160,6 +182,11 @@ Run without approvals only when you trust the model for that task:
 ./scripts/run-agent-browser.sh task2 "Enter the task." --yes
 ```
 
+If the model proposes the same ineffective action repeatedly, reject it with `n`.
+The runner records generic step outcomes such as URL change, scroll change, and
+DOM/visible text changes, then sends no-progress warnings back to the model on
+the next request. This is generic loop handling; it is not website-specific.
+
 ## Resume an existing task
 
 ```bash
@@ -171,10 +198,12 @@ Resume mode:
 - keeps the current browser tab/session;
 - does not clear browser data;
 - does not create a new isolated context;
+- requires the prompt to match the saved task prompt;
 - reloads recent completed actions from `trajectory.jsonl`;
 - appends new steps after the last existing step.
 
-Use resume only when continuing the same task.
+Use resume only when continuing the same task. If the task text changed, start a
+new task id.
 
 ## Step limits and timeouts
 

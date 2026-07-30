@@ -72,6 +72,7 @@ Allowed actions:
 Rules:
 - Prefer click/fill by ref from the snapshot.
 - If a modal, consent dialog, popup, interstitial, ad, login prompt, or overlay blocks the page, choose an action that dismisses or handles the blocker before continuing with the task.
+- If recent action outcomes say there was no visible progress, do not repeat the same action on the same target. Change strategy: use search/navigation, choose a different visible control, scroll to new content, go back, or terminate if the task is impossible.
 - Use open/navigate for the first URL if the browser is blank.
 - Stop only after the task is visibly complete or impossible.
 """
@@ -202,13 +203,244 @@ def normalize_action(action: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def action_signature(action: dict[str, Any]) -> dict[str, Any]:
+    """Small stable identity used only for generic loop detection."""
+
+    name = action_name(action)
+    signature: dict[str, Any] = {"action": name}
+    for key in ("ref", "selector", "url", "key", "pixels", "text"):
+        if key in action:
+            value = action.get(key)
+            if isinstance(value, str):
+                value = value[:120]
+            signature[key] = value
+    if "coordinate" in action:
+        coordinate = action.get("coordinate")
+        if isinstance(coordinate, list) and len(coordinate) == 2:
+            signature["coordinate"] = [round(float(coordinate[0])), round(float(coordinate[1]))]
+    return signature
+
+
+def page_scroll_y(page: dict[str, Any]) -> Any:
+    viewport = page.get("viewport")
+    return viewport.get("scrollY") if isinstance(viewport, dict) else None
+
+
+def build_step_outcome(
+    action: dict[str, Any],
+    before_page: dict[str, Any],
+    after_page: dict[str, Any],
+    dom_diff_summary: dict[str, Any],
+) -> dict[str, Any]:
+    """Summarize whether a completed step changed observable page state.
+
+    This is intentionally generic. It does not inspect website names, product
+    names, cookie labels, or task-specific text.
+    """
+
+    stats = dom_diff_summary.get("stats", {}) if isinstance(dom_diff_summary.get("stats"), dict) else {}
+    visible_text_added = dom_diff_summary.get("visible_text_added")
+    visible_text_removed = dom_diff_summary.get("visible_text_removed")
+    interactive_added = dom_diff_summary.get("interactive_added")
+    interactive_removed = dom_diff_summary.get("interactive_removed")
+    interactive_changed = dom_diff_summary.get("interactive_changed")
+    url_changed = bool((dom_diff_summary.get("url") or {}).get("changed"))
+    title_changed = bool((dom_diff_summary.get("title") or {}).get("changed"))
+    scroll_changed = bool((dom_diff_summary.get("scroll") or {}).get("changed"))
+    element_delta = sum(
+        int(stats.get(key) or 0)
+        for key in ("elements_added", "elements_removed", "elements_changed")
+        if isinstance(stats.get(key), int)
+    )
+    visible_delta = (
+        len(visible_text_added) if isinstance(visible_text_added, list) else 0
+    ) + (
+        len(visible_text_removed) if isinstance(visible_text_removed, list) else 0
+    )
+    interactive_delta = (
+        len(interactive_added) if isinstance(interactive_added, list) else 0
+    ) + (
+        len(interactive_removed) if isinstance(interactive_removed, list) else 0
+    ) + (
+        len(interactive_changed) if isinstance(interactive_changed, list) else 0
+    )
+    made_progress = bool(url_changed or title_changed or scroll_changed or element_delta or visible_delta or interactive_delta)
+    return {
+        "action_signature": action_signature(action),
+        "made_visible_progress": made_progress,
+        "url_changed": url_changed,
+        "title_changed": title_changed,
+        "scroll_changed": scroll_changed,
+        "element_delta_count": element_delta,
+        "visible_text_delta_count": visible_delta,
+        "interactive_delta_count": interactive_delta,
+        "before": {
+            "url": before_page.get("url"),
+            "title": before_page.get("title"),
+            "scrollY": page_scroll_y(before_page),
+        },
+        "after": {
+            "url": after_page.get("url"),
+            "title": after_page.get("title"),
+            "scrollY": page_scroll_y(after_page),
+        },
+    }
+
+
+def progress_warnings(history: list[dict[str, Any]]) -> list[str]:
+    warnings: list[str] = []
+    completed = [
+        item
+        for item in history
+        if item.get("approved") is True and isinstance(item.get("outcome"), dict)
+    ]
+    if not completed:
+        return warnings
+
+    last = completed[-1]["outcome"]
+    if last.get("made_visible_progress") is False:
+        signature = last.get("action_signature", {})
+        warnings.append(
+            "The previous approved action made no visible progress. Do not repeat "
+            f"the same target/action: {json.dumps(signature, ensure_ascii=False)}"
+        )
+
+    recent = completed[-5:]
+    signatures = [json.dumps((item.get("outcome") or {}).get("action_signature", {}), sort_keys=True) for item in recent]
+    no_progress = [bool((item.get("outcome") or {}).get("made_visible_progress") is False) for item in recent]
+    if len(recent) >= 3 and len(set(signatures[-3:])) == 1 and all(no_progress[-3:]):
+        warnings.append(
+            "The same action has failed to change the page for three consecutive approved steps. "
+            "Choose a different strategy now instead of retrying it."
+        )
+    elif len(recent) >= 4 and sum(no_progress[-4:]) >= 3:
+        warnings.append(
+            "Most recent approved steps made no visible progress. Reassess the page and change strategy."
+        )
+
+    repeated: dict[str, dict[str, Any]] = {}
+    for item in completed[-12:]:
+        outcome = item.get("outcome") or {}
+        signature = outcome.get("action_signature") if isinstance(outcome, dict) else {}
+        if not isinstance(signature, dict):
+            continue
+        if signature.get("action") not in {"click", "left_click", "fill", "press"}:
+            continue
+        key = json.dumps(signature, sort_keys=True)
+        record = repeated.setdefault(
+            key,
+            {
+                "count": 0,
+                "signature": signature,
+                "url_or_title_changed": False,
+                "scroll_changed": False,
+            },
+        )
+        record["count"] += 1
+        record["url_or_title_changed"] = bool(
+            record["url_or_title_changed"] or outcome.get("url_changed") or outcome.get("title_changed")
+        )
+        record["scroll_changed"] = bool(record["scroll_changed"] or outcome.get("scroll_changed"))
+    for record in repeated.values():
+        if record["count"] >= 3 and not record["url_or_title_changed"] and not record["scroll_changed"]:
+            warnings.append(
+                "A recent click/fill/key target has been retried multiple times without URL, title, or scroll progress. "
+                f"Do not retry it: {json.dumps(record['signature'], ensure_ascii=False)}"
+            )
+            break
+    return warnings
+
+
+def fallback_dom_diff_summary(before_page: dict[str, Any], after_page: dict[str, Any]) -> dict[str, Any]:
+    before_viewport = before_page.get("viewport") if isinstance(before_page.get("viewport"), dict) else {}
+    after_viewport = after_page.get("viewport") if isinstance(after_page.get("viewport"), dict) else {}
+    return {
+        "url": {"changed": before_page.get("url") != after_page.get("url")},
+        "title": {"changed": before_page.get("title") != after_page.get("title")},
+        "scroll": {"changed": before_viewport != after_viewport},
+        "stats": {},
+        "visible_text_added": [],
+        "visible_text_removed": [],
+        "interactive_added": [],
+        "interactive_removed": [],
+        "interactive_changed": [],
+    }
+
+
+def outcome_from_trajectory_item(task_dir: Path, item: dict[str, Any], action: dict[str, Any]) -> dict[str, Any] | None:
+    existing = item.get("outcome")
+    if isinstance(existing, dict):
+        return existing
+
+    before_page = item.get("before_page") if isinstance(item.get("before_page"), dict) else {}
+    after_page = item.get("after_page") if isinstance(item.get("after_page"), dict) else {}
+    if not before_page and not after_page:
+        return None
+
+    summary = fallback_dom_diff_summary(before_page, after_page)
+    artifact_dir = item.get("artifacts_directory")
+    if isinstance(artifact_dir, str) and artifact_dir:
+        summary_path = task_dir / artifact_dir / "dom_diff_summary.json"
+        if summary_path.exists():
+            try:
+                loaded = json.loads(summary_path.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    summary = loaded
+            except json.JSONDecodeError:
+                pass
+    return build_step_outcome(action, before_page, after_page, summary)
+
+
+async def apply_language_overrides(cdp: CDPConnection, *, locale: str, accept_language: str) -> dict[str, Any]:
+    outcomes: dict[str, Any] = {}
+    if accept_language:
+        try:
+            await cdp.send("Network.enable", {}, use_session=True, timeout=5.0)
+            outcomes["Network.enable"] = {"ok": True}
+        except Exception as error:
+            outcomes["Network.enable"] = {"ok": False, "error": str(error)}
+        try:
+            await cdp.send(
+                "Network.setExtraHTTPHeaders",
+                {"headers": {"Accept-Language": accept_language}},
+                use_session=True,
+                timeout=5.0,
+            )
+            outcomes["Network.setExtraHTTPHeaders"] = {"ok": True, "accept_language": accept_language}
+        except Exception as error:
+            outcomes["Network.setExtraHTTPHeaders"] = {"ok": False, "error": str(error)}
+    if locale:
+        try:
+            await cdp.send("Emulation.setLocaleOverride", {"locale": locale}, use_session=True, timeout=5.0)
+            outcomes["Emulation.setLocaleOverride"] = {"ok": True, "locale": locale}
+        except Exception as error:
+            outcomes["Emulation.setLocaleOverride"] = {"ok": False, "error": str(error)}
+    return outcomes
+
+
 class DesktopWootzAgent:
     """Agent-browser style controller backed by desktop Wootz CDP."""
 
-    def __init__(self, cdp: CDPConnection, input_timeout: float = 8.0):
+    def __init__(
+        self,
+        cdp: CDPConnection,
+        input_timeout: float = 8.0,
+        *,
+        browser_locale: str = "en-US",
+        accept_language: str = "en-US,en;q=0.9",
+    ):
         self.cdp = cdp
         self.input_timeout = input_timeout
+        self.browser_locale = browser_locale
+        self.accept_language = accept_language
         self._last_snapshot: Snapshot | None = None
+
+    async def apply_language_overrides(self) -> dict[str, Any]:
+        return await apply_language_overrides(
+            self.cdp,
+            locale=self.browser_locale,
+            accept_language=self.accept_language,
+        )
 
     async def snapshot(self, max_elements: int = 120) -> Snapshot:
         value, timing = await timed_command(self.cdp, "ChromiumRL.getAgentObservation", required=True)
@@ -678,6 +910,7 @@ async def call_openai_json(
     user_payload = {
         "task": task,
         "recent_actions": history[-20:],
+        "progress_warnings": progress_warnings(history),
         "snapshot": snapshot.text,
     }
     body = {
@@ -729,11 +962,13 @@ def load_existing_history(task_dir: Path, limit: int = 40) -> list[dict[str, Any
             continue
         before_page = item.get("before_page") if isinstance(item.get("before_page"), dict) else {}
         after_page = item.get("after_page") if isinstance(item.get("after_page"), dict) else {}
+        outcome = outcome_from_trajectory_item(task_dir, item, action)
         history.append(
             {
                 "step": item.get("step"),
                 "action": action,
                 "approved": True,
+                "outcome": outcome,
                 "before": {
                     "url": before_page.get("url"),
                     "scrollY": (before_page.get("viewport") or {}).get("scrollY") if isinstance(before_page.get("viewport"), dict) else None,
@@ -745,6 +980,27 @@ def load_existing_history(task_dir: Path, limit: int = 40) -> list[dict[str, Any
             }
         )
     return history[-limit:]
+
+
+def saved_task_prompt(task_dir: Path) -> str:
+    actions_path = task_dir / "actions.json"
+    if not actions_path.exists():
+        return ""
+    try:
+        data = json.loads(actions_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return ""
+    return str(data.get("task", "")) if isinstance(data, dict) else ""
+
+
+def validate_resume_prompt(task_dir: Path, task: str) -> None:
+    saved = saved_task_prompt(task_dir)
+    if saved and saved != task:
+        raise RecorderError(
+            "resume prompt does not match the saved task prompt. "
+            f"Saved task: {saved!r}. New prompt: {task!r}. "
+            "Use the exact same prompt with --resume, or start a new task id."
+        )
 
 
 async def record_automated_step(
@@ -831,7 +1087,8 @@ async def record_automated_step(
         "chromiumrl_result": compare_response.get("result", {}),
     }
     write_json(step_dir / "dom_diff.json", dom_diff)
-    write_json(step_dir / "dom_diff_summary.json", build_dom_diff_summary(before, after))
+    dom_diff_summary = build_dom_diff_summary(before, after)
+    write_json(step_dir / "dom_diff_summary.json", dom_diff_summary)
 
     signals = await collect_chromiumrl_signals(cdp)
     write_json(step_dir / "chromiumrl_signals.json", signals)
@@ -854,6 +1111,7 @@ async def record_automated_step(
             "after_captured_at": after.index["completed_at"],
             "before_page": before.page_state,
             "after_page": after.page_state,
+            "outcome": build_step_outcome(performed_action, before.page_state, after.page_state, dom_diff_summary),
             "artifacts": artifact_record(step_dir, task_dir),
         }
     )
@@ -871,6 +1129,7 @@ async def record_automated_step(
             "completed_at": metadata["completed_at"],
             "before_page": before.page_state,
             "after_page": after.page_state,
+            "outcome": metadata["outcome"],
             "artifacts_directory": step_dir.relative_to(task_dir).as_posix(),
             "dom_diff": "dom_diff.json",
             "dom_diff_summary": "dom_diff_summary.json",
@@ -886,7 +1145,7 @@ async def record_automated_step(
         == "complete"
     )
     update_manifest(task_dir, completed_steps=completed, status="recording")
-    return performed_action
+    return {"action": performed_action, "outcome": metadata["outcome"]}
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -906,6 +1165,8 @@ async def run(args: argparse.Namespace) -> None:
         args.cdp_url,
         resume=args.resume,
     )
+    if args.resume:
+        validate_resume_prompt(task_dir, args.task)
     screenshot_config = ScreenshotConfig(
         source=args.screenshot_source,
         container=args.screenshot_container,
@@ -923,6 +1184,11 @@ async def run(args: argparse.Namespace) -> None:
         target_url_contains=args.target_url_contains,
     ) as cdp:
         await enable_page_domains(cdp)
+        startup_language_overrides = await apply_language_overrides(
+            cdp,
+            locale=args.browser_locale,
+            accept_language=args.accept_language,
+        )
         if not args.resume:
             fresh_context = {"ok": False, "reason": "disabled"}
             browser_context_id = ""
@@ -931,6 +1197,11 @@ async def run(args: argparse.Namespace) -> None:
                 if fresh_context.get("ok"):
                     browser_context_id = str(fresh_context.get("browserContextId", ""))
             fresh_target = await open_fresh_tab(cdp, args.fresh_tab_url, browser_context_id=browser_context_id)
+            fresh_tab_language_overrides = await apply_language_overrides(
+                cdp,
+                locale=args.browser_locale,
+                accept_language=args.accept_language,
+            )
             cleanup_result: dict[str, Any] | None = None
             if not args.keep_browser_data and not browser_context_id:
                 cleanup_result = await clear_browser_data_for_fresh_task(cdp)
@@ -943,6 +1214,8 @@ async def run(args: argparse.Namespace) -> None:
                     "fresh_browser_context": fresh_context,
                     "target": fresh_target,
                     "url": args.fresh_tab_url,
+                    "startup_language_overrides": startup_language_overrides,
+                    "fresh_tab_language_overrides": fresh_tab_language_overrides,
                     "browser_data_cleared": not args.keep_browser_data,
                     "browser_data_cleanup": cleanup_result,
                 },
@@ -953,12 +1226,32 @@ async def run(args: argparse.Namespace) -> None:
             elif not args.keep_browser_data:
                 print("Cleared browser cookies/cache/storage for fresh non-resume task.")
         else:
+            resume_language_overrides = await apply_language_overrides(
+                cdp,
+                locale=args.browser_locale,
+                accept_language=args.accept_language,
+            )
+            append_jsonl(
+                task_dir / "agent_browser_decisions.jsonl",
+                {
+                    "timestamp": utc_now(),
+                    "source": "runner",
+                    "event": "resume_language_overrides",
+                    "language_overrides": resume_language_overrides,
+                },
+            )
             print("Resume mode: keeping the current browser tab/session.")
-        agent = DesktopWootzAgent(cdp, input_timeout=args.input_timeout)
+        agent = DesktopWootzAgent(
+            cdp,
+            input_timeout=args.input_timeout,
+            browser_locale=args.browser_locale,
+            accept_language=args.accept_language,
+        )
 
         step = next_step
         recorded_this_run = 0
         while recorded_this_run < args.max_steps:
+            await agent.apply_language_overrides()
             snapshot = await agent.snapshot(max_elements=args.max_elements)
             action = await call_openai_json(
                 api_key=api_key,
@@ -1005,7 +1298,7 @@ async def run(args: argparse.Namespace) -> None:
                     history.append({"step": step, "action": action, "approved": False})
                     continue
 
-            performed = await record_automated_step(
+            result = await record_automated_step(
                 agent=agent,
                 task_dir=task_dir,
                 step_number=step,
@@ -1014,7 +1307,14 @@ async def run(args: argparse.Namespace) -> None:
                 settle_seconds=args.settle_seconds,
                 capture_all_targets=not args.no_capture_all_targets,
             )
-            history.append({"step": step, "action": performed, "approved": True})
+            history.append(
+                {
+                    "step": step,
+                    "action": result["action"],
+                    "approved": True,
+                    "outcome": result["outcome"],
+                }
+            )
             print(f"Recorded automated step {step:03d} in {task_dir / f'step_{step:03d}'}")
             step += 1
             recorded_this_run += 1
@@ -1039,6 +1339,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--fresh-tab-url", default="about:blank")
     parser.add_argument("--keep-browser-data", action="store_true")
+    parser.add_argument("--browser-locale", default=os.environ.get("BROWSER_LANG", "en-US"))
+    parser.add_argument("--accept-language", default=os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"))
     parser.add_argument("--yes", action="store_true", help="perform model actions without approval prompts")
     parser.add_argument("--no-capture-all-targets", action="store_true", default=True)
     parser.add_argument("--capture-all-targets", dest="no_capture_all_targets", action="store_false")
