@@ -39,15 +39,43 @@ su -s /bin/bash wootz -c \
     --disable-first-run-ui \
     --window-size=1365,768 \
     '$START_URL'" &
+browser_pid="$!"
 
 for _ in $(seq 1 100); do
   if curl -fsS "http://127.0.0.1:${CDP_PORT}/json/version" >/dev/null 2>&1; then
     break
   fi
+  if ! kill -0 "$browser_pid" >/dev/null 2>&1; then
+    echo "Wootz browser exited before CDP became ready" >&2
+    wait "$browser_pid" || true
+    exit 1
+  fi
   sleep 0.1
 done
 
+if ! curl -fsS "http://127.0.0.1:${CDP_PORT}/json/version" >/dev/null 2>&1; then
+  echo "Wootz browser CDP did not become ready on 127.0.0.1:${CDP_PORT}" >&2
+  exit 1
+fi
+
 echo "Proxying desktop CDP on 0.0.0.0:${CDP_PROXY_PORT} -> 127.0.0.1:${CDP_PORT}"
-exec socat \
+socat \
   "TCP-LISTEN:${CDP_PROXY_PORT},fork,reuseaddr,bind=0.0.0.0" \
-  "TCP:127.0.0.1:${CDP_PORT}"
+  "TCP:127.0.0.1:${CDP_PORT}" &
+proxy_pid="$!"
+
+trap 'kill "$browser_pid" "$proxy_pid" >/dev/null 2>&1 || true' EXIT INT TERM
+
+while true; do
+  if ! kill -0 "$browser_pid" >/dev/null 2>&1; then
+    echo "Wootz browser exited; stopping CDP proxy so the container can restart" >&2
+    wait "$browser_pid" || true
+    exit 1
+  fi
+  if ! kill -0 "$proxy_pid" >/dev/null 2>&1; then
+    echo "CDP proxy exited; stopping container" >&2
+    wait "$proxy_pid" || true
+    exit 1
+  fi
+  sleep 1
+done
