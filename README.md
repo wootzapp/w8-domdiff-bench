@@ -104,7 +104,7 @@ RECORDER_LANG=en_US.UTF-8
 RECORDER_LC_ALL=en_US.UTF-8
 ```
 
-If the container was already running before this setting was added, restart only
+<!-- If the container was already running before this setting was added, restart only
 the desktop recorder container:
 
 ```bash
@@ -115,7 +115,7 @@ docker compose up -d --force-recreate wootz-desktop
 This does not change the Android recorder or the desktop authoring container.
 Some websites may still route by server IP, for example to a `.de` domain, but
 the browser will request English content and the runner also applies CDP
-language overrides before capturing and acting.
+language overrides before capturing and acting. -->
 
 ## Open noVNC
 
