@@ -442,12 +442,14 @@ class DesktopWootzAgent:
             accept_language=self.accept_language,
         )
 
-    async def snapshot(self, max_elements: int = 120) -> Snapshot:
+    async def snapshot(self, max_elements: int = 120, *, include_runtime_visible_text: bool = True) -> Snapshot:
         value, timing = await timed_command(self.cdp, "ChromiumRL.getAgentObservation", required=True)
         payload = command_entry({}, timing, value)
         observation = get_observation_dict(payload)
         elements = observation.get("elements", [])
-        visible_text_blocks = await self.visible_text_blocks(max_blocks=max_elements)
+        visible_text_blocks = (
+            await self.visible_text_blocks(max_blocks=max_elements) if include_runtime_visible_text else []
+        )
         refs: dict[str, dict[str, Any]] = {}
         lines = [
             f"url: {observation.get('url', '')}",
@@ -491,7 +493,14 @@ class DesktopWootzAgent:
 
         snapshot = Snapshot(
             text="\n".join(lines),
-            payload={**payload, "visible_text_blocks": visible_text_blocks},
+            payload={
+                **payload,
+                "model_observation_sources": {
+                    "primary": "ChromiumRL.getAgentObservation",
+                    "supplemental_runtime_visible_text": include_runtime_visible_text,
+                },
+                "visible_text_blocks": visible_text_blocks,
+            },
             refs=refs,
         )
         self._last_snapshot = snapshot
@@ -900,19 +909,11 @@ async def call_openai_json(
     *,
     api_key: str,
     model: str,
-    task: str,
-    history: list[dict[str, Any]],
-    snapshot: Snapshot,
+    user_payload: dict[str, Any],
     timeout: float,
 ) -> dict[str, Any]:
     base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     url = base_url + "/chat/completions"
-    user_payload = {
-        "task": task,
-        "recent_actions": history[-20:],
-        "progress_warnings": progress_warnings(history),
-        "snapshot": snapshot.text,
-    }
     body = {
         "model": model,
         "response_format": {"type": "json_object"},
@@ -943,6 +944,72 @@ async def call_openai_json(
     except json.JSONDecodeError as error:
         raise RecorderError(f"OpenAI did not return valid JSON: {content[:1000]}") from error
     return normalize_action(action)
+
+
+def build_model_user_payload(
+    *,
+    task: str,
+    history: list[dict[str, Any]],
+    snapshot: Snapshot,
+    strict_chromiumrl_observation: bool,
+) -> dict[str, Any]:
+    return {
+        "task": task,
+        "recent_actions": history[-20:],
+        "progress_warnings": progress_warnings(history),
+        "observation_contract": {
+            "primary_page_observation": "ChromiumRL.getAgentObservation",
+            "strict_chromiumrl_observation": strict_chromiumrl_observation,
+            "supplemental_runtime_visible_text": not strict_chromiumrl_observation,
+            "note": (
+                "The model receives the snapshot text below. It has no direct CDP/browser access; "
+                "browser actions are executed only by this runner after JSON is returned."
+            ),
+        },
+        "snapshot": snapshot.text,
+    }
+
+
+def build_model_audit_payload(
+    *,
+    request_number: int,
+    step: int,
+    model: str,
+    user_payload: dict[str, Any],
+    snapshot: Snapshot,
+) -> dict[str, Any]:
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "request_number": request_number,
+        "step": step,
+        "created_at": utc_now(),
+        "model": model,
+        "system_prompt": SYSTEM_PROMPT,
+        "exact_user_payload_sent": user_payload,
+        "snapshot_payload": snapshot.payload,
+        "protocols_used_for_model_input": [
+            "ChromiumRL.getAgentObservation",
+            *([] if not snapshot.payload.get("model_observation_sources", {}).get("supplemental_runtime_visible_text") else ["Runtime.evaluate"]),
+        ],
+        "protocols_used_for_action_execution": [
+            "Page.navigate",
+            "Input.dispatchMouseEvent",
+            "Input.insertText",
+            "Input.dispatchKeyEvent",
+            "Runtime.evaluate",
+        ],
+        "protocols_used_for_recording": [
+            "ChromiumRL.enable",
+            "ChromiumRL.saveDOMState",
+            "ChromiumRL.compareDOMState",
+            "ChromiumRL.getAgentObservation",
+            "ChromiumRL.getTouchTraces",
+            "ChromiumRL.captureInteraction",
+            "ChromiumRL.getVisualHash",
+            "Page.captureScreenshot",
+            "Runtime.evaluate",
+        ],
+    }
 
 
 def load_existing_history(task_dir: Path, limit: int = 40) -> list[dict[str, Any]]:
@@ -1250,15 +1317,37 @@ async def run(args: argparse.Namespace) -> None:
 
         step = next_step
         recorded_this_run = 0
+        existing_model_inputs = sorted((task_dir / "model_inputs").glob("request_*_step_*.json"))
+        model_request_number = len(existing_model_inputs) + 1
         while recorded_this_run < args.max_steps:
             await agent.apply_language_overrides()
-            snapshot = await agent.snapshot(max_elements=args.max_elements)
-            action = await call_openai_json(
-                api_key=api_key,
-                model=model,
+            snapshot = await agent.snapshot(
+                max_elements=args.max_elements,
+                include_runtime_visible_text=not args.strict_chromiumrl_observation,
+            )
+            user_payload = build_model_user_payload(
                 task=args.task,
                 history=history,
                 snapshot=snapshot,
+                strict_chromiumrl_observation=args.strict_chromiumrl_observation,
+            )
+            model_inputs_dir = task_dir / "model_inputs"
+            model_inputs_dir.mkdir(exist_ok=True)
+            model_input_path = model_inputs_dir / f"request_{model_request_number:06d}_step_{step:03d}.json"
+            write_json(
+                model_input_path,
+                build_model_audit_payload(
+                    request_number=model_request_number,
+                    step=step,
+                    model=model,
+                    user_payload=user_payload,
+                    snapshot=snapshot,
+                ),
+            )
+            action = await call_openai_json(
+                api_key=api_key,
+                model=model,
+                user_payload=user_payload,
                 timeout=args.model_timeout,
             )
             decision = {
@@ -1267,9 +1356,12 @@ async def run(args: argparse.Namespace) -> None:
                 "task": args.task,
                 "source": "model",
                 "snapshot": snapshot.text,
+                "model_input": model_input_path.relative_to(task_dir).as_posix(),
+                "model_observation_sources": snapshot.payload.get("model_observation_sources", {}),
                 "action": action,
             }
             append_jsonl(task_dir / "agent_browser_decisions.jsonl", decision)
+            model_request_number += 1
 
             print("\n" + "=" * 78)
             print(f"PROPOSED STEP {step:03d} (model)")
@@ -1341,6 +1433,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--keep-browser-data", action="store_true")
     parser.add_argument("--browser-locale", default=os.environ.get("BROWSER_LANG", "en-US"))
     parser.add_argument("--accept-language", default=os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"))
+    parser.add_argument(
+        "--strict-chromiumrl-observation",
+        action="store_true",
+        help="send only ChromiumRL.getAgentObservation-derived page observation to the model; disables supplemental Runtime.evaluate visible text",
+    )
     parser.add_argument("--yes", action="store_true", help="perform model actions without approval prompts")
     parser.add_argument("--no-capture-all-targets", action="store_true", default=True)
     parser.add_argument("--capture-all-targets", dest="no_capture_all_targets", action="store_false")
