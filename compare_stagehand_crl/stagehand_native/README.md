@@ -1,4 +1,4 @@
-# Stagehand native Qatar — clean per-step files
+# Stagehand per-step files
 
 Each `step_XXX_*` folder contains the small set of files for that trajectory step.
 
