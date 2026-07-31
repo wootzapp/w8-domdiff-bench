@@ -1,0 +1,183 @@
+{
+  "score": 0,
+  "evidence_format": "chromiumrl-dom-diff",
+  "evidence_schema_version": "chromiumrl-dom-diff/v1",
+  "requested_evidence_mode": "dom_diff",
+  "diff_frames": 12,
+  "actions": 12,
+  "alignment_complete": true,
+  "verifier_schema_version": "mmrubric-dom-diff-result/v1",
+  "prompt_version": "mmrubric-dom-diff-prompts/v1",
+  "model_roles": {
+    "judge": "gpt-5.2",
+    "action_rubric": "o4-mini"
+  },
+  "capture_coverage": {
+    "actions": 12,
+    "diff_frames": 12,
+    "alignment_complete": true,
+    "capture_status_counts": {
+      "complete": 12
+    },
+    "declared_omissions": [
+      "screenshots",
+      "before_dom",
+      "after_dom",
+      "before_page_state",
+      "after_page_state",
+      "verifier_action"
+    ],
+    "requested_evidence_mode": "dom_diff"
+  },
+  "frozen_rubric_sha256": "7b1a977f2e0a214fb29ef9853c7e6b602a69bf9edd7871e7f49fe56ca8344b5c",
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 146541,
+      "completion_tokens": 5981,
+      "reasoning_tokens": 0,
+      "total_tokens": 152522
+    },
+    "action_rubric": {
+      "prompt_tokens": 20306,
+      "completion_tokens": 3930,
+      "reasoning_tokens": 2688,
+      "total_tokens": 24236
+    },
+    "total": {
+      "prompt_tokens": 166847,
+      "completion_tokens": 9911,
+      "reasoning_tokens": 2688,
+      "total_tokens": 176758
+    },
+    "solver_recorded": {}
+  },
+  "verifier_config": {
+    "requested_evidence_mode": "dom_diff",
+    "evidence_format": "chromiumrl-dom-diff",
+    "evidence_schema_version": "chromiumrl-dom-diff/v1",
+    "verifier_schema_version": "mmrubric-dom-diff-result/v1",
+    "prompt_version": "mmrubric-dom-diff-prompts/v1",
+    "model_roles": {
+      "judge": "gpt-5.2",
+      "action_rubric": "o4-mini"
+    },
+    "rubric_threshold": 0.8,
+    "max_evidence_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome",
+    "dom_frame_char_budget": 16000,
+    "dom_context_char_budget": 48000,
+    "dom_top_k": null,
+    "request_timeout_seconds": 180.0,
+    "max_api_retries": 2
+  },
+  "cache_identity": "c00c01acfccdfba3",
+  "result": {
+    "top_score": 0,
+    "success_criterion": "outcome",
+    "rubric": {
+      "score": 0.6,
+      "is_success": false,
+      "total_max_points": 10.0,
+      "total_earned_points": 6.0,
+      "items": [
+        {
+          "criterion": "Use CarMax to search inventory near Kentwood, MI 49512",
+          "description": "Navigate on CarMax (starting from carmax.com) and set the search location to be near Kentwood, MI 49512 (e.g., entering the ZIP code or selecting a nearby store/delivery area). Full credit if location is correctly applied or if CarMax cannot accept the ZIP/location due to site errors/blocks and the agent clearly reports the blocker. Partial credit if the agent searches in Michigan but not clearly near Kentwood/49512. No credit if the agent searches a clearly different region when the correct location method is available.",
+          "max_points": 4,
+          "justification": "The agent navigated from carmax.com to the cars page, typed \u201cKentwood, MI 49512\u201d into the location search field, and selected the resulting location without errors. The location was clearly applied before filtering.",
+          "earned_points": 4,
+          "reality_notes": "Semantic DOM evidence does not show an explicit CarMax UI control/state confirming the active location was set to the ZIP 49512 (e.g., no visible location input value, selected store widget, or applied-radius indicator). Evidence does show that \u201cKentwood, MI 49512\u201d was registered as a recent search item in the header menu, and multiple result tiles display the store/location line \u201cCarMax Grand Rapids (Kentwood), MI,\u201d which supports Kentwood-area context but does not on its own prove the ZIP-specific location filter was applied.",
+          "applicable_evidence": "Applicable evidence: DOM diff 3/12 shows third-party tracker URLs encoding a referrer/search query for `/cars?search=Kentwood%2C+MI+49512`. DOM diff 7/12 shows a new Recent Searches menu entry with visible text \u201cKentwood, MI 49512\u201d linking to `/cars?searchToken=...`. DOM diffs 8/12 and 10/12 show many listing tiles containing the visible location line text \u201cCarMax Grand Rapids (Kentwood), MI.\u201d Latest relevant evidence is diff 10/12 (still showing Kentwood store text), but none of these diffs explicitly show a CarMax-controlled location widget/value confirming the active location is set to ZIP 49512.",
+          "post_image_justification": "The evidence supports that the agent entered \u201cKentwood, MI 49512\u201d (it appears in Recent Searches) and that results are associated with the Kentwood-area store (\u201cCarMax Grand Rapids (Kentwood), MI\u201d). However, per the Reality Notes, the semantic evidence does not explicitly confirm that CarMax applied the ZIP/location setting as an active filter/state (no recorded location control value/radius/selected-store widget state). So full credit is not supported; award partial credit for clear Kentwood-area context and recorded search term.",
+          "post_image_earned_points": 3.0,
+          "post_evidence_justification": "The evidence supports that the agent entered \u201cKentwood, MI 49512\u201d (it appears in Recent Searches) and that results are associated with the Kentwood-area store (\u201cCarMax Grand Rapids (Kentwood), MI\u201d). However, per the Reality Notes, the semantic evidence does not explicitly confirm that CarMax applied the ZIP/location setting as an active filter/state (no recorded location control value/radius/selected-store widget state). So full credit is not supported; award partial credit for clear Kentwood-area context and recorded search term.",
+          "post_evidence_earned_points": 3.0
+        },
+        {
+          "criterion": "Find Nissan cars for sale near Kentwood, MI 49512 on CarMax",
+          "description": "Filter/search results to Nissan and view cars for sale near the specified location. Full credit if Nissan inventory is shown or if zero Nissan listings exist and the agent accurately reports no results after using reasonable filters. Partial credit if Nissan is searched but results are not clearly constrained to the Kentwood/49512 area. No credit if the agent only shows non-Nissan vehicles when Nissan results are available.",
+          "max_points": 3,
+          "justification": "After setting the location, the agent clicked the Nissan filter, and the URL changed to include \u201c/nissan\u201d under the Kentwood store ID, indicating Nissan inventory near Kentwood was displayed.",
+          "earned_points": 3,
+          "reality_notes": "Nissan inventory is explicitly evidenced in the DOM via (a) visible listing title text such as \u201c2016 Nissan Rogue SL\u201d and (b) car-tile metadata strings (data-clickprops) containing Nissan YMM (e.g., Nissan Rogue). The same results also include location text \u201cCarMax Grand Rapids (Kentwood), MI,\u201d supporting Kentwood-area association. However, the frames do not explicitly show that a Nissan make filter/facet is selected (no active filter chip/heading confirming Nissan-only results), and they do not explicitly show the ZIP code 49512 in an applied location state.",
+          "applicable_evidence": "Applicable evidence: DOM diff 3/12 includes car-tile `data-clickprops` strings with Nissan YMMs (e.g., \u201c2016 Nissan Rogue\u201d, \u201c2022 Nissan Rogue\u201d). DOM diff 10/12 includes an explicit listing title text \u201c2016 Nissan Rogue SL\u201d and also shows the store/location line \u201cCarMax Grand Rapids (Kentwood), MI\u201d on multiple tiles. Latest relevant evidence is diff 10/12. No diff explicitly shows an applied/selected Nissan make filter chip or heading confirming Nissan-only filtering.",
+          "post_image_justification": "Semantic evidence confirms at least one Nissan listing is shown and that listings are associated with the Kentwood store text, which is substantial progress toward \u201cNissan cars for sale near Kentwood.\u201d But the evidence does not verify that results are filtered to Nissan specifically (could be mixed inventory containing some Nissan), nor does it explicitly verify the ZIP 49512 constraint. This warrants a slight reduction from full credit but still high partial credit because Nissan inventory presence near the Kentwood store is directly evidenced.",
+          "post_image_earned_points": 2.0,
+          "post_evidence_justification": "Semantic evidence confirms at least one Nissan listing is shown and that listings are associated with the Kentwood store text, which is substantial progress toward \u201cNissan cars for sale near Kentwood.\u201d But the evidence does not verify that results are filtered to Nissan specifically (could be mixed inventory containing some Nissan), nor does it explicitly verify the ZIP 49512 constraint. This warrants a slight reduction from full credit but still high partial credit because Nissan inventory presence near the Kentwood store is directly evidenced.",
+          "post_evidence_earned_points": 2.0
+        },
+        {
+          "criterion": "Find Honda cars for sale near Kentwood, MI 49512 on CarMax",
+          "description": "Filter/search results to Honda and view cars for sale near the specified location. Full credit if Honda inventory is shown or if zero Honda listings exist and the agent accurately reports no results after using reasonable filters. Partial credit if Honda is searched but results are not clearly constrained to the Kentwood/49512 area. No credit if the agent only shows non-Honda vehicles when Honda results are available.",
+          "max_points": 3,
+          "justification": "The agent reset the location to Kentwood, MI 49512 and then clicked the Honda filter, resulting in a URL ending with \u201c/honda\u201d under the Kentwood store ID, demonstrating Honda inventory near Kentwood was shown.",
+          "earned_points": 3,
+          "reality_notes": "No semantic DOM frame provided includes explicit Honda evidence: there are no listing titles containing \u201cHonda,\u201d no data-clickprops entries naming a Honda vehicle, and no recorded filter state indicating Make=Honda. Several frames show Kentwood-area store text (\u201cCarMax Grand Rapids (Kentwood), MI\u201d), but none tie that context to Honda-specific results or a zero-results message for Honda. Under the grounding rules, this criterion is therefore not directly verifiable from the supplied DOM/diff evidence (and the absence of Honda in diffs should be treated as unknown, not proof of no Honda listings).",
+          "applicable_evidence": "Applicable evidence: DOM diffs 8/12, 9/12, 10/12, 11/12 contain no explicit Honda make/model text, no Honda-specific filter state, and no zero-results message for Honda. Diff 12/12 provides only a similarity summary with no content changes recorded. The Action History shows navigation to a `/honda` URL, but the provided semantic DOM evidence sections explicitly note Honda is not verifiable from the diffs (and grounding rules prevent treating unshown content as confirmed). Latest evidence is diff 12/12, which contains no Honda-confirming details.",
+          "post_image_justification": "There is no grounded evidence that Honda cars for sale were actually displayed (or that there were zero Honda results) near Kentwood/49512. The agent\u2019s final output claims both Nissan and Honda listings were gathered, but Honda is not supported by the semantic DOM evidence provided. Given this, the baseline full score is not justified; award minimal credit only for attempting navigation (via action history) without verifiable Honda results/content in the DOM diffs.",
+          "post_image_earned_points": 1.0,
+          "post_evidence_justification": "There is no grounded evidence that Honda cars for sale were actually displayed (or that there were zero Honda results) near Kentwood/49512. The agent\u2019s final output claims both Nissan and Honda listings were gathered, but Honda is not supported by the semantic DOM evidence provided. Given this, the baseline full score is not justified; award minimal credit only for attempting navigation (via action history) without verifiable Honda results/content in the DOM diffs.",
+          "post_evidence_earned_points": 1.0
+        }
+      ]
+    },
+    "outcome": {
+      "success": false,
+      "reasoning": "Nitpicks: The agent did not present any actual listings (names/links/counts) in its final message; however, the task wording \"See Nissan and Honda cars for sale\" could be satisfied by simply reaching pages that show those makes near the location, so lack of a written list is not automatically fatal if the browsing state clearly shows both makes.\n\nCritical issues: (1) The agent\u2019s final output claims it \"gathered the requested Nissan and Honda listings\" but the provided semantic DOM evidence only directly substantiates Nissan (e.g., a visible listing title \"2016 Nissan Rogue SL\" and multiple Nissan YMM strings in data-clickprops). There is no grounded evidence in the supplied DOM/diff excerpts that any Honda listings were actually displayed, nor a grounded zero-results message for Honda. Therefore, the agent\u2019s claim about Honda is unverified and plausibly a fabrication given the available evidence. (2) Location: there is partial support that the search term \"Kentwood, MI 49512\" was entered (it appears in Recent Searches) and that many listings show \"CarMax Grand Rapids (Kentwood), MI,\" which is consistent with being near Kentwood, but there is no explicit evidence of an applied ZIP/location filter state. This is less severe than the Honda issue because the Kentwood store association is repeatedly evidenced.\n\nOutcome assessment: The agent did navigate to CarMax and appears to have executed searches/URLs for Kentwood and for Nissan and Honda (action history shows /cars/6041/nissan and /cars/6041/honda). But per the grounding rules, the success determination must rely on what is actually evidenced in the semantic DOM diffs. Nissan near the Kentwood-area store is supported; Honda near Kentwood is not supported by the provided evidence, and the agent did not output any concrete Honda vehicles to compensate for the missing DOM support. From an average user perspective, the request was to see both Nissan and Honda cars for sale near that ZIP; with only Nissan verifiably shown and Honda not verifiably shown, the task is not successfully completed.",
+      "primary_intent": "The user wanted to browse CarMax inventory for cars for sale near Kentwood, MI 49512, specifically seeing both Nissan and Honda options. A reasonable user would be flexible on the exact path/navigation method, but not flexible on missing one of the two makes or claiming results were found without actually showing Nissan and Honda vehicles in that area."
+    },
+    "error_taxonomy": {
+      "first_point_of_failure": {
+        "reasoning": "The agent navigated on CarMax, entered \u201cKentwood, MI 49512,\u201d and successfully reached a page that shows Nissan inventory associated with the Kentwood-area store (\u201cCarMax Grand Rapids (Kentwood), MI\u201d), which supports partial completion. However, the trajectory never produces grounded evidence that Honda inventory was actually shown (no Honda listing text, no Honda filter state, and no zero-results message in the provided semantic DOM diffs). Despite this, the agent\u2019s final response claims it \u201cgathered the requested Nissan and Honda listings,\u201d which is not supported by the evidence. Additionally, the agent did not provide any concrete listings/links/counts in the final response, making the \u201csee Nissan and Honda cars for sale\u201d request unfulfilled even if pages were reached. The first clear, materially impactful failure is the unsupported claim of success for Honda in the final output.",
+        "has_failure": true,
+        "failure_points": [
+          {
+            "step_numbers": "12",
+            "error_code": "2.3",
+            "error_category": "Hallucination",
+            "error_type": "Output fabrication",
+            "what_happened": "The agent claimed it had gathered both Nissan and Honda listings near Kentwood, MI 49512, but Honda results are not grounded in the provided semantic DOM evidence.",
+            "agent_reasoning": "After navigating to Nissan and then attempting Honda, the agent concluded it had completed the request and reported success.",
+            "evidence": "Predicted Output: \u201cWe have gathered the requested Nissan and Honda listings near Kentwood, MI 49512.\u201d Criterion 2 Reality Notes + DOM diffs 8-12: no listing titles containing \u201cHonda,\u201d no data-clickprops naming a Honda vehicle, and no recorded filter state indicating Make=Honda; diffs explicitly show Nissan (e.g., \u201c2016 Nissan Rogue SL\u201d and Nissan YMM strings) but not Honda.",
+            "impact": "User is misled into believing Honda inventory was found/shown; primary intent (seeing both makes) is not met, contributing directly to task failure."
+          },
+          {
+            "step_numbers": "12",
+            "error_code": "3.3",
+            "error_category": "Execution & Strategy",
+            "error_type": "Incomplete delivery",
+            "what_happened": "The agent did not provide any actual Nissan/Honda cars (e.g., model names list, links, counts, or a clear statement of what was seen) in the final response\u2014only a generic completion statement.",
+            "agent_reasoning": "The agent treated reaching the relevant pages/filters as sufficient and ended with a high-level confirmation instead of reporting concrete results.",
+            "evidence": "Predicted Output contains no vehicle names, counts, URLs, or confirmation details beyond \u201cgathered the requested Nissan and Honda listings.\u201d Outcome verification notes the agent \u201cdid not present any actual listings (names/links/counts) in its final message.\u201d",
+            "impact": "Even where Nissan evidence exists in the browsing state, the user receives no actionable information to \u201csee\u201d the cars; the missing Honda evidence is not compensated by reporting specific Honda vehicles."
+          }
+        ],
+        "first_failure_step": 12,
+        "first_failure_summary": "[2.3] Output fabrication: The agent claimed it had gathered both Nissan and Honda listings near Kentwood, MI 49512, but Honda results are not grounded in the provided semantic DOM evidence."
+      },
+      "task_verification_with_trajectory": {
+        "reasoning_is_ambiguous": "The instruction \u201cSee Nissan and Honda cars for sale near Kentwood, MI 49512 on CarMax\u201d clearly specifies the website (CarMax), the location (Kentwood, MI 49512), and the two makes (Nissan and Honda). The agent\u2019s action history shows it understood these targets and attempted to set the ZIP code and select each make. There is no evidence that critical information is missing or that multiple interpretations are possible. Thus the task is not ambiguous.",
+        "is_ambiguous": false,
+        "ambiguity_codes": [],
+        "reasoning_is_invalid": "The task is feasible in a desktop browser environment, involves no illegal or NSFW content, requires no unavailable credentials or impossible actions, and does not violate any responsible-AI policies. A competent agent could, in principle, complete it. Therefore, the task is not invalid.",
+        "is_invalid": false,
+        "invalid_task_codes": []
+      },
+      "task_verification": {
+        "result_type": "task_verification",
+        "score": 1.0,
+        "reasoning": "OK",
+        "verifier_name": "task_verification",
+        "metadata": {},
+        "reasoning_is_ambiguous": "The task specifies the website (CarMax), the location (Kentwood, MI 49512), and the makes (Nissan and Honda). A competent agent could navigate to CarMax, enter the zip code, and filter by those two makes. No essential information is missing nor are there multiple valid interpretations.",
+        "is_ambiguous": false,
+        "ambiguity_codes": [],
+        "reasoning_is_invalid": "Searching for cars on CarMax is a valid and supported operation. There are no legal, policy, or feasibility issues with viewing Nissan and Honda listings near the provided zip code.",
+        "is_invalid": false,
+        "invalid_task_codes": []
+      }
+    }
+  }
+}
