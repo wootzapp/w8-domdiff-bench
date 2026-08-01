@@ -546,7 +546,12 @@ def _node_text(node: dict[str, Any]) -> str:
     return " ".join(parts).strip()
 
 
-def _attributes_text(node: dict[str, Any]) -> str:
+def _attributes_text(
+    node: dict[str, Any],
+    *,
+    include_data_attributes: bool = True,
+    include_identity_attributes: bool = True,
+) -> str:
     attrs = node.get("attributes") or []
     if isinstance(attrs, dict):
         items = attrs.items()
@@ -554,15 +559,28 @@ def _attributes_text(node: dict[str, Any]) -> str:
         pairs = []
         for item in attrs:
             if isinstance(item, dict):
-                pairs.extend(item.items())
+                # ChromiumRL serializes attributes as
+                # {"name": "aria-label", "value": "..."}. Treating that
+                # object as a regular mapping loses the actual attribute name
+                # and value (it produces the keys "name" and "value").
+                if "name" in item:
+                    pairs.append((item.get("name"), item.get("value")))
+                else:
+                    pairs.extend(item.items())
             elif isinstance(item, (list, tuple)) and len(item) == 2:
                 pairs.append((item[0], item[1]))
         items = pairs
     else:
         items = []
-    keep = {}
+    keep: dict[str, Any] = {}
+    secondary: dict[str, Any] = {}
     for key, value in items:
-        if str(key).lower() in {
+        normalized = str(key or "").lower()
+        if not include_identity_attributes and normalized in {"id", "name", "href"}:
+            continue
+        if normalized in {
+            "id",
+            "name",
             "aria-label",
             "title",
             "alt",
@@ -572,8 +590,21 @@ def _attributes_text(node: dict[str, Any]) -> str:
             "role",
             "checked",
             "selected",
-        }:
+            "disabled",
+            "open",
+        } or normalized.startswith("aria-"):
             keep[str(key)] = value
+        elif (
+            include_data_attributes
+            and normalized.startswith("data-")
+            and len(str(value or "")) <= 120
+        ):
+            # Short data attributes frequently carry control state that is not
+            # otherwise exposed. Keep a bounded number without preferring any
+            # task, site, product, or action vocabulary.
+            secondary[str(key)] = value
+    for key in sorted(secondary)[:6]:
+        keep[key] = secondary[key]
     return _compact(keep, 500) if keep else ""
 
 
@@ -679,6 +710,18 @@ def project_frame_retrieved(
     keeps the same action-aligned files, but ranks DOM/diff records by relevance
     before budgeting so important evidence is less likely to be truncated out.
     """
+    total_budget = frame_char_budget
+    overview_marker = (
+        "\nUNFILTERED WHOLE-FRAME SEMANTIC CONTEXT "
+        "(not task/rubric term filtered):\n"
+    )
+    overview_budget = min(
+        5000,
+        max(400, total_budget // 3),
+    )
+    frame_char_budget = max(
+        1, total_budget - overview_budget - len(overview_marker)
+    )
     before_page = _page_state_summary(frame.before_page_state)
     after_page = _page_state_summary(frame.after_page_state)
     header = (
@@ -712,7 +755,7 @@ def project_frame_retrieved(
         char_budget=min(state_char_budget, remaining),
         label="AFTER STATE",
     )
-    return (
+    retrieved = (
         header
         + "RETRIEVED DIFF EVIDENCE:\n"
         + diff
@@ -721,9 +764,15 @@ def project_frame_retrieved(
         + "\n"
         + after_state
     )[:frame_char_budget]
+    overview = project_semantic_transition(frame, char_budget=overview_budget)
+    return (
+        retrieved
+        + overview_marker
+        + overview
+    )[:total_budget]
 
 
-def _page_state_summary(page_state: dict[str, Any] | None) -> str:
+def _page_state_summary(page_state: dict[str, Any] | None, *, limit: int = 900) -> str:
     if not page_state:
         return "unavailable"
     viewport = page_state.get("viewport") or {}
@@ -739,7 +788,7 @@ def _page_state_summary(page_state: dict[str, Any] | None) -> str:
             "scrollHeight": viewport.get("scrollHeight"),
         },
     }
-    return _compact(summary, 900)
+    return _compact(summary, limit)
 
 
 def project_retrieved_snapshot(
@@ -917,6 +966,363 @@ def _diff_entry_line(section: str, entry: Any) -> str:
         f"selector={_compact(entry.get('cssSelector') or entry.get('stablePath'), 350)} "
         f"text={text}"
     )
+
+
+_NON_SEMANTIC_TAGS = {"script", "style", "link", "meta", "noscript"}
+
+
+def _semantic_node_priority(node: dict[str, Any]) -> int:
+    """Rank a DOM node by represented user-observable state, not task words."""
+    tag = str(node.get("tagName") or node.get("tag") or "").lower()
+    text = _node_text(node)
+    if not text:
+        text = " ".join(
+            str(node.get(key) or "")
+            for key in ("name", "text", "value")
+            if node.get(key)
+        )
+    attrs = _attributes_text(node)
+    states = node.get("states")
+    if not (text or attrs or states):
+        return -100
+
+    score = 0
+    if bool(node.get("isInViewport")):
+        score += 12
+    if bool(node.get("isVisible")):
+        score += 8
+    if _is_interactive_node(node):
+        score += 6
+    if text:
+        score += 5
+    if attrs:
+        score += 4
+        if "aria-" in attrs.lower():
+            score += 8
+    if states:
+        score += 4
+    if node.get("role"):
+        score += 2
+    if 0 < len(text) <= 180:
+        score += 5
+    elif len(text) > 700:
+        score -= 8
+    if tag in _NON_SEMANTIC_TAGS:
+        score -= 30
+    if _looks_noisy_dom_text(text):
+        score -= 20
+    return score
+
+
+def _semantic_diff_priority(section: str, entry: Any) -> int:
+    """Rank an explicit transition using modality-generic semantic signals."""
+    base = {
+        "textChanges": 12,
+        "insertions": 9,
+        "attributeChanges": 8,
+        "deletions": 7,
+        "typeChanges": 4,
+        "moves": 2,
+        "layoutChanges": 0,
+        "styleChanges": -2,
+    }.get(section, 0)
+    if not isinstance(entry, dict):
+        return base
+    details = (
+        entry.get("nodeDetails")
+        if isinstance(entry.get("nodeDetails"), dict)
+        else {}
+    )
+    node = {**entry, **details}
+    score = base + _semantic_node_priority(node)
+    old_value = str(entry.get("oldValue") or "")
+    new_value = str(entry.get("newValue") or "")
+    if old_value != new_value and (old_value or new_value):
+        score += 5
+        if max(len(old_value), len(new_value)) <= 180:
+            score += 6
+    return score
+
+
+def project_semantic_snapshot_overview(
+    snapshot: SemanticDOMSnapshot | dict[str, Any] | None,
+    *,
+    label: str = "STATE",
+    char_budget: int = 3000,
+    compact_header: bool = False,
+) -> str:
+    """Project high-signal visible/control state without task-term retrieval."""
+    if snapshot is None:
+        return f"{label} unavailable"
+    if isinstance(snapshot, SemanticDOMSnapshot):
+        header = (
+            f"{label} UNFILTERED SEMANTIC STATE:\n"
+            if compact_header
+            else (
+                f"{label} snapshot={snapshot.snapshot_id} ordinal={snapshot.ordinal}\n"
+                f"url={_compact(snapshot.url, 500)}\n"
+                f"title={_compact(snapshot.title, 500)}\n"
+                f"{coverage_text(snapshot.coverage)}\n"
+                "UNFILTERED SEMANTIC STATE:\n"
+            )
+        )
+        ranked = []
+        for node in snapshot.nodes:
+            data = node.model_dump()
+            score = _semantic_node_priority(data)
+            if score > 0:
+                ranked.append((score, _node_line(data)))
+        return _budget(header, _dedupe_ranked(ranked, max_lines=80), char_budget)
+
+    nodes = snapshot.get("nodes") or []
+    header = (
+        f"{label} UNFILTERED SEMANTIC STATE:\n"
+        if compact_header
+        else (
+            f"{label} schema=chromiumrl_dom\n"
+            f"url={_compact(snapshot.get('url'), 500)}\n"
+            f"title={_compact(snapshot.get('title'), 500)}\n"
+            f"viewport={_compact(snapshot.get('viewport'), 500)}\n"
+            f"nodes={len(nodes)}\n"
+            "UNFILTERED SEMANTIC STATE:\n"
+        )
+    )
+    ranked: list[tuple[int, str]] = []
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        score = _semantic_node_priority(node)
+        if score > 0:
+            ranked.append((score, _chromiumrl_node_line(node)))
+    return _budget(header, _dedupe_ranked(ranked, max_lines=100), char_budget)
+
+
+def project_semantic_transition(
+    frame: DOMEvidenceFrame, *, char_budget: int = 5000
+) -> str:
+    """Project one complete action transition without criterion filtering."""
+    header = (
+        f"FRAME {frame.action_ordinal} action_id={frame.action_id or 'N/A'} "
+        f"capture={frame.capture_status or 'unknown'} "
+        f"coverage={frame.coverage_status or _snapshot_coverage_status(frame.snapshot)}\n"
+        f"action={_compact(frame.verifier_action, 700)}\n"
+        f"before_page={_page_state_summary(frame.before_page_state, limit=450)}\n"
+        f"after_page={_page_state_summary(frame.after_page_state, limit=450)}\n"
+    )
+    remaining = max(0, char_budget - len(header))
+    diff_header = "UNFILTERED EXPLICIT CHANGES:\n"
+    ranked: list[tuple[int, str]] = []
+    diff = frame.diff
+    if isinstance(diff, SemanticDOMDiff):
+        ranked.extend(
+            (_semantic_diff_priority("insertions", node), _node_line(node, "+ "))
+            for node in diff.added
+        )
+        ranked.extend(
+            (_semantic_diff_priority("deletions", node), _node_line(node, "- "))
+            for node in diff.removed
+        )
+        for update in diff.updated:
+            changes = ", ".join(
+                f"{field}:{_compact(change['before'])}->{_compact(change['after'])}"
+                for field, change in sorted(update.changes.items())
+            )
+            ranked.append((12, f"updated key={update.key} {changes}"))
+        diff_header += (
+            f"added={len(diff.added)} removed={len(diff.removed)} "
+            f"updated={len(diff.updated)} unchanged={diff.unchanged_count}\n"
+        )
+    elif isinstance(diff, dict):
+        result = diff.get("chromiumrl_result") or diff.get("chromiumrl_response") or {}
+        if isinstance(result, dict):
+            sections = (
+                "textChanges",
+                "insertions",
+                "attributeChanges",
+                "deletions",
+                "typeChanges",
+                "moves",
+                "layoutChanges",
+                "styleChanges",
+            )
+            counts = {
+                section: len(result.get(section) or [])
+                for section in sections
+                if isinstance(result.get(section), list)
+            }
+            diff_header += f"counts={_compact(counts, 700)}\n"
+            for section in sections:
+                for entry in result.get(section) or []:
+                    score = _semantic_diff_priority(section, entry)
+                    if score > 0:
+                        ranked.append((score, _diff_entry_line(section, entry)))
+    else:
+        diff_header += "diff unavailable\n"
+
+    diff_budget = max(0, int(remaining * 0.55))
+    changes = _budget(
+        diff_header, _dedupe_ranked(ranked, max_lines=120), diff_budget
+    )
+    state_budget = max(0, remaining - len(changes) - 1)
+    after_state = project_semantic_snapshot_overview(
+        frame.snapshot,
+        label="AFTER STATE",
+        char_budget=state_budget,
+        compact_header=True,
+    )
+    return (header + changes + "\n" + after_state)[:char_budget]
+
+
+def _snapshot_state_records(
+    snapshot: SemanticDOMSnapshot | dict[str, Any] | None,
+) -> list[tuple[str, int, str]]:
+    """Return stable, user-observable state records for cross-frame matching."""
+    if snapshot is None:
+        return []
+    records: list[tuple[str, int, str]] = []
+    if isinstance(snapshot, SemanticDOMSnapshot):
+        for node in snapshot.nodes:
+            data = node.model_dump()
+            score = _semantic_node_priority(data)
+            if score <= 0:
+                continue
+            state = (
+                f"role={_compact(data.get('role'))} "
+                f"name={_compact(data.get('name'), 220)} "
+                f"text={_compact(data.get('text'), 300)} "
+                f"value={_compact(data.get('value'), 180)} "
+                f"states={_compact(data.get('states'), 240)}"
+            )
+            records.append((str(data.get("key") or ""), score, state))
+        return records
+
+    raw_records: dict[str, tuple[int, str]] = {}
+    for node in snapshot.get("nodes") or []:
+        if not isinstance(node, dict):
+            continue
+        if not (
+            bool(node.get("isVisible"))
+            or bool(node.get("isInViewport"))
+            or _is_interactive_node(node)
+        ):
+            continue
+        score = _semantic_node_priority(node)
+        if score <= 0:
+            continue
+        key = str(
+            node.get("cssSelector")
+            or node.get("stablePath")
+            or f"nodeId:{node.get('nodeId')}"
+        )
+        state = (
+            f"tag={_compact(node.get('tagName') or node.get('tag'))} "
+            f"role={_compact(node.get('role'))} "
+            f"text={_compact(_node_text(node), 300)} "
+            "attrs="
+            + _attributes_text(
+                node,
+                include_data_attributes=False,
+                include_identity_attributes=False,
+            )
+        )
+        current = raw_records.get(key)
+        if current is None or score > current[0]:
+            raw_records[key] = (score, state)
+    return [
+        (key, score, state)
+        for key, (score, state) in sorted(raw_records.items())
+    ]
+
+
+def project_cross_frame_state_changes(
+    frames: Iterable[DOMEvidenceFrame], *, char_budget: int = 6000
+) -> str:
+    """Compare N+1 semantic states and retain only stable elements that change."""
+    ordered = sorted(frames, key=lambda frame: (frame.action_ordinal, frame.action_id))
+    header = (
+        "CROSS-FRAME SEMANTIC STATE CHANGES "
+        "(N actions -> N+1 states; no task-term filtering):\n"
+    )
+    if not ordered:
+        return header + "none (no frames)"
+
+    states: list[tuple[str, SemanticDOMSnapshot | dict[str, Any] | None]] = [
+        ("initial", ordered[0].before_snapshot)
+    ]
+    states.extend((str(frame.action_ordinal), frame.snapshot) for frame in ordered)
+    histories: dict[str, list[tuple[str, str]]] = {}
+    priorities: dict[str, int] = {}
+    observations: dict[str, int] = {}
+    for state_label, snapshot in states:
+        for key, score, represented_state in _snapshot_state_records(snapshot):
+            history = histories.setdefault(key, [])
+            if not history or history[-1][1] != represented_state:
+                history.append((state_label, represented_state))
+            priorities[key] = max(priorities.get(key, 0), score)
+            observations[key] = observations.get(key, 0) + 1
+
+    ranked: list[tuple[int, str]] = []
+    for key, history in histories.items():
+        distinct = {state for _, state in history}
+        if len(distinct) <= 1:
+            continue
+        timeline = "; ".join(
+            f"state_{label}={state}" for label, state in history
+        )
+        changes = len(distinct) - 1
+        # Persistent elements with a few coherent transitions are stronger
+        # state evidence than highly volatile page-load noise.
+        score = (
+            priorities.get(key, 0)
+            + min(24, 2 * observations.get(key, 0))
+            + min(24, 8 * changes)
+            - 4 * max(0, changes - 3)
+        )
+        ranked.append(
+            (
+                score,
+                f"key={_compact(key, 320)} timeline={_compact(timeline, 1200)}",
+            )
+        )
+    if not ranked:
+        return header + "none represented"
+    return _budget(header, _dedupe_ranked(ranked, max_lines=100), char_budget)
+
+
+def project_dom_transition_timeline(
+    frames: Iterable[DOMEvidenceFrame],
+    *,
+    context_char_budget: int = 24000,
+    frame_char_budget: int = 6000,
+) -> str:
+    """Preserve every action's unfiltered semantic transition chronologically."""
+    ordered = sorted(frames, key=lambda frame: (frame.action_ordinal, frame.action_id))
+    header = (
+        "GLOBAL DOM TRANSITION EVIDENCE (chronological, not task/rubric filtered)\n"
+        f"frames={len(ordered)}\n"
+    )
+    if context_char_budget <= len(header):
+        return header[:context_char_budget]
+    cross_frame_budget = min(6000, max(800, context_char_budget // 4))
+    cross_frame = project_cross_frame_state_changes(
+        ordered, char_budget=cross_frame_budget
+    )
+    output = header + cross_frame + "\n---\n"
+    if len(output) >= context_char_budget:
+        return output[:context_char_budget]
+    remaining = context_char_budget - len(output)
+    for index, frame in enumerate(ordered):
+        frames_left = len(ordered) - index
+        budget = min(frame_char_budget, max(1, remaining // frames_left))
+        projected = project_semantic_transition(frame, char_budget=budget)
+        separator = "\n---\n"
+        if len(separator) + len(projected) > remaining:
+            projected = projected[: max(0, remaining - len(separator))]
+        output += separator + projected
+        remaining = context_char_budget - len(output)
+        if remaining <= 0:
+            break
+    return output[:context_char_budget]
 
 
 def project_frame(

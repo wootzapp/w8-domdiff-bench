@@ -12,8 +12,11 @@ from webeval.rubric_agent.dom_evidence import (
     DOMEvidenceFrame,
     load_dom_frames,
     load_snapshot,
+    project_dom_transition_timeline,
     project_frame,
+    project_frame_retrieved,
     project_frames,
+    project_semantic_transition,
 )
 from webeval.rubric_agent.mm_rubric_agent import MMRubricAgent, MMRubricAgentConfig
 from webeval.rubric_agent import prompts
@@ -317,8 +320,13 @@ def test_datapoint_extraction_exposes_dom_paths_and_mode():
         evidence_mode="dom",
         dom_action_ordinal=1,
         dom_action_id="action-0001",
+        dom_evidence_schema_version="chromiumrl-dom-step/v1",
+        dom_before_snapshot_path="/tmp/before_semantic_dom.json",
         dom_after_snapshot_path="/tmp/semantic_dom.json",
         dom_diff_path="/tmp/dom_diff.json",
+        dom_before_page_state_path="/tmp/before_page_state.json",
+        dom_after_page_state_path="/tmp/after_page_state.json",
+        dom_verifier_action_path="/tmp/verifier_action.json",
         dom_capture_status="captured",
         dom_coverage_status="complete",
     )
@@ -351,12 +359,21 @@ def test_all_dom_prompt_templates_are_valid_and_coverage_grounded():
     assert names
     for name in names:
         prompt = getattr(prompts, name)
-        assert Template(prompt).is_valid(), name
-        assert "ground truth ONLY" in prompt, name
-        assert "declared coverage" in prompt, name
+        prompt_text = prompt.template if isinstance(prompt, Template) else prompt
+        assert Template(prompt_text).is_valid(), name
+        if name == "DOM_RETRIEVAL_TERMS_PROMPT":
+            continue
+        assert "ground truth ONLY" in prompt_text, name
+        assert "declared coverage" in prompt_text, name
 
-    assert "post_evidence_earned_points" in prompts.DOM_RUBRIC_RESCORING_PROMPT
-    assert "post_image_earned_points" not in prompts.DOM_RUBRIC_RESCORING_PROMPT
+    rescoring_prompt = prompts.DOM_RUBRIC_RESCORING_PROMPT
+    rescoring_text = (
+        rescoring_prompt.template
+        if isinstance(rescoring_prompt, Template)
+        else rescoring_prompt
+    )
+    assert "post_evidence_earned_points" in rescoring_text
+    assert "post_image_earned_points" not in rescoring_text
 
 
 def test_dom_rescoring_accepts_generic_fields_and_writes_aliases(monkeypatch):
@@ -415,3 +432,141 @@ def test_dom_rescoring_accepts_generic_fields_and_writes_aliases(monkeypatch):
     item = result["items"][0]
     assert item["post_evidence_earned_points"] == 2
     assert item["post_image_earned_points"] == 2
+
+
+def _raw_transition_frame(ordinal: int, before_value: str, after_value: str):
+    def node(value: str):
+        return {
+            "nodeId": ordinal,
+            "tagName": "BUTTON",
+            "role": "button",
+            "isVisible": True,
+            "isInViewport": True,
+            "textContent": value,
+            "attributes": [
+                {"name": "aria-label", "value": f"Current state {value}"},
+                {"name": "value", "value": value},
+            ],
+        }
+
+    before = {
+        "url": "https://example.test/state",
+        "title": "State",
+        "nodes": [node(before_value)],
+    }
+    after = {
+        "url": "https://example.test/state",
+        "title": "State",
+        "nodes": [node(after_value)],
+    }
+    diff = {
+        "schema_version": "chromiumrl-dom-diff/v1",
+        "chromiumrl_result": {
+            "summary": {},
+            "textChanges": [
+                {
+                    "nodeId": ordinal,
+                    "type": "text",
+                    "tagName": "BUTTON",
+                    "oldValue": before_value,
+                    "newValue": after_value,
+                    "nodeDetails": node(after_value),
+                }
+            ],
+            "insertions": [],
+            "attributeChanges": [],
+            "deletions": [],
+            "typeChanges": [],
+            "moves": [],
+            "layoutChanges": [],
+            "styleChanges": [],
+        },
+    }
+    return DOMEvidenceFrame(
+        action_ordinal=ordinal,
+        action_id=f"action-{ordinal:04d}",
+        after_snapshot_path=f"/unused/after-{ordinal}.json",
+        before_snapshot=before,
+        snapshot=after,
+        diff=diff,
+        verifier_action={"name": "click", "arguments": {"x": 1, "y": 2}},
+    )
+
+
+def test_retrieved_frame_preserves_unfiltered_semantic_state():
+    frame = _raw_transition_frame(1, "zero", "two")
+    projected = project_frame_retrieved(
+        frame,
+        terms=["term-that-does-not-occur"],
+        frame_char_budget=5000,
+    )
+    assert "UNFILTERED WHOLE-FRAME SEMANTIC CONTEXT" in projected
+    assert "Current state two" in projected
+    assert "zero" in projected and "two" in projected
+
+
+def test_global_transition_timeline_is_chronological_and_not_term_filtered():
+    frames = [
+        _raw_transition_frame(2, "one", "two"),
+        _raw_transition_frame(1, "zero", "one"),
+    ]
+    timeline = project_dom_transition_timeline(
+        frames, context_char_budget=5000, frame_char_budget=2400
+    )
+    assert "not task/rubric filtered" in timeline
+    assert timeline.index("FRAME 1") < timeline.index("FRAME 2")
+    assert "Current state one" in timeline
+    assert "Current state zero" in timeline
+    assert "Current state two" in timeline
+    assert project_semantic_transition(frames[0], char_budget=2000)
+
+
+def test_dom_side_effect_prompt_receives_global_transition_evidence(monkeypatch):
+    agent = _agent()
+    prompts_seen = []
+
+    async def fake_call(messages, client, json_output=False):
+        prompts_seen.append(messages[-1]["content"])
+        return json.dumps(
+            {
+                "reasoning": "No unrequested material state was represented.",
+                "requires_penalty": False,
+                "penalty_criteria": [],
+            }
+        )
+
+    monkeypatch.setattr(agent, "_call_llm", fake_call)
+    rubric = {
+        "items": [
+            {
+                "criterion": "Requested state",
+                "description": "Reach the requested state",
+                "max_points": 1,
+                "post_evidence_earned_points": 1,
+                "post_evidence_justification": "Confirmed",
+            }
+        ]
+    }
+    evidence = {
+        0: [
+            {
+                "evidence_text": "Criterion evidence.",
+                "criterion_analysis": "Confirmed.",
+                "discrepancies": "None.",
+            }
+        ]
+    }
+    result = asyncio.run(
+        agent._detect_unsolicited_side_effects(
+            rubric,
+            evidence,
+            "change state",
+            "",
+            "Action 1: click",
+            evidence_mode="dom",
+            global_transition_evidence="FRAME 1 explicit state zero->two",
+        )
+    )
+    assert result["requires_penalty"] is False
+    assert "Global Chronological State-Transition Evidence" in prompts_seen[0]
+    assert "explicit state zero->two" in prompts_seen[0]

@@ -488,6 +488,7 @@ from .dom_evidence import (
     DOMEvidenceFrame,
     build_dom_retrieval_terms,
     load_dom_frames,
+    project_dom_transition_timeline,
     project_frame,
     project_frame_retrieved,
 )
@@ -622,6 +623,7 @@ class MMRubricAgentConfig(AgentConfig):
     verifier_schema_version: str = "mmrubric-result/v2"
     dom_frame_char_budget: int = 16000
     dom_context_char_budget: int = 48000
+    dom_global_transition_char_budget: int = 24000
     dom_top_k: Optional[int] = None
     majority_vote_instances: int = 1
     redo_eval: bool = False
@@ -641,7 +643,11 @@ class MMRubricAgentConfig(AgentConfig):
     def _set_action_definitions_from_tools(self) -> "MMRubricAgentConfig":
         if self.evidence_mode not in ("screenshot", "dom", "dual"):
             raise ValueError(f"Unsupported evidence_mode: {self.evidence_mode!r}")
-        if self.dom_frame_char_budget <= 0 or self.dom_context_char_budget <= 0:
+        if (
+            self.dom_frame_char_budget <= 0
+            or self.dom_context_char_budget <= 0
+            or self.dom_global_transition_char_budget <= 0
+        ):
             raise ValueError("DOM character budgets must be positive")
         if self.dom_top_k is not None and self.dom_top_k <= 0:
             raise ValueError("dom_top_k must be positive")
@@ -3056,6 +3062,7 @@ class MMRubricAgent(VerifierAgent):
         init_url_context: str,
         action_history: str,
         evidence_mode: str = "screenshot",
+        global_transition_evidence: str = "",
     ) -> dict:
         all_evidence_text = ""
         for c_idx, analyses in evidence_by_criterion.items():
@@ -3071,6 +3078,15 @@ class MMRubricAgent(VerifierAgent):
                 all_evidence_text += (
                     f"- **Discrepancies:** {analysis.get('discrepancies', 'N/A')}\n"
                 )
+
+        if global_transition_evidence:
+            all_evidence_text += (
+                "\n\n## Global Chronological State-Transition Evidence\n"
+                "This evidence is unfiltered by task or rubric terms and is "
+                "included so material side effects outside the selected "
+                "criteria remain observable.\n"
+                + global_transition_evidence
+            )
 
         scored_summary = self._build_scored_rubric_summary(rubric)
         prompt_template = (
@@ -3791,6 +3807,7 @@ class MMRubricAgent(VerifierAgent):
         predicted_output: str,
         instance_idx: int,
         evidence_mode: str = "screenshot",
+        global_transition_evidence: str = "",
     ) -> Tuple[dict, float, dict]:
         rubric_copy = copy.deepcopy(rubric_dict)
         instance_steps = {}
@@ -3852,6 +3869,7 @@ class MMRubricAgent(VerifierAgent):
             init_url_context,
             action_history,
             evidence_mode=evidence_mode,
+            global_transition_evidence=global_transition_evidence,
         )
         instance_steps["step7_penalty_criteria"] = side_effect_result.get(
             "penalty_criteria", []
@@ -4333,10 +4351,19 @@ class MMRubricAgent(VerifierAgent):
                     predicted_output,
                 )
                 intermediate["step1b_dom_retrieval_terms"] = dom_retrieval_terms
+                dom_global_transition_evidence = project_dom_transition_timeline(
+                    screenshots,
+                    context_char_budget=self.config.dom_global_transition_char_budget,
+                    frame_char_budget=min(6000, self.config.dom_frame_char_budget),
+                )
+                intermediate["step1c_dom_global_transition_evidence"] = (
+                    dom_global_transition_evidence
+                )
             else:
                 logger.info("[Step 1/9] Loading screenshots...")
                 screenshots = self._load_screenshots(screenshots_dir, actions_list)
                 dom_retrieval_terms = None
+                dom_global_transition_evidence = ""
             intermediate["evidence_mode"] = evidence_mode
             intermediate["step1_num_screenshots"] = (
                 0 if use_dom else len(screenshots)
@@ -4502,6 +4529,7 @@ class MMRubricAgent(VerifierAgent):
                     predicted_output,
                     instance_idx=i,
                     evidence_mode=evidence_mode,
+                    global_transition_evidence=dom_global_transition_evidence,
                 )
                 for i in range(N)
             ]
