@@ -1,0 +1,813 @@
+{
+  "timestamp": "2026-08-01T10:31:45.164Z",
+  "note": "Exact browser-agent model request captured from Stagehand/AI SDK for this step.",
+  "request": {
+    "body": {
+      "model": "gpt-4.1",
+      "input": [
+        {
+          "role": "system",
+          "content": "<system>\n  <identity>You are a web automation assistant using browser automation tools to accomplish the user's goal.</identity>\n  <customInstructions><![CDATA[If a cookie consent, privacy dialog, sign-in prompt, ad, newsletter modal, or other overlay blocks the task, handle it first using the visible controls. Prefer the least intrusive option that lets you continue, such as close, reject non-essential cookies, continue without sign-in, or accept only if needed. Do not spend steps on popups that do not block the task.]]></customInstructions>\n  <task>\n    <goal><![CDATA[Find the weight of baggage allowance for economy class on Qatar Airways.]]></goal>\n    <date display=\"local\" iso=\"2026-08-01T10:30:13.365Z\">8/1/2026</date>\n    <note>You may think the date is different due to knowledge cutoff, but this is the actual date.</note>\n  </task>\n  <page>\n    <startingUrl>you are starting your task on this url: about:blank</startingUrl>\n  </page>\n  <mindset>\n    <note>Be very intentional about your action. The initial instruction is very important, and slight variations of the actual goal can lead to failures.</note>\n    <importantNote>If something fails to meet a single condition of the task, move on from it rather than seeing if it meets other criteria. We only care that it meets all of it</importantNote>\n    <note>When the task is complete, do not seek more information; you have completed the task.</note>\n  </mindset>\n  <guidelines>\n    <item>Always start by understanding the current page state</item>\n    <item>Use the screenshot tool to verify page state when needed</item>\n    <item>Use appropriate tools for each action</item>\n  </guidelines>\n  <page_understanding_protocol>\n    <step_1>\n      <title>UNDERSTAND THE PAGE</title>\n      <primary_tool>\n        <name>ariaTree</name>\n        <usage>Get complete page context before taking actions</usage>\n        <benefit>Eliminates the need to scroll and provides full accessible content</benefit>\n        </primary_tool>\n      <secondary_tool>\n        <name>screenshot</name>\n        <usage>Visual confirmation when needed. Ideally after navigating to a new page.</usage>\n      </secondary_tool>\n    </step_1>\n  </page_understanding_protocol>\n  <navigation>\n    <rule>If you are confident in the URL, navigate directly to it.</rule>\n    \n  </navigation>\n  <tools>\n    <tool name=\"screenshot\">Take a compressed JPEG screenshot for quick visual context</tool>\n    <tool name=\"ariaTree\">Get an accessibility (ARIA) hybrid tree for full page context</tool>\n    <tool name=\"act\">Perform a specific atomic action (click, type)</tool>\n    <tool name=\"keys\">Press a keyboard key</tool>\n    <tool name=\"fillForm\">Fill out a form</tool>\n    <tool name=\"think\">Think about the task</tool>\n    <tool name=\"extract\">Extract structured data</tool>\n    <tool name=\"goto\">Navigate to a URL</tool>\n    <tool name=\"wait\">Wait for a specified time</tool>\n    <tool name=\"navback\">Navigate back in browser history</tool>\n    <tool name=\"scroll\">Scroll the page x pixels up or down</tool>\n  </tools>\n  <strategy>\n    <item>Tool selection priority: Use act tool for all clicking and typing on a page.</item>\n    <item>Always check ariaTree first to understand full page content without scrolling - it shows all elements including those below the fold.</item>\n    <item>When interacting with an input, always use the act tool to type into the input, over clicking and then typing.</item>\n    <item>If an element is present in the ariaTree, use act to interact with it directly - this eliminates the need to scroll.</item>\n    <item>Use screenshot for visual confirmation when needed, but rely primarily on ariaTree for element detection.</item>\n    \n    <item>CRITICAL: Use extract ONLY when the task explicitly requires structured data output (e.g., \"get job listings\", \"extract product details\"). For reading page content or understanding elements, always use ariaTree instead - it's faster and more reliable.</item>\n    <item>Keep actions atomic and verify outcomes before proceeding.</item>\n    <item>For each action, provide clear reasoning about why you're taking that step.</item>\n    <item>When you need to input text that could be entered character-by-character or through multiple separate inputs, prefer using the keys tool to type the entire sequence at once. This is more efficient for scenarios like verification codes split across multiple fields, or when virtual keyboards are present but direct typing would be faster.</item>\n    \n  </strategy>\n  \n  \n  <completion>\n    <note>When you complete the task, explain any information that was found that was relevant to the original task.</note>\n    <examples>\n      <example>If you were asked for specific flights, list the flights you found.</example>\n      <example>If you were asked for information about a product, list the product information you were asked for.</example>\n    </examples>\n  </completion>\n</system>"
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "input_text",
+              "text": "Find the weight of baggage allowance for economy class on Qatar Airways."
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_ffMlfuAPzbiEEFaAFnsM6DIa",
+          "name": "goto",
+          "arguments": "{\"url\":\"https://www.qatarairways.com/\"}",
+          "id": "fc_02181a59f8fd094f016a6dcab6b40c8193b6037a58f4eecace"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ffMlfuAPzbiEEFaAFnsM6DIa",
+          "output": "{\"success\":true,\"url\":\"https://www.qatarairways.com/\"}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_ubxKop6dnE7InUNcRGmkHP0y",
+          "name": "ariaTree",
+          "arguments": "{}",
+          "id": "fc_02181a59f8fd094f016a6dcabbc5bc8193a69b3d002f7f593f"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ubxKop6dnE7InUNcRGmkHP0y",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "ARIA tree extracted for context of page elements"
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_IY5lSNGN6u8RMDCSb4Y9EE57",
+          "name": "think",
+          "arguments": "{\"reasoning\":\"From the aria tree, there is no direct mention of baggage allowance on the landing page. The most logical path is to look for a 'Help' section or search for 'baggage allowance.' The navigation bar includes a 'Help' link. I will first click the 'Help' link to see if it leads to a support or information page with baggage details, as this is the most likely place such information is consolidated.\"}",
+          "id": "fc_02181a59f8fd094f016a6dcabe5ee88193b3acf2bd16bd5f23"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_IY5lSNGN6u8RMDCSb4Y9EE57",
+          "output": "{\"acknowledged\":true,\"message\":\"From the aria tree, there is no direct mention of baggage allowance on the landing page. The most logical path is to look for a 'Help' section or search for 'baggage allowance.' The navigation bar includes a 'Help' link. I will first click the 'Help' link to see if it leads to a support or information page with baggage details, as this is the most likely place such information is consolidated.\"}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_ob8glBkzKYl4b3cIdjRmK9AO",
+          "name": "act",
+          "arguments": "{\"action\":\"click the Help link\"}",
+          "id": "fc_02181a59f8fd094f016a6dcac0efd48193a60f3ba6f6319f18"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_ob8glBkzKYl4b3cIdjRmK9AO",
+          "output": "{\"success\":true,\"action\":\"link labeled 'Help' in the navigation menu\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[5]/div[2]/div[1]/header[1]/div[1]/div[1]/div[1]/div[1]/nav[1]/div[4]/ul[2]/li[2]/a[1]\",\"description\":\"link labeled 'Help' in the navigation menu\",\"method\":\"click\",\"arguments\":[]}}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_cqSrjktVlYwnuiJdIGfvh94W",
+          "name": "ariaTree",
+          "arguments": "{}",
+          "id": "fc_02181a59f8fd094f016a6dcac673c0819387edcf7d0eda3a96"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_cqSrjktVlYwnuiJdIGfvh94W",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "ARIA tree extracted for context of page elements"
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_TFMvzV5yTyh41fRCsbjbUFcd",
+          "name": "act",
+          "arguments": "{\"action\":\"click the Reject all button in the privacy dialog\"}",
+          "id": "fc_02181a59f8fd094f016a6dcaca5b708193aaa1e6620faa584a"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_dCQW1Tc9SwmpbBd6CFmzmgLF",
+          "name": "act",
+          "arguments": "{\"action\":\"click the Check my baggage allowance button under 'How much can I carry?' section\"}",
+          "id": "fc_02181a59f8fd094f016a6dcaca5b848193954154f89201405e"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_TFMvzV5yTyh41fRCsbjbUFcd",
+          "output": "{\"success\":true,\"action\":\"button labeled 'Reject all' in the privacy dialog, used to reject all cookies\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[12]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/button[2]\",\"description\":\"button labeled 'Reject all' in the privacy dialog, used to reject all cookies\",\"method\":\"click\",\"arguments\":[]}}"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_dCQW1Tc9SwmpbBd6CFmzmgLF",
+          "output": "{\"success\":true,\"action\":\"button labeled 'Check my baggage allowance' under the 'How much can I carry?' section\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[6]/main[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[5]/div[1]/div[1]/div[1]/div[1]/a[1]\",\"description\":\"button labeled 'Check my baggage allowance' under the 'How much can I carry?' section\",\"method\":\"click\",\"arguments\":[]}}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_8iq3Iqxs9CwB50pnCQkNOtnC",
+          "name": "ariaTree",
+          "arguments": "{}",
+          "id": "fc_02181a59f8fd094f016a6dcacecf788193a41c02edefc4d801"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_8iq3Iqxs9CwB50pnCQkNOtnC",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "ARIA tree extracted for context of page elements"
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_tDiI8tbOTG8EtuHbQuJsdJml",
+          "name": "ariaTree",
+          "arguments": "{}",
+          "id": "fc_02181a59f8fd094f016a6dcad13b2081939f2f472ce3432688"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_tDiI8tbOTG8EtuHbQuJsdJml",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "ARIA tree extracted for context of page elements"
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_YwXSWyJHQuxDLHJg5ph85Iec",
+          "name": "think",
+          "arguments": "{\"reasoning\":\"The 'Check my baggage allowance' button may have led to a booking-specific checker. If this is the case, there may also be a general info page or an FAQ for standard allowances. I should check for links or sections regarding generic baggage policy, or a general info link for 'Baggage allowance for economy class.' If not found, I will also consider checking the FAQ or using the site search.\"}",
+          "id": "fc_02181a59f8fd094f016a6dcad3cf50819388c1b1dd0af64bc5"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_YwXSWyJHQuxDLHJg5ph85Iec",
+          "output": "{\"acknowledged\":true,\"message\":\"The 'Check my baggage allowance' button may have led to a booking-specific checker. If this is the case, there may also be a general info page or an FAQ for standard allowances. I should check for links or sections regarding generic baggage policy, or a general info link for 'Baggage allowance for economy class.' If not found, I will also consider checking the FAQ or using the site search.\"}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_euiI0uchnv0klNFVUtM2URzA",
+          "name": "ariaTree",
+          "arguments": "{}",
+          "id": "fc_02181a59f8fd094f016a6dcad669148193966ec7d1555da8a4"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_euiI0uchnv0klNFVUtM2URzA",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "ARIA tree extracted for context of page elements"
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_30Prbe06z6yn2YWfVWOM8lkQ",
+          "name": "act",
+          "arguments": "{\"action\":\"click the Browse FAQs link\"}",
+          "id": "fc_02181a59f8fd094f016a6dcad90ab08193a6bd449e71f28c3b"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_30Prbe06z6yn2YWfVWOM8lkQ",
+          "output": "{\"success\":true,\"action\":\"link labeled 'Browse FAQs' for browsing frequently asked questions\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[6]/main[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[7]/div[1]/div[1]/div[1]/div[1]/div[2]/a[1]\",\"description\":\"link labeled 'Browse FAQs' for browsing frequently asked questions\",\"method\":\"click\",\"arguments\":[]}}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_a4M84kKxZyk7oRhJPtYVifgC",
+          "name": "ariaTree",
+          "arguments": "{}",
+          "id": "fc_02181a59f8fd094f016a6dcae2701081938346afa766b7a2ff"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_a4M84kKxZyk7oRhJPtYVifgC",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "ARIA tree extracted for context of page elements"
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_wu6QgtmxiTiZRqvli7Xg8YoA",
+          "name": "act",
+          "arguments": "{\"action\":\"click the Baggage button under 'Popular searches'\"}",
+          "id": "fc_02181a59f8fd094f016a6dcae8e8e8819395a64e62c5d36cc2"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_wu6QgtmxiTiZRqvli7Xg8YoA",
+          "output": "{\"success\":true,\"action\":\"Baggage button under 'Popular searches' section\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[6]/main[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[2]/div[1]/button[1]\",\"description\":\"Baggage button under 'Popular searches' section\",\"method\":\"click\",\"arguments\":[]}}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_eTGqPFMbQ15dquvv6gqSUL9w",
+          "name": "ariaTree",
+          "arguments": "{}",
+          "id": "fc_02181a59f8fd094f016a6dcaf0bba881939487f2cf7138b1a0"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_eTGqPFMbQ15dquvv6gqSUL9w",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "ARIA tree extracted for context of page elements"
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_SzWy1PmMK9ET9voN1M7e77Wa",
+          "name": "act",
+          "arguments": "{\"action\":\"click the What is my checked or free baggage allowance on Qatar Airways? button\"}",
+          "id": "fc_02181a59f8fd094f016a6dcaf6bf6481938baa2e8e96be5bc3"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_SzWy1PmMK9ET9voN1M7e77Wa",
+          "output": "{\"success\":true,\"action\":\"button labeled 'What is my checked or free baggage allowance on Qatar Airways?'\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[6]/main[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/div[2]/div[1]/div[1]/div[14]/div[1]/button[1]\",\"description\":\"button labeled 'What is my checked or free baggage allowance on Qatar Airways?'\",\"method\":\"click\",\"arguments\":[]}}"
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_K5SdlDXAq8VMczRlp8QyoGPG",
+          "name": "ariaTree",
+          "arguments": "{}",
+          "id": "fc_02181a59f8fd094f016a6dcaff36a48193bf6a32f682f3b639"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_K5SdlDXAq8VMczRlp8QyoGPG",
+          "output": [
+            {
+              "type": "input_text",
+              "text": "Accessibility Tree:\n[7-30] RootWebArea: Frequently asked questions | Qatar Airways\n  [7-31] scrollable, html\n    [7-146] body\n      [7-490] main\n        [7-495] div\n          [7-498] div\n            [7-499] sectionheader\n              [7-514] div\n                [7-5319] StaticText: Travel alerts\n                [7-5282] list\n                  [7-5292] listitem\n                    [7-5294] link: 18 June 2026: Updates on Travelling with Power Banks\n                  [7-5296] listitem\n                    [7-5298] link: 30 July 2026: Temporary passenger flight suspension to Bahrain (BAH), Erbil (EBL), and Kuwait (KWI)\n                  [7-5284] listitem\n                    [7-5286] link: Qatar Airways Expands Global Network to over 160 Destinations\n                  [7-5288] listitem\n                    [7-5290] link: Passengers flying between Doha and Auckland on QR914 and QR915\n                [7-5300] button: Close the travel alerts bar\n              [7-515] link: Skip to content\n              [7-524] navigation\n                [7-525] link: Qatar Airways Qatar Airways Home Page Qatar Airways Home Page Qatar Airways Home Page Qatar Airways Home Page Qatar Airways Home Page\n                  [7-710] StaticText: Qatar Airways\n                [7-765] link: one-world one world One World\n                  [7-1438] StaticText: one-world\n                [7-1341] div\n                  [7-1342] list\n                    [7-1343] listitem\n                      [7-1344] button: Explore\n                        [7-1439] StaticText: Explore\n                        [7-1440] StaticText: (active)\n                    [7-1697] listitem\n                      [7-1698] button: Book\n                    [7-1832] listitem\n                      [7-1833] button: Experience\n                    [7-1970] listitem\n                      [7-1971] button: Privilege Club\n                  [7-2325] list\n                    [7-2328] listitem\n                      [7-2329] link: Help\n                    [7-2330] listitem\n                      [7-2331] button: Search\n                    [7-2360] listitem: Change language selector\n                      [7-2366] button: global - en\n                        [7-2711] StaticText: \n                        [7-2706] StaticText: EN\n                [7-2949] div\n                  [7-2951] link: Profile Icon Log in\n                    [7-3321] StaticText: Log in\n                  [7-2972] link: | Sign up\n                    [7-3322] StaticText: |\n                    [7-3323] StaticText: Sign up\n            [7-3215] form\n            [7-3230] form\n            [7-3237] form\n            [7-3244] form\n            [7-3246] form\n          [7-3250] div\n            [7-3266] heading: Frequently Asked Questions\n            [7-3297] navigation: breadcrumb\n              [7-3298] list\n                [7-3299] listitem\n                  [7-3300] link: Home Page\n                [7-3302] listitem\n                  [7-3303] link: Help\n                [7-3304] listitem\n                  [7-3325] StaticText: Frequently Asked Questions\n            [7-4234] div\n              [7-4237] div\n                [7-5035] StaticText: Find everything you need to know about your trip\n                [7-4239] form\n                  [7-4240] textbox: Search Faqs\n                  [7-4241] button\n              [7-4244] div\n                [7-5681] heading: Popular searches\n                [7-5683] div\n                  [7-5684] button: Baggage\n                  [7-5685] button: Booking Online\n                  [7-5686] button: Redeeming Avios\n                  [7-5687] button: Student Club\n                  [7-5688] button: Checking In\n              [7-4245] div\n                [7-4247] div\n                  [7-4248] heading: FAQs\n                  [7-4249] div\n                    [7-5690] div\n                      [7-5692] button: Airport Services\n                        [7-5694] heading: Airport Services\n                      [7-5696] list\n                        [7-5697] listitem\n                          [7-5698] link: Checking In\n                        [7-5699] listitem\n                          [7-5700] link: Fast Pass\n                    [7-5702] div\n                      [7-5704] button: Animal Transportation\n                        [7-5706] heading: Animal Transportation\n                      [7-5708] list\n                        [7-5709] listitem\n                          [7-5710] link: Travelling with pets\n                    [7-5712] div\n                      [7-5714] button: Beyond Business\n                        [7-5716] heading: Beyond Business\n                      [7-5718] list\n                        [7-5719] listitem\n                          [7-5720] link: Account cancellation\n                        [7-5721] listitem\n                          [7-5722] link: Account management\n                        [7-5723] listitem\n                          [7-5724] link: Earning Qrewards\n                        [7-5725] listitem\n                          [7-5726] link: Enrolment\n                        [7-5727] listitem\n                          [7-5728] link: Managing Beyond Business Award tickets\n                        [7-5729] listitem\n                          [7-5730] link: Redeeming Qrewards\n                    [7-5732] div\n                      [7-5734] button: Booking and managing a reservation\n                        [7-5736] heading: Booking and managing a reservation\n                      [7-5738] list\n                        [7-5739] listitem\n                          [7-5740] link: Booking Online\n                        [7-5741] listitem\n                          [7-5742] link: Manage a booking\n                        [7-5743] listitem\n                          [7-5744] link: Refund\n                        [7-5745] listitem\n                          [7-5746] link: Seat selection\n                    [7-5748] div\n                      [7-5750] button: Carbon Offsetting\n                        [7-5752] heading: Carbon Offsetting\n                      [7-5754] list\n                        [7-5755] listitem\n                          [7-5756] link: Carbon calculations\n                        [7-5757] listitem\n                          [7-5758] link: Climate change and offsetting\n                        [7-5759] listitem\n                          [7-5760] link: Co-benefits\n                        [7-5761] listitem\n                          [7-5762] link: Financial information\n                        [7-5763] listitem\n                          [7-5764] link: Offset program approval\n                    [7-5766] div\n                      [7-5768] button: Compliance\n                        [7-5770] heading: Compliance\n                      [7-5772] list\n                        [7-5773] listitem\n                          [7-5774] link: Japan\n                        [7-5775] listitem\n                          [7-5776] link: South Africa\n                        [7-5777] listitem\n                          [7-5778] link: USA\n                    [7-5780] div\n                      [7-5782] button: Flight Disruption\n                        [7-5784] heading: Flight Disruption\n                      [7-5786] list\n                        [7-5787] listitem\n                          [7-5788] link: Changes\n                        [7-5789] listitem\n                          [7-5790] link: Passenger updates\n                        [7-5791] listitem\n                          [7-5792] link: Privilege Club\n                        [7-5793] listitem\n                          [7-5794] link: Refund Voucher\n                        [7-5795] listitem\n                          [7-5796] link: Refunds\n                    [7-5798] div\n                      [7-5800] button: Hotels, cars and travel insurance\n                        [7-5802] heading: Hotels, cars and travel insurance\n                      [7-5804] list\n                        [7-5805] listitem\n                          [7-5806] link: AIG Travel Guard Insurance\n                        [7-5807] listitem\n                          [7-5808] link: Car rental\n                        [7-5809] listitem\n                          [7-5810] link: Hotel booking\n                        [7-5811] listitem\n                          [7-5812] link: QIC Travelcare Plus\n                    [7-5814] div\n                      [7-5816] button: Legal\n                        [7-5818] heading: Legal\n                      [7-5820] list\n                        [7-5821] listitem\n                          [7-5822] link: EU & UK Passenger Rights\n                        [7-5823] listitem\n                          [7-5824] link: Italian Legal Information\n                        [7-5825] listitem\n                          [7-5826] link: Spain Legal Information\n                        [7-5827] listitem\n                          [7-5828] link: United States Legal Information\n                    [7-5830] div\n                      [7-5832] button: Offers\n                        [7-5834] heading: Offers\n                      [7-5836] list\n                        [7-5837] listitem\n                          [7-5838] link: Promo Codes and Vouchers\n                    [7-5840] div\n                      [7-5842] button: On-board experience\n                        [7-5844] heading: On-board experience\n                      [7-5846] list\n                        [7-5847] listitem\n                          [7-5848] link: Mobile\n                        [7-5849] listitem\n                          [7-5850] link: On-board Wi-Fi\n                        [7-5851] listitem\n                          [7-5852] link: Portable Electronic Devices (PEDs)\n                        [7-5853] listitem\n                          [7-5854] link: Pre-Select Dining\n                        [7-5855] listitem\n                          [7-5856] link: Qsuite product\n                        [7-5857] listitem\n                          [7-5858] link: Starlink Wi-Fi\n                    [7-5860] div\n                      [7-5862] button: Payments\n                        [7-5864] heading: Payments\n                      [7-5866] list\n                        [7-5867] listitem\n                          [7-5868] link: Credit Card service fee for Australia and New Zealand\n                        [7-5869] listitem\n                          [7-5870] link: Payment Verification\n                    [7-5872] div\n                      [7-5874] button: Privilege Club : Qatar Airways' loyalty programme\n                        [7-5876] heading: Privilege Club : Qatar Airways' loyalty programme\n                      [7-5878] list\n                        [7-5879] listitem\n                          [7-5880] link: Privilege Club Collection\n                        [7-5881] listitem\n                          [7-5882] link: Avios Max\n                        [7-5883] listitem\n                          [7-5884] link: Booking an Award ticket\n                        [7-5885] listitem\n                          [7-5886] link: Card linking\n                        [7-5887] listitem\n                          [7-5888] link: Claim missing Avios\n                        [7-5889] listitem\n                          [7-5890] link: Combine Avios\n                        [7-5891] listitem\n                          [7-5892] link: Earning Avios & Qpoints\n                        [7-5893] listitem\n                          [7-5894] link: Excess baggage awards\n                        [7-5895] listitem\n                          [7-5896] link: Family & Friends\n                        [7-5897] listitem\n                          [7-5898] link: Fare Families\n                        [7-5899] listitem\n                          [7-5900] link: General FAQs\n                        [7-5901] listitem\n                          [7-5902] link: Lifestyle Rewards (E-store)\n                        [7-5903] listitem\n                          [7-5904] link: Linking Qatar Airways Privilege Club and ALL – Accor Live Limitless accounts\n                        [7-5905] listitem\n                          [7-5906] link: Linking Qatar Airways Privilege Club and British Airways Executive Club accounts\n                        [7-5907] listitem\n                          [7-5908] link: Membership and Benefits\n                        [7-5909] listitem\n                          [7-5910] link: My List\n                        [7-5911] listitem\n                          [7-5912] link: oneworld Alliance\n                        [7-5913] listitem\n                          [7-5914] link: Privilege Club and Marriott Bonvoy\n                        [7-5915] listitem\n                          [7-5916] link: Privilege Club OTP (One-Time Password)\n                        [7-5917] listitem\n                          [7-5918] link: Qatar Airways Privilege Club Credit Cards USA: Booking fee waiver\n                        [7-5919] listitem\n                          [7-5920] link: Qatar Duty Free redemption\n                        [7-5921] listitem\n                          [7-5922] link: Redeeming Avios\n                        [7-5923] listitem\n                          [7-5924] link: Redemption Discount\n                        [7-5925] listitem\n                          [7-5926] link: Seasonal Pricing\n                        [7-5927] listitem\n                          [7-5928] link: Spending Avios\n                        [7-5929] listitem\n                          [7-5930] link: Starlink Wi-Fi\n                        [7-5931] listitem\n                          [7-5932] link: Student Club\n                        [7-5933] listitem\n                          [7-5934] link: Tier upgrade and renewal\n                        [7-5935] listitem\n                          [7-5936] link: Two-factor authentication\n                    [7-5938] div\n                      [7-5940] button: Qatar Airways Affiliate Program\n                        [7-5942] heading: Qatar Airways Affiliate Program\n                      [7-5944] list\n                        [7-5945] listitem\n                          [7-5946] link: Affiliate marketing\n                    [7-5948] div\n                      [7-5950] button: Qatar Airways Packages\n                        [7-5952] heading: Qatar Airways Packages\n                      [7-5954] list\n                        [7-5955] listitem\n                          [7-5956] link: Formula One™\n                        [7-5957] listitem\n                          [7-5958] link: Sports and Events Packages\n                    [7-5960] div\n                      [7-5962] button: QMICE\n                        [7-5964] heading: QMICE\n                      [7-5966] list\n                        [7-5967] listitem\n                          [7-5968] link: QMICE Account Cancellation\n                        [7-5969] listitem\n                          [7-5970] link: QMICE Account Management\n                        [7-5971] listitem\n                          [7-5972] link: QMICE Booking Terms and Conditions\n                    [7-5974] div\n                      [7-5976] button: Special assistance\n                        [7-5978] heading: Special assistance\n                      [7-5980] list\n                        [7-5981] listitem\n                          [7-5982] link: Special Services\n                    [7-5984] div\n                      [7-5986] button: Travel Baggage\n                        [7-5988] heading: Travel Baggage\n                      [7-5990] list\n                        [7-5991] listitem\n                          [7-5992] link: Baggage\n                        [7-5993] listitem\n                          [7-5994] link: BAGTAG\n                        [7-5995] listitem\n                          [7-5996] link: Hand baggage\n                        [7-5997] listitem\n                          [7-5998] link: Liquids\n                        [7-5999] listitem\n                          [7-6000] link: Mishandled baggage\n                    [7-6002] div\n                      [7-6004] button: Travel voucher\n                        [7-6006] heading: Travel voucher\n                      [7-6008] list\n                        [7-6009] listitem\n                          [7-6010] link: Voucher redemption\n                    [7-6012] div\n                      [7-6014] button: TripAdd\n                        [7-6016] heading: TripAdd\n                      [7-6018] list\n                        [7-6019] listitem\n                          [7-6020] link: eSIM - TripAdd\n                        [7-6021] listitem\n                          [7-6022] link: Fast Track - TripAdd\n                        [7-6023] listitem\n                          [7-6024] link: Lounge - TripAdd\n                        [7-6025] listitem\n                          [7-6026] link: Meet and Greet - TripAdd\n                        [7-6027] listitem\n                          [7-6028] link: Smart Travel Pack - TripAdd\n                    [7-6030] div\n                      [7-6032] button: Young Travellers\n                        [7-6034] heading: Young Travellers\n                      [7-6036] list\n                        [7-6037] listitem\n                          [7-6038] link: Travelling with children\n                        [7-6039] listitem\n                          [7-6040] link: Unaccompanied minors\n                [7-7717] div\n                  [7-7718] div\n                    [7-7720] button: Are infants entitled to any baggage allowance?\n                      [7-7722] heading: Are infants entitled to any baggage allowance?\n                    [7-7723] div\n                      [7-7724] paragraph\n                        [7-7963] StaticText: Yes, infants are entitled to a checked baggage allowance of:\n                      [7-7729] paragraph\n                        [7-7730] LineBreak: \n                      [7-7731] table\n                        [7-7732] tbody\n                          [7-7733] row\n                            [7-7734] cell: Route\n                              [7-7735] paragraph\n                                [7-7737] strong\n                                  [7-7964] StaticText: Route\n                            [7-7738] cell: All classes\n                              [7-7739] paragraph\n                                [7-7741] strong\n                                  [7-7965] StaticText: All classes\n                          [7-7742] row\n                            [7-7743] cell: Flights to and from Africa or Americas\n                              [7-7744] paragraph\n                                [7-7966] StaticText: Flights to and from Africa or Americas\n                            [7-7746] cell: One piece, not to exceed 23kg (50lb)\n                              [7-7747] paragraph\n                                [7-7967] StaticText: One piece, not to exceed 23kg (50lb)\n                          [7-7749] row\n                            [7-7750] cell: Flights to and from all other destinations\n                              [7-7751] paragraph\n                                [7-7968] StaticText: Flights to and from all other destinations\n                            [7-7753] cell: 10kg (22lb)\n                              [7-7754] paragraph\n                                [7-7969] StaticText: 10kg (22lb)\n                      [7-7756] paragraph\n                        [7-7757] LineBreak: \n                      [7-7758] paragraph\n                        [7-7970] StaticText: Additionally, only one of the following items can be accepted without additional charges when travelling with the infant\n                      [7-7760] list\n                        [7-7761] listitem\n                          [7-7932] ListMarker: •\n                          [7-7971] StaticText: Stroller\n                        [7-7763] listitem\n                          [7-7933] ListMarker: •\n                          [7-7972] StaticText: Collapsible carrycot\n                        [7-7765] listitem\n                          [7-7934] ListMarker: •\n                          [7-7973] StaticText: Pushchair\n                        [7-7767] listitem\n                          [7-7935] ListMarker: •\n                          [7-7974] StaticText: Car Seat\n                      [7-7769] paragraph\n                        [7-7770] LineBreak: \n                        [7-7975] StaticText: Note: Infants are not entitled to any hand baggage allowance.\n                  [7-7774] button: Can I carry an LCD or LED TV in my checked baggage?\n                    [7-7776] heading: Can I carry an LCD or LED TV in my checked baggage?\n                  [7-7780] button: What are the dimensions of checked-in and hand luggage that Qatar Airways allows?\n                    [7-7782] heading: What are the dimensions of checked-in and hand luggage that Qatar Airways allows?\n                  [7-7786] button: Can I carry musical instruments on board?\n                    [7-7788] heading: Can I carry musical instruments on board?\n                  [7-7792] button: Can I carry and/or use an electronic respiratory device on board?\n                    [7-7794] heading: Can I carry and/or use an electronic respiratory device on board?\n                  [7-7798] button: Is there a provision at Hamad International Airport to check in my baggage much earlier to my flight departure?\n                    [7-7800] heading: Is there a provision at Hamad International Airport to check in my baggage much earlier to my flight departure?\n                  [7-7804] button: Can I carry Zamzam holy water as checked and/or hand baggage?\n                    [7-7806] heading: Can I carry Zamzam holy water as checked and/or hand baggage?\n                  [7-7810] button: In the event of death, what is the repatriation procedure for human remains?\n                    [7-7812] heading: In the event of death, what is the repatriation procedure for human remains?\n                  [7-7816] button: How are the baggage dimensions measured?\n                    [7-7818] heading: How are the baggage dimensions measured?\n                  [7-7822] button: Can I check in my sports equipment?\n                    [7-7824] heading: Can I check in my sports equipment?\n                  [7-7828] button: Can passengers travel with their own wheelchair as checked baggage?\n                    [7-7830] heading: Can passengers travel with their own wheelchair as checked baggage?\n                  [7-7834] button: How many pieces can be checked in if my baggage allowance is 40kg when travelling on a weight concept route?\n                    [7-7836] heading: How many pieces can be checked in if my baggage allowance is 40kg when travelling on a weight concept route?\n                  [7-7840] button: Where can I purchase excess baggage for my Qatar Airways flight?\n                    [7-7842] heading: Where can I purchase excess baggage for my Qatar Airways flight?\n                  [7-7844] div\n                    [7-7846] button: What is my checked or free baggage allowance on Qatar Airways?\n                      [7-7848] heading: What is my checked or free baggage allowance on Qatar Airways?\n                    [7-7849] div\n                      [7-8059] paragraph\n                        [7-8102] StaticText: Your baggage allowances may vary according to your route and cabin class. Your complimentary checked baggage allowance is printed on your ticket.\n                      [7-8061] paragraph\n                      [7-8063] paragraph\n                        [7-8103] StaticText: Click below to view the standard checked baggage allowance.\n                      [7-8065] paragraph\n                        [7-8067] link: https://www.qatarairways.com/en/baggage/allowance.html\n                      [7-8069] paragraph\n                      [7-8071] paragraph\n                        [7-8105] StaticText: Children are eligible for the same baggage allowance as adults. Infants travelling on Child fare and occupying a seat are also eligible for the same baggage allowance as adults.\n                      [7-8073] paragraph\n                      [7-8075] paragraph\n                        [7-8106] StaticText: Click here for baggage allowance on infants travelling on infant fare\n                      [7-8077] paragraph\n                        [7-8079] link: https://www.qatarairways.com/en/family/child-fares-baggage.html\n                      [7-8081] paragraph\n                      [7-8083] paragraph\n                        [7-8108] StaticText: If your journey includes travel on an airline other than Qatar Airways, including a Qatar Airways code-share flight operated by another airline, that operating airline may offer you a lower baggage allowance. You are advised to check with that airline on their allowance.\n                      [7-8085] paragraph\n                      [7-8087] paragraph\n                        [7-8109] StaticText: To purchase excess baggage, login to Manage Booking (you will require PNR/ticket number/Privilege Club number and passenger's last name).\n                      [7-8089] paragraph\n                        [7-8091] link: https://booking.qatarairways.com/nsp/views/retrievePnr.xhtml\n                      [7-8093] paragraph\n                      [7-8095] paragraph\n                        [7-8111] StaticText: Your free baggage allowance flight will appear in your flight details under your booked cabin.\n                      [7-8097] paragraph\n                        [7-8112] StaticText: Once you retrieve your booking, click on ‘Extra baggage’ on the right panel to purchase additional baggage online.\n                  [7-7852] button: Can I carry goods that are considered dangerous?\n                    [7-7854] heading: Can I carry goods that are considered dangerous?\n                  [7-7858] button: Can I carry food items as checked baggage?\n                    [7-7860] heading: Can I carry food items as checked baggage?\n                  [7-7864] button: Can I carry cremated human remains as checked/hand baggage?\n                    [7-7866] heading: Can I carry cremated human remains as checked/hand baggage?\n                  [7-7870] button: What is the maximum weight of a single piece of checked baggage?\n                    [7-7872] heading: What is the maximum weight of a single piece of checked baggage?\n                  [7-7876] button: Will my checked baggage be accepted if the dimensions exceed 300 cm (118 in)?\n                    [7-7878] heading: Will my checked baggage be accepted if the dimensions exceed 300 cm (118 in)?\n                  [7-7882] button: Are valuables allowed in checked baggage?\n                    [7-7884] heading: Are valuables allowed in checked baggage?\n                  [7-7888] button: What is the rate to calculate excess baggage?\n                    [7-7890] heading: What is the rate to calculate excess baggage?\n                  [7-7894] button: I am travelling on piece concept route and have few KG as excess baggage. Do I have to pay for one full piece?\n                    [7-7896] heading: I am travelling on piece concept route and have few KG as excess baggage. Do I have to pay for one full piece?\n                  [7-7900] button: What excess baggage rates are available for purchase at the airport?\n                    [7-7902] heading: What excess baggage rates are available for purchase at the airport?\n                  [7-7906] button: Is there a limit on how much excess baggage I can purchase?\n                    [7-7908] heading: Is there a limit on how much excess baggage I can purchase?\n                  [7-7912] button: Is there a special baggage allowance for passengers with special needs?\n                    [7-7914] heading: Is there a special baggage allowance for passengers with special needs?\n                  [7-7918] button: I am travelling on Premium cabin (First/Business), can I carry my total hand baggage in one piece of 15 kg?\n                    [7-7920] heading: I am travelling on Premium cabin (First/Business), can I carry my total hand baggage in one piece of 15 kg?\n                  [7-7924] button: Is it permitted to attach an Apple AirTag to my bag when travelling with Qatar Airways?\n                    [7-7926] heading: Is it permitted to attach an Apple AirTag to my bag when travelling with Qatar Airways?\n          [7-4269] sectionfooter\n            [7-4280] div\n              [7-4281] div\n                [7-4282] div\n                  [7-4283] heading: Qatar Airways\n                  [7-4284] heading: Group companies\n                  [7-4285] heading: Business solutions\n                  [7-4286] heading: Business partners\n                  [7-4287] heading: Help\n                [7-4289] link: Certified by Theqa\n                  [7-4293] image: Certified by Theqa\n              [7-4294] div\n                [7-4295] div\n                  [7-4297] div\n                    [7-4303] div\n                      [7-4304] list\n                        [7-4305] listitem\n                          [7-4306] link: Qatar Airways About us Opens in new window\n                            [7-5044] StaticText: About us\n                        [7-4307] listitem\n                          [7-4308] link: Qatar Airways Careers Opens in new window\n                            [7-5045] StaticText: Careers\n                        [7-4309] listitem\n                          [7-4310] link: Qatar Airways Press releases Opens in new window\n                            [7-5046] StaticText: Press releases\n                        [7-4311] listitem\n                          [7-4312] link: Qatar Airways Sponsorship\n                            [7-5047] StaticText: Sponsorship\n                        [7-4313] listitem\n                          [7-4314] link: Qatar Airways Al Darb Qatarisation\n                            [7-5048] StaticText: Al Darb Qatarisation\n                        [7-4315] listitem\n                          [7-4316] link: Qatar Airways Annual reports Opens in new window\n                            [7-5049] StaticText: Annual reports\n                      [7-4317] list\n                        [7-4318] listitem\n                          [7-4319] link: Environmental sustainability\n                    [7-4326] list\n                      [7-4327] listitem\n                        [7-4328] link: Group companies Hamad International Airport Opens in new window\n                          [7-5051] StaticText: Hamad International Airport\n                      [7-4329] listitem\n                        [7-4330] link: Group companies Qatar Executive Opens in new window\n                          [7-5052] StaticText: Qatar Executive\n                      [7-4331] listitem\n                        [7-4332] link: Group companies Qatar Duty Free Opens in new window\n                          [7-5053] StaticText: Qatar Duty Free\n                      [7-4333] listitem\n                        [7-4334] link: Group companies Qatar Airways Cargo Opens in new window\n                          [7-5054] StaticText: Qatar Airways Cargo\n                      [7-4335] listitem\n                        [7-4336] link: Group companies Internal Media Services Opens in new window\n                          [7-5055] StaticText: Internal Media Services\n                      [7-4337] listitem\n                        [7-4338] link: Group companies Design Organisation Opens in new window\n                          [7-5056] StaticText: Design Organisation\n                      [7-4339] listitem\n                        [7-4340] link: Group companies Group companies\n                          [7-5057] StaticText: Group companies\n                    [7-4347] list\n                      [7-4348] listitem\n                        [7-4349] link: Business solutions Corporate travel\n                          [7-5058] StaticText: Corporate travel\n                      [7-4350] listitem\n                        [7-4351] link: Business solutions Beyond Business\n                          [7-5059] StaticText: Beyond Business\n                      [7-4352] listitem\n                        [7-4353] link: Business solutions QMICE meetings and events\n                          [7-5060] StaticText: QMICE meetings and events\n                      [7-4354] listitem\n                        [7-4355] link: Business solutions Advertise with us Opens in new window\n                          [7-5061] StaticText: Advertise with us\n                    [7-4362] list\n                      [7-4363] listitem\n                        [7-4364] link: Business partners Affiliate marketing\n                          [7-5062] StaticText: Affiliate marketing\n                      [7-4365] listitem\n                        [7-4366] link: Business partners e-Procurement and Supplier Registration\n                          [7-5063] StaticText: e-Procurement and Supplier Registration\n                      [7-4367] listitem\n                        [7-4368] link: Business partners Trade partners\n                          [7-5064] StaticText: Trade partners\n                    [7-4375] list\n                      [7-4376] listitem\n                        [7-4377] link: Help Contact us\n                          [7-5065] StaticText: Contact us\n                      [7-4378] listitem\n                        [7-4379] link: Help Browse FAQs\n                          [7-5066] StaticText: Browse FAQs\n                      [7-4380] listitem\n                        [7-4381] link: Help Travel alerts\n                          [7-5067] StaticText: Travel alerts\n                  [7-4395] div\n                    [7-4396] paragraph\n                      [7-5068] StaticText: Let’s stay connected\n                    [7-4397] list\n                      [7-4398] listitem\n                        [7-4399] link: facebook\n                      [7-4400] listitem\n                        [7-4401] link: twitter\n                      [7-4402] listitem\n                        [7-4403] link: linkedin\n                      [7-4404] listitem\n                        [7-4405] link: youtube\n                      [7-4406] listitem\n                        [7-4407] link: instagram\n                [7-4410] list\n                  [7-4411] listitem\n                    [7-4412] link: Open Link Awards\n                      [7-4416] image: Open Link Awards\n                    [7-4418] paragraph\n                      [7-5070] StaticText: World’s Best Airline\n                  [7-4419] listitem\n                    [7-4420] link: Open Link Awards\n                      [7-4424] image: Open Link Awards\n                    [7-4426] paragraph\n                      [7-5072] StaticText: World's Best Business Class\n                  [7-4427] listitem\n                    [7-4428] link: Open Link Awards\n                      [7-4432] image: Open Link Awards\n                    [7-4434] paragraph\n                      [7-5074] StaticText: World's Best Business Class Lounge\n                  [7-4435] listitem\n                    [7-4436] link: Open Link Awards\n                      [7-4440] image: Open Link Awards\n                    [7-4442] paragraph\n                      [7-5076] StaticText: Best Airline in the Middle East\n            [7-4464] div\n              [7-4465] div\n                [7-4466] list\n                  [7-4467] listitem\n                    [7-4468] link: Cookie policy\n                  [7-4469] listitem\n                    [7-4470] link: Legal\n                  [7-4471] listitem\n                    [7-4472] link: Privacy\n                  [7-4473] listitem\n                    [7-4474] link: Accessibility\n                  [7-4475] listitem\n                    [7-4476] link: Combating human trafficking This link will take you away from the Qatar Airways website to content that may not meet accessibility guidelines\n                      [7-5083] StaticText: Combating human trafficking\n                  [7-4477] listitem\n                    [7-4478] link: Sitemap\n                [7-4480] button: Cookie Consent\n              [7-5087] StaticText: Qatar Airways. All rights reserved\n      [7-4505] article"
+            }
+          ]
+        },
+        {
+          "type": "function_call",
+          "call_id": "call_C7pb46st74ldrlaTF0vnjX9F",
+          "name": "goto",
+          "arguments": "{\"url\":\"https://www.qatarairways.com/en/baggage/allowance.html\"}",
+          "id": "fc_02181a59f8fd094f016a6dcb054cc4819385090923626326eb"
+        },
+        {
+          "type": "function_call_output",
+          "call_id": "call_C7pb46st74ldrlaTF0vnjX9F",
+          "output": "{\"success\":true,\"url\":\"https://www.qatarairways.com/en/baggage/allowance.html\"}"
+        }
+      ],
+      "temperature": null,
+      "top_p": null,
+      "max_output_tokens": null,
+      "conversation": null,
+      "max_tool_calls": null,
+      "metadata": null,
+      "parallel_tool_calls": null,
+      "previous_response_id": null,
+      "store": false,
+      "user": null,
+      "instructions": null,
+      "service_tier": null,
+      "include": null,
+      "prompt_cache_key": null,
+      "prompt_cache_options": null,
+      "prompt_cache_retention": null,
+      "safety_identifier": null,
+      "top_logprobs": null,
+      "truncation": null,
+      "tools": [
+        {
+          "type": "function",
+          "name": "act",
+          "description": "Perform an action on the page (click, type). Provide a short, specific phrase that mentions the element type.",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "description": "Describe what to click or type, e.g. \"click the Login button\" or \"type \"John\" into the first name input\""
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "ariaTree",
+          "description": "gets the accessibility (ARIA) hybrid tree text for the current page. use this to understand structure and content.",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "extract",
+          "description": "Extract structured data from the current page based on a provided schema.\n    \n    USAGE GUIDELINES:\n    - Keep schemas MINIMAL - only include fields essential for the task\n    - IMPORTANT: only use this if explicitly asked for structured output. In most scenarios, you should use the aria tree tool over this.\n    - For URL fields, use format: \"url\"\n    \n    EXAMPLES:\n    1. Extract a single value:\n       instruction: \"extract the product price\"\n       schema: { type: \"object\", properties: { price: { type: \"number\" } } }\n    \n    2. Extract multiple fields:\n       instruction: \"extract product name and price\"\n       schema: { type: \"object\", properties: { name: { type: \"string\" }, price: { type: \"number\" } } }\n    \n    3. Extract arrays:\n       instruction: \"extract all product names and prices\"\n       schema: { type: \"object\", properties: { products: { type: \"array\", items: { type: \"object\", properties: { name: { type: \"string\" }, price: { type: \"number\" } } } } } }\n    \n    4. Extract a URL:\n       instruction: \"extract the link\"\n       schema: { type: \"object\", properties: { url: { type: \"string\", format: \"url\" } } }",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "instruction": {
+                "type": "string"
+              },
+              "schema": {
+                "description": "JSON Schema object describing the structure to extract",
+                "type": "object",
+                "properties": {
+                  "type": "[MaxDepth]",
+                  "properties": "[MaxDepth]",
+                  "items": "[MaxDepth]",
+                  "enum": "[MaxDepth]",
+                  "format": "[MaxDepth]"
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "instruction"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "fillForm",
+          "description": "FORM FILL - MULTI-FIELD INPUT TOOL\nFill 2+ form inputs/textareas at once. Each action MUST include the exact text to type and the target field, e.g. \"type john@example.com into the email field\".",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "fields": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": "[MaxDepth]",
+                  "required": "[MaxDepth]",
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "fields"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "goto",
+          "description": "Navigate to a specific URL",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "The URL to navigate to"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "keys",
+          "description": "Send keyboard input to the page without targeting a specific element. Unlike the type tool which clicks then types into coordinates, this sends keystrokes directly to wherever focus currently is.\n\nUse method=\"type\" to enter text into the currently focused element. Preferred when: input is already focused, text needs to flow across multiple fields (e.g., verification codes)\n\nUse method=\"press\" for navigation keys (Enter, Tab, Escape, Backspace, arrows) and keyboard shortcuts (Cmd+A, Ctrl+C, Shift+Tab).",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "press",
+                  "type"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "The text to type, or the key/combo to press (Enter, Tab, Cmd+A)"
+              },
+              "repeat": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "method",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "navback",
+          "description": "Navigate back to the previous page",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "reasoningText": {
+                "type": "string",
+                "description": "Why you're going back"
+              }
+            },
+            "required": [
+              "reasoningText"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "screenshot",
+          "description": "Takes a screenshot (PNG) of the current page. Use this to quickly verify page state.",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "scroll",
+          "description": "Scroll the page up or down by a percentage of the viewport height. Default is 80%, and what should be typically used for general page scrolling",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "up",
+                  "down"
+                ]
+              },
+              "percentage": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 200
+              }
+            },
+            "required": [
+              "direction"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "think",
+          "description": "Use this tool to think through complex problems or plan a sequence of steps. This is for internal reasoning only and doesn't perform any actions. Use this to:\n\n1. Plan a multi-step approach before taking action\n2. Break down complex tasks\n3. Reason through edge cases\n4. Evaluate options when you're unsure what to do next\n\nThe output is only visible to you; use it to track your own reasoning process.",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "reasoning": {
+                "type": "string",
+                "description": "Your step-by-step reasoning or planning process. Be as detailed as needed."
+              }
+            },
+            "required": [
+              "reasoning"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        },
+        {
+          "type": "function",
+          "name": "wait",
+          "description": "Wait for a specified time",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {
+              "timeMs": {
+                "type": "number",
+                "description": "Time in milliseconds"
+              }
+            },
+            "required": [
+              "timeMs"
+            ],
+            "additionalProperties": false
+          },
+          "strict": false
+        }
+      ],
+      "tool_choice": "auto"
+    }
+  },
+  "prompt_input": [
+    {
+      "role": "system",
+      "content": "<system>\n  <identity>You are a web automation assistant using browser automation tools to accomplish the user's goal.</identity>\n  <customInstructions><![CDATA[If a cookie consent, privacy dialog, sign-in prompt, ad, newsletter modal, or other overlay blocks the task, handle it first using the visible controls. Prefer the least intrusive option that lets you continue, such as close, reject non-essential cookies, continue without sign-in, or accept only if needed. Do not spend steps on popups that do not block the task.]]></customInstructions>\n  <task>\n    <goal><![CDATA[Find the weight of baggage allowance for economy class on Qatar Airways.]]></goal>\n    <date display=\"local\" iso=\"2026-08-01T10:30:13.365Z\">8/1/2026</date>\n    <note>You may think the date is different due to knowledge cutoff, but this is the actual date.</note>\n  </task>\n  <page>\n    <startingUrl>you are starting your task on this url: about:blank</startingUrl>\n  </page>\n  <mindset>\n    <note>Be very intentional about your action. The initial instruction is very important, and slight variations of the actual goal can lead to failures.</note>\n    <importantNote>If something fails to meet a single condition of the task, move on from it rather than seeing if it meets other criteria. We only care that it meets all of it</importantNote>\n    <note>When the task is complete, do not seek more information; you have completed the task.</note>\n  </mindset>\n  <guidelines>\n    <item>Always start by understanding the current page state</item>\n    <item>Use the screenshot tool to verify page state when needed</item>\n    <item>Use appropriate tools for each action</item>\n  </guidelines>\n  <page_understanding_protocol>\n    <step_1>\n      <title>UNDERSTAND THE PAGE</title>\n      <primary_tool>\n        <name>ariaTree</name>\n        <usage>Get complete page context before taking actions</usage>\n        <benefit>Eliminates the need to scroll and provides full accessible content</benefit>\n        </primary_tool>\n      <secondary_tool>\n        <name>screenshot</name>\n        <usage>Visual confirmation when needed. Ideally after navigating to a new page.</usage>\n      </secondary_tool>\n    </step_1>\n  </page_understanding_protocol>\n  <navigation>\n    <rule>If you are confident in the URL, navigate directly to it.</rule>\n    \n  </navigation>\n  <tools>\n    <tool name=\"screenshot\">Take a compressed JPEG screenshot for quick visual context</tool>\n    <tool name=\"ariaTree\">Get an accessibility (ARIA) hybrid tree for full page context</tool>\n    <tool name=\"act\">Perform a specific atomic action (click, type)</tool>\n    <tool name=\"keys\">Press a keyboard key</tool>\n    <tool name=\"fillForm\">Fill out a form</tool>\n    <tool name=\"think\">Think about the task</tool>\n    <tool name=\"extract\">Extract structured data</tool>\n    <tool name=\"goto\">Navigate to a URL</tool>\n    <tool name=\"wait\">Wait for a specified time</tool>\n    <tool name=\"navback\">Navigate back in browser history</tool>\n    <tool name=\"scroll\">Scroll the page x pixels up or down</tool>\n  </tools>\n  <strategy>\n    <item>Tool selection priority: Use act tool for all clicking and typing on a page.</item>\n    <item>Always check ariaTree first to understand full page content without scrolling - it shows all elements including those below the fold.</item>\n    <item>When interacting with an input, always use the act tool to type into the input, over clicking and then typing.</item>\n    <item>If an element is present in the ariaTree, use act to interact with it directly - this eliminates the need to scroll.</item>\n    <item>Use screenshot for visual confirmation when needed, but rely primarily on ariaTree for element detection.</item>\n    \n    <item>CRITICAL: Use extract ONLY when the task explicitly requires structured data output (e.g., \"get job listings\", \"extract product details\"). For reading page content or understanding elements, always use ariaTree instead - it's faster and more reliable.</item>\n    <item>Keep actions atomic and verify outcomes before proceeding.</item>\n    <item>For each action, provide clear reasoning about why you're taking that step.</item>\n    <item>When you need to input text that could be entered character-by-character or through multiple separate inputs, prefer using the keys tool to type the entire sequence at once. This is more efficient for scenarios like verification codes split across multiple fields, or when virtual keyboards are present but direct typing would be faster.</item>\n    \n  </strategy>\n  \n  \n  <completion>\n    <note>When you complete the task, explain any information that was found that was relevant to the original task.</note>\n    <examples>\n      <example>If you were asked for specific flights, list the flights you found.</example>\n      <example>If you were asked for information about a product, list the product information you were asked for.</example>\n    </examples>\n  </completion>\n</system>"
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Find the weight of baggage allowance for economy class on Qatar Airways."
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_ffMlfuAPzbiEEFaAFnsM6DIa",
+      "name": "goto",
+      "arguments": "{\"url\":\"https://www.qatarairways.com/\"}",
+      "id": "fc_02181a59f8fd094f016a6dcab6b40c8193b6037a58f4eecace"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_ffMlfuAPzbiEEFaAFnsM6DIa",
+      "output": "{\"success\":true,\"url\":\"https://www.qatarairways.com/\"}"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_ubxKop6dnE7InUNcRGmkHP0y",
+      "name": "ariaTree",
+      "arguments": "{}",
+      "id": "fc_02181a59f8fd094f016a6dcabbc5bc8193a69b3d002f7f593f"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_ubxKop6dnE7InUNcRGmkHP0y",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "ARIA tree extracted for context of page elements"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_IY5lSNGN6u8RMDCSb4Y9EE57",
+      "name": "think",
+      "arguments": "{\"reasoning\":\"From the aria tree, there is no direct mention of baggage allowance on the landing page. The most logical path is to look for a 'Help' section or search for 'baggage allowance.' The navigation bar includes a 'Help' link. I will first click the 'Help' link to see if it leads to a support or information page with baggage details, as this is the most likely place such information is consolidated.\"}",
+      "id": "fc_02181a59f8fd094f016a6dcabe5ee88193b3acf2bd16bd5f23"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_IY5lSNGN6u8RMDCSb4Y9EE57",
+      "output": "{\"acknowledged\":true,\"message\":\"From the aria tree, there is no direct mention of baggage allowance on the landing page. The most logical path is to look for a 'Help' section or search for 'baggage allowance.' The navigation bar includes a 'Help' link. I will first click the 'Help' link to see if it leads to a support or information page with baggage details, as this is the most likely place such information is consolidated.\"}"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_ob8glBkzKYl4b3cIdjRmK9AO",
+      "name": "act",
+      "arguments": "{\"action\":\"click the Help link\"}",
+      "id": "fc_02181a59f8fd094f016a6dcac0efd48193a60f3ba6f6319f18"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_ob8glBkzKYl4b3cIdjRmK9AO",
+      "output": "{\"success\":true,\"action\":\"link labeled 'Help' in the navigation menu\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[5]/div[2]/div[1]/header[1]/div[1]/div[1]/div[1]/div[1]/nav[1]/div[4]/ul[2]/li[2]/a[1]\",\"description\":\"link labeled 'Help' in the navigation menu\",\"method\":\"click\",\"arguments\":[]}}"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_cqSrjktVlYwnuiJdIGfvh94W",
+      "name": "ariaTree",
+      "arguments": "{}",
+      "id": "fc_02181a59f8fd094f016a6dcac673c0819387edcf7d0eda3a96"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_cqSrjktVlYwnuiJdIGfvh94W",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "ARIA tree extracted for context of page elements"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_TFMvzV5yTyh41fRCsbjbUFcd",
+      "name": "act",
+      "arguments": "{\"action\":\"click the Reject all button in the privacy dialog\"}",
+      "id": "fc_02181a59f8fd094f016a6dcaca5b708193aaa1e6620faa584a"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_dCQW1Tc9SwmpbBd6CFmzmgLF",
+      "name": "act",
+      "arguments": "{\"action\":\"click the Check my baggage allowance button under 'How much can I carry?' section\"}",
+      "id": "fc_02181a59f8fd094f016a6dcaca5b848193954154f89201405e"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_TFMvzV5yTyh41fRCsbjbUFcd",
+      "output": "{\"success\":true,\"action\":\"button labeled 'Reject all' in the privacy dialog, used to reject all cookies\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[12]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/button[2]\",\"description\":\"button labeled 'Reject all' in the privacy dialog, used to reject all cookies\",\"method\":\"click\",\"arguments\":[]}}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_dCQW1Tc9SwmpbBd6CFmzmgLF",
+      "output": "{\"success\":true,\"action\":\"button labeled 'Check my baggage allowance' under the 'How much can I carry?' section\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[6]/main[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[5]/div[1]/div[1]/div[1]/div[1]/a[1]\",\"description\":\"button labeled 'Check my baggage allowance' under the 'How much can I carry?' section\",\"method\":\"click\",\"arguments\":[]}}"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_8iq3Iqxs9CwB50pnCQkNOtnC",
+      "name": "ariaTree",
+      "arguments": "{}",
+      "id": "fc_02181a59f8fd094f016a6dcacecf788193a41c02edefc4d801"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_8iq3Iqxs9CwB50pnCQkNOtnC",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "ARIA tree extracted for context of page elements"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_tDiI8tbOTG8EtuHbQuJsdJml",
+      "name": "ariaTree",
+      "arguments": "{}",
+      "id": "fc_02181a59f8fd094f016a6dcad13b2081939f2f472ce3432688"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_tDiI8tbOTG8EtuHbQuJsdJml",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "ARIA tree extracted for context of page elements"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_YwXSWyJHQuxDLHJg5ph85Iec",
+      "name": "think",
+      "arguments": "{\"reasoning\":\"The 'Check my baggage allowance' button may have led to a booking-specific checker. If this is the case, there may also be a general info page or an FAQ for standard allowances. I should check for links or sections regarding generic baggage policy, or a general info link for 'Baggage allowance for economy class.' If not found, I will also consider checking the FAQ or using the site search.\"}",
+      "id": "fc_02181a59f8fd094f016a6dcad3cf50819388c1b1dd0af64bc5"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_YwXSWyJHQuxDLHJg5ph85Iec",
+      "output": "{\"acknowledged\":true,\"message\":\"The 'Check my baggage allowance' button may have led to a booking-specific checker. If this is the case, there may also be a general info page or an FAQ for standard allowances. I should check for links or sections regarding generic baggage policy, or a general info link for 'Baggage allowance for economy class.' If not found, I will also consider checking the FAQ or using the site search.\"}"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_euiI0uchnv0klNFVUtM2URzA",
+      "name": "ariaTree",
+      "arguments": "{}",
+      "id": "fc_02181a59f8fd094f016a6dcad669148193966ec7d1555da8a4"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_euiI0uchnv0klNFVUtM2URzA",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "ARIA tree extracted for context of page elements"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_30Prbe06z6yn2YWfVWOM8lkQ",
+      "name": "act",
+      "arguments": "{\"action\":\"click the Browse FAQs link\"}",
+      "id": "fc_02181a59f8fd094f016a6dcad90ab08193a6bd449e71f28c3b"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_30Prbe06z6yn2YWfVWOM8lkQ",
+      "output": "{\"success\":true,\"action\":\"link labeled 'Browse FAQs' for browsing frequently asked questions\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[6]/main[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[7]/div[1]/div[1]/div[1]/div[1]/div[2]/a[1]\",\"description\":\"link labeled 'Browse FAQs' for browsing frequently asked questions\",\"method\":\"click\",\"arguments\":[]}}"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_a4M84kKxZyk7oRhJPtYVifgC",
+      "name": "ariaTree",
+      "arguments": "{}",
+      "id": "fc_02181a59f8fd094f016a6dcae2701081938346afa766b7a2ff"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_a4M84kKxZyk7oRhJPtYVifgC",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "ARIA tree extracted for context of page elements"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_wu6QgtmxiTiZRqvli7Xg8YoA",
+      "name": "act",
+      "arguments": "{\"action\":\"click the Baggage button under 'Popular searches'\"}",
+      "id": "fc_02181a59f8fd094f016a6dcae8e8e8819395a64e62c5d36cc2"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_wu6QgtmxiTiZRqvli7Xg8YoA",
+      "output": "{\"success\":true,\"action\":\"Baggage button under 'Popular searches' section\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[6]/main[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[3]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[2]/div[1]/button[1]\",\"description\":\"Baggage button under 'Popular searches' section\",\"method\":\"click\",\"arguments\":[]}}"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_eTGqPFMbQ15dquvv6gqSUL9w",
+      "name": "ariaTree",
+      "arguments": "{}",
+      "id": "fc_02181a59f8fd094f016a6dcaf0bba881939487f2cf7138b1a0"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_eTGqPFMbQ15dquvv6gqSUL9w",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "ARIA tree extracted for context of page elements"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_SzWy1PmMK9ET9voN1M7e77Wa",
+      "name": "act",
+      "arguments": "{\"action\":\"click the What is my checked or free baggage allowance on Qatar Airways? button\"}",
+      "id": "fc_02181a59f8fd094f016a6dcaf6bf6481938baa2e8e96be5bc3"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_SzWy1PmMK9ET9voN1M7e77Wa",
+      "output": "{\"success\":true,\"action\":\"button labeled 'What is my checked or free baggage allowance on Qatar Airways?'\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[6]/main[1]/div[1]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/div[2]/div[1]/div[1]/div[14]/div[1]/button[1]\",\"description\":\"button labeled 'What is my checked or free baggage allowance on Qatar Airways?'\",\"method\":\"click\",\"arguments\":[]}}"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_K5SdlDXAq8VMczRlp8QyoGPG",
+      "name": "ariaTree",
+      "arguments": "{}",
+      "id": "fc_02181a59f8fd094f016a6dcaff36a48193bf6a32f682f3b639"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_K5SdlDXAq8VMczRlp8QyoGPG",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "Accessibility Tree:\n[7-30] RootWebArea: Frequently asked questions | Qatar Airways\n  [7-31] scrollable, html\n    [7-146] body\n      [7-490] main\n        [7-495] div\n          [7-498] div\n            [7-499] sectionheader\n              [7-514] div\n                [7-5319] StaticText: Travel alerts\n                [7-5282] list\n                  [7-5292] listitem\n                    [7-5294] link: 18 June 2026: Updates on Travelling with Power Banks\n                  [7-5296] listitem\n                    [7-5298] link: 30 July 2026: Temporary passenger flight suspension to Bahrain (BAH), Erbil (EBL), and Kuwait (KWI)\n                  [7-5284] listitem\n                    [7-5286] link: Qatar Airways Expands Global Network to over 160 Destinations\n                  [7-5288] listitem\n                    [7-5290] link: Passengers flying between Doha and Auckland on QR914 and QR915\n                [7-5300] button: Close the travel alerts bar\n              [7-515] link: Skip to content\n              [7-524] navigation\n                [7-525] link: Qatar Airways Qatar Airways Home Page Qatar Airways Home Page Qatar Airways Home Page Qatar Airways Home Page Qatar Airways Home Page\n                  [7-710] StaticText: Qatar Airways\n                [7-765] link: one-world one world One World\n                  [7-1438] StaticText: one-world\n                [7-1341] div\n                  [7-1342] list\n                    [7-1343] listitem\n                      [7-1344] button: Explore\n                        [7-1439] StaticText: Explore\n                        [7-1440] StaticText: (active)\n                    [7-1697] listitem\n                      [7-1698] button: Book\n                    [7-1832] listitem\n                      [7-1833] button: Experience\n                    [7-1970] listitem\n                      [7-1971] button: Privilege Club\n                  [7-2325] list\n                    [7-2328] listitem\n                      [7-2329] link: Help\n                    [7-2330] listitem\n                      [7-2331] button: Search\n                    [7-2360] listitem: Change language selector\n                      [7-2366] button: global - en\n                        [7-2711] StaticText: \n                        [7-2706] StaticText: EN\n                [7-2949] div\n                  [7-2951] link: Profile Icon Log in\n                    [7-3321] StaticText: Log in\n                  [7-2972] link: | Sign up\n                    [7-3322] StaticText: |\n                    [7-3323] StaticText: Sign up\n            [7-3215] form\n            [7-3230] form\n            [7-3237] form\n            [7-3244] form\n            [7-3246] form\n          [7-3250] div\n            [7-3266] heading: Frequently Asked Questions\n            [7-3297] navigation: breadcrumb\n              [7-3298] list\n                [7-3299] listitem\n                  [7-3300] link: Home Page\n                [7-3302] listitem\n                  [7-3303] link: Help\n                [7-3304] listitem\n                  [7-3325] StaticText: Frequently Asked Questions\n            [7-4234] div\n              [7-4237] div\n                [7-5035] StaticText: Find everything you need to know about your trip\n                [7-4239] form\n                  [7-4240] textbox: Search Faqs\n                  [7-4241] button\n              [7-4244] div\n                [7-5681] heading: Popular searches\n                [7-5683] div\n                  [7-5684] button: Baggage\n                  [7-5685] button: Booking Online\n                  [7-5686] button: Redeeming Avios\n                  [7-5687] button: Student Club\n                  [7-5688] button: Checking In\n              [7-4245] div\n                [7-4247] div\n                  [7-4248] heading: FAQs\n                  [7-4249] div\n                    [7-5690] div\n                      [7-5692] button: Airport Services\n                        [7-5694] heading: Airport Services\n                      [7-5696] list\n                        [7-5697] listitem\n                          [7-5698] link: Checking In\n                        [7-5699] listitem\n                          [7-5700] link: Fast Pass\n                    [7-5702] div\n                      [7-5704] button: Animal Transportation\n                        [7-5706] heading: Animal Transportation\n                      [7-5708] list\n                        [7-5709] listitem\n                          [7-5710] link: Travelling with pets\n                    [7-5712] div\n                      [7-5714] button: Beyond Business\n                        [7-5716] heading: Beyond Business\n                      [7-5718] list\n                        [7-5719] listitem\n                          [7-5720] link: Account cancellation\n                        [7-5721] listitem\n                          [7-5722] link: Account management\n                        [7-5723] listitem\n                          [7-5724] link: Earning Qrewards\n                        [7-5725] listitem\n                          [7-5726] link: Enrolment\n                        [7-5727] listitem\n                          [7-5728] link: Managing Beyond Business Award tickets\n                        [7-5729] listitem\n                          [7-5730] link: Redeeming Qrewards\n                    [7-5732] div\n                      [7-5734] button: Booking and managing a reservation\n                        [7-5736] heading: Booking and managing a reservation\n                      [7-5738] list\n                        [7-5739] listitem\n                          [7-5740] link: Booking Online\n                        [7-5741] listitem\n                          [7-5742] link: Manage a booking\n                        [7-5743] listitem\n                          [7-5744] link: Refund\n                        [7-5745] listitem\n                          [7-5746] link: Seat selection\n                    [7-5748] div\n                      [7-5750] button: Carbon Offsetting\n                        [7-5752] heading: Carbon Offsetting\n                      [7-5754] list\n                        [7-5755] listitem\n                          [7-5756] link: Carbon calculations\n                        [7-5757] listitem\n                          [7-5758] link: Climate change and offsetting\n                        [7-5759] listitem\n                          [7-5760] link: Co-benefits\n                        [7-5761] listitem\n                          [7-5762] link: Financial information\n                        [7-5763] listitem\n                          [7-5764] link: Offset program approval\n                    [7-5766] div\n                      [7-5768] button: Compliance\n                        [7-5770] heading: Compliance\n                      [7-5772] list\n                        [7-5773] listitem\n                          [7-5774] link: Japan\n                        [7-5775] listitem\n                          [7-5776] link: South Africa\n                        [7-5777] listitem\n                          [7-5778] link: USA\n                    [7-5780] div\n                      [7-5782] button: Flight Disruption\n                        [7-5784] heading: Flight Disruption\n                      [7-5786] list\n                        [7-5787] listitem\n                          [7-5788] link: Changes\n                        [7-5789] listitem\n                          [7-5790] link: Passenger updates\n                        [7-5791] listitem\n                          [7-5792] link: Privilege Club\n                        [7-5793] listitem\n                          [7-5794] link: Refund Voucher\n                        [7-5795] listitem\n                          [7-5796] link: Refunds\n                    [7-5798] div\n                      [7-5800] button: Hotels, cars and travel insurance\n                        [7-5802] heading: Hotels, cars and travel insurance\n                      [7-5804] list\n                        [7-5805] listitem\n                          [7-5806] link: AIG Travel Guard Insurance\n                        [7-5807] listitem\n                          [7-5808] link: Car rental\n                        [7-5809] listitem\n                          [7-5810] link: Hotel booking\n                        [7-5811] listitem\n                          [7-5812] link: QIC Travelcare Plus\n                    [7-5814] div\n                      [7-5816] button: Legal\n                        [7-5818] heading: Legal\n                      [7-5820] list\n                        [7-5821] listitem\n                          [7-5822] link: EU & UK Passenger Rights\n                        [7-5823] listitem\n                          [7-5824] link: Italian Legal Information\n                        [7-5825] listitem\n                          [7-5826] link: Spain Legal Information\n                        [7-5827] listitem\n                          [7-5828] link: United States Legal Information\n                    [7-5830] div\n                      [7-5832] button: Offers\n                        [7-5834] heading: Offers\n                      [7-5836] list\n                        [7-5837] listitem\n                          [7-5838] link: Promo Codes and Vouchers\n                    [7-5840] div\n                      [7-5842] button: On-board experience\n                        [7-5844] heading: On-board experience\n                      [7-5846] list\n                        [7-5847] listitem\n                          [7-5848] link: Mobile\n                        [7-5849] listitem\n                          [7-5850] link: On-board Wi-Fi\n                        [7-5851] listitem\n                          [7-5852] link: Portable Electronic Devices (PEDs)\n                        [7-5853] listitem\n                          [7-5854] link: Pre-Select Dining\n                        [7-5855] listitem\n                          [7-5856] link: Qsuite product\n                        [7-5857] listitem\n                          [7-5858] link: Starlink Wi-Fi\n                    [7-5860] div\n                      [7-5862] button: Payments\n                        [7-5864] heading: Payments\n                      [7-5866] list\n                        [7-5867] listitem\n                          [7-5868] link: Credit Card service fee for Australia and New Zealand\n                        [7-5869] listitem\n                          [7-5870] link: Payment Verification\n                    [7-5872] div\n                      [7-5874] button: Privilege Club : Qatar Airways' loyalty programme\n                        [7-5876] heading: Privilege Club : Qatar Airways' loyalty programme\n                      [7-5878] list\n                        [7-5879] listitem\n                          [7-5880] link: Privilege Club Collection\n                        [7-5881] listitem\n                          [7-5882] link: Avios Max\n                        [7-5883] listitem\n                          [7-5884] link: Booking an Award ticket\n                        [7-5885] listitem\n                          [7-5886] link: Card linking\n                        [7-5887] listitem\n                          [7-5888] link: Claim missing Avios\n                        [7-5889] listitem\n                          [7-5890] link: Combine Avios\n                        [7-5891] listitem\n                          [7-5892] link: Earning Avios & Qpoints\n                        [7-5893] listitem\n                          [7-5894] link: Excess baggage awards\n                        [7-5895] listitem\n                          [7-5896] link: Family & Friends\n                        [7-5897] listitem\n                          [7-5898] link: Fare Families\n                        [7-5899] listitem\n                          [7-5900] link: General FAQs\n                        [7-5901] listitem\n                          [7-5902] link: Lifestyle Rewards (E-store)\n                        [7-5903] listitem\n                          [7-5904] link: Linking Qatar Airways Privilege Club and ALL – Accor Live Limitless accounts\n                        [7-5905] listitem\n                          [7-5906] link: Linking Qatar Airways Privilege Club and British Airways Executive Club accounts\n                        [7-5907] listitem\n                          [7-5908] link: Membership and Benefits\n                        [7-5909] listitem\n                          [7-5910] link: My List\n                        [7-5911] listitem\n                          [7-5912] link: oneworld Alliance\n                        [7-5913] listitem\n                          [7-5914] link: Privilege Club and Marriott Bonvoy\n                        [7-5915] listitem\n                          [7-5916] link: Privilege Club OTP (One-Time Password)\n                        [7-5917] listitem\n                          [7-5918] link: Qatar Airways Privilege Club Credit Cards USA: Booking fee waiver\n                        [7-5919] listitem\n                          [7-5920] link: Qatar Duty Free redemption\n                        [7-5921] listitem\n                          [7-5922] link: Redeeming Avios\n                        [7-5923] listitem\n                          [7-5924] link: Redemption Discount\n                        [7-5925] listitem\n                          [7-5926] link: Seasonal Pricing\n                        [7-5927] listitem\n                          [7-5928] link: Spending Avios\n                        [7-5929] listitem\n                          [7-5930] link: Starlink Wi-Fi\n                        [7-5931] listitem\n                          [7-5932] link: Student Club\n                        [7-5933] listitem\n                          [7-5934] link: Tier upgrade and renewal\n                        [7-5935] listitem\n                          [7-5936] link: Two-factor authentication\n                    [7-5938] div\n                      [7-5940] button: Qatar Airways Affiliate Program\n                        [7-5942] heading: Qatar Airways Affiliate Program\n                      [7-5944] list\n                        [7-5945] listitem\n                          [7-5946] link: Affiliate marketing\n                    [7-5948] div\n                      [7-5950] button: Qatar Airways Packages\n                        [7-5952] heading: Qatar Airways Packages\n                      [7-5954] list\n                        [7-5955] listitem\n                          [7-5956] link: Formula One™\n                        [7-5957] listitem\n                          [7-5958] link: Sports and Events Packages\n                    [7-5960] div\n                      [7-5962] button: QMICE\n                        [7-5964] heading: QMICE\n                      [7-5966] list\n                        [7-5967] listitem\n                          [7-5968] link: QMICE Account Cancellation\n                        [7-5969] listitem\n                          [7-5970] link: QMICE Account Management\n                        [7-5971] listitem\n                          [7-5972] link: QMICE Booking Terms and Conditions\n                    [7-5974] div\n                      [7-5976] button: Special assistance\n                        [7-5978] heading: Special assistance\n                      [7-5980] list\n                        [7-5981] listitem\n                          [7-5982] link: Special Services\n                    [7-5984] div\n                      [7-5986] button: Travel Baggage\n                        [7-5988] heading: Travel Baggage\n                      [7-5990] list\n                        [7-5991] listitem\n                          [7-5992] link: Baggage\n                        [7-5993] listitem\n                          [7-5994] link: BAGTAG\n                        [7-5995] listitem\n                          [7-5996] link: Hand baggage\n                        [7-5997] listitem\n                          [7-5998] link: Liquids\n                        [7-5999] listitem\n                          [7-6000] link: Mishandled baggage\n                    [7-6002] div\n                      [7-6004] button: Travel voucher\n                        [7-6006] heading: Travel voucher\n                      [7-6008] list\n                        [7-6009] listitem\n                          [7-6010] link: Voucher redemption\n                    [7-6012] div\n                      [7-6014] button: TripAdd\n                        [7-6016] heading: TripAdd\n                      [7-6018] list\n                        [7-6019] listitem\n                          [7-6020] link: eSIM - TripAdd\n                        [7-6021] listitem\n                          [7-6022] link: Fast Track - TripAdd\n                        [7-6023] listitem\n                          [7-6024] link: Lounge - TripAdd\n                        [7-6025] listitem\n                          [7-6026] link: Meet and Greet - TripAdd\n                        [7-6027] listitem\n                          [7-6028] link: Smart Travel Pack - TripAdd\n                    [7-6030] div\n                      [7-6032] button: Young Travellers\n                        [7-6034] heading: Young Travellers\n                      [7-6036] list\n                        [7-6037] listitem\n                          [7-6038] link: Travelling with children\n                        [7-6039] listitem\n                          [7-6040] link: Unaccompanied minors\n                [7-7717] div\n                  [7-7718] div\n                    [7-7720] button: Are infants entitled to any baggage allowance?\n                      [7-7722] heading: Are infants entitled to any baggage allowance?\n                    [7-7723] div\n                      [7-7724] paragraph\n                        [7-7963] StaticText: Yes, infants are entitled to a checked baggage allowance of:\n                      [7-7729] paragraph\n                        [7-7730] LineBreak: \n                      [7-7731] table\n                        [7-7732] tbody\n                          [7-7733] row\n                            [7-7734] cell: Route\n                              [7-7735] paragraph\n                                [7-7737] strong\n                                  [7-7964] StaticText: Route\n                            [7-7738] cell: All classes\n                              [7-7739] paragraph\n                                [7-7741] strong\n                                  [7-7965] StaticText: All classes\n                          [7-7742] row\n                            [7-7743] cell: Flights to and from Africa or Americas\n                              [7-7744] paragraph\n                                [7-7966] StaticText: Flights to and from Africa or Americas\n                            [7-7746] cell: One piece, not to exceed 23kg (50lb)\n                              [7-7747] paragraph\n                                [7-7967] StaticText: One piece, not to exceed 23kg (50lb)\n                          [7-7749] row\n                            [7-7750] cell: Flights to and from all other destinations\n                              [7-7751] paragraph\n                                [7-7968] StaticText: Flights to and from all other destinations\n                            [7-7753] cell: 10kg (22lb)\n                              [7-7754] paragraph\n                                [7-7969] StaticText: 10kg (22lb)\n                      [7-7756] paragraph\n                        [7-7757] LineBreak: \n                      [7-7758] paragraph\n                        [7-7970] StaticText: Additionally, only one of the following items can be accepted without additional charges when travelling with the infant\n                      [7-7760] list\n                        [7-7761] listitem\n                          [7-7932] ListMarker: •\n                          [7-7971] StaticText: Stroller\n                        [7-7763] listitem\n                          [7-7933] ListMarker: •\n                          [7-7972] StaticText: Collapsible carrycot\n                        [7-7765] listitem\n                          [7-7934] ListMarker: •\n                          [7-7973] StaticText: Pushchair\n                        [7-7767] listitem\n                          [7-7935] ListMarker: •\n                          [7-7974] StaticText: Car Seat\n                      [7-7769] paragraph\n                        [7-7770] LineBreak: \n                        [7-7975] StaticText: Note: Infants are not entitled to any hand baggage allowance.\n                  [7-7774] button: Can I carry an LCD or LED TV in my checked baggage?\n                    [7-7776] heading: Can I carry an LCD or LED TV in my checked baggage?\n                  [7-7780] button: What are the dimensions of checked-in and hand luggage that Qatar Airways allows?\n                    [7-7782] heading: What are the dimensions of checked-in and hand luggage that Qatar Airways allows?\n                  [7-7786] button: Can I carry musical instruments on board?\n                    [7-7788] heading: Can I carry musical instruments on board?\n                  [7-7792] button: Can I carry and/or use an electronic respiratory device on board?\n                    [7-7794] heading: Can I carry and/or use an electronic respiratory device on board?\n                  [7-7798] button: Is there a provision at Hamad International Airport to check in my baggage much earlier to my flight departure?\n                    [7-7800] heading: Is there a provision at Hamad International Airport to check in my baggage much earlier to my flight departure?\n                  [7-7804] button: Can I carry Zamzam holy water as checked and/or hand baggage?\n                    [7-7806] heading: Can I carry Zamzam holy water as checked and/or hand baggage?\n                  [7-7810] button: In the event of death, what is the repatriation procedure for human remains?\n                    [7-7812] heading: In the event of death, what is the repatriation procedure for human remains?\n                  [7-7816] button: How are the baggage dimensions measured?\n                    [7-7818] heading: How are the baggage dimensions measured?\n                  [7-7822] button: Can I check in my sports equipment?\n                    [7-7824] heading: Can I check in my sports equipment?\n                  [7-7828] button: Can passengers travel with their own wheelchair as checked baggage?\n                    [7-7830] heading: Can passengers travel with their own wheelchair as checked baggage?\n                  [7-7834] button: How many pieces can be checked in if my baggage allowance is 40kg when travelling on a weight concept route?\n                    [7-7836] heading: How many pieces can be checked in if my baggage allowance is 40kg when travelling on a weight concept route?\n                  [7-7840] button: Where can I purchase excess baggage for my Qatar Airways flight?\n                    [7-7842] heading: Where can I purchase excess baggage for my Qatar Airways flight?\n                  [7-7844] div\n                    [7-7846] button: What is my checked or free baggage allowance on Qatar Airways?\n                      [7-7848] heading: What is my checked or free baggage allowance on Qatar Airways?\n                    [7-7849] div\n                      [7-8059] paragraph\n                        [7-8102] StaticText: Your baggage allowances may vary according to your route and cabin class. Your complimentary checked baggage allowance is printed on your ticket.\n                      [7-8061] paragraph\n                      [7-8063] paragraph\n                        [7-8103] StaticText: Click below to view the standard checked baggage allowance.\n                      [7-8065] paragraph\n                        [7-8067] link: https://www.qatarairways.com/en/baggage/allowance.html\n                      [7-8069] paragraph\n                      [7-8071] paragraph\n                        [7-8105] StaticText: Children are eligible for the same baggage allowance as adults. Infants travelling on Child fare and occupying a seat are also eligible for the same baggage allowance as adults.\n                      [7-8073] paragraph\n                      [7-8075] paragraph\n                        [7-8106] StaticText: Click here for baggage allowance on infants travelling on infant fare\n                      [7-8077] paragraph\n                        [7-8079] link: https://www.qatarairways.com/en/family/child-fares-baggage.html\n                      [7-8081] paragraph\n                      [7-8083] paragraph\n                        [7-8108] StaticText: If your journey includes travel on an airline other than Qatar Airways, including a Qatar Airways code-share flight operated by another airline, that operating airline may offer you a lower baggage allowance. You are advised to check with that airline on their allowance.\n                      [7-8085] paragraph\n                      [7-8087] paragraph\n                        [7-8109] StaticText: To purchase excess baggage, login to Manage Booking (you will require PNR/ticket number/Privilege Club number and passenger's last name).\n                      [7-8089] paragraph\n                        [7-8091] link: https://booking.qatarairways.com/nsp/views/retrievePnr.xhtml\n                      [7-8093] paragraph\n                      [7-8095] paragraph\n                        [7-8111] StaticText: Your free baggage allowance flight will appear in your flight details under your booked cabin.\n                      [7-8097] paragraph\n                        [7-8112] StaticText: Once you retrieve your booking, click on ‘Extra baggage’ on the right panel to purchase additional baggage online.\n                  [7-7852] button: Can I carry goods that are considered dangerous?\n                    [7-7854] heading: Can I carry goods that are considered dangerous?\n                  [7-7858] button: Can I carry food items as checked baggage?\n                    [7-7860] heading: Can I carry food items as checked baggage?\n                  [7-7864] button: Can I carry cremated human remains as checked/hand baggage?\n                    [7-7866] heading: Can I carry cremated human remains as checked/hand baggage?\n                  [7-7870] button: What is the maximum weight of a single piece of checked baggage?\n                    [7-7872] heading: What is the maximum weight of a single piece of checked baggage?\n                  [7-7876] button: Will my checked baggage be accepted if the dimensions exceed 300 cm (118 in)?\n                    [7-7878] heading: Will my checked baggage be accepted if the dimensions exceed 300 cm (118 in)?\n                  [7-7882] button: Are valuables allowed in checked baggage?\n                    [7-7884] heading: Are valuables allowed in checked baggage?\n                  [7-7888] button: What is the rate to calculate excess baggage?\n                    [7-7890] heading: What is the rate to calculate excess baggage?\n                  [7-7894] button: I am travelling on piece concept route and have few KG as excess baggage. Do I have to pay for one full piece?\n                    [7-7896] heading: I am travelling on piece concept route and have few KG as excess baggage. Do I have to pay for one full piece?\n                  [7-7900] button: What excess baggage rates are available for purchase at the airport?\n                    [7-7902] heading: What excess baggage rates are available for purchase at the airport?\n                  [7-7906] button: Is there a limit on how much excess baggage I can purchase?\n                    [7-7908] heading: Is there a limit on how much excess baggage I can purchase?\n                  [7-7912] button: Is there a special baggage allowance for passengers with special needs?\n                    [7-7914] heading: Is there a special baggage allowance for passengers with special needs?\n                  [7-7918] button: I am travelling on Premium cabin (First/Business), can I carry my total hand baggage in one piece of 15 kg?\n                    [7-7920] heading: I am travelling on Premium cabin (First/Business), can I carry my total hand baggage in one piece of 15 kg?\n                  [7-7924] button: Is it permitted to attach an Apple AirTag to my bag when travelling with Qatar Airways?\n                    [7-7926] heading: Is it permitted to attach an Apple AirTag to my bag when travelling with Qatar Airways?\n          [7-4269] sectionfooter\n            [7-4280] div\n              [7-4281] div\n                [7-4282] div\n                  [7-4283] heading: Qatar Airways\n                  [7-4284] heading: Group companies\n                  [7-4285] heading: Business solutions\n                  [7-4286] heading: Business partners\n                  [7-4287] heading: Help\n                [7-4289] link: Certified by Theqa\n                  [7-4293] image: Certified by Theqa\n              [7-4294] div\n                [7-4295] div\n                  [7-4297] div\n                    [7-4303] div\n                      [7-4304] list\n                        [7-4305] listitem\n                          [7-4306] link: Qatar Airways About us Opens in new window\n                            [7-5044] StaticText: About us\n                        [7-4307] listitem\n                          [7-4308] link: Qatar Airways Careers Opens in new window\n                            [7-5045] StaticText: Careers\n                        [7-4309] listitem\n                          [7-4310] link: Qatar Airways Press releases Opens in new window\n                            [7-5046] StaticText: Press releases\n                        [7-4311] listitem\n                          [7-4312] link: Qatar Airways Sponsorship\n                            [7-5047] StaticText: Sponsorship\n                        [7-4313] listitem\n                          [7-4314] link: Qatar Airways Al Darb Qatarisation\n                            [7-5048] StaticText: Al Darb Qatarisation\n                        [7-4315] listitem\n                          [7-4316] link: Qatar Airways Annual reports Opens in new window\n                            [7-5049] StaticText: Annual reports\n                      [7-4317] list\n                        [7-4318] listitem\n                          [7-4319] link: Environmental sustainability\n                    [7-4326] list\n                      [7-4327] listitem\n                        [7-4328] link: Group companies Hamad International Airport Opens in new window\n                          [7-5051] StaticText: Hamad International Airport\n                      [7-4329] listitem\n                        [7-4330] link: Group companies Qatar Executive Opens in new window\n                          [7-5052] StaticText: Qatar Executive\n                      [7-4331] listitem\n                        [7-4332] link: Group companies Qatar Duty Free Opens in new window\n                          [7-5053] StaticText: Qatar Duty Free\n                      [7-4333] listitem\n                        [7-4334] link: Group companies Qatar Airways Cargo Opens in new window\n                          [7-5054] StaticText: Qatar Airways Cargo\n                      [7-4335] listitem\n                        [7-4336] link: Group companies Internal Media Services Opens in new window\n                          [7-5055] StaticText: Internal Media Services\n                      [7-4337] listitem\n                        [7-4338] link: Group companies Design Organisation Opens in new window\n                          [7-5056] StaticText: Design Organisation\n                      [7-4339] listitem\n                        [7-4340] link: Group companies Group companies\n                          [7-5057] StaticText: Group companies\n                    [7-4347] list\n                      [7-4348] listitem\n                        [7-4349] link: Business solutions Corporate travel\n                          [7-5058] StaticText: Corporate travel\n                      [7-4350] listitem\n                        [7-4351] link: Business solutions Beyond Business\n                          [7-5059] StaticText: Beyond Business\n                      [7-4352] listitem\n                        [7-4353] link: Business solutions QMICE meetings and events\n                          [7-5060] StaticText: QMICE meetings and events\n                      [7-4354] listitem\n                        [7-4355] link: Business solutions Advertise with us Opens in new window\n                          [7-5061] StaticText: Advertise with us\n                    [7-4362] list\n                      [7-4363] listitem\n                        [7-4364] link: Business partners Affiliate marketing\n                          [7-5062] StaticText: Affiliate marketing\n                      [7-4365] listitem\n                        [7-4366] link: Business partners e-Procurement and Supplier Registration\n                          [7-5063] StaticText: e-Procurement and Supplier Registration\n                      [7-4367] listitem\n                        [7-4368] link: Business partners Trade partners\n                          [7-5064] StaticText: Trade partners\n                    [7-4375] list\n                      [7-4376] listitem\n                        [7-4377] link: Help Contact us\n                          [7-5065] StaticText: Contact us\n                      [7-4378] listitem\n                        [7-4379] link: Help Browse FAQs\n                          [7-5066] StaticText: Browse FAQs\n                      [7-4380] listitem\n                        [7-4381] link: Help Travel alerts\n                          [7-5067] StaticText: Travel alerts\n                  [7-4395] div\n                    [7-4396] paragraph\n                      [7-5068] StaticText: Let’s stay connected\n                    [7-4397] list\n                      [7-4398] listitem\n                        [7-4399] link: facebook\n                      [7-4400] listitem\n                        [7-4401] link: twitter\n                      [7-4402] listitem\n                        [7-4403] link: linkedin\n                      [7-4404] listitem\n                        [7-4405] link: youtube\n                      [7-4406] listitem\n                        [7-4407] link: instagram\n                [7-4410] list\n                  [7-4411] listitem\n                    [7-4412] link: Open Link Awards\n                      [7-4416] image: Open Link Awards\n                    [7-4418] paragraph\n                      [7-5070] StaticText: World’s Best Airline\n                  [7-4419] listitem\n                    [7-4420] link: Open Link Awards\n                      [7-4424] image: Open Link Awards\n                    [7-4426] paragraph\n                      [7-5072] StaticText: World's Best Business Class\n                  [7-4427] listitem\n                    [7-4428] link: Open Link Awards\n                      [7-4432] image: Open Link Awards\n                    [7-4434] paragraph\n                      [7-5074] StaticText: World's Best Business Class Lounge\n                  [7-4435] listitem\n                    [7-4436] link: Open Link Awards\n                      [7-4440] image: Open Link Awards\n                    [7-4442] paragraph\n                      [7-5076] StaticText: Best Airline in the Middle East\n            [7-4464] div\n              [7-4465] div\n                [7-4466] list\n                  [7-4467] listitem\n                    [7-4468] link: Cookie policy\n                  [7-4469] listitem\n                    [7-4470] link: Legal\n                  [7-4471] listitem\n                    [7-4472] link: Privacy\n                  [7-4473] listitem\n                    [7-4474] link: Accessibility\n                  [7-4475] listitem\n                    [7-4476] link: Combating human trafficking This link will take you away from the Qatar Airways website to content that may not meet accessibility guidelines\n                      [7-5083] StaticText: Combating human trafficking\n                  [7-4477] listitem\n                    [7-4478] link: Sitemap\n                [7-4480] button: Cookie Consent\n              [7-5087] StaticText: Qatar Airways. All rights reserved\n      [7-4505] article"
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_C7pb46st74ldrlaTF0vnjX9F",
+      "name": "goto",
+      "arguments": "{\"url\":\"https://www.qatarairways.com/en/baggage/allowance.html\"}",
+      "id": "fc_02181a59f8fd094f016a6dcb054cc4819385090923626326eb"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_C7pb46st74ldrlaTF0vnjX9F",
+      "output": "{\"success\":true,\"url\":\"https://www.qatarairways.com/en/baggage/allowance.html\"}"
+    }
+  ]
+}
