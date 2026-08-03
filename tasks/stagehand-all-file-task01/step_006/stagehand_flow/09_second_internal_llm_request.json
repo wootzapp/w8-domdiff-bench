@@ -1,0 +1,105 @@
+{
+  "modelId": "gpt-4.1",
+  "messages": [
+    {
+      "role": "system",
+      "content": " You are helping the user automate the browser by finding elements based on what action the user wants to take on the page You will be given: 1. a user defined instruction about what action to take 2. a hierarchical accessibility tree showing the semantic structure of the page. The tree is a hybrid of the DOM and the accessibility tree. Return the element that matches the instruction if it exists. If no element on the page matches the instruction, set `action` to null. Do not fabricate or guess an element — empty strings or placeholder values for elementId/description/method are not acceptable."
+    },
+    {
+      "role": "user",
+      "content": "instruction: \n  The original user action was: click the Color button to filter chairs by color.\n  You have just taken the following action which completed step 1 of 2: method: click, description: button labeled 'Color' to filter chairs by color, arguments: .\n  \n  Now, you must find the most relevant element to perform an action on in order to complete step 2 of 2. \n  \n  General Instructions: \n  Provide an action for this element such as click, fill, type, press, scrollTo, nextChunk, prevChunk, hover, doubleClick, dragAndDrop. Remember that to users, buttons and links look the same in most cases.\n  If the action is completely unrelated to a potential action to be taken on the page, or no matching element exists, set `action` to null. Do not fabricate or guess an element.\n  ONLY return one action. If multiple actions are relevant, return the most relevant one.\n  If the user is asking to scroll to a position on the page, e.g., 'halfway' or 0.75, etc, you must return the argument formatted as the correct percentage, e.g., '50%' or '75%', etc.\n  If the user is asking to scroll to the next chunk/previous chunk, choose the nextChunk/prevChunk method. No arguments are required here.\n  If the action implies a key press, e.g., 'press enter', 'press a', 'press space', etc., always choose the press method with the appropriate key as argument — e.g. 'a', 'Enter', 'Space'. Do not choose a click action on an on-screen keyboard. Capitalize the first character like 'Enter', 'Tab', 'Escape' only for special keys. \n  \nAccessibility Tree: \n[4-7178] region: Color\n  [4-7174] group: Color\n    [4-7101] Legend\n      [4-9908] StaticText: Color\n    [4-7107] div\n      [4-7104] LabelText\n        [4-9909] StaticText: Black\n        [4-9910] StaticText: 30\n      [4-7105] checkbox: Black 30 products\n    [4-7113] div\n      [4-7110] LabelText\n        [4-9911] StaticText: Gray\n        [4-9912] StaticText: 20\n      [4-7111] checkbox: Gray 20 products\n    [4-7119] div\n      [4-7116] LabelText\n        [4-9913] StaticText: White\n        [4-9914] StaticText: 16\n      [4-7117] checkbox: White 16 products\n    [4-7125] div\n      [4-7122] LabelText\n        [4-9915] StaticText: Beige\n        [4-9916] StaticText: 14\n      [4-7123] checkbox: Beige 14 products\n    [4-7131] div\n      [4-7128] LabelText\n        [4-9917] StaticText: Blue\n        [4-9918] StaticText: 4\n      [4-7129] checkbox: Blue 4 products\n    [4-7137] div\n      [4-7134] LabelText\n        [4-9919] StaticText: Yellow\n        [4-9920] StaticText: 4\n      [4-7135] checkbox: Yellow 4 products\n    [4-7143] div\n      [4-7140] LabelText\n        [4-9921] StaticText: Brown\n        [4-9922] StaticText: 3\n      [4-7141] checkbox: Brown 3 products\n    [4-7149] div\n      [4-7146] LabelText\n        [4-9923] StaticText: Green\n        [4-9924] StaticText: 3\n      [4-7147] checkbox: Green 3 products\n    [4-7155] div\n      [4-7152] LabelText\n        [4-9925] StaticText: Turquoise\n        [4-9926] StaticText: 3\n      [4-7153] checkbox: Turquoise 3 products\n    [4-7161] div\n      [4-7158] LabelText\n        [4-9927] StaticText: Red\n        [4-9928] StaticText: 2\n      [4-7159] checkbox: Red 2 products\n    [4-7167] div\n      [4-7164] LabelText\n        [4-9929] StaticText: Lilac\n        [4-9930] StaticText: 1\n      [4-7165] checkbox: Lilac 1 products\n    [4-7173] div\n      [4-7170] LabelText\n        [4-9931] StaticText: Orange\n        [4-9932] StaticText: 1\n      [4-7171] checkbox: Orange 1 products\n"
+    }
+  ],
+  "schema": {
+    "toJSONSchema": "[Function anonymous]",
+    "def": {
+      "type": "object",
+      "shape": {
+        "action": {
+          "toJSONSchema": "[Function anonymous]",
+          "def": {
+            "type": "nullable",
+            "innerType": {
+              "toJSONSchema": "[Function anonymous]",
+              "def": {
+                "type": "object",
+                "shape": {
+                  "elementId": "[MaxDepth]",
+                  "description": "[MaxDepth]",
+                  "method": "[MaxDepth]",
+                  "arguments": "[MaxDepth]"
+                }
+              },
+              "type": "object",
+              "parse": "[Function anonymous]",
+              "safeParse": "[Function anonymous]",
+              "parseAsync": "[Function anonymous]",
+              "safeParseAsync": "[Function anonymous]",
+              "spa": "[Function anonymous]",
+              "encode": "[Function anonymous]",
+              "decode": "[Function anonymous]",
+              "encodeAsync": "[Function anonymous]",
+              "decodeAsync": "[Function anonymous]",
+              "safeEncode": "[Function anonymous]",
+              "safeDecode": "[Function anonymous]",
+              "safeEncodeAsync": "[Function anonymous]",
+              "safeDecodeAsync": "[Function anonymous]",
+              "nullable": "[Function bound nullable]"
+            }
+          },
+          "type": "nullable",
+          "parse": "[Function anonymous]",
+          "safeParse": "[Function anonymous]",
+          "parseAsync": "[Function anonymous]",
+          "safeParseAsync": "[Function anonymous]",
+          "spa": "[Function anonymous]",
+          "encode": "[Function anonymous]",
+          "decode": "[Function anonymous]",
+          "encodeAsync": "[Function anonymous]",
+          "decodeAsync": "[Function anonymous]",
+          "safeEncode": "[Function anonymous]",
+          "safeDecode": "[Function anonymous]",
+          "safeEncodeAsync": "[Function anonymous]",
+          "safeDecodeAsync": "[Function anonymous]",
+          "unwrap": "[Function anonymous]"
+        },
+        "twoStep": {
+          "toJSONSchema": "[Function anonymous]",
+          "def": {
+            "type": "boolean"
+          },
+          "type": "boolean",
+          "parse": "[Function anonymous]",
+          "safeParse": "[Function anonymous]",
+          "parseAsync": "[Function anonymous]",
+          "safeParseAsync": "[Function anonymous]",
+          "spa": "[Function anonymous]",
+          "encode": "[Function anonymous]",
+          "decode": "[Function anonymous]",
+          "encodeAsync": "[Function anonymous]",
+          "decodeAsync": "[Function anonymous]",
+          "safeEncode": "[Function anonymous]",
+          "safeDecode": "[Function anonymous]",
+          "safeEncodeAsync": "[Function anonymous]",
+          "safeDecodeAsync": "[Function anonymous]"
+        }
+      }
+    },
+    "type": "object",
+    "parse": "[Function anonymous]",
+    "safeParse": "[Function anonymous]",
+    "parseAsync": "[Function anonymous]",
+    "safeParseAsync": "[Function anonymous]",
+    "spa": "[Function anonymous]",
+    "encode": "[Function anonymous]",
+    "decode": "[Function anonymous]",
+    "encodeAsync": "[Function anonymous]",
+    "decodeAsync": "[Function anonymous]",
+    "safeEncode": "[Function anonymous]",
+    "safeDecode": "[Function anonymous]",
+    "safeEncodeAsync": "[Function anonymous]",
+    "safeDecodeAsync": "[Function anonymous]"
+  },
+  "temperature": null,
+  "allowSystemInMessages": true
+}

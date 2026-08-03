@@ -1,0 +1,855 @@
+{
+  "timestamp": "2026-08-03T09:41:11.138Z",
+  "note": "Browser-agent LLM output/tool-call result for this Stagehand step.",
+  "event": {
+    "content": [
+      {
+        "type": "tool-call",
+        "toolCallId": "call_kyIxeCesaDs8eERFNndVE1Ws",
+        "toolName": "goto",
+        "input": {
+          "url": "https://www.ikea.com/us/en/cat/office-desks-20652/"
+        },
+        "providerExecuted": null,
+        "providerMetadata": {
+          "openai": {
+            "itemId": "fc_06192001663f95a0016a706230b2648194aca2f64a56945c5f"
+          }
+        }
+      },
+      {
+        "type": "tool-result",
+        "toolCallId": "call_kyIxeCesaDs8eERFNndVE1Ws",
+        "toolName": "goto",
+        "input": {
+          "url": "https://www.ikea.com/us/en/cat/office-desks-20652/"
+        },
+        "output": {
+          "success": true,
+          "url": "https://www.ikea.com/us/en/cat/office-desks-20652/"
+        },
+        "dynamic": false
+      }
+    ],
+    "finishReason": "tool-calls",
+    "usage": {
+      "inputTokens": 16577,
+      "outputTokens": 32,
+      "totalTokens": 16609,
+      "reasoningTokens": 0,
+      "cachedInputTokens": 16384
+    },
+    "warnings": [],
+    "request": {
+      "body": {
+        "model": "gpt-4.1",
+        "input": [
+          {
+            "role": "system",
+            "content": "<system>\n  <identity>You are a web automation assistant using browser automation tools to accomplish the user's goal.</identity>\n  <customInstructions><![CDATA[If a cookie consent, privacy dialog, sign-in prompt, ad, newsletter modal, or other overlay blocks the task, handle it first using the visible controls. Prefer the least intrusive option that lets you continue, such as close, reject non-essential cookies, continue without sign-in, or accept only if needed. Do not spend steps on popups that do not block the task.]]></customInstructions>\n  <task>\n    <goal><![CDATA[Go to IKEA and find a white office desk that is available for delivery to ZIP code 10001. Open a suitable product page and report the product name, price, dimensions, and delivery\n    availability.]]></goal>\n    <date display=\"local\" iso=\"2026-08-03T09:40:52.140Z\">8/3/2026</date>\n    <note>You may think the date is different due to knowledge cutoff, but this is the actual date.</note>\n  </task>\n  <page>\n    <startingUrl>you are starting your task on this url: about:blank</startingUrl>\n  </page>\n  <mindset>\n    <note>Be very intentional about your action. The initial instruction is very important, and slight variations of the actual goal can lead to failures.</note>\n    <importantNote>If something fails to meet a single condition of the task, move on from it rather than seeing if it meets other criteria. We only care that it meets all of it</importantNote>\n    <note>When the task is complete, do not seek more information; you have completed the task.</note>\n  </mindset>\n  <guidelines>\n    <item>Always start by understanding the current page state</item>\n    <item>Use the screenshot tool to verify page state when needed</item>\n    <item>Use appropriate tools for each action</item>\n  </guidelines>\n  <page_understanding_protocol>\n    <step_1>\n      <title>UNDERSTAND THE PAGE</title>\n      <primary_tool>\n        <name>ariaTree</name>\n        <usage>Get complete page context before taking actions</usage>\n        <benefit>Eliminates the need to scroll and provides full accessible content</benefit>\n        </primary_tool>\n      <secondary_tool>\n        <name>screenshot</name>\n        <usage>Visual confirmation when needed. Ideally after navigating to a new page.</usage>\n      </secondary_tool>\n    </step_1>\n  </page_understanding_protocol>\n  <navigation>\n    <rule>If you are confident in the URL, navigate directly to it.</rule>\n    \n  </navigation>\n  <tools>\n    <tool name=\"screenshot\">Take a compressed JPEG screenshot for quick visual context</tool>\n    <tool name=\"ariaTree\">Get an accessibility (ARIA) hybrid tree for full page context</tool>\n    <tool name=\"act\">Perform a specific atomic action (click, type)</tool>\n    <tool name=\"keys\">Press a keyboard key</tool>\n    <tool name=\"fillForm\">Fill out a form</tool>\n    <tool name=\"think\">Think about the task</tool>\n    <tool name=\"extract\">Extract structured data</tool>\n    <tool name=\"goto\">Navigate to a URL</tool>\n    <tool name=\"wait\">Wait for a specified time</tool>\n    <tool name=\"navback\">Navigate back in browser history</tool>\n    <tool name=\"scroll\">Scroll the page x pixels up or down</tool>\n  </tools>\n  <strategy>\n    <item>Tool selection priority: Use act tool for all clicking and typing on a page.</item>\n    <item>Always check ariaTree first to understand full page content without scrolling - it shows all elements including those below the fold.</item>\n    <item>When interacting with an input, always use the act tool to type into the input, over clicking and then typing.</item>\n    <item>If an element is present in the ariaTree, use act to interact with it directly - this eliminates the need to scroll.</item>\n    <item>Use screenshot for visual confirmation when needed, but rely primarily on ariaTree for element detection.</item>\n    \n    <item>CRITICAL: Use extract ONLY when the task explicitly requires structured data output (e.g., \"get job listings\", \"extract product details\"). For reading page content or understanding elements, always use ariaTree instead - it's faster and more reliable.</item>\n    <item>Keep actions atomic and verify outcomes before proceeding.</item>\n    <item>For each action, provide clear reasoning about why you're taking that step.</item>\n    <item>When you need to input text that could be entered character-by-character or through multiple separate inputs, prefer using the keys tool to type the entire sequence at once. This is more efficient for scenarios like verification codes split across multiple fields, or when virtual keyboards are present but direct typing would be faster.</item>\n    \n  </strategy>\n  \n  \n  <completion>\n    <note>When you complete the task, explain any information that was found that was relevant to the original task.</note>\n    <examples>\n      <example>If you were asked for specific flights, list the flights you found.</example>\n      <example>If you were asked for information about a product, list the product information you were asked for.</example>\n    </examples>\n  </completion>\n</system>"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Go to IKEA and find a white office desk that is available for delivery to ZIP code 10001. Open a suitable product page and report the product name, price, dimensions, and delivery\n    availability."
+              }
+            ]
+          },
+          {
+            "type": "function_call",
+            "call_id": "call_RqIh6hoRvjekCDkRJVH0hRTH",
+            "name": "goto",
+            "arguments": "{\"url\":\"https://www.ikea.com/us/en/cat/desks-tables-fu002/\"}",
+            "id": "fc_06192001663f95a0016a7062258f80819488565fdd4aec2be9"
+          },
+          {
+            "type": "function_call_output",
+            "call_id": "call_RqIh6hoRvjekCDkRJVH0hRTH",
+            "output": "{\"success\":true,\"url\":\"https://www.ikea.com/us/en/cat/desks-tables-fu002/\"}"
+          },
+          {
+            "type": "function_call",
+            "call_id": "call_ShUI7Kbo1O5T5uNVW4jRcCrv",
+            "name": "ariaTree",
+            "arguments": "{}",
+            "id": "fc_06192001663f95a0016a706229ff3c81949c6280b6a467ad11"
+          },
+          {
+            "type": "function_call_output",
+            "call_id": "call_ShUI7Kbo1O5T5uNVW4jRcCrv",
+            "output": [
+              {
+                "type": "input_text",
+                "text": "Accessibility Tree:\n[4-2] RootWebArea: Tables & Chairs - IKEA\n  [4-15] scrollable, html\n    [4-172] body\n      [4-184] div\n        [4-185] link: Skip to main content\n        [4-189] navigation: Accessibility\n          [4-190] link: Accessibility\n        [4-194] banner\n          [4-198] div\n            [4-200] button: Change language or country/region, current language is English\n              [4-207] span\n                [4-208] StaticText: US\n                [4-210] StaticText: English\n            [4-215] link: Shop college essentials for every budget\n            [4-16] div\n              [4-18] button: Enter ZIP code\n              [4-20] button: Select store\n          [4-238] div\n            [4-240] link: IKEA Home\n            [4-243] navigation: Open the navigation menu\n              [4-244] button: Products\n              [4-5] button: Rooms\n              [4-6] button: Deals\n              [4-7] button: Design & ideas\n              [4-8] button: Services\n            [4-60] search\n              [4-261] div\n                [4-61] combobox: Search by product\n                [4-279] button: Search IKEA products using a photo\n            [4-25] navigation: Shopping links\n              [4-296] list\n                [4-304] listitem\n                  [4-26] link: Hej! Log in or sign up\n                    [4-309] span\n                      [4-311] StaticText: Hej!\n                      [4-312] StaticText: Log in or sign up\n                [4-313] listitem\n                  [4-28] link: Favorites\n                [4-320] listitem\n                  [4-31] link: Shopping bag\n        [4-337] complementary: Floating action buttons\n      [4-348] main\n        [4-349] link: Skip to product list\n        [4-353] div\n          [4-356] navigation: Breadcrumbs\n            [4-357] list\n              [4-358] listitem\n                [4-360] link: Products\n              [4-22] listitem\n                [4-23] StaticText: Tables & chairs\n          [4-374] heading: Tables & chairs\n          [4-376] div\n            [4-377] link: Skip product categories list\n            [4-385] scrollable, div\n              [4-386] listitem\n                [4-387] link: Products\n              [4-393] listitem\n                [4-394] link: Dining furniture\n              [4-398] listitem\n                [4-399] link: Tables\n              [4-403] listitem\n                [4-404] link: Chairs\n              [4-407] listitem\n                [4-408] link: Benches\n              [4-412] listitem\n                [4-413] link: Bar furniture\n              [4-417] listitem\n                [4-418] link: Accent tables\n              [4-421] listitem\n                [4-422] link: Kids tables\n              [4-426] listitem\n                [4-427] link: High chairs\n              [4-431] listitem\n                [4-432] link: Stools\n              [4-436] listitem\n                [4-437] link: Café furniture\n              [4-441] listitem\n                [4-442] link: Step stools & step ladders\n              [4-447] listitem\n                [4-448] link: Vanity chairs\n              [4-453] listitem\n                [4-454] link: Children's seating\n        [4-470] div\n          [4-480] div\n            [4-481] link: Skip listing\n            [4-489] list\n              [4-490] listitem\n                [4-492] div\n                  [4-493] button: Hide price tags on image 1\n                    [4-42] image: Minimal dining space with light wood table and benches, white pendant lights and a vase of flowers.\n                  [4-496] list: Products shown on image\n                    [4-497] listitem\n                      [4-498] link: New BERGSHYTTAN / BERGSHYTTAN Table and 2 benches $849.99 Price $ 849.99 Product information page\n              [4-537] listitem\n                [4-540] div\n                  [4-544] StaticText: New\n                  [4-72] link: Pieces to make every meal special\n                    [4-546] heading: Pieces to make every meal special\n              [4-554] listitem\n                [4-556] div\n                  [4-557] button: Hide price tags on image 2\n                    [4-43] image: Stacked light wood chairs with metal legs beside a radiator and window with decorative vases.\n                  [4-560] list: Products shown on image\n                    [4-561] listitem\n                      [4-562] link: SKÅLSTA Chair $70.00 Price $ 70.00 Product information page\n              [4-599] listitem\n                [4-601] div\n                  [4-602] button: Hide price tags on image 3\n                    [4-44] image: Modern living space with wood cabinet, abstract art, white lamp, and glass vase near a cozy office nook.\n                  [4-605] list: Products shown on image\n                    [4-606] listitem\n                      [4-607] link: BESTÅ Storage combination with doors $265.00 Price $ 265.00 Product information page\n              [4-644] listitem\n                [4-646] div\n                  [4-647] button: Hide price tags on image 4\n                    [4-45] image: Stacked black chairs beside a glass-front cabinet with dishes and books in a bright, modern room.\n                  [4-650] list: Products shown on image\n                    [4-651] listitem\n                      [4-652] link: New RAMSNÄS Chair $100.00 Price $ 100.00 Product information page\n          [4-769] div\n            [4-770] link: Skip listing\n            [4-778] scrollable, div\n              [4-779] listitem\n                [4-780] div\n                  [4-783] link: BERGSHYTTAN / BERGSHYTTAN Table and 2 benches, dark brown ash veneer/tinted effect birch veneer, 94 1/2x36 5/8 \" BERGSHYTTAN / BERGSHYTTAN Table and 2 benches, dark brown ash veneer/tinted effect birch veneer, 94 1/2x36 5/8 \"\n                    [4-46] image: BERGSHYTTAN / BERGSHYTTAN Table and 2 benches, dark brown ash veneer/tinted effect birch veneer, 94 1/2x36 5/8 \"\n                    [4-48] image: BERGSHYTTAN / BERGSHYTTAN Table and 2 benches, dark brown ash veneer/tinted effect birch veneer, 94 1/2x36 5/8 \"\n                  [4-786] div\n                    [4-787] div\n                      [4-789] StaticText: New\n                      [4-790] heading: BERGSHYTTAN / BERGSHYTTAN, Table and 2 benches, dark brown ash veneer/tinted effect birch veneer, 94 1/2x36 5/8 \" Table and 2 benches, dark brown ash veneer/tinted effect birch veneer, 94 1/2x36 5/8 \"\n                        [4-792] link: BERGSHYTTAN / BERGSHYTTAN, Table and 2 benches, dark brown ash veneer/tinted effect birch veneer, 94 1/2x36 5/8 \"\n                          [4-795] StaticText: BERGSHYTTAN / BERGSHYTTAN\n                        [4-797] StaticText: Table and 2 benches, dark brown ash veneer/tinted effect birch veneer, 94 1/2x36 5/8 \"\n                    [4-813] StaticText: Price $ 849.99\n                  [4-814] button: Review: 5 out of 5 stars. Total reviews: (3)\n                    [4-818] StaticText: Review: 5 out of 5 stars. Total reviews:\n                    [4-819] span\n                      [4-821] StaticText: (\n                      [4-822] StaticText: 3\n                      [4-823] StaticText: )\n                  [4-824] div\n                    [4-825] button: Add \"BERGSHYTTAN / BERGSHYTTAN Table and 2 benches\" to cart\n                    [4-834] button: Save \"BERGSHYTTAN / BERGSHYTTAN Table and 2 benches\" to shopping list\n              [4-842] listitem\n                [4-843] div\n                  [4-846] link: RAMSNÄS Chair, anthracite/Vissle dark gray Modern dining area with RAMSNÄS dark grey chair. Steel frame, cushioned seat, wooden table, pendant lights, white cabinet, and window plant.\n                    [4-47] image: RAMSNÄS Chair, anthracite/Vissle dark gray\n                    [4-49] image: Modern dining area with RAMSNÄS dark grey chair. Steel frame, cushioned seat, wooden table, pendant lights, white cabinet, and window plant.\n                  [4-849] div\n                    [4-850] div\n                      [4-852] StaticText: New\n                      [4-853] heading: RAMSNÄS, Chair, anthracite/Vissle dark gray Chair, anthracite/Vissle dark gray\n                        [4-855] link: RAMSNÄS, Chair, anthracite/Vissle dark gray\n                          [4-858] StaticText: RAMSNÄS\n                        [4-860] StaticText: Chair, anthracite/Vissle dark gray\n                    [4-876] StaticText: Price $ 100.00\n                  [4-877] button: Review: 4.8 out of 5 stars. Total reviews: (4)\n                    [4-881] StaticText: Review: 4.8 out of 5 stars. Total reviews:\n                    [4-882] span\n                      [4-884] StaticText: (\n                      [4-885] StaticText: 4\n                      [4-886] StaticText: )\n                  [4-887] div\n                    [4-888] button: Add \"RAMSNÄS Chair\" to cart\n                    [4-897] button: Save \"RAMSNÄS Chair\" to shopping list\n              [4-905] listitem\n                [4-906] div\n                  [4-909] link: SKOGSTA Table, counter height acacia/black, 59x29 1/8 \" SKOGSTA Table, counter height acacia/black, 59x29 1/8 \"\n                    [4-50] image: SKOGSTA Table, counter height acacia/black, 59x29 1/8 \"\n                    [4-51] image: SKOGSTA Table, counter height acacia/black, 59x29 1/8 \"\n                  [4-912] div\n                    [4-913] div\n                      [4-915] StaticText: New\n                      [4-916] heading: SKOGSTA, Table, counter height acacia/black, 59x29 1/8 \" Table, counter height acacia/black, 59x29 1/8 \"\n                        [4-918] link: SKOGSTA, Table, counter height acacia/black, 59x29 1/8 \"\n                          [4-921] StaticText: SKOGSTA\n                        [4-923] StaticText: Table, counter height acacia/black, 59x29 1/8 \"\n                    [4-939] StaticText: Price $ 349.99\n                  [4-940] button: Review: 4.8 out of 5 stars. Total reviews: (8)\n                    [4-944] StaticText: Review: 4.8 out of 5 stars. Total reviews:\n                    [4-945] span\n                      [4-947] StaticText: (\n                      [4-948] StaticText: 8\n                      [4-949] StaticText: )\n                  [4-950] div\n                    [4-951] button: Add \"SKOGSTA Table\" to cart\n                    [4-960] button: Save \"SKOGSTA Table\" to shopping list\n              [4-968] listitem\n                [4-969] div\n                  [4-972] link: SKOGSTA Bar stool with backrest, counter height acacia, 24 3/8 \" SKOGSTA Bar stool with backrest, counter height acacia, 24 3/8 \"\n                    [4-52] image: SKOGSTA Bar stool with backrest, counter height acacia, 24 3/8 \"\n                    [4-53] image: SKOGSTA Bar stool with backrest, counter height acacia, 24 3/8 \"\n                  [4-975] div\n                    [4-976] div\n                      [4-978] StaticText: New\n                      [4-979] heading: SKOGSTA, Bar stool with backrest, counter height acacia, 24 3/8 \" Bar stool with backrest, counter height acacia, 24 3/8 \"\n                        [4-981] link: SKOGSTA, Bar stool with backrest, counter height acacia, 24 3/8 \"\n                          [4-984] StaticText: SKOGSTA\n                        [4-986] StaticText: Bar stool with backrest, counter height acacia, 24 3/8 \"\n                    [4-1002] StaticText: Price $ 95.00\n                  [4-1003] button: Review: 4.6 out of 5 stars. Total reviews: (14)\n                    [4-1007] StaticText: Review: 4.6 out of 5 stars. Total reviews:\n                    [4-1008] span\n                      [4-1010] StaticText: (\n                      [4-1011] StaticText: 14\n                      [4-1012] StaticText: )\n                  [4-1013] div\n                    [4-1014] button: Add \"SKOGSTA Bar stool with backrest\" to cart\n                    [4-1023] button: Save \"SKOGSTA Bar stool with backrest\" to shopping list\n              [4-1031] listitem\n                [4-1032] div\n                  [4-1035] link: SKOGSTA / RAMSNÄS Table and 6 chairs, acacia black/anthracite Vissle dark gray, 92 1/2x39 3/8 \" SKOGSTA / RAMSNÄS Table and 6 chairs, acacia black/anthracite Vissle dark gray, 92 1/2x39 3/8 \"\n                    [4-54] image: SKOGSTA / RAMSNÄS Table and 6 chairs, acacia black/anthracite Vissle dark gray, 92 1/2x39 3/8 \"\n                    [4-55] image: SKOGSTA / RAMSNÄS Table and 6 chairs, acacia black/anthracite Vissle dark gray, 92 1/2x39 3/8 \"\n                  [4-1038] div\n                    [4-1039] div\n                      [4-1041] StaticText: New\n                      [4-1042] heading: SKOGSTA / RAMSNÄS, Table and 6 chairs, acacia black/anthracite Vissle dark gray, 92 1/2x39 3/8 \" Table and 6 chairs, acacia black/anthracite Vissle dark gray, 92 1/2x39 3/8 \"\n                        [4-1044] link: SKOGSTA / RAMSNÄS, Table and 6 chairs, acacia black/anthracite Vissle dark gray, 92 1/2x39 3/8 \"\n                          [4-1047] StaticText: SKOGSTA / RAMSNÄS\n                        [4-1049] StaticText: Table and 6 chairs, acacia black/anthracite Vissle dark gray, 92 1/2x39 3/8 \"\n                    [4-1065] StaticText: Price $ 1249.99\n                  [4-1066] button: Review: 4.7 out of 5 stars. Total reviews: (23)\n                    [4-1070] StaticText: Review: 4.7 out of 5 stars. Total reviews:\n                    [4-1071] span\n                      [4-1073] StaticText: (\n                      [4-1074] StaticText: 23\n                      [4-1075] StaticText: )\n                  [4-1076] div\n                    [4-1077] button: Add \"SKOGSTA / RAMSNÄS Table and 6 chairs\" to cart\n                    [4-1086] button: Save \"SKOGSTA / RAMSNÄS Table and 6 chairs\" to shopping list\n              [4-1094] listitem\n                [4-1095] div\n                  [4-1098] link: Red SKÅLSTA chair with curved seat and back, four black metal legs, stackable design. SKÅLSTA Chair, plastic red/tubular metal/black-gray\n                    [4-56] image: Red SKÅLSTA chair with curved seat and back, four black metal legs, stackable design.\n                    [4-57] image: SKÅLSTA Chair, plastic red/tubular metal/black-gray\n                  [4-1101] div\n                    [4-1103] heading: SKÅLSTA, Chair, plastic red/tubular metal/black-gray Chair, plastic red/tubular metal/black-gray\n                      [4-1105] link: SKÅLSTA, Chair, plastic red/tubular metal/black-gray\n                        [4-1108] StaticText: SKÅLSTA\n                      [4-1110] StaticText: Chair, plastic red/tubular metal/black-gray\n                    [4-1126] StaticText: Price $ 55.00\n                  [4-1127] button: Review: 5 out of 5 stars. Total reviews: (4)\n                    [4-1131] StaticText: Review: 5 out of 5 stars. Total reviews:\n                    [4-1132] span\n                      [4-1134] StaticText: (\n                      [4-1135] StaticText: 4\n                      [4-1136] StaticText: )\n                  [4-1137] div\n                    [4-1138] button: Add \"SKÅLSTA Chair\" to cart\n                    [4-1147] button: Save \"SKÅLSTA Chair\" to shopping list\n              [4-1155] listitem\n                [4-1156] div\n                  [4-1159] link: SKOGSTA / RAMSNÄS Table and 4 chairs, acacia/anthracite Vissle dark gray, 47 1/4 \" SKOGSTA / RAMSNÄS Table and 4 chairs, acacia/anthracite Vissle dark gray, 47 1/4 \"\n                    [4-58] image: SKOGSTA / RAMSNÄS Table and 4 chairs, acacia/anthracite Vissle dark gray, 47 1/4 \"\n                    [4-59] image: SKOGSTA / RAMSNÄS Table and 4 chairs, acacia/anthracite Vissle dark gray, 47 1/4 \"\n                  [4-1162] div\n                    [4-1163] div\n                      [4-1165] StaticText: New\n                      [4-1166] heading: SKOGSTA / RAMSNÄS, Table and 4 chairs, acacia/anthracite Vissle dark gray, 47 1/4 \" Table and 4 chairs, acacia/anthracite Vissle dark gray, 47 1/4 \"\n                        [4-1168] link: SKOGSTA / RAMSNÄS, Table and 4 chairs, acacia/anthracite Vissle dark gray, 47 1/4 \"\n                          [4-1171] StaticText: SKOGSTA / RAMSNÄS\n                        [4-1173] StaticText: Table and 4 chairs, acacia/anthracite Vissle dark gray, 47 1/4 \"\n                    [4-1189] StaticText: Price $ 799.99\n                  [4-1190] button: Review: 5 out of 5 stars. Total reviews: (1)\n                    [4-1194] StaticText: Review: 5 out of 5 stars. Total reviews:\n                    [4-1195] span\n                      [4-1197] StaticText: (\n                      [4-1198] StaticText: 1\n                      [4-1199] StaticText: )\n                  [4-1200] div\n                    [4-1201] button: Add \"SKOGSTA / RAMSNÄS Table and 4 chairs\" to cart\n                    [4-1210] button: Save \"SKOGSTA / RAMSNÄS Table and 4 chairs\" to shopping list\n              [4-1218] listitem\n              [4-1229] listitem\n          [4-1261] div\n            [4-1263] div\n              [4-1264] heading: Contract grade tables & chairs, now open for business\n              [4-1266] paragraph\n                [4-1267] StaticText: Designed to handle the demands of your business, our contract-grade furniture combines durability with everyday style. Reliable, functional and built to last so you can stay focused on running your restaurant, café, bistro or wherever your business takes you.\n            [4-1270] div\n              [4-1271] link: Skip listing\n              [4-1279] list\n                [4-1280] listitem\n                  [4-1282] link: Contract grade dining chairs A black RÖNNINGE chair in the dining room\n                    [4-1283] div\n                      [4-1290] StaticText: Contract grade dining chairs\n                      [4-1297] image: A black RÖNNINGE chair in the dining room\n                [4-1298] listitem\n                  [4-1300] link: Contract grade dining tables Close-up of a black LISABO table with food, water, CHOKLADHAJ table organiser and a magazine on top.\n                    [4-1301] div\n                      [4-1308] StaticText: Contract grade dining tables\n                      [4-1315] image: Close-up of a black LISABO table with food, water, CHOKLADHAJ table organiser and a magazine on top.\n                [4-1316] listitem\n                  [4-1318] link: Explore all contract grade furniture Tables and chairs\n                    [4-1319] div\n                      [4-1326] StaticText: Explore all contract grade furniture\n                      [4-1333] image: Tables and chairs\n          [4-1347] div\n            [4-1348] div\n              [4-1349] div\n                [4-1350] heading: Bring playful functionality home with IKEA PS 2026\n                [4-1353] paragraph\n                  [4-1354] StaticText: With a focus on Scandinavian design, the collection blends form, function and quality at a price that says good design should be for everyone. Simple but never boring, it’s the playful details that make everyday life just a bit more joyful.\n              [4-1356] link: Shop the collection\n            [4-1362] div\n              [4-1363] link: Skip listing\n              [4-1371] list\n                [4-1372] listitem\n                  [4-1374] span\n                    [4-41] Video\n                    [4-1487] button: Pause video\n                    [4-1496] button: View transcript\n                [4-1506] listitem\n                  [4-1508] div\n                    [4-1509] button: Hide price tags on image 2\n                      [4-1511] image: Light wood table with scattered items, folding chairs and a lamp in a bright room.\n                    [4-1513] list: Products shown on image\n          [4-1558] div\n            [4-1559] heading: Discover our dining furniture series\n            [4-1562] div\n              [4-1563] link: Skip listing\n              [4-1571] scrollable, div\n                [4-1572] listitem\n                  [4-1575] link: A white white/green Tibbleby grey-green VIHALS table and 4 chairs\n                    [4-1577] image: A white white/green Tibbleby grey-green VIHALS table and 4 chairs\n                [4-1584] listitem\n                  [4-1587] link: An oak veneer TONSTAD extendable table\n                    [4-1589] image: An oak veneer TONSTAD extendable table\n                [4-1596] listitem\n                  [4-1599] link: An acacia/black SKOGSTA dining table\n                    [4-1601] image: An acacia/black SKOGSTA dining table\n                [4-1608] listitem\n                  [4-1611] link: An ash veneer LISABO table\n                    [4-1613] image: An ash veneer LISABO table\n                [4-1620] listitem\n                  [4-1623] link: A brown beech/brown beech SKANSNÄS table and 4 chairs\n                    [4-1625] image: A brown beech/brown beech SKANSNÄS table and 4 chairs\n                [4-1632] listitem\n                  [4-1635] link: Tables and surrounding chairs\n                    [4-1637] image: Tables and surrounding chairs\n                [4-1644] listitem\n                  [4-1647] link: Dining table and chairs\n                    [4-1649] image: Dining table and chairs\n                [4-1656] listitem\n                  [4-1659] link: An oak/leather STOCKHOLM 2025 chair in the dining room\n                    [4-1661] image: An oak/leather STOCKHOLM 2025 chair in the dining room\n                [4-1668] listitem\n                  [4-1671] link: A black stained pine HÄGERNÄS table and 4 chairs\n                    [4-1673] image: A black stained pine HÄGERNÄS table and 4 chairs\n          [4-1695] div\n            [4-1696] div\n              [4-1697] div\n                [4-1698] heading: Make room for a table that stands the test of time\n                [4-1701] paragraph\n                  [4-1702] StaticText: Strong, stable and made to handle everything from slow winter Sundays to spring’s first gatherings. When quality matters, the right table makes all the difference.\n              [4-1704] link: Shop all dining sets\n            [4-1710] div\n              [4-1711] link: Skip listing\n              [4-1719] scrollable, div\n                [4-1720] listitem\n                  [4-1722] div\n                    [4-1723] button: Hide price tags on image 1\n                      [4-1725] image: VIHALS chairs and an URBAN junior chair stand at a round VIHALS table on a RIDSTIG rug near a PERJOHAN stool with storage.\n                    [4-1727] list: Products shown on image\n                [4-1798] listitem\n                  [4-1800] div\n                    [4-1801] button: Hide price tags on image 2\n                      [4-1803] image: A mixed colours MÅLA fluorescent/glitter paint in the living room\n                    [4-1805] list: Products shown on image\n                [4-1813] listitem\n                  [4-1815] div\n                    [4-1816] button: Hide price tags on image 3\n                      [4-1818] image: A bright green ÄRTBUSKE vase/watering can in the living room\n                    [4-1820] list: Products shown on image\n          [4-1971] div\n            [4-1972] link: Skip listing\n            [4-1980] scrollable, div\n              [4-1981] listitem\n                [4-1982] div\n                  [4-1985] link: SKOGSTA 6-seat dining set with sturdy acacia table and dark chairs. SKOGSTA / SKOGSTA Table and 6 chairs, acacia/black, 92 1/2 \"\n                    [4-1986] image: SKOGSTA 6-seat dining set with sturdy acacia table and dark chairs.\n                    [4-1987] image: SKOGSTA / SKOGSTA Table and 6 chairs, acacia/black, 92 1/2 \"\n                  [4-1990] div\n                    [4-1992] heading: SKOGSTA / SKOGSTA, Table and 6 chairs, acacia/black, 92 1/2 \" Table and 6 chairs, acacia/black, 92 1/2 \"\n                      [4-1994] link: SKOGSTA / SKOGSTA, Table and 6 chairs, acacia/black, 92 1/2 \"\n                        [4-1997] StaticText: SKOGSTA / SKOGSTA\n                      [4-1999] StaticText: Table and 6 chairs, acacia/black, 92 1/2 \"\n                    [4-2015] StaticText: Price $ 1069.99\n                  [4-2016] button: Review: 4.7 out of 5 stars. Total reviews: (23)\n                    [4-2021] StaticText: Review: 4.7 out of 5 stars. Total reviews:\n                    [4-2022] span\n                      [4-2024] StaticText: (\n                      [4-2025] StaticText: 23\n                      [4-2026] StaticText: )\n                  [4-2027] div\n                    [4-2028] button: Add \"SKOGSTA / SKOGSTA Table and 6 chairs\" to cart\n                    [4-2037] button: Save \"SKOGSTA / SKOGSTA Table and 6 chairs\" to shopping list\n              [4-2045] listitem\n                [4-2046] div\n                  [4-2047] div\n                    [4-2049] paragraph\n                      [4-2050] StaticText: Best seller\n                    [4-2051] link: HÄGERNÄS light brown wooden dining set includes rectangular table and four matching chairs, perfect for small spaces. Rustic wood dining table with chairs, green walls, cushions, cloth runner, dried flowers.\n                      [4-2052] image: HÄGERNÄS light brown wooden dining set includes rectangular table and four matching chairs, perfect for small spaces.\n                      [4-2053] image: Rustic wood dining table with chairs, green walls, cushions, cloth runner, dried flowers.\n                  [4-2056] div\n                    [4-2058] heading: HÄGERNÄS, Table and 4 chairs, antique stain pine Table and 4 chairs, antique stain pine\n                      [4-2060] link: HÄGERNÄS, Table and 4 chairs, antique stain pine\n                        [4-2063] StaticText: HÄGERNÄS\n                      [4-2065] StaticText: Table and 4 chairs, antique stain pine\n                    [4-2081] StaticText: Price $ 259.99\n                  [4-2082] button: Review: 4.6 out of 5 stars. Total reviews: (459)\n                    [4-2087] StaticText: Review: 4.6 out of 5 stars. Total reviews:\n                    [4-2088] span\n                      [4-2090] StaticText: (\n                      [4-2091] StaticText: 459\n                      [4-2092] StaticText: )\n                  [4-2093] div\n                    [4-2094] button: Add \"HÄGERNÄS Table and 4 chairs\" to cart\n                    [4-2103] button: Save \"HÄGERNÄS Table and 4 chairs\" to shopping list\n              [4-2111] listitem\n                [4-2112] div\n                  [4-2115] link: TONSTAD / TONSTAD Table and 4 chairs, brown oak veneer/brown oak effect Fridtuna light beige, 59x31 1/2 \" TONSTAD / TONSTAD Table and 4 chairs, brown oak veneer/brown oak effect Fridtuna light beige, 59x31 1/2 \"\n                    [4-2116] image: TONSTAD / TONSTAD Table and 4 chairs, brown oak veneer/brown oak effect Fridtuna light beige, 59x31 1/2 \"\n                    [4-2117] image: TONSTAD / TONSTAD Table and 4 chairs, brown oak veneer/brown oak effect Fridtuna light beige, 59x31 1/2 \"\n                  [4-2120] div\n                    [4-2122] heading: TONSTAD / TONSTAD, Table and 4 chairs, brown oak veneer/brown oak effect Fridtuna light beige, 59x31 1/2 \" Table and 4 chairs, brown oak veneer/brown oak effect Fridtuna light beige, 59x31 1/2 \"\n                      [4-2124] link: TONSTAD / TONSTAD, Table and 4 chairs, brown oak veneer/brown oak effect Fridtuna light beige, 59x31 1/2 \"\n                        [4-2127] StaticText: TONSTAD / TONSTAD\n                      [4-2129] StaticText: Table and 4 chairs, brown oak veneer/brown oak effect Fridtuna light beige, 59x31 1/2 \"\n                    [4-2145] StaticText: Price $ 579.99\n                  [4-2146] button: Review: 5 out of 5 stars. Total reviews: (2)\n                    [4-2151] StaticText: Review: 5 out of 5 stars. Total reviews:\n                    [4-2152] span\n                      [4-2154] StaticText: (\n                      [4-2155] StaticText: 2\n                      [4-2156] StaticText: )\n                  [4-2157] div\n                    [4-2158] button: Add \"TONSTAD / TONSTAD Table and 4 chairs\" to cart\n                    [4-2167] button: Save \"TONSTAD / TONSTAD Table and 4 chairs\" to shopping list\n              [4-2175] listitem\n                [4-2176] div\n                  [4-2179] link: A light wooden oval dining table with six matching chairs, featuring brown leather seats and a sleek, minimalist design. Modern dining room with oak table & chairs, white light, colourful rug.\n                    [4-2180] image: A light wooden oval dining table with six matching chairs, featuring brown leather seats and a sleek, minimalist design.\n                    [4-2181] image: Modern dining room with oak table & chairs, white light, colourful rug.\n                  [4-2184] div\n                    [4-2186] heading: STOCKHOLM 2025 / STOCKHOLM 2025, Table and 6 chairs, oak veneer/oak leather, 90 1/2x35 3/8 \" Table and 6 chairs, oak veneer/oak leather, 90 1/2x35 3/8 \"\n                      [4-2188] link: STOCKHOLM 2025 / STOCKHOLM 2025, Table and 6 chairs, oak veneer/oak leather, 90 1/2x35 3/8 \"\n                        [4-2191] StaticText: STOCKHOLM 2025 / STOCKHOLM 2025\n                      [4-2193] StaticText: Table and 6 chairs, oak veneer/oak leather, 90 1/2x35 3/8 \"\n                    [4-2209] StaticText: Price $ 2379.99\n                  [4-2210] button: Review: 5 out of 5 stars. Total reviews: (1)\n                    [4-2215] StaticText: Review: 5 out of 5 stars. Total reviews:\n                    [4-2216] span\n                      [4-2218] StaticText: (\n                      [4-2219] StaticText: 1\n                      [4-2220] StaticText: )\n                  [4-2226] StaticText: Contract grade\n                  [4-2227] div\n                    [4-2228] button: Add \"STOCKHOLM 2025 / STOCKHOLM 2025 Table and 6 chairs\" to cart\n                    [4-2237] button: Save \"STOCKHOLM 2025 / STOCKHOLM 2025 Table and 6 chairs\" to shopping list\n              [4-2245] listitem\n                [4-2246] div\n                  [4-2249] link: SKANSNÄS: 4-seat brown wooden dining set, round, scandinavian style. SKANSNÄS dining set, extendable & social\n                    [4-2250] image: SKANSNÄS: 4-seat brown wooden dining set, round, scandinavian style.\n                    [4-2251] image: SKANSNÄS dining set, extendable & social\n                  [4-2254] div\n                    [4-2256] heading: SKANSNÄS / SKANSNÄS, Table and 4 chairs, brown beech/brown beech, 45 1/4/66 7/8 \" Table and 4 chairs, brown beech/brown beech, 45 1/4/66 7/8 \"\n                      [4-2258] link: SKANSNÄS / SKANSNÄS, Table and 4 chairs, brown beech/brown beech, 45 1/4/66 7/8 \"\n                        [4-2261] StaticText: SKANSNÄS / SKANSNÄS\n                      [4-2263] StaticText: Table and 4 chairs, brown beech/brown beech, 45 1/4/66 7/8 \"\n                    [4-2279] StaticText: Price $ 1319.99\n                  [4-2280] button: Review: 3.8 out of 5 stars. Total reviews: (5)\n                    [4-2285] StaticText: Review: 3.8 out of 5 stars. Total reviews:\n                    [4-2286] span\n                      [4-2288] StaticText: (\n                      [4-2289] StaticText: 5\n                      [4-2290] StaticText: )\n                  [4-2291] div\n                    [4-2292] button: Add \"SKANSNÄS / SKANSNÄS Table and 4 chairs\" to cart\n                    [4-2301] button: Save \"SKANSNÄS / SKANSNÄS Table and 4 chairs\" to shopping list\n              [4-2309] listitem\n                [4-2310] div\n                  [4-2313] link: TONSTAD / TONSTAD Table and 6 chairs, oak veneer/oak effect Fridtuna light beige, 78 3/4x33 1/2 \" TONSTAD / TONSTAD Table and 6 chairs, oak veneer/oak effect Fridtuna light beige, 78 3/4x33 1/2 \"\n                    [4-2314] image: TONSTAD / TONSTAD Table and 6 chairs, oak veneer/oak effect Fridtuna light beige, 78 3/4x33 1/2 \"\n                    [4-2315] image: TONSTAD / TONSTAD Table and 6 chairs, oak veneer/oak effect Fridtuna light beige, 78 3/4x33 1/2 \"\n                  [4-2318] div\n                    [4-2320] heading: TONSTAD / TONSTAD, Table and 6 chairs, oak veneer/oak effect Fridtuna light beige, 78 3/4x33 1/2 \" Table and 6 chairs, oak veneer/oak effect Fridtuna light beige, 78 3/4x33 1/2 \"\n                      [4-2322] link: TONSTAD / TONSTAD, Table and 6 chairs, oak veneer/oak effect Fridtuna light beige, 78 3/4x33 1/2 \"\n                        [4-2325] StaticText: TONSTAD / TONSTAD\n                      [4-2327] StaticText: Table and 6 chairs, oak veneer/oak effect Fridtuna light beige, 78 3/4x33 1/2 \"\n                    [4-2343] StaticText: Price $ 849.99\n                  [4-2344] button: Review: 5 out of 5 stars. Total reviews: (1)\n                    [4-2349] StaticText: Review: 5 out of 5 stars. Total reviews:\n                    [4-2350] span\n                      [4-2352] StaticText: (\n                      [4-2353] StaticText: 1\n                      [4-2354] StaticText: )\n                  [4-2355] div\n                    [4-2356] button: Add \"TONSTAD / TONSTAD Table and 6 chairs\" to cart\n                    [4-2365] button: Save \"TONSTAD / TONSTAD Table and 6 chairs\" to shopping list\n              [4-2373] listitem\n                [4-2374] div\n                  [4-2377] link: LISABO dining set with light wooden table and four matching chairs, designed with natural wood finish, rectangular tabletop, and angular chair design. LISABO / LISABO Table and 4 chairs, ash veneer/ash, 55 1/8x30 3/4 \"\n                    [4-2378] image: LISABO dining set with light wooden table and four matching chairs, designed with natural wood finish, rectangular tabletop, and angular chair design.\n                    [4-2379] image: LISABO / LISABO Table and 4 chairs, ash veneer/ash, 55 1/8x30 3/4 \"\n                  [4-2382] div\n                    [4-2384] heading: LISABO / LISABO, Table and 4 chairs, ash veneer/ash, 55 1/8x30 3/4 \" Table and 4 chairs, ash veneer/ash, 55 1/8x30 3/4 \"\n                      [4-2386] link: LISABO / LISABO, Table and 4 chairs, ash veneer/ash, 55 1/8x30 3/4 \"\n                        [4-2389] StaticText: LISABO / LISABO\n                      [4-2391] StaticText: Table and 4 chairs, ash veneer/ash, 55 1/8x30 3/4 \"\n                    [4-2407] StaticText: Price $ 619.99\n                  [4-2408] button: Review: 4.8 out of 5 stars. Total reviews: (71)\n                    [4-2413] StaticText: Review: 4.8 out of 5 stars. Total reviews:\n                    [4-2414] span\n                      [4-2416] StaticText: (\n                      [4-2417] StaticText: 71\n                      [4-2418] StaticText: )\n                  [4-2419] div\n                    [4-2420] button: Add \"LISABO / LISABO Table and 4 chairs\" to cart\n                    [4-2429] button: Save \"LISABO / LISABO Table and 4 chairs\" to shopping list\n              [4-2437] listitem\n              [4-2448] listitem\n          [4-2476] div\n            [4-2477] heading: Shop dining table sets by size\n            [4-2480] div\n              [4-2481] link: Skip listing\n              [4-2489] scrollable, div\n                [4-2490] listitem\n                  [4-2493] link: A white IKEA NÄSINGE table and two matching chairs in white and grey soft seat in a sunny white kitchen.\n                    [4-2495] image: A white IKEA NÄSINGE table and two matching chairs in white and grey soft seat in a sunny white kitchen.\n                [4-2502] listitem\n                  [4-2505] link: An oak veneer TONSTAD table\n                    [4-2507] image: An oak veneer TONSTAD table\n                [4-2514] listitem\n                  [4-2517] link: A black and brown IKEA ÅLHULT dining table and six chairs in a dining room, with a jute rug and a large paper-sphere ceiling pendant lamp above.\n                    [4-2519] image: A black and brown IKEA ÅLHULT dining table and six chairs in a dining room, with a jute rug and a large paper-sphere ceiling pendant lamp above.\n                [4-2526] listitem\n                  [4-2529] link: A white/Ramna light grey BERGMUND table and 8 chairs\n                    [4-2531] image: A white/Ramna light grey BERGMUND table and 8 chairs\n                [4-2538] listitem\n                  [4-2541] link: Two people are pulling out a round white ROSENTORP extendable table to make it bigger with the integrated butterfly leaf.\n                    [4-2543] image: Two people are pulling out a round white ROSENTORP extendable table to make it bigger with the integrated butterfly leaf.\n          [4-2565] div\n            [4-2566] div\n              [4-2567] div\n                [4-2568] heading: Best sellers for better meals\n                [4-2570] paragraph\n                  [4-2571] StaticText: These dining favorites bring people together, whether it’s pancakes at sunrise or pasta at midnight.\n              [4-2572] link: Shop best selling dining furniture\n            [4-2579] div\n              [4-2580] link: Skip listing\n              [4-2588] list\n                [4-2589] listitem\n                  [4-2591] link: Best selling chairs A black/Orrsta light grey BERGMUND chair\n                    [4-2592] div\n                      [4-2599] StaticText: Best selling chairs\n                      [4-2606] image: A black/Orrsta light grey BERGMUND chair\n                [4-2607] listitem\n                  [4-2609] link: Best selling tables An acacia/black SKOGSTA dining table\n                    [4-2610] div\n                      [4-2617] StaticText: Best selling tables\n                      [4-2624] image: An acacia/black SKOGSTA dining table\n                [4-2625] listitem\n                  [4-2627] link: Best selling bar furniture A white kitchen island with a worktop in a brown walnut effect is placed in a kitchen with high gloss RINGHULT fronts.\n                    [4-2628] div\n                      [4-2635] StaticText: Best selling bar furniture\n                      [4-2642] image: A white kitchen island with a worktop in a brown walnut effect is placed in a kitchen with high gloss RINGHULT fronts.\n          [4-2661] div\n            [4-2664] link: Learn more\n              [4-2666] image: Learn more\n            [4-2668] div\n              [4-2669] heading: Design your dream dining space with 0% interest\n              [4-2671] div\n                [4-2673] paragraph\n                  [4-2674] StaticText: Create the dining experience you’ve always wanted. With the IKEA Projekt Credit Card, you can bring home new tables and chairs today. Once approved, get 0% interest for 6, 12, 24 months. After that, purchase APR of 21.99%. On purchases of $500 or more for 6 months, $1,000 or more for 12 months or $2,500 or more for 24 months made with your IKEA Projekt Credit Card.^\n                [4-2675] link: Learn more\n          [4-2687] div\n            [4-2690] heading: More ways to shop\n            [4-2694] div\n              [4-2695] link: Skip listing\n              [4-2703] list\n                [4-2704] listitem\n                  [4-2706] link: Best sellers Ever wonder what our top-selling tables and chairs are? From classics to this year's most popular products, you can find our best sellers here. A counter height/white ROSENTORP bar stool with backrest\n                    [4-2707] div\n                      [4-2712] div\n                        [4-2714] StaticText: Best sellers\n                        [4-2716] StaticText: Ever wonder what our top-selling tables and chairs are? From classics to this year's most popular products, you can find our best sellers here.\n                      [4-2723] image: A counter height/white ROSENTORP bar stool with backrest\n                [4-2724] listitem\n                  [4-2726] link: New Make way for something new! At IKEA, new products arrive all year round. Get inspired by our new tables and chairs that are sure to impress. Blue wooden dining table with four matching chairs and a small vase centerpiece on a patterned area rug in a bright, sunlit dining room.\n                    [4-2727] div\n                      [4-2732] div\n                        [4-2734] StaticText: New\n                        [4-2736] StaticText: Make way for something new! At IKEA, new products arrive all year round. Get inspired by our new tables and chairs that are sure to impress.\n                      [4-2743] image: Blue wooden dining table with four matching chairs and a small vase centerpiece on a patterned area rug in a bright, sunlit dining room.\n                [4-2744] listitem\n                  [4-2746] link: Last chance Don't miss out on our last chance items! These products are going fast and won't be restocked, so now is the time to grab them before they're gone for good. A counter height black/Orrsta light grey BERGMUND bar stool with backrest\n                    [4-2747] div\n                      [4-2752] div\n                        [4-2754] StaticText: Last chance\n                        [4-2756] StaticText: Don't miss out on our last chance items! These products are going fast and won't be restocked, so now is the time to grab them before they're gone for good.\n                      [4-2763] image: A counter height black/Orrsta light grey BERGMUND bar stool with backrest\n          [4-2774] div\n            [4-2777] heading: Want to make the most of your dining area?\n            [4-2780] link: Find top tips to get the comfort, look and atmosphere you want A light beech/veneer SKANSNÄS round extendable table and SKANSNÄS light beech chairs stand in a room with a wooden floor.\n              [4-2781] div\n                [4-2788] StaticText: Find top tips to get the comfort, look and atmosphere you want\n                [4-2795] image: A light beech/veneer SKANSNÄS round extendable table and SKANSNÄS light beech chairs stand in a room with a wooden floor.\n          [4-2801] div\n            [4-2802] div\n              [4-2805] heading: Delivery\n              [4-2807] paragraph\n                [4-2808] StaticText: Shop from home and get it delivered to your front door.\n              [4-2809] link: Learn more\n            [4-2811] div\n              [4-2814] heading: Taskrabbit Assembly\n              [4-2816] paragraph\n                [4-2817] StaticText: Find flexible and affordable ways to get your to-dos done.\n              [4-2818] link: Learn more\n            [4-2820] div\n              [4-2823] heading: Financing options\n              [4-2825] paragraph\n                [4-2826] StaticText: Finance your dream home with our credit cards.\n              [4-2827] link: Learn more\n            [4-2829] div\n              [4-2833] heading: Planning tools\n              [4-2835] paragraph\n                [4-2836] StaticText: Create your perfect storage and home furnishing solutions\n              [4-2837] link: Learn more\n        [4-2841] heading: Recommended for you\n      [4-2846] div\n        [4-2847] complementary\n          [4-2848] paragraph\n            [4-2849] StaticText: Tell us about your experience!\n          [4-2850] button: We'd love your feedback\n        [4-2924] contentinfo\n          [4-2925] div\n            [4-2926] heading: Footer\n            [4-2928] div\n              [4-2929] div\n                [4-2930] div\n                  [4-2931] heading: Join IKEA Family\n                  [4-2934] paragraph\n                    [4-2935] StaticText: Bring your ideas to life with special discounts, inspiration, and lots of good things in store. It's all free.\n                  [4-2936] paragraph\n                    [4-2937] link: See more\n                  [4-2939] link: Join or log in\n                [4-2944] div\n                  [4-2945] heading: Join IKEA Business Network\n                  [4-2948] paragraph\n                    [4-2949] StaticText: Enjoy a number of unique benefits to create a better life at work.\n                  [4-2950] paragraph\n                    [4-2951] link: See more\n                  [4-2953] link: Join or log in\n              [4-2959] list\n                [4-2960] listitem\n                  [4-2961] heading: Help\n                  [4-2964] list: Help Customer service FAQ My orders Contact Us Product Recalls Return Policy Warranties Feedback\n                    [4-2965] listitem\n                      [4-2966] link: Customer service\n                    [4-2968] listitem\n                      [4-2969] link: FAQ\n                    [4-2971] listitem\n                      [4-2972] link: My orders\n                    [4-2974] listitem\n                      [4-2975] link: Contact Us\n                    [4-2977] listitem\n                      [4-2978] link: Product Recalls\n                    [4-2980] listitem\n                      [4-2981] link: Return Policy\n                    [4-2983] listitem\n                      [4-2984] link: Warranties\n                    [4-2986] listitem\n                      [4-2987] link: Feedback\n                [4-2989] listitem\n                  [4-2990] heading: Shop & Learn\n                  [4-2993] list: Shop & Learn Find a Location IKEA Services IKEA Family IKEA for Business IKEA Planning Tools IKEA Brochures Buying guides Payment options Gift Cards IKEA Credit Card Management IKEA Credit Cards Cash App Afterpay Explore the New IKEA App\n                    [4-2994] listitem\n                      [4-2995] link: Find a Location\n                    [4-2997] listitem\n                      [4-2998] link: IKEA Services\n                    [4-3000] listitem\n                      [4-3001] link: IKEA Family\n                    [4-3003] listitem\n                      [4-3004] link: IKEA for Business\n                    [4-3006] listitem\n                      [4-3007] link: IKEA Planning Tools\n                    [4-3009] listitem\n                      [4-3010] link: IKEA Brochures\n                    [4-3012] listitem\n                      [4-3013] link: Buying guides\n                    [4-3015] listitem\n                      [4-3016] link: Payment options\n                    [4-3018] listitem\n                      [4-3019] link: Gift Cards\n                    [4-3021] listitem\n                      [4-3022] link: IKEA Credit Card Management\n                    [4-3024] listitem\n                      [4-3025] link: IKEA Credit Cards\n                    [4-3027] listitem\n                      [4-3028] link: Cash App Afterpay\n                    [4-3030] listitem\n                      [4-3031] link: Explore the New IKEA App\n                [4-3033] listitem\n                  [4-3034] heading: About IKEA\n                  [4-3037] list: About IKEA This is IKEA Careers Newsroom Life at Home IKEA Foundation Safety at Home\n                    [4-3038] listitem\n                      [4-3039] link: This is IKEA\n                    [4-3041] listitem\n                      [4-3042] link: Careers\n                    [4-3044] listitem\n                      [4-3045] link: Newsroom\n                    [4-3047] listitem\n                      [4-3048] link: Life at Home\n                    [4-3050] listitem\n                      [4-3051] link: IKEA Foundation\n                    [4-3053] listitem\n                      [4-3054] link: Safety at Home\n                [4-3056] listitem\n                  [4-3057] heading: Legal\n                  [4-3060] list: Legal Privacy & Security Privacy policy Terms and conditions IKEA Children’s Product Registration Accessibility IKEA SMÅLAND Privacy notice\n                    [4-3061] listitem\n                      [4-3062] link: Privacy & Security\n                    [4-3064] listitem\n                      [4-3065] link: Privacy policy\n                    [4-3067] listitem\n                      [4-3068] link: Terms and conditions\n                    [4-3070] listitem\n                      [4-3071] link: IKEA Children’s Product Registration\n                    [4-3073] listitem\n                      [4-3074] link: Accessibility\n                    [4-3076] listitem\n                      [4-3077] link: IKEA SMÅLAND Privacy notice\n              [4-3079] div\n                [4-3080] div\n                  [4-3081] list\n                    [4-3082] listitem\n                      [4-3083] link: Follow IKEA on Facebook\n                    [4-3086] listitem\n                      [4-3087] link: Follow IKEA on Instagram\n                    [4-3090] listitem\n                      [4-3091] link: Follow IKEA on Pinterest\n                    [4-3094] listitem\n                      [4-3095] link: Follow IKEA on X\n                    [4-3098] listitem\n                      [4-3099] link: Follow IKEA on Youtube\n                  [4-3102] list\n                    [4-3103] listitem\n                      [4-3105] image: Visa\n                    [4-3106] listitem\n                      [4-3108] image: Mastercard\n                    [4-3109] listitem\n                      [4-3111] image: Discover\n                    [4-3112] listitem\n                      [4-3114] image: Amex\n                    [4-3115] listitem\n                      [4-3117] image: IKEA credit card\n                    [4-3118] listitem\n                      [4-3120] image: Paypal\n                    [4-3121] listitem\n                      [4-3123] image: Apple Pay\n                    [4-3124] listitem\n                      [4-3126] image: Google Pay\n                    [4-3127] listitem\n                      [4-3129] image: Slope\n                    [4-3130] listitem\n                      [4-3132] image: Union Pay\n                    [4-3133] listitem\n                      [4-3135] image: JCB\n                    [4-3136] listitem\n                      [4-3138] image: IKEA gift card\n                    [4-3139] listitem\n                      [4-3141] image: Cash App Afterpay\n                [4-3142] div\n                  [4-3144] button: Cookie settings\n                  [4-3155] button: Change language or country/region, current language is English\n                    [4-3160] span\n                      [4-3165] StaticText: US\n                      [4-3167] StaticText: English\n            [4-3168] div\n              [4-3170] paragraph\n                [4-3171] StaticText: © Inter IKEA Systems B.V. 1999-2026\n              [4-3173] list\n                [4-3174] listitem\n                  [4-3175] link: Cookie policy\n                [4-3177] listitem\n                  [4-3178] link: Privacy policy\n                [4-3180] listitem\n                  [4-3181] link: California Notice at Collection\n      [4-3276] region: Cookie consent banner\n        [4-3277] dialog: Privacy\n          [4-3280] div\n            [4-3285] div\n              [4-3286] StaticText: IKEA US and our digital partners use cookies on this site. Some are strictly necessary to run the site and others are used for measuring site usage, enabling personalization and for advertising, marketing, and social media. View our\n              [4-3287] link: Privacy Policy\n              [4-3289] StaticText: ,\n              [4-3290] link: California Notice at Collection\n              [4-3292] StaticText: , and\n              [4-3293] link: Cookie Policy\n              [4-3295] StaticText: for more information.\n            [4-3297] div\n              [4-3298] button: Your privacy choices, Opens the preference center dialog\n                [4-3299] StaticText: Your privacy choices\n              [4-3300] button: Ok"
+              }
+            ]
+          },
+          {
+            "type": "function_call",
+            "call_id": "call_z99Mcg9hcYx3ioEvwN2XOXbP",
+            "name": "act",
+            "arguments": "{\"action\":\"click the Ok button in the cookie consent banner\"}",
+            "id": "fc_06192001663f95a0016a70622c47c481948b90c6cabf90110e"
+          },
+          {
+            "type": "function_call_output",
+            "call_id": "call_z99Mcg9hcYx3ioEvwN2XOXbP",
+            "output": "{\"success\":true,\"action\":\"Ok button in the cookie consent banner dialog. Clicking this will accept the cookie consent.\",\"playwrightArguments\":{\"selector\":\"xpath=/html[1]/body[1]/div[12]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/button[2]\",\"description\":\"Ok button in the cookie consent banner dialog. Clicking this will accept the cookie consent.\",\"method\":\"click\",\"arguments\":[]}}"
+          }
+        ],
+        "temperature": null,
+        "top_p": null,
+        "max_output_tokens": null,
+        "conversation": null,
+        "max_tool_calls": null,
+        "metadata": null,
+        "parallel_tool_calls": null,
+        "previous_response_id": null,
+        "store": false,
+        "user": null,
+        "instructions": null,
+        "service_tier": null,
+        "include": null,
+        "prompt_cache_key": null,
+        "prompt_cache_options": null,
+        "prompt_cache_retention": null,
+        "safety_identifier": null,
+        "top_logprobs": null,
+        "truncation": null,
+        "tools": [
+          {
+            "type": "function",
+            "name": "act",
+            "description": "Perform an action on the page (click, type). Provide a short, specific phrase that mentions the element type.",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "description": "Describe what to click or type, e.g. \"click the Login button\" or \"type \"John\" into the first name input\""
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "ariaTree",
+            "description": "gets the accessibility (ARIA) hybrid tree text for the current page. use this to understand structure and content.",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "extract",
+            "description": "Extract structured data from the current page based on a provided schema.\n    \n    USAGE GUIDELINES:\n    - Keep schemas MINIMAL - only include fields essential for the task\n    - IMPORTANT: only use this if explicitly asked for structured output. In most scenarios, you should use the aria tree tool over this.\n    - For URL fields, use format: \"url\"\n    \n    EXAMPLES:\n    1. Extract a single value:\n       instruction: \"extract the product price\"\n       schema: { type: \"object\", properties: { price: { type: \"number\" } } }\n    \n    2. Extract multiple fields:\n       instruction: \"extract product name and price\"\n       schema: { type: \"object\", properties: { name: { type: \"string\" }, price: { type: \"number\" } } }\n    \n    3. Extract arrays:\n       instruction: \"extract all product names and prices\"\n       schema: { type: \"object\", properties: { products: { type: \"array\", items: { type: \"object\", properties: { name: { type: \"string\" }, price: { type: \"number\" } } } } } }\n    \n    4. Extract a URL:\n       instruction: \"extract the link\"\n       schema: { type: \"object\", properties: { url: { type: \"string\", format: \"url\" } } }",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "instruction": {
+                  "type": "string"
+                },
+                "schema": {
+                  "description": "JSON Schema object describing the structure to extract",
+                  "type": "object",
+                  "properties": "[MaxDepth]",
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "instruction"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "fillForm",
+            "description": "FORM FILL - MULTI-FIELD INPUT TOOL\nFill 2+ form inputs/textareas at once. Each action MUST include the exact text to type and the target field, e.g. \"type john@example.com into the email field\".",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": "[MaxDepth]"
+                }
+              },
+              "required": [
+                "fields"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "goto",
+            "description": "Navigate to a specific URL",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "The URL to navigate to"
+                }
+              },
+              "required": [
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "keys",
+            "description": "Send keyboard input to the page without targeting a specific element. Unlike the type tool which clicks then types into coordinates, this sends keystrokes directly to wherever focus currently is.\n\nUse method=\"type\" to enter text into the currently focused element. Preferred when: input is already focused, text needs to flow across multiple fields (e.g., verification codes)\n\nUse method=\"press\" for navigation keys (Enter, Tab, Escape, Backspace, arrows) and keyboard shortcuts (Cmd+A, Ctrl+C, Shift+Tab).",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "enum": "[MaxDepth]"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The text to type, or the key/combo to press (Enter, Tab, Cmd+A)"
+                },
+                "repeat": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "method",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "navback",
+            "description": "Navigate back to the previous page",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "reasoningText": {
+                  "type": "string",
+                  "description": "Why you're going back"
+                }
+              },
+              "required": [
+                "reasoningText"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "screenshot",
+            "description": "Takes a screenshot (PNG) of the current page. Use this to quickly verify page state.",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "scroll",
+            "description": "Scroll the page up or down by a percentage of the viewport height. Default is 80%, and what should be typically used for general page scrolling",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "direction": {
+                  "type": "string",
+                  "enum": "[MaxDepth]"
+                },
+                "percentage": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 200
+                }
+              },
+              "required": [
+                "direction"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "think",
+            "description": "Use this tool to think through complex problems or plan a sequence of steps. This is for internal reasoning only and doesn't perform any actions. Use this to:\n\n1. Plan a multi-step approach before taking action\n2. Break down complex tasks\n3. Reason through edge cases\n4. Evaluate options when you're unsure what to do next\n\nThe output is only visible to you; use it to track your own reasoning process.",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "reasoning": {
+                  "type": "string",
+                  "description": "Your step-by-step reasoning or planning process. Be as detailed as needed."
+                }
+              },
+              "required": [
+                "reasoning"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "name": "wait",
+            "description": "Wait for a specified time",
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "timeMs": {
+                  "type": "number",
+                  "description": "Time in milliseconds"
+                }
+              },
+              "required": [
+                "timeMs"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          }
+        ],
+        "tool_choice": "auto"
+      }
+    },
+    "response": {
+      "id": "resp_06192001663f95a0016a7062302ab08194a3f060468c97e8dc",
+      "timestamp": {},
+      "modelId": "gpt-4.1-2025-04-14",
+      "headers": {
+        "access-control-expose-headers": "X-Request-ID, CF-Ray, CF-Ray",
+        "alt-svc": "h3=\":443\"; ma=86400",
+        "cf-cache-status": "DYNAMIC",
+        "cf-ray": "a2545d4bbb143647-FRA",
+        "connection": "keep-alive",
+        "content-encoding": "br",
+        "content-type": "application/json",
+        "date": "Mon, 03 Aug 2026 09:41:05 GMT",
+        "openai-organization": "user-kabmfjag6frqhbge4z4eil6j",
+        "openai-processing-ms": "875",
+        "openai-project": "proj_hZBwfBH7ZCYnn1TmcsFJOcIY",
+        "openai-version": "2020-10-01",
+        "server": "cloudflare",
+        "set-cookie": "__cf_bm=5.Tld4okIN5F9CBFsIlpXA.eXVeH9qQFdziSwxV4jvY-1785750063.955042-1.0.1.1-JiMdBVUPA3Kzhp_KkR9g.I9R80bAche7quytArnKiLUJMTCsqzDIUjTR45EFWAcfsbZxv4KptHzUCf8gvnt0JbPLWhcD.7dlEs._oQyx3gxjL.keIJZ6VjdPQilHbu0b; HttpOnly; SameSite=None; Secure; Path=/; Domain=api.openai.com; Expires=Mon, 03 Aug 2026 10:11:04 GMT",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "transfer-encoding": "chunked",
+        "x-content-type-options": "nosniff",
+        "x-ratelimit-limit-requests": "10000",
+        "x-ratelimit-limit-tokens": "30000000",
+        "x-ratelimit-remaining-requests": "9999",
+        "x-ratelimit-remaining-tokens": "30000000",
+        "x-ratelimit-reset-requests": "6ms",
+        "x-ratelimit-reset-tokens": "0s",
+        "x-request-id": "req_ef0a0914725547f6ba5fdd942ced00c6"
+      },
+      "body": {
+        "id": "resp_06192001663f95a0016a7062302ab08194a3f060468c97e8dc",
+        "object": "response",
+        "created_at": 1785750064,
+        "status": "completed",
+        "background": false,
+        "billing": {
+          "payer": "developer"
+        },
+        "completed_at": 1785750064,
+        "error": null,
+        "frequency_penalty": 0,
+        "incomplete_details": null,
+        "instructions": null,
+        "max_output_tokens": null,
+        "max_tool_calls": null,
+        "model": "gpt-4.1-2025-04-14",
+        "moderation": null,
+        "output": [
+          {
+            "id": "fc_06192001663f95a0016a706230b2648194aca2f64a56945c5f",
+            "type": "function_call",
+            "status": "completed",
+            "arguments": "{\"url\":\"https://www.ikea.com/us/en/cat/office-desks-20652/\"}",
+            "call_id": "call_kyIxeCesaDs8eERFNndVE1Ws",
+            "name": "goto"
+          }
+        ],
+        "parallel_tool_calls": true,
+        "presence_penalty": 0,
+        "previous_response_id": null,
+        "prompt_cache_key": null,
+        "prompt_cache_retention": "in_memory",
+        "reasoning": {
+          "context": null,
+          "effort": null,
+          "summary": null
+        },
+        "safety_identifier": null,
+        "service_tier": "default",
+        "store": false,
+        "temperature": 1,
+        "text": {
+          "format": {
+            "type": "text"
+          },
+          "verbosity": "medium"
+        },
+        "tool_choice": "auto",
+        "tool_usage": {
+          "image_gen": {
+            "input_tokens": 0,
+            "input_tokens_details": {
+              "image_tokens": 0,
+              "text_tokens": 0
+            },
+            "output_tokens": 0,
+            "output_tokens_details": {
+              "image_tokens": 0,
+              "text_tokens": 0
+            },
+            "total_tokens": 0
+          },
+          "web_search": {
+            "num_requests": 0
+          }
+        },
+        "tools": [
+          {
+            "type": "function",
+            "description": "Perform an action on the page (click, type). Provide a short, specific phrase that mentions the element type.",
+            "name": "act",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "description": "Describe what to click or type, e.g. \"click the Login button\" or \"type \"John\" into the first name input\""
+                }
+              },
+              "required": [
+                "action"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "gets the accessibility (ARIA) hybrid tree text for the current page. use this to understand structure and content.",
+            "name": "ariaTree",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "Extract structured data from the current page based on a provided schema.\n    \n    USAGE GUIDELINES:\n    - Keep schemas MINIMAL - only include fields essential for the task\n    - IMPORTANT: only use this if explicitly asked for structured output. In most scenarios, you should use the aria tree tool over this.\n    - For URL fields, use format: \"url\"\n    \n    EXAMPLES:\n    1. Extract a single value:\n       instruction: \"extract the product price\"\n       schema: { type: \"object\", properties: { price: { type: \"number\" } } }\n    \n    2. Extract multiple fields:\n       instruction: \"extract product name and price\"\n       schema: { type: \"object\", properties: { name: { type: \"string\" }, price: { type: \"number\" } } }\n    \n    3. Extract arrays:\n       instruction: \"extract all product names and prices\"\n       schema: { type: \"object\", properties: { products: { type: \"array\", items: { type: \"object\", properties: { name: { type: \"string\" }, price: { type: \"number\" } } } } } }\n    \n    4. Extract a URL:\n       instruction: \"extract the link\"\n       schema: { type: \"object\", properties: { url: { type: \"string\", format: \"url\" } } }",
+            "name": "extract",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "instruction": {
+                  "type": "string"
+                },
+                "schema": {
+                  "description": "JSON Schema object describing the structure to extract",
+                  "type": "object",
+                  "properties": "[MaxDepth]",
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "instruction"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "FORM FILL - MULTI-FIELD INPUT TOOL\nFill 2+ form inputs/textareas at once. Each action MUST include the exact text to type and the target field, e.g. \"type john@example.com into the email field\".",
+            "name": "fillForm",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "fields": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": "[MaxDepth]"
+                }
+              },
+              "required": [
+                "fields"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "Navigate to a specific URL",
+            "name": "goto",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "description": "The URL to navigate to"
+                }
+              },
+              "required": [
+                "url"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "Send keyboard input to the page without targeting a specific element. Unlike the type tool which clicks then types into coordinates, this sends keystrokes directly to wherever focus currently is.\n\nUse method=\"type\" to enter text into the currently focused element. Preferred when: input is already focused, text needs to flow across multiple fields (e.g., verification codes)\n\nUse method=\"press\" for navigation keys (Enter, Tab, Escape, Backspace, arrows) and keyboard shortcuts (Cmd+A, Ctrl+C, Shift+Tab).",
+            "name": "keys",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "enum": "[MaxDepth]"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The text to type, or the key/combo to press (Enter, Tab, Cmd+A)"
+                },
+                "repeat": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "method",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "Navigate back to the previous page",
+            "name": "navback",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "reasoningText": {
+                  "type": "string",
+                  "description": "Why you're going back"
+                }
+              },
+              "required": [
+                "reasoningText"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "Takes a screenshot (PNG) of the current page. Use this to quickly verify page state.",
+            "name": "screenshot",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "Scroll the page up or down by a percentage of the viewport height. Default is 80%, and what should be typically used for general page scrolling",
+            "name": "scroll",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "direction": {
+                  "type": "string",
+                  "enum": "[MaxDepth]"
+                },
+                "percentage": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 200
+                }
+              },
+              "required": [
+                "direction"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "Use this tool to think through complex problems or plan a sequence of steps. This is for internal reasoning only and doesn't perform any actions. Use this to:\n\n1. Plan a multi-step approach before taking action\n2. Break down complex tasks\n3. Reason through edge cases\n4. Evaluate options when you're unsure what to do next\n\nThe output is only visible to you; use it to track your own reasoning process.",
+            "name": "think",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "reasoning": {
+                  "type": "string",
+                  "description": "Your step-by-step reasoning or planning process. Be as detailed as needed."
+                }
+              },
+              "required": [
+                "reasoning"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          },
+          {
+            "type": "function",
+            "description": "Wait for a specified time",
+            "name": "wait",
+            "output_schema": null,
+            "parameters": {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "type": "object",
+              "properties": {
+                "timeMs": {
+                  "type": "number",
+                  "description": "Time in milliseconds"
+                }
+              },
+              "required": [
+                "timeMs"
+              ],
+              "additionalProperties": false
+            },
+            "strict": false
+          }
+        ],
+        "top_logprobs": 0,
+        "top_p": 1,
+        "truncation": "disabled",
+        "usage": {
+          "input_tokens": 16577,
+          "input_tokens_details": {
+            "cache_write_tokens": 0,
+            "cached_tokens": 16384
+          },
+          "output_tokens": 32,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 16609
+        },
+        "user": null,
+        "metadata": {}
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "toolCallId": "call_RqIh6hoRvjekCDkRJVH0hRTH",
+              "toolName": "goto",
+              "input": {
+                "url": "https://www.ikea.com/us/en/cat/desks-tables-fu002/"
+              },
+              "providerExecuted": null,
+              "providerOptions": {
+                "openai": {
+                  "itemId": "fc_06192001663f95a0016a7062258f80819488565fdd4aec2be9"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "call_RqIh6hoRvjekCDkRJVH0hRTH",
+              "toolName": "goto",
+              "output": {
+                "type": "json",
+                "value": {
+                  "success": true,
+                  "url": "https://www.ikea.com/us/en/cat/desks-tables-fu002/"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "toolCallId": "call_ShUI7Kbo1O5T5uNVW4jRcCrv",
+              "toolName": "ariaTree",
+              "input": {},
+              "providerExecuted": null,
+              "providerOptions": {
+                "openai": {
+                  "itemId": "fc_06192001663f95a0016a706229ff3c81949c6280b6a467ad11"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "call_ShUI7Kbo1O5T5uNVW4jRcCrv",
+              "toolName": "ariaTree",
+              "output": {
+                "type": "content",
+                "value": [
+                  "[MaxDepth]"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "toolCallId": "call_z99Mcg9hcYx3ioEvwN2XOXbP",
+              "toolName": "act",
+              "input": {
+                "action": "click the Ok button in the cookie consent banner"
+              },
+              "providerExecuted": null,
+              "providerOptions": {
+                "openai": {
+                  "itemId": "fc_06192001663f95a0016a70622c47c481948b90c6cabf90110e"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "call_z99Mcg9hcYx3ioEvwN2XOXbP",
+              "toolName": "act",
+              "output": {
+                "type": "json",
+                "value": {
+                  "success": true,
+                  "action": "Ok button in the cookie consent banner dialog. Clicking this will accept the cookie consent.",
+                  "playwrightArguments": "[MaxDepth]"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "toolCallId": "call_kyIxeCesaDs8eERFNndVE1Ws",
+              "toolName": "goto",
+              "input": {
+                "url": "https://www.ikea.com/us/en/cat/office-desks-20652/"
+              },
+              "providerExecuted": null,
+              "providerOptions": {
+                "openai": {
+                  "itemId": "fc_06192001663f95a0016a706230b2648194aca2f64a56945c5f"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "content": [
+            {
+              "type": "tool-result",
+              "toolCallId": "call_kyIxeCesaDs8eERFNndVE1Ws",
+              "toolName": "goto",
+              "output": {
+                "type": "json",
+                "value": {
+                  "success": true,
+                  "url": "https://www.ikea.com/us/en/cat/office-desks-20652/"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "providerMetadata": {
+      "openai": {
+        "responseId": "resp_06192001663f95a0016a7062302ab08194a3f060468c97e8dc",
+        "serviceTier": "default",
+        "usage": {
+          "cacheWriteTokens": 0
+        }
+      }
+    }
+  }
+}
