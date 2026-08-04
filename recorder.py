@@ -1140,7 +1140,7 @@ def build_verifier_action(
 
 
 async def collect_chromiumrl_signals(cdp: CDPConnection) -> dict[str, Any]:
-    frame_tree, frame_tree_timing = await timed_command(cdp, "Page.getFrameTree", required=False)
+    frame_tree, frame_tree_timing = await timed_command(cdp, "Page.getFrameTree", required=False, timeout=5.0)
     ids = frame_ids(frame_tree)
     main_frame_id = ids[0] if ids else ""
     requests: list[tuple[str, dict[str, Any]]] = [
@@ -1162,13 +1162,13 @@ async def collect_chromiumrl_signals(cdp: CDPConnection) -> dict[str, Any]:
         },
     }
     for method, params in requests:
-        value, timing = await timed_command(cdp, method, params, required=False, label="signals")
+        value, timing = await timed_command(cdp, method, params, required=False, label="signals", timeout=5.0)
         result["commands"][method] = command_entry(params, timing, value)
     return result
 
 
 async def collect_touch_trace_signals(cdp: CDPConnection) -> dict[str, Any]:
-    value, timing = await timed_command(cdp, "ChromiumRL.getTouchTraces", required=False, label="signals")
+    value, timing = await timed_command(cdp, "ChromiumRL.getTouchTraces", required=False, label="signals", timeout=5.0)
     return {
         "captured_at": utc_now(),
         "commands": {
@@ -1216,10 +1216,23 @@ async def collect_interaction_capture(
         "xpath": node.get("xpath"),
         "bounds": node.get("bounds"),
     }
-    result: dict[str, Any] = {"captured_at": utc_now(), "target": target, "commands": {}}
+    result: dict[str, Any] = {
+        "captured_at": utc_now(),
+        "target": target,
+        "selected_method": None,
+        "commands": {},
+    }
+    # Some ChromiumRL builds expose the singular method name, while older notes
+    # may refer to the plural alias. Use the real method first and probe the
+    # plural alias only as a fallback to avoid noisy verifier artifacts.
+    # Interaction capture is optional evidence. Some Wootz builds expose the
+    # method but never answer it, so bound each probe and never stall a run.
     for method in ("ChromiumRL.captureInteraction", "ChromiumRL.captureInteractions"):
-        value, timing = await timed_command(cdp, method, params, required=False)
+        value, timing = await timed_command(cdp, method, params, required=False, timeout=2.0)
         result["commands"][method] = command_entry(params, timing, value)
+        if timing.get("ok"):
+            result["selected_method"] = method
+            break
     return result
 
 
@@ -1298,7 +1311,8 @@ async def run_doctor(args: argparse.Namespace) -> None:
             cdp,
             "ChromiumRL.compareDOMState",
             {"referenceState": state.get("state", {})},
-            required=True,
+            required=False,
+            timeout=min(30.0, max(1.0, cdp.command_timeout)),
         )
         dom_state = state.get("state", {})
         node = first_visible_node(dom_state) if isinstance(dom_state, dict) else None
@@ -1307,33 +1321,28 @@ async def run_doctor(args: argparse.Namespace) -> None:
         for method, params in (
             ("ChromiumRL.getAgentObservation", {}),
             ("ChromiumRL.getTouchTraces", {}),
-            (
-                "ChromiumRL.captureInteraction",
-                {
-                    "interactionType": "wait",
-                    "targetNodeId": node_id,
-                    "captureDurationMs": 1,
-                }
-                if isinstance(node_id, int)
-                else {},
-            ),
-            (
-                "ChromiumRL.captureInteractions",
-                {
-                    "interactionType": "wait",
-                    "targetNodeId": node_id,
-                    "captureDurationMs": 1,
-                }
-                if isinstance(node_id, int)
-                else {},
-            ),
         ):
-            if method.endswith("captureInteraction") or method.endswith("captureInteractions"):
-                if not isinstance(node_id, int):
-                    optional_methods[method] = {"skipped": "no DOM nodeId available"}
-                    continue
             value, timing = await timed_command(cdp, method, params, required=False)
             optional_methods[method] = command_entry(params, timing, value)
+
+        capture_params = (
+            {
+                "interactionType": "wait",
+                "targetNodeId": node_id,
+                "captureDurationMs": 1,
+            }
+            if isinstance(node_id, int)
+            else {}
+        )
+        if not isinstance(node_id, int):
+            optional_methods["ChromiumRL.captureInteraction"] = {"skipped": "no DOM nodeId available"}
+        else:
+            for method in ("ChromiumRL.captureInteraction", "ChromiumRL.captureInteractions"):
+                value, timing = await timed_command(cdp, method, capture_params, required=False, timeout=2.0)
+                optional_methods[method] = command_entry(capture_params, timing, value)
+                if timing.get("ok"):
+                    optional_methods["ChromiumRL.captureInteraction.selected"] = method
+                    break
         await cdp.send("ChromiumRL.disable", {}, use_session=True)
         report = {
             "ok": True,

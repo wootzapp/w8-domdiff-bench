@@ -1,295 +1,97 @@
-# Desktop agent-browser task recorder
+# Task Recorder
 
-This readme has steps for automated desktop Wootz browser tasks using agent-browser.
+This active folder is for Wootz browser task recording and ChromiumRL verifier artifacts.
 
-It uses a separate desktop recorder container:
-
-```text
-Image:      wootz-runtime:wootz-chrome
-Container:  wootz-desktop-browser-replay-001
-CDP:        http://127.0.0.1:49325
-noVNC:      127.0.0.1:16181
-VNC:        127.0.0.1:15901
-```
-
-
-<!-- ## Related containers
-
-| Use | Container | CDP | noVNC | VNC |
-| --- | --- | ---: | ---: | ---: |
-| Android recorder | `knowledge-work-workflow-browser-replay-001` | `49224` | `16080` | existing Android config |
-| Desktop authoring | `wootz-runtime` | `9225` | `16081` | `15900` |
-| Desktop automated recorder | `wootz-desktop-browser-replay-001` | `49325` | `16181` | `15901` |
-
-Use `wootz-desktop-browser-replay-001` for automated DOM recording. -->
-
-## What this runner does
-
-The automated runner is in:
-
-<!-- ```text
-/data/aayush/task-recorder/agent_browser/desktop_agent.py
-``` -->
-```text
-desktop_agent.py
-```
-
-It controls the desktop Wootz browser through CDP and records verifier artifacts through ChromiumRL.
-Implemented browser actions:
-
-- `snapshot()` semantic, ref-based page view for the model.
-- visible text blocks from the current viewport.
-- `navigate` / `open`.
-- `click` by snapshot ref, CSS selector, or coordinate.
-- `type` and `fill`.
-- `press`.
-- `scroll`.
-- `wait`.
-
-Supported model action schema:
-
-```json
-{"action":"open","url":"https://example.com","thoughts":"Open the site"}
-{"action":"navigate","url":"https://example.com","thoughts":"Open the site"}
-{"action":"click","ref":"e12","thoughts":"Click a visible element"}
-{"action":"click","selector":"input[name='q']","thoughts":"Click by selector"}
-{"action":"left_click","coordinate":[500,300],"thoughts":"Fallback coordinate click"}
-{"action":"type","text":"example query","thoughts":"Type text"}
-{"action":"fill","ref":"e3","text":"example text","thoughts":"Fill input"}
-{"action":"press","key":"Enter","thoughts":"Press key"}
-{"action":"key","key":"Enter","thoughts":"Press key"}
-{"action":"scroll","pixels":700,"thoughts":"Scroll down"}
-{"action":"wait","seconds":2,"thoughts":"Wait for page update"}
-{"action":"terminate","status":"success","final_answer":"Done","thoughts":"Task complete"}
-```
-
-Scroll direction:
-
-```text
-positive pixels = scroll down
-negative pixels = scroll up
-```
-
-## Configure model access
-
-Edit `.env`:
-
-```bash
-nano .env
-```
-
-Add or update:
-
-```text
-OPENAI_API_KEY=sk-...
-AGENT_BROWSER_MODEL=gpt-4.1-mini
-OPENAI_BASE_URL=https://api.openai.com/v1
-```
-
-## Start browser and check CDP
-
-```bash
-docker compose up -d
-./scripts/doctor.sh
-```
-
-`doctor.sh` checks CDP and ChromiumRL availability.
-
-The desktop recorder defaults the browser language to English:
-
-```text
-BROWSER_LANG=en-US
-BROWSER_ACCEPT_LANGUAGE=en-US,en;q=0.9
-RECORDER_LANG=en_US.UTF-8
-RECORDER_LC_ALL=en_US.UTF-8
-```
-
-<!-- If the container was already running before this setting was added, restart only
-the desktop recorder container:
-
-```bash
-docker compose up -d --force-recreate wootz-desktop
-./scripts/doctor.sh
-```
-
-This does not change the Android recorder or the desktop authoring container.
-Some websites may still route by server IP, for example to a `.de` domain, but
-the browser will request English content and the runner also applies CDP
-language overrides before capturing and acting. -->
-
-## Open noVNC
-
-From Windows PowerShell:
-
-```powershell
-ssh -N -L "[::1]:39081:127.0.0.1:16181" ubuntu@static.235.31.55.162.clients.your-server.de
-```
-
-Open:
-
-```text
-http://[::1]:39081/vnc.html?resize=scale&autoconnect=1
-```
-
-<!-- If the local port is blocked, change only the first port:
-
-```powershell
-ssh -N -L "[::1]:49181:127.0.0.1:16181" ubuntu@static.235.31.55.162.clients.your-server.de
-```
-
-Then open:
-
-```text
-http://[::1]:49181/vnc.html?resize=scale&autoconnect=1
-```
-
-Do not change the server-side port `16181`. -->
-
-## Run a new automated task
-
-```bash
-./scripts/run-agent-browser.sh task2 "Enter the task."
-```
-
-For a new non-resume task, the runner:
-
-- creates a fresh browser tab;
-- starts an isolated browser context when CDP supports it;
-- otherwise falls back to clearing cookies/cache/storage;
-- starts with empty model action history.
-
-This prevents a new task from inheriting the previous task’s tab, cookies, login state, localStorage, sessionStorage, cache, or model history.
-
-If you intentionally want a new task to reuse browser data:
-
-```bash
-./scripts/run-agent-browser.sh task2 "Enter the task." --keep-browser-data
-```
-
-## Approval flow
-
-By default, every proposed action requires approval:
-
-```text
-y + Enter  = perform and record the action
-n + Enter  = reject the action and ask the model again
-q + Enter  = stop the run
-```
-
-Run without approvals only when you trust the model for that task:
-
-```bash
-./scripts/run-agent-browser.sh task2 "Enter the task." --yes
-```
-
-If the model proposes the same ineffective action repeatedly, reject it with `n`.
-The runner records generic step outcomes such as URL change, scroll change, and
-DOM/visible text changes, then sends no-progress warnings back to the model on
-the next request. This is generic loop handling; it is not website-specific.
-
-## Resume an existing task
-
-```bash
-./scripts/run-agent-browser.sh task1 "Same task prompt as before." --resume
-```
-
-Resume mode:
-
-- keeps the current browser tab/session;
-- does not clear browser data;
-- does not create a new isolated context;
-- requires the prompt to match the saved task prompt;
-- reloads recent completed actions from `trajectory.jsonl`;
-- appends new steps after the last existing step.
-
-Use resume only when continuing the same task. If the task text changed, start a
-new task id.
-
-## Step limits and timeouts
-
-Default max steps:
-
-```text
---max-steps 80
-```
-
-For longer tasks:
-
-```bash
-./scripts/run-agent-browser.sh task1 "Same task prompt as before." --resume --max-steps 120
-```
-
-<!-- Input events use a separate short timeout so a stuck mouse/keyboard CDP command does not block for the full DOM-capture timeout:
-
-```bash
-./scripts/run-agent-browser.sh task2 "Enter the task." --input-timeout 8
-```
-
-If CDP mouse-wheel scrolling times out, the runner reconnects CDP and performs a recorded `window.scrollBy` fallback. The step still writes verifier artifacts, and `action.json` will include:
-
-```json
-"_execution_method": "runtime_scroll_fallback"
-``` -->
-
-## Output structure
-
-Output is written to:
-
-```text
-/data/aayush/task-recorder/tasks/<task-id>/
-```
-
-Typical structure:
-
-```text
-tasks/<task-id>/
-├── manifest.json
-├── actions.json
-├── trajectory.jsonl
-├── agent_browser_decisions.jsonl
-├── agent_browser_final.json
-└── step_001/
-    ├── action.json
-    ├── step.json
-    ├── before/
-    │   ├── chromiumrl_dom.json
-    │   ├── chromiumrl_agent_observation.json
-    │   ├── chromiumrl_visual_hash.json
-    │   ├── page_state.json
-    │   ├── screenshot.png
-    │   └── state_index.json
-    ├── after/
-    │   ├── chromiumrl_dom.json
-    │   ├── chromiumrl_agent_observation.json
-    │   ├── chromiumrl_visual_hash.json
-    │   ├── page_state.json
-    │   ├── screenshot.png
-    │   └── state_index.json
-    ├── verifier_action.json
-    ├── interaction_capture.json
-    ├── chromiumrl_signals.json
-    ├── dom_diff.json
-    └── dom_diff_summary.json
-```
-
-Important files:
-
-- `before/chromiumrl_dom.json`: ChromiumRL refined DOM before the action.
-- `after/chromiumrl_dom.json`: ChromiumRL refined DOM after the action.
-- `dom_diff.json`: raw `ChromiumRL.compareDOMState` output.
-- `dom_diff_summary.json`: summarized verifier-friendly DOM diff.
-- `chromiumrl_agent_observation.json`: compact visible/interactable browser observation.
-- `page_state.json`: URL, title, viewport, scroll, and target metadata.
-- `screenshot.png`: visual state.
-- `verifier_action.json`: action metadata from the automated agent action.
-- `agent_browser_decisions.jsonl`: model proposals and runner events.
-- `agent_browser_final.json`: final terminate output, if the model terminates.
-
-## Stop only the desktop recorder
+## Browser
 
 ```bash
 cd /data/aayush/task-recorder
-docker compose stop
+docker compose --env-file .env.agent-browser up -d
+./scripts/doctor.sh
 ```
 
-This stops only `wootz-desktop-browser-replay-001`. It does not stop the Android recorder, desktop authoring container, or other containers.
+Desktop browser endpoints:
+
+```text
+CDP:   http://127.0.0.1:49325
+noVNC: 127.0.0.1:16181
+VNC:   127.0.0.1:15901
+```
+
+## Official Agent Browser runtime
+
+The active automated runner uses the official Vercel Agent Browser native CLI (`agent-browser` 0.33.2) for browser input. Its Linux binary and version-matched skill files are stored under `agent_browser/official_runtime/`. The runner does not use a replacement action implementation.
+
+The workflow is split deliberately:
+
+- ChromiumRL supplies the model observation and all verifier artifacts (`getAgentObservation`, DOM state, DOM diff, screenshot, interactions, and touch traces).
+- The official Agent Browser native CLI connects to the same Wootz CDP endpoint and executes navigation, clicks, typing, keys, scrolling, and waits.
+- `agent_browser/desktop_agent.py` is only the bridge/recording loop: it translates the model JSON action into an official CLI command and records the resulting ChromiumRL state.
+
+The vendored runtime came from the official repository: https://github.com/vercel-labs/agent-browser.
+
+## Agent-browser + ChromiumRL
+
+Configure the single environment file:
+
+```bash
+nano .env.agent-browser
+```
+
+Set at least:
+
+```text
+AGENT_BROWSER_MODEL=gpt-4.1
+```
+
+Start or update the desktop container (Compose must be told to use the single environment file):
+
+```bash
+docker compose --env-file .env.agent-browser up -d
+```
+
+Run the automated task:
+
+```bash
+./scripts/run-agent-browser.sh <task-id> "Your task prompt here."
+```
+
+Example:
+
+```bash
+./scripts/run-agent-browser.sh task-agentbrowser-test \
+  "Go to Best Buy and find a 55-inch Samsung 4K smart TV available for pickup near ZIP code 10001. Report the product name, price, model number, and pickup availability."
+```
+
+## Recorded artifacts
+
+Each recorded step stores ChromiumRL verifier artifacts under:
+
+```text
+tasks/<task-id>/step_XXX/
+├── action.json
+├── step.json
+├── before/
+│   ├── chromiumrl_dom.json
+│   ├── chromiumrl_agent_observation.json
+│   ├── page_state.json
+│   └── screenshot.png
+├── after/
+│   ├── chromiumrl_dom.json
+│   ├── chromiumrl_agent_observation.json
+│   ├── page_state.json
+│   └── screenshot.png
+├── dom_diff.json
+├── dom_diff_summary.json
+└── verifier_action.json
+```
+
+Main ChromiumRL protocols used for verifier artifacts:
+
+```text
+ChromiumRL.getAgentObservation
+ChromiumRL.saveDOMState
+ChromiumRL.compareDOMState
+ChromiumRL.getTouchTraces
+```
+
