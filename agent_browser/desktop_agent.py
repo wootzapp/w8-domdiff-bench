@@ -1309,10 +1309,16 @@ def content_tokens(text: str) -> list[str]:
 
 
 def grounding_check(final_answer: str, observation_text: str) -> dict[str, Any]:
+    import re
+    obs = observation_text.lower()
+    quoted = re.findall(r"['\"]([^'\"]{3,160})['\"]", final_answer)
+    for quote in quoted:
+        quote_norm = " ".join(quote.lower().split())
+        if quote_norm and quote_norm in obs:
+            return {"ok": True, "reason": "quoted_evidence", "quote": quote[:160]}
     tokens = content_tokens(final_answer)
     if not tokens:
         return {"ok": False, "reason": "no_content_tokens", "matched": 0, "total": 0, "ratio": 0}
-    obs = observation_text.lower()
     matched = [token for token in tokens if token in obs]
     ratio = len(matched) / max(1, len(tokens))
     return {"ok": ratio >= 0.5, "matched": len(matched), "total": len(tokens), "ratio": round(ratio, 3), "missing": [t for t in tokens if t not in matched][:20]}
