@@ -542,6 +542,29 @@ def command_entry(params: dict[str, Any], timing: dict[str, Any], result: dict[s
     return {"params": params, "timing": timing, "result": result}
 
 
+@dataclass
+class CapturedState:
+    directory: Path
+    chromiumrl_dom: dict[str, Any]
+    page_state: dict[str, Any]
+    index: dict[str, Any]
+    agent_observation: dict[str, Any]
+    degraded: bool = False
+    capture_notes: list[str] | None = None
+    observation_source: str = "chromiumrl"
+    dom_captured: bool = False
+
+
+@dataclass(frozen=True)
+class ScreenshotConfig:
+    source: str
+    container: str
+    adb_serial: str
+    timeout_seconds: float
+    format: str = "jpeg"
+    quality: int = 80
+
+
 async def enable_page_domains(cdp: CDPConnection) -> dict[str, Any]:
     results: dict[str, Any] = {}
     if getattr(cdp, "enable_runtime_domain", False):
