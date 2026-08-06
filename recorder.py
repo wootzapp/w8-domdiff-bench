@@ -776,6 +776,7 @@ async def collect_agent_observation(
     if source == "js":
         payload = await collect_js_observation(cdp, label=label or directory.name)
         payload["source"] = "js_fallback"
+        trim_observation_context(payload)
         write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
         return payload
 
@@ -813,6 +814,7 @@ async def collect_agent_observation(
             chromiumrl_error=chromiumrl_error,
         )
         payload = chromiumrl_payload or js
+        trim_observation_context(payload)
         write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
         return payload
 
@@ -842,12 +844,14 @@ async def collect_agent_observation(
             payload = js if winner == "js_fallback" else payload
         elif reason:
             log_event(cdp, "observation_implausible", reason=reason, label=label, source=source, fallback="not_allowed")
+        trim_observation_context(payload)
         write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
         return payload
     except ChromiumRLUnavailable as error:
         if source == "chromiumrl":
             raise
         payload = await js_payload(str(error))
+        trim_observation_context(payload)
         write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
         return payload
 
@@ -1136,6 +1140,29 @@ def labelled_element_count(observation: dict[str, Any]) -> int:
     if not isinstance(elements, list):
         return 0
     return sum(1 for element in elements if isinstance(element, dict) and element_label_text(element))
+
+
+def trim_observation_context(payload: dict[str, Any], *, limit: int = 80) -> dict[str, Any]:
+    observation = observation_payload(payload)
+    elements = observation.get("elements", []) if isinstance(observation, dict) else []
+    if not isinstance(elements, list):
+        return payload
+    for element in elements:
+        if not isinstance(element, dict):
+            continue
+        context = element.get("context")
+        if not isinstance(context, str) or not context.strip():
+            continue
+        label = element_label_text(element)
+        norm_context = " ".join(context.split())
+        norm_label = " ".join(label.split())
+        if norm_label and norm_label.lower() in norm_context.lower() and len(norm_context) > len(norm_label):
+            element.pop("context", None)
+        elif len(norm_context) > limit:
+            element["context"] = norm_context[:limit - 1] + "…"
+        else:
+            element["context"] = norm_context
+    return payload
 
 
 def observation_is_implausible(obs: dict[str, Any], page_state: dict[str, Any]) -> str | None:

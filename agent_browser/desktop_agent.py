@@ -59,6 +59,7 @@ from recorder import (  # noqa: E402
     observation_payload,
     observation_is_implausible,
     labelled_element_count,
+    trim_observation_context,
     TIMEOUT_DOM_CAPTURE,
     TIMEOUT_OBSERVATION,
     TIMEOUT_SCREENSHOT,
@@ -572,6 +573,7 @@ class DesktopWootzAgent:
                 if observation_source == "chromiumrl":
                     raise
                 payload = await js_payload(str(error))
+        trim_observation_context(payload)
         observation = get_observation_dict(payload)
         elements = observation.get("elements", [])
         visible_text_blocks = (
