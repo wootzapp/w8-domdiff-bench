@@ -101,6 +101,17 @@ def append_jsonl(path: Path, value: Any) -> None:
         os.fsync(stream.fileno())
 
 
+def log_event(cdp: Any, event: str, **fields: Any) -> None:
+    record = {"ts": utc_now(), "event": event, **fields}
+    try:
+        if getattr(cdp, "log_path", None) is not None:
+            append_jsonl(cdp.log_path, record)
+        elif hasattr(cdp, "event_log"):
+            cdp.event_log.append(record)
+    except Exception:
+        pass
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
