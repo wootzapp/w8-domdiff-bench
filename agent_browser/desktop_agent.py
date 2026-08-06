@@ -1459,16 +1459,17 @@ async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_confi
             target_dom.unlink()
         dom_path.rename(target_dom)
     for extra in (final_dir / "page_state.json", final_dir / "screenshot_error.json", final_dir / "screenshot_skipped.json"):
-        if extra.exists() and extra.name != "screenshot.png":
+        if extra.exists():
             with contextlib.suppress(Exception):
                 extra.unlink()
-    screenshot_path = final_dir / "screenshot.png"
+    screenshot_path = screenshot_artifact_from_capture(final_dir)
     return {
         "degraded": state.degraded,
         "notes": state.capture_notes,
         "dom_captured": state.dom_captured,
         "observation_source": state.observation_source,
-        "screenshot": screenshot_path.exists(),
+        "screenshot": bool(screenshot_path),
+        "screenshot_artifact": screenshot_path.name if screenshot_path else "",
     }
 
 
@@ -1589,6 +1590,10 @@ async def run(args: argparse.Namespace) -> None:
                     include_runtime_visible_text=not args.strict_chromiumrl_observation,
                     observation_source=args.observation_source,
                 )
+                if getattr(cdp, "renderer_wedged", False):
+                    await finish_run(task_dir, status="failure", reason="renderer_unresponsive")
+                    print("Stopped: renderer_unresponsive")
+                    return
                 user_payload = build_model_user_payload(
                     task=args.task,
                     history=history,
@@ -1658,6 +1663,10 @@ async def run(args: argparse.Namespace) -> None:
                     no_progress_count += 1
                     continue
 
+                if getattr(cdp, "renderer_wedged", False):
+                    await finish_run(task_dir, status="failure", reason="renderer_unresponsive")
+                    print("Stopped: renderer_unresponsive")
+                    return
                 last_action_error = result.get("last_action_error")
                 if result.get("degraded") and last_action_error is None:
                     last_action_error = {"type": "degraded_capture", "message": "one or more capture tiers failed; observation may be incomplete"}

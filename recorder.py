@@ -212,6 +212,7 @@ class CDPConnection:
         self.renderer_crashed: dict[str, Any] | None = None
         self.enable_runtime_domain = False
         self.main_frame_navigated = False
+        self.renderer_wedged = False
         self.log_path: Path | None = None
 
     async def __aenter__(self) -> "CDPConnection":
@@ -539,6 +540,237 @@ async def timed_command(
 
 def command_entry(params: dict[str, Any], timing: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
     return {"params": params, "timing": timing, "result": result}
+
+
+async def probe_renderer_responsive(cdp: CDPConnection, *, timeout: float = 3.0) -> bool:
+    try:
+        await cdp.send(
+            "Runtime.evaluate",
+            {"expression": "1", "returnByValue": True, "awaitPromise": False},
+            use_session=True,
+            timeout=timeout,
+        )
+        return True
+    except Exception as error:
+        cdp.renderer_wedged = True
+        log_event(cdp, "renderer_wedged", error=str(error), probe="Runtime.evaluate:1", timeout=timeout)
+        return False
+
+
+async def chromiumrl_call(
+    cdp: CDPConnection,
+    method: str,
+    params: dict[str, Any] | None = None,
+    *,
+    timeout: float,
+    label: str = "",
+) -> dict[str, Any]:
+    for attempt in (1, 2):
+        try:
+            return await cdp.send(method, params or {}, use_session=True, timeout=timeout)
+        except RecorderError as error:
+            log_event(cdp, "chromiumrl_timeout", method=method, attempt=attempt, label=label, error=str(error))
+            if not await probe_renderer_responsive(cdp, timeout=3.0):
+                log_event(cdp, "chromiumrl_unavailable", method=method, label=label, error=str(error), renderer_wedged=True)
+                raise ChromiumRLUnavailable(f"renderer_unresponsive during {method}: {error}") from error
+            if attempt == 1:
+                try:
+                    await cdp.rebind_session()
+                    continue
+                except RecorderError as rebind_error:
+                    log_event(cdp, "chromiumrl_rebind_failed", method=method, error=str(rebind_error))
+            log_event(cdp, "chromiumrl_unavailable", method=method, label=label, error=str(error), renderer_wedged=False)
+            raise ChromiumRLUnavailable(f"{method} unavailable after rebind: {error}") from error
+    raise ChromiumRLUnavailable(f"{method} unavailable")
+
+
+async def reset_chromiumrl_tracing(cdp: CDPConnection, *, full_tracing: bool = False) -> dict[str, Any]:
+    try:
+        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=5.0)
+    except RecorderError:
+        pass
+    params = {
+        "captureTouchTraces": True,
+        "captureLayoutTimings": bool(full_tracing),
+        "captureCLSAttribution": bool(full_tracing),
+        "captureCompositorLayers": bool(full_tracing),
+    }
+    result = await cdp.send("ChromiumRL.enable", params, use_session=True, timeout=5.0)
+    trace_session_id = str(result.get("sessionId", "")).strip()
+    if not trace_session_id:
+        raise RecorderError(f"ChromiumRL.enable returned no sessionId: {result}")
+    return result
+
+
+JS_OBSERVATION_EXPRESSION = r"""
+(() => {
+  const t0 = performance.now();
+  const SEL = 'a[href],button,input,select,textarea,summary,[role=button],[role=link],' +
+              '[role=checkbox],[role=radio],[role=tab],[role=menuitem],[role=combobox],' +
+              '[role=searchbox],[role=textbox],[onclick],[tabindex]:not([tabindex="-1"]),' +
+              '[contenteditable=""],[contenteditable=true]';
+  const vw = innerWidth, vh = innerHeight;
+  const xpath = (el) => {
+    const parts = [];
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      let i = 1;
+      for (let s = n.previousElementSibling; s; s = s.previousElementSibling)
+        if (s.tagName === n.tagName) i++;
+      parts.unshift(n.tagName.toLowerCase() + '[' + i + ']');
+    }
+    return '/' + parts.join('/');
+  };
+  const collect = (root, ox = 0, oy = 0) => {
+    const out = [];
+    for (const el of root.querySelectorAll(SEL)) {
+      if (performance.now() - t0 > 1200) return {out, truncated: true};
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+      if (el.disabled || el.getAttribute('aria-hidden') === 'true') continue;
+      const name = (el.getAttribute('aria-label') || el.innerText || el.value ||
+                    el.placeholder || el.title || el.alt || '').replace(/\s+/g,' ').trim();
+      const cx = ox + r.left + r.width / 2, cy = oy + r.top + r.height / 2;
+      out.push({
+        tag: el.tagName.toLowerCase(), role: el.getAttribute('role') || '',
+        accessibleName: name.slice(0, 120), href: el.getAttribute('href') || '',
+        value: (el.value || '').toString().slice(0, 80), xpath: xpath(el),
+        bounds: { x: ox + r.left, y: oy + r.top, width: r.width, height: r.height },
+        centerX: cx, centerY: cy,
+        isInViewport: cy >= 0 && cy <= vh && cx >= 0 && cx <= vw,
+        isVisible: true, isHitTestable: true
+      });
+      if (out.length >= 300) return {out, truncated: true};
+    }
+    return {out, truncated: false};
+  };
+  let result = collect(document);
+  const out = result.out;
+  let truncated = result.truncated;
+  for (const iframe of document.querySelectorAll('iframe')) {
+    if (performance.now() - t0 > 1200 || out.length >= 300) { truncated = true; break; }
+    try {
+      if (!iframe.contentDocument) continue;
+      const r = iframe.getBoundingClientRect();
+      const child = collect(iframe.contentDocument, r.left, r.top);
+      out.push(...child.out.slice(0, 300 - out.length));
+      truncated = truncated || child.truncated;
+    } catch (error) {}
+  }
+  return { url: location.href, title: document.title,
+           scroll: { x: scrollX, y: scrollY, scrollTop: scrollY,
+                     maxY: Math.max(0, document.documentElement.scrollHeight - vh),
+                     pageHeight: document.documentElement.scrollHeight,
+                     viewportWidth: vw, viewportHeight: vh,
+                     canScrollDown: scrollY + vh < document.documentElement.scrollHeight - 1,
+                     canScrollUp: scrollY > 0 },
+           viewport: { width: vw, height: vh }, elements: out, truncated, source: 'js_fallback' };
+})()
+"""
+
+
+async def collect_js_observation(cdp: CDPConnection, label: str = "") -> dict[str, Any]:
+    runtime, timing = await timed_command(
+        cdp,
+        "Runtime.evaluate",
+        {"expression": JS_OBSERVATION_EXPRESSION, "returnByValue": True, "awaitPromise": False},
+        required=False,
+        label=label,
+        timeout=TIMEOUT_EVALUATE,
+    )
+    observation = runtime.get("result", {}).get("value", {}) if isinstance(runtime, dict) else {}
+    if not isinstance(observation, dict):
+        observation = {"url": "", "title": "", "elements": [], "source": "js_fallback", "error": "invalid Runtime.evaluate result"}
+    return command_entry({}, timing, {"observation": observation})
+
+
+async def collect_agent_observation(
+    cdp: CDPConnection,
+    directory: Path,
+    *,
+    source: str = "auto",
+    label: str = "",
+    page_state: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    page_state = page_state or {}
+    if source == "js":
+        payload = await collect_js_observation(cdp, label=label or directory.name)
+        payload["source"] = "js_fallback"
+        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
+        return payload
+
+    def obs_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
+        return observation_payload(payload)
+
+    async def js_payload(reason: str) -> dict[str, Any]:
+        log_event(cdp, "observation_fallback", reason=reason, fallback="js")
+        payload = await collect_js_observation(cdp, label=label or directory.name)
+        payload["source"] = "js_fallback"
+        return payload
+
+    if source == "cross_check":
+        chromiumrl_payload: dict[str, Any] | None = None
+        chromiumrl_error = ""
+        try:
+            value = await chromiumrl_call(cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label=label or directory.name)
+            chromiumrl_payload = command_entry({}, {"ok": True, "elapsed_ms": 0}, value)
+            chromiumrl_payload["source"] = "chromiumrl"
+        except Exception as error:
+            chromiumrl_error = str(error)
+        js = await collect_js_observation(cdp, label=label or directory.name)
+        js["source"] = "js_fallback"
+        cr_obs = obs_from_payload(chromiumrl_payload or {})
+        js_obs = obs_from_payload(js)
+        log_event(
+            cdp,
+            "observation_cross_check",
+            label=label,
+            url=(page_state.get("url") or cr_obs.get("url") or js_obs.get("url")),
+            chromiumrl_count=len(cr_obs.get("elements", []) or []),
+            chromiumrl_labelled=labelled_element_count(cr_obs),
+            js_count=len(js_obs.get("elements", []) or []),
+            js_labelled=labelled_element_count(js_obs),
+            chromiumrl_error=chromiumrl_error,
+        )
+        payload = chromiumrl_payload or js
+        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
+        return payload
+
+    try:
+        value = await chromiumrl_call(cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label=label or directory.name)
+        payload = command_entry({}, {"ok": True, "elapsed_ms": 0}, value)
+        payload["source"] = "chromiumrl"
+        obs = obs_from_payload(payload)
+        reason = observation_is_implausible(obs, page_state)
+        if reason and source == "auto":
+            js = await js_payload(reason)
+            js_obs = obs_from_payload(js)
+            cr_labelled = labelled_element_count(obs)
+            js_labelled = labelled_element_count(js_obs)
+            winner = "js_fallback" if js_labelled > cr_labelled else "chromiumrl"
+            log_event(
+                cdp,
+                "observation_implausible",
+                reason=reason,
+                label=label,
+                chromiumrl_count=len(obs.get("elements", []) or []),
+                chromiumrl_labelled=cr_labelled,
+                js_count=len(js_obs.get("elements", []) or []),
+                js_labelled=js_labelled,
+                winner=winner,
+            )
+            payload = js if winner == "js_fallback" else payload
+        elif reason:
+            log_event(cdp, "observation_implausible", reason=reason, label=label, source=source, fallback="not_allowed")
+        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
+        return payload
+    except ChromiumRLUnavailable as error:
+        if source == "chromiumrl":
+            raise
+        payload = await js_payload(str(error))
+        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
+        return payload
 
 
 async def capture_screenshot_best_effort(cdp: CDPConnection, directory: Path, config: ScreenshotConfig) -> dict[str, Any]:
