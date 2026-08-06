@@ -685,9 +685,24 @@ class DesktopWootzAgent:
             out.push({ tag, text: s.slice(0, 200), center: [r.left + r.width/2, r.top + r.height/2] });
             if (out.length >= %d) break;
           }
+          const noisy = new Set(['container','row','col','span','active','disabled','hidden','visible','clearfix','pull-left','pull-right']);
+          for (const el of document.querySelectorAll('[aria-label],[title],[class]')) {
+            if (performance.now() - t0 > 800 || out.length >= %d) break;
+            const tag = el.tagName.toLowerCase();
+            if (['script','style','noscript','template','html','body'].includes(tag)) continue;
+            const r = el.getBoundingClientRect();
+            if (r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw || !r.width || !r.height) continue;
+            const aria = (el.getAttribute('aria-label') || '').replace(/\s+/g,' ').trim();
+            const title = (el.getAttribute('title') || '').replace(/\s+/g,' ').trim();
+            const classes = String(el.className || '').split(/\s+/).filter(c => c && c.length <= 40 && !noisy.has(c.toLowerCase())).slice(0, 6).join(' ');
+            const text = [aria && `aria: ${aria}`, title && `title: ${title}`, classes && `class: ${classes}`].filter(Boolean).join(' | ');
+            if (!text || seen.has(text)) continue;
+            seen.add(text);
+            out.push({ tag, text: text.slice(0, 200), center: [r.left + r.width/2, r.top + r.height/2] });
+          }
           return out;
         })()
-        """ % max(1, int(max_blocks))
+        """ % (max(1, int(max_blocks)), max(1, int(max_blocks)))
         try:
             response = await self.cdp.send(
                 "Runtime.evaluate",
