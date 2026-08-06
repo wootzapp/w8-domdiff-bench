@@ -16,6 +16,7 @@ import hashlib
 import time
 import shutil
 import sys
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -1371,6 +1372,10 @@ async def record_automated_step(
         else:
             raise RecorderError(f"step directory already complete: {step_dir}")
     step_dir.mkdir(parents=False, exist_ok=False)
+    evidence_dir = step_dir / "evidence"
+    agent_dir = step_dir / "agent"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    agent_dir.mkdir(parents=True, exist_ok=True)
     log_path = task_dir / "log.jsonl"
     append_jsonl(log_path, {"ts": utc_now(), "event": "step_started", "step": step_number, "action": action})
 
@@ -1388,17 +1393,18 @@ async def record_automated_step(
         dom_capture=dom_capture,
         observation_max_elements=observation_max_elements,
     )
-    write_json_gz(step_dir / "observation_before.json.gz", before.agent_observation)
+    write_json_compact(step_dir / "page_state_before.json", before.page_state)
+    write_json_gz(agent_dir / "observation_before.json.gz", before.agent_observation)
     if dom_capture != "none" and before.dom_captured:
         src = before_dir / "chromiumrl_dom_slim.json.gz"
         if src.exists():
-            shutil.copyfile(src, step_dir / "dom_before.json.gz")
+            shutil.copyfile(src, evidence_dir / "dom_state_before.json.gz")
         raw = before_dir / "chromiumrl_dom_raw.json.gz"
         if raw.exists():
-            shutil.copyfile(raw, step_dir / "dom_before_raw.json.gz")
+            shutil.copyfile(raw, evidence_dir / "dom_full_before.json.gz")
     before_image = None
     if screenshot_mode == "both":
-        before_image = copy_step_screenshot(before_dir, step_dir, "before")
+        before_image = copy_step_screenshot(before_dir, evidence_dir, "before")
     append_jsonl(log_path, {"ts": utc_now(), "event": "observation_captured", "step": step_number, "phase": "before", "source": before.observation_source, "degraded": before.degraded, "notes": before.capture_notes})
 
     action_error: dict[str, Any] | None = None
@@ -1430,19 +1436,20 @@ async def record_automated_step(
         dom_capture=dom_capture,
         observation_max_elements=observation_max_elements,
     )
-    write_json_gz(step_dir / "observation_after.json.gz", after.agent_observation)
+    write_json_compact(step_dir / "page_state_after.json", after.page_state)
+    write_json_gz(agent_dir / "observation_after.json.gz", after.agent_observation)
     if dom_capture != "none" and after.dom_captured:
         src = after_dir / "chromiumrl_dom_slim.json.gz"
         if src.exists():
-            shutil.copyfile(src, step_dir / "dom_after.json.gz")
+            shutil.copyfile(src, evidence_dir / "dom_state_after.json.gz")
         raw = after_dir / "chromiumrl_dom_raw.json.gz"
         if raw.exists():
-            shutil.copyfile(raw, step_dir / "dom_after_raw.json.gz")
-    after_image = copy_step_screenshot(after_dir, step_dir, "after")
+            shutil.copyfile(raw, evidence_dir / "dom_full_after.json.gz")
+    after_image = copy_step_screenshot(after_dir, evidence_dir, "after")
     append_jsonl(log_path, {"ts": utc_now(), "event": "observation_captured", "step": step_number, "phase": "after", "source": after.observation_source, "degraded": after.degraded, "notes": after.capture_notes})
 
     observation_diff = build_dom_diff_summary(before, after)
-    write_json_compact(step_dir / "observation_diff.json", observation_diff)
+    write_json_compact(agent_dir / "observation_diff.json", observation_diff)
 
     compare_result: dict[str, Any] = {}
     compare_timing: dict[str, Any] = {"ok": False, "skipped": True}
@@ -1517,8 +1524,18 @@ async def record_automated_step(
     return {"action": performed_action, "outcome": action_record["outcome"], "last_action_error": action_error, "degraded": after.degraded, "before_degraded": before.degraded, "after_degraded": after.degraded}
 
 
-async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_config: ScreenshotConfig, *, observation_source: str, chromiumrl_full_tracing: bool, dom_capture: str = "slim", observation_max_elements: int | None = None) -> dict[str, Any]:
+async def write_final_state(
+    task_dir: Path,
+    cdp: CDPConnection,
+    screenshot_config: ScreenshotConfig,
+    *,
+    observation_source: str,
+    chromiumrl_full_tracing: bool,
+    final_state_dom: str = "both",
+    observation_max_elements: int | None = None,
+) -> dict[str, Any]:
     final_dir = task_dir / "final_state"
+    capture_dom_mode = "full" if final_state_dom in {"full", "both"} else "slim"
     state = await capture_state_with_recovery(
         cdp,
         final_dir,
@@ -1527,8 +1544,8 @@ async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_confi
         capture_all_targets=False,
         chromiumrl_full_tracing=chromiumrl_full_tracing,
         observation_source=observation_source,
-        write_dom=dom_capture != "none",
-        dom_capture=dom_capture,
+        write_dom=True,
+        dom_capture=capture_dom_mode,
         observation_max_elements=observation_max_elements,
     )
     observation_path = final_dir / "chromiumrl_agent_observation.json"
@@ -1541,17 +1558,23 @@ async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_confi
             pass
     dom_path = final_dir / "chromiumrl_dom_slim.json.gz"
     if dom_path.exists():
-        target_dom = final_dir / "dom.json.gz"
+        target_dom = final_dir / "dom_state.json.gz"
         if target_dom.exists():
             target_dom.unlink()
-        dom_path.rename(target_dom)
+        if final_state_dom in {"slim", "both"}:
+            dom_path.rename(target_dom)
+        else:
+            dom_path.unlink()
     raw_dom_path = final_dir / "chromiumrl_dom_raw.json.gz"
     if raw_dom_path.exists():
-        target_raw = final_dir / "dom_raw.json.gz"
+        target_raw = final_dir / "dom_full.json.gz"
         if target_raw.exists():
             target_raw.unlink()
-        raw_dom_path.rename(target_raw)
-    for extra in (final_dir / "page_state.json", final_dir / "screenshot_error.json", final_dir / "screenshot_skipped.json"):
+        if final_state_dom in {"full", "both"}:
+            raw_dom_path.rename(target_raw)
+        else:
+            raw_dom_path.unlink()
+    for extra in (final_dir / "screenshot_error.json", final_dir / "screenshot_skipped.json"):
         if extra.exists():
             with contextlib.suppress(Exception):
                 extra.unlink()
@@ -1560,6 +1583,9 @@ async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_confi
         "degraded": state.degraded,
         "notes": state.capture_notes,
         "dom_captured": state.dom_captured,
+        "final_state_dom": final_state_dom,
+        "raw_dom": (final_dir / "dom_full.json.gz").exists(),
+        "slim_dom": (final_dir / "dom_state.json.gz").exists(),
         "observation_source": state.observation_source,
         "screenshot": bool(screenshot_path),
         "screenshot_artifact": screenshot_path.name if screenshot_path else "",
@@ -1585,11 +1611,119 @@ def append_model_request_log(log_path: Path, *, step: int, payload: dict[str, An
         },
     )
 
+def task_prompt_from_manifest(task_dir: Path) -> str:
+    try:
+        manifest = json.loads((task_dir / "manifest.json").read_text(encoding="utf-8"))
+        source = manifest.get("source_actions")
+        if isinstance(source, dict):
+            prompt = str(source.get("task") or source.get("prompt") or "")
+            if prompt:
+                return prompt
+    except Exception:
+        pass
+    try:
+        log_path = task_dir / "log.jsonl"
+        if log_path.exists():
+            for line in log_path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                event = json.loads(line)
+                if event.get("event") == "run_started":
+                    source = event.get("source_actions")
+                    if isinstance(source, dict):
+                        return str(source.get("task") or source.get("prompt") or "")
+    except Exception:
+        pass
+    return ""
 
-async def finish_run(task_dir: Path, *, status: str, reason: str = "", final_answer: str = "", action: dict[str, Any] | None = None) -> None:
-    final = {"completed_at": utc_now(), "status": status, "reason": reason, "final_answer": final_answer, "action": action or {}}
+
+def write_agent_browser_final(
+    task_dir: Path,
+    *,
+    status: str,
+    reason: str = "",
+    final_answer: str = "",
+    action: dict[str, Any] | None = None,
+    termination_reason: str = "",
+    grounding_check_result: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    completed_steps = len(step_numbers(task_dir))
+    final = {
+        "task_id": task_dir.name,
+        "task_prompt": task_prompt_from_manifest(task_dir),
+        "status": status,
+        "final_answer": final_answer,
+        "terminated_at": utc_now(),
+        "action": action or {},
+        "completed_steps": completed_steps,
+        "termination_reason": termination_reason or status or reason or "unknown",
+        "reason": reason,
+        "grounding_check": grounding_check_result or {"ok": False, "reason": "not_checked", "unmatched_tokens": []},
+    }
+    write_json(task_dir / "agent_browser_final.json", final)
+    return final
+
+
+def create_verifier_bundle(task_dir: Path) -> dict[str, Any]:
+    task_id = task_dir.name
+    bundle_path = task_dir / f"{task_id}_verifier_bundle.zip"
+    if bundle_path.exists():
+        bundle_path.unlink()
+    required_roots = {"manifest.json", "log.jsonl", "agent_browser_final.json", "VERIFIER.md"}
+    include: list[Path] = []
+    for name in sorted(required_roots):
+        p = task_dir / name
+        if p.exists():
+            include.append(p)
+    final_dir = task_dir / "final_state"
+    if final_dir.exists():
+        include.extend(sorted(p for p in final_dir.rglob("*") if p.is_file()))
+    for step_dir in sorted(task_dir.glob("step_*")):
+        if not step_dir.is_dir():
+            continue
+        for name in ("action.json", "page_state_before.json", "page_state_after.json", "dom_diff.json"):
+            p = step_dir / name
+            if p.exists():
+                include.append(p)
+        for sub in ("evidence", "agent"):
+            d = step_dir / sub
+            if d.exists():
+                include.extend(sorted(p for p in d.rglob("*") if p.is_file()))
+    with zipfile.ZipFile(bundle_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for p in include:
+            zf.write(p, p.relative_to(task_dir).as_posix())
+    return {"path": bundle_path.name, "bytes": bundle_path.stat().st_size, "files": len(include)}
+
+
+async def finish_run(
+    task_dir: Path,
+    *,
+    status: str,
+    reason: str = "",
+    final_answer: str = "",
+    action: dict[str, Any] | None = None,
+    termination_reason: str = "",
+    grounding_check_result: dict[str, Any] | None = None,
+    verifier_bundle: bool = False,
+) -> None:
+    final = write_agent_browser_final(
+        task_dir,
+        status=status,
+        reason=reason,
+        final_answer=final_answer,
+        action=action,
+        termination_reason=termination_reason,
+        grounding_check_result=grounding_check_result,
+    )
+    bundle: dict[str, Any] | None = None
+    if verifier_bundle:
+        bundle = create_verifier_bundle(task_dir)
+        final["verifier_bundle"] = bundle
+        write_json(task_dir / "agent_browser_final.json", final)
     append_jsonl(task_dir / "log.jsonl", {"ts": utc_now(), "event": "run_finished", **final})
-    update_manifest(task_dir, status="complete" if status == "success" else status, finished_at=utc_now(), reason=reason)
+    if bundle:
+        append_jsonl(task_dir / "log.jsonl", {"ts": utc_now(), "event": "verifier_bundle_created", **bundle})
+    update_manifest(task_dir, status="complete" if status == "success" else status, finished_at=utc_now(), reason=reason, verifier_bundle=bundle)
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -1683,7 +1817,7 @@ async def run(args: argparse.Namespace) -> None:
         try:
             while recorded_this_run < args.max_steps:
                 if time.perf_counter() - started > args.max_duration_seconds:
-                    await finish_run(task_dir, status="duration_exceeded", reason="max_duration_seconds exceeded")
+                    await finish_run(task_dir, status="duration_exceeded", reason="max_duration_seconds exceeded", termination_reason="duration_exceeded", verifier_bundle=args.verifier_bundle)
                     print("Stopped: duration_exceeded")
                     return
                 snapshot = await agent.snapshot(
@@ -1693,7 +1827,7 @@ async def run(args: argparse.Namespace) -> None:
                     observation_max_elements=args.observation_max_elements,
                 )
                 if getattr(cdp, "renderer_wedged", False):
-                    await finish_run(task_dir, status="failure", reason="renderer_unresponsive")
+                    await finish_run(task_dir, status="failure", reason="renderer_unresponsive", termination_reason="renderer_unresponsive", verifier_bundle=args.verifier_bundle)
                     print("Stopped: renderer_unresponsive")
                     return
                 user_payload = build_model_user_payload(
@@ -1717,22 +1851,23 @@ async def run(args: argparse.Namespace) -> None:
                 if action_name(action) == "terminate":
                     status = str(action.get("status", "success"))
                     final_answer = str(action.get("final_answer", ""))
+                    grounding = {"ok": False, "reason": "not_applicable", "unmatched_tokens": []}
                     if status == "success":
                         grounding = grounding_check(final_answer, snapshot.text)
                         if not grounding.get("ok"):
                             append_jsonl(log_path, {"ts": utc_now(), "event": "ungrounded_success", "step": step, "grounding": grounding, "final_answer": final_answer})
                             action["_ungrounded_success"] = grounding
-                    final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing, dom_capture=args.dom_capture, observation_max_elements=args.observation_max_elements)
+                    final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing, final_state_dom=args.final_state_dom, observation_max_elements=args.observation_max_elements)
                     final_state_written = True
                     append_jsonl(log_path, {"ts": utc_now(), "event": "final_state_captured", "final_state": final_state})
-                    await finish_run(task_dir, status=status, reason=str(action.get("reason", "")), final_answer=final_answer, action=action)
+                    await finish_run(task_dir, status=status, reason=str(action.get("reason", "")), final_answer=final_answer, action=action, termination_reason="model_terminate", grounding_check_result=grounding, verifier_bundle=args.verifier_bundle)
                     print(f"Agent terminated: {status}")
                     return
 
                 if not args.yes:
                     reply = input("Approve this action? [y/N/q]: ").strip().lower()
                     if reply in {"q", "quit", "stop"}:
-                        await finish_run(task_dir, status="stopped", reason="user stopped before approved action")
+                        await finish_run(task_dir, status="stopped", reason="user stopped before approved action", termination_reason="user_stopped", verifier_bundle=args.verifier_bundle)
                         print(f"Stopped before step {step:03d}")
                         return
                     if reply not in {"y", "yes"}:
@@ -1771,7 +1906,7 @@ async def run(args: argparse.Namespace) -> None:
                     continue
 
                 if getattr(cdp, "renderer_wedged", False):
-                    await finish_run(task_dir, status="failure", reason="renderer_unresponsive")
+                    await finish_run(task_dir, status="failure", reason="renderer_unresponsive", termination_reason="renderer_unresponsive", verifier_bundle=args.verifier_bundle)
                     print("Stopped: renderer_unresponsive")
                     return
                 last_action_error = result.get("last_action_error")
@@ -1793,25 +1928,25 @@ async def run(args: argparse.Namespace) -> None:
                 else:
                     degraded_count = 0
                 if no_progress_count >= 4:
-                    await finish_run(task_dir, status="no_progress", reason="4 consecutive completed steps made no visible progress")
+                    await finish_run(task_dir, status="no_progress", reason="4 consecutive completed steps made no visible progress", termination_reason="no_progress", verifier_bundle=args.verifier_bundle)
                     print("Stopped: no_progress")
                     return
                 if wait_count >= 3:
-                    await finish_run(task_dir, status="wait_loop", reason="3 consecutive wait actions")
+                    await finish_run(task_dir, status="wait_loop", reason="3 consecutive wait actions", termination_reason="wait_loop", verifier_bundle=args.verifier_bundle)
                     print("Stopped: wait_loop")
                     return
                 if degraded_count >= 3:
-                    await finish_run(task_dir, status="capture_unavailable", reason="3 consecutive degraded captures")
+                    await finish_run(task_dir, status="capture_unavailable", reason="3 consecutive degraded captures", termination_reason="capture_unavailable", verifier_bundle=args.verifier_bundle)
                     print("Stopped: capture_unavailable")
                     return
                 step += 1
                 recorded_this_run += 1
-            await finish_run(task_dir, status="max_steps_reached", reason=f"stopped after max steps: {args.max_steps}")
+            await finish_run(task_dir, status="max_steps_reached", reason=f"stopped after max steps: {args.max_steps}", termination_reason="max_steps", verifier_bundle=args.verifier_bundle)
             print(f"Stopped after max steps: {args.max_steps}")
         finally:
             if not final_state_written:
                 try:
-                    final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing, dom_capture=args.dom_capture, observation_max_elements=args.observation_max_elements)
+                    final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing, final_state_dom=args.final_state_dom, observation_max_elements=args.observation_max_elements)
                     append_jsonl(log_path, {"ts": utc_now(), "event": "final_state_captured", "final_state": final_state})
                 except Exception as error:
                     append_jsonl(log_path, {"ts": utc_now(), "event": "warning", "warning": "final_state_capture_failed", "error": str(error)})
@@ -1839,6 +1974,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-elements", type=int, default=120)
     parser.add_argument("--observation-max-elements", type=int, default=250)
     parser.add_argument("--dom-capture", choices=("full", "slim", "none"), default="slim")
+    parser.add_argument("--final-state-dom", choices=("full", "slim", "both"), default="both")
     parser.add_argument("--dom-diff-max-entries", type=int, default=200)
     parser.add_argument("--collapse-text-chars", type=int, default=500)
     parser.add_argument("--validate-diff", action="store_true")
@@ -1863,6 +1999,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--screenshot-quality", type=int, default=70)
     parser.add_argument("--screenshot-mode", choices=("both", "after_only"), default="after_only")
     parser.add_argument("--screenshot-container", default="wootz-desktop-browser-replay-001")
+    parser.add_argument("--verifier-bundle", action="store_true", help="write <task-id>_verifier_bundle.zip with required verifier artifacts")
     return parser
 
 

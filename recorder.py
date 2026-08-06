@@ -2293,6 +2293,33 @@ def step_numbers(task_dir: Path) -> list[int]:
     return sorted(numbers)
 
 
+def write_verifier_readme(task_dir: Path) -> None:
+    text = """# Verifier artifact guide
+
+Required files:
+
+- `manifest.json` — run metadata and task id.
+- `log.jsonl` — complete event stream and model/action trace.
+- `agent_browser_final.json` — final claim/status to verify.
+- `step_NNN/action.json` — normalized action and verifier action fields.
+- `step_NNN/page_state_before.json` and `step_NNN/page_state_after.json` — URL/title/viewport state for the step.
+- `step_NNN/dom_diff.json` — primary verifier evidence.
+
+Supporting evidence:
+
+- `step_NNN/evidence/dom_state_before.json.gz` and `dom_state_after.json.gz` — slim DOM projections.
+- `step_NNN/evidence/*.jpg` — screenshots.
+- `step_NNN/agent/*` — model-facing observation evidence and observation diff.
+- `final_state/dom_full.json.gz` — raw final ChromiumRL DOM snapshot when enabled.
+- `final_state/dom_state.json.gz` — slim final DOM projection.
+- `final_state/page_state.json` — final URL/title/viewport state.
+- `final_state/observation.json` — final capped interactive observation; this is not a DOM snapshot.
+
+Use the last step's `dom_diff.json` for the final transition. There is intentionally no `final_state/dom_diff.json`.
+"""
+    (task_dir / "VERIFIER.md").write_text(text, encoding="utf-8")
+
+
 def update_manifest(task_dir: Path, **updates: Any) -> dict[str, Any]:
     path = task_dir / "manifest.json"
     manifest = json.loads(path.read_text(encoding="utf-8"))
@@ -2330,10 +2357,12 @@ def initialize_task(
             "started_at": utc_now(),
             "updated_at": utc_now(),
             "cdp_url": cdp_url,
+            "source_actions": source_actions,
             "source_action_count": action_count,
             "completed_steps": 0,
         },
     )
+    write_verifier_readme(task_dir)
     return task_dir
 
 

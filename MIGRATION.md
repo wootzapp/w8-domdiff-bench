@@ -6,17 +6,25 @@ V5 restored per-step DOM capture because DOM-diff verifier evidence is the produ
 tasks/<task-id>/
 ├── manifest.json
 ├── log.jsonl
+├── agent_browser_final.json
+├── VERIFIER.md
 ├── step_001/
 │   ├── action.json
-│   ├── observation_before.json.gz
-│   ├── observation_after.json.gz
-│   ├── dom_before.json.gz
-│   ├── dom_after.json.gz
+│   ├── page_state_before.json
+│   ├── page_state_after.json
 │   ├── dom_diff.json
-│   ├── observation_diff.json
-│   └── after.jpg
+│   ├── evidence/
+│   │   ├── dom_state_before.json.gz
+│   │   ├── dom_state_after.json.gz
+│   │   └── after.jpg
+│   └── agent/
+│       ├── observation_before.json.gz
+│       ├── observation_after.json.gz
+│       └── observation_diff.json
 └── final_state/
-    ├── dom.json.gz
+    ├── dom_full.json.gz
+    ├── dom_state.json.gz
+    ├── page_state.json
     ├── observation.json
     └── screenshot.jpg
 ```
@@ -29,9 +37,13 @@ Old-to-new mapping:
 | `agent_browser_decisions.jsonl` | `log.jsonl` events `model_request` / `model_response` | Model inputs are consolidated into the log. |
 | `model_inputs/request_*.json` | `log.jsonl` event `model_request` | Snapshot text is truncated only in the log copy at 8000 chars. |
 | `step.json` + `verifier_action.json` | `step_NNN/action.json` | Step metadata and verifier action are merged. |
+| root final claim in logs only | `agent_browser_final.json` | Final answer/status/termination reason is restored as a required first-class verifier file. |
+| old page state inside nested capture folders | `step_NNN/page_state_before.json`, `page_state_after.json`, `final_state/page_state.json` | Tiny URL/title/viewport state files are restored and left uncompressed. |
+| final slim DOM `dom.json.gz` | `final_state/dom_state.json.gz` | Slim projection only; not interchangeable with raw DOM. |
+| final raw DOM opt-in only | `final_state/dom_full.json.gz` | Raw final `saveDOMState`, gzipped, written by default with `--final-state-dom both`. |
 | `dom_diff_summary.json` | `step_NNN/observation_diff.json` | Important: the old file was based on capped `getAgentObservation` interactive elements, not the full DOM. Conclusions about non-interactive text, totals, confirmations, or status changes were not supportable. |
 | v4 `step_NNN/diff.json` | `step_NNN/observation_diff.json` | Same observation-based progress signal, renamed for provenance clarity. |
-| per-step raw `chromiumrl_dom.json` | `step_NNN/dom_before.json.gz` / `dom_after.json.gz` | Default is a slim semantic projection. Use `--dom-capture full` for raw audit copies. |
+| per-step raw `chromiumrl_dom.json` | `step_NNN/evidence/dom_state_before.json.gz` / `dom_state_after.json.gz` | Default per-step evidence is a slim semantic projection. Use `--dom-capture full` for per-step raw audit copies. |
 | `ChromiumRL.compareDOMState` output | folded into `step_NNN/dom_diff.json.source.compareDOMState` | The compact local diff uses saveDOMState projections; browser compare timing/summary is kept as provenance. |
 
 Verifier guidance: consume `step_NNN/dom_diff.json`. Use `observation_diff.json` only as supporting progress/debug evidence.
@@ -44,3 +56,5 @@ V6 verifier notes:
 - Every diff has `enrichment`. Form `value`, `checked`, and `selected` can come from `Runtime.evaluate`; enriched attributes are marked with `{"v": ..., "src": "prop"}`. If enrichment fails, verifier confidence for form changes should be downgraded.
 - `active` and `current` class changes are preserved. On pure scroll steps they are moved to `flagged_changes` with `likely_scroll_artifact: true`; `stats.changed_total` counts only unflagged semantic changes.
 - `--validate-diff` records a count-level comparison against browser `ChromiumRL.compareDOMState` operations in `dom_diff.json.compare_validation`.
+
+V7 note: `final_state/observation.json` is not a DOM snapshot under any setting. It is capped interactive observation data. Final-state DOM diff is intentionally absent; use the last step's `dom_diff.json`.

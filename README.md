@@ -90,53 +90,72 @@ Useful options:
 
 ## Current artifact layout
 
-Each run writes the v5 DOM-diff layout. The DOM diff is the primary verifier artifact; observations and screenshots are supporting evidence.
+Each run writes the v7 DOM-diff verifier layout. The DOM diff is the primary verifier artifact; page state and final claim files are required verifier inputs; observations and screenshots are supporting evidence.
 
 ```text
 tasks/<task-id>/
 ├── manifest.json
 ├── log.jsonl
+├── agent_browser_final.json
+├── VERIFIER.md
 ├── step_001/
 │   ├── action.json
-│   ├── observation_before.json.gz
-│   ├── observation_after.json.gz
-│   ├── dom_before.json.gz
-│   ├── dom_after.json.gz
+│   ├── page_state_before.json
+│   ├── page_state_after.json
 │   ├── dom_diff.json
-│   ├── observation_diff.json
-│   └── after.jpg              # default; before.jpg also appears with --screenshot-mode both
+│   ├── evidence/
+│   │   ├── dom_state_before.json.gz
+│   │   ├── dom_state_after.json.gz
+│   │   └── after.jpg
+│   └── agent/
+│       ├── observation_before.json.gz
+│       ├── observation_after.json.gz
+│       └── observation_diff.json
 └── final_state/
-    ├── dom.json.gz
+    ├── dom_full.json.gz
+    ├── dom_state.json.gz
+    ├── page_state.json
     ├── observation.json
     └── screenshot.jpg
 ```
 
-File meanings:
+File tiers:
 
-| File | Meaning |
-|---|---|
-| `manifest.json` | Run metadata: task id, prompt, runner, model/config, start time. |
-| `log.jsonl` | Unified trajectory/event log. Includes model requests/responses, actions, capture notes, warnings, and final status. |
-| `step_XXX/action.json` | Human-readable action record, including normalized verifier action fields like `url` for navigation and `key` for keypresses. |
-| `step_XXX/observation_before.json.gz` / `observation_after.json.gz` | Compressed model-facing observations before/after the action. These come from ChromiumRL observation or JS fallback and are not the DOM diff source. |
-| `step_XXX/dom_before.json.gz` / `dom_after.json.gz` | Slim projections of `ChromiumRL.saveDOMState`. These preserve semantic text, semantic attributes, visibility, viewport flags, and selected state-ish styles/classes. |
-| `step_XXX/dom_diff.json` | Compact semantic DOM diff computed from real slim DOM projections. This is the verifier artifact. It includes cross-document mode, frame coverage, enrichment provenance, true totals, emitted counts, and `truncated`. |
-| `step_XXX/observation_diff.json` | Observation-based interactive-element diff. This replaces the old misleading `dom_diff_summary.json` name and is mainly useful for agent-loop/progress detection. |
-| `step_XXX/after.jpg` | Default post-action screenshot. With `--screenshot-mode both`, `before.jpg` is also written. Extension follows `--screenshot-format`. |
-| `final_state/dom.json.gz` | Final slim DOM projection. If `--dom-capture full` is used, `final_state/dom_raw.json.gz` is also written. |
-| `final_state/observation.json` | Final observation. |
-| `final_state/screenshot.jpg` | Final screenshot. Extension follows `--screenshot-format`. |
+| File | Tier | Meaning |
+|---|---|---|
+| `manifest.json` | Required | Run metadata: task id, runner, model/config, start time. |
+| `log.jsonl` | Required | Unified trajectory/event log with model requests/responses, actions, capture notes, warnings, and final status. |
+| `agent_browser_final.json` | Required | Final claim being verified: status, final answer, terminate action, termination reason, completed step count, and grounding check. |
+| `VERIFIER.md` | Required | Human-readable guide for the task artifact folder. |
+| `step_XXX/action.json` | Required | Human-readable action record, including normalized verifier action fields like `url` for navigation and `key` for keypresses. |
+| `step_XXX/page_state_before.json` / `page_state_after.json` | Required | Tiny greppable page state: URL, title, readyState, viewport, scroll, and devicePixelRatio. |
+| `step_XXX/dom_diff.json` | Primary verifier artifact | Compact semantic DOM diff computed from real slim DOM projections. Includes cross-document mode, frame coverage, enrichment provenance, true totals, emitted counts, and `truncated`. |
+| `step_XXX/evidence/dom_state_before.json.gz` / `dom_state_after.json.gz` | Supporting evidence | Slim DOM projections. These preserve semantic text/attrs, visibility, viewport flags, and selected state-ish styles/classes. |
+| `step_XXX/evidence/after.jpg` | Supporting evidence | Default post-action screenshot. With `--screenshot-mode both`, `before.jpg` is also written. |
+| `step_XXX/agent/observation_before.json.gz` / `observation_after.json.gz` | Agent/debug evidence | Model-facing observations before/after the action. These are not DOM snapshots and are not the DOM diff source. |
+| `step_XXX/agent/observation_diff.json` | Agent/debug evidence | Observation-based interactive-element diff; useful for progress/debugging only. |
+| `final_state/dom_full.json.gz` | Final audit evidence | Raw final `ChromiumRL.saveDOMState`, gzipped. It contains full raw node payloads, including full `keyStyles`; it is not interchangeable with the slim projection. |
+| `final_state/dom_state.json.gz` | Final audit evidence | Slim final DOM projection. It has reduced `keyStyles` to 6 properties and removed comments/scripts/styles/whitespace-only text nodes. |
+| `final_state/page_state.json` | Required final evidence | Final URL/title/viewport state. |
+| `final_state/observation.json` | Agent/debug evidence | Final `getAgentObservation` payload: interactive elements only, capped by `--observation-max-elements`. It is not a DOM snapshot under any setting. |
+| `final_state/screenshot.jpg` | Supporting evidence | Final screenshot. Extension follows `--screenshot-format`. |
+
+Final-state DOM diff is intentionally absent. Use the last step's `dom_diff.json`; it covers the final transition.
 
 DOM options:
 
 ```text
---dom-capture slim            Default. Writes slim DOM projections plus compact dom_diff.json.
---dom-capture full            Also writes raw saveDOMState as dom_before_raw/dom_after_raw/final_state/dom_raw.
---dom-capture none            Disables DOM artifacts; use only for debugging, not verifier data.
+--dom-capture slim            Default. Writes per-step slim DOM projections plus compact dom_diff.json.
+--dom-capture full            Also writes per-step raw saveDOMState as evidence/dom_full_before/after.json.gz.
+--dom-capture none            Disables per-step DOM artifacts; use only for debugging, not verifier data.
+--final-state-dom both        Default. Writes final_state/dom_full.json.gz and dom_state.json.gz.
+--final-state-dom slim        Final state slim projection only.
+--final-state-dom full        Final state raw DOM only.
 --dom-diff-max-entries 200    Per-list emitted-entry cap; true totals are always reported.
---collapse-text-chars 500      Visible-text budget for collapsed subtree/document summaries. Raise to 2000 for audit runs.
+--collapse-text-chars 500     Visible-text budget for collapsed subtree/document summaries. Raise to 2000 for audit runs.
 --validate-diff               Compare local compact diff counts against ChromiumRL.compareDOMState operations.
 --observation-max-elements 250 Raises ChromiumRL.getAgentObservation maxElements/maxInteractiveElements.
+--verifier-bundle             Writes <task-id>_verifier_bundle.zip containing required and supporting verifier files.
 --fresh-tab-mode new_tab      Default. Use current browser window with a fresh tab. new_context isolates more but risks OS window ordering/occlusion.
 ```
 
