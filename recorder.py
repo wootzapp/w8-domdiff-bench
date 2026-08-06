@@ -542,6 +542,51 @@ def command_entry(params: dict[str, Any], timing: dict[str, Any], result: dict[s
     return {"params": params, "timing": timing, "result": result}
 
 
+async def enable_page_domains(cdp: CDPConnection) -> dict[str, Any]:
+    results: dict[str, Any] = {}
+    if getattr(cdp, "enable_runtime_domain", False):
+        try:
+            await cdp.send("Runtime.enable", {}, use_session=True, timeout=5.0)
+            results["Runtime.enable"] = {"ok": True}
+        except Exception as error:
+            results["Runtime.enable"] = {"ok": False, "error": str(error)}
+            log_event(cdp, "warning", warning="Runtime.enable failed", error=str(error))
+    else:
+        results["Runtime.enable"] = {"ok": True, "skipped": True, "reason": "default disabled; Runtime.evaluate works without Runtime.enable"}
+    try:
+        await cdp.send("Page.enable", {}, use_session=True, timeout=5.0)
+        results["Page.enable"] = {"ok": True}
+    except Exception as error:
+        results["Page.enable"] = {"ok": False, "error": str(error)}
+        log_event(cdp, "warning", warning="Page.enable failed", error=str(error))
+    return results
+
+
+PAGE_STATE_EXPRESSION = r"""
+(() => {
+  const de = document.documentElement || {};
+  const body = document.body || {};
+  const viewportHeight = window.innerHeight || de.clientHeight || 0;
+  const viewportWidth = window.innerWidth || de.clientWidth || 0;
+  const scrollHeight = Math.max(de.scrollHeight || 0, body.scrollHeight || 0, de.clientHeight || 0);
+  const scrollWidth = Math.max(de.scrollWidth || 0, body.scrollWidth || 0, de.clientWidth || 0);
+  return {
+    url: location.href,
+    title: document.title,
+    readyState: document.readyState,
+    viewport: {
+      innerWidth: viewportWidth, innerHeight: viewportHeight,
+      scrollX: window.scrollX || 0, scrollY: window.scrollY || 0,
+      scrollWidth, scrollHeight,
+      canScrollDown: (window.scrollY || 0) + viewportHeight < scrollHeight - 1,
+      canScrollUp: (window.scrollY || 0) > 0
+    },
+    nodeCount: document.querySelectorAll('*').length
+  };
+})()
+"""
+
+
 async def probe_renderer_responsive(cdp: CDPConnection, *, timeout: float = 3.0) -> bool:
     try:
         await cdp.send(
