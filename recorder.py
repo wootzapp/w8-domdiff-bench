@@ -573,7 +573,7 @@ class ScreenshotConfig:
     adb_serial: str
     timeout_seconds: float
     format: str = "jpeg"
-    quality: int = 80
+    quality: int = 70
 
 
 async def enable_page_domains(cdp: CDPConnection) -> dict[str, Any]:
@@ -862,7 +862,7 @@ async def capture_screenshot_best_effort(cdp: CDPConnection, directory: Path, co
     extension = "jpg" if fmt == "jpeg" else fmt
     params: dict[str, Any] = {"format": fmt, "fromSurface": True, "captureBeyondViewport": False}
     if fmt in {"jpeg", "webp"}:
-        quality = int(getattr(config, "quality", 80) or 80)
+        quality = int(getattr(config, "quality", 70) or 70)
         params["quality"] = max(1, min(100, quality))
     attempts: list[dict[str, Any]] = []
     started = time.perf_counter()

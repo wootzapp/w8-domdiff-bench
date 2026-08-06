@@ -1751,7 +1751,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--step-timeout", type=float, default=120.0)
     parser.add_argument("--load-timeout", type=float, default=12.0)
     parser.add_argument("--max-duration-seconds", type=float, default=900.0)
-    parser.add_argument("--max-steps", type=int, default=80)
+    parser.add_argument("--max-steps", type=int, default=70)
     parser.add_argument("--max-elements", type=int, default=120)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--fresh-tab-url", default="about:blank")
@@ -1770,7 +1770,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--chromiumrl-full-tracing", action="store_true", help="enable legacy heavy ChromiumRL tracing probes")
     parser.add_argument("--screenshot-source", choices=("cdp", "none"), default="cdp")
     parser.add_argument("--screenshot-format", choices=("jpeg", "png", "webp"), default="jpeg")
-    parser.add_argument("--screenshot-quality", type=int, default=80)
+    parser.add_argument("--screenshot-quality", type=int, default=70)
     parser.add_argument("--screenshot-mode", choices=("both", "after_only"), default="after_only")
     parser.add_argument("--screenshot-container", default="wootz-desktop-browser-replay-001")
     return parser
