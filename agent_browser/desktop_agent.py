@@ -1309,9 +1309,11 @@ def content_tokens(text: str) -> list[str]:
 
 
 def grounding_check(final_answer: str, observation_text: str) -> dict[str, Any]:
-    import re
     obs = observation_text.lower()
-    quoted = re.findall(r"['\"]([^'\"]{3,160})['\"]", final_answer)
+    quoted: list[str] = []
+    for quote_char in ("'", '\"'):
+        parts = final_answer.split(quote_char)
+        quoted.extend(parts[index] for index in range(1, len(parts), 2))
     for quote in quoted:
         quote_norm = " ".join(quote.lower().split())
         if quote_norm and quote_norm in obs:
