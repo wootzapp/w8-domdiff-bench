@@ -1,8 +1,8 @@
-# task-recorder v3 artifact layout
+# task-recorder v5 artifact layout
 
-New runs use a reduced artifact layout:
+V5 restores per-step DOM capture because DOM-diff verifier evidence is the product. The v4 reduced layout treated DOM capture as overhead; that was incorrect for verifier work.
 
-```
+```text
 tasks/<task-id>/
 ├── manifest.json
 ├── log.jsonl
@@ -10,13 +10,15 @@ tasks/<task-id>/
 │   ├── action.json
 │   ├── observation_before.json.gz
 │   ├── observation_after.json.gz
-│   ├── diff.json
-│   ├── before.png
-│   └── after.png
+│   ├── dom_before.json.gz
+│   ├── dom_after.json.gz
+│   ├── dom_diff.json
+│   ├── observation_diff.json
+│   └── after.jpg
 └── final_state/
     ├── dom.json.gz
     ├── observation.json
-    └── screenshot.png
+    └── screenshot.jpg
 ```
 
 Old-to-new mapping:
@@ -26,10 +28,10 @@ Old-to-new mapping:
 | `trajectory.jsonl` | `log.jsonl` | Use `scripts/replay-log.py tasks/<task-id>` for a readable trajectory. |
 | `agent_browser_decisions.jsonl` | `log.jsonl` events `model_request` / `model_response` | Model inputs are consolidated into the log. |
 | `model_inputs/request_*.json` | `log.jsonl` event `model_request` | Snapshot text is truncated only in the log copy at 8000 chars. |
-| `step.json` + `verifier_action.json` | `step_NNN/action.json` | Human-readable step metadata and verifier action are merged. |
-| `dom_diff_summary.json` | `step_NNN/diff.json` | Computed by the recorder from before/after observations. |
-| per-step `before/after/chromiumrl_dom.json` | removed | Full DOM is kept only at `final_state/dom.json.gz`. |
-| `chromiumrl_signals.json` | removed | Only `getTouchTraces` is retained, and only when the action has coordinates. |
-| `interaction_capture.json`, `all_targets/`, visual hash files | removed | Not needed by the reduced verifier artifact set. |
+| `step.json` + `verifier_action.json` | `step_NNN/action.json` | Step metadata and verifier action are merged. |
+| `dom_diff_summary.json` | `step_NNN/observation_diff.json` | Important: the old file was based on `getAgentObservation`, not the full DOM. It was not valid DOM-diff verifier evidence. |
+| v4 `step_NNN/diff.json` | `step_NNN/observation_diff.json` | Same observation-based progress signal, renamed for provenance clarity. |
+| per-step raw `chromiumrl_dom.json` | `step_NNN/dom_before.json.gz` / `dom_after.json.gz` | Default is a slim semantic projection. Use `--dom-capture full` for raw audit copies. |
+| `ChromiumRL.compareDOMState` output | folded into `step_NNN/dom_diff.json.source.compareDOMState` | The compact local diff uses saveDOMState projections; browser compare timing/summary is kept as provenance. |
 
-The model-facing observation now includes visible off-fold elements grouped as `above fold`, `in viewport`, and `below fold`. Off-fold refs remain actionable; the runner scrolls them into view before clicking or filling.
+Verifier guidance: consume `step_NNN/dom_diff.json`. Use `observation_diff.json` only as supporting progress/debug evidence.

@@ -35,6 +35,7 @@ from recorder import (  # noqa: E402
     append_jsonl,
     artifact_record,
     build_dom_diff_summary,
+    build_compact_dom_diff,
     build_verifier_action,
     capture_state_with_recovery,
     collect_chromiumrl_signals,
@@ -55,6 +56,7 @@ from recorder import (  # noqa: E402
     wait_for_ready,
     collect_js_observation,
     chromiumrl_call,
+    activate_current_target,
     log_event,
     observation_payload,
     observation_is_implausible,
@@ -444,7 +446,7 @@ def outcome_from_trajectory_item(task_dir: Path, item: dict[str, Any], action: d
     summary = fallback_dom_diff_summary(before_page, after_page)
     artifact_dir = item.get("artifacts_directory")
     if isinstance(artifact_dir, str) and artifact_dir:
-        summary_path = task_dir / artifact_dir / "dom_diff_summary.json"
+        summary_path = task_dir / artifact_dir / "observation_diff.json"
         if summary_path.exists():
             try:
                 loaded = json.loads(summary_path.read_text(encoding="utf-8"))
@@ -513,6 +515,7 @@ class DesktopWootzAgent:
         *,
         include_runtime_visible_text: bool = True,
         observation_source: str = "auto",
+        observation_max_elements: int | None = None,
     ) -> Snapshot:
         payload: dict[str, Any]
 
@@ -522,12 +525,15 @@ class DesktopWootzAgent:
             js["source"] = "js_fallback"
             return js
 
+        chromiumrl_params: dict[str, Any] = {}
+        if observation_max_elements and observation_max_elements > 0:
+            chromiumrl_params = {"maxElements": int(observation_max_elements), "maxInteractiveElements": int(observation_max_elements)}
         if observation_source == "js":
             payload = await js_payload("requested_js")
         else:
             try:
-                value = await chromiumrl_call(self.cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label="snapshot")
-                payload = {"params": {}, "timing": {"ok": True}, "result": value, "source": "chromiumrl"}
+                value = await chromiumrl_call(self.cdp, "ChromiumRL.getAgentObservation", chromiumrl_params, timeout=TIMEOUT_OBSERVATION, label="snapshot")
+                payload = {"params": chromiumrl_params, "timing": {"ok": True}, "result": value, "source": "chromiumrl"}
                 observation_for_gate = get_observation_dict(payload)
                 page_state_for_gate = {
                     "url": observation_for_gate.get("url", ""),
@@ -931,6 +937,7 @@ class DesktopWootzAgent:
         return float(x), float(y)
 
     async def perform(self, action: dict[str, Any]) -> dict[str, Any]:
+        await activate_current_target(self.cdp, label="before_action")
         normalized = normalize_action(action)
         name = str(normalized.get("action", ""))
         if name == "navigate":
@@ -1341,6 +1348,9 @@ async def record_automated_step(
     observation_source: str = "auto",
     load_timeout: float = 12.0,
     screenshot_mode: str = "after_only",
+    dom_capture: str = "slim",
+    dom_diff_max_entries: int = 200,
+    observation_max_elements: int | None = None,
 ) -> dict[str, Any]:
     cdp = agent.cdp
     action = normalize_action(action)
@@ -1372,9 +1382,18 @@ async def record_automated_step(
         capture_all_targets=False,
         chromiumrl_full_tracing=chromiumrl_full_tracing,
         observation_source=observation_source,
-        write_dom=False,
+        write_dom=dom_capture != "none",
+        dom_capture=dom_capture,
+        observation_max_elements=observation_max_elements,
     )
     write_json_gz(step_dir / "observation_before.json.gz", before.agent_observation)
+    if dom_capture != "none" and before.dom_captured:
+        src = before_dir / "chromiumrl_dom_slim.json.gz"
+        if src.exists():
+            shutil.copyfile(src, step_dir / "dom_before.json.gz")
+        raw = before_dir / "chromiumrl_dom_raw.json.gz"
+        if raw.exists():
+            shutil.copyfile(raw, step_dir / "dom_before_raw.json.gz")
     before_image = None
     if screenshot_mode == "both":
         before_image = copy_step_screenshot(before_dir, step_dir, "before")
@@ -1405,14 +1424,42 @@ async def record_automated_step(
         capture_all_targets=False,
         chromiumrl_full_tracing=chromiumrl_full_tracing,
         observation_source=observation_source,
-        write_dom=False,
+        write_dom=dom_capture != "none",
+        dom_capture=dom_capture,
+        observation_max_elements=observation_max_elements,
     )
     write_json_gz(step_dir / "observation_after.json.gz", after.agent_observation)
+    if dom_capture != "none" and after.dom_captured:
+        src = after_dir / "chromiumrl_dom_slim.json.gz"
+        if src.exists():
+            shutil.copyfile(src, step_dir / "dom_after.json.gz")
+        raw = after_dir / "chromiumrl_dom_raw.json.gz"
+        if raw.exists():
+            shutil.copyfile(raw, step_dir / "dom_after_raw.json.gz")
     after_image = copy_step_screenshot(after_dir, step_dir, "after")
     append_jsonl(log_path, {"ts": utc_now(), "event": "observation_captured", "step": step_number, "phase": "after", "source": after.observation_source, "degraded": after.degraded, "notes": after.capture_notes})
 
-    diff = build_dom_diff_summary(before, after)
-    write_json_compact(step_dir / "diff.json", diff)
+    observation_diff = build_dom_diff_summary(before, after)
+    write_json_compact(step_dir / "observation_diff.json", observation_diff)
+
+    compare_result: dict[str, Any] = {}
+    compare_timing: dict[str, Any] = {"ok": False, "skipped": True}
+    if dom_capture != "none" and before.chromiumrl_dom:
+        started_compare = time.perf_counter()
+        try:
+            compare_result = await chromiumrl_call(
+                cdp,
+                "ChromiumRL.compareDOMState",
+                {"referenceState": before.chromiumrl_dom},
+                timeout=TIMEOUT_DOM_CAPTURE,
+                label="compare_dom_state",
+            )
+            compare_timing = {"ok": True, "elapsed_ms": round((time.perf_counter() - started_compare) * 1000, 3)}
+        except Exception as error:
+            compare_timing = {"ok": False, "elapsed_ms": round((time.perf_counter() - started_compare) * 1000, 3), "error": str(error)}
+            log_event(cdp, "warning", warning="compare_dom_state_failed", step=step_number, error=str(error))
+    dom_diff = build_compact_dom_diff(before.chromiumrl_dom, after.chromiumrl_dom, compare_result=compare_result, compare_timing=compare_timing, max_entries=dom_diff_max_entries)
+    write_json_compact(step_dir / "dom_diff.json", dom_diff)
 
     signals: dict[str, Any] = {"captured_at": utc_now(), "commands": {}}
     if performed_action.get("coordinate") is not None:
@@ -1443,7 +1490,7 @@ async def record_automated_step(
             "before_image": before_image,
             "after_image": after_image,
         },
-        "outcome": build_step_outcome(performed_action, before.page_state, after.page_state, diff),
+        "outcome": build_step_outcome(performed_action, before.page_state, after.page_state, observation_diff),
     }
     if action_error:
         action_record["last_action_error"] = action_error
@@ -1457,7 +1504,7 @@ async def record_automated_step(
     return {"action": performed_action, "outcome": action_record["outcome"], "last_action_error": action_error, "degraded": after.degraded, "before_degraded": before.degraded, "after_degraded": after.degraded}
 
 
-async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_config: ScreenshotConfig, *, observation_source: str, chromiumrl_full_tracing: bool) -> dict[str, Any]:
+async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_config: ScreenshotConfig, *, observation_source: str, chromiumrl_full_tracing: bool, dom_capture: str = "slim", observation_max_elements: int | None = None) -> dict[str, Any]:
     final_dir = task_dir / "final_state"
     state = await capture_state_with_recovery(
         cdp,
@@ -1467,7 +1514,9 @@ async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_confi
         capture_all_targets=False,
         chromiumrl_full_tracing=chromiumrl_full_tracing,
         observation_source=observation_source,
-        write_dom=True,
+        write_dom=dom_capture != "none",
+        dom_capture=dom_capture,
+        observation_max_elements=observation_max_elements,
     )
     observation_path = final_dir / "chromiumrl_agent_observation.json"
     if observation_path.exists():
@@ -1477,12 +1526,18 @@ async def write_final_state(task_dir: Path, cdp: CDPConnection, screenshot_confi
             observation_path.unlink()
         except Exception:
             pass
-    dom_path = final_dir / "chromiumrl_dom.json.gz"
+    dom_path = final_dir / "chromiumrl_dom_slim.json.gz"
     if dom_path.exists():
         target_dom = final_dir / "dom.json.gz"
         if target_dom.exists():
             target_dom.unlink()
         dom_path.rename(target_dom)
+    raw_dom_path = final_dir / "chromiumrl_dom_raw.json.gz"
+    if raw_dom_path.exists():
+        target_raw = final_dir / "dom_raw.json.gz"
+        if target_raw.exists():
+            target_raw.unlink()
+        raw_dom_path.rename(target_raw)
     for extra in (final_dir / "page_state.json", final_dir / "screenshot_error.json", final_dir / "screenshot_skipped.json"):
         if extra.exists():
             with contextlib.suppress(Exception):
@@ -1539,8 +1594,9 @@ async def run(args: argparse.Namespace) -> None:
         {
             "mode": "agent_browser_desktop",
             "task": args.task,
-            "artifact_layout": "v3_reduced",
+            "artifact_layout": "v5_dom_diff",
             "observation_source": args.observation_source,
+            "dom_capture": args.dom_capture,
             "model": model,
         },
         0,
@@ -1579,19 +1635,26 @@ async def run(args: argparse.Namespace) -> None:
             log_event(cdp, "warning", warning="chromiumrl_startup_enable_failed", error=str(error))
         startup_language_overrides = await apply_language_overrides(cdp, locale=args.browser_locale, accept_language=args.accept_language)
         if not args.resume:
-            fresh_context = {"ok": False, "reason": "disabled"}
+            fresh_context = {"ok": False, "reason": "fresh_tab_mode_not_new_context"}
             browser_context_id = ""
-            if not args.keep_browser_data:
+            cleanup_result: dict[str, Any] | None = None
+            if args.fresh_tab_mode == "new_context":
                 fresh_context = await create_fresh_browser_context(cdp)
                 if fresh_context.get("ok"):
                     browser_context_id = str(fresh_context.get("browserContextId", ""))
-            fresh_target = await open_fresh_tab(cdp, args.fresh_tab_url, browser_context_id=browser_context_id)
+            if args.fresh_tab_mode == "reuse":
+                fresh_target = cdp.target
+                cdp.pinned_target_id = target_id(cdp.target)
+                if args.fresh_tab_url and args.fresh_tab_url != "about:blank":
+                    await cdp.send("Page.navigate", {"url": args.fresh_tab_url}, use_session=True, timeout=TIMEOUT_EVALUATE)
+                    cdp.main_frame_navigated = True
+            else:
+                fresh_target = await open_fresh_tab(cdp, args.fresh_tab_url, browser_context_id=browser_context_id)
             fresh_tab_language_overrides = await apply_language_overrides(cdp, locale=args.browser_locale, accept_language=args.accept_language)
-            cleanup_result: dict[str, Any] | None = None
             if not args.keep_browser_data and not browser_context_id:
                 cleanup_result = await clear_browser_data_for_fresh_task(cdp)
-            append_jsonl(log_path, {"ts": utc_now(), "event": "target_attached", "target": fresh_target, "fresh_context": fresh_context, "cleanup": cleanup_result, "domains": domains, "language_overrides": startup_language_overrides, "fresh_tab_language_overrides": fresh_tab_language_overrides})
-            print(f"Started non-resume task in a fresh tab: {args.fresh_tab_url}")
+            append_jsonl(log_path, {"ts": utc_now(), "event": "target_attached", "target": fresh_target, "fresh_context": fresh_context, "fresh_tab_mode": args.fresh_tab_mode, "cleanup": cleanup_result, "domains": domains, "language_overrides": startup_language_overrides, "fresh_tab_language_overrides": fresh_tab_language_overrides})
+            print(f"Started non-resume task with fresh-tab-mode={args.fresh_tab_mode}: {args.fresh_tab_url}")
         else:
             append_jsonl(log_path, {"ts": utc_now(), "event": "target_attached", "target": cdp.target, "resume": True, "domains": domains, "language_overrides": startup_language_overrides, "fresh_tab_language_overrides": fresh_tab_language_overrides})
             print("Resume mode: keeping the current browser tab/session.")
@@ -1614,6 +1677,7 @@ async def run(args: argparse.Namespace) -> None:
                     max_elements=args.max_elements,
                     include_runtime_visible_text=not args.strict_chromiumrl_observation,
                     observation_source=args.observation_source,
+                    observation_max_elements=args.observation_max_elements,
                 )
                 if getattr(cdp, "renderer_wedged", False):
                     await finish_run(task_dir, status="failure", reason="renderer_unresponsive")
@@ -1645,7 +1709,7 @@ async def run(args: argparse.Namespace) -> None:
                         if not grounding.get("ok"):
                             append_jsonl(log_path, {"ts": utc_now(), "event": "ungrounded_success", "step": step, "grounding": grounding, "final_answer": final_answer})
                             action["_ungrounded_success"] = grounding
-                    final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing)
+                    final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing, dom_capture=args.dom_capture, observation_max_elements=args.observation_max_elements)
                     final_state_written = True
                     append_jsonl(log_path, {"ts": utc_now(), "event": "final_state_captured", "final_state": final_state})
                     await finish_run(task_dir, status=status, reason=str(action.get("reason", "")), final_answer=final_answer, action=action)
@@ -1676,6 +1740,9 @@ async def run(args: argparse.Namespace) -> None:
                             observation_source=args.observation_source,
                             load_timeout=args.load_timeout,
                             screenshot_mode=args.screenshot_mode,
+                            dom_capture=args.dom_capture,
+                            dom_diff_max_entries=args.dom_diff_max_entries,
+                            observation_max_elements=args.observation_max_elements,
                         ),
                         timeout=args.step_timeout,
                     )
@@ -1729,7 +1796,7 @@ async def run(args: argparse.Namespace) -> None:
         finally:
             if not final_state_written:
                 try:
-                    final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing)
+                    final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing, dom_capture=args.dom_capture, observation_max_elements=args.observation_max_elements)
                     append_jsonl(log_path, {"ts": utc_now(), "event": "final_state_captured", "final_state": final_state})
                 except Exception as error:
                     append_jsonl(log_path, {"ts": utc_now(), "event": "warning", "warning": "final_state_capture_failed", "error": str(error)})
@@ -1755,8 +1822,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-duration-seconds", type=float, default=900.0)
     parser.add_argument("--max-steps", type=int, default=80)
     parser.add_argument("--max-elements", type=int, default=120)
+    parser.add_argument("--observation-max-elements", type=int, default=250)
+    parser.add_argument("--dom-capture", choices=("full", "slim", "none"), default="slim")
+    parser.add_argument("--dom-diff-max-entries", type=int, default=200)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--fresh-tab-url", default="about:blank")
+    parser.add_argument("--fresh-tab-mode", choices=("new_context", "new_tab", "reuse"), default="new_tab")
     parser.add_argument("--keep-browser-data", action="store_true")
     parser.add_argument("--browser-locale", default=os.environ.get("BROWSER_LANG", "en-US"))
     parser.add_argument("--accept-language", default=os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"))

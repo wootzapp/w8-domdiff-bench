@@ -37,6 +37,11 @@ su -s /bin/bash wootz -c \
     --accept-lang='$BROWSER_ACCEPT_LANGUAGE' \
     --no-first-run \
     --disable-first-run-ui \
+    --disable-backgrounding-occluded-windows \
+    --disable-renderer-backgrounding \
+    --disable-background-timer-throttling \
+    --disable-features=CalculateNativeWinOcclusion \
+    --force-device-scale-factor=1 \
     --window-size=1365,768 \
     '$START_URL'" &
 browser_pid="$!"

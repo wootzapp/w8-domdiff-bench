@@ -576,6 +576,29 @@ class ScreenshotConfig:
     quality: int = 70
 
 
+async def activate_current_target(cdp: CDPConnection, *, label: str = "") -> dict[str, Any]:
+    identifier = cdp.pinned_target_id or target_id(cdp.target)
+    result = {"ok": True, "target_id": identifier, "errors": []}
+    if not identifier:
+        result["ok"] = False
+        result["errors"].append("no target id")
+        log_event(cdp, "activate_failed", label=label, result=result)
+        return result
+    try:
+        await cdp.send("Target.activateTarget", {"targetId": identifier}, timeout=TIMEOUT_SIGNAL)
+    except Exception as error:
+        result["ok"] = False
+        result["errors"].append(f"Target.activateTarget: {error}")
+    try:
+        await cdp.send("Page.bringToFront", {}, use_session=True, timeout=TIMEOUT_SIGNAL)
+    except Exception as error:
+        result["ok"] = False
+        result["errors"].append(f"Page.bringToFront: {error}")
+    if not result["ok"]:
+        log_event(cdp, "activate_failed", label=label, result=result)
+    return result
+
+
 async def enable_page_domains(cdp: CDPConnection) -> dict[str, Any]:
     results: dict[str, Any] = {}
     if getattr(cdp, "enable_runtime_domain", False):
@@ -771,8 +794,15 @@ async def collect_agent_observation(
     source: str = "auto",
     label: str = "",
     page_state: dict[str, Any] | None = None,
+    observation_max_elements: int | None = None,
 ) -> dict[str, Any]:
     page_state = page_state or {}
+    chromiumrl_params: dict[str, Any] = {}
+    if observation_max_elements and observation_max_elements > 0:
+        chromiumrl_params = {
+            "maxElements": int(observation_max_elements),
+            "maxInteractiveElements": int(observation_max_elements),
+        }
     if source == "js":
         payload = await collect_js_observation(cdp, label=label or directory.name)
         payload["source"] = "js_fallback"
@@ -793,8 +823,8 @@ async def collect_agent_observation(
         chromiumrl_payload: dict[str, Any] | None = None
         chromiumrl_error = ""
         try:
-            value = await chromiumrl_call(cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label=label or directory.name)
-            chromiumrl_payload = command_entry({}, {"ok": True, "elapsed_ms": 0}, value)
+            value = await chromiumrl_call(cdp, "ChromiumRL.getAgentObservation", chromiumrl_params, timeout=TIMEOUT_OBSERVATION, label=label or directory.name)
+            chromiumrl_payload = command_entry(chromiumrl_params, {"ok": True, "elapsed_ms": 0}, value)
             chromiumrl_payload["source"] = "chromiumrl"
         except Exception as error:
             chromiumrl_error = str(error)
@@ -819,8 +849,8 @@ async def collect_agent_observation(
         return payload
 
     try:
-        value = await chromiumrl_call(cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label=label or directory.name)
-        payload = command_entry({}, {"ok": True, "elapsed_ms": 0}, value)
+        value = await chromiumrl_call(cdp, "ChromiumRL.getAgentObservation", chromiumrl_params, timeout=TIMEOUT_OBSERVATION, label=label or directory.name)
+        payload = command_entry(chromiumrl_params, {"ok": True, "elapsed_ms": 0}, value)
         payload["source"] = "chromiumrl"
         obs = obs_from_payload(payload)
         reason = observation_is_implausible(obs, page_state)
@@ -854,6 +884,73 @@ async def collect_agent_observation(
         trim_observation_context(payload)
         write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
         return payload
+
+
+FORM_CONTROL_STATE_EXPRESSION = r"""
+(() => {
+  const xpath = (el) => {
+    const parts = [];
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      let i = 1;
+      for (let s = n.previousElementSibling; s; s = s.previousElementSibling)
+        if (s.tagName === n.tagName) i++;
+      parts.unshift(n.tagName.toLowerCase() + '[' + i + ']');
+    }
+    return '/' + parts.join('/');
+  };
+  const out = [];
+  for (const el of document.querySelectorAll('input,textarea,select,option')) {
+    const item = {tag: el.tagName.toLowerCase(), selector: '', xpath: xpath(el)};
+    try { item.selector = el.id ? '#' + CSS.escape(el.id) : ''; } catch (e) {}
+    if ('value' in el) item.value = String(el.value || '');
+    if ('checked' in el) item.checked = !!el.checked;
+    if ('selected' in el) item.selected = !!el.selected;
+    out.push(item);
+  }
+  return out;
+})()
+"""
+
+
+async def collect_form_control_state(cdp: CDPConnection, *, label: str = "") -> dict[str, dict[str, Any]]:
+    runtime, timing = await timed_command(
+        cdp,
+        "Runtime.evaluate",
+        {"expression": FORM_CONTROL_STATE_EXPRESSION, "returnByValue": True, "awaitPromise": False},
+        required=False,
+        label=label,
+        timeout=TIMEOUT_EVALUATE,
+    )
+    value = runtime.get("result", {}).get("value", []) if isinstance(runtime, dict) else []
+    by_key: dict[str, dict[str, Any]] = {}
+    if isinstance(value, list):
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            for key_name in ("selector", "xpath"):
+                key = item.get(key_name)
+                if isinstance(key, str) and key.strip():
+                    by_key[f"{key_name}:{key.strip()}"] = item
+    return by_key
+
+
+def enrich_dom_with_form_state(dom_state: dict[str, Any], form_state: dict[str, dict[str, Any]]) -> None:
+    for node in dom_state.get("nodes", []) if isinstance(dom_state.get("nodes"), list) else []:
+        if not isinstance(node, dict):
+            continue
+        candidates = []
+        if isinstance(node.get("cssSelector"), str) and node.get("cssSelector").strip():
+            candidates.append("selector:" + node.get("cssSelector").strip())
+        if isinstance(node.get("xpath"), str) and node.get("xpath").strip():
+            candidates.append("xpath:" + node.get("xpath").strip())
+        match = next((form_state[k] for k in candidates if k in form_state), None)
+        if not match:
+            continue
+        attrs = semantic_attrs(node.get("attributes"))
+        for key in ("value", "checked", "selected"):
+            if key in match:
+                attrs[key] = match[key]
+        node["attributes"] = [{"name": k, "value": str(v).lower() if isinstance(v, bool) else str(v)} for k, v in attrs.items()]
 
 
 async def capture_screenshot_best_effort(cdp: CDPConnection, directory: Path, config: ScreenshotConfig) -> dict[str, Any]:
@@ -894,6 +991,8 @@ async def capture_state(
     capture_all_targets: bool = False,
     observation_source: str = "auto",
     write_dom: bool = False,
+    dom_capture: str = "slim",
+    observation_max_elements: int | None = None,
 ) -> CapturedState:
     directory.mkdir(parents=True, exist_ok=True)
     started_at = utc_now()
@@ -903,6 +1002,8 @@ async def capture_state(
     page_state: dict[str, Any] = {}
     chromiumrl_dom: dict[str, Any] = {}
     dom_captured = False
+
+    commands["activate"] = await activate_current_target(cdp, label=label)
 
     runtime, commands["Runtime.evaluate"] = await timed_command(
         cdp,
@@ -926,7 +1027,7 @@ async def capture_state(
         notes.append("screenshot_failed")
 
     try:
-        agent_observation = await collect_agent_observation(cdp, directory, source=observation_source, label=label, page_state=page_state)
+        agent_observation = await collect_agent_observation(cdp, directory, source=observation_source, label=label, page_state=page_state, observation_max_elements=observation_max_elements)
     except Exception as error:
         degraded = True
         notes.append(f"observation_failed:{error}")
@@ -934,17 +1035,28 @@ async def capture_state(
         write_json_compact(directory / "chromiumrl_agent_observation.json", agent_observation)
     commands["observation"] = {"ok": True, "source": agent_observation.get("source", "chromiumrl")}
 
-    if write_dom:
+    if write_dom and dom_capture != "none":
         try:
             save_dom = await chromiumrl_call(cdp, "ChromiumRL.saveDOMState", {}, timeout=TIMEOUT_DOM_CAPTURE, label=label)
             chromiumrl_dom = save_dom.get("state", {}) if isinstance(save_dom, dict) else {}
             if not isinstance(chromiumrl_dom, dict):
                 chromiumrl_dom = {}
-            write_json_gz(directory / "chromiumrl_dom.json.gz", chromiumrl_dom)
+            try:
+                form_state = await collect_form_control_state(cdp, label=f"{label}:form_state")
+                enrich_dom_with_form_state(chromiumrl_dom, form_state)
+                commands["form_control_state"] = {"ok": True, "count": len(form_state)}
+            except Exception as form_error:
+                commands["form_control_state"] = {"ok": False, "error": str(form_error)}
+            slim_dom = project_dom_state(chromiumrl_dom)
+            write_json_gz(directory / "chromiumrl_dom_slim.json.gz", slim_dom)
+            if dom_capture == "full":
+                write_json_gz(directory / "chromiumrl_dom_raw.json.gz", chromiumrl_dom)
             dom_captured = True
+            commands["ChromiumRL.saveDOMState"] = {"ok": True, "raw_nodes": len(chromiumrl_dom.get("nodes", []) or []), "slim_nodes": len(slim_dom.get("nodes", []) or []), "dom_capture": dom_capture}
         except Exception as error:
             degraded = True
             notes.append(f"dom_failed:{error}")
+            commands["ChromiumRL.saveDOMState"] = {"ok": False, "error": str(error), "dom_capture": dom_capture}
             log_event(cdp, "capture_degraded", label=label, reason=str(error))
 
     index = {
@@ -973,6 +1085,8 @@ async def capture_state_with_recovery(
     chromiumrl_full_tracing: bool = False,
     observation_source: str = "auto",
     write_dom: bool = False,
+    dom_capture: str = "slim",
+    observation_max_elements: int | None = None,
 ) -> CapturedState:
     if cdp.main_frame_navigated:
         try:
@@ -987,6 +1101,8 @@ async def capture_state_with_recovery(
         capture_all_targets=capture_all_targets,
         observation_source=observation_source,
         write_dom=write_dom,
+        dom_capture=dom_capture,
+        observation_max_elements=observation_max_elements,
     )
 
 
@@ -1246,6 +1362,322 @@ def element_at_coordinate_from_observation(state_or_payload: Any, coordinate: li
                 best_area = area
     return best
 
+
+
+SEMANTIC_ATTRS = {
+    "id", "href", "src", "value", "checked", "selected", "disabled", "readonly", "required",
+    "type", "name", "placeholder", "title", "alt", "role", "data-testid",
+}
+STATE_CLASS_RE = re.compile(r"(?:^|[-_])(selected|checked|open|expanded|collapsed|disabled|error|invalid|success|hidden|show|star|rating)(?:$|[-_])", re.I)
+DIFF_STYLE_KEYS = ("display", "visibility", "opacity", "color", "backgroundColor", "textDecoration")
+SKIP_DOM_TAGS = {"#comment", "script", "style", "noscript", "template"}
+INTERACTIVE_TAGS = {"a", "button", "input", "select", "textarea", "summary", "option"}
+INTERACTIVE_ROLES = {"button", "link", "checkbox", "radio", "tab", "menuitem", "combobox", "searchbox", "textbox", "option"}
+
+
+def _attr_items(attributes: Any) -> list[tuple[str, str]]:
+    if isinstance(attributes, dict):
+        return [(str(k), str(v)) for k, v in attributes.items()]
+    result: list[tuple[str, str]] = []
+    if isinstance(attributes, list):
+        for item in attributes:
+            if isinstance(item, dict):
+                name = item.get("name")
+                value = item.get("value", "")
+                if name not in (None, ""):
+                    result.append((str(name), str(value)))
+            elif isinstance(item, (list, tuple)) and len(item) >= 2:
+                result.append((str(item[0]), str(item[1])))
+    return result
+
+
+def semantic_attrs(attributes: Any) -> dict[str, Any]:
+    kept: dict[str, Any] = {}
+    class_tokens: list[str] = []
+    for name, value in _attr_items(attributes):
+        lname = name.lower()
+        if lname in SEMANTIC_ATTRS or lname.startswith("aria-"):
+            kept[lname] = value
+        elif lname == "class":
+            for token in str(value).split():
+                if STATE_CLASS_RE.search(token):
+                    class_tokens.append(token)
+    if class_tokens:
+        kept["class"] = " ".join(dict.fromkeys(class_tokens))
+    return kept
+
+
+def normalize_dom_text(value: Any, limit: int = 200) -> str:
+    if not isinstance(value, str):
+        return ""
+    return " ".join(value.split())[:limit]
+
+
+def node_tag(node: dict[str, Any]) -> str:
+    return str(node.get("tagName") or node.get("nodeName") or "").lower()
+
+
+def _node_raw_key(node: dict[str, Any]) -> str:
+    for key in ("stablePath", "cssSelector", "xpath"):
+        value = node.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def build_structural_paths(nodes: list[dict[str, Any]]) -> dict[Any, str]:
+    by_id = {node.get("nodeId"): node for node in nodes if isinstance(node, dict) and node.get("nodeId") is not None}
+    cache: dict[Any, str] = {}
+
+    def segment(node: dict[str, Any]) -> str:
+        tag = node_tag(node) or "node"
+        sibling = node.get("siblingIndex")
+        try:
+            return f"{tag}[{int(sibling)}]"
+        except Exception:
+            return f"{tag}[]"
+
+    def path_for(node: dict[str, Any]) -> str:
+        node_id = node.get("nodeId")
+        if node_id in cache:
+            return cache[node_id]
+        parent = by_id.get(node.get("parentId"))
+        if parent is not None and parent is not node:
+            value = path_for(parent).rstrip("/") + "/" + segment(node)
+        else:
+            value = "/" + segment(node)
+        if node_id is not None:
+            cache[node_id] = value
+        return value
+
+    return {node.get("nodeId"): path_for(node) for node in nodes if isinstance(node, dict)}
+
+
+def dom_key_population(dom_state: dict[str, Any]) -> dict[str, Any]:
+    nodes = [n for n in dom_state.get("nodes", []) if isinstance(n, dict)]
+    total = len(nodes)
+    fields = {}
+    for key in ("stablePath", "cssSelector", "xpath"):
+        count = sum(1 for n in nodes if isinstance(n.get(key), str) and n.get(key).strip())
+        fields[key] = {"count": count, "rate": round(count / total, 4) if total else 0.0}
+    return {"total_nodes": total, "fields": fields}
+
+
+def project_dom_state(dom_state: dict[str, Any]) -> dict[str, Any]:
+    raw_nodes = [n for n in dom_state.get("nodes", []) if isinstance(n, dict)]
+    structural_paths = build_structural_paths(raw_nodes)
+    projected: list[dict[str, Any]] = []
+    key_counts: dict[str, int] = {}
+    for node in raw_nodes:
+        tag = node_tag(node)
+        text = normalize_dom_text(node.get("textContent"))
+        if tag in SKIP_DOM_TAGS:
+            continue
+        if tag == "#text" and not text:
+            continue
+        raw_key = _node_raw_key(node) or structural_paths.get(node.get("nodeId"), "")
+        if not raw_key:
+            raw_key = f"/{tag}[{node.get('parentId','')}/{node.get('siblingIndex','')}/{node.get('nodeId','')}]"
+        count = key_counts.get(raw_key, 0)
+        key_counts[raw_key] = count + 1
+        key = raw_key if count == 0 else f"{raw_key}#{count+1}"
+        attrs = semantic_attrs(node.get("attributes"))
+        style_src = node.get("keyStyles") if isinstance(node.get("keyStyles"), dict) else {}
+        style = {k: style_src.get(k) for k in DIFF_STYLE_KEYS if style_src.get(k) not in (None, "")}
+        parent_id = node.get("parentId")
+        parent_raw = ""
+        if parent_id is not None:
+            parent_node = next((n for n in raw_nodes if n.get("nodeId") == parent_id), None)
+            if parent_node is not None:
+                parent_raw = _node_raw_key(parent_node) or structural_paths.get(parent_id, "")
+                parent_count = key_counts.get(parent_raw, 0)
+                # Parent is usually already seen in document order. If duplicate suffix was needed,
+                # subtree collapse still works for normal unique structural paths.
+        projected.append({
+            "k": key,
+            "parent": parent_raw,
+            "tag": tag,
+            "text": text,
+            "attrs": attrs,
+            "vis": bool(node.get("isVisible")),
+            "vp": bool(node.get("isInViewport")),
+            "style": style,
+            "nodeId": node.get("nodeId"),
+            "parentId": parent_id,
+            "siblingIndex": node.get("siblingIndex"),
+        })
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "method": "slim_dom_projection",
+        "url": dom_state.get("url", ""),
+        "title": dom_state.get("title", ""),
+        "viewport": dom_state.get("viewport", {}),
+        "key_population": dom_key_population(dom_state),
+        "nodes": projected,
+    }
+
+
+def _is_interactive_projected(node: dict[str, Any]) -> bool:
+    tag = str(node.get("tag") or "").lower()
+    attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
+    role = str(attrs.get("role") or "").lower()
+    return tag in INTERACTIVE_TAGS or role in INTERACTIVE_ROLES or any(k in attrs for k in ("href", "checked", "selected", "disabled", "value"))
+
+
+def _children_by_parent(nodes_by_key: dict[str, dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    children: dict[str, list[dict[str, Any]]] = {}
+    for node in nodes_by_key.values():
+        parent = str(node.get("parent") or "")
+        if parent:
+            children.setdefault(parent, []).append(node)
+    return children
+
+
+def _subtree_nodes(root: dict[str, Any], children: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    stack = list(children.get(str(root.get("k")), []))
+    while stack:
+        node = stack.pop(0)
+        out.append(node)
+        stack[0:0] = children.get(str(node.get("k")), [])
+    return out
+
+
+def collapse_subtree_entry(root: dict[str, Any], nodes_by_key: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    children = _children_by_parent(nodes_by_key)
+    descendants = _subtree_nodes(root, children)
+    texts: list[str] = []
+    interactive: list[dict[str, Any]] = []
+    for node in [root, *descendants]:
+        if node.get("vis") and node.get("text"):
+            texts.append(str(node.get("text")))
+        if _is_interactive_projected(node) and len(interactive) < 20:
+            interactive.append({k: node.get(k) for k in ("k", "tag", "text", "attrs", "vis", "vp") if node.get(k) not in (None, "", {}, [])})
+    attrs = root.get("attrs") if isinstance(root.get("attrs"), dict) else {}
+    entry = {k: root.get(k) for k in ("k", "tag", "text", "attrs", "vis", "vp") if root.get(k) not in (None, "", {}, [])}
+    if attrs.get("role"):
+        entry["role"] = attrs.get("role")
+    entry["descendant_count"] = len(descendants)
+    visible_text = " ".join(" ".join(texts).split())[:500]
+    if visible_text:
+        entry["visible_text"] = visible_text
+    if interactive:
+        entry["interactive_descendants"] = interactive
+    return entry
+
+
+def classify_projected_change(before: dict[str, Any], after: dict[str, Any]) -> tuple[list[str], dict[str, Any], int]:
+    kinds: list[str] = []
+    changes: dict[str, Any] = {}
+    weight = 0
+    if before.get("text") != after.get("text"):
+        kinds.append("text")
+        changes["text"] = {"before": before.get("text", ""), "after": after.get("text", "")}
+        weight = max(weight, 30)
+    b_attrs = before.get("attrs") if isinstance(before.get("attrs"), dict) else {}
+    a_attrs = after.get("attrs") if isinstance(after.get("attrs"), dict) else {}
+    for name in sorted(set(b_attrs) | set(a_attrs)):
+        if b_attrs.get(name) != a_attrs.get(name):
+            kinds.append(f"attr:{name}")
+            changes.setdefault("attrs", {})[name] = {"before": b_attrs.get(name), "after": a_attrs.get(name)}
+            if name in {"value", "checked", "selected", "disabled"} or name.startswith("aria-"):
+                weight = max(weight, 80)
+            else:
+                weight = max(weight, 25)
+    semantic_before_visibility = bool(kinds)
+    if before.get("vis") != after.get("vis") or before.get("vp") != after.get("vp"):
+        # Viewport membership alone is not semantic; visibility is only kept when
+        # paired with text/attribute state. This keeps pure scroll diffs empty.
+        if semantic_before_visibility and before.get("vis") != after.get("vis"):
+            kinds.append("visibility")
+            changes["visibility"] = {"before": before.get("vis"), "after": after.get("vis")}
+            weight = max(weight, 100)
+    b_style = before.get("style") if isinstance(before.get("style"), dict) else {}
+    a_style = after.get("style") if isinstance(after.get("style"), dict) else {}
+    if semantic_before_visibility:
+        for prop in sorted(set(b_style) | set(a_style)):
+            if b_style.get(prop) != a_style.get(prop):
+                kinds.append(f"style:{prop}")
+                changes.setdefault("style", {})[prop] = {"before": b_style.get(prop), "after": a_style.get(prop)}
+                weight = max(weight, 10)
+    return kinds, changes, weight
+
+
+def rank_diff_entry(entry: dict[str, Any]) -> tuple[int, str]:
+    return (-int(entry.get("semantic_weight", 0)), str(entry.get("k", "")))
+
+
+def build_compact_dom_diff(
+    before_dom: dict[str, Any],
+    after_dom: dict[str, Any],
+    *,
+    compare_result: dict[str, Any] | None = None,
+    compare_timing: dict[str, Any] | None = None,
+    max_entries: int = 200,
+) -> dict[str, Any]:
+    before_projection = project_dom_state(before_dom) if before_dom else {"nodes": [], "key_population": {}}
+    after_projection = project_dom_state(after_dom) if after_dom else {"nodes": [], "key_population": {}}
+    before_nodes = {str(n.get("k")): n for n in before_projection.get("nodes", []) if isinstance(n, dict) and n.get("k")}
+    after_nodes = {str(n.get("k")): n for n in after_projection.get("nodes", []) if isinstance(n, dict) and n.get("k")}
+    before_keys = set(before_nodes)
+    after_keys = set(after_nodes)
+    added_keys = after_keys - before_keys
+    removed_keys = before_keys - after_keys
+    common_keys = before_keys & after_keys
+
+    added_roots = [k for k in added_keys if str(after_nodes[k].get("parent") or "") not in added_keys]
+    removed_roots = [k for k in removed_keys if str(before_nodes[k].get("parent") or "") not in removed_keys]
+    added_entries = [collapse_subtree_entry(after_nodes[k], after_nodes) for k in added_roots]
+    removed_entries = [collapse_subtree_entry(before_nodes[k], before_nodes) for k in removed_roots]
+
+    changed_entries: list[dict[str, Any]] = []
+    for key in common_keys:
+        kinds, changes, weight = classify_projected_change(before_nodes[key], after_nodes[key])
+        if not kinds:
+            continue
+        changed_entries.append({
+            "k": key,
+            "tag": after_nodes[key].get("tag"),
+            "kind": kinds,
+            "semantic_weight": weight,
+            "before": {k: before_nodes[key].get(k) for k in ("text", "attrs", "vis", "vp", "style") if before_nodes[key].get(k) not in (None, "", {}, [])},
+            "after": {k: after_nodes[key].get(k) for k in ("text", "attrs", "vis", "vp", "style") if after_nodes[key].get(k) not in (None, "", {}, [])},
+            "changes": changes,
+        })
+
+    def truncate(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        entries = sorted(entries, key=rank_diff_entry)
+        return entries[:max(0, int(max_entries))]
+
+    added_emit = truncate(added_entries)
+    removed_emit = truncate(removed_entries)
+    changed_emit = truncate(changed_entries)
+    stats = {
+        "added_total": len(added_keys),
+        "added_roots_total": len(added_entries),
+        "added_emitted": len(added_emit),
+        "removed_total": len(removed_keys),
+        "removed_roots_total": len(removed_entries),
+        "removed_emitted": len(removed_emit),
+        "changed_total": len(changed_entries),
+        "changed_emitted": len(changed_emit),
+        "truncated": len(added_entries) > len(added_emit) or len(removed_entries) > len(removed_emit) or len(changed_entries) > len(changed_emit),
+    }
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "method": "local_slim_dom_semantic_diff",
+        "captured_at": utc_now(),
+        "source": {
+            "before": {"url": before_dom.get("url", ""), "title": before_dom.get("title", ""), "nodes": len(before_dom.get("nodes", []) or [])},
+            "after": {"url": after_dom.get("url", ""), "title": after_dom.get("title", ""), "nodes": len(after_dom.get("nodes", []) or [])},
+            "compareDOMState": {"timing": compare_timing or {}, "summary": ((compare_result or {}).get("result") or compare_result or {}).get("summary", {}) if isinstance(compare_result, dict) else {}},
+        },
+        "key_population": {"before": before_projection.get("key_population", {}), "after": after_projection.get("key_population", {})},
+        "stats": stats,
+        "added": added_emit,
+        "removed": removed_emit,
+        "changed": changed_emit,
+    }
 
 def build_dom_diff_summary(before: CapturedState, after: CapturedState) -> dict[str, Any]:
     before_obs = observation_payload(before)

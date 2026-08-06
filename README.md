@@ -90,7 +90,7 @@ Useful options:
 
 ## Current artifact layout
 
-Each run writes the reduced v4 layout:
+Each run writes the v5 DOM-diff layout. The DOM diff is the primary verifier artifact; observations and screenshots are supporting evidence.
 
 ```text
 tasks/<task-id>/
@@ -100,7 +100,10 @@ tasks/<task-id>/
 │   ├── action.json
 │   ├── observation_before.json.gz
 │   ├── observation_after.json.gz
-│   ├── diff.json
+│   ├── dom_before.json.gz
+│   ├── dom_after.json.gz
+│   ├── dom_diff.json
+│   ├── observation_diff.json
 │   └── after.jpg              # default; before.jpg also appears with --screenshot-mode both
 └── final_state/
     ├── dom.json.gz
@@ -115,15 +118,25 @@ File meanings:
 | `manifest.json` | Run metadata: task id, prompt, runner, model/config, start time. |
 | `log.jsonl` | Unified trajectory/event log. Includes model requests/responses, actions, capture notes, warnings, and final status. |
 | `step_XXX/action.json` | Human-readable action record, including normalized verifier action fields like `url` for navigation and `key` for keypresses. |
-| `step_XXX/observation_before.json.gz` | Compressed model-facing observation before the action. |
-| `step_XXX/observation_after.json.gz` | Compressed model-facing observation after the action. |
-| `step_XXX/diff.json` | Recorder-computed diff between before/after observations. Movement-only scroll noise is excluded from interactive changes. |
+| `step_XXX/observation_before.json.gz` / `observation_after.json.gz` | Compressed model-facing observations before/after the action. These come from ChromiumRL observation or JS fallback and are not the DOM diff source. |
+| `step_XXX/dom_before.json.gz` / `dom_after.json.gz` | Slim projections of `ChromiumRL.saveDOMState`. These preserve semantic text, semantic attributes, visibility, viewport flags, and selected state-ish styles/classes. |
+| `step_XXX/dom_diff.json` | Compact semantic DOM diff computed from the slim DOM projections. This is the verifier artifact. It includes true totals, emitted counts, and `truncated`. |
+| `step_XXX/observation_diff.json` | Observation-based interactive-element diff. This replaces the old misleading `dom_diff_summary.json` name and is mainly useful for agent-loop/progress detection. |
 | `step_XXX/after.jpg` | Default post-action screenshot. With `--screenshot-mode both`, `before.jpg` is also written. Extension follows `--screenshot-format`. |
-| `final_state/dom.json.gz` | Final compressed ChromiumRL DOM snapshot, captured only once at the end. |
+| `final_state/dom.json.gz` | Final slim DOM projection. If `--dom-capture full` is used, `final_state/dom_raw.json.gz` is also written. |
 | `final_state/observation.json` | Final observation. |
 | `final_state/screenshot.jpg` | Final screenshot. Extension follows `--screenshot-format`. |
 
-Removed old heavy artifacts include per-step `chromiumrl_dom.json`, `dom_diff.json` from `ChromiumRL.compareDOMState`, `chromiumrl_signals.json`, `interaction_capture.json`, `all_targets/`, `model_inputs/`, separate `step.json`, and separate `verifier_action.json`.
+DOM options:
+
+```text
+--dom-capture slim            Default. Writes slim DOM projections plus compact dom_diff.json.
+--dom-capture full            Also writes raw saveDOMState as dom_before_raw/dom_after_raw/final_state/dom_raw.
+--dom-capture none            Disables DOM artifacts; use only for debugging, not verifier data.
+--dom-diff-max-entries 200    Per-list emitted-entry cap; true totals are always reported.
+--observation-max-elements 250 Raises ChromiumRL.getAgentObservation maxElements/maxInteractiveElements.
+--fresh-tab-mode new_tab      Default. Use current browser window with a fresh tab. new_context isolates more but risks OS window ordering/occlusion.
+```
 
 ## ChromiumRL and CDP protocols used
 
@@ -131,7 +144,8 @@ Observation and evidence:
 
 ```text
 ChromiumRL.getAgentObservation
-ChromiumRL.saveDOMState        final_state only
+ChromiumRL.saveDOMState        before/after every step when --dom-capture is slim/full
+ChromiumRL.compareDOMState     called after each action; timing/summary stored in dom_diff.json source metadata
 ChromiumRL.getTouchTraces      coordinate actions only
 ```
 
@@ -141,7 +155,7 @@ Recovery and fallback:
 Target.attachToTarget / Target.detachFromTarget
 Page.enable
 Page.captureScreenshot
-Runtime.evaluate               page state, JS fallback, scroll/fill verification
+Runtime.evaluate               page state, JS fallback, form-control state enrichment, scroll/fill verification
 ```
 
 Action execution:
