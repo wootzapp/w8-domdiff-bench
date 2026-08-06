@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Desktop Wootz agent-browser runner.
 
-DOM collection is not shortcut or synthetic. Every recorded step uses the
-task-recorder's ChromiumRL saveDOMState/getAgentObservation/compareDOMState
-flow and writes the standard verifier artifacts.
+Every recorded step uses ChromiumRL or the JS fallback observation, raw CDP
+action execution, and the reduced verifier artifact layout.
 """
 
 from __future__ import annotations
@@ -57,6 +56,9 @@ from recorder import (  # noqa: E402
     collect_js_observation,
     chromiumrl_call,
     log_event,
+    observation_payload,
+    observation_is_implausible,
+    labelled_element_count,
     TIMEOUT_DOM_CAPTURE,
     TIMEOUT_OBSERVATION,
     TIMEOUT_SCREENSHOT,
@@ -99,7 +101,8 @@ Decision rules:
 4. If a page requires login, CAPTCHA, payment, age verification, or unavailable permissions,
    terminate with status failure immediately. Do not attempt to bypass it.
 5. If a consent banner, modal, popup, ad, or interstitial blocks the task, dismiss it using a visible
-   listed control. Do not hardcode labels, sites, products, colors, prices, or availability.
+   listed control. Elements marked [blocked] are covered by an overlay and cannot be clicked directly.
+   Do not hardcode labels, sites, products, colors, prices, or availability.
 6. You may use wait at most twice consecutively. If content still has not loaded, treat the page as
    broken and change strategy.
 7. When fewer than 5 steps remain, either complete the task or terminate with failure and explain
@@ -219,7 +222,9 @@ def element_label(element: dict[str, Any]) -> str:
 
 
 def element_identity_for_ref(element: dict[str, Any]) -> str:
-    for key in ("nodeId", "selector", "fingerprint", "backendNodeId", "xpath", "cssSelector", "href", "text", "accessibleName", "idx"):
+    # diagnostics/v3/identity_stability_probe_output.json: selector was stable
+    # and auditable; fingerprint collided across repeated links.
+    for key in ("selector", "nodeId", "backendNodeId", "xpath", "cssSelector", "href", "text", "accessibleName", "idx", "fingerprint"):
         value = element.get(key)
         if value not in (None, "", [], {}):
             return f"{key}:{str(value).strip()}"
@@ -509,19 +514,64 @@ class DesktopWootzAgent:
         observation_source: str = "auto",
     ) -> Snapshot:
         payload: dict[str, Any]
+
+        async def js_payload(reason: str) -> dict[str, Any]:
+            log_event(self.cdp, "observation_fallback", reason=reason, fallback="js", scope="model_snapshot")
+            js = await collect_js_observation(self.cdp, label="snapshot")
+            js["source"] = "js_fallback"
+            return js
+
         if observation_source == "js":
-            payload = await collect_js_observation(self.cdp, label="snapshot")
-            payload["source"] = "js_fallback"
+            payload = await js_payload("requested_js")
         else:
             try:
                 value = await chromiumrl_call(self.cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label="snapshot")
                 payload = {"params": {}, "timing": {"ok": True}, "result": value, "source": "chromiumrl"}
+                observation_for_gate = get_observation_dict(payload)
+                page_state_for_gate = {
+                    "url": observation_for_gate.get("url", ""),
+                    "viewport": {
+                        "scrollHeight": (observation_for_gate.get("scroll") or {}).get("pageHeight") if isinstance(observation_for_gate.get("scroll"), dict) else 0,
+                    },
+                }
+                reason = observation_is_implausible(observation_for_gate, page_state_for_gate)
+                if observation_source == "cross_check":
+                    js = await collect_js_observation(self.cdp, label="snapshot")
+                    js["source"] = "js_fallback"
+                    js_obs = get_observation_dict(js)
+                    log_event(
+                        self.cdp,
+                        "observation_cross_check",
+                        label="snapshot",
+                        url=observation_for_gate.get("url") or js_obs.get("url"),
+                        chromiumrl_count=len(observation_for_gate.get("elements", []) or []),
+                        chromiumrl_labelled=labelled_element_count(observation_for_gate),
+                        js_count=len(js_obs.get("elements", []) or []),
+                        js_labelled=labelled_element_count(js_obs),
+                    )
+                if reason and observation_source in {"auto", "cross_check"}:
+                    js = await js_payload(reason)
+                    js_obs = get_observation_dict(js)
+                    cr_labelled = labelled_element_count(observation_for_gate)
+                    js_labelled = labelled_element_count(js_obs)
+                    winner = "js_fallback" if js_labelled > cr_labelled else "chromiumrl"
+                    log_event(
+                        self.cdp,
+                        "observation_implausible",
+                        reason=reason,
+                        chromiumrl_count=len(observation_for_gate.get("elements", []) or []),
+                        chromiumrl_labelled=cr_labelled,
+                        js_count=len(js_obs.get("elements", []) or []),
+                        js_labelled=js_labelled,
+                        winner=winner,
+                        scope="model_snapshot",
+                    )
+                    if winner == "js_fallback":
+                        payload = js
             except Exception as error:
                 if observation_source == "chromiumrl":
                     raise
-                log_event(self.cdp, "observation_fallback", reason=str(error), fallback="js")
-                payload = await collect_js_observation(self.cdp, label="snapshot")
-                payload["source"] = "js_fallback"
+                payload = await js_payload(str(error))
         observation = get_observation_dict(payload)
         elements = observation.get("elements", [])
         visible_text_blocks = (
@@ -529,15 +579,17 @@ class DesktopWootzAgent:
         )
         refs: dict[str, dict[str, Any]] = {}
         viewport = observation.get("viewport") if isinstance(observation.get("viewport"), dict) else {}
-        scroll = observation.get("scroll") if isinstance(observation.get("scroll"), dict) else observation.get("scroll")
-        viewport_height = first_number(viewport.get("height"), viewport.get("innerHeight"), 768) or 768
-        viewport_width = first_number(viewport.get("width"), viewport.get("innerWidth"), 1365) or 1365
-        scroll_y = 0.0
-        max_y = 0.0
-        if isinstance(scroll, dict):
-            scroll_y = first_number(scroll.get("y"), scroll.get("scrollY"), 0) or 0
-            max_y = first_number(scroll.get("maxY"), scroll.get("scrollHeight"), 0) or 0
+        scroll = observation.get("scroll") if isinstance(observation.get("scroll"), dict) else {}
+        viewport_height = first_number(scroll.get("viewportHeight"), viewport.get("height"), viewport.get("innerHeight"), 768) or 768
+        viewport_width = first_number(scroll.get("viewportWidth"), viewport.get("width"), viewport.get("innerWidth"), 1365) or 1365
+        scroll_y = first_number(scroll.get("scrollTop"), scroll.get("y"), scroll.get("scrollY"), 0) or 0
+        page_height = first_number(scroll.get("pageHeight"), scroll.get("scrollHeight"), scroll.get("maxY"), 0) or 0
+        max_y = max(0.0, page_height - viewport_height) if page_height else (first_number(scroll.get("maxY"), 0) or 0)
+        can_scroll_down = scroll.get("canScrollDown")
+        can_scroll_up = scroll.get("canScrollUp")
         sections: dict[str, list[tuple[str, dict[str, Any]]]] = {"above fold": [], "in viewport": [], "below fold": []}
+        blocked_in_view = 0
+        total_in_view = 0
         if isinstance(elements, list):
             for element in elements:
                 if not isinstance(element, dict):
@@ -550,16 +602,27 @@ class DesktopWootzAgent:
                 ref = stable_ref(element)
                 refs[ref] = element
                 pos = element_position(element, viewport_height)
+                if pos == "in viewport":
+                    total_in_view += 1
+                    if element.get("isHitTestable") is False:
+                        blocked_in_view += 1
                 sections.setdefault(pos, []).append((ref, element))
         total_above = len(sections.get("above fold", []))
         total_in = len(sections.get("in viewport", []))
         total_below = len(sections.get("below fold", []))
         pct = round((scroll_y / max(max_y, 1)) * 100)
+        scroll_bits = [f"scrollY: {round(scroll_y)} / {round(max_y)} ({pct}%)"]
+        if can_scroll_up is not None:
+            scroll_bits.append(f"canScrollUp: {bool(can_scroll_up)}")
+        if can_scroll_down is not None:
+            scroll_bits.append(f"canScrollDown: {bool(can_scroll_down)}")
         lines = [
             f"url: {observation.get('url', '')}",
             f"title: {observation.get('title', '')}",
-            f"viewport: {round(viewport_width)}x{round(viewport_height)} | scrollY: {round(scroll_y)} / {round(max_y)} ({pct}%) | {total_above} above, {total_in} in view, {total_below} below",
+            f"viewport: {round(viewport_width)}x{round(viewport_height)} | {' | '.join(scroll_bits)} | {total_above} above, {total_in} in view, {total_below} below",
         ]
+        if total_in_view and blocked_in_view / total_in_view > 0.30:
+            lines.append("NOTE: most elements are covered by an overlay — dismiss it before proceeding.")
         covered_text: set[str] = set()
         for section_name in ("above fold", "in viewport", "below fold"):
             lines.append(f"{section_name}:")
@@ -571,7 +634,8 @@ class DesktopWootzAgent:
                     covered_text.add(" ".join(label.split()).lower())
                 href = short(element.get("href"), 90)
                 href_text = f" href={json.dumps(href, ensure_ascii=False)}" if href else ""
-                lines.append(f"  [{ref}] {role} {json.dumps(label, ensure_ascii=False)}{href_text}")
+                blocked = " [blocked]" if section_name == "in viewport" and element.get("isHitTestable") is False else ""
+                lines.append(f"  [{ref}] {role}{blocked} {json.dumps(label, ensure_ascii=False)}{href_text}")
             if len(items) > 80:
                 lines.append(f"  ... {len(items) - 80} more {section_name} elements omitted")
         if visible_text_blocks:
@@ -594,7 +658,7 @@ class DesktopWootzAgent:
                     "supplemental_runtime_visible_text": include_runtime_visible_text,
                 },
                 "visible_text_blocks": visible_text_blocks,
-                "element_counts": {"above": total_above, "in_viewport": total_in, "below": total_below, "total": len(refs)},
+                "element_counts": {"above": total_above, "in_viewport": total_in, "below": total_below, "total": len(refs), "blocked_in_viewport": blocked_in_view},
             },
             refs=refs,
         )
@@ -769,6 +833,9 @@ class DesktopWootzAgent:
             if self._last_snapshot is None or ref not in self._last_snapshot.refs:
                 raise RecorderError(f"ref {ref!r} is not in the current observation")
             element = self._last_snapshot.refs[ref]
+            if element.get("isInViewport") is not False and element.get("isHitTestable") is False:
+                self.last_action_details["blocked_refused"] = True
+                raise RecorderError(f"ref {ref!r} is blocked by an overlay (isHitTestable=false); dismiss the overlay first")
             center = element_center(element)
             bounds = element.get("bounds") or {}
             y = first_number(bounds.get("y"), element.get("centerY")) if isinstance(bounds, dict) else first_number(element.get("centerY"))
@@ -1198,6 +1265,44 @@ def validate_resume_prompt(task_dir: Path, task: str) -> None:
         )
 
 
+def screenshot_artifact_from_capture(directory: Path) -> Path | None:
+    for name in ("screenshot.jpg", "screenshot.jpeg", "screenshot.webp", "screenshot.png"):
+        candidate = directory / name
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def copy_step_screenshot(source_dir: Path, dest_dir: Path, phase: str) -> str | None:
+    artifact = screenshot_artifact_from_capture(source_dir)
+    if artifact is None:
+        return None
+    suffix = ".jpg" if artifact.suffix.lower() in {".jpeg", ".jpg"} else artifact.suffix.lower()
+    dest = dest_dir / f"{phase}{suffix}"
+    shutil.copy2(artifact, dest)
+    return dest.name
+
+
+STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "go", "in", "is", "it", "of", "on", "or", "report", "the", "to", "with", "was", "were", "this", "that", "quote", "exact", "text"
+}
+
+
+def content_tokens(text: str) -> list[str]:
+    import re
+    return [token for token in re.findall(r"[a-z0-9]+", text.lower()) if len(token) > 2 and token not in STOPWORDS]
+
+
+def grounding_check(final_answer: str, observation_text: str) -> dict[str, Any]:
+    tokens = content_tokens(final_answer)
+    if not tokens:
+        return {"ok": False, "reason": "no_content_tokens", "matched": 0, "total": 0, "ratio": 0}
+    obs = observation_text.lower()
+    matched = [token for token in tokens if token in obs]
+    ratio = len(matched) / max(1, len(tokens))
+    return {"ok": ratio >= 0.5, "matched": len(matched), "total": len(tokens), "ratio": round(ratio, 3), "missing": [t for t in tokens if t not in matched][:20]}
+
+
 async def record_automated_step(
     *,
     agent: DesktopWootzAgent,
@@ -1210,6 +1315,7 @@ async def record_automated_step(
     chromiumrl_full_tracing: bool = False,
     observation_source: str = "auto",
     load_timeout: float = 12.0,
+    screenshot_mode: str = "after_only",
 ) -> dict[str, Any]:
     cdp = agent.cdp
     action = normalize_action(action)
@@ -1244,8 +1350,9 @@ async def record_automated_step(
         write_dom=False,
     )
     write_json_gz(step_dir / "observation_before.json.gz", before.agent_observation)
-    if (before_dir / "screenshot.png").exists():
-        shutil.copy2(before_dir / "screenshot.png", step_dir / "before.png")
+    before_image = None
+    if screenshot_mode == "both":
+        before_image = copy_step_screenshot(before_dir, step_dir, "before")
     append_jsonl(log_path, {"ts": utc_now(), "event": "observation_captured", "step": step_number, "phase": "before", "source": before.observation_source, "degraded": before.degraded, "notes": before.capture_notes})
 
     action_error: dict[str, Any] | None = None
@@ -1276,8 +1383,7 @@ async def record_automated_step(
         write_dom=False,
     )
     write_json_gz(step_dir / "observation_after.json.gz", after.agent_observation)
-    if (after_dir / "screenshot.png").exists():
-        shutil.copy2(after_dir / "screenshot.png", step_dir / "after.png")
+    after_image = copy_step_screenshot(after_dir, step_dir, "after")
     append_jsonl(log_path, {"ts": utc_now(), "event": "observation_captured", "step": step_number, "phase": "after", "source": after.observation_source, "degraded": after.degraded, "notes": after.capture_notes})
 
     diff = build_dom_diff_summary(before, after)
@@ -1309,6 +1415,8 @@ async def record_automated_step(
             "after_notes": after.capture_notes,
             "observation_source_before": before.observation_source,
             "observation_source_after": after.observation_source,
+            "before_image": before_image,
+            "after_image": after_image,
         },
         "outcome": build_step_outcome(performed_action, before.page_state, after.page_state, diff),
     }
@@ -1421,6 +1529,8 @@ async def run(args: argparse.Namespace) -> None:
         container=args.screenshot_container,
         adb_serial="",
         timeout_seconds=args.command_timeout,
+        format=args.screenshot_format,
+        quality=args.screenshot_quality,
     )
     history: list[dict[str, Any]] = load_existing_history(task_dir) if args.resume else []
     existing_steps = step_numbers(task_dir)
@@ -1498,11 +1608,17 @@ async def run(args: argparse.Namespace) -> None:
                 print("=" * 78)
 
                 if action_name(action) == "terminate":
+                    status = str(action.get("status", "success"))
+                    final_answer = str(action.get("final_answer", ""))
+                    if status == "success":
+                        grounding = grounding_check(final_answer, snapshot.text)
+                        if not grounding.get("ok"):
+                            append_jsonl(log_path, {"ts": utc_now(), "event": "ungrounded_success", "step": step, "grounding": grounding, "final_answer": final_answer})
+                            action["_ungrounded_success"] = grounding
                     final_state = await write_final_state(task_dir, cdp, screenshot_config, observation_source=args.observation_source, chromiumrl_full_tracing=args.chromiumrl_full_tracing)
                     final_state_written = True
                     append_jsonl(log_path, {"ts": utc_now(), "event": "final_state_captured", "final_state": final_state})
-                    status = str(action.get("status", "success"))
-                    await finish_run(task_dir, status=status, reason=str(action.get("reason", "")), final_answer=str(action.get("final_answer", "")), action=action)
+                    await finish_run(task_dir, status=status, reason=str(action.get("reason", "")), final_answer=final_answer, action=action)
                     print(f"Agent terminated: {status}")
                     return
 
@@ -1529,6 +1645,7 @@ async def run(args: argparse.Namespace) -> None:
                             chromiumrl_full_tracing=args.chromiumrl_full_tracing,
                             observation_source=args.observation_source,
                             load_timeout=args.load_timeout,
+                            screenshot_mode=args.screenshot_mode,
                         ),
                         timeout=args.step_timeout,
                     )
@@ -1609,7 +1726,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--keep-browser-data", action="store_true")
     parser.add_argument("--browser-locale", default=os.environ.get("BROWSER_LANG", "en-US"))
     parser.add_argument("--accept-language", default=os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"))
-    parser.add_argument("--observation-source", choices=("auto", "chromiumrl", "js"), default="auto")
+    parser.add_argument("--observation-source", choices=("auto", "chromiumrl", "js", "cross_check"), default="auto")
     parser.add_argument("--enable-runtime-domain", action="store_true", help="debug only: call Runtime.enable on each session bind")
     parser.add_argument(
         "--strict-chromiumrl-observation",
@@ -1620,6 +1737,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--capture-all-targets", action="store_true", default=False, help="legacy debug option; ignored by reduced v3 per-step layout")
     parser.add_argument("--chromiumrl-full-tracing", action="store_true", help="enable legacy heavy ChromiumRL tracing probes")
     parser.add_argument("--screenshot-source", choices=("cdp", "none"), default="cdp")
+    parser.add_argument("--screenshot-format", choices=("jpeg", "png", "webp"), default="jpeg")
+    parser.add_argument("--screenshot-quality", type=int, default=80)
+    parser.add_argument("--screenshot-mode", choices=("both", "after_only"), default="after_only")
     parser.add_argument("--screenshot-container", default="wootz-desktop-browser-replay-001")
     return parser
 

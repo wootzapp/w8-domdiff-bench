@@ -541,432 +541,31 @@ def command_entry(params: dict[str, Any], timing: dict[str, Any], result: dict[s
     return {"params": params, "timing": timing, "result": result}
 
 
-async def capture_screenshot_best_effort(
-    cdp: CDPConnection, directory: Path, screenshot_config: ScreenshotConfig
-) -> dict[str, Any]:
-    attempts: list[dict[str, Any]] = []
-    if screenshot_config.source == "none":
-        result = {"ok": True, "skipped": True, "source": "none"}
-        write_json(directory / "screenshot_skipped.json", result)
-        return result
-
-    if screenshot_config.source in {"auto", "adb"}:
-        adb_attempt = await capture_adb_screenshot(screenshot_config, directory)
-        attempts.append(adb_attempt)
-        if adb_attempt.get("ok"):
-            return {"ok": True, "source": "adb", "attempts": attempts}
-        if screenshot_config.source == "adb":
-            write_json(directory / "screenshot_error.json", {"ok": False, "attempts": attempts})
-            return {"ok": False, "attempts": attempts, "artifact": "screenshot_error.json"}
-
-    for params in (
-        {"format": "png", "fromSurface": True, "captureBeyondViewport": False},
-        {"format": "png", "fromSurface": False, "captureBeyondViewport": False},
-    ):
-        started = time.perf_counter()
-        try:
-            screenshot = await cdp.send("Page.captureScreenshot", params, use_session=True)
-            timing = {"ok": True, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3)}
-            encoded = screenshot.get("data")
-            if not isinstance(encoded, str) or not encoded:
-                attempts.append(
-                    {
-                        "source": "cdp",
-                        "params": params,
-                        "timing": timing,
-                        "ok": False,
-                        "error": "Page.captureScreenshot returned no image data",
-                    }
-                )
-                continue
-            try:
-                (directory / "screenshot.png").write_bytes(base64.b64decode(encoded, validate=True))
-            except (ValueError, binascii.Error) as error:
-                attempts.append(
-                    {
-                        "source": "cdp",
-                        "params": params,
-                        "timing": timing,
-                        "ok": False,
-                        "error": f"Page.captureScreenshot returned invalid base64: {error}",
-                    }
-                )
-                continue
-            attempts.append(
-                {"source": "cdp", "params": params, "timing": timing, "ok": True, "artifact": "screenshot.png"}
-            )
-            return {"ok": True, "source": "cdp", "attempts": attempts}
-        except Exception as error:
-            attempts.append(
-                {
-                    "source": "cdp",
-                    "params": params,
-                    "timing": {
-                        "ok": False,
-                        "elapsed_ms": round((time.perf_counter() - started) * 1000, 3),
-                        "error": str(error),
-                    },
-                    "ok": False,
-                    "error": str(error),
-                }
-            )
-    write_json(directory / "screenshot_error.json", {"ok": False, "attempts": attempts})
-    return {"ok": False, "attempts": attempts, "artifact": "screenshot_error.json"}
-
-
-PAGE_STATE_EXPRESSION = """(() => ({
-  url: location.href,
-  title: document.title,
-  readyState: document.readyState,
-  viewport: {
-    innerWidth: window.innerWidth,
-    innerHeight: window.innerHeight,
-    devicePixelRatio: window.devicePixelRatio,
-    scrollX: window.scrollX,
-    scrollY: window.scrollY,
-    scrollWidth: document.documentElement ? document.documentElement.scrollWidth : 0,
-    scrollHeight: document.documentElement ? document.documentElement.scrollHeight : 0
-  }
-}))()"""
-
-
-async def capture_target_snapshot(
-    cdp: CDPConnection,
-    target: dict[str, Any],
-    directory: Path,
-    label: str,
-) -> dict[str, Any]:
-    directory.mkdir(parents=True, exist_ok=True)
-    started_at = utc_now()
-    commands: dict[str, Any] = {}
-    page_state: dict[str, Any] = {}
-    node_count = 0
-    try:
-        await cdp.attach_to_target(target)
-        commands["domains"] = await enable_page_domains(cdp)
-        commands["ChromiumRL.enable"] = await reset_chromiumrl_tracing(cdp)
-
-        save_dom, commands["ChromiumRL.saveDOMState"] = await timed_command(
-            cdp, "ChromiumRL.saveDOMState", required=True, label=label
-        )
-        chromiumrl_dom = save_dom.get("state", {})
-        if not isinstance(chromiumrl_dom, dict) or not isinstance(chromiumrl_dom.get("nodes"), list):
-            raise RecorderError(f"ChromiumRL.saveDOMState returned an invalid state: {save_dom}")
-        node_count = len(chromiumrl_dom.get("nodes", []))
-        write_json(directory / "chromiumrl_dom.json", chromiumrl_dom)
-
-        runtime, commands["Runtime.evaluate"] = await timed_command(
-            cdp,
-            "Runtime.evaluate",
-            {"expression": PAGE_STATE_EXPRESSION, "returnByValue": True, "awaitPromise": False},
-            required=True,
-            label=label,
-        )
-        if runtime.get("exceptionDetails"):
-            raise RecorderError(f"Runtime.evaluate failed: {runtime['exceptionDetails']}")
-        value = runtime.get("result", {}).get("value", {})
-        if isinstance(value, dict):
-            page_state = value
-        write_json(directory / "page_state.json", page_state)
-
-        agent_observation = await collect_agent_observation(cdp, directory)
-        commands["ChromiumRL.getAgentObservation"] = agent_observation["timing"]
-
-        result = {
-            "ok": True,
-            "target": normalize_target_info(target),
-            "page": page_state,
-            "node_count": node_count,
-            "started_at": started_at,
-            "completed_at": utc_now(),
-            "commands": commands,
-        }
-        write_json(directory / "state_index.json", result)
-        return result
-    except Exception as error:
-        result = {
-            "ok": False,
-            "target": normalize_target_info(target),
-            "page": page_state,
-            "node_count": node_count,
-            "started_at": started_at,
-            "completed_at": utc_now(),
-            "commands": commands,
-            "error": str(error),
-        }
-        write_json(directory / "capture_error.json", result)
-        return result
-
-
-async def capture_all_page_targets(
-    cdp: CDPConnection,
-    directory: Path,
-    label: str,
-    restore_target: dict[str, Any],
-) -> dict[str, Any]:
-    started_at = utc_now()
-    targets = await cdp.page_targets()
-    summaries: list[dict[str, Any]] = []
-    for index, target in enumerate(targets, start=1):
-        target_dir = directory / safe_target_dir_name(index, target)
-        summaries.append(await capture_target_snapshot(cdp, target, target_dir, f"{label}/target_{index:02d}"))
-    try:
-        await cdp.attach_to_target(restore_target)
-        await enable_page_domains(cdp)
-        await reset_chromiumrl_tracing(cdp)
-    except Exception as error:
-        summaries.append(
-            {
-                "ok": False,
-                "target": normalize_target_info(restore_target),
-                "error": f"failed to restore main target after all-target capture: {error}",
-            }
-        )
-    result = {
-        "ok": all(item.get("ok") for item in summaries),
-        "started_at": started_at,
-        "completed_at": utc_now(),
-        "target_count": len(targets),
-        "targets": summaries,
-    }
-    write_json(directory / "all_targets_index.json", result)
-    return result
-
-
-async def enable_page_domains(cdp: CDPConnection) -> dict[str, Any]:
-    outcomes: dict[str, Any] = {}
-    # Verified 2026-08-06 in diagnostics/t2_probe.py: Runtime.evaluate works
-    # without Runtime.enable. Keep Runtime disabled by default to reduce bot
-    # detection surface; enable only when --enable-runtime-domain is set.
-    if cdp.enable_runtime_domain:
-        _, outcomes["Runtime.enable"] = await timed_command(cdp, "Runtime.enable", required=False, timeout=5.0)
-    _, outcomes["Page.enable"] = await timed_command(cdp, "Page.enable", required=False, timeout=5.0)
-    outcomes["DOM.enable"] = {"ok": True, "skipped": "not required by recorder"}
-    return outcomes
-
-
-def log_event(cdp: CDPConnection, event: str, **fields: Any) -> None:
-    if cdp.log_path is not None:
-        append_jsonl(cdp.log_path, {"ts": utc_now(), "event": event, **fields})
-
-
-async def chromiumrl_call(
-    cdp: CDPConnection,
-    method: str,
-    params: dict[str, Any] | None = None,
-    *,
-    timeout: float,
-    label: str = "",
-) -> dict[str, Any]:
-    for attempt in (1, 2):
-        try:
-            return await cdp.send(method, params or {}, use_session=True, timeout=timeout)
-        except RecorderError as error:
-            log_event(cdp, "chromiumrl_timeout", method=method, attempt=attempt, label=label, error=str(error))
-            if attempt == 1:
-                try:
-                    await cdp.rebind_session()
-                    continue
-                except RecorderError as rebind_error:
-                    log_event(cdp, "chromiumrl_rebind_failed", method=method, error=str(rebind_error))
-            log_event(cdp, "chromiumrl_unavailable", method=method, label=label, error=str(error))
-            raise ChromiumRLUnavailable(f"{method} unavailable after rebind: {error}") from error
-    raise ChromiumRLUnavailable(f"{method} unavailable")
-
-
-async def reset_chromiumrl_tracing(cdp: CDPConnection, *, full_tracing: bool = False) -> dict[str, Any]:
-    try:
-        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=5.0)
-    except RecorderError:
-        pass
-    params = {
-        "captureTouchTraces": True,
-        "captureLayoutTimings": bool(full_tracing),
-        "captureCLSAttribution": bool(full_tracing),
-        "captureCompositorLayers": bool(full_tracing),
-    }
-    result = await cdp.send("ChromiumRL.enable", params, use_session=True, timeout=5.0)
-    trace_session_id = str(result.get("sessionId", "")).strip()
-    if not trace_session_id:
-        raise RecorderError(f"ChromiumRL.enable returned no sessionId: {result}")
-    return result
-
-
-def frame_ids(frame_tree: dict[str, Any]) -> list[str]:
-    result: list[str] = []
-
-    def visit(item: dict[str, Any]) -> None:
-        frame_id = item.get("frame", {}).get("id")
-        if frame_id:
-            result.append(str(frame_id))
-        for child in item.get("childFrames", []) or []:
-            visit(child)
-
-    root = frame_tree.get("frameTree")
-    if isinstance(root, dict):
-        visit(root)
-    return result
-
-
-@dataclass
-class CapturedState:
-    directory: Path
-    chromiumrl_dom: dict[str, Any]
-    page_state: dict[str, Any]
-    index: dict[str, Any]
-    agent_observation: dict[str, Any]
-    degraded: bool = False
-    capture_notes: list[str] | None = None
-    observation_source: str = "chromiumrl"
-    dom_captured: bool = False
-
-
-@dataclass(frozen=True)
-class ScreenshotConfig:
-    source: str
-    container: str
-    adb_serial: str
-    timeout_seconds: float
-
-
-async def capture_adb_screenshot(config: ScreenshotConfig, directory: Path) -> dict[str, Any]:
-    started = time.perf_counter()
-    command = [
-        "docker",
-        "exec",
-        config.container,
-        "adb",
-        "-s",
-        config.adb_serial,
-        "exec-out",
-        "screencap",
-        "-p",
-    ]
-    try:
-        process = await asyncio.create_subprocess_exec(
-            *command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=config.timeout_seconds)
-    except FileNotFoundError as error:
-        return {"source": "adb", "ok": False, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "error": f"docker executable not found: {error}"}
-    except asyncio.TimeoutError:
-        try:
-            process.kill()
-        except ProcessLookupError:
-            pass
-        return {"source": "adb", "ok": False, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "error": f"adb screencap timed out after {config.timeout_seconds:.1f}s"}
-    elapsed = round((time.perf_counter() - started) * 1000, 3)
-    stderr_text = stderr.decode("utf-8", errors="replace").strip()
-    if process.returncode != 0:
-        return {"source": "adb", "ok": False, "elapsed_ms": elapsed, "returncode": process.returncode, "stderr": stderr_text}
-    if not stdout.startswith(b"\x89PNG\r\n\x1a\n"):
-        return {"source": "adb", "ok": False, "elapsed_ms": elapsed, "bytes": len(stdout), "stderr": stderr_text, "error": "adb screencap did not return PNG data"}
-    (directory / "screenshot.png").write_bytes(stdout)
-    return {"source": "adb", "ok": True, "elapsed_ms": elapsed, "artifact": "screenshot.png", "bytes": len(stdout), "container": config.container, "adb_serial": config.adb_serial}
-
-
-JS_OBSERVATION_EXPRESSION = r"""
-(() => {
-  const t0 = performance.now();
-  const SEL = 'a[href],button,input,select,textarea,summary,[role=button],[role=link],' +
-              '[role=checkbox],[role=radio],[role=tab],[role=menuitem],[role=combobox],' +
-              '[role=searchbox],[role=textbox],[onclick],[tabindex]:not([tabindex="-1"]),' +
-              '[contenteditable=""],[contenteditable=true]';
-  const vw = innerWidth, vh = innerHeight;
-  const xpath = (el) => {
-    const parts = [];
-    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
-      let i = 1;
-      for (let s = n.previousElementSibling; s; s = s.previousElementSibling)
-        if (s.tagName === n.tagName) i++;
-      parts.unshift(n.tagName.toLowerCase() + '[' + i + ']');
-    }
-    return '/' + parts.join('/');
-  };
-  const out = [];
-  let truncated = false;
-  for (const el of document.querySelectorAll(SEL)) {
-    if (performance.now() - t0 > 1200) { truncated = true; break; }
-    const r = el.getBoundingClientRect();
-    if (!r.width || !r.height) continue;
-    const cs = getComputedStyle(el);
-    if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
-    if (el.disabled || el.getAttribute('aria-hidden') === 'true') continue;
-    const name = (el.getAttribute('aria-label') || el.innerText || el.value ||
-                  el.placeholder || el.title || el.alt || '').replace(/\s+/g,' ').trim();
-    out.push({
-      tag: el.tagName.toLowerCase(), role: el.getAttribute('role') || '',
-      accessibleName: name.slice(0, 120), href: el.getAttribute('href') || '',
-      value: (el.value || '').toString().slice(0, 80), xpath: xpath(el),
-      bounds: { x: r.left, y: r.top, width: r.width, height: r.height },
-      centerX: r.left + r.width / 2, centerY: r.top + r.height / 2,
-      isInViewport: r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw,
-      isVisible: true
-    });
-    if (out.length >= 300) { truncated = true; break; }
-  }
-  return { url: location.href, title: document.title,
-           scroll: { x: scrollX, y: scrollY, maxY: document.documentElement.scrollHeight - vh },
-           viewport: { width: vw, height: vh }, elements: out, truncated, source: 'js_fallback' };
-})()
-"""
-
-
-async def collect_js_observation(cdp: CDPConnection, label: str = "") -> dict[str, Any]:
-    runtime, timing = await timed_command(
-        cdp,
-        "Runtime.evaluate",
-        {"expression": JS_OBSERVATION_EXPRESSION, "returnByValue": True, "awaitPromise": False},
-        required=False,
-        label=label,
-        timeout=TIMEOUT_EVALUATE,
-    )
-    observation = runtime.get("result", {}).get("value", {}) if isinstance(runtime, dict) else {}
-    if not isinstance(observation, dict):
-        observation = {"url": "", "title": "", "elements": [], "source": "js_fallback", "error": "invalid Runtime.evaluate result"}
-    return command_entry({}, timing, {"observation": observation})
-
-
-async def collect_agent_observation(cdp: CDPConnection, directory: Path, *, source: str = "auto", label: str = "") -> dict[str, Any]:
-    if source == "js":
-        payload = await collect_js_observation(cdp, label=label or directory.name)
-        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
-        return payload
-    try:
-        value = await chromiumrl_call(cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label=label or directory.name)
-        payload = command_entry({}, {"ok": True, "elapsed_ms": 0}, value)
-        payload["source"] = "chromiumrl"
-        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
-        return payload
-    except ChromiumRLUnavailable as error:
-        if source == "chromiumrl":
-            raise
-        log_event(cdp, "observation_fallback", reason=str(error), fallback="js")
-        payload = await collect_js_observation(cdp, label=label or directory.name)
-        payload["source"] = "js_fallback"
-        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
-        return payload
-
-
 async def capture_screenshot_best_effort(cdp: CDPConnection, directory: Path, config: ScreenshotConfig) -> dict[str, Any]:
     if config.source == "none":
         write_json(directory / "screenshot_skipped.json", {"ok": True, "source": "none"})
         return {"ok": True, "source": "none", "artifact": "screenshot_skipped.json"}
+    fmt = getattr(config, "format", "jpeg") or "jpeg"
+    if fmt == "jpg":
+        fmt = "jpeg"
+    extension = "jpg" if fmt == "jpeg" else fmt
+    params: dict[str, Any] = {"format": fmt, "fromSurface": True, "captureBeyondViewport": False}
+    if fmt in {"jpeg", "webp"}:
+        quality = int(getattr(config, "quality", 80) or 80)
+        params["quality"] = max(1, min(100, quality))
     attempts: list[dict[str, Any]] = []
-    for params in ({"format": "png", "fromSurface": True, "captureBeyondViewport": False},):
-        started = time.perf_counter()
-        try:
-            screenshot = await cdp.send("Page.captureScreenshot", params, use_session=True, timeout=TIMEOUT_SCREENSHOT)
-            encoded = screenshot.get("data")
-            if isinstance(encoded, str) and encoded:
-                data = base64.b64decode(encoded, validate=True)
-                (directory / "screenshot.png").write_bytes(data)
-                return {"source": "cdp", "ok": True, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "artifact": "screenshot.png", "bytes": len(data)}
-            attempts.append({"source": "cdp", "ok": False, "params": params, "error": "no screenshot data"})
-        except Exception as error:
-            attempts.append({"source": "cdp", "ok": False, "params": params, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "error": str(error)})
+    started = time.perf_counter()
+    try:
+        screenshot = await cdp.send("Page.captureScreenshot", params, use_session=True, timeout=TIMEOUT_SCREENSHOT)
+        encoded = screenshot.get("data")
+        if isinstance(encoded, str) and encoded:
+            data = base64.b64decode(encoded, validate=True)
+            artifact = f"screenshot.{extension}"
+            (directory / artifact).write_bytes(data)
+            return {"source": "cdp", "ok": True, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "artifact": artifact, "bytes": len(data), "params": params}
+        attempts.append({"source": "cdp", "ok": False, "params": params, "error": "no screenshot data"})
+    except Exception as error:
+        attempts.append({"source": "cdp", "ok": False, "params": params, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "error": str(error)})
     write_json(directory / "screenshot_error.json", {"ok": False, "attempts": attempts})
     return {"ok": False, "attempts": attempts, "artifact": "screenshot_error.json"}
 
@@ -1012,7 +611,7 @@ async def capture_state(
         notes.append("screenshot_failed")
 
     try:
-        agent_observation = await collect_agent_observation(cdp, directory, source=observation_source, label=label)
+        agent_observation = await collect_agent_observation(cdp, directory, source=observation_source, label=label, page_state=page_state)
     except Exception as error:
         degraded = True
         notes.append(f"observation_failed:{error}")
@@ -1212,8 +811,44 @@ def observation_elements(state_or_payload: Any) -> list[dict[str, Any]]:
     return [item for item in elements if isinstance(item, dict)]
 
 
+def element_label_text(element: dict[str, Any]) -> str:
+    parts: list[str] = []
+    for key in ("text", "accessibleName", "name", "label", "placeholder", "value", "href"):
+        value = element.get(key)
+        if isinstance(value, str) and value.strip():
+            parts.append(" ".join(value.split()))
+    return " ".join(parts).strip()
+
+
+def labelled_element_count(observation: dict[str, Any]) -> int:
+    elements = observation.get("elements", []) if isinstance(observation, dict) else []
+    if not isinstance(elements, list):
+        return 0
+    return sum(1 for element in elements if isinstance(element, dict) and element_label_text(element))
+
+
+def observation_is_implausible(obs: dict[str, Any], page_state: dict[str, Any]) -> str | None:
+    elements = obs.get("elements") or []
+    url = (page_state.get("url") or obs.get("url") or "").strip()
+    if url in ("", "about:blank") or url.startswith(("chrome://", "chrome-native://")):
+        return None
+    if not elements:
+        return "zero_elements"
+    viewport = page_state.get("viewport") if isinstance(page_state.get("viewport"), dict) else {}
+    scroll_height = first_number(viewport.get("scrollHeight"), viewport.get("pageHeight"), viewport.get("height"), 0) or 0
+    if len(elements) < 3 and scroll_height > 2000:
+        return "too_few_elements_for_page_height"
+    if all(not element_label_text(e) for e in elements if isinstance(e, dict)):
+        return "no_labelled_elements"
+    return None
+
+
 def element_identity(element: dict[str, Any]) -> str:
-    for key in ("nodeId", "selector", "fingerprint", "backendNodeId", "xpath", "cssSelector", "href", "text", "accessibleName", "idx"):
+    # diagnostics/v3/identity_stability_probe_output.json showed selector is
+    # present and stable, while fingerprint collides (e.g. repeated Home links).
+    # Prefer selector, use nodeId as tiebreaker/auditable fallback, and never
+    # use fingerprint before structural identifiers.
+    for key in ("selector", "nodeId", "backendNodeId", "xpath", "cssSelector", "href", "text", "accessibleName", "idx", "fingerprint"):
         value = element.get(key)
         if value not in (None, "", [], {}):
             return f"{key}:{str(value).strip()}"
