@@ -1,0 +1,139 @@
+InspectorChromiumRLAgent::BuildRichNode(Node* node) {
+  int node_id = IdentifiersFactory::IntIdForNode(node);
+  String tag_name = node->nodeName();
+  
+  auto default_styles = protocol::ChromiumRL::DOMComputedStyle::create()
+        .setDisplay("none")
+        .setVisibility("hidden")
+        .setOpacity("0")
+        .setColor("")
+        .setBackgroundColor("")
+        .setFontSize("0")
+        .setFontWeight("normal")
+        .setPadding("")
+        .setMargin("")
+        .setWidth("")
+        .setHeight("")
+        .setPosition("static")
+        .setOverflow("visible")
+        .setWhiteSpace("normal")
+        .setTextAlign("start")
+        .setLineHeight("normal")
+        .setTextDecoration("none")
+        .setBorder("")
+        .setBorderRadius("")
+        .build();
+
+  // Bounds
+  auto bounds = protocol::DOM::Rect::create().setX(0).setY(0).setWidth(0).setHeight(0).build();
+  bool is_in_viewport = false;
+  if (node->GetLayoutObject()) {
+    gfx::RectF box = node->GetLayoutObject()->AbsoluteBoundingBoxRectF();
+    bounds->setX(box.x());
+    bounds->setY(box.y());
+    bounds->setWidth(box.width());
+    bounds->setHeight(box.height());
+    is_in_viewport = (box.width() > 0 && box.height() > 0);
+  }
+
+  // Text Content: Use textContent() safely
+  String text_content;
+  if (node->IsTextNode()) {
+      text_content = node->nodeValue();
+  } else if (node->IsElementNode()) {
+      // Only fetch aggregated text for specific content elements or leaves
+      // to avoid OOM/Crash on large containers like <body>
+      Element* element = DynamicTo<Element>(node);
+      bool is_code_tag = element->HasTagName(html_names::kScriptTag) ||
+                         element->HasTagName(html_names::kStyleTag);
+
+      bool is_content_tag = element->HasTagName(html_names::kButtonTag) ||
+                            element->HasTagName(html_names::kATag) ||
+                            element->HasTagName(html_names::kH1Tag) ||
+                            element->HasTagName(html_names::kH2Tag) ||
+                            element->HasTagName(html_names::kH3Tag) ||
+                            element->HasTagName(html_names::kH4Tag) ||
+                            element->HasTagName(html_names::kH5Tag) ||
+                            element->HasTagName(html_names::kH6Tag) ||
+                            element->HasTagName(html_names::kPTag) ||
+                            element->HasTagName(html_names::kSpanTag) ||
+                            element->HasTagName(html_names::kLiTag) ||
+                            element->HasTagName(html_names::kLabelTag) ||
+                            element->HasTagName(html_names::kOptionTag);
+
+      if (is_code_tag) {
+          String raw = node->textContent();
+          if (!raw.empty()) {
+              std::string hash = crypto::SHA256HashString(raw.Utf8());
+              text_content = "sha256:" + String::FromUtf8(base::Base64Encode(hash));
+          }
+      } else if (is_content_tag || !ElementTraversal::FirstChild(*element)) {
+          text_content = node->textContent();
+          if (text_content.length() > 1000) text_content = text_content.substr(0, 1000);
+      }
+  }
+
+  auto rich_node = protocol::ChromiumRL::RichNode::create()
+    .setNodeId(node_id)
+    .setTagName(tag_name)
+    .setStablePath(BuildSelectorPath(node))
+    .setCssSelector(BuildSelectorPath(node))
+    .setXpath(BuildXPath(node))
+    .setFingerprint(GetNodeFingerprint(node))
+    .setIsVisible(false)
+    .setIsInViewport(is_in_viewport)
+    .setZIndex(0)
+    .setTextContent(NormalizeTextContent(text_content)) // Use aggregated text
+    .setSiblingIndex(0)
+    .setAttributes(std::make_unique<protocol::Array<protocol::ChromiumRL::DOMAttribute>>()) 
+    .setKeyStyles(std::move(default_styles)) 
+    .setParentId(0) 
+    .setBounds(std::move(bounds))
+    .build();
+
+  if (node->parentNode()) {
+    rich_node->setParentId(IdentifiersFactory::IntIdForNode(node->parentNode()));
+  }
+
+  if (auto* element = DynamicTo<Element>(node)) {
+    auto attributes = std::make_unique<protocol::Array<protocol::ChromiumRL::DOMAttribute>>();
+    for (const auto& attr : element->Attributes()) {
+      attributes->push_back(protocol::ChromiumRL::DOMAttribute::create()
+        .setName(attr.GetName().ToString())
+        .setValue(attr.Value())
+        .build());
+    }
+    rich_node->setAttributes(std::move(attributes));
+    
+    if (const ComputedStyle* style = element->GetComputedStyle()) {
+      rich_node->setIsVisible(style->Visibility() == EVisibility::kVisible && style->Display() != EDisplay::kNone);
+      rich_node->setZIndex(style->ZIndex());
+      
+      auto* computed = MakeGarbageCollected<CSSComputedStyleDeclaration>(element);
+      auto key_styles = protocol::ChromiumRL::DOMComputedStyle::create()
+        .setDisplay(computed->GetPropertyValue(CSSPropertyID::kDisplay))
+        .setVisibility(computed->GetPropertyValue(CSSPropertyID::kVisibility))
+        .setOpacity(computed->GetPropertyValue(CSSPropertyID::kOpacity))
+        .setColor(computed->GetPropertyValue(CSSPropertyID::kColor))
+        .setBackgroundColor(computed->GetPropertyValue(CSSPropertyID::kBackgroundColor))
+        .setFontSize(computed->GetPropertyValue(CSSPropertyID::kFontSize))
+        .setFontWeight(computed->GetPropertyValue(CSSPropertyID::kFontWeight))
+        .setPadding(computed->GetPropertyValue(CSSPropertyID::kPadding))
+        .setMargin(computed->GetPropertyValue(CSSPropertyID::kMargin))
+        .setWidth(computed->GetPropertyValue(CSSPropertyID::kWidth))
+        .setHeight(computed->GetPropertyValue(CSSPropertyID::kHeight))
+        .setPosition(computed->GetPropertyValue(CSSPropertyID::kPosition))
+        .setOverflow(computed->GetPropertyValue(CSSPropertyID::kOverflow))
+        .setWhiteSpace(computed->GetPropertyValue(CSSPropertyID::kWhiteSpace))
+        .setTextAlign(computed->GetPropertyValue(CSSPropertyID::kTextAlign))
+        .setLineHeight(computed->GetPropertyValue(CSSPropertyID::kLineHeight))
+        .setTextDecoration(computed->GetPropertyValue(CSSPropertyID::kTextDecoration))
+        .setBorder(computed->GetPropertyValue(CSSPropertyID::kBorder))
+        .setBorderRadius(computed->GetPropertyValue(CSSPropertyID::kBorderRadius))
+        .build();
+        
+      rich_node->setKeyStyles(std::move(key_styles));
+    }
+  }
+
+  return rich_node;
