@@ -1751,7 +1751,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--step-timeout", type=float, default=120.0)
     parser.add_argument("--load-timeout", type=float, default=12.0)
     parser.add_argument("--max-duration-seconds", type=float, default=900.0)
-    parser.add_argument("--max-steps", type=int, default=70)
+    parser.add_argument("--max-steps", type=int, default=80)
     parser.add_argument("--max-elements", type=int, default=120)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--fresh-tab-url", default="about:blank")
