@@ -120,7 +120,7 @@ File meanings:
 | `step_XXX/action.json` | Human-readable action record, including normalized verifier action fields like `url` for navigation and `key` for keypresses. |
 | `step_XXX/observation_before.json.gz` / `observation_after.json.gz` | Compressed model-facing observations before/after the action. These come from ChromiumRL observation or JS fallback and are not the DOM diff source. |
 | `step_XXX/dom_before.json.gz` / `dom_after.json.gz` | Slim projections of `ChromiumRL.saveDOMState`. These preserve semantic text, semantic attributes, visibility, viewport flags, and selected state-ish styles/classes. |
-| `step_XXX/dom_diff.json` | Compact semantic DOM diff computed from the slim DOM projections. This is the verifier artifact. It includes true totals, emitted counts, and `truncated`. |
+| `step_XXX/dom_diff.json` | Compact semantic DOM diff computed from real slim DOM projections. This is the verifier artifact. It includes cross-document mode, frame coverage, enrichment provenance, true totals, emitted counts, and `truncated`. |
 | `step_XXX/observation_diff.json` | Observation-based interactive-element diff. This replaces the old misleading `dom_diff_summary.json` name and is mainly useful for agent-loop/progress detection. |
 | `step_XXX/after.jpg` | Default post-action screenshot. With `--screenshot-mode both`, `before.jpg` is also written. Extension follows `--screenshot-format`. |
 | `final_state/dom.json.gz` | Final slim DOM projection. If `--dom-capture full` is used, `final_state/dom_raw.json.gz` is also written. |
@@ -134,8 +134,20 @@ DOM options:
 --dom-capture full            Also writes raw saveDOMState as dom_before_raw/dom_after_raw/final_state/dom_raw.
 --dom-capture none            Disables DOM artifacts; use only for debugging, not verifier data.
 --dom-diff-max-entries 200    Per-list emitted-entry cap; true totals are always reported.
+--collapse-text-chars 500      Visible-text budget for collapsed subtree/document summaries. Raise to 2000 for audit runs.
+--validate-diff               Compare local compact diff counts against ChromiumRL.compareDOMState operations.
 --observation-max-elements 250 Raises ChromiumRL.getAgentObservation maxElements/maxInteractiveElements.
 --fresh-tab-mode new_tab      Default. Use current browser window with a fresh tab. new_context isolates more but risks OS window ordering/occlusion.
+```
+
+Cross-document DOM diffs:
+
+```text
+Same-document step       node-level added/removed/changed over slim DOM projections
+Cross-document step      document_removed + document_added + text_delta + interactive_added; no node-level changed entries
+Iframe coverage          frames block declares child frames; same-origin iframe projected nodes are marked source=js_iframe
+Form enrichment          attrs like value/checked/selected may be {"v":"...","src":"prop"}; see enrichment.ok
+Scroll artifacts         active/current-only class churn on scroll is reported under flagged_changes, not changed
 ```
 
 ## ChromiumRL and CDP protocols used

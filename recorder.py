@@ -564,6 +564,8 @@ class CapturedState:
     capture_notes: list[str] | None = None
     observation_source: str = "chromiumrl"
     dom_captured: bool = False
+    frame_tree: dict[str, Any] | None = None
+    form_enrichment: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -912,7 +914,7 @@ FORM_CONTROL_STATE_EXPRESSION = r"""
 """
 
 
-async def collect_form_control_state(cdp: CDPConnection, *, label: str = "") -> dict[str, dict[str, Any]]:
+async def collect_form_control_state(cdp: CDPConnection, *, label: str = "") -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     runtime, timing = await timed_command(
         cdp,
         "Runtime.evaluate",
@@ -923,7 +925,15 @@ async def collect_form_control_state(cdp: CDPConnection, *, label: str = "") -> 
     )
     value = runtime.get("result", {}).get("value", []) if isinstance(runtime, dict) else []
     by_key: dict[str, dict[str, Any]] = {}
+    meta: dict[str, Any] = {
+        "attempted": True,
+        "ok": bool(timing.get("ok")),
+        "error": timing.get("error", ""),
+        "controls_seen": 0,
+        "controls_enriched": 0,
+    }
     if isinstance(value, list):
+        meta["controls_seen"] = len(value)
         for item in value:
             if not isinstance(item, dict):
                 continue
@@ -931,10 +941,20 @@ async def collect_form_control_state(cdp: CDPConnection, *, label: str = "") -> 
                 key = item.get(key_name)
                 if isinstance(key, str) and key.strip():
                     by_key[f"{key_name}:{key.strip()}"] = item
-    return by_key
+    elif meta["ok"]:
+        meta["ok"] = False
+        meta["error"] = "Runtime.evaluate returned a non-list form state"
+    return by_key, meta
 
 
-def enrich_dom_with_form_state(dom_state: dict[str, Any], form_state: dict[str, dict[str, Any]]) -> None:
+def _prop_value(value: Any, *, redacted: bool = False) -> dict[str, Any]:
+    if redacted:
+        return {"v": "<REDACTED>", "src": "prop", "redacted": True}
+    return {"v": str(value).lower() if isinstance(value, bool) else str(value), "src": "prop"}
+
+
+def enrich_dom_with_form_state(dom_state: dict[str, Any], form_state: dict[str, dict[str, Any]]) -> int:
+    enriched = 0
     for node in dom_state.get("nodes", []) if isinstance(dom_state.get("nodes"), list) else []:
         if not isinstance(node, dict):
             continue
@@ -946,11 +966,162 @@ def enrich_dom_with_form_state(dom_state: dict[str, Any], form_state: dict[str, 
         match = next((form_state[k] for k in candidates if k in form_state), None)
         if not match:
             continue
-        attrs = semantic_attrs(node.get("attributes"))
+        attrs = node.get("_semantic_attrs_override") if isinstance(node.get("_semantic_attrs_override"), dict) else semantic_attrs(node.get("attributes"))
+        touched = False
+        sensitive_control = any(SENSITIVE_FIELD_RE.search(str(attrs.get(k, ""))) for k in ("name", "id", "type", "autocomplete"))
         for key in ("value", "checked", "selected"):
             if key in match:
-                attrs[key] = match[key]
-        node["attributes"] = [{"name": k, "value": str(v).lower() if isinstance(v, bool) else str(v)} for k, v in attrs.items()]
+                attrs[key] = _prop_value(match[key], redacted=(key == "value" and sensitive_control))
+                touched = True
+        if touched:
+            node["_semantic_attrs_override"] = attrs
+            enriched += 1
+    return enriched
+
+
+
+def _frame_tree_root(frame_tree_result: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(frame_tree_result, dict):
+        return {}
+    root = frame_tree_result.get("frameTree")
+    if isinstance(root, dict):
+        return root
+    result = frame_tree_result.get("result")
+    if isinstance(result, dict) and isinstance(result.get("frameTree"), dict):
+        return result["frameTree"]
+    return {}
+
+
+def walk_frame_tree(frame_tree_result: dict[str, Any]) -> list[dict[str, Any]]:
+    root = _frame_tree_root(frame_tree_result)
+    frames: list[dict[str, Any]] = []
+
+    def visit(node: dict[str, Any], depth: int) -> None:
+        frame = node.get("frame") if isinstance(node.get("frame"), dict) else {}
+        if frame:
+            item = dict(frame)
+            item["depth"] = depth
+            frames.append(item)
+        for child in node.get("childFrames") or []:
+            if isinstance(child, dict):
+                visit(child, depth + 1)
+
+    if root:
+        visit(root, 0)
+    return frames
+
+
+def main_frame_info(frame_tree_result: dict[str, Any]) -> dict[str, Any]:
+    for frame in walk_frame_tree(frame_tree_result):
+        if frame.get("depth") == 0:
+            return frame
+    return {}
+
+
+def frame_coverage_from_tree(frame_tree_result: dict[str, Any], projection: dict[str, Any] | None = None) -> dict[str, Any]:
+    frames = walk_frame_tree(frame_tree_result)
+    child_frames = [f for f in frames if f.get("depth", 0) > 0]
+    js_iframe_frames = set()
+    if isinstance(projection, dict):
+        for node in projection.get("nodes", []) or []:
+            if isinstance(node, dict) and node.get("source") == "js_iframe" and node.get("frame"):
+                js_iframe_frames.add(str(node.get("frame")))
+    traversed = 1 + len(js_iframe_frames) if frames else len(js_iframe_frames)
+    coverage = "main_frame_plus_same_origin_iframes" if js_iframe_frames else "main_frame_only"
+    return {
+        "count": len(frames),
+        "child_frames": len(child_frames),
+        "traversed": traversed,
+        "coverage": coverage,
+        "child_frame_urls": [str(f.get("url") or "") for f in child_frames if f.get("url")],
+        "same_origin_iframe_sources": sorted(js_iframe_frames),
+        "shadow_dom": "none",
+    }
+
+
+JS_IFRAME_DOM_PROJECTION_EXPRESSION = r"""
+(() => {
+  const t0 = performance.now();
+  const SEM = new Set(['id','href','src','value','checked','selected','disabled','readonly','required','type','name','placeholder','title','alt','role','data-testid']);
+  const STATE = /(?:^|[-_])(active|current|selected|checked|open|expanded|collapsed|disabled|error|invalid|success|hidden|show|star|rating)(?:$|[-_])/i;
+  const styleKeys = ['display','visibility','opacity','color','backgroundColor','textDecoration'];
+  const xpath = (el) => {
+    const parts = [];
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      let i = 1;
+      for (let s = n.previousElementSibling; s; s = s.previousElementSibling)
+        if (s.tagName === n.tagName) i++;
+      parts.unshift(n.tagName.toLowerCase() + '[' + i + ']');
+    }
+    return '/' + parts.join('/');
+  };
+  const attrsFor = (el) => {
+    const attrs = {};
+    for (const attr of Array.from(el.attributes || [])) {
+      const name = attr.name.toLowerCase();
+      if (SEM.has(name) || name.startsWith('aria-')) attrs[name] = attr.value;
+      else if (name === 'class') {
+        const kept = attr.value.split(/\s+/).filter(t => STATE.test(t));
+        if (kept.length) attrs.class = Array.from(new Set(kept)).join(' ');
+      }
+    }
+    if ('value' in el && el.value !== '') attrs.value = {v:String(el.value), src:'prop'};
+    if ('checked' in el) attrs.checked = {v:String(!!el.checked), src:'prop'};
+    if ('selected' in el) attrs.selected = {v:String(!!el.selected), src:'prop'};
+    return attrs;
+  };
+  const out = [];
+  let truncated = false;
+  let frameIndex = 0;
+  for (const iframe of document.querySelectorAll('iframe')) {
+    frameIndex += 1;
+    if (performance.now() - t0 > 1200 || out.length >= 500) { truncated = true; break; }
+    let doc;
+    try { doc = iframe.contentDocument; } catch (e) { continue; }
+    if (!doc || !doc.documentElement) continue;
+    const frameRect = iframe.getBoundingClientRect();
+    const frameKey = iframe.getAttribute('src') || (doc.location && doc.location.href) || ('iframe[' + frameIndex + ']');
+    const frameId = frameKey;
+    const nodes = Array.from(doc.querySelectorAll('*'));
+    const keyOf = (el) => 'frame:' + frameId + ':' + xpath(el);
+    for (const el of nodes) {
+      if (performance.now() - t0 > 1200 || out.length >= 500) { truncated = true; break; }
+      const tag = el.tagName.toLowerCase();
+      if (['script','style','noscript','template'].includes(tag)) continue;
+      const text = (el.textContent || '').replace(/\s+/g,' ').trim().slice(0,200);
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      const parent = el.parentElement ? keyOf(el.parentElement) : '';
+      const style = {};
+      for (const k of styleKeys) if (cs[k]) style[k] = cs[k];
+      out.push({
+        k: keyOf(el), parent, tag, text, attrs: attrsFor(el),
+        vis: !!(r.width && r.height && cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity !== 0),
+        vp: frameRect.bottom + r.bottom > 0 && frameRect.top + r.top < innerHeight,
+        style, frame: frameId, source: 'js_iframe'
+      });
+    }
+  }
+  return {nodes: out, truncated};
+})()
+"""
+
+
+async def collect_js_iframe_projection(cdp: CDPConnection, *, label: str = "") -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    runtime, timing = await timed_command(
+        cdp,
+        "Runtime.evaluate",
+        {"expression": JS_IFRAME_DOM_PROJECTION_EXPRESSION, "returnByValue": True, "awaitPromise": False},
+        required=False,
+        label=label,
+        timeout=TIMEOUT_EVALUATE,
+    )
+    value = runtime.get("result", {}).get("value", {}) if isinstance(runtime, dict) else {}
+    nodes = value.get("nodes", []) if isinstance(value, dict) else []
+    if not isinstance(nodes, list):
+        nodes = []
+    meta = {"attempted": True, "ok": bool(timing.get("ok")), "error": timing.get("error", ""), "nodes": len(nodes), "truncated": bool(value.get("truncated")) if isinstance(value, dict) else False}
+    return [n for n in nodes if isinstance(n, dict)], meta
 
 
 async def capture_screenshot_best_effort(cdp: CDPConnection, directory: Path, config: ScreenshotConfig) -> dict[str, Any]:
@@ -1002,6 +1173,8 @@ async def capture_state(
     page_state: dict[str, Any] = {}
     chromiumrl_dom: dict[str, Any] = {}
     dom_captured = False
+    frame_tree: dict[str, Any] = {}
+    form_enrichment: dict[str, Any] = {"attempted": False, "ok": False, "error": "not_attempted", "controls_enriched": 0}
 
     commands["activate"] = await activate_current_target(cdp, label=label)
 
@@ -1020,6 +1193,10 @@ async def capture_state(
         degraded = True
         notes.append("page_state_failed")
     write_json_compact(directory / "page_state.json", page_state)
+
+    frame_tree, commands["Page.getFrameTree"] = await timed_command(cdp, "Page.getFrameTree", required=False, label=label, timeout=TIMEOUT_EVALUATE)
+    if not isinstance(frame_tree, dict):
+        frame_tree = {}
 
     commands["screenshot"] = await capture_screenshot_best_effort(cdp, directory, screenshot_config)
     if not commands["screenshot"].get("ok"):
@@ -1042,11 +1219,19 @@ async def capture_state(
             if not isinstance(chromiumrl_dom, dict):
                 chromiumrl_dom = {}
             try:
-                form_state = await collect_form_control_state(cdp, label=f"{label}:form_state")
-                enrich_dom_with_form_state(chromiumrl_dom, form_state)
-                commands["form_control_state"] = {"ok": True, "count": len(form_state)}
+                form_state, form_enrichment = await collect_form_control_state(cdp, label=f"{label}:form_state")
+                form_enrichment["controls_enriched"] = enrich_dom_with_form_state(chromiumrl_dom, form_state)
+                commands["form_control_state"] = form_enrichment
             except Exception as form_error:
-                commands["form_control_state"] = {"ok": False, "error": str(form_error)}
+                form_enrichment = {"attempted": True, "ok": False, "error": str(form_error), "controls_enriched": 0}
+                commands["form_control_state"] = form_enrichment
+            try:
+                iframe_nodes, iframe_meta = await collect_js_iframe_projection(cdp, label=f"{label}:iframe_dom")
+                if iframe_nodes:
+                    chromiumrl_dom["_extra_projected_nodes"] = iframe_nodes
+                commands["js_iframe_dom"] = iframe_meta
+            except Exception as iframe_error:
+                commands["js_iframe_dom"] = {"attempted": True, "ok": False, "error": str(iframe_error), "nodes": 0}
             slim_dom = project_dom_state(chromiumrl_dom)
             write_json_gz(directory / "chromiumrl_dom_slim.json.gz", slim_dom)
             if dom_capture == "full":
@@ -1071,8 +1256,11 @@ async def capture_state(
         "capture_notes": notes,
         "observation_source": agent_observation.get("source", "chromiumrl"),
         "dom_captured": dom_captured,
+        "frame_tree": frame_tree,
+        "frames": frame_coverage_from_tree(frame_tree, project_dom_state(chromiumrl_dom) if chromiumrl_dom else None),
+        "form_enrichment": form_enrichment,
     }
-    return CapturedState(directory, chromiumrl_dom, page_state, index, agent_observation, degraded, notes, agent_observation.get("source", "chromiumrl"), dom_captured)
+    return CapturedState(directory, chromiumrl_dom, page_state, index, agent_observation, degraded, notes, agent_observation.get("source", "chromiumrl"), dom_captured, frame_tree, form_enrichment)
 
 
 async def capture_state_with_recovery(
@@ -1368,7 +1556,8 @@ SEMANTIC_ATTRS = {
     "id", "href", "src", "value", "checked", "selected", "disabled", "readonly", "required",
     "type", "name", "placeholder", "title", "alt", "role", "data-testid",
 }
-STATE_CLASS_RE = re.compile(r"(?:^|[-_])(selected|checked|open|expanded|collapsed|disabled|error|invalid|success|hidden|show|star|rating)(?:$|[-_])", re.I)
+STATE_CLASS_RE = re.compile(r"(?:^|[-_])(active|current|selected|checked|open|expanded|collapsed|disabled|error|invalid|success|hidden|show|star|rating)(?:$|[-_])", re.I)
+SENSITIVE_FIELD_RE = re.compile(r"csrf|token|secret|session|auth|password", re.I)
 DIFF_STYLE_KEYS = ("display", "visibility", "opacity", "color", "backgroundColor", "textDecoration")
 SKIP_DOM_TAGS = {"#comment", "script", "style", "noscript", "template"}
 INTERACTIVE_TAGS = {"a", "button", "input", "select", "textarea", "summary", "option"}
@@ -1402,6 +1591,8 @@ def semantic_attrs(attributes: Any) -> dict[str, Any]:
             for token in str(value).split():
                 if STATE_CLASS_RE.search(token):
                     class_tokens.append(token)
+    if "value" in kept and any(SENSITIVE_FIELD_RE.search(str(kept.get(k, ""))) for k in ("name", "id", "type", "autocomplete")):
+        kept["value"] = "<REDACTED>"
     if class_tokens:
         kept["class"] = " ".join(dict.fromkeys(class_tokens))
     return kept
@@ -1481,7 +1672,7 @@ def project_dom_state(dom_state: dict[str, Any]) -> dict[str, Any]:
         count = key_counts.get(raw_key, 0)
         key_counts[raw_key] = count + 1
         key = raw_key if count == 0 else f"{raw_key}#{count+1}"
-        attrs = semantic_attrs(node.get("attributes"))
+        attrs = node.get("_semantic_attrs_override") if isinstance(node.get("_semantic_attrs_override"), dict) else semantic_attrs(node.get("attributes"))
         style_src = node.get("keyStyles") if isinstance(node.get("keyStyles"), dict) else {}
         style = {k: style_src.get(k) for k in DIFF_STYLE_KEYS if style_src.get(k) not in (None, "")}
         parent_id = node.get("parentId")
@@ -1506,6 +1697,9 @@ def project_dom_state(dom_state: dict[str, Any]) -> dict[str, Any]:
             "parentId": parent_id,
             "siblingIndex": node.get("siblingIndex"),
         })
+    for extra in dom_state.get("_extra_projected_nodes", []) if isinstance(dom_state.get("_extra_projected_nodes"), list) else []:
+        if isinstance(extra, dict) and extra.get("k"):
+            projected.append(dict(extra))
     return {
         "schema_version": SCHEMA_VERSION,
         "method": "slim_dom_projection",
@@ -1543,7 +1737,7 @@ def _subtree_nodes(root: dict[str, Any], children: dict[str, list[dict[str, Any]
     return out
 
 
-def collapse_subtree_entry(root: dict[str, Any], nodes_by_key: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def collapse_subtree_entry(root: dict[str, Any], nodes_by_key: dict[str, dict[str, Any]], *, text_chars: int = 500) -> dict[str, Any]:
     children = _children_by_parent(nodes_by_key)
     descendants = _subtree_nodes(root, children)
     texts: list[str] = []
@@ -1558,7 +1752,7 @@ def collapse_subtree_entry(root: dict[str, Any], nodes_by_key: dict[str, dict[st
     if attrs.get("role"):
         entry["role"] = attrs.get("role")
     entry["descendant_count"] = len(descendants)
-    visible_text = " ".join(" ".join(texts).split())[:500]
+    visible_text = " ".join(" ".join(texts).split())[:max(0, int(text_chars))]
     if visible_text:
         entry["visible_text"] = visible_text
     if interactive:
@@ -1566,7 +1760,17 @@ def collapse_subtree_entry(root: dict[str, Any], nodes_by_key: dict[str, dict[st
     return entry
 
 
-def classify_projected_change(before: dict[str, Any], after: dict[str, Any]) -> tuple[list[str], dict[str, Any], int]:
+def _attr_plain(value: Any) -> str:
+    if isinstance(value, dict) and "v" in value:
+        return str(value.get("v", ""))
+    return str(value or "")
+
+
+def _class_tokens(value: Any) -> set[str]:
+    return {token for token in _attr_plain(value).split() if token}
+
+
+def classify_projected_change(before: dict[str, Any], after: dict[str, Any], *, action: str = "") -> tuple[list[str], dict[str, Any], int, bool]:
     kinds: list[str] = []
     changes: dict[str, Any] = {}
     weight = 0
@@ -1576,18 +1780,28 @@ def classify_projected_change(before: dict[str, Any], after: dict[str, Any]) -> 
         weight = max(weight, 30)
     b_attrs = before.get("attrs") if isinstance(before.get("attrs"), dict) else {}
     a_attrs = after.get("attrs") if isinstance(after.get("attrs"), dict) else {}
+    attr_changed_names: list[str] = []
     for name in sorted(set(b_attrs) | set(a_attrs)):
         if b_attrs.get(name) != a_attrs.get(name):
+            attr_changed_names.append(name)
             kinds.append(f"attr:{name}")
             changes.setdefault("attrs", {})[name] = {"before": b_attrs.get(name), "after": a_attrs.get(name)}
             if name in {"value", "checked", "selected", "disabled"} or name.startswith("aria-"):
                 weight = max(weight, 80)
             else:
                 weight = max(weight, 25)
-    semantic_before_visibility = bool(kinds)
+    likely_scroll_artifact = False
+    if action == "scroll" and set(attr_changed_names) == {"class"} and len(kinds) == 1:
+        before_tokens = _class_tokens(b_attrs.get("class"))
+        after_tokens = _class_tokens(a_attrs.get("class"))
+        delta = before_tokens ^ after_tokens
+        if delta and all(token.lower() in {"active", "current"} or "active" in token.lower() or "current" in token.lower() for token in delta):
+            likely_scroll_artifact = True
+            weight = 1
+    semantic_before_visibility = bool(kinds) and not likely_scroll_artifact
     if before.get("vis") != after.get("vis") or before.get("vp") != after.get("vp"):
         # Viewport membership alone is not semantic; visibility is only kept when
-        # paired with text/attribute state. This keeps pure scroll diffs empty.
+        # paired with non-scroll-artifact text/attribute state. This keeps pure scroll diffs empty.
         if semantic_before_visibility and before.get("vis") != after.get("vis"):
             kinds.append("visibility")
             changes["visibility"] = {"before": before.get("vis"), "after": after.get("vis")}
@@ -1600,11 +1814,91 @@ def classify_projected_change(before: dict[str, Any], after: dict[str, Any]) -> 
                 kinds.append(f"style:{prop}")
                 changes.setdefault("style", {})[prop] = {"before": b_style.get(prop), "after": a_style.get(prop)}
                 weight = max(weight, 10)
-    return kinds, changes, weight
+    return kinds, changes, weight, likely_scroll_artifact
 
 
 def rank_diff_entry(entry: dict[str, Any]) -> tuple[int, str]:
     return (-int(entry.get("semantic_weight", 0)), str(entry.get("k", "")))
+
+
+def _url_document_key(url: str) -> tuple[str, str, str]:
+    try:
+        parts = urlsplit(url or "")
+        return (parts.scheme, parts.netloc, parts.path)
+    except Exception:
+        return ("", "", str(url or ""))
+
+
+def _is_blankish_url(url: str) -> bool:
+    return not url or url == "about:blank" or url.startswith(("chrome://", "chrome-native://"))
+
+
+def detect_cross_document(before_dom: dict[str, Any], after_dom: dict[str, Any], before_index: dict[str, Any] | None, after_index: dict[str, Any] | None) -> tuple[bool, dict[str, Any]]:
+    before_index = before_index or {}
+    after_index = after_index or {}
+    before_frame = main_frame_info(before_index.get("frame_tree", {}))
+    after_frame = main_frame_info(after_index.get("frame_tree", {}))
+    before_loader = str(before_frame.get("loaderId") or "")
+    after_loader = str(after_frame.get("loaderId") or "")
+    before_url = str((before_index.get("page") or {}).get("url") or before_dom.get("url") or before_frame.get("url") or "")
+    after_url = str((after_index.get("page") or {}).get("url") or after_dom.get("url") or after_frame.get("url") or "")
+    loader_changed = bool(before_loader and after_loader and before_loader != after_loader)
+    path_changed = not _is_blankish_url(before_url) and not _is_blankish_url(after_url) and _url_document_key(before_url) != _url_document_key(after_url)
+    cross = bool(loader_changed or path_changed)
+    return cross, {"from_url": before_url, "to_url": after_url, "from_loader": before_loader, "to_loader": after_loader, "loader_changed": loader_changed, "path_or_origin_changed": path_changed}
+
+
+def _visible_text_set(projection: dict[str, Any]) -> set[str]:
+    values = set()
+    for node in projection.get("nodes", []) or []:
+        if isinstance(node, dict) and node.get("vis") and node.get("text"):
+            text = " ".join(str(node.get("text") or "").split())
+            if text:
+                values.add(text)
+    return values
+
+
+def _document_entry(projection: dict[str, Any], *, text_chars: int) -> dict[str, Any]:
+    nodes = [n for n in projection.get("nodes", []) or [] if isinstance(n, dict)]
+    root = next((n for n in nodes if n.get("tag") == "html"), nodes[0] if nodes else {})
+    texts = [str(n.get("text")) for n in nodes if n.get("vis") and n.get("text")]
+    interactive = []
+    for node in nodes:
+        if _is_interactive_projected(node) and len(interactive) < 40:
+            interactive.append({k: node.get(k) for k in ("k", "tag", "text", "attrs", "vis", "vp", "frame", "source") if node.get(k) not in (None, "", {}, [])})
+    return {
+        "root": root.get("k", ""),
+        "title": projection.get("title", ""),
+        "descendant_count": max(0, len(nodes) - 1),
+        "visible_text": " ".join(" ".join(texts).split())[:max(0, int(text_chars))],
+        "interactive_descendants": interactive,
+    }
+
+
+def compare_operation_counts(compare_result: dict[str, Any] | None) -> dict[str, int]:
+    payload = ((compare_result or {}).get("result") or compare_result or {}) if isinstance(compare_result, dict) else {}
+    counts: dict[str, int] = {}
+    for key in ("insertions", "deletions", "moves", "attributeChanges", "textChanges", "layoutChanges", "styleChanges", "typeChanges"):
+        value = payload.get(key) if isinstance(payload, dict) else None
+        counts[key] = len(value) if isinstance(value, list) else 0
+    return counts
+
+
+def validate_local_diff_against_compare(local: dict[str, Any], compare_result: dict[str, Any] | None) -> dict[str, Any]:
+    compare_counts = compare_operation_counts(compare_result)
+    changed = local.get("changed", []) if isinstance(local.get("changed"), list) else []
+    local_counts = {
+        "insertions": int((local.get("stats") or {}).get("added_total", 0)),
+        "deletions": int((local.get("stats") or {}).get("removed_total", 0)),
+        "attributeChanges": sum(1 for e in changed if any(str(k).startswith("attr:") for k in e.get("kind", []))),
+        "textChanges": sum(1 for e in changed if "text" in e.get("kind", [])),
+        "styleChanges": sum(1 for e in changed if any(str(k).startswith("style:") for k in e.get("kind", []))),
+    }
+    categories = sorted(set(compare_counts) | set(local_counts))
+    return {
+        "enabled": True,
+        "counts": {key: {"local": local_counts.get(key, 0), "compareDOMState": compare_counts.get(key, 0), "delta": local_counts.get(key, 0) - compare_counts.get(key, 0)} for key in categories},
+    }
 
 
 def build_compact_dom_diff(
@@ -1614,9 +1908,65 @@ def build_compact_dom_diff(
     compare_result: dict[str, Any] | None = None,
     compare_timing: dict[str, Any] | None = None,
     max_entries: int = 200,
+    before_index: dict[str, Any] | None = None,
+    after_index: dict[str, Any] | None = None,
+    action: str = "",
+    collapse_text_chars: int = 500,
+    validate_diff: bool = False,
 ) -> dict[str, Any]:
-    before_projection = project_dom_state(before_dom) if before_dom else {"nodes": [], "key_population": {}}
-    after_projection = project_dom_state(after_dom) if after_dom else {"nodes": [], "key_population": {}}
+    before_projection = project_dom_state(before_dom) if before_dom else {"nodes": [], "key_population": {}, "url": "", "title": ""}
+    after_projection = project_dom_state(after_dom) if after_dom else {"nodes": [], "key_population": {}, "url": "", "title": ""}
+    cross_document, navigation = detect_cross_document(before_dom, after_dom, before_index, after_index)
+    frames = frame_coverage_from_tree((after_index or {}).get("frame_tree", {}) or (before_index or {}).get("frame_tree", {}), after_projection)
+    source = {
+        "before": {"url": before_dom.get("url", ""), "title": before_dom.get("title", ""), "nodes": len(before_dom.get("nodes", []) or [])},
+        "after": {"url": after_dom.get("url", ""), "title": after_dom.get("title", ""), "nodes": len(after_dom.get("nodes", []) or [])},
+        "compareDOMState": {"timing": compare_timing or {}, "summary": ((compare_result or {}).get("result") or compare_result or {}).get("summary", {}) if isinstance(compare_result, dict) else {}},
+    }
+    base: dict[str, Any] = {
+        "schema_version": SCHEMA_VERSION,
+        "method": "local_slim_dom_semantic_diff",
+        "captured_at": utc_now(),
+        "cross_document": cross_document,
+        "navigation": navigation,
+        "source": source,
+        "frames": frames,
+        "enrichment": {"before": (before_index or {}).get("form_enrichment", {}), "after": (after_index or {}).get("form_enrichment", {})},
+        "key_population": {"before": before_projection.get("key_population", {}), "after": after_projection.get("key_population", {})},
+    }
+    if cross_document:
+        before_text = _visible_text_set(before_projection)
+        after_text = _visible_text_set(after_projection)
+        added_text = sorted(after_text - before_text, key=lambda x: (-len(x), x))[:200]
+        removed_text = sorted(before_text - after_text, key=lambda x: (-len(x), x))[:200]
+        stats = {
+            "added_total": len(after_projection.get("nodes", []) or []),
+            "added_roots_total": 1 if after_projection.get("nodes") else 0,
+            "added_emitted": 1 if after_projection.get("nodes") else 0,
+            "removed_total": len(before_projection.get("nodes", []) or []),
+            "removed_roots_total": 1 if before_projection.get("nodes") else 0,
+            "removed_emitted": 1 if before_projection.get("nodes") else 0,
+            "changed_total": 0,
+            "changed_emitted": 0,
+            "flagged_total": 0,
+            "flagged_emitted": 0,
+            "truncated": len(added_text) >= 200 or len(removed_text) >= 200,
+        }
+        base.update({
+            "stats": stats,
+            "document_removed": _document_entry(before_projection, text_chars=collapse_text_chars),
+            "document_added": _document_entry(after_projection, text_chars=collapse_text_chars),
+            "text_delta": {"added": added_text, "removed": removed_text, "added_total": len(after_text - before_text), "removed_total": len(before_text - after_text)},
+            "interactive_added": _document_entry(after_projection, text_chars=collapse_text_chars).get("interactive_descendants", [])[:40],
+            "added": [],
+            "removed": [],
+            "changed": [],
+            "flagged_changes": [],
+        })
+        if validate_diff:
+            base["compare_validation"] = validate_local_diff_against_compare(base, compare_result)
+        return base
+
     before_nodes = {str(n.get("k")): n for n in before_projection.get("nodes", []) if isinstance(n, dict) and n.get("k")}
     after_nodes = {str(n.get("k")): n for n in after_projection.get("nodes", []) if isinstance(n, dict) and n.get("k")}
     before_keys = set(before_nodes)
@@ -1627,23 +1977,29 @@ def build_compact_dom_diff(
 
     added_roots = [k for k in added_keys if str(after_nodes[k].get("parent") or "") not in added_keys]
     removed_roots = [k for k in removed_keys if str(before_nodes[k].get("parent") or "") not in removed_keys]
-    added_entries = [collapse_subtree_entry(after_nodes[k], after_nodes) for k in added_roots]
-    removed_entries = [collapse_subtree_entry(before_nodes[k], before_nodes) for k in removed_roots]
+    added_entries = [collapse_subtree_entry(after_nodes[k], after_nodes, text_chars=collapse_text_chars) for k in added_roots]
+    removed_entries = [collapse_subtree_entry(before_nodes[k], before_nodes, text_chars=collapse_text_chars) for k in removed_roots]
 
     changed_entries: list[dict[str, Any]] = []
+    flagged_entries: list[dict[str, Any]] = []
     for key in common_keys:
-        kinds, changes, weight = classify_projected_change(before_nodes[key], after_nodes[key])
+        kinds, changes, weight, likely_scroll_artifact = classify_projected_change(before_nodes[key], after_nodes[key], action=action)
         if not kinds:
             continue
-        changed_entries.append({
+        entry = {
             "k": key,
             "tag": after_nodes[key].get("tag"),
             "kind": kinds,
             "semantic_weight": weight,
-            "before": {k: before_nodes[key].get(k) for k in ("text", "attrs", "vis", "vp", "style") if before_nodes[key].get(k) not in (None, "", {}, [])},
-            "after": {k: after_nodes[key].get(k) for k in ("text", "attrs", "vis", "vp", "style") if after_nodes[key].get(k) not in (None, "", {}, [])},
+            "before": {k: before_nodes[key].get(k) for k in ("text", "attrs", "vis", "vp", "style", "frame", "source") if before_nodes[key].get(k) not in (None, "", {}, [])},
+            "after": {k: after_nodes[key].get(k) for k in ("text", "attrs", "vis", "vp", "style", "frame", "source") if after_nodes[key].get(k) not in (None, "", {}, [])},
             "changes": changes,
-        })
+        }
+        if likely_scroll_artifact:
+            entry["likely_scroll_artifact"] = True
+            flagged_entries.append(entry)
+        else:
+            changed_entries.append(entry)
 
     def truncate(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         entries = sorted(entries, key=rank_diff_entry)
@@ -1652,6 +2008,8 @@ def build_compact_dom_diff(
     added_emit = truncate(added_entries)
     removed_emit = truncate(removed_entries)
     changed_emit = truncate(changed_entries)
+    flagged_emit = truncate(flagged_entries)
+    suspicious = bool(before_nodes and (len(added_keys) + len(removed_keys)) > 0.60 * len(before_nodes))
     stats = {
         "added_total": len(added_keys),
         "added_roots_total": len(added_entries),
@@ -1661,23 +2019,16 @@ def build_compact_dom_diff(
         "removed_emitted": len(removed_emit),
         "changed_total": len(changed_entries),
         "changed_emitted": len(changed_emit),
-        "truncated": len(added_entries) > len(added_emit) or len(removed_entries) > len(removed_emit) or len(changed_entries) > len(changed_emit),
+        "flagged_total": len(flagged_entries),
+        "flagged_emitted": len(flagged_emit),
+        "truncated": len(added_entries) > len(added_emit) or len(removed_entries) > len(removed_emit) or len(changed_entries) > len(changed_emit) or len(flagged_entries) > len(flagged_emit),
+        "suspicious_diff_scale": suspicious,
     }
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "method": "local_slim_dom_semantic_diff",
-        "captured_at": utc_now(),
-        "source": {
-            "before": {"url": before_dom.get("url", ""), "title": before_dom.get("title", ""), "nodes": len(before_dom.get("nodes", []) or [])},
-            "after": {"url": after_dom.get("url", ""), "title": after_dom.get("title", ""), "nodes": len(after_dom.get("nodes", []) or [])},
-            "compareDOMState": {"timing": compare_timing or {}, "summary": ((compare_result or {}).get("result") or compare_result or {}).get("summary", {}) if isinstance(compare_result, dict) else {}},
-        },
-        "key_population": {"before": before_projection.get("key_population", {}), "after": after_projection.get("key_population", {})},
-        "stats": stats,
-        "added": added_emit,
-        "removed": removed_emit,
-        "changed": changed_emit,
-    }
+    base.update({"stats": stats, "added": added_emit, "removed": removed_emit, "changed": changed_emit, "flagged_changes": flagged_emit})
+    if validate_diff:
+        base["compare_validation"] = validate_local_diff_against_compare(base, compare_result)
+    return base
+
 
 def build_dom_diff_summary(before: CapturedState, after: CapturedState) -> dict[str, Any]:
     before_obs = observation_payload(before)

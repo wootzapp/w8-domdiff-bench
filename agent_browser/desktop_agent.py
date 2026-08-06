@@ -737,8 +737,8 @@ class DesktopWootzAgent:
         x, y = await self.resolve_point(ref=ref, selector=selector, coordinate=coordinate)
         sub_events = [
             ("mouseMoved", {"type": "mouseMoved", "x": x, "y": y}),
-            ("mousePressed", {"type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1}),
-            ("mouseReleased", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1}),
+            ("mousePressed", {"type": "mousePressed", "x": x, "y": y, "button": "left", "buttons": 1, "clickCount": 1}),
+            ("mouseReleased", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "buttons": 0, "clickCount": 1}),
         ]
         for name, params in sub_events:
             try:
@@ -1351,6 +1351,8 @@ async def record_automated_step(
     dom_capture: str = "slim",
     dom_diff_max_entries: int = 200,
     observation_max_elements: int | None = None,
+    collapse_text_chars: int = 500,
+    validate_diff: bool = False,
 ) -> dict[str, Any]:
     cdp = agent.cdp
     action = normalize_action(action)
@@ -1458,7 +1460,18 @@ async def record_automated_step(
         except Exception as error:
             compare_timing = {"ok": False, "elapsed_ms": round((time.perf_counter() - started_compare) * 1000, 3), "error": str(error)}
             log_event(cdp, "warning", warning="compare_dom_state_failed", step=step_number, error=str(error))
-    dom_diff = build_compact_dom_diff(before.chromiumrl_dom, after.chromiumrl_dom, compare_result=compare_result, compare_timing=compare_timing, max_entries=dom_diff_max_entries)
+    dom_diff = build_compact_dom_diff(
+        before.chromiumrl_dom,
+        after.chromiumrl_dom,
+        compare_result=compare_result,
+        compare_timing=compare_timing,
+        max_entries=dom_diff_max_entries,
+        before_index=before.index,
+        after_index=after.index,
+        action=action_name(performed_action),
+        collapse_text_chars=collapse_text_chars,
+        validate_diff=validate_diff,
+    )
     write_json_compact(step_dir / "dom_diff.json", dom_diff)
 
     signals: dict[str, Any] = {"captured_at": utc_now(), "commands": {}}
@@ -1743,6 +1756,8 @@ async def run(args: argparse.Namespace) -> None:
                             dom_capture=args.dom_capture,
                             dom_diff_max_entries=args.dom_diff_max_entries,
                             observation_max_elements=args.observation_max_elements,
+                            collapse_text_chars=args.collapse_text_chars,
+                            validate_diff=args.validate_diff,
                         ),
                         timeout=args.step_timeout,
                     )
@@ -1825,6 +1840,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--observation-max-elements", type=int, default=250)
     parser.add_argument("--dom-capture", choices=("full", "slim", "none"), default="slim")
     parser.add_argument("--dom-diff-max-entries", type=int, default=200)
+    parser.add_argument("--collapse-text-chars", type=int, default=500)
+    parser.add_argument("--validate-diff", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--fresh-tab-url", default="about:blank")
     parser.add_argument("--fresh-tab-mode", choices=("new_context", "new_tab", "reuse"), default="new_tab")

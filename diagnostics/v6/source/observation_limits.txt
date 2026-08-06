@@ -1,0 +1,38 @@
+      viewport_height = viewport->VisibleContentRect(kExcludeScrollbars).height();
+      viewport_width = viewport->VisibleContentRect(kExcludeScrollbars).width();
+    }
+    if (auto* layout_view = view->GetLayoutView()) {
+      page_height = layout_view->DocumentRect().Height();
+    }
+  }
+
+  auto scroll = protocol::ChromiumRL::ScrollInfo::create()
+    .setScrollTop(scroll_top / device_pixel_ratio)
+    .setPageHeight(page_height / device_pixel_ratio)
+    .setViewportWidth(viewport_width / device_pixel_ratio)
+    .setViewportHeight(viewport_height / device_pixel_ratio)
+    .setDevicePixelRatio(device_pixel_ratio)
+    .setCanScrollDown(scroll_top + viewport_height < page_height - 10)
+    .setCanScrollUp(scroll_top > 10)
+    .build();
+
+  // Determine root
+  Node* root = document;
+  if (root_selector.has_value() && !root_selector->empty()) {
+    if (Element* el = document->querySelector(AtomicString(*root_selector), ASSERT_NO_EXCEPTION)) {
+      root = el;
+    }
+  }
+
+  int legacy_limit = max_elements.value_or(100);
+  int interactive_limit = max_interactive_elements.value_or(legacy_limit);
+  int content_limit = max_content_blocks.value_or(include_content.value_or(false) ? 40 : 0);
+  if (interactive_limit <= 0) interactive_limit = legacy_limit;
+  if (content_limit < 0) content_limit = 0;
+  bool viewport_only = in_viewport_only.value_or(false);
+  bool want_content = include_content.value_or(false);
+  String last_context;
+
+  auto elements = std::make_unique<protocol::Array<protocol::ChromiumRL::ObservedElement>>();
+  auto content_blocks = std::make_unique<protocol::Array<protocol::ChromiumRL::ContentBlock>>();
+

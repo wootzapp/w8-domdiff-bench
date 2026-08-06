@@ -1,0 +1,30 @@
+InspectorChromiumRLAgent* InspectorChromiumRLAgent::GetAgentForFrame(LocalFrame* frame) {
+  if (!frame) return nullptr;
+  auto it = GetAgentMap()->find(frame);
+  if (it != GetAgentMap()->end())
+    return static_cast<InspectorChromiumRLAgent*>(it->value.Get());
+  return nullptr;
+}
+
+void InspectorChromiumRLAgent::Restore() {
+  if (enabled_.Get()) {
+    enable(capture_touch_traces_.Get(), capture_layout_timings_.Get(), capture_cls_attribution_.Get(), capture_compositor_layers_.Get(),
+           &current_session_id_);
+  }
+}
+
+void InspectorChromiumRLAgent::DidCommitLoadForLocalFrame(LocalFrame* frame) {
+  if (enabled_.Get() && frame == inspected_frames_->Root()) {
+    // Re-register if frame changed
+    RegisterAgent();
+
+    // This is a reliable point to capture page-load metrics.
+    if (capture_layout_timings_.Get() && frame->GetDocument()) {
+      Document* doc = frame->GetDocument();
+      FrameMetricsEntry metrics;
+
+      // Capture Paint Timings
+      PaintTiming& paint_timing = PaintTiming::From(*doc);
+      metrics.first_contentful_paint = paint_timing.FirstContentfulPaintPresentation().since_origin().InMillisecondsF();
+      // LCP requires a more complex detector, leaving as 0 for now.
+      

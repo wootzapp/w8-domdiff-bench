@@ -1,0 +1,15 @@
+
+  // [ChromiumRL] Capture layer tree state
+  if (InspectorChromiumRLAgent* agent =
+          InspectorChromiumRLAgent::GetAgentForFrame(
+              LocalRootImpl()->GetFrame())) {
+    LOG(ERROR) << "ChromiumRL: Hook fired in BeginCommitCompositorFrame agent="
+               << agent;
+    agent->OnCompositorCommit(LayerTreeHost());
+  } else {
+    LOG(ERROR)
+        << "ChromiumRL: Hook fired but GetAgentForFrame returned null frame="
+        << LocalRootImpl()->GetFrame();
+  }
+
+  if (ForTopMostMainFrame()) {
