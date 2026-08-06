@@ -78,6 +78,10 @@ Useful options:
 --observation-source auto        ChromiumRL observation with JS fallback. Default.
 --observation-source chromiumrl  ChromiumRL only.
 --observation-source js          JS-only observation for A/B debugging.
+--observation-source cross_check ChromiumRL primary plus JS count logging every step.
+--screenshot-format jpeg        Default screenshot encoding. Use png/webp if needed.
+--screenshot-quality 70         Default JPEG/WebP quality.
+--screenshot-mode after_only    Default; use both to write before+after images.
 --step-timeout 120               Max seconds per recorded step.
 --load-timeout 12                Max bounded page readiness wait after an action.
 --max-duration-seconds 900       Max whole-run duration.
@@ -86,7 +90,7 @@ Useful options:
 
 ## Current artifact layout
 
-Each run writes the reduced v3 layout:
+Each run writes the reduced v4 layout:
 
 ```text
 tasks/<task-id>/
@@ -97,12 +101,11 @@ tasks/<task-id>/
 │   ├── observation_before.json.gz
 │   ├── observation_after.json.gz
 │   ├── diff.json
-│   ├── before.png
-│   └── after.png
+│   └── after.jpg              # default; before.jpg also appears with --screenshot-mode both
 └── final_state/
     ├── dom.json.gz
     ├── observation.json
-    └── screenshot.png
+    └── screenshot.jpg
 ```
 
 File meanings:
@@ -115,10 +118,10 @@ File meanings:
 | `step_XXX/observation_before.json.gz` | Compressed model-facing observation before the action. |
 | `step_XXX/observation_after.json.gz` | Compressed model-facing observation after the action. |
 | `step_XXX/diff.json` | Recorder-computed diff between before/after observations. Movement-only scroll noise is excluded from interactive changes. |
-| `step_XXX/before.png`, `after.png` | Screenshots around the action. |
+| `step_XXX/after.jpg` | Default post-action screenshot. With `--screenshot-mode both`, `before.jpg` is also written. Extension follows `--screenshot-format`. |
 | `final_state/dom.json.gz` | Final compressed ChromiumRL DOM snapshot, captured only once at the end. |
 | `final_state/observation.json` | Final observation. |
-| `final_state/screenshot.png` | Final screenshot. |
+| `final_state/screenshot.jpg` | Final screenshot. Extension follows `--screenshot-format`. |
 
 Removed old heavy artifacts include per-step `chromiumrl_dom.json`, `dom_diff.json` from `ChromiumRL.compareDOMState`, `chromiumrl_signals.json`, `interaction_capture.json`, `all_targets/`, `model_inputs/`, separate `step.json`, and separate `verifier_action.json`.
 
