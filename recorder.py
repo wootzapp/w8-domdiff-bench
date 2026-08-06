@@ -2302,14 +2302,23 @@ Required files:
 - `log.jsonl` — complete event stream and model/action trace.
 - `agent_browser_final.json` — final claim/status to verify.
 - `step_NNN/action.json` — normalized action and verifier action fields.
-- `step_NNN/page_state_before.json` and `step_NNN/page_state_after.json` — URL/title/viewport state for the step.
+- `step_NNN/page_state.json` — after-step URL/title/viewport state.
 - `step_NNN/dom_diff.json` — primary verifier evidence.
 
-Supporting evidence:
+Default step files:
 
-- `step_NNN/evidence/dom_state_before.json.gz` and `dom_state_after.json.gz` — slim DOM projections.
-- `step_NNN/evidence/*.jpg` — screenshots.
-- `step_NNN/agent/*` — model-facing observation evidence and observation diff.
+- `after.jpg` — after-step screenshot.
+- `before.jpg` — present only with `--screenshot-mode both`.
+- `dom_before.json.gz` and `dom_after.json.gz` — slim DOM projections used to produce the diff.
+
+Optional agent-debug files, present only with `--keep-observations`:
+
+- `observation_before.json.gz`
+- `observation_after.json.gz`
+- `observation_diff.json`
+
+Final state:
+
 - `final_state/dom_full.json.gz` — raw final ChromiumRL DOM snapshot when enabled.
 - `final_state/dom_state.json.gz` — slim final DOM projection.
 - `final_state/page_state.json` — final URL/title/viewport state.

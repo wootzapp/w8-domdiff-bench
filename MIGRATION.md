@@ -58,3 +58,5 @@ V6 verifier notes:
 - `--validate-diff` records a count-level comparison against browser `ChromiumRL.compareDOMState` operations in `dom_diff.json.compare_validation`.
 
 V7 note: `final_state/observation.json` is not a DOM snapshot under any setting. It is capped interactive observation data. Final-state DOM diff is intentionally absent; use the last step's `dom_diff.json`.
+
+V8 note: step folders are flat again. `page_state_before.json` / `page_state_after.json` were replaced by a single after-state `page_state.json`. Per-step observations moved behind `--keep-observations`; when enabled they are written at the step root. `evidence/` and `agent/` subdirectories are no longer created.

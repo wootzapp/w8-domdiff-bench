@@ -14,6 +14,8 @@ import json
 import os
 import hashlib
 import time
+import subprocess
+import urllib.request
 import shutil
 import sys
 import zipfile
@@ -447,14 +449,16 @@ def outcome_from_trajectory_item(task_dir: Path, item: dict[str, Any], action: d
     summary = fallback_dom_diff_summary(before_page, after_page)
     artifact_dir = item.get("artifacts_directory")
     if isinstance(artifact_dir, str) and artifact_dir:
-        summary_path = task_dir / artifact_dir / "observation_diff.json"
-        if summary_path.exists():
-            try:
-                loaded = json.loads(summary_path.read_text(encoding="utf-8"))
-                if isinstance(loaded, dict):
-                    summary = loaded
-            except json.JSONDecodeError:
-                pass
+        candidates = [task_dir / artifact_dir / "observation_diff.json", task_dir / artifact_dir / "agent" / "observation_diff.json"]
+        for summary_path in candidates:
+            if summary_path.exists():
+                try:
+                    loaded = json.loads(summary_path.read_text(encoding="utf-8"))
+                    if isinstance(loaded, dict):
+                        summary = loaded
+                        break
+                except json.JSONDecodeError:
+                    pass
     return build_step_outcome(action, before_page, after_page, summary)
 
 
@@ -1025,6 +1029,86 @@ async def open_fresh_tab(
     return cdp.target
 
 
+
+
+def _parse_cpu_percent(value: str) -> float | None:
+    try:
+        return float(value.strip().rstrip("%"))
+    except Exception:
+        return None
+
+
+def browser_health_preflight(cdp_url: str, container: str) -> dict[str, Any]:
+    result: dict[str, Any] = {"target_count": None, "targets": [], "cpu_percent": None, "memory": "", "ok": True, "warnings": []}
+    try:
+        with urllib.request.urlopen(cdp_url.rstrip("/") + "/json/list", timeout=5) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        if isinstance(payload, list):
+            pages = [item for item in payload if isinstance(item, dict) and item.get("type") == "page" and not str(item.get("url", "")).startswith("devtools://")]
+            result["target_count"] = len(pages)
+            result["targets"] = [{"id": item.get("id") or item.get("targetId"), "url": item.get("url", ""), "title": item.get("title", "")} for item in pages]
+    except Exception as error:
+        result["warnings"].append(f"target_count_unavailable:{error}")
+    if container:
+        try:
+            proc = subprocess.run(
+                ["docker", "stats", "--no-stream", "--format", "{{.CPUPerc}} {{.MemUsage}}", container],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=8,
+                check=False,
+            )
+            if proc.returncode == 0 and proc.stdout.strip():
+                parts = proc.stdout.strip().split(maxsplit=1)
+                result["cpu_percent"] = _parse_cpu_percent(parts[0])
+                result["memory"] = parts[1] if len(parts) > 1 else ""
+            else:
+                result["warnings"].append(f"docker_stats_failed:{proc.stderr.strip()}")
+        except Exception as error:
+            result["warnings"].append(f"docker_stats_unavailable:{error}")
+    if (result.get("cpu_percent") is not None and float(result["cpu_percent"]) > 150) or (result.get("target_count") is not None and int(result["target_count"]) > 20):
+        result["ok"] = False
+        result["warning"] = "browser_unhealthy_at_start"
+    return result
+
+
+async def preflight_cleanup_targets(cdp: CDPConnection) -> dict[str, Any]:
+    targets = await cdp.page_targets()
+    keep = target_id(cdp.target) or (target_id(targets[0]) if targets else "")
+    closed: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+    for target in targets:
+        tid = target_id(target)
+        url = str(target.get("url", ""))
+        if not tid or tid == keep or url.startswith("devtools://"):
+            continue
+        try:
+            response = await cdp.send("Target.closeTarget", {"targetId": tid}, timeout=5.0)
+            closed.append({"targetId": tid, "url": url, "title": target.get("title", ""), "response": response})
+        except Exception as error:
+            failed.append({"targetId": tid, "url": url, "title": target.get("title", ""), "error": str(error)})
+    return {"found": len(targets), "kept_target_id": keep, "closed_count": len(closed), "closed": closed, "failed": failed, "stale_targets_warning": len(targets) > 20}
+
+
+async def teardown_task_target(cdp: CDPConnection, *, target_to_close: str, log_path: Path) -> dict[str, Any]:
+    result: dict[str, Any] = {"chromiumrl_disable": {"ok": False}, "close_target": {"ok": False, "targetId": target_to_close}}
+    try:
+        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=TIMEOUT_SIGNAL)
+        result["chromiumrl_disable"] = {"ok": True}
+    except Exception as error:
+        result["chromiumrl_disable"] = {"ok": False, "error": str(error)}
+    if target_to_close:
+        try:
+            response = await cdp.send("Target.closeTarget", {"targetId": target_to_close}, timeout=5.0)
+            result["close_target"] = {"ok": True, "targetId": target_to_close, "response": response}
+        except Exception as error:
+            result["close_target"] = {"ok": False, "targetId": target_to_close, "error": str(error)}
+    else:
+        result["close_target"] = {"ok": True, "skipped": "no_target"}
+    append_jsonl(log_path, {"ts": utc_now(), "event": "teardown_complete", **result})
+    return result
+
 async def reattach_to_target(cdp: CDPConnection, expected_target_id: str) -> None:
     if not expected_target_id:
         return
@@ -1354,6 +1438,7 @@ async def record_automated_step(
     observation_max_elements: int | None = None,
     collapse_text_chars: int = 500,
     validate_diff: bool = False,
+    keep_observations: bool = False,
 ) -> dict[str, Any]:
     cdp = agent.cdp
     action = normalize_action(action)
@@ -1372,10 +1457,6 @@ async def record_automated_step(
         else:
             raise RecorderError(f"step directory already complete: {step_dir}")
     step_dir.mkdir(parents=False, exist_ok=False)
-    evidence_dir = step_dir / "evidence"
-    agent_dir = step_dir / "agent"
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    agent_dir.mkdir(parents=True, exist_ok=True)
     log_path = task_dir / "log.jsonl"
     append_jsonl(log_path, {"ts": utc_now(), "event": "step_started", "step": step_number, "action": action})
 
@@ -1393,18 +1474,18 @@ async def record_automated_step(
         dom_capture=dom_capture,
         observation_max_elements=observation_max_elements,
     )
-    write_json_compact(step_dir / "page_state_before.json", before.page_state)
-    write_json_gz(agent_dir / "observation_before.json.gz", before.agent_observation)
+    if keep_observations:
+        write_json_gz(step_dir / "observation_before.json.gz", before.agent_observation)
     if dom_capture != "none" and before.dom_captured:
         src = before_dir / "chromiumrl_dom_slim.json.gz"
         if src.exists():
-            shutil.copyfile(src, evidence_dir / "dom_state_before.json.gz")
+            shutil.copyfile(src, step_dir / "dom_before.json.gz")
         raw = before_dir / "chromiumrl_dom_raw.json.gz"
         if raw.exists():
-            shutil.copyfile(raw, evidence_dir / "dom_full_before.json.gz")
+            shutil.copyfile(raw, step_dir / "dom_before_raw.json.gz")
     before_image = None
     if screenshot_mode == "both":
-        before_image = copy_step_screenshot(before_dir, evidence_dir, "before")
+        before_image = copy_step_screenshot(before_dir, step_dir, "before")
     append_jsonl(log_path, {"ts": utc_now(), "event": "observation_captured", "step": step_number, "phase": "before", "source": before.observation_source, "degraded": before.degraded, "notes": before.capture_notes})
 
     action_error: dict[str, Any] | None = None
@@ -1436,20 +1517,22 @@ async def record_automated_step(
         dom_capture=dom_capture,
         observation_max_elements=observation_max_elements,
     )
-    write_json_compact(step_dir / "page_state_after.json", after.page_state)
-    write_json_gz(agent_dir / "observation_after.json.gz", after.agent_observation)
+    write_json_compact(step_dir / "page_state.json", after.page_state)
+    if keep_observations:
+        write_json_gz(step_dir / "observation_after.json.gz", after.agent_observation)
     if dom_capture != "none" and after.dom_captured:
         src = after_dir / "chromiumrl_dom_slim.json.gz"
         if src.exists():
-            shutil.copyfile(src, evidence_dir / "dom_state_after.json.gz")
+            shutil.copyfile(src, step_dir / "dom_after.json.gz")
         raw = after_dir / "chromiumrl_dom_raw.json.gz"
         if raw.exists():
-            shutil.copyfile(raw, evidence_dir / "dom_full_after.json.gz")
-    after_image = copy_step_screenshot(after_dir, evidence_dir, "after")
+            shutil.copyfile(raw, step_dir / "dom_after_raw.json.gz")
+    after_image = copy_step_screenshot(after_dir, step_dir, "after")
     append_jsonl(log_path, {"ts": utc_now(), "event": "observation_captured", "step": step_number, "phase": "after", "source": after.observation_source, "degraded": after.degraded, "notes": after.capture_notes})
 
     observation_diff = build_dom_diff_summary(before, after)
-    write_json_compact(agent_dir / "observation_diff.json", observation_diff)
+    if keep_observations:
+        write_json_compact(step_dir / "observation_diff.json", observation_diff)
 
     compare_result: dict[str, Any] = {}
     compare_timing: dict[str, Any] = {"ok": False, "skipped": True}
@@ -1669,9 +1752,8 @@ def create_verifier_bundle(task_dir: Path) -> dict[str, Any]:
     bundle_path = task_dir / f"{task_id}_verifier_bundle.zip"
     if bundle_path.exists():
         bundle_path.unlink()
-    required_roots = {"manifest.json", "log.jsonl", "agent_browser_final.json", "VERIFIER.md"}
     include: list[Path] = []
-    for name in sorted(required_roots):
+    for name in ("manifest.json", "log.jsonl", "agent_browser_final.json", "VERIFIER.md"):
         p = task_dir / name
         if p.exists():
             include.append(p)
@@ -1681,14 +1763,10 @@ def create_verifier_bundle(task_dir: Path) -> dict[str, Any]:
     for step_dir in sorted(task_dir.glob("step_*")):
         if not step_dir.is_dir():
             continue
-        for name in ("action.json", "page_state_before.json", "page_state_after.json", "dom_diff.json"):
+        for name in ("action.json", "after.jpg", "before.jpg", "dom_after.json.gz", "dom_before.json.gz", "dom_diff.json", "page_state.json", "observation_before.json.gz", "observation_after.json.gz", "observation_diff.json"):
             p = step_dir / name
             if p.exists():
                 include.append(p)
-        for sub in ("evidence", "agent"):
-            d = step_dir / sub
-            if d.exists():
-                include.extend(sorted(p for p in d.rglob("*") if p.is_file()))
     with zipfile.ZipFile(bundle_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for p in include:
             zf.write(p, p.relative_to(task_dir).as_posix())
@@ -1751,6 +1829,11 @@ async def run(args: argparse.Namespace) -> None:
         resume=args.resume,
     )
     log_path = task_dir / "log.jsonl"
+    health = browser_health_preflight(args.cdp_url, args.screenshot_container)
+    update_manifest(task_dir, browser_health_start=health)
+    append_jsonl(log_path, {"ts": utc_now(), "event": "browser_health_start", **health})
+    if not health.get("ok", True):
+        print(f"WARNING: browser_unhealthy_at_start: targets={health.get('target_count')} cpu={health.get('cpu_percent')}%. Run scripts/reset-browser.sh if tasks hang.")
     if args.resume:
         validate_resume_prompt(task_dir, args.task)
     screenshot_config = ScreenshotConfig(
@@ -1768,6 +1851,8 @@ async def run(args: argparse.Namespace) -> None:
     print(f"Connecting to desktop Wootz CDP at {args.cdp_url} ...")
     started = time.perf_counter()
     final_state_written = False
+    task_target_to_close = ""
+    close_task_target_on_exit = False
     async with CDPConnection(
         args.cdp_url,
         command_timeout=args.command_timeout,
@@ -1782,6 +1867,12 @@ async def run(args: argparse.Namespace) -> None:
             log_event(cdp, "warning", warning="chromiumrl_startup_enable_failed", error=str(error))
         startup_language_overrides = await apply_language_overrides(cdp, locale=args.browser_locale, accept_language=args.accept_language)
         if not args.resume:
+            preflight_cleanup = {"skipped": bool(args.no_preflight_cleanup)}
+            if not args.no_preflight_cleanup:
+                preflight_cleanup = await preflight_cleanup_targets(cdp)
+                append_jsonl(log_path, {"ts": utc_now(), "event": "preflight_cleanup", **preflight_cleanup})
+                if preflight_cleanup.get("stale_targets_warning"):
+                    append_jsonl(log_path, {"ts": utc_now(), "event": "stale_targets_warning", "target_count": preflight_cleanup.get("found")})
             fresh_context = {"ok": False, "reason": "fresh_tab_mode_not_new_context"}
             browser_context_id = ""
             cleanup_result: dict[str, Any] | None = None
@@ -1800,7 +1891,9 @@ async def run(args: argparse.Namespace) -> None:
             fresh_tab_language_overrides = await apply_language_overrides(cdp, locale=args.browser_locale, accept_language=args.accept_language)
             if not args.keep_browser_data and not browser_context_id:
                 cleanup_result = await clear_browser_data_for_fresh_task(cdp)
-            append_jsonl(log_path, {"ts": utc_now(), "event": "target_attached", "target": fresh_target, "fresh_context": fresh_context, "fresh_tab_mode": args.fresh_tab_mode, "cleanup": cleanup_result, "domains": domains, "language_overrides": startup_language_overrides, "fresh_tab_language_overrides": fresh_tab_language_overrides})
+            task_target_to_close = target_id(cdp.target)
+            close_task_target_on_exit = True
+            append_jsonl(log_path, {"ts": utc_now(), "event": "target_attached", "target": fresh_target, "fresh_context": fresh_context, "fresh_tab_mode": args.fresh_tab_mode, "cleanup": cleanup_result, "preflight_cleanup": preflight_cleanup, "domains": domains, "language_overrides": startup_language_overrides, "fresh_tab_language_overrides": fresh_tab_language_overrides})
             print(f"Started non-resume task with fresh-tab-mode={args.fresh_tab_mode}: {args.fresh_tab_url}")
         else:
             append_jsonl(log_path, {"ts": utc_now(), "event": "target_attached", "target": cdp.target, "resume": True, "domains": domains, "language_overrides": startup_language_overrides, "fresh_tab_language_overrides": fresh_tab_language_overrides})
@@ -1893,6 +1986,7 @@ async def run(args: argparse.Namespace) -> None:
                             observation_max_elements=args.observation_max_elements,
                             collapse_text_chars=args.collapse_text_chars,
                             validate_diff=args.validate_diff,
+                            keep_observations=args.keep_observations,
                         ),
                         timeout=args.step_timeout,
                     )
@@ -1950,10 +2044,13 @@ async def run(args: argparse.Namespace) -> None:
                     append_jsonl(log_path, {"ts": utc_now(), "event": "final_state_captured", "final_state": final_state})
                 except Exception as error:
                     append_jsonl(log_path, {"ts": utc_now(), "event": "warning", "warning": "final_state_capture_failed", "error": str(error)})
-            try:
-                await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=TIMEOUT_SIGNAL)
-            except Exception:
-                pass
+            if close_task_target_on_exit:
+                await teardown_task_target(cdp, target_to_close=task_target_to_close, log_path=log_path)
+            else:
+                try:
+                    await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=TIMEOUT_SIGNAL)
+                except Exception:
+                    pass
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1978,10 +2075,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dom-diff-max-entries", type=int, default=200)
     parser.add_argument("--collapse-text-chars", type=int, default=500)
     parser.add_argument("--validate-diff", action="store_true")
+    parser.add_argument("--keep-observations", action="store_true", help="write model-facing observation_before/after and observation_diff files per step")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--fresh-tab-url", default="about:blank")
     parser.add_argument("--fresh-tab-mode", choices=("new_context", "new_tab", "reuse"), default="new_tab")
     parser.add_argument("--keep-browser-data", action="store_true")
+    parser.add_argument("--no-preflight-cleanup", action="store_true", help="preserve existing tabs before starting a non-resume task")
     parser.add_argument("--browser-locale", default=os.environ.get("BROWSER_LANG", "en-US"))
     parser.add_argument("--accept-language", default=os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"))
     parser.add_argument("--observation-source", choices=("auto", "chromiumrl", "js", "cross_check"), default="auto")
@@ -2009,6 +2108,9 @@ def main() -> None:
         raise SystemExit("--max-steps must be positive")
     try:
         asyncio.run(run(args))
+    except KeyboardInterrupt:
+        print("Interrupted by user; teardown attempted.", file=sys.stderr)
+        raise SystemExit(130)
     except (RecorderError, aiohttp.ClientError, asyncio.TimeoutError) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         raise SystemExit(1)

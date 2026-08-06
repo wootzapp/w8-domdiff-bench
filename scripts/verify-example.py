@@ -22,7 +22,7 @@ def require(path: Path, errors: list[str]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Check v7 task-recorder verifier artifact layout")
+    parser = argparse.ArgumentParser(description="Check v8 task-recorder verifier artifact layout")
     parser.add_argument("task_dir", type=Path)
     args = parser.parse_args()
     root = args.task_dir
@@ -36,12 +36,11 @@ def main() -> int:
     if not steps:
         errors.append("missing: at least one step_NNN directory")
     for step in steps:
-        for name in ("action.json", "page_state_before.json", "page_state_after.json", "dom_diff.json"):
+        for name in ("action.json", "after.jpg", "dom_after.json.gz", "dom_before.json.gz", "dom_diff.json", "page_state.json"):
             require(step / name, errors)
-        for name in ("dom_state_before.json.gz", "dom_state_after.json.gz", "after.jpg"):
-            require(step / "evidence" / name, errors)
-        for name in ("observation_before.json.gz", "observation_after.json.gz", "observation_diff.json"):
-            require(step / "agent" / name, errors)
+        subdirs = [p.name for p in step.iterdir() if p.is_dir()]
+        if subdirs:
+            errors.append(f"unexpected step subdirectories in {step}: {subdirs}")
     if (final / "dom_full.json.gz").exists():
         try:
             raw = load_json(final / "dom_full.json.gz")
@@ -56,7 +55,7 @@ def main() -> int:
         for error in errors:
             print(f"ERROR: {error}")
         return 1
-    print(f"OK: {root} has v7 verifier artifacts ({len(steps)} steps)")
+    print(f"OK: {root} has v8 verifier artifacts ({len(steps)} steps)")
     return 0
 
 

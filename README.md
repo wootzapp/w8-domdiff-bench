@@ -90,7 +90,7 @@ Useful options:
 
 ## Current artifact layout
 
-Each run writes the v7 DOM-diff verifier layout. The DOM diff is the primary verifier artifact; page state and final claim files are required verifier inputs; observations and screenshots are supporting evidence.
+Each run writes the v8 flat DOM-diff verifier layout. A step directory has no subdirectories. The DOM diff is the primary verifier artifact; `page_state.json` and `agent_browser_final.json` are required verifier evidence.
 
 ```text
 tasks/<task-id>/
@@ -100,40 +100,37 @@ tasks/<task-id>/
 ├── VERIFIER.md
 ├── step_001/
 │   ├── action.json
-│   ├── page_state_before.json
-│   ├── page_state_after.json
+│   ├── after.jpg
+│   ├── before.jpg              # only with --screenshot-mode both
+│   ├── dom_after.json.gz
+│   ├── dom_before.json.gz
 │   ├── dom_diff.json
-│   ├── evidence/
-│   │   ├── dom_state_before.json.gz
-│   │   ├── dom_state_after.json.gz
-│   │   └── after.jpg
-│   └── agent/
-│       ├── observation_before.json.gz
-│       ├── observation_after.json.gz
-│       └── observation_diff.json
+│   └── page_state.json
 └── final_state/
     ├── dom_full.json.gz
     ├── dom_state.json.gz
-    ├── page_state.json
     ├── observation.json
+    ├── page_state.json
     └── screenshot.jpg
 ```
+
+Default `--screenshot-mode after_only` writes 6 files per step: `action.json`, `after.jpg`, `dom_after.json.gz`, `dom_before.json.gz`, `dom_diff.json`, and `page_state.json`. `--screenshot-mode both` adds `before.jpg`, for 7 files. No `evidence/` or `agent/` subdirectories are created.
 
 File tiers:
 
 | File | Tier | Meaning |
 |---|---|---|
-| `manifest.json` | Required | Run metadata: task id, runner, model/config, start time. |
-| `log.jsonl` | Required | Unified trajectory/event log with model requests/responses, actions, capture notes, warnings, and final status. |
+| `manifest.json` | Required | Run metadata: task id, runner, model/config, start health, and timing. |
+| `log.jsonl` | Required | Unified trajectory/event log with model requests/responses, actions, cleanup/teardown events, capture notes, warnings, and final status. |
 | `agent_browser_final.json` | Required | Final claim being verified: status, final answer, terminate action, termination reason, completed step count, and grounding check. |
 | `VERIFIER.md` | Required | Human-readable guide for the task artifact folder. |
 | `step_XXX/action.json` | Required | Human-readable action record, including normalized verifier action fields like `url` for navigation and `key` for keypresses. |
-| `step_XXX/page_state_before.json` / `page_state_after.json` | Required | Tiny greppable page state: URL, title, readyState, viewport, scroll, and devicePixelRatio. |
+| `step_XXX/page_state.json` | Required | After-step URL/title/viewport state. This is the outcome state for the action. |
 | `step_XXX/dom_diff.json` | Primary verifier artifact | Compact semantic DOM diff computed from real slim DOM projections. Includes cross-document mode, frame coverage, enrichment provenance, true totals, emitted counts, and `truncated`. |
-| `step_XXX/evidence/dom_state_before.json.gz` / `dom_state_after.json.gz` | Supporting evidence | Slim DOM projections. These preserve semantic text/attrs, visibility, viewport flags, and selected state-ish styles/classes. |
-| `step_XXX/evidence/after.jpg` | Supporting evidence | Default post-action screenshot. With `--screenshot-mode both`, `before.jpg` is also written. |
-| `step_XXX/agent/observation_before.json.gz` / `observation_after.json.gz` | Agent/debug evidence | Model-facing observations before/after the action. These are not DOM snapshots and are not the DOM diff source. |
-| `step_XXX/agent/observation_diff.json` | Agent/debug evidence | Observation-based interactive-element diff; useful for progress/debugging only. |
+| `step_XXX/dom_before.json.gz` / `dom_after.json.gz` | Supporting evidence | Slim DOM projections used to compute `dom_diff.json`. Both are kept for step self-containment. |
+| `step_XXX/after.jpg` / `before.jpg` | Supporting evidence | Screenshots. `before.jpg` exists only with `--screenshot-mode both`. |
+| `step_XXX/observation_before.json.gz` / `observation_after.json.gz` | Opt-in agent/debug evidence | Written only with `--keep-observations`; these are model-facing observations, not DOM snapshots. |
+| `step_XXX/observation_diff.json` | Opt-in agent/debug evidence | Written only with `--keep-observations`; useful for progress/debugging only. |
 | `final_state/dom_full.json.gz` | Final audit evidence | Raw final `ChromiumRL.saveDOMState`, gzipped. It contains full raw node payloads, including full `keyStyles`; it is not interchangeable with the slim projection. |
 | `final_state/dom_state.json.gz` | Final audit evidence | Slim final DOM projection. It has reduced `keyStyles` to 6 properties and removed comments/scripts/styles/whitespace-only text nodes. |
 | `final_state/page_state.json` | Required final evidence | Final URL/title/viewport state. |
@@ -142,11 +139,13 @@ File tiers:
 
 Final-state DOM diff is intentionally absent. Use the last step's `dom_diff.json`; it covers the final transition.
 
-DOM options:
+Canonical example on disk: `tasks/task-v7-books-check-003` has been migrated to the current flat v8 layout.
+
+DOM and artifact options:
 
 ```text
 --dom-capture slim            Default. Writes per-step slim DOM projections plus compact dom_diff.json.
---dom-capture full            Also writes per-step raw saveDOMState as evidence/dom_full_before/after.json.gz.
+--dom-capture full            Also writes per-step raw saveDOMState as dom_before_raw/dom_after_raw.json.gz.
 --dom-capture none            Disables per-step DOM artifacts; use only for debugging, not verifier data.
 --final-state-dom both        Default. Writes final_state/dom_full.json.gz and dom_state.json.gz.
 --final-state-dom slim        Final state slim projection only.
@@ -154,10 +153,18 @@ DOM options:
 --dom-diff-max-entries 200    Per-list emitted-entry cap; true totals are always reported.
 --collapse-text-chars 500     Visible-text budget for collapsed subtree/document summaries. Raise to 2000 for audit runs.
 --validate-diff               Compare local compact diff counts against ChromiumRL.compareDOMState operations.
+--keep-observations           Write per-step observation_before/after and observation_diff at the step root.
 --observation-max-elements 250 Raises ChromiumRL.getAgentObservation maxElements/maxInteractiveElements.
 --verifier-bundle             Writes <task-id>_verifier_bundle.zip containing required and supporting verifier files.
---fresh-tab-mode new_tab      Default. Use current browser window with a fresh tab. new_context isolates more but risks OS window ordering/occlusion.
+--fresh-tab-mode new_tab      Default. Use current browser window with a fresh tab.
+--no-preflight-cleanup        Preserve existing tabs before a non-resume task. Normally leave this off.
 ```
+
+Browser tab hygiene:
+
+- Non-resume runs close stale page targets before starting unless `--no-preflight-cleanup` is used.
+- Every non-resume run closes its own task tab in teardown, including success, failure, max-steps, kill switches, exceptions, and Ctrl-C.
+- If tasks start hanging or CPU is high, run `scripts/reset-browser.sh`.
 
 Cross-document DOM diffs:
 
@@ -168,6 +175,19 @@ Iframe coverage          frames block declares child frames; same-origin iframe 
 Form enrichment          attrs like value/checked/selected may be {"v":"...","src":"prop"}; see enrichment.ok
 Scroll artifacts         active/current-only class churn on scroll is reported under flagged_changes, not changed
 ```
+
+## Scripts inventory
+
+| Script | Purpose |
+|---|---|
+| `scripts/run-agent-browser.sh` | Main wrapper for automated ChromiumRL-backed agent runs. |
+| `scripts/doctor.sh` | Runs CDP/ChromiumRL health checks against the configured browser endpoint. |
+| `scripts/container-start.sh` | Container entrypoint that starts Wootz Chrome/noVNC/CDP proxy. |
+| `scripts/replay-log.py` | Reconstructs a readable trajectory from `log.jsonl`. |
+| `scripts/run-diff-benchmarks.py` | Runs DOM-diff benchmark/assertion tasks. |
+| `scripts/verify-example.py` | Validates that a task folder matches the current v8 verifier artifact layout. |
+| `scripts/export-verifier-bundle.py` | Creates a verifier bundle zip from an existing task folder. |
+| `scripts/reset-browser.sh` | Restarts the browser container and prints target count plus CPU/memory. |
 
 ## ChromiumRL and CDP protocols used
 
