@@ -9,6 +9,7 @@ import base64
 import binascii
 import hashlib
 import json
+import gzip
 import os
 import re
 import sys
@@ -25,8 +26,20 @@ import aiohttp
 
 SCHEMA_VERSION = "1.0"
 TASK_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
-COORDINATE_ACTIONS = {"left_click", "scroll", "mouse_move"}
+COORDINATE_ACTIONS = {"click", "left_click", "scroll", "mouse_move", "fill"}
+
+TIMEOUT_DOM_CAPTURE = 20.0
+TIMEOUT_OBSERVATION = 10.0
+TIMEOUT_SCREENSHOT = 10.0
+TIMEOUT_EVALUATE = 5.0
+TIMEOUT_INPUT = 8.0
+TIMEOUT_SIGNAL = 2.0
+
 class RecorderError(RuntimeError):
+    pass
+
+
+class ChromiumRLUnavailable(RecorderError):
     pass
 
 
@@ -51,10 +64,32 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
+def first_number(*values: Any) -> float | None:
+    for value in values:
+        if isinstance(value, (int, float)):
+            return float(value)
+    return None
+
+
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def write_json_compact(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def write_json_gz(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    with gzip.open(temporary, "wt", encoding="utf-8", compresslevel=6) as stream:
+        json.dump(value, stream, ensure_ascii=False, separators=(",", ":"))
     temporary.replace(path)
 
 
@@ -175,6 +210,9 @@ class CDPConnection:
         self.reader_task: asyncio.Task[None] | None = None
         self.event_log: list[dict[str, Any]] = []
         self.renderer_crashed: dict[str, Any] | None = None
+        self.enable_runtime_domain = False
+        self.main_frame_navigated = False
+        self.log_path: Path | None = None
 
     async def __aenter__(self) -> "CDPConnection":
         await self.connect()
@@ -271,6 +309,25 @@ class CDPConnection:
             if self.pinned_target_id and selected != self.pinned_target_id:
                 self.pinned_target_id = selected
         await self.attach_to_target(self.target)
+
+    async def rebind_session(self) -> None:
+        identifier = self.pinned_target_id or target_id(self.target)
+        if not identifier:
+            await self.refresh_page_session()
+            identifier = target_id(self.target)
+        old_session = self.session_id
+        if old_session:
+            try:
+                await self.send("Target.detachFromTarget", {"sessionId": old_session}, timeout=5.0)
+            except RecorderError:
+                pass
+        await self.attach_to_target({"targetId": identifier, "id": identifier, "type": "page"})
+        self.pinned_target_id = identifier
+        self.main_frame_navigated = False
+        await enable_page_domains(self)
+        await reset_chromiumrl_tracing(self)
+        if self.log_path is not None:
+            append_jsonl(self.log_path, {"ts": utc_now(), "event": "session_rebound", "target_id": identifier})
 
     async def page_targets(self) -> list[dict[str, Any]]:
         """Return page targets, preferring /json/list order.
@@ -415,7 +472,16 @@ class CDPConnection:
             "Target.targetDestroyed",
             "Inspector.targetCrashed",
         }:
-            self.event_log.append({"timestamp": utc_now(), "event": method, "params": params})
+            event = {"timestamp": utc_now(), "event": method, "params": params}
+            self.event_log.append(event)
+            if self.log_path is not None:
+                append_jsonl(self.log_path, {"ts": event["timestamp"], "event": method, "params": params})
+        if method == "Page.frameNavigated":
+            frame = params.get("frame") if isinstance(params, dict) else {}
+            if isinstance(frame, dict) and frame.get("parentId") is None:
+                self.main_frame_navigated = True
+                if self.log_path is not None:
+                    append_jsonl(self.log_path, {"ts": utc_now(), "event": "main_frame_navigated", "url": frame.get("url")})
         if method == "Page.javascriptDialogOpening":
             asyncio.create_task(self._dismiss_javascript_dialog())
         elif method == "Inspector.targetCrashed":
@@ -429,7 +495,10 @@ class CDPConnection:
     async def _dismiss_javascript_dialog(self) -> None:
         try:
             await self.send("Page.handleJavaScriptDialog", {"accept": True}, use_session=True, timeout=2.0)
-            self.event_log.append({"timestamp": utc_now(), "event": "javascript_dialog_dismissed"})
+            event = {"timestamp": utc_now(), "event": "javascript_dialog_dismissed"}
+            self.event_log.append(event)
+            if self.log_path is not None:
+                append_jsonl(self.log_path, {"ts": event["timestamp"], "event": "javascript_dialog_dismissed"})
         except Exception as error:
             self.event_log.append(
                 {"timestamp": utc_now(), "event": "javascript_dialog_dismiss_failed", "error": str(error)}
@@ -449,7 +518,10 @@ async def timed_command(
     started = time.perf_counter()
     print(f"{prefix}{method} ...", flush=True)
     try:
-        result = await cdp.send(method, params, use_session=True, timeout=timeout)
+        if method.startswith("ChromiumRL.") and method not in {"ChromiumRL.enable", "ChromiumRL.disable"}:
+            result = await chromiumrl_call(cdp, method, params or {}, timeout=timeout or cdp.command_timeout, label=label or "")
+        else:
+            result = await cdp.send(method, params, use_session=True, timeout=timeout)
         timing = {"ok": True, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3)}
         print(f"{prefix}{method} ok in {timing['elapsed_ms']:.1f}ms", flush=True)
         return result, timing
@@ -663,19 +735,48 @@ async def capture_all_page_targets(
 
 async def enable_page_domains(cdp: CDPConnection) -> dict[str, Any]:
     outcomes: dict[str, Any] = {}
-    # Verified 2026-08-06 in diagnostics/t2_probe.py: Runtime.evaluate and
-    # ChromiumRL commands work without Runtime.enable/DOM.enable. Domain enables
-    # are useful for events, but must not kill a run. DOM.enable is intentionally
-    # skipped because this recorder does not issue DOM.* traversal commands.
-    for method in ("Runtime.enable", "Page.enable"):
-        _, outcomes[method] = await timed_command(cdp, method, required=False, timeout=5.0)
-    outcomes["DOM.enable"] = {"ok": True, "skipped": "not required by recorder; see diagnostics/t2_probe.py"}
+    # Verified 2026-08-06 in diagnostics/t2_probe.py: Runtime.evaluate works
+    # without Runtime.enable. Keep Runtime disabled by default to reduce bot
+    # detection surface; enable only when --enable-runtime-domain is set.
+    if cdp.enable_runtime_domain:
+        _, outcomes["Runtime.enable"] = await timed_command(cdp, "Runtime.enable", required=False, timeout=5.0)
+    _, outcomes["Page.enable"] = await timed_command(cdp, "Page.enable", required=False, timeout=5.0)
+    outcomes["DOM.enable"] = {"ok": True, "skipped": "not required by recorder"}
     return outcomes
+
+
+def log_event(cdp: CDPConnection, event: str, **fields: Any) -> None:
+    if cdp.log_path is not None:
+        append_jsonl(cdp.log_path, {"ts": utc_now(), "event": event, **fields})
+
+
+async def chromiumrl_call(
+    cdp: CDPConnection,
+    method: str,
+    params: dict[str, Any] | None = None,
+    *,
+    timeout: float,
+    label: str = "",
+) -> dict[str, Any]:
+    for attempt in (1, 2):
+        try:
+            return await cdp.send(method, params or {}, use_session=True, timeout=timeout)
+        except RecorderError as error:
+            log_event(cdp, "chromiumrl_timeout", method=method, attempt=attempt, label=label, error=str(error))
+            if attempt == 1:
+                try:
+                    await cdp.rebind_session()
+                    continue
+                except RecorderError as rebind_error:
+                    log_event(cdp, "chromiumrl_rebind_failed", method=method, error=str(rebind_error))
+            log_event(cdp, "chromiumrl_unavailable", method=method, label=label, error=str(error))
+            raise ChromiumRLUnavailable(f"{method} unavailable after rebind: {error}") from error
+    raise ChromiumRLUnavailable(f"{method} unavailable")
 
 
 async def reset_chromiumrl_tracing(cdp: CDPConnection, *, full_tracing: bool = False) -> dict[str, Any]:
     try:
-        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=2.0)
+        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=5.0)
     except RecorderError:
         pass
     params = {
@@ -684,7 +785,7 @@ async def reset_chromiumrl_tracing(cdp: CDPConnection, *, full_tracing: bool = F
         "captureCLSAttribution": bool(full_tracing),
         "captureCompositorLayers": bool(full_tracing),
     }
-    result = await cdp.send("ChromiumRL.enable", params, use_session=True, timeout=10.0)
+    result = await cdp.send("ChromiumRL.enable", params, use_session=True, timeout=5.0)
     trace_session_id = str(result.get("sessionId", "")).strip()
     if not trace_session_id:
         raise RecorderError(f"ChromiumRL.enable returned no sessionId: {result}")
@@ -714,6 +815,10 @@ class CapturedState:
     page_state: dict[str, Any]
     index: dict[str, Any]
     agent_observation: dict[str, Any]
+    degraded: bool = False
+    capture_notes: list[str] | None = None
+    observation_source: str = "chromiumrl"
+    dom_captured: bool = False
 
 
 @dataclass(frozen=True)
@@ -745,53 +850,125 @@ async def capture_adb_screenshot(config: ScreenshotConfig, directory: Path) -> d
         )
         stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=config.timeout_seconds)
     except FileNotFoundError as error:
-        return {
-            "source": "adb",
-            "ok": False,
-            "elapsed_ms": round((time.perf_counter() - started) * 1000, 3),
-            "error": f"docker executable not found: {error}",
-        }
+        return {"source": "adb", "ok": False, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "error": f"docker executable not found: {error}"}
     except asyncio.TimeoutError:
         try:
             process.kill()
         except ProcessLookupError:
             pass
-        return {
-            "source": "adb",
-            "ok": False,
-            "elapsed_ms": round((time.perf_counter() - started) * 1000, 3),
-            "error": f"adb screencap timed out after {config.timeout_seconds:.1f}s",
-        }
-
+        return {"source": "adb", "ok": False, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "error": f"adb screencap timed out after {config.timeout_seconds:.1f}s"}
     elapsed = round((time.perf_counter() - started) * 1000, 3)
     stderr_text = stderr.decode("utf-8", errors="replace").strip()
     if process.returncode != 0:
-        return {
-            "source": "adb",
-            "ok": False,
-            "elapsed_ms": elapsed,
-            "returncode": process.returncode,
-            "stderr": stderr_text,
-        }
+        return {"source": "adb", "ok": False, "elapsed_ms": elapsed, "returncode": process.returncode, "stderr": stderr_text}
     if not stdout.startswith(b"\x89PNG\r\n\x1a\n"):
-        return {
-            "source": "adb",
-            "ok": False,
-            "elapsed_ms": elapsed,
-            "bytes": len(stdout),
-            "stderr": stderr_text,
-            "error": "adb screencap did not return PNG data",
-        }
+        return {"source": "adb", "ok": False, "elapsed_ms": elapsed, "bytes": len(stdout), "stderr": stderr_text, "error": "adb screencap did not return PNG data"}
     (directory / "screenshot.png").write_bytes(stdout)
-    return {
-        "source": "adb",
-        "ok": True,
-        "elapsed_ms": elapsed,
-        "artifact": "screenshot.png",
-        "bytes": len(stdout),
-        "container": config.container,
-        "adb_serial": config.adb_serial,
+    return {"source": "adb", "ok": True, "elapsed_ms": elapsed, "artifact": "screenshot.png", "bytes": len(stdout), "container": config.container, "adb_serial": config.adb_serial}
+
+
+JS_OBSERVATION_EXPRESSION = r"""
+(() => {
+  const t0 = performance.now();
+  const SEL = 'a[href],button,input,select,textarea,summary,[role=button],[role=link],' +
+              '[role=checkbox],[role=radio],[role=tab],[role=menuitem],[role=combobox],' +
+              '[role=searchbox],[role=textbox],[onclick],[tabindex]:not([tabindex="-1"]),' +
+              '[contenteditable=""],[contenteditable=true]';
+  const vw = innerWidth, vh = innerHeight;
+  const xpath = (el) => {
+    const parts = [];
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      let i = 1;
+      for (let s = n.previousElementSibling; s; s = s.previousElementSibling)
+        if (s.tagName === n.tagName) i++;
+      parts.unshift(n.tagName.toLowerCase() + '[' + i + ']');
     }
+    return '/' + parts.join('/');
+  };
+  const out = [];
+  let truncated = false;
+  for (const el of document.querySelectorAll(SEL)) {
+    if (performance.now() - t0 > 1200) { truncated = true; break; }
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) continue;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+    if (el.disabled || el.getAttribute('aria-hidden') === 'true') continue;
+    const name = (el.getAttribute('aria-label') || el.innerText || el.value ||
+                  el.placeholder || el.title || el.alt || '').replace(/\s+/g,' ').trim();
+    out.push({
+      tag: el.tagName.toLowerCase(), role: el.getAttribute('role') || '',
+      accessibleName: name.slice(0, 120), href: el.getAttribute('href') || '',
+      value: (el.value || '').toString().slice(0, 80), xpath: xpath(el),
+      bounds: { x: r.left, y: r.top, width: r.width, height: r.height },
+      centerX: r.left + r.width / 2, centerY: r.top + r.height / 2,
+      isInViewport: r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw,
+      isVisible: true
+    });
+    if (out.length >= 300) { truncated = true; break; }
+  }
+  return { url: location.href, title: document.title,
+           scroll: { x: scrollX, y: scrollY, maxY: document.documentElement.scrollHeight - vh },
+           viewport: { width: vw, height: vh }, elements: out, truncated, source: 'js_fallback' };
+})()
+"""
+
+
+async def collect_js_observation(cdp: CDPConnection, label: str = "") -> dict[str, Any]:
+    runtime, timing = await timed_command(
+        cdp,
+        "Runtime.evaluate",
+        {"expression": JS_OBSERVATION_EXPRESSION, "returnByValue": True, "awaitPromise": False},
+        required=False,
+        label=label,
+        timeout=TIMEOUT_EVALUATE,
+    )
+    observation = runtime.get("result", {}).get("value", {}) if isinstance(runtime, dict) else {}
+    if not isinstance(observation, dict):
+        observation = {"url": "", "title": "", "elements": [], "source": "js_fallback", "error": "invalid Runtime.evaluate result"}
+    return command_entry({}, timing, {"observation": observation})
+
+
+async def collect_agent_observation(cdp: CDPConnection, directory: Path, *, source: str = "auto", label: str = "") -> dict[str, Any]:
+    if source == "js":
+        payload = await collect_js_observation(cdp, label=label or directory.name)
+        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
+        return payload
+    try:
+        value = await chromiumrl_call(cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label=label or directory.name)
+        payload = command_entry({}, {"ok": True, "elapsed_ms": 0}, value)
+        payload["source"] = "chromiumrl"
+        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
+        return payload
+    except ChromiumRLUnavailable as error:
+        if source == "chromiumrl":
+            raise
+        log_event(cdp, "observation_fallback", reason=str(error), fallback="js")
+        payload = await collect_js_observation(cdp, label=label or directory.name)
+        payload["source"] = "js_fallback"
+        write_json_compact(directory / "chromiumrl_agent_observation.json", payload)
+        return payload
+
+
+async def capture_screenshot_best_effort(cdp: CDPConnection, directory: Path, config: ScreenshotConfig) -> dict[str, Any]:
+    if config.source == "none":
+        write_json(directory / "screenshot_skipped.json", {"ok": True, "source": "none"})
+        return {"ok": True, "source": "none", "artifact": "screenshot_skipped.json"}
+    attempts: list[dict[str, Any]] = []
+    for params in ({"format": "png", "fromSurface": True, "captureBeyondViewport": False},):
+        started = time.perf_counter()
+        try:
+            screenshot = await cdp.send("Page.captureScreenshot", params, use_session=True, timeout=TIMEOUT_SCREENSHOT)
+            encoded = screenshot.get("data")
+            if isinstance(encoded, str) and encoded:
+                data = base64.b64decode(encoded, validate=True)
+                (directory / "screenshot.png").write_bytes(data)
+                return {"source": "cdp", "ok": True, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "artifact": "screenshot.png", "bytes": len(data)}
+            attempts.append({"source": "cdp", "ok": False, "params": params, "error": "no screenshot data"})
+        except Exception as error:
+            attempts.append({"source": "cdp", "ok": False, "params": params, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "error": str(error)})
+    write_json(directory / "screenshot_error.json", {"ok": False, "attempts": attempts})
+    return {"ok": False, "attempts": attempts, "artifact": "screenshot_error.json"}
 
 
 async def capture_state(
@@ -800,50 +977,62 @@ async def capture_state(
     label: str,
     screenshot_config: ScreenshotConfig,
     *,
-    capture_all_targets: bool,
+    capture_all_targets: bool = False,
+    observation_source: str = "auto",
+    write_dom: bool = False,
 ) -> CapturedState:
     directory.mkdir(parents=True, exist_ok=True)
     started_at = utc_now()
     commands: dict[str, Any] = {}
-
-    save_dom, commands["ChromiumRL.saveDOMState"] = await timed_command(
-        cdp, "ChromiumRL.saveDOMState", required=True, label=label
-    )
-    chromiumrl_dom = save_dom.get("state", {})
-    if not isinstance(chromiumrl_dom, dict) or not isinstance(chromiumrl_dom.get("nodes"), list):
-        raise RecorderError(f"ChromiumRL.saveDOMState returned an invalid state: {save_dom}")
-    write_json(directory / "chromiumrl_dom.json", chromiumrl_dom)
-
-    visual_hash, commands["ChromiumRL.getVisualHash"] = await timed_command(
-        cdp, "ChromiumRL.getVisualHash", required=False, label=label
-    )
-    write_json(directory / "chromiumrl_visual_hash.json", visual_hash)
-
-    agent_observation = await collect_agent_observation(cdp, directory)
-    commands["ChromiumRL.getAgentObservation"] = agent_observation["timing"]
+    notes: list[str] = []
+    degraded = False
+    page_state: dict[str, Any] = {}
+    chromiumrl_dom: dict[str, Any] = {}
+    dom_captured = False
 
     runtime, commands["Runtime.evaluate"] = await timed_command(
         cdp,
         "Runtime.evaluate",
         {"expression": PAGE_STATE_EXPRESSION, "returnByValue": True, "awaitPromise": False},
-        required=True,
+        required=False,
         label=label,
+        timeout=TIMEOUT_EVALUATE,
     )
-    if runtime.get("exceptionDetails"):
-        raise RecorderError(f"Runtime.evaluate failed: {runtime['exceptionDetails']}")
-    page_state = runtime.get("result", {}).get("value", {})
-    if not isinstance(page_state, dict):
-        raise RecorderError(f"Runtime.evaluate returned no page state: {runtime}")
-    write_json(directory / "page_state.json", page_state)
+    value = runtime.get("result", {}).get("value", {}) if isinstance(runtime, dict) else {}
+    if isinstance(value, dict):
+        page_state = value
+    else:
+        degraded = True
+        notes.append("page_state_failed")
+    write_json_compact(directory / "page_state.json", page_state)
 
     commands["screenshot"] = await capture_screenshot_best_effort(cdp, directory, screenshot_config)
-    if capture_all_targets:
-        commands["all_targets"] = await capture_all_page_targets(cdp, directory / "all_targets", label, cdp.target)
+    if not commands["screenshot"].get("ok"):
+        degraded = True
+        notes.append("screenshot_failed")
 
-    artifacts: dict[str, Any] = {}
-    for path in sorted(directory.iterdir()):
-        if path.is_file():
-            artifacts[path.name] = {"bytes": path.stat().st_size, "sha256": sha256_file(path)}
+    try:
+        agent_observation = await collect_agent_observation(cdp, directory, source=observation_source, label=label)
+    except Exception as error:
+        degraded = True
+        notes.append(f"observation_failed:{error}")
+        agent_observation = {"source": "none", "result": {"observation": {"url": page_state.get("url", ""), "title": page_state.get("title", ""), "elements": []}}}
+        write_json_compact(directory / "chromiumrl_agent_observation.json", agent_observation)
+    commands["observation"] = {"ok": True, "source": agent_observation.get("source", "chromiumrl")}
+
+    if write_dom:
+        try:
+            save_dom = await chromiumrl_call(cdp, "ChromiumRL.saveDOMState", {}, timeout=TIMEOUT_DOM_CAPTURE, label=label)
+            chromiumrl_dom = save_dom.get("state", {}) if isinstance(save_dom, dict) else {}
+            if not isinstance(chromiumrl_dom, dict):
+                chromiumrl_dom = {}
+            write_json_gz(directory / "chromiumrl_dom.json.gz", chromiumrl_dom)
+            dom_captured = True
+        except Exception as error:
+            degraded = True
+            notes.append(f"dom_failed:{error}")
+            log_event(cdp, "capture_degraded", label=label, reason=str(error))
+
     index = {
         "schema_version": SCHEMA_VERSION,
         "label": label,
@@ -852,10 +1041,12 @@ async def capture_state(
         "target": cdp.target,
         "page": page_state,
         "commands": commands,
-        "artifacts": artifacts,
+        "degraded": degraded,
+        "capture_notes": notes,
+        "observation_source": agent_observation.get("source", "chromiumrl"),
+        "dom_captured": dom_captured,
     }
-    write_json(directory / "state_index.json", index)
-    return CapturedState(directory, chromiumrl_dom, page_state, index, agent_observation)
+    return CapturedState(directory, chromiumrl_dom, page_state, index, agent_observation, degraded, notes, agent_observation.get("source", "chromiumrl"), dom_captured)
 
 
 async def capture_state_with_recovery(
@@ -864,26 +1055,25 @@ async def capture_state_with_recovery(
     label: str,
     screenshot_config: ScreenshotConfig,
     *,
-    capture_all_targets: bool,
+    capture_all_targets: bool = False,
     chromiumrl_full_tracing: bool = False,
+    observation_source: str = "auto",
+    write_dom: bool = False,
 ) -> CapturedState:
-    try:
-        await cdp.refresh_page_session()
-        await enable_page_domains(cdp)
-        await reset_chromiumrl_tracing(cdp, full_tracing=chromiumrl_full_tracing)
-        return await capture_state(
-            cdp, directory, label, screenshot_config, capture_all_targets=capture_all_targets
-        )
-    except CDPCommandError as error:
-        if not is_session_not_found(error):
-            raise
-        print("CDP page session was invalidated; reattaching and retrying capture once...")
-        await cdp.refresh_page_session()
-        await enable_page_domains(cdp)
-        await reset_chromiumrl_tracing(cdp, full_tracing=chromiumrl_full_tracing)
-        return await capture_state(
-            cdp, directory, label, screenshot_config, capture_all_targets=capture_all_targets
-        )
+    if cdp.main_frame_navigated:
+        try:
+            await cdp.rebind_session()
+        except RecorderError as error:
+            log_event(cdp, "warning", message="session rebind failed before capture", error=str(error))
+    return await capture_state(
+        cdp,
+        directory,
+        label,
+        screenshot_config,
+        capture_all_targets=capture_all_targets,
+        observation_source=observation_source,
+        write_dom=write_dom,
+    )
 
 
 def action_name(action: Any) -> str:
@@ -1023,17 +1213,16 @@ def observation_elements(state_or_payload: Any) -> list[dict[str, Any]]:
 
 
 def element_identity(element: dict[str, Any]) -> str:
-    for key in ("fingerprint", "selector", "href", "text", "accessibleName"):
+    for key in ("nodeId", "selector", "fingerprint", "backendNodeId", "xpath", "cssSelector", "href", "text", "accessibleName", "idx"):
         value = element.get(key)
-        if isinstance(value, str) and value.strip():
-            return f"{key}:{value.strip()}"
-    node_id = element.get("nodeId")
-    return f"nodeId:{node_id}"
+        if value not in (None, "", [], {}):
+            return f"{key}:{str(value).strip()}"
+    return "unknown:" + hashlib.sha1(json.dumps(element, sort_keys=True, default=str).encode()).hexdigest()[:12]
 
 
 def compact_element(element: dict[str, Any]) -> dict[str, Any]:
     result: dict[str, Any] = {}
-    for key in ("idx", "nodeId", "tag", "role", "accessibleName", "text", "context", "href"):
+    for key in ("idx", "nodeId", "backendNodeId", "xpath", "cssSelector", "selector", "tag", "role", "accessibleName", "text", "context", "href", "value", "placeholder"):
         value = element.get(key)
         if value not in (None, "", [], {}):
             result[key] = value
@@ -1108,10 +1297,22 @@ def build_dom_diff_summary(before: CapturedState, after: CapturedState) -> dict[
         before_element = before_by_id[identity]
         after_element = after_by_id[identity]
         changes: dict[str, Any] = {}
-        for key in ("text", "accessibleName", "href", "bounds", "centerX", "centerY"):
-            if before_element.get(key) != after_element.get(key):
+        for key in ("text", "accessibleName", "href", "value", "selected", "expanded"):
+            if key in before_element and key in after_element and before_element.get(key) != after_element.get(key):
                 changes[key] = {"before": before_element.get(key), "after": after_element.get(key)}
+        before_center = (first_number(before_element.get("centerX")), first_number(before_element.get("centerY")))
+        after_center = (first_number(after_element.get("centerX")), first_number(after_element.get("centerY")))
+        try:
+            dx = (after_center[0] or 0) - (before_center[0] or 0)
+            dy = (after_center[1] or 0) - (before_center[1] or 0)
+            scroll_dx = float(after_scroll.get("scrollX", 0) or 0) - float(before_scroll.get("scrollX", 0) or 0)
+            scroll_dy = float(after_scroll.get("scrollY", 0) or 0) - float(before_scroll.get("scrollY", 0) or 0)
+            moved = abs(dx + scroll_dx) > 8 or abs(dy + scroll_dy) > 8
+        except Exception:
+            moved = False
         if changes:
+            if moved:
+                changes["moved"] = True
             changed.append({"id": identity, "element": compact_element(after_element), "changes": changes})
 
     return {
@@ -1133,7 +1334,7 @@ def build_dom_diff_summary(before: CapturedState, after: CapturedState) -> dict[
         "scroll": {
             "before": before_scroll,
             "after": after_scroll,
-            "changed": before_scroll != after_scroll,
+            "changed": (before_scroll.get("scrollX"), before_scroll.get("scrollY")) != (after_scroll.get("scrollX"), after_scroll.get("scrollY")),
         },
         "stats": {
             "before": before_obs.get("stats", {}),
@@ -1196,24 +1397,24 @@ def build_verifier_action(
             result["text"] = action["text"]
         else:
             warnings.append("text is required for type but was missing")
-    elif name == "web_search":
+    elif name in {"web_search", "search"}:
         if "query" in action:
             result["query"] = action["query"]
         else:
-            warnings.append("query is required for web_search but was missing")
-    elif name == "visit_url":
+            warnings.append("query is required for search but was missing")
+    elif name in {"navigate", "visit_url", "open"}:
         if "url" in action:
             result["url"] = action["url"]
         else:
-            warnings.append("url is required for visit_url but was missing")
-    elif name == "key":
+            warnings.append("url is required for navigate but was missing")
+    elif name in {"press", "key"}:
         if "key" in action:
             result["key"] = action["key"]
         elif isinstance(action.get("keys"), list) and action["keys"]:
             result["key"] = action["keys"][0]
             result["_key_source"] = "keys[0]"
         else:
-            warnings.append("key is required for key but was missing")
+            warnings.append("key is required for press but was missing")
     elif name == "terminate":
         result["status"] = action.get("status", "success")
 
@@ -1264,12 +1465,6 @@ async def collect_touch_trace_signals(cdp: CDPConnection) -> dict[str, Any]:
         },
     }
 
-
-async def collect_agent_observation(cdp: CDPConnection, directory: Path) -> dict[str, Any]:
-    value, timing = await timed_command(cdp, "ChromiumRL.getAgentObservation", required=False, label=directory.name)
-    payload = command_entry({}, timing, value)
-    write_json(directory / "chromiumrl_agent_observation.json", payload)
-    return payload
 
 
 async def collect_interaction_capture(
@@ -1369,7 +1564,7 @@ def initialize_task(
             raise RecorderError(f"cannot resume {task_dir}: manifest.json is missing")
         return task_dir
     task_dir.mkdir(parents=True)
-    write_json(task_dir / "actions.json", source_actions)
+    append_jsonl(task_dir / "log.jsonl", {"ts": utc_now(), "event": "run_started", "task_id": task_id, "source_actions": source_actions})
     write_json(
         task_dir / "manifest.json",
         {
@@ -1386,52 +1581,58 @@ def initialize_task(
     return task_dir
 
 
+async def wait_for_ready(cdp: CDPConnection, *, timeout: float = 12.0, quiet_ms: int = 500) -> dict[str, Any]:
+    started = time.perf_counter()
+    last_count: int | None = None
+    stable_since: float | None = None
+    last_state = ""
+    while (time.perf_counter() - started) < timeout:
+        try:
+            runtime = await cdp.send(
+                "Runtime.evaluate",
+                {"expression": "({readyState: document.readyState, count: document.querySelectorAll('*').length})", "returnByValue": True},
+                use_session=True,
+                timeout=min(TIMEOUT_EVALUATE, max(0.5, timeout - (time.perf_counter() - started))),
+            )
+            value = runtime.get("result", {}).get("value") or runtime.get("result", {}).get("result", {}).get("value", {})
+            if isinstance(value, dict):
+                last_state = str(value.get("readyState", ""))
+                count = int(value.get("count", 0) or 0)
+                now = time.perf_counter()
+                if count == last_count:
+                    if stable_since is None:
+                        stable_since = now
+                else:
+                    last_count = count
+                    stable_since = now
+                if last_state in {"interactive", "complete"} and stable_since is not None and (now - stable_since) * 1000 >= quiet_ms:
+                    return {"ok": True, "elapsed_ms": round((now - started) * 1000, 3), "readyState": last_state, "node_count": count}
+        except Exception as error:
+            return {"ok": False, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "reason": "evaluate_failed", "error": str(error)}
+        await asyncio.sleep(0.25)
+    return {"ok": False, "elapsed_ms": round((time.perf_counter() - started) * 1000, 3), "reason": "load_wait_timeout", "readyState": last_state, "node_count": last_count}
+
+
 async def run_doctor(args: argparse.Namespace) -> None:
     async with CDPConnection(
         args.cdp_url,
         command_timeout=args.command_timeout,
         target_url_contains=args.target_url_contains,
     ) as cdp:
+        cdp.enable_runtime_domain = bool(getattr(args, "enable_runtime_domain", False))
         domains = await enable_page_domains(cdp)
         chromiumrl = await reset_chromiumrl_tracing(cdp, full_tracing=args.chromiumrl_full_tracing)
-        state, state_timing = await timed_command(cdp, "ChromiumRL.saveDOMState", required=True)
-        compare_response, compare_timing = await timed_command(
-            cdp,
-            "ChromiumRL.compareDOMState",
-            {"referenceState": state.get("state", {})},
-            required=False,
-            timeout=min(30.0, max(1.0, cdp.command_timeout)),
-        )
+        state, state_timing = await timed_command(cdp, "ChromiumRL.saveDOMState", required=True, timeout=TIMEOUT_DOM_CAPTURE)
         dom_state = state.get("state", {})
-        node = first_visible_node(dom_state) if isinstance(dom_state, dict) else None
-        node_id = node.get("nodeId") if isinstance(node, dict) else None
         optional_methods: dict[str, Any] = {}
-        for method, params in (
-            ("ChromiumRL.getAgentObservation", {}),
-            ("ChromiumRL.getTouchTraces", {}),
+        for method, params, budget in (
+            ("ChromiumRL.getAgentObservation", {}, TIMEOUT_OBSERVATION),
+            ("ChromiumRL.getTouchTraces", {}, TIMEOUT_SIGNAL),
         ):
-            value, timing = await timed_command(cdp, method, params, required=False)
+            value, timing = await timed_command(cdp, method, params, required=False, timeout=budget)
             optional_methods[method] = command_entry(params, timing, value)
 
-        capture_params = (
-            {
-                "interactionType": "wait",
-                "targetNodeId": node_id,
-                "captureDurationMs": 1,
-            }
-            if isinstance(node_id, int)
-            else {}
-        )
-        if not isinstance(node_id, int):
-            optional_methods["ChromiumRL.captureInteraction"] = {"skipped": "no DOM nodeId available"}
-        else:
-            for method in ("ChromiumRL.captureInteraction", "ChromiumRL.captureInteractions"):
-                value, timing = await timed_command(cdp, method, capture_params, required=False, timeout=2.0)
-                optional_methods[method] = command_entry(capture_params, timing, value)
-                if timing.get("ok"):
-                    optional_methods["ChromiumRL.captureInteraction.selected"] = method
-                    break
-        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=2.0)
+        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=TIMEOUT_SIGNAL)
         report = {
             "ok": True,
             "cdp_url": cdp.http_base,
@@ -1443,10 +1644,6 @@ async def run_doctor(args: argparse.Namespace) -> None:
             "chromiumrl_save_dom_state": {
                 "timing": state_timing,
                 "node_count": len(state.get("state", {}).get("nodes", [])),
-            },
-            "chromiumrl_compare_dom_state": {
-                "timing": compare_timing,
-                "result_keys": sorted(compare_response.keys()),
             },
             "chromiumrl_optional_methods": optional_methods,
         }
@@ -1472,6 +1669,7 @@ def build_parser() -> argparse.ArgumentParser:
     doctor = subparsers.add_parser("doctor", help="verify CDP and the ChromiumRL custom domain")
     add_connection_arguments(doctor)
     doctor.add_argument("--chromiumrl-full-tracing", action="store_true", help="enable legacy heavy ChromiumRL tracing probes")
+    doctor.add_argument("--enable-runtime-domain", action="store_true", help="call Runtime.enable for debugging")
     return parser
 
 

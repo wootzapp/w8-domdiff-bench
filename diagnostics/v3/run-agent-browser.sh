@@ -39,4 +39,8 @@ fi
 if ! has_arg "--yes" "${ARGS[@]}"; then
   ARGS+=(--yes)
 fi
+if ! has_arg "--strict-chromiumrl-observation" "${ARGS[@]}"; then
+  ARGS+=(--strict-chromiumrl-observation)
+fi
+
 python3 agent_browser/desktop_agent.py "${ARGS[@]}"

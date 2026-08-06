@@ -1,0 +1,500 @@
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:5:task-recorder's ChromiumRL saveDOMState/getAgentObservation/compareDOMState
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:75:You receive a ChromiumRL/JS observation rendered by this runner. You do not have direct browser
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:169:        raise RecorderError(f"ChromiumRL.getAgentObservation returned unexpected payload: {payload}")
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:182:    # ChromiumRL element bounds are viewport-relative for normal page content.
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:517:                value = await chromiumrl_call(self.cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label="snapshot")
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:914:        # critical part for CDP/ChromiumRL commands.
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1110:            ("Runtime.evaluate(js_fallback)" if snapshot.payload.get("model_observation_sources", {}).get("primary") == "js_fallback" else "ChromiumRL.getAgentObservation"),
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1122:            "ChromiumRL.enable",
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1123:            "ChromiumRL.saveDOMState",
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1124:            "ChromiumRL.getAgentObservation",
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1125:            "ChromiumRL.getTouchTraces",
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1286:            traces = await chromiumrl_call(cdp, "ChromiumRL.getTouchTraces", {}, timeout=TIMEOUT_SIGNAL, label="touch_traces")
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1287:            signals = {"captured_at": utc_now(), "commands": {"ChromiumRL.getTouchTraces": {"result": traces, "timing": {"ok": True}}}}
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1289:            signals = {"captured_at": utc_now(), "commands": {"ChromiumRL.getTouchTraces": {"timing": {"ok": False, "error": str(error)}}}}
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1580:                await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=TIMEOUT_SIGNAL)
+/data/aayush/task-recorder/agent_browser/desktop_agent.py:1615:    parser.add_argument("--chromiumrl-full-tracing", action="store_true", help="enable legacy heavy ChromiumRL tracing probes")
+/data/aayush/task-recorder/README.md:3:This active folder is for Wootz browser task recording and ChromiumRL verifier artifacts.
+/data/aayush/task-recorder/README.md:27:- ChromiumRL supplies the model observation and all verifier artifacts (`getAgentObservation`, DOM state, DOM diff, screenshot, interactions, and touch traces).
+/data/aayush/task-recorder/README.md:29:- `agent_browser/desktop_agent.py` is only the bridge/recording loop: it translates the model JSON action into an official CLI command and records the resulting ChromiumRL state.
+/data/aayush/task-recorder/README.md:33:## Agent-browser + ChromiumRL
+/data/aayush/task-recorder/README.md:68:Each recorded step stores ChromiumRL verifier artifacts under:
+/data/aayush/task-recorder/README.md:89:Main ChromiumRL protocols used for verifier artifacts:
+/data/aayush/task-recorder/README.md:92:ChromiumRL.getAgentObservation
+/data/aayush/task-recorder/README.md:93:ChromiumRL.saveDOMState
+/data/aayush/task-recorder/README.md:94:ChromiumRL.compareDOMState
+/data/aayush/task-recorder/README.md:95:ChromiumRL.getTouchTraces
+/data/aayush/task-recorder/diagnostics/coord_probe.py:13:    r = await cdp.send("ChromiumRL.getAgentObservation", {}, use_session=True, timeout=30)
+/data/aayush/task-recorder/diagnostics/t2_probe.py:15:  ('chromiumrl_enable_heavy','ChromiumRL.enable',{'captureTouchTraces':True,'captureLayoutTimings':True,'captureCLSAttribution':True,'captureCompositorLayers':True},True,10.0),
+/data/aayush/task-recorder/diagnostics/t2_probe.py:16:  ('chromiumrl_enable_light','ChromiumRL.enable',{'captureTouchTraces':True,'captureLayoutTimings':False,'captureCLSAttribution':False,'captureCompositorLayers':False},True,10.0),
+/data/aayush/task-recorder/diagnostics/t2_probe.py:17:  ('chromiumrl_save_dom','ChromiumRL.saveDOMState',{},True,20.0),
+/data/aayush/task-recorder/diagnostics/t2_probe.py:18:  ('chromiumrl_observation','ChromiumRL.getAgentObservation',{},True,15.0),
+/data/aayush/task-recorder/diagnostics/identity_stability_probe.py:10:    r=await cdp.send("ChromiumRL.getAgentObservation", {}, use_session=True, timeout=10)
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:12:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:13:ChromiumRL.getAgentObservation ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:27:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:28:before: ChromiumRL.saveDOMState ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:29:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:30:before: ChromiumRL.getVisualHash ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:31:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:32:before: ChromiumRL.getAgentObservation ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:43:after: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:44:after: ChromiumRL.saveDOMState ok in 4.0ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:45:after: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:46:after: ChromiumRL.getVisualHash ok in 1.1ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:47:after: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:48:after: ChromiumRL.getAgentObservation ok in 1.7ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:51:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:52:ChromiumRL.compareDOMState ok in 12.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:55:signals: ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:56:signals: ChromiumRL.getTouchTraces ok in 0.8ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:57:signals: ChromiumRL.getLayoutTimings ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:58:signals: ChromiumRL.getLayoutTimings ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:59:signals: ChromiumRL.getCLSAttribution ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:60:signals: ChromiumRL.getCLSAttribution ok in 0.3ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:61:signals: ChromiumRL.getCompositorLayers ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:62:signals: ChromiumRL.getCompositorLayers ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:63:signals: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:64:signals: ChromiumRL.getVisualHash ok in 0.2ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:65:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:66:ChromiumRL.captureInteraction ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:68:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:69:ChromiumRL.getAgentObservation ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:83:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:84:before: ChromiumRL.saveDOMState ok in 6.1ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:85:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:86:before: ChromiumRL.getVisualHash ok in 1.1ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:87:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:88:before: ChromiumRL.getAgentObservation ok in 2.9ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:99:ERROR: CDP command ChromiumRL.enable timed out after 10.0s
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:12:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:13:ChromiumRL.getAgentObservation ok in 0.5ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:27:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:28:before: ChromiumRL.saveDOMState ok in 1.0ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:29:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:30:before: ChromiumRL.getVisualHash ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:31:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:32:before: ChromiumRL.getAgentObservation ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:47:after: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:48:after: ChromiumRL.saveDOMState ok in 5.0ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:49:after: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:50:after: ChromiumRL.getVisualHash ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:51:after: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:52:after: ChromiumRL.getAgentObservation ok in 1.3ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:55:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:56:ChromiumRL.compareDOMState ok in 9.1ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:59:signals: ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:60:signals: ChromiumRL.getTouchTraces ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:61:signals: ChromiumRL.getLayoutTimings ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:62:signals: ChromiumRL.getLayoutTimings ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:63:signals: ChromiumRL.getCLSAttribution ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:64:signals: ChromiumRL.getCLSAttribution ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:65:signals: ChromiumRL.getCompositorLayers ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:66:signals: ChromiumRL.getCompositorLayers ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:67:signals: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:68:signals: ChromiumRL.getVisualHash ok in 0.3ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:69:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:70:ChromiumRL.captureInteraction ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:72:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:73:ChromiumRL.getAgentObservation ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:87:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:88:before: ChromiumRL.saveDOMState ok in 5.1ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:89:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:90:before: ChromiumRL.getVisualHash ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:91:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:92:before: ChromiumRL.getAgentObservation ok in 0.7ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:107:ERROR: CDP command ChromiumRL.enable timed out after 10.0s
+/data/aayush/task-recorder/diagnostics/nav_rebind_probe.py:24:        await call(cdp, stage, "ChromiumRL.saveDOMState", {}, 8),
+/data/aayush/task-recorder/diagnostics/nav_rebind_probe.py:25:        await call(cdp, stage, "ChromiumRL.getAgentObservation", {}, 8),
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:5:ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:6:ChromiumRL.saveDOMState ok in 824.1ms
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:7:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:8:ChromiumRL.compareDOMState ok in 1050.7ms
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:9:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:10:ChromiumRL.getAgentObservation ok in 68.1ms
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:11:ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:12:ChromiumRL.getTouchTraces ok in 2.4ms
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:13:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:14:ChromiumRL.captureInteraction ok in 1.4ms
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:71:    "ChromiumRL.getAgentObservation": {
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:2293:    "ChromiumRL.getTouchTraces": {
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:2305:    "ChromiumRL.captureInteraction": {
+/data/aayush/task-recorder/diagnostics/t_doctor_heavy.json:2322:    "ChromiumRL.captureInteraction.selected": "ChromiumRL.captureInteraction"
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:12:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:13:ChromiumRL.getAgentObservation ok in 1.2ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:27:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:28:before: ChromiumRL.saveDOMState ok in 2.6ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:29:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:30:before: ChromiumRL.getVisualHash ok in 1.8ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:31:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:32:before: ChromiumRL.getAgentObservation ok in 1.8ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:47:after: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:48:after: ChromiumRL.saveDOMState ok in 7.0ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:49:after: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:50:after: ChromiumRL.getVisualHash ok in 2.4ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:51:after: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:52:after: ChromiumRL.getAgentObservation ok in 2.8ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:55:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:56:ChromiumRL.compareDOMState ok in 10.5ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:59:signals: ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:60:signals: ChromiumRL.getTouchTraces ok in 2.7ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:61:signals: ChromiumRL.getLayoutTimings ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:62:signals: ChromiumRL.getLayoutTimings ok in 1.8ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:63:signals: ChromiumRL.getCLSAttribution ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:64:signals: ChromiumRL.getCLSAttribution ok in 1.7ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:65:signals: ChromiumRL.getCompositorLayers ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:66:signals: ChromiumRL.getCompositorLayers ok in 1.5ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:67:signals: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:68:signals: ChromiumRL.getVisualHash ok in 1.3ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:69:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:70:ChromiumRL.captureInteraction ok in 1.6ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:72:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:73:ChromiumRL.getAgentObservation ok in 2.3ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:87:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:88:before: ChromiumRL.saveDOMState ok in 5.5ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:89:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:90:before: ChromiumRL.getVisualHash ok in 2.3ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:91:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:92:before: ChromiumRL.getAgentObservation ok in 2.6ms
+/data/aayush/task-recorder/diagnostics/t8_baseline_run_002.log:107:ERROR: CDP command ChromiumRL.disable timed out after 2.0s
+/data/aayush/old/wootzapp-hybrid-agent-recorder-removed-20260728/README.md:14:capture current ChromiumRL observation
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:5:ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:6:ChromiumRL.saveDOMState ok in 785.6ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:7:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:8:ChromiumRL.compareDOMState ok in 951.8ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:9:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:10:ChromiumRL.getAgentObservation ok in 61.2ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:11:ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:12:ChromiumRL.getTouchTraces ok in 2.0ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:13:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:14:ChromiumRL.captureInteraction ok in 1.7ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:71:    "ChromiumRL.getAgentObservation": {
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:2293:    "ChromiumRL.getTouchTraces": {
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:2305:    "ChromiumRL.captureInteraction": {
+/data/aayush/task-recorder/diagnostics/t_final_doctor_heavy.json:2322:    "ChromiumRL.captureInteraction.selected": "ChromiumRL.captureInteraction"
+/data/aayush/chromium/browserless-runtime/README.md:35:          ChromiumRL C++ domain
+/data/aayush/chromium/browserless-runtime/README.md:38:The available custom commands include `ChromiumRL.enable`,
+/data/aayush/chromium/browserless-runtime/README.md:39:`ChromiumRL.getAgentObservation`, `ChromiumRL.saveDOMState`,
+/data/aayush/chromium/browserless-runtime/README.md:40:`ChromiumRL.getVisualHash`, and `ChromiumRL.disable`.
+/data/aayush/chromium/browserless-runtime/README.md:110:session, invokes the custom ChromiumRL commands, prints the extracted elements,
+/data/aayush/chromium/browserless-runtime/README.md:164:### 4. Run ChromiumRL visibly
+/data/aayush/chromium/browserless-runtime/README.md:175:  const enabled = await cdp.send("ChromiumRL.enable");
+/data/aayush/chromium/browserless-runtime/README.md:178:    "ChromiumRL.getAgentObservation",
+/data/aayush/chromium/browserless-runtime/README.md:186:  const domState = await cdp.send("ChromiumRL.saveDOMState");
+/data/aayush/chromium/browserless-runtime/README.md:187:  const visual = await cdp.send("ChromiumRL.getVisualHash");
+/data/aayush/chromium/browserless-runtime/README.md:222:  await cdp.send("ChromiumRL.disable");
+/data/aayush/chromium/browserless-runtime/README.md:247:The permanent runtime successfully navigated and invoked ChromiumRL on:
+/data/aayush/chromium/browserless-runtime/README.md:256:element, and ChromiumRL returned `Hello World!` from the post-load DOM.
+/data/aayush/task-recorder/diagnostics/t8_post_click_no_enable_probe.json:14:      "method": "ChromiumRL.saveDOMState",
+/data/aayush/task-recorder/diagnostics/t8_post_click_no_enable_probe.json:17:      "error": "CDP command ChromiumRL.saveDOMState timed out after 20.0s"
+/data/aayush/task-recorder/diagnostics/t8_post_click_no_enable_probe.json:20:      "method": "ChromiumRL.getAgentObservation",
+/data/aayush/task-recorder/diagnostics/t8_post_click_no_enable_probe.json:23:      "error": "CDP command ChromiumRL.getAgentObservation timed out after 15.0s"
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:5:**Phase T did not fully pass.** CDP health, dialog handling, and coordinate-space checks now pass, but **T-8 exact baseline fails**: the model chooses Amazon, clicks Amazon's `Continue shopping` interstitial, and that page target stops answering ChromiumRL `saveDOMState` / `getAgentObservation`. Because T-8 is an exit criterion, I did **not** proceed to Phase B.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:13:Assessment: Docker health became `healthy`. No renderer crash, OOM kill, segmentation fault, or shared-memory fatal error was found. The boot log is not perfectly quiet: it contains expected container/browser DBus and GCM errors plus ChromiumRL startup messages like `GetAgentForFrame returned null`, but no fatal boot blocker.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:55:- Heavy ChromiumRL page capture on Amazon search was: `saveDOMState` ~867 ms, `getAgentObservation` ~109 ms in T-2.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:64:- ChromiumRL tracing defaults are reduced to touch traces only: layout timings, CLS attribution, and compositor layers default false.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:66:- `ChromiumRL.disable` is best-effort on reset and connection close.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:109:Code comment added at `element_center()` recording this 2026-08-06 verdict: do not subtract `scrollY`/`scrollX` from ChromiumRL bounds.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:407:3. After that click, `Page.enable` and `ChromiumRL.enable` began timing out.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:409:   - `ChromiumRL.saveDOMState` timed out after 20s
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:410:   - `ChromiumRL.getAgentObservation` timed out after 15s
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:412:This means the exact A6/T-8 baseline is blocked by the Amazon page target becoming unresponsive to ChromiumRL after the interstitial click. It is not fixed by raising timeouts.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:456:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:457:ChromiumRL.getAgentObservation ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:471:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:472:before: ChromiumRL.saveDOMState ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:473:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:474:before: ChromiumRL.getVisualHash ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:475:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:476:before: ChromiumRL.getAgentObservation ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:487:after: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:488:after: ChromiumRL.saveDOMState ok in 4.0ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:489:after: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:490:after: ChromiumRL.getVisualHash ok in 1.1ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:491:after: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:492:after: ChromiumRL.getAgentObservation ok in 1.7ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:495:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:496:ChromiumRL.compareDOMState ok in 12.4ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:499:signals: ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:500:signals: ChromiumRL.getTouchTraces ok in 0.8ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:501:signals: ChromiumRL.getLayoutTimings ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:502:signals: ChromiumRL.getLayoutTimings ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:503:signals: ChromiumRL.getCLSAttribution ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:504:signals: ChromiumRL.getCLSAttribution ok in 0.3ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:505:signals: ChromiumRL.getCompositorLayers ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:506:signals: ChromiumRL.getCompositorLayers ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:507:signals: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:508:signals: ChromiumRL.getVisualHash ok in 0.2ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:509:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:510:ChromiumRL.captureInteraction ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:512:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:513:ChromiumRL.getAgentObservation ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:527:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:528:before: ChromiumRL.saveDOMState ok in 6.1ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:529:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:530:before: ChromiumRL.getVisualHash ok in 1.1ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:531:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:532:before: ChromiumRL.getAgentObservation ok in 2.9ms
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:543:ERROR: CDP command ChromiumRL.enable timed out after 10.0s
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:573:| page | ok | target | saveDOMState ms | compareDOMState ms | getAgentObservation ms |
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:585:1. **T-8 exact baseline is blocked.** Amazon's post-interstitial page target stops answering ChromiumRL after clicking `Continue shopping`. The browser target remains listed in `/json/list`, but ChromiumRL capture calls do not return.
+/data/aayush/task-recorder/diagnostics/PHASE_T_REPORT.md:592:2. The exact A6 baseline using an unconstrained task prompt is unreliable because the model chooses Amazon, and Amazon's interstitial path wedges ChromiumRL in this browser build. A baseline should use a stable site or explicitly exclude Amazon if the goal is recorder performance measurement rather than anti-bot behavior measurement.
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:5:{"target": "existing_about_or_selected", "target_id": "78125BC40D66CC8A5B60BB3BB7510140", "command": "chromiumrl_enable_heavy", "method": "ChromiumRL.enable", "timeout_s": 10.0, "ok": true, "elapsed_ms": 89.838, "result_keys": ["sessionId"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:6:{"target": "existing_about_or_selected", "target_id": "78125BC40D66CC8A5B60BB3BB7510140", "command": "chromiumrl_enable_light", "method": "ChromiumRL.enable", "timeout_s": 10.0, "ok": true, "elapsed_ms": 89.34, "result_keys": ["sessionId"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:7:{"target": "existing_about_or_selected", "target_id": "78125BC40D66CC8A5B60BB3BB7510140", "command": "chromiumrl_save_dom", "method": "ChromiumRL.saveDOMState", "timeout_s": 20.0, "ok": true, "elapsed_ms": 47.992, "result_keys": ["state"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:8:{"target": "existing_about_or_selected", "target_id": "78125BC40D66CC8A5B60BB3BB7510140", "command": "chromiumrl_observation", "method": "ChromiumRL.getAgentObservation", "timeout_s": 15.0, "ok": true, "elapsed_ms": 90.277, "result_keys": ["observation"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:13:{"target": "fresh_about_blank", "target_id": "1C7FECDE564F7F741E752C8C1F293FB3", "command": "chromiumrl_enable_heavy", "method": "ChromiumRL.enable", "timeout_s": 10.0, "ok": true, "elapsed_ms": 90.039, "result_keys": ["sessionId"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:14:{"target": "fresh_about_blank", "target_id": "1C7FECDE564F7F741E752C8C1F293FB3", "command": "chromiumrl_enable_light", "method": "ChromiumRL.enable", "timeout_s": 10.0, "ok": true, "elapsed_ms": 89.329, "result_keys": ["sessionId"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:15:{"target": "fresh_about_blank", "target_id": "1C7FECDE564F7F741E752C8C1F293FB3", "command": "chromiumrl_save_dom", "method": "ChromiumRL.saveDOMState", "timeout_s": 20.0, "ok": true, "elapsed_ms": 89.563, "result_keys": ["state"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:16:{"target": "fresh_about_blank", "target_id": "1C7FECDE564F7F741E752C8C1F293FB3", "command": "chromiumrl_observation", "method": "ChromiumRL.getAgentObservation", "timeout_s": 15.0, "ok": true, "elapsed_ms": 88.796, "result_keys": ["observation"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:21:{"target": "heavy_real_page", "target_id": "9ABB00D2CCBF770FAC65B5A282573147", "command": "chromiumrl_enable_heavy", "method": "ChromiumRL.enable", "timeout_s": 10.0, "ok": true, "elapsed_ms": 89.429, "result_keys": ["sessionId"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:22:{"target": "heavy_real_page", "target_id": "9ABB00D2CCBF770FAC65B5A282573147", "command": "chromiumrl_enable_light", "method": "ChromiumRL.enable", "timeout_s": 10.0, "ok": true, "elapsed_ms": 90.028, "result_keys": ["sessionId"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:23:{"target": "heavy_real_page", "target_id": "9ABB00D2CCBF770FAC65B5A282573147", "command": "chromiumrl_save_dom", "method": "ChromiumRL.saveDOMState", "timeout_s": 20.0, "ok": true, "elapsed_ms": 867.282, "result_keys": ["state"]}
+/data/aayush/task-recorder/diagnostics/t2_probe_stdout.jsonl:24:{"target": "heavy_real_page", "target_id": "9ABB00D2CCBF770FAC65B5A282573147", "command": "chromiumrl_observation", "method": "ChromiumRL.getAgentObservation", "timeout_s": 15.0, "ok": true, "elapsed_ms": 108.625, "result_keys": ["observation"]}
+/data/aayush/task-recorder/diagnostics/t1_container_boot.log:61:[309:309:0806/090250.718164:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0xa2c02031750
+/data/aayush/task-recorder/diagnostics/t1_container_boot.log:62:[309:309:0806/090250.739725:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0xa2c02031750
+/data/aayush/task-recorder/diagnostics/t1_container_boot.log:63:[284:284:0806/090250.741271:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0xa2c02031750
+/data/aayush/task-recorder/diagnostics/t1_container_boot.log:64:[284:284:0806/090250.751366:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0xa2c02031750
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:5:ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:6:ChromiumRL.saveDOMState ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:7:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:8:ChromiumRL.compareDOMState ok in 0.7ms
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:9:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:10:ChromiumRL.getAgentObservation ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:11:ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:12:ChromiumRL.getTouchTraces ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:13:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:14:ChromiumRL.captureInteraction ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:71:    "ChromiumRL.getAgentObservation": {
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:107:    "ChromiumRL.getTouchTraces": {
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:119:    "ChromiumRL.captureInteraction": {
+/data/aayush/task-recorder/diagnostics/t_doctor_after_restart.json:136:    "ChromiumRL.captureInteraction.selected": "ChromiumRL.captureInteraction"
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:45:[310:310:0806/091639.720951:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:48:[310:310:0806/091639.745205:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:49:[286:286:0806/091639.750669:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:50:[286:286:0806/091639.762434:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:56:[310:310:0806/091650.388595:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:156] ChromiumRL: [Lifecycle] Agent ENABLED agent=0x122c02146020 capture_compositor=0 session="310.0"
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:57:[310:310:0806/091650.391234:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:187] ChromiumRL: [Command] getTouchTraces received.
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:58:[310:310:0806/091650.391291:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:189] ChromiumRL: [Command] Buffer contains 0 traces. Converting...
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:62:[526:526:0806/091658.090069:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c02144780
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:63:[526:526:0806/091658.090203:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c02144780 enabled=0 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:64:[514:514:0806/091658.100025:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:65:[514:514:0806/091658.112158:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:66:[526:526:0806/091659.084630:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:156] ChromiumRL: [Lifecycle] Agent ENABLED agent=0x122c02144780 capture_compositor=0 session="526.0"
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:67:[526:526:0806/091659.130167:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:156] ChromiumRL: [Lifecycle] Agent ENABLED agent=0x122c021476f8 capture_compositor=0 session="526.1"
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:72:[526:526:0806/091659.137943:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c021476f8
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:73:[526:526:0806/091659.138035:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c021476f8 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:74:[514:514:0806/091659.178107:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:76:[514:514:0806/091659.365617:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:78:[514:514:0806/091659.516079:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:80:[526:526:0806/091659.674778:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c021af210
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:81:[526:526:0806/091659.674869:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c021af210 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:82:[514:514:0806/091659.676652:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:83:[526:526:0806/091659.678885:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c021af210
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:84:[526:526:0806/091659.678981:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c021af210 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:85:[526:526:0806/091659.695051:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c021af210
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:86:[526:526:0806/091659.695165:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c021af210 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:87:[526:526:0806/091700.256506:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:156] ChromiumRL: [Lifecycle] Agent ENABLED agent=0x122c02227420 capture_compositor=0 session="526.2"
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:92:[526:526:0806/091700.270304:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c02227420
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:93:[526:526:0806/091700.270497:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c02227420 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:94:[526:526:0806/091700.333139:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:187] ChromiumRL: [Command] getTouchTraces received.
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:95:[526:526:0806/091700.333367:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:189] ChromiumRL: [Command] Buffer contains 0 traces. Converting...
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:96:[526:526:0806/091701.365152:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:156] ChromiumRL: [Lifecycle] Agent ENABLED agent=0x122c02227420 capture_compositor=0 session="526.3"
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:97:[526:526:0806/091701.375677:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:156] ChromiumRL: [Lifecycle] Agent ENABLED agent=0x122c022292e8 capture_compositor=0 session="526.4"
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:102:[526:526:0806/091701.394253:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022292e8
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:103:[526:526:0806/091701.394541:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022292e8 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:104:[526:526:0806/091701.452093:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022292e8
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:105:[526:526:0806/091701.452534:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022292e8 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:106:[526:526:0806/091701.461733:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022292e8
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:107:[526:526:0806/091701.461965:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022292e8 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:108:[514:514:0806/091701.472073:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2939] ChromiumRL: Hook fired but GetAgentForFrame returned null frame=0x122c02031750
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:110:[526:526:0806/091701.896229:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:111:[526:526:0806/091701.896358:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:112:[526:526:0806/091701.923430:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:113:[526:526:0806/091701.923536:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:114:[526:526:0806/091701.940054:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:115:[526:526:0806/091701.940178:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:116:[526:526:0806/091701.973575:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:117:[526:526:0806/091701.973811:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:118:[526:526:0806/091702.009379:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:119:[526:526:0806/091702.009491:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:120:[526:526:0806/091702.022623:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:121:[526:526:0806/091702.022754:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:122:[526:526:0806/091702.057793:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:123:[526:526:0806/091702.057963:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:124:[526:526:0806/091702.067472:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:125:[526:526:0806/091702.067626:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:126:[526:526:0806/091702.071984:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:127:[526:526:0806/091702.072086:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:128:[526:526:0806/091702.091805:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:129:[526:526:0806/091702.092041:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:130:[526:526:0806/091702.097433:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:131:[526:526:0806/091702.097532:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:132:[526:526:0806/091702.151207:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:133:[526:526:0806/091702.151371:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:134:[526:526:0806/091702.153162:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:135:[526:526:0806/091702.153261:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:136:[526:526:0806/091702.168396:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:137:[526:526:0806/091702.168520:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:138:[526:526:0806/091702.254345:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:139:[526:526:0806/091702.254614:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:140:[526:526:0806/091702.256836:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:141:[526:526:0806/091702.256947:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:142:[526:526:0806/091702.263565:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:143:[526:526:0806/091702.263663:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:144:[526:526:0806/091702.350500:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:145:[526:526:0806/091702.350797:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:147:[526:526:0806/091702.431670:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:148:[526:526:0806/091702.432025:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:149:[526:526:0806/091702.465516:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:150:[526:526:0806/091702.465767:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:151:[526:526:0806/091702.476165:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c022aa5c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:152:[526:526:0806/091702.476274:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c022aa5c0 enabled=1 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:153:[526:526:0806/091702.481358:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c02db64c8
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:154:[526:526:0806/091702.481466:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c02db64c8 enabled=0 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:155:[526:526:0806/091702.566085:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c02db64c8
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:156:[526:526:0806/091702.569343:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c02db64c8 enabled=0 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:157:[526:526:0806/091702.594871:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c02db64c8
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:158:[526:526:0806/091702.595029:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c02db64c8 enabled=0 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:159:[526:526:0806/091702.679896:ERROR:third_party/blink/renderer/core/frame/web_frame_widget_impl.cc:2935] ChromiumRL: Hook fired in BeginCommitCompositorFrame agent=0x122c02b119c0
+/data/aayush/task-recorder/diagnostics/t8_after_failure_container_tail.log:160:[526:526:0806/091702.680042:ERROR:third_party/blink/renderer/core/inspector/inspector_chromiumrl_agent.cc:452] ChromiumRL: [Hook] OnCompositorCommit agent=0x122c02b119c0 enabled=0 capture_compositor=0
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:5:ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:6:ChromiumRL.saveDOMState ok in 2.6ms
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:7:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:8:ChromiumRL.compareDOMState ok in 2.2ms
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:9:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:10:ChromiumRL.getAgentObservation ok in 1.2ms
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:11:ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:12:ChromiumRL.getTouchTraces ok in 1.4ms
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:13:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:14:ChromiumRL.captureInteraction ok in 1.2ms
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:71:    "ChromiumRL.getAgentObservation": {
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:107:    "ChromiumRL.getTouchTraces": {
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:119:    "ChromiumRL.captureInteraction": {
+/data/aayush/task-recorder/diagnostics/t_doctor_blank.json:136:    "ChromiumRL.captureInteraction.selected": "ChromiumRL.captureInteraction"
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:5:ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:6:ChromiumRL.saveDOMState ok in 1.0ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:7:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:8:ChromiumRL.compareDOMState ok in 1.6ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:9:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:10:ChromiumRL.getAgentObservation ok in 1.7ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:11:ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:12:ChromiumRL.getTouchTraces ok in 1.4ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:13:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:14:ChromiumRL.captureInteraction ok in 1.1ms
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:71:    "ChromiumRL.getAgentObservation": {
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:107:    "ChromiumRL.getTouchTraces": {
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:119:    "ChromiumRL.captureInteraction": {
+/data/aayush/task-recorder/diagnostics/t_final_doctor_blank.json:136:    "ChromiumRL.captureInteraction.selected": "ChromiumRL.captureInteraction"
+/data/aayush/task-recorder/diagnostics/PHASE_A_REPORT.md:227:Live CDP `/json/version` responded, but page-session CDP commands timed out at `Runtime.enable`. Therefore timings for `saveDOMState`, `compareDOMState`, and `getAgentObservation` are unavailable for both blank and heavy states.
+/data/aayush/task-recorder/diagnostics/PHASE_A_REPORT.md:232:| `saveDOMState` | UNAVAILABLE | UNAVAILABLE | not reached |
+/data/aayush/task-recorder/diagnostics/PHASE_A_REPORT.md:233:| `compareDOMState` | UNAVAILABLE | UNAVAILABLE | not reached |
+/data/aayush/task-recorder/diagnostics/PHASE_A_REPORT.md:234:| `getAgentObservation` | UNAVAILABLE | UNAVAILABLE | not reached |
+/data/aayush/task-recorder/diagnostics/PHASE_A_REPORT.md:236:Optional ChromiumRL methods returning `ok: true`: UNAVAILABLE, doctor did not progress past `Runtime.enable`.
+/data/aayush/task-recorder/diagnostics/PHASE_A_REPORT.md:513:| `recorder.py` | 591 | `cdp.send` no explicit `timeout=` | recorder `command_timeout`, default 30s | `ChromiumRL.disable` |
+/data/aayush/task-recorder/diagnostics/PHASE_A_REPORT.md:514:| `recorder.py` | 600 | `cdp.send` no explicit `timeout=` | recorder `command_timeout`, default 30s | `ChromiumRL.enable` |
+/data/aayush/task-recorder/diagnostics/PHASE_A_REPORT.md:515:| `recorder.py` | 1346 | `cdp.send` no explicit `timeout=` | recorder `command_timeout`, default 30s | final `ChromiumRL.disable` in doctor |
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:1:/data/aayush/task-recorder/agent_browser/desktop_agent.py:5:task-recorder's ChromiumRL saveDOMState/getAgentObservation/compareDOMState
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:2:/data/aayush/task-recorder/agent_browser/desktop_agent.py:75:You receive a ChromiumRL/JS observation rendered by this runner. You do not have direct browser
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:3:/data/aayush/task-recorder/agent_browser/desktop_agent.py:169:        raise RecorderError(f"ChromiumRL.getAgentObservation returned unexpected payload: {payload}")
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:4:/data/aayush/task-recorder/agent_browser/desktop_agent.py:182:    # ChromiumRL element bounds are viewport-relative for normal page content.
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:5:/data/aayush/task-recorder/agent_browser/desktop_agent.py:517:                value = await chromiumrl_call(self.cdp, "ChromiumRL.getAgentObservation", {}, timeout=TIMEOUT_OBSERVATION, label="snapshot")
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:6:/data/aayush/task-recorder/agent_browser/desktop_agent.py:914:        # critical part for CDP/ChromiumRL commands.
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:7:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1110:            ("Runtime.evaluate(js_fallback)" if snapshot.payload.get("model_observation_sources", {}).get("primary") == "js_fallback" else "ChromiumRL.getAgentObservation"),
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:8:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1122:            "ChromiumRL.enable",
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:9:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1123:            "ChromiumRL.saveDOMState",
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:10:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1124:            "ChromiumRL.getAgentObservation",
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:11:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1125:            "ChromiumRL.getTouchTraces",
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:12:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1286:            traces = await chromiumrl_call(cdp, "ChromiumRL.getTouchTraces", {}, timeout=TIMEOUT_SIGNAL, label="touch_traces")
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:13:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1287:            signals = {"captured_at": utc_now(), "commands": {"ChromiumRL.getTouchTraces": {"result": traces, "timing": {"ok": True}}}}
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:14:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1289:            signals = {"captured_at": utc_now(), "commands": {"ChromiumRL.getTouchTraces": {"timing": {"ok": False, "error": str(error)}}}}
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:15:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1580:                await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=TIMEOUT_SIGNAL)
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:16:/data/aayush/task-recorder/agent_browser/desktop_agent.py:1615:    parser.add_argument("--chromiumrl-full-tracing", action="store_true", help="enable legacy heavy ChromiumRL tracing probes")
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:17:/data/aayush/task-recorder/README.md:3:This active folder is for Wootz browser task recording and ChromiumRL verifier artifacts.
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:18:/data/aayush/task-recorder/README.md:27:- ChromiumRL supplies the model observation and all verifier artifacts (`getAgentObservation`, DOM state, DOM diff, screenshot, interactions, and touch traces).
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:19:/data/aayush/task-recorder/README.md:29:- `agent_browser/desktop_agent.py` is only the bridge/recording loop: it translates the model JSON action into an official CLI command and records the resulting ChromiumRL state.
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:20:/data/aayush/task-recorder/README.md:33:## Agent-browser + ChromiumRL
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:21:/data/aayush/task-recorder/README.md:68:Each recorded step stores ChromiumRL verifier artifacts under:
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:22:/data/aayush/task-recorder/README.md:89:Main ChromiumRL protocols used for verifier artifacts:
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:23:/data/aayush/task-recorder/README.md:92:ChromiumRL.getAgentObservation
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:24:/data/aayush/task-recorder/README.md:93:ChromiumRL.saveDOMState
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:25:/data/aayush/task-recorder/README.md:94:ChromiumRL.compareDOMState
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:26:/data/aayush/task-recorder/README.md:95:ChromiumRL.getTouchTraces
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:27:/data/aayush/task-recorder/diagnostics/coord_probe.py:13:    r = await cdp.send("ChromiumRL.getAgentObservation", {}, use_session=True, timeout=30)
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:28:/data/aayush/task-recorder/diagnostics/t2_probe.py:15:  ('chromiumrl_enable_heavy','ChromiumRL.enable',{'captureTouchTraces':True,'captureLayoutTimings':True,'captureCLSAttribution':True,'captureCompositorLayers':True},True,10.0),
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:29:/data/aayush/task-recorder/diagnostics/t2_probe.py:16:  ('chromiumrl_enable_light','ChromiumRL.enable',{'captureTouchTraces':True,'captureLayoutTimings':False,'captureCLSAttribution':False,'captureCompositorLayers':False},True,10.0),
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:30:/data/aayush/task-recorder/diagnostics/t2_probe.py:17:  ('chromiumrl_save_dom','ChromiumRL.saveDOMState',{},True,20.0),
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:31:/data/aayush/task-recorder/diagnostics/t2_probe.py:18:  ('chromiumrl_observation','ChromiumRL.getAgentObservation',{},True,15.0),
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:32:/data/aayush/task-recorder/diagnostics/identity_stability_probe.py:10:    r=await cdp.send("ChromiumRL.getAgentObservation", {}, use_session=True, timeout=10)
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:33:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:12:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:34:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:13:ChromiumRL.getAgentObservation ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:35:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:27:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:36:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:28:before: ChromiumRL.saveDOMState ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:37:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:29:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:38:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:30:before: ChromiumRL.getVisualHash ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:39:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:31:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:40:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:32:before: ChromiumRL.getAgentObservation ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:41:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:43:after: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:42:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:44:after: ChromiumRL.saveDOMState ok in 4.0ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:43:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:45:after: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:44:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:46:after: ChromiumRL.getVisualHash ok in 1.1ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:45:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:47:after: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:46:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:48:after: ChromiumRL.getAgentObservation ok in 1.7ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:47:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:51:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:48:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:52:ChromiumRL.compareDOMState ok in 12.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:49:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:55:signals: ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:50:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:56:signals: ChromiumRL.getTouchTraces ok in 0.8ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:51:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:57:signals: ChromiumRL.getLayoutTimings ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:52:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:58:signals: ChromiumRL.getLayoutTimings ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:53:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:59:signals: ChromiumRL.getCLSAttribution ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:54:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:60:signals: ChromiumRL.getCLSAttribution ok in 0.3ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:55:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:61:signals: ChromiumRL.getCompositorLayers ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:56:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:62:signals: ChromiumRL.getCompositorLayers ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:57:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:63:signals: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:58:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:64:signals: ChromiumRL.getVisualHash ok in 0.2ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:59:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:65:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:60:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:66:ChromiumRL.captureInteraction ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:61:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:68:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:62:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:69:ChromiumRL.getAgentObservation ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:63:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:83:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:64:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:84:before: ChromiumRL.saveDOMState ok in 6.1ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:65:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:85:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:66:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:86:before: ChromiumRL.getVisualHash ok in 1.1ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:67:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:87:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:68:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:88:before: ChromiumRL.getAgentObservation ok in 2.9ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:69:/data/aayush/task-recorder/diagnostics/t8_baseline_run_004.log:99:ERROR: CDP command ChromiumRL.enable timed out after 10.0s
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:70:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:12:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:71:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:13:ChromiumRL.getAgentObservation ok in 0.5ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:72:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:27:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:73:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:28:before: ChromiumRL.saveDOMState ok in 1.0ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:74:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:29:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:75:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:30:before: ChromiumRL.getVisualHash ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:76:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:31:before: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:77:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:32:before: ChromiumRL.getAgentObservation ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:78:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:47:after: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:79:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:48:after: ChromiumRL.saveDOMState ok in 5.0ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:80:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:49:after: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:81:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:50:after: ChromiumRL.getVisualHash ok in 0.9ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:82:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:51:after: ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:83:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:52:after: ChromiumRL.getAgentObservation ok in 1.3ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:84:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:55:ChromiumRL.compareDOMState ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:85:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:56:ChromiumRL.compareDOMState ok in 9.1ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:86:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:59:signals: ChromiumRL.getTouchTraces ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:87:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:60:signals: ChromiumRL.getTouchTraces ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:88:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:61:signals: ChromiumRL.getLayoutTimings ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:89:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:62:signals: ChromiumRL.getLayoutTimings ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:90:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:63:signals: ChromiumRL.getCLSAttribution ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:91:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:64:signals: ChromiumRL.getCLSAttribution ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:92:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:65:signals: ChromiumRL.getCompositorLayers ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:93:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:66:signals: ChromiumRL.getCompositorLayers ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:94:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:67:signals: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:95:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:68:signals: ChromiumRL.getVisualHash ok in 0.3ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:96:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:69:ChromiumRL.captureInteraction ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:97:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:70:ChromiumRL.captureInteraction ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:98:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:72:ChromiumRL.getAgentObservation ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:99:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:73:ChromiumRL.getAgentObservation ok in 0.6ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:100:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:87:before: ChromiumRL.saveDOMState ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:101:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:88:before: ChromiumRL.saveDOMState ok in 5.1ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:102:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:89:before: ChromiumRL.getVisualHash ...
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:103:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:90:before: ChromiumRL.getVisualHash ok in 0.4ms
+/data/aayush/task-recorder/diagnostics/v3/local_chromiumrl_source_candidates.txt:104:/data/aayush/task-recorder/diagnostics/t8_baseline_run_003.log:91:before: ChromiumRL.getAgentObservation ...
