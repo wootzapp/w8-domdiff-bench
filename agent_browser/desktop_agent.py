@@ -12,7 +12,6 @@ import argparse
 import asyncio
 import json
 import os
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -127,89 +126,6 @@ class Snapshot:
     refs: dict[str, dict[str, Any]]
 
 
-class OfficialAgentBrowser:
-    """Invoke the official Vercel Agent Browser native CLI for execution."""
-
-    def __init__(self, *, binary: Path, cdp_url: str, session: str, timeout: float = 30.0) -> None:
-        if not binary.is_file():
-            raise RecorderError(
-                f"official Agent Browser binary not found at {binary}. "
-                "The bundled runtime is missing; restore agent_browser/official_runtime/bin/agent-browser-linux-x64."
-            )
-        self.binary = binary
-        self.cdp_url = cdp_url
-        self.session = session
-        self.timeout = timeout
-
-    async def command(self, *args: str) -> dict[str, Any]:
-        argv = [str(self.binary), "--json", "--session", self.session, "--cdp", self.cdp_url, *args]
-
-        def run() -> subprocess.CompletedProcess[str]:
-            return subprocess.run(argv, capture_output=True, text=True, timeout=self.timeout, check=False)
-
-        completed = await asyncio.to_thread(run)
-        payload: dict[str, Any] | None = None
-        for line in reversed([line.strip() for line in completed.stdout.splitlines() if line.strip()]):
-            try:
-                candidate = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(candidate, dict):
-                payload = candidate
-                break
-        if completed.returncode != 0 or not payload or payload.get("success") is False:
-            detail = (payload or {}).get("error") or completed.stderr.strip() or completed.stdout.strip()
-            raise RecorderError(f"official Agent Browser command failed ({' '.join(args)}): {detail}")
-        return payload
-
-    async def click_at(self, x: float, y: float) -> None:
-        await self.command("mouse", "move", str(round(x)), str(round(y)))
-        await self.command("mouse", "down", "left")
-        await self.command("mouse", "up", "left")
-
-    async def perform(self, action: dict[str, Any], *, resolve_point: Any) -> dict[str, Any]:
-        name = str(action.get("action", ""))
-        if name == "navigate":
-            await self.command("open", str(action.get("url", "")).strip())
-        elif name == "click":
-            if action.get("selector") and not action.get("coordinate") and not action.get("ref"):
-                await self.command("click", str(action["selector"]))
-            else:
-                x, y = await resolve_point(action)
-                await self.click_at(x, y)
-                action["coordinate"] = [round(x, 2), round(y, 2)]
-        elif name == "type":
-            await self.command("keyboard", "type", str(action.get("text", "")))
-        elif name == "fill":
-            if action.get("selector") and not action.get("coordinate") and not action.get("ref"):
-                await self.command("fill", str(action["selector"]), str(action.get("text", "")))
-            else:
-                x, y = await resolve_point(action)
-                await self.click_at(x, y)
-                await self.command("press", "Control+a")
-                await self.command("keyboard", "inserttext", str(action.get("text", "")))
-                action["coordinate"] = [round(x, 2), round(y, 2)]
-        elif name == "press":
-            key = str(action.get("key") or (action.get("keys") or [""])[0]).strip()
-            await self.command("press", key)
-        elif name == "scroll":
-            pixels = float(action.get("pixels", action.get("deltaY", 0)))
-            direction = "down" if pixels >= 0 else "up"
-            await self.command("scroll", direction, str(round(abs(pixels))))
-        elif name == "wait":
-            milliseconds = max(0, round(float(action.get("seconds", 1)) * 1000))
-            await self.command("wait", str(milliseconds))
-        elif name == "terminate":
-            return action
-        else:
-            raise RecorderError(f"unsupported automated action for official Agent Browser: {name}")
-        action["_execution_engine"] = "official_agent_browser_native_cli"
-        return action
-
-
-class ScrollFallbackUsed(RecorderError):
-    """Raised after a scroll fallback succeeds so metadata can record it."""
-
 
 def load_env_file(path: Path) -> None:
     if not path.exists():
@@ -258,6 +174,10 @@ def first_number(*values: Any) -> float | None:
 
 
 def element_center(element: dict[str, Any]) -> tuple[float, float] | None:
+    # Verified 2026-08-06 with diagnostics/t7_coord_probe_plus.json:
+    # ChromiumRL element bounds are viewport-relative for normal page content.
+    # Sticky elements may move by a smaller delta, but click coordinates should
+    # not subtract window.scrollY/window.scrollX.
     x = first_number(element.get("centerX"), element.get("x"))
     y = first_number(element.get("centerY"), element.get("y"))
     if x is not None and y is not None:
@@ -535,13 +455,11 @@ class DesktopWootzAgent:
         *,
         browser_locale: str = "en-US",
         accept_language: str = "en-US,en;q=0.9",
-        official_executor: OfficialAgentBrowser | None = None,
     ):
         self.cdp = cdp
         self.input_timeout = input_timeout
         self.browser_locale = browser_locale
         self.accept_language = accept_language
-        self.official_executor = official_executor
         self._last_snapshot: Snapshot | None = None
 
     async def apply_language_overrides(self) -> dict[str, Any]:
@@ -778,7 +696,7 @@ class DesktopWootzAgent:
                 use_session=True,
                 timeout=self.input_timeout,
             )
-            raise ScrollFallbackUsed(str(error))
+            return
 
     async def wait(self, seconds: float) -> None:
         await asyncio.sleep(max(0.0, min(float(seconds), 30.0)))
@@ -834,20 +752,38 @@ class DesktopWootzAgent:
 
     async def perform(self, action: dict[str, Any]) -> dict[str, Any]:
         normalized = normalize_action(action)
-        if self.official_executor is None:
-            raise RecorderError(
-                "official Agent Browser executor is required; "
-                "raw-CDP action fallback is disabled"
+        name = str(normalized.get("action", ""))
+        if name == "navigate":
+            await self.navigate(str(normalized.get("url", "")).strip())
+        elif name == "click":
+            x, y = await self.click(
+                ref=normalized.get("ref"),
+                selector=normalized.get("selector"),
+                coordinate=normalized.get("coordinate"),
             )
-
-        async def resolve_for_official(candidate: dict[str, Any]) -> tuple[float, float]:
-            return await self.resolve_point(
-                ref=candidate.get("ref"),
-                selector=candidate.get("selector"),
-                coordinate=candidate.get("coordinate"),
+            normalized["coordinate"] = [round(x, 2), round(y, 2)]
+        elif name == "type":
+            await self.type_text(str(normalized.get("text", "")))
+        elif name == "fill":
+            await self.fill(
+                text=str(normalized.get("text", "")),
+                ref=normalized.get("ref"),
+                selector=normalized.get("selector"),
+                coordinate=normalized.get("coordinate"),
             )
-
-        return await self.official_executor.perform(normalized, resolve_point=resolve_for_official)
+        elif name == "press":
+            key = str(normalized.get("key") or (normalized.get("keys") or [""])[0]).strip()
+            await self.press(key)
+        elif name == "scroll":
+            await self.scroll(float(normalized.get("pixels", normalized.get("deltaY", 0))))
+        elif name == "wait":
+            await self.wait(float(normalized.get("seconds", 1)))
+        elif name == "terminate":
+            return normalized
+        else:
+            raise RecorderError(f"unsupported automated action: {name}")
+        normalized["_execution_engine"] = "raw_cdp"
+        return normalized
 
 
 async def create_fresh_browser_context(cdp: CDPConnection) -> dict[str, Any]:
@@ -875,11 +811,11 @@ async def open_fresh_tab(
     if browser_context_id:
         params["browserContextId"] = browser_context_id
     created = await cdp.send("Target.createTarget", params)
-    target_id = str(created.get("targetId", ""))
-    if not target_id:
+    created_target_id = str(created.get("targetId", ""))
+    if not created_target_id:
         raise RecorderError(f"Target.createTarget returned no targetId: {created}")
     try:
-        await cdp.send("Target.activateTarget", {"targetId": target_id})
+        await cdp.send("Target.activateTarget", {"targetId": created_target_id})
     except CDPCommandError:
         # Some Chromium builds do not need or allow activation. Attaching is the
         # critical part for CDP/ChromiumRL commands.
@@ -889,13 +825,14 @@ async def open_fresh_tab(
         (
             item
             for item in targets
-            if str(item.get("targetId") or item.get("target_id") or item.get("id")) == target_id
+            if str(item.get("targetId") or item.get("target_id") or item.get("id")) == created_target_id
         ),
         None,
     )
     if target is None:
-        target = {"targetId": target_id, "type": "page", "url": url, "title": ""}
+        target = {"targetId": created_target_id, "type": "page", "url": url, "title": ""}
     await cdp.attach_to_target(target)
+    cdp.pinned_target_id = target_id(cdp.target)
     await enable_page_domains(cdp)
     return cdp.target
 
@@ -907,6 +844,7 @@ async def reattach_to_target(cdp: CDPConnection, expected_target_id: str) -> Non
     target = next((item for item in targets if target_id(item) == expected_target_id), None)
     if target is not None:
         await cdp.attach_to_target(target)
+        cdp.pinned_target_id = target_id(cdp.target)
         await enable_page_domains(cdp)
 
 
@@ -1058,14 +996,13 @@ def build_model_audit_payload(
             "ChromiumRL.getAgentObservation",
             *([] if not snapshot.payload.get("model_observation_sources", {}).get("supplemental_runtime_visible_text") else ["Runtime.evaluate"]),
         ],
-        "action_execution_engine": "official_agent_browser_native_cli",
+        "action_execution_engine": "raw_cdp",
         "protocols_used_for_action_execution": [
-            "official agent-browser CLI: open",
-            "official agent-browser CLI: click/mouse",
-            "official agent-browser CLI: keyboard/press",
-            "official agent-browser CLI: fill",
-            "official agent-browser CLI: scroll",
-            "official agent-browser CLI: wait",
+            "Page.navigate",
+            "Input.dispatchMouseEvent",
+            "Input.insertText",
+            "Input.dispatchKeyEvent",
+            "Runtime.evaluate",
         ],
         "protocols_used_for_recording": [
             "ChromiumRL.enable",
@@ -1148,6 +1085,7 @@ async def record_automated_step(
     screenshot_config: ScreenshotConfig,
     settle_seconds: float,
     capture_all_targets: bool,
+    chromiumrl_full_tracing: bool = False,
 ) -> dict[str, Any]:
     cdp = agent.cdp
     action = normalize_action(action)
@@ -1166,10 +1104,15 @@ async def record_automated_step(
     }
     write_json(step_dir / "step.json", metadata)
 
-    tracing = await reset_chromiumrl_tracing(cdp)
+    tracing = await reset_chromiumrl_tracing(cdp, full_tracing=chromiumrl_full_tracing)
     metadata["chromiumrl_trace_session_id"] = tracing.get("sessionId")
     before = await capture_state_with_recovery(
-        cdp, step_dir / "before", "before", screenshot_config, capture_all_targets=capture_all_targets
+        cdp,
+        step_dir / "before",
+        "before",
+        screenshot_config,
+        capture_all_targets=capture_all_targets,
+        chromiumrl_full_tracing=chromiumrl_full_tracing,
     )
     metadata["status"] = "performing_action"
     metadata["before_captured_at"] = before.index["completed_at"]
@@ -1186,11 +1129,14 @@ async def record_automated_step(
     metadata["status"] = "capturing_after"
     write_json(step_dir / "step.json", metadata)
 
-    await cdp.reconnect()
-    await enable_page_domains(cdp)
     await reattach_to_target(cdp, expected_target_id)
     after = await capture_state_with_recovery(
-        cdp, step_dir / "after", "after", screenshot_config, capture_all_targets=capture_all_targets
+        cdp,
+        step_dir / "after",
+        "after",
+        screenshot_config,
+        capture_all_targets=capture_all_targets,
+        chromiumrl_full_tracing=chromiumrl_full_tracing,
     )
 
     compare_params = {"referenceState": before.chromiumrl_dom}
@@ -1391,19 +1337,11 @@ async def run(args: argparse.Namespace) -> None:
                 },
             )
             print("Resume mode: keeping the current browser tab/session.")
-        official_binary = Path(args.official_agent_browser_binary)
-        official_executor = OfficialAgentBrowser(
-            binary=official_binary,
-            cdp_url=args.cdp_url,
-            session=f"task-recorder-{args.task_id}",
-            timeout=args.official_agent_browser_timeout,
-        )
         agent = DesktopWootzAgent(
             cdp,
             input_timeout=args.input_timeout,
             browser_locale=args.browser_locale,
             accept_language=args.accept_language,
-            official_executor=official_executor,
         )
 
         step = next_step
@@ -1489,6 +1427,7 @@ async def run(args: argparse.Namespace) -> None:
                 screenshot_config=screenshot_config,
                 settle_seconds=args.settle_seconds,
                 capture_all_targets=not args.no_capture_all_targets,
+                chromiumrl_full_tracing=args.chromiumrl_full_tracing,
             )
             history.append(
                 {
@@ -1515,11 +1454,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-root", default="tasks")
     parser.add_argument("--command-timeout", type=float, default=90.0)
     parser.add_argument("--input-timeout", type=float, default=8.0)
-    parser.add_argument(
-        "--official-agent-browser-binary",
-        default=os.environ.get("AGENT_BROWSER_NATIVE_BINARY", str(ROOT / "agent_browser/official_runtime/bin/agent-browser-linux-x64")),
-    )
-    parser.add_argument("--official-agent-browser-timeout", type=float, default=30.0)
     parser.add_argument("--model-timeout", type=float, default=120.0)
     parser.add_argument("--settle-seconds", type=float, default=1.0)
     parser.add_argument("--max-steps", type=int, default=80)
@@ -1537,6 +1471,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--yes", action="store_true", help="perform model actions without approval prompts")
     parser.add_argument("--no-capture-all-targets", action="store_true", default=True)
     parser.add_argument("--capture-all-targets", dest="no_capture_all_targets", action="store_false")
+    parser.add_argument("--chromiumrl-full-tracing", action="store_true", help="enable legacy heavy ChromiumRL tracing probes")
     parser.add_argument("--screenshot-source", choices=("cdp", "none"), default="cdp")
     parser.add_argument("--screenshot-container", default="wootz-desktop-browser-replay-001")
     return parser

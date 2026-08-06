@@ -13,6 +13,7 @@ import os
 import re
 import sys
 import time
+import contextlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -169,6 +170,11 @@ class CDPConnection:
         self.session_id = ""
         self.target: dict[str, Any] = {}
         self.version: dict[str, Any] = {}
+        self.pinned_target_id = ""
+        self.pending: dict[int, tuple[str, asyncio.Future[dict[str, Any]]]] = {}
+        self.reader_task: asyncio.Task[None] | None = None
+        self.event_log: list[dict[str, Any]] = []
+        self.renderer_crashed: dict[str, Any] | None = None
 
     async def __aenter__(self) -> "CDPConnection":
         await self.connect()
@@ -210,8 +216,9 @@ class CDPConnection:
                     ws_close=10.0,
                 ),
                 heartbeat=20,
-                max_msg_size=0,
+                max_msg_size=256 * 1024 * 1024,
             )
+            self.reader_task = asyncio.create_task(self._reader_loop())
 
             await self.refresh_page_session()
         except (aiohttp.ClientError, asyncio.TimeoutError) as error:
@@ -222,6 +229,14 @@ class CDPConnection:
             raise
 
     async def close(self) -> None:
+        if self.ws is not None and not self.ws.closed and self.session_id:
+            with contextlib.suppress(Exception):
+                await self.send("ChromiumRL.disable", {}, use_session=True, timeout=2.0)
+        if self.reader_task is not None:
+            self.reader_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError, asyncio.TimeoutError, TimeoutError):
+                await self.reader_task
+            self.reader_task = None
         if self.ws is not None and not self.ws.closed:
             await self.ws.close()
         if self.http is not None and not self.http.closed:
@@ -229,6 +244,7 @@ class CDPConnection:
         self.ws = None
         self.http = None
         self.session_id = ""
+        self.pending.clear()
 
     async def reconnect(self) -> None:
         await self.close()
@@ -236,7 +252,24 @@ class CDPConnection:
 
     async def refresh_page_session(self) -> None:
         targets = await self.page_targets()
-        self.target = select_page_target(targets, self.target_url_contains)
+        pinned = next((item for item in targets if self.pinned_target_id and target_id(item) == self.pinned_target_id), None)
+        if pinned is not None:
+            self.target = pinned
+        else:
+            previous = self.pinned_target_id or target_id(self.target)
+            self.target = select_page_target(targets, self.target_url_contains)
+            selected = target_id(self.target)
+            self.event_log.append(
+                {
+                    "timestamp": utc_now(),
+                    "event": "initial_target_selected" if not previous else "target_switched",
+                    "previous_target_id": previous,
+                    "selected_target_id": selected,
+                    "selected_target": self.target,
+                }
+            )
+            if self.pinned_target_id and selected != self.pinned_target_id:
+                self.pinned_target_id = selected
         await self.attach_to_target(self.target)
 
     async def page_targets(self) -> list[dict[str, Any]]:
@@ -316,6 +349,8 @@ class CDPConnection:
     ) -> dict[str, Any]:
         if self.ws is None or self.ws.closed:
             raise RecorderError("CDP WebSocket is not connected")
+        if self.renderer_crashed is not None and method != "Target.getTargets":
+            raise RecorderError(f"renderer target crashed: {self.renderer_crashed}")
         self.message_id += 1
         request_id = self.message_id
         payload: dict[str, Any] = {"id": request_id, "method": method, "params": params or {}}
@@ -323,32 +358,82 @@ class CDPConnection:
             if not self.session_id:
                 raise RecorderError(f"{method} requires an attached page session")
             payload["sessionId"] = self.session_id
-        await self.ws.send_json(payload)
 
         deadline = timeout if timeout is not None else self.command_timeout
+        loop = asyncio.get_running_loop()
+        future: asyncio.Future[dict[str, Any]] = loop.create_future()
+        self.pending[request_id] = (method, future)
+        await self.ws.send_json(payload)
+        try:
+            return await asyncio.wait_for(future, timeout=deadline)
+        except asyncio.TimeoutError as error:
+            self.pending.pop(request_id, None)
+            raise RecorderError(f"CDP command {method} timed out after {deadline:.1f}s") from error
 
-        async def wait_for_response() -> dict[str, Any]:
-            while True:
-                message = await self.ws.receive()
-                if message.type == aiohttp.WSMsgType.TEXT:
-                    response = json.loads(message.data)
-                    if response.get("id") != request_id:
+    async def _reader_loop(self) -> None:
+        if self.ws is None:
+            return
+        while True:
+            message = await self.ws.receive()
+            if message.type == aiohttp.WSMsgType.TEXT:
+                response = json.loads(message.data)
+                request_id = response.get("id")
+                if isinstance(request_id, int):
+                    item = self.pending.pop(request_id, None)
+                    if item is None:
+                        continue
+                    method, future = item
+                    if future.done():
                         continue
                     if "error" in response:
-                        raise CDPCommandError(method, response["error"])
-                    result = response.get("result", {})
-                    return result if isinstance(result, dict) else {"value": result}
-                if message.type in {
-                    aiohttp.WSMsgType.CLOSE,
-                    aiohttp.WSMsgType.CLOSED,
-                    aiohttp.WSMsgType.ERROR,
-                }:
-                    raise RecorderError(f"CDP WebSocket closed while waiting for {method}")
+                        future.set_exception(CDPCommandError(method, response["error"]))
+                    else:
+                        result = response.get("result", {})
+                        future.set_result(result if isinstance(result, dict) else {"value": result})
+                    continue
+                await self._handle_event(response)
+                continue
+            if message.type in {
+                aiohttp.WSMsgType.CLOSE,
+                aiohttp.WSMsgType.CLOSED,
+                aiohttp.WSMsgType.ERROR,
+            }:
+                error = RecorderError("CDP WebSocket closed")
+                for _, future in list(self.pending.values()):
+                    if not future.done():
+                        future.set_exception(error)
+                self.pending.clear()
+                return
 
+    async def _handle_event(self, message: dict[str, Any]) -> None:
+        method = str(message.get("method", ""))
+        params = message.get("params") if isinstance(message.get("params"), dict) else {}
+        if method in {
+            "Page.javascriptDialogOpening",
+            "Page.frameNavigated",
+            "Target.targetCreated",
+            "Target.targetDestroyed",
+            "Inspector.targetCrashed",
+        }:
+            self.event_log.append({"timestamp": utc_now(), "event": method, "params": params})
+        if method == "Page.javascriptDialogOpening":
+            asyncio.create_task(self._dismiss_javascript_dialog())
+        elif method == "Inspector.targetCrashed":
+            self.renderer_crashed = {"timestamp": utc_now(), "params": params}
+            error = RecorderError(f"renderer target crashed: {params}")
+            for _, future in list(self.pending.values()):
+                if not future.done():
+                    future.set_exception(error)
+            self.pending.clear()
+
+    async def _dismiss_javascript_dialog(self) -> None:
         try:
-            return await asyncio.wait_for(wait_for_response(), timeout=deadline)
-        except asyncio.TimeoutError as error:
-            raise RecorderError(f"CDP command {method} timed out after {deadline:.1f}s") from error
+            await self.send("Page.handleJavaScriptDialog", {"accept": True}, use_session=True, timeout=2.0)
+            self.event_log.append({"timestamp": utc_now(), "event": "javascript_dialog_dismissed"})
+        except Exception as error:
+            self.event_log.append(
+                {"timestamp": utc_now(), "event": "javascript_dialog_dismiss_failed", "error": str(error)}
+            )
 
 
 async def timed_command(
@@ -578,26 +663,28 @@ async def capture_all_page_targets(
 
 async def enable_page_domains(cdp: CDPConnection) -> dict[str, Any]:
     outcomes: dict[str, Any] = {}
-    for method, required in (
-        ("Runtime.enable", True),
-        ("DOM.enable", True),
-    ):
-        _, outcomes[method] = await timed_command(cdp, method, required=required)
+    # Verified 2026-08-06 in diagnostics/t2_probe.py: Runtime.evaluate and
+    # ChromiumRL commands work without Runtime.enable/DOM.enable. Domain enables
+    # are useful for events, but must not kill a run. DOM.enable is intentionally
+    # skipped because this recorder does not issue DOM.* traversal commands.
+    for method in ("Runtime.enable", "Page.enable"):
+        _, outcomes[method] = await timed_command(cdp, method, required=False, timeout=5.0)
+    outcomes["DOM.enable"] = {"ok": True, "skipped": "not required by recorder; see diagnostics/t2_probe.py"}
     return outcomes
 
 
-async def reset_chromiumrl_tracing(cdp: CDPConnection) -> dict[str, Any]:
+async def reset_chromiumrl_tracing(cdp: CDPConnection, *, full_tracing: bool = False) -> dict[str, Any]:
     try:
-        await cdp.send("ChromiumRL.disable", {}, use_session=True)
-    except CDPCommandError:
+        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=2.0)
+    except RecorderError:
         pass
     params = {
         "captureTouchTraces": True,
-        "captureLayoutTimings": True,
-        "captureCLSAttribution": True,
-        "captureCompositorLayers": True,
+        "captureLayoutTimings": bool(full_tracing),
+        "captureCLSAttribution": bool(full_tracing),
+        "captureCompositorLayers": bool(full_tracing),
     }
-    result = await cdp.send("ChromiumRL.enable", params, use_session=True)
+    result = await cdp.send("ChromiumRL.enable", params, use_session=True, timeout=10.0)
     trace_session_id = str(result.get("sessionId", "")).strip()
     if not trace_session_id:
         raise RecorderError(f"ChromiumRL.enable returned no sessionId: {result}")
@@ -778,11 +865,12 @@ async def capture_state_with_recovery(
     screenshot_config: ScreenshotConfig,
     *,
     capture_all_targets: bool,
+    chromiumrl_full_tracing: bool = False,
 ) -> CapturedState:
     try:
         await cdp.refresh_page_session()
         await enable_page_domains(cdp)
-        await reset_chromiumrl_tracing(cdp)
+        await reset_chromiumrl_tracing(cdp, full_tracing=chromiumrl_full_tracing)
         return await capture_state(
             cdp, directory, label, screenshot_config, capture_all_targets=capture_all_targets
         )
@@ -792,7 +880,7 @@ async def capture_state_with_recovery(
         print("CDP page session was invalidated; reattaching and retrying capture once...")
         await cdp.refresh_page_session()
         await enable_page_domains(cdp)
-        await reset_chromiumrl_tracing(cdp)
+        await reset_chromiumrl_tracing(cdp, full_tracing=chromiumrl_full_tracing)
         return await capture_state(
             cdp, directory, label, screenshot_config, capture_all_targets=capture_all_targets
         )
@@ -1305,7 +1393,7 @@ async def run_doctor(args: argparse.Namespace) -> None:
         target_url_contains=args.target_url_contains,
     ) as cdp:
         domains = await enable_page_domains(cdp)
-        chromiumrl = await reset_chromiumrl_tracing(cdp)
+        chromiumrl = await reset_chromiumrl_tracing(cdp, full_tracing=args.chromiumrl_full_tracing)
         state, state_timing = await timed_command(cdp, "ChromiumRL.saveDOMState", required=True)
         compare_response, compare_timing = await timed_command(
             cdp,
@@ -1343,7 +1431,7 @@ async def run_doctor(args: argparse.Namespace) -> None:
                 if timing.get("ok"):
                     optional_methods["ChromiumRL.captureInteraction.selected"] = method
                     break
-        await cdp.send("ChromiumRL.disable", {}, use_session=True)
+        await cdp.send("ChromiumRL.disable", {}, use_session=True, timeout=2.0)
         report = {
             "ok": True,
             "cdp_url": cdp.http_base,
@@ -1383,6 +1471,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     doctor = subparsers.add_parser("doctor", help="verify CDP and the ChromiumRL custom domain")
     add_connection_arguments(doctor)
+    doctor.add_argument("--chromiumrl-full-tracing", action="store_true", help="enable legacy heavy ChromiumRL tracing probes")
     return parser
 
 
