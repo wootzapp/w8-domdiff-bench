@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the v7 verifier artifact layout for one task directory."""
+"""Validate the current verifier artifact layout for one task directory."""
 from __future__ import annotations
 
 import argparse
@@ -36,7 +36,7 @@ def main() -> int:
     if not steps:
         errors.append("missing: at least one step_NNN directory")
     for step in steps:
-        for name in ("action.json", "after.jpg", "dom_after.json.gz", "dom_before.json.gz", "dom_diff.json", "page_state.json"):
+        for name in ("action.json", "after.jpg", "dom_after.json.gz", "dom_before.json.gz", "dom_diff.json", "dom_diff.txt", "page_state.json"):
             require(step / name, errors)
         subdirs = [p.name for p in step.iterdir() if p.is_dir()]
         if subdirs:

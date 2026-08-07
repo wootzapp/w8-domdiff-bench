@@ -962,7 +962,8 @@ async def collect_form_control_state(cdp: CDPConnection, *, label: str = "") -> 
 
 def _prop_value(value: Any, *, redacted: bool = False) -> dict[str, Any]:
     if redacted:
-        return {"v": "<REDACTED>", "src": "prop", "redacted": True}
+        text = str(value or "")
+        return {"v": "<REDACTED>", "src": "prop", "redacted": True, "filled": bool(text), "length": len(text)}
     return {"v": str(value).lower() if isinstance(value, bool) else str(value), "src": "prop"}
 
 
@@ -1668,6 +1669,8 @@ def dom_key_population(dom_state: dict[str, Any]) -> dict[str, Any]:
 
 
 def project_dom_state(dom_state: dict[str, Any]) -> dict[str, Any]:
+    if dom_state.get("method") == "slim_dom_projection":
+        return dom_state
     raw_nodes = [n for n in dom_state.get("nodes", []) if isinstance(n, dict)]
     structural_paths = build_structural_paths(raw_nodes)
     projected: list[dict[str, Any]] = []
@@ -1728,7 +1731,7 @@ def _is_interactive_projected(node: dict[str, Any]) -> bool:
     tag = str(node.get("tag") or "").lower()
     attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
     role = str(attrs.get("role") or "").lower()
-    return tag in INTERACTIVE_TAGS or role in INTERACTIVE_ROLES or any(k in attrs for k in ("href", "checked", "selected", "disabled", "value"))
+    return tag in INTERACTIVE_TAGS or role in INTERACTIVE_ROLES or any(k in attrs for k in ("checked", "selected", "disabled", "value"))
 
 
 def _children_by_parent(nodes_by_key: dict[str, dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -1812,13 +1815,21 @@ def classify_projected_change(before: dict[str, Any], after: dict[str, Any], *, 
             likely_scroll_artifact = True
             weight = 1
     semantic_before_visibility = bool(kinds) and not likely_scroll_artifact
-    if before.get("vis") != after.get("vis") or before.get("vp") != after.get("vp"):
-        # Viewport membership alone is not semantic; visibility is only kept when
-        # paired with non-scroll-artifact text/attribute state. This keeps pure scroll diffs empty.
-        if semantic_before_visibility and before.get("vis") != after.get("vis"):
+    if before.get("vis") != after.get("vis"):
+        # Visibility itself is semantic for clicks/forms/navigation: modal/banner
+        # show-hide, validation messages, and drawers often change only display.
+        # During a pure scroll, ChromiumRL can flip visibility for nodes entering
+        # or leaving the viewport; with no text/attr change that is scroll noise.
+        if action == "scroll" and not semantic_before_visibility:
+            kinds.append("visibility")
+            changes["visibility"] = {"before": before.get("vis"), "after": after.get("vis")}
+            likely_scroll_artifact = True
+            weight = 1
+        else:
             kinds.append("visibility")
             changes["visibility"] = {"before": before.get("vis"), "after": after.get("vis")}
             weight = max(weight, 100)
+            semantic_before_visibility = True
     b_style = before.get("style") if isinstance(before.get("style"), dict) else {}
     a_style = after.get("style") if isinstance(after.get("style"), dict) else {}
     if semantic_before_visibility:
@@ -1870,15 +1881,250 @@ def _visible_text_set(projection: dict[str, Any]) -> set[str]:
                 values.add(text)
     return values
 
+STATE_TEXT_RE = re.compile(r"\b(?:stock|available|availability|unavailable|sold|price|tax|total|subtotal|error|required|invalid|success|selected|checked|disabled|enabled|basket|cart|checkout|shipping|delivery|pickup|rating|review|reviews|option)\b", re.I)
+NUMERIC_TEXT_RE = re.compile(r"(?:\d|[£$€¥₹]|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten)\b)", re.I)
+
+
+def _text_has_numeric_or_state(text: str) -> bool:
+    return bool(NUMERIC_TEXT_RE.search(text or "") or STATE_TEXT_RE.search(text or ""))
+
+
+def _short_common_chrome_text(text: str) -> bool:
+    normalized = " ".join(str(text or "").split())
+    return bool(normalized and len(normalized) < 40 and not _text_has_numeric_or_state(normalized))
+
+
+def _semantic_context_for_text_node(node: dict[str, Any]) -> str:
+    path = str(node.get("k") or node.get("parent") or "").lower()
+    tag = str(node.get("tag") or "").lower()
+    attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
+    classes = str(attrs.get("class") or "").lower()
+    role = str(attrs.get("role") or "").lower()
+    parts: list[str] = []
+    for needle, label in (
+        ("product_page", "product"),
+        ("product_pod", "listing_item"),
+        ("price_color", "price"),
+        ("instock", "availability"),
+        ("table", "table"),
+        ("breadcrumb", "breadcrumb"),
+        ("side_categories", "sidebar"),
+        ("sidebar", "sidebar"),
+        ("header", "header"),
+        ("footer", "footer"),
+        ("nav", "nav"),
+        ("content_inner", "main"),
+        ("main", "main"),
+        ("article", "article"),
+        ("section", "section"),
+    ):
+        if needle in path or needle in classes or needle == role:
+            parts.append(label)
+    if tag:
+        parts.append(tag)
+    # Preserve enough ancestry shape to distinguish listing-row price from
+    # product-page price, but strip positional details that vary across pages.
+    tail = re.sub(r"(?::nth-of-type\(\d+\)|\[\d+\]|#\d+)", "", path)
+    tail = ">".join(part.strip() for part in tail.split(">")[-4:])
+    if tail:
+        parts.append(tail[-180:])
+    return "|".join(dict.fromkeys(p for p in parts if p))
+
+
+def _visible_text_records(projection: dict[str, Any]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for node in projection.get("nodes", []) or []:
+        if not isinstance(node, dict) or not node.get("vis") or not node.get("text"):
+            continue
+        text = " ".join(str(node.get("text") or "").split())
+        if not text:
+            continue
+        context = _semantic_context_for_text_node(node)
+        identity = (text, context)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        records.append({"text": text, "context": context, "k": node.get("k", ""), "tag": node.get("tag", ""), "weight": _text_record_weight(text, context)})
+    return records
+
+
+def _text_record_weight(text: str, context: str) -> tuple[int, int, str]:
+    weight = 0
+    lower_context = (context or "").lower()
+    if _text_has_numeric_or_state(text):
+        weight += 1000
+    if any(x in lower_context for x in ("product", "price", "availability", "table", "article", "main")):
+        weight += 500
+    if any(x in lower_context for x in ("sidebar", "breadcrumb", "header", "footer", "nav")):
+        weight -= 300
+    return (-weight, -len(text), text)
+
+
+def _cross_document_text_delta(before_projection: dict[str, Any], after_projection: dict[str, Any], *, limit: int = 200) -> dict[str, Any]:
+    before_records = _visible_text_records(before_projection)
+    after_records = _visible_text_records(after_projection)
+    before_pairs = {(r["text"], r["context"]) for r in before_records}
+    after_pairs = {(r["text"], r["context"]) for r in after_records}
+    before_texts = {r["text"] for r in before_records}
+    after_texts = {r["text"] for r in after_records}
+    common_texts = before_texts & after_texts
+
+    suppressed_common_chrome = 0
+
+    def emit_records(records: list[dict[str, Any]], other_pairs: set[tuple[str, str]], *, suppress_common: bool) -> tuple[list[str], int]:
+        nonlocal suppressed_common_chrome
+        candidates: list[dict[str, Any]] = []
+        for record in records:
+            text = record["text"]
+            # Persistent chrome such as category/sidebar/nav labels often survives a
+            # navigation with slightly different structural paths. Suppress only
+            # short, identical, non-numeric/non-state strings; prices, counts,
+            # availability, errors, totals, etc. are never suppressed here.
+            if suppress_common and text in common_texts and _short_common_chrome_text(text):
+                suppressed_common_chrome += 1
+                continue
+            pair = (text, record["context"])
+            if pair in other_pairs:
+                continue
+            # Do not suppress numeric/state values even if the same raw string appears elsewhere.
+            # If context changed, the text moved semantically and is verifier-relevant.
+            candidates.append(record)
+        candidates.sort(key=lambda r: r.get("weight", (0, 0, "")))
+        out: list[str] = []
+        seen_text: set[str] = set()
+        for record in candidates:
+            text = record["text"]
+            if text in seen_text:
+                continue
+            seen_text.add(text)
+            out.append(text)
+            if len(out) >= limit:
+                break
+        return out, len(candidates)
+
+    added, added_total = emit_records(after_records, before_pairs, suppress_common=True)
+    removed, removed_total = emit_records(before_records, after_pairs, suppress_common=True)
+    return {
+        "added": added,
+        "removed": removed,
+        "added_total": added_total,
+        "removed_total": removed_total,
+        "suppressed_common_chrome": suppressed_common_chrome,
+        "common_text_total": len(common_texts),
+    }
+
+
+def _action_label(node: dict[str, Any]) -> str:
+    attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
+    for value in (node.get("text"), attrs.get("aria-label"), attrs.get("title"), attrs.get("alt"), attrs.get("value"), attrs.get("placeholder")):
+        label = " ".join(str(value or "").split())
+        if label:
+            return label
+    return ""
+
+
+def _action_region_score(node: dict[str, Any]) -> int:
+    path = str(node.get("k") or "").lower()
+    score = 0
+    if node.get("vp"):
+        score += 300
+    if node.get("vis"):
+        score += 200
+    if any(x in path for x in ("content_inner", "product_page", "article", "main", "section")):
+        score += 250
+    if any(x in path for x in ("header", "breadcrumb", "side_categories", "sidebar", "footer", "nav")):
+        score -= 250
+    tag = str(node.get("tag") or "").lower()
+    attrs = node.get("attrs") if isinstance(node.get("attrs"), dict) else {}
+    role = str(attrs.get("role") or "").lower()
+    if tag in {"button", "input", "select", "textarea"} or role in {"button", "checkbox", "radio", "combobox", "textbox"}:
+        score += 350
+    elif tag == "a" or role == "link":
+        score += 50
+    label = _action_label(node).lower()
+    if any(word in label for word in ("add", "basket", "cart", "buy", "submit", "continue", "checkout", "select", "option")):
+        score += 300
+    return score
+
+
+def _projected_action_entry(node: dict[str, Any]) -> dict[str, Any] | None:
+    if not _is_interactive_projected(node):
+        return None
+    label = _action_label(node)
+    if not label:
+        return None
+    entry = {k: node.get(k) for k in ("k", "tag", "attrs", "vis", "vp", "frame", "source") if node.get(k) not in (None, "", {}, [])}
+    entry["text"] = label
+    entry["action_score"] = _action_region_score(node)
+    return entry
+
+
+def _action_context(node: dict[str, Any], nodes_by_key: dict[str, dict[str, Any]]) -> str:
+    label = _action_label(node)
+    parent = str(node.get("parent") or "")
+    seen = set()
+    while parent and parent not in seen:
+        seen.add(parent)
+        candidate = nodes_by_key.get(parent)
+        if not candidate:
+            break
+        text = " ".join(str(candidate.get("text") or "").split())
+        if text and text != label:
+            return text[:180]
+        parent = str(candidate.get("parent") or "")
+    return ""
+
+
+def _action_signature_for_dedupe(entry: dict[str, Any]) -> tuple[str, str, str]:
+    path = str(entry.get("k") or "")
+    label = str(entry.get("text") or "")
+    tag = str(entry.get("tag") or "")
+    leaf = re.sub(r":nth-of-type\(\d+\)|\[\d+\]|#\d+$", "", path.rsplit(">", 1)[-1])
+    return tag, label, leaf
+
+
+def _dedupe_ranked_actions(entries: list[dict[str, Any]], *, limit: int = 40) -> list[dict[str, Any]]:
+    label_counts: dict[str, int] = {}
+    for entry in entries:
+        label = str(entry.get("text") or "")
+        label_counts[label] = label_counts.get(label, 0) + 1
+    for entry in entries:
+        if label_counts.get(str(entry.get("text") or ""), 0) > 1 and entry.get("context"):
+            entry["action_score"] = int(entry.get("action_score", 0) or 0) - 75
+    entries.sort(key=lambda e: (-int(e.get("action_score", 0) or 0), str(e.get("text") or ""), str(e.get("context") or ""), str(e.get("k") or "")))
+    out: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for entry in entries:
+        sig = _action_signature_for_dedupe(entry)
+        # Keep distinct labelled links/buttons, but avoid filling top_actions with
+        # many identical controls from a repeated carousel/list. Context remains
+        # on the retained item so the action is still interpretable.
+        if sig in seen:
+            continue
+        seen.add(sig)
+        cleaned = dict(entry)
+        cleaned.pop("action_score", None)
+        out.append(cleaned)
+        if len(out) >= limit:
+            break
+    return out
+
 
 def _document_entry(projection: dict[str, Any], *, text_chars: int) -> dict[str, Any]:
     nodes = [n for n in projection.get("nodes", []) or [] if isinstance(n, dict)]
+    nodes_by_key = {str(n.get("k")): n for n in nodes if n.get("k")}
     root = next((n for n in nodes if n.get("tag") == "html"), nodes[0] if nodes else {})
     texts = [str(n.get("text")) for n in nodes if n.get("vis") and n.get("text")]
     interactive = []
     for node in nodes:
-        if _is_interactive_projected(node) and len(interactive) < 40:
-            interactive.append({k: node.get(k) for k in ("k", "tag", "text", "attrs", "vis", "vp", "frame", "source") if node.get(k) not in (None, "", {}, [])})
+        entry = _projected_action_entry(node)
+        if entry is not None:
+            context = _action_context(node, nodes_by_key)
+            if context:
+                entry["context"] = context
+            interactive.append(entry)
+    interactive = _dedupe_ranked_actions(interactive, limit=40)
     return {
         "root": root.get("k", ""),
         "title": projection.get("title", ""),
@@ -1886,6 +2132,208 @@ def _document_entry(projection: dict[str, Any], *, text_chars: int) -> dict[str,
         "visible_text": " ".join(" ".join(texts).split())[:max(0, int(text_chars))],
         "interactive_descendants": interactive,
     }
+
+
+def _entry_text(entry: dict[str, Any]) -> str:
+    parts = []
+    for key in ("text", "visible_text"):
+        value = entry.get(key)
+        if value:
+            parts.append(str(value))
+    for child in entry.get("interactive_descendants", []) if isinstance(entry.get("interactive_descendants"), list) else []:
+        if isinstance(child, dict):
+            for key in ("text", "visible_text"):
+                value = child.get(key)
+                if value:
+                    parts.append(str(value))
+    return " ".join(" ".join(parts).split())
+
+
+def _group_signature(entry: dict[str, Any]) -> str:
+    path = str(entry.get("k") or "")
+    parent = path.rsplit("/", 1)[0] if "/" in path else ""
+    tag = str(entry.get("tag") or "node")
+    attrs = entry.get("attrs") if isinstance(entry.get("attrs"), dict) else {}
+    cls = attrs.get("class", "")
+    role = attrs.get("role", "") or entry.get("role", "")
+    # Strip positional details from the leaf only; parent remains to avoid merging
+    # unrelated repeated structures in different page regions.
+    leaf = path.rsplit("/", 1)[-1]
+    leaf = re.sub(r":nth-of-type\(\d+\)|\[\d+\]|#\d+$", "", leaf)
+    return "|".join(str(x) for x in (parent, tag, role, cls, leaf))
+
+
+def collapse_repeated_diff_groups(entries: list[dict[str, Any]], *, text_chars: int = 300) -> list[dict[str, Any]]:
+    groups: dict[str, list[dict[str, Any]]] = {}
+    order: list[str] = []
+    for entry in entries:
+        sig = _group_signature(entry)
+        if sig not in groups:
+            order.append(sig)
+        groups.setdefault(sig, []).append(entry)
+    out: list[dict[str, Any]] = []
+    group_index = 1
+    for sig in order:
+        members = groups[sig]
+        if len(members) < 3:
+            out.extend(members)
+            continue
+        member_texts = []
+        for member in members:
+            text = _entry_text(member)
+            if text:
+                member_texts.append(text[:220])
+        combined_text = " ".join(member_texts)
+        combined_text = " ".join(combined_text.split())[:max(0, int(text_chars))]
+        sample = []
+        for member in members[:2]:
+            sample.append({k: member.get(k) for k in ("k", "tag", "text", "attrs", "visible_text", "descendant_count") if member.get(k) not in (None, "", {}, [])})
+        out.append({
+            "kind": "group",
+            "group_id": f"g{group_index}",
+            "signature": sig,
+            "count": len(members),
+            "sample": sample,
+            "text": combined_text,
+            "member_text": member_texts[:40],
+            "semantic_weight": max(int(member.get("semantic_weight", 0) or 0) for member in members),
+        })
+        group_index += 1
+    return out
+
+
+def _collect_paths(value: Any, paths: dict[str, str]) -> None:
+    if isinstance(value, dict):
+        k = value.get("k")
+        if isinstance(k, str) and k:
+            paths.setdefault(k, "")
+        for child in value.values():
+            _collect_paths(child, paths)
+    elif isinstance(value, list):
+        for child in value:
+            _collect_paths(child, paths)
+
+
+def _replace_paths_with_ids(value: Any, id_by_path: dict[str, str]) -> Any:
+    if isinstance(value, dict):
+        out = {}
+        for key, item in value.items():
+            if key == "k" and isinstance(item, str) and item in id_by_path:
+                out["id"] = id_by_path[item]
+            elif key in {"parent", "root"} and isinstance(item, str) and item in id_by_path:
+                out[key] = id_by_path[item]
+            elif key == "signature" and isinstance(item, str):
+                # Group signatures can include long parent paths; keep a short readable leaf.
+                out[key] = item.rsplit("|", 1)[-1] or item[-80:]
+            else:
+                out[key] = _replace_paths_with_ids(item, id_by_path)
+        return out
+    if isinstance(value, list):
+        return [_replace_paths_with_ids(item, id_by_path) for item in value]
+    return value
+
+
+def compact_dom_diff_payload(diff: dict[str, Any]) -> dict[str, Any]:
+    payload = json.loads(json.dumps(diff, ensure_ascii=False))
+    payload["format"] = "compact"
+
+    # Changed entries carry all verifier evidence in `changes`; remove redundant
+    # before/after full node projections that repeated unchanged attrs/styles.
+    for section in ("changed", "flagged_changes"):
+        for entry in payload.get(section, []) if isinstance(payload.get(section), list) else []:
+            if not isinstance(entry, dict):
+                continue
+            entry.pop("before", None)
+            entry.pop("after", None)
+            entry.pop("style", None)
+
+    # Cross-document compact representation: counts + text delta + top actions.
+    if payload.get("cross_document"):
+        doc_added = payload.pop("document_added", {}) if isinstance(payload.get("document_added"), dict) else {}
+        doc_removed = payload.pop("document_removed", {}) if isinstance(payload.get("document_removed"), dict) else {}
+        if doc_added or doc_removed:
+            payload["document"] = {
+                "removed_nodes": doc_removed.get("descendant_count", 0),
+                "added_nodes": doc_added.get("descendant_count", 0),
+            }
+        top_actions = payload.pop("interactive_added", [])
+        payload["top_actions"] = top_actions[:10] if isinstance(top_actions, list) else []
+
+    paths_seen: dict[str, str] = {}
+    for key in ("added", "removed", "changed", "flagged_changes", "top_actions"):
+        _collect_paths(payload.get(key), paths_seen)
+    sorted_paths = sorted(paths_seen)
+    id_by_path = {path: f"n{i+1}" for i, path in enumerate(sorted_paths)}
+    payload = _replace_paths_with_ids(payload, id_by_path)
+    if id_by_path:
+        payload["paths"] = {short_id: path for path, short_id in id_by_path.items()}
+    return payload
+
+
+def _quote_short(value: Any, limit: int = 120) -> str:
+    text = " ".join(str(value or "").split())
+    if len(text) > limit:
+        text = text[: max(0, limit - 1)].rstrip() + "…"
+    return json.dumps(text, ensure_ascii=False)
+
+
+def render_dom_diff_text(diff: dict[str, Any]) -> str:
+    lines: list[str] = []
+    nav = diff.get("navigation") if isinstance(diff.get("navigation"), dict) else {}
+    source = diff.get("source") if isinstance(diff.get("source"), dict) else {}
+    after = source.get("after") if isinstance(source.get("after"), dict) else {}
+    title = after.get("title") or ""
+    url = after.get("url") or nav.get("to_url") or ""
+    lines.append(f"PAGE title={_quote_short(title, 160)} url={_quote_short(url, 240)}")
+    if diff.get("cross_document"):
+        document = diff.get("document") if isinstance(diff.get("document"), dict) else {}
+        lines.append(
+            f"NAV from={_quote_short(nav.get('from_url'), 180)} to={_quote_short(nav.get('to_url'), 180)} "
+            f"removed_nodes={document.get('removed_nodes', 0)} added_nodes={document.get('added_nodes', 0)}"
+        )
+    text_delta = diff.get("text_delta") if isinstance(diff.get("text_delta"), dict) else {}
+    for text in text_delta.get("added", [])[:80] if isinstance(text_delta.get("added"), list) else []:
+        lines.append(f"+TEXT {_quote_short(text, 220)}")
+    for text in text_delta.get("removed", [])[:80] if isinstance(text_delta.get("removed"), list) else []:
+        lines.append(f"-TEXT {_quote_short(text, 220)}")
+    for entry in diff.get("added", []) if isinstance(diff.get("added"), list) else []:
+        if entry.get("kind") == "group":
+            lines.append(f"+GROUP {entry.get('group_id','')} {entry.get('signature','')} x{entry.get('count',0)} {_quote_short(entry.get('text'), 240)}")
+            for member_text in entry.get("member_text", [])[:20] if isinstance(entry.get("member_text"), list) else []:
+                lines.append(f"  +ITEM {_quote_short(member_text, 180)}")
+        else:
+            lines.append(f"+[{entry.get('id', entry.get('k', ''))}] {entry.get('tag','node')} {_quote_short(entry.get('text') or entry.get('visible_text'), 220)}")
+    for entry in diff.get("removed", []) if isinstance(diff.get("removed"), list) else []:
+        if entry.get("kind") == "group":
+            lines.append(f"-GROUP {entry.get('group_id','')} {entry.get('signature','')} x{entry.get('count',0)} {_quote_short(entry.get('text'), 240)}")
+            for member_text in entry.get("member_text", [])[:20] if isinstance(entry.get("member_text"), list) else []:
+                lines.append(f"  -ITEM {_quote_short(member_text, 180)}")
+        else:
+            lines.append(f"-[{entry.get('id', entry.get('k', ''))}] {entry.get('tag','node')} {_quote_short(entry.get('text') or entry.get('visible_text'), 220)}")
+    for entry in diff.get("changed", []) if isinstance(diff.get("changed"), list) else []:
+        changes = entry.get("changes") if isinstance(entry.get("changes"), dict) else {}
+        facts = []
+        if "text" in changes:
+            t = changes["text"]
+            facts.append(f"text:{_quote_short(t.get('before'), 80)}->{_quote_short(t.get('after'), 80)}")
+        for name, change in (changes.get("attrs") or {}).items() if isinstance(changes.get("attrs"), dict) else []:
+            facts.append(f"{name}:{_quote_short(change.get('before'), 60)}->{_quote_short(change.get('after'), 60)}")
+        if "visibility" in changes:
+            v = changes["visibility"]
+            facts.append(f"visible:{v.get('before')}->{v.get('after')}")
+        lines.append(f"~[{entry.get('id', entry.get('k', ''))}] {entry.get('tag','node')} {'; '.join(facts)}")
+    for entry in diff.get("flagged_changes", []) if isinstance(diff.get("flagged_changes"), list) else []:
+        lines.append(f"![{entry.get('id', entry.get('k', ''))}] flagged={entry.get('likely_scroll_artifact', False)} kind={','.join(entry.get('kind', []))}")
+    for entry in diff.get("top_actions", []) if isinstance(diff.get("top_actions"), list) else []:
+        lines.append(f"ACTION [{entry.get('id', entry.get('k', ''))}] {entry.get('tag','node')} {_quote_short(entry.get('text'), 160)}" + (f" context={_quote_short(entry.get('context'), 180)}" if entry.get('context') else ""))
+    stats = diff.get("stats") if isinstance(diff.get("stats"), dict) else {}
+    frames = diff.get("frames") if isinstance(diff.get("frames"), dict) else {}
+    lines.append(
+        f"STATS +{stats.get('added_total',0)}/-{stats.get('removed_total',0)} ~{stats.get('changed_total',0)} "
+        f"flagged={stats.get('flagged_total',0)} truncated={bool(stats.get('truncated'))} "
+        f"frames={frames.get('traversed',0)}/{frames.get('count',0)} shadow={frames.get('shadow_dom','unknown')}"
+    )
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def compare_operation_counts(compare_result: dict[str, Any] | None) -> dict[str, int]:
@@ -1926,6 +2374,7 @@ def build_compact_dom_diff(
     action: str = "",
     collapse_text_chars: int = 500,
     validate_diff: bool = False,
+    verbosity: str = "compact",
 ) -> dict[str, Any]:
     before_projection = project_dom_state(before_dom) if before_dom else {"nodes": [], "key_population": {}, "url": "", "title": ""}
     after_projection = project_dom_state(after_dom) if after_dom else {"nodes": [], "key_population": {}, "url": "", "title": ""}
@@ -1948,10 +2397,9 @@ def build_compact_dom_diff(
         "key_population": {"before": before_projection.get("key_population", {}), "after": after_projection.get("key_population", {})},
     }
     if cross_document:
-        before_text = _visible_text_set(before_projection)
-        after_text = _visible_text_set(after_projection)
-        added_text = sorted(after_text - before_text, key=lambda x: (-len(x), x))[:200]
-        removed_text = sorted(before_text - after_text, key=lambda x: (-len(x), x))[:200]
+        text_delta = _cross_document_text_delta(before_projection, after_projection, limit=200)
+        added_text = text_delta.get("added", [])
+        removed_text = text_delta.get("removed", [])
         stats = {
             "added_total": len(after_projection.get("nodes", []) or []),
             "added_roots_total": 1 if after_projection.get("nodes") else 0,
@@ -1963,14 +2411,17 @@ def build_compact_dom_diff(
             "changed_emitted": 0,
             "flagged_total": 0,
             "flagged_emitted": 0,
-            "truncated": len(added_text) >= 200 or len(removed_text) >= 200,
+            "truncated": int(text_delta.get("added_total", 0) or 0) > len(added_text) or int(text_delta.get("removed_total", 0) or 0) > len(removed_text),
+            "suppressed_common_chrome": int(text_delta.get("suppressed_common_chrome", 0) or 0),
         }
+        before_doc = _document_entry(before_projection, text_chars=collapse_text_chars)
+        after_doc = _document_entry(after_projection, text_chars=collapse_text_chars)
         base.update({
             "stats": stats,
-            "document_removed": _document_entry(before_projection, text_chars=collapse_text_chars),
-            "document_added": _document_entry(after_projection, text_chars=collapse_text_chars),
-            "text_delta": {"added": added_text, "removed": removed_text, "added_total": len(after_text - before_text), "removed_total": len(before_text - after_text)},
-            "interactive_added": _document_entry(after_projection, text_chars=collapse_text_chars).get("interactive_descendants", [])[:40],
+            "document_removed": before_doc,
+            "document_added": after_doc,
+            "text_delta": text_delta,
+            "interactive_added": after_doc.get("interactive_descendants", [])[:40],
             "added": [],
             "removed": [],
             "changed": [],
@@ -1978,7 +2429,7 @@ def build_compact_dom_diff(
         })
         if validate_diff:
             base["compare_validation"] = validate_local_diff_against_compare(base, compare_result)
-        return base
+        return base if verbosity == "full" else compact_dom_diff_payload(base)
 
     before_nodes = {str(n.get("k")): n for n in before_projection.get("nodes", []) if isinstance(n, dict) and n.get("k")}
     after_nodes = {str(n.get("k")): n for n in after_projection.get("nodes", []) if isinstance(n, dict) and n.get("k")}
@@ -2014,6 +2465,9 @@ def build_compact_dom_diff(
         else:
             changed_entries.append(entry)
 
+    added_entries = collapse_repeated_diff_groups(added_entries, text_chars=300)
+    removed_entries = collapse_repeated_diff_groups(removed_entries, text_chars=300)
+
     def truncate(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         entries = sorted(entries, key=rank_diff_entry)
         return entries[:max(0, int(max_entries))]
@@ -2040,7 +2494,7 @@ def build_compact_dom_diff(
     base.update({"stats": stats, "added": added_emit, "removed": removed_emit, "changed": changed_emit, "flagged_changes": flagged_emit})
     if validate_diff:
         base["compare_validation"] = validate_local_diff_against_compare(base, compare_result)
-    return base
+    return base if verbosity == "full" else compact_dom_diff_payload(base)
 
 
 def build_dom_diff_summary(before: CapturedState, after: CapturedState) -> dict[str, Any]:
@@ -2317,6 +2771,7 @@ Required files:
 - `step_NNN/action.json` — normalized action and verifier action fields.
 - `step_NNN/page_state.json` — after-step URL/title/viewport state.
 - `step_NNN/dom_diff.json` — primary verifier evidence.
+- `step_NNN/dom_diff.txt` — human-readable rendering of the same diff.
 
 Default step files:
 

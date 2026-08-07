@@ -17,7 +17,7 @@ def collect(task_dir: Path) -> list[Path]:
     if final.exists():
         include.extend(sorted(p for p in final.rglob("*") if p.is_file()))
     for step in sorted(p for p in task_dir.glob("step_*") if p.is_dir()):
-        for name in ("action.json", "after.jpg", "before.jpg", "dom_after.json.gz", "dom_before.json.gz", "dom_diff.json", "page_state.json", "observation_before.json.gz", "observation_after.json.gz", "observation_diff.json"):
+        for name in ("action.json", "after.jpg", "before.jpg", "dom_after.json.gz", "dom_before.json.gz", "dom_diff.json", "dom_diff.txt", "page_state.json", "observation_before.json.gz", "observation_after.json.gz", "observation_diff.json"):
             p = step / name
             if p.exists():
                 include.append(p)

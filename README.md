@@ -177,6 +177,7 @@ This section is generated from the current `argparse` surface in `agent_browser/
 | `--dom-capture` | `slim` | `slim`, `full`, or `none`. `slim` writes projected DOM states and `dom_diff.json`. `full` additionally writes raw per-step DOM audit files. `none` is debug-only and not verifier-safe. |
 | `--final-state-dom` | `both` | `full`, `slim`, or `both` for final-state DOM capture. |
 | `--dom-diff-max-entries` | `200` | Per-list emitted-entry cap. True totals are still recorded. |
+| `--dom-diff-verbosity` | `compact` | `compact` writes the short-id compact diff. `full` writes the expanded debug form. |
 | `--collapse-text-chars` | `500` | Text budget for collapsed subtree/document summaries. |
 | `--validate-diff` | `false` | Compare local compact diff counts against ChromiumRL `compareDOMState` operations. |
 | `--keep-observations` | `false` | Write per-step model-facing observations and observation diff files. |
@@ -219,6 +220,7 @@ tasks/<task-id>/
 │   ├── dom_after.json.gz
 │   ├── dom_before.json.gz
 │   ├── dom_diff.json
+│   ├── dom_diff.txt
 │   └── page_state.json
 └── final_state/
     ├── dom_full.json.gz
@@ -228,7 +230,7 @@ tasks/<task-id>/
     └── screenshot.jpg
 ```
 
-Default `--screenshot-mode after_only` writes 6 files per step: `action.json`, `after.jpg`, `dom_after.json.gz`, `dom_before.json.gz`, `dom_diff.json`, and `page_state.json`. `--screenshot-mode both` adds `before.jpg`, for 7 files.
+Default `--screenshot-mode after_only` writes 7 files per step: `action.json`, `after.jpg`, `dom_after.json.gz`, `dom_before.json.gz`, `dom_diff.json`, `dom_diff.txt`, and `page_state.json`. `--screenshot-mode both` adds `before.jpg`, for 8 files.
 
 `--keep-observations` adds these optional top-level step files:
 
@@ -249,6 +251,7 @@ observation_diff.json
 | `step_NNN/action.json` | Required | Normalized action record and verifier-action fields, including `url` for navigation and `key` for keypresses. |
 | `step_NNN/page_state.json` | Required | After-step URL/title/viewport state. This is the state resulting from the action. |
 | `step_NNN/dom_diff.json` | Required / primary verifier artifact | Refined real DOM diff for this step. |
+| `step_NNN/dom_diff.txt` | Required / human-readable verifier artifact | Text rendering generated from the same diff builder as `dom_diff.json`; useful for review and quick greps. |
 | `step_NNN/dom_before.json.gz` / `dom_after.json.gz` | Fallback verifier evidence | Slim DOM projections used to compute `dom_diff.json`. Kept for step self-containment. |
 | `step_NNN/after.jpg` / `before.jpg` | Human-review evidence | Screenshots. `before.jpg` exists only with `--screenshot-mode both`. |
 | `step_NNN/observation_before.json.gz` / `observation_after.json.gz` | Not verifier-facing | Model-facing observations, written only with `--keep-observations`. These are not DOM snapshots. |
@@ -275,13 +278,14 @@ python3 scripts/verify-example.py tasks/<task-id>
 
 ## DOM DIFF: WHAT IT IS AND HOW IT IS REFINED
 
-`dom_diff.json` is the refined compact DOM diff. There is no separate compacted diff file.
+`dom_diff.json` is the refined compact DOM diff. `dom_diff.txt` is the human-readable rendering of the same facts, generated from the same builder. There is no separate compacted diff file.
 
 Do not confuse these:
 
 - `dom_before.json.gz`, `dom_after.json.gz`, and `final_state/dom_state.json.gz` are compressed slim DOM projections.
 - `final_state/dom_full.json.gz` is a compressed raw DOM snapshot.
 - `dom_diff.json` is the compact semantic diff computed from DOM projections.
+- `dom_diff.txt` is a line-oriented rendering of `dom_diff.json`, not a separate evidence source.
 
 ### 1. Capture: `capture_state()` and `chromiumrl_call()`
 
@@ -397,17 +401,16 @@ The text budget is controlled by `--collapse-text-chars`.
 
 For a cross-document navigation, structural node paths can collide across unrelated pages. A product listing and a product detail page may both contain paths like `html > body > div.container > ...`, but those nodes do not represent the same content.
 
-When `detect_cross_document()` sees a loader change or URL path/origin change, node-level matching is abandoned. The diff emits:
+When `detect_cross_document()` sees a loader change or URL path/origin change, node-level matching is abandoned. In compact mode the diff emits:
 
 - `cross_document: true`;
 - `navigation` metadata;
-- `document_removed`;
-- `document_added`;
+- `document` counts for removed/added nodes;
 - `text_delta`;
-- `interactive_added`;
+- `top_actions`;
 - no node-level `changed` entries.
 
-For same-document steps, node-level added/removed/changed diffing is used.
+For same-document steps, node-level added/removed/changed diffing is used. Use `--dom-diff-verbosity full` only for debugging the expanded internal representation.
 
 ### 9. Scroll-artifact flagging: `classify_projected_change()`
 

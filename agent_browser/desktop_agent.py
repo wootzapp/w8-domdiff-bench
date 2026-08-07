@@ -39,6 +39,7 @@ from recorder import (  # noqa: E402
     artifact_record,
     build_dom_diff_summary,
     build_compact_dom_diff,
+    render_dom_diff_text,
     build_verifier_action,
     capture_state_with_recovery,
     collect_chromiumrl_signals,
@@ -774,7 +775,7 @@ class DesktopWootzAgent:
         return snapshot
 
     async def visible_text_blocks(self, max_blocks: int = 80) -> list[dict[str, Any]]:
-        expression = """
+        expression = r"""
         (() => {
           const t0 = performance.now(), out = [], seen = new Set();
           const vh = innerHeight, vw = innerWidth;
@@ -914,7 +915,7 @@ class DesktopWootzAgent:
             element = self._last_snapshot.refs[ref]
         selector_value = selector or ((element or {}).get("selector") or (element or {}).get("cssSelector"))
         xpath_value = (element or {}).get("xpath")
-        expression = f"""
+        expression = rf"""
         (() => {{
           const selector = {json.dumps(selector_value)};
           const xpath = {json.dumps(xpath_value)};
@@ -1011,7 +1012,7 @@ class DesktopWootzAgent:
     async def scroll_element_into_view(self, element: dict[str, Any]) -> tuple[float, float] | None:
         selector = element.get("selector") or element.get("cssSelector")
         xpath = element.get("xpath")
-        expression = f"""
+        expression = rf"""
         (() => {{
           const selector = {json.dumps(selector)};
           const xpath = {json.dumps(xpath)};
@@ -1031,7 +1032,7 @@ class DesktopWootzAgent:
         return (float(x), float(y)) if isinstance(x, (int, float)) and isinstance(y, (int, float)) else None
 
     async def selector_center(self, selector: str) -> tuple[float, float]:
-        expression = f"""
+        expression = rf"""
         (() => {{
           const selector = {json.dumps(selector)};
           const el = document.querySelector(selector);
@@ -1577,6 +1578,7 @@ async def record_automated_step(
     collapse_text_chars: int = 500,
     validate_diff: bool = False,
     keep_observations: bool = False,
+    dom_diff_verbosity: str = "compact",
 ) -> dict[str, Any]:
     cdp = agent.cdp
     action = normalize_action(action)
@@ -1699,8 +1701,10 @@ async def record_automated_step(
         action=action_name(performed_action),
         collapse_text_chars=collapse_text_chars,
         validate_diff=validate_diff,
+        verbosity=dom_diff_verbosity,
     )
     write_json_compact(step_dir / "dom_diff.json", dom_diff)
+    (step_dir / "dom_diff.txt").write_text(render_dom_diff_text(dom_diff), encoding="utf-8")
 
     signals: dict[str, Any] = {"captured_at": utc_now(), "commands": {}}
     if performed_action.get("coordinate") is not None:
@@ -2125,6 +2129,7 @@ async def run(args: argparse.Namespace) -> None:
                             collapse_text_chars=args.collapse_text_chars,
                             validate_diff=args.validate_diff,
                             keep_observations=args.keep_observations,
+                            dom_diff_verbosity=args.dom_diff_verbosity,
                         ),
                         timeout=args.step_timeout,
                     )
@@ -2211,6 +2216,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dom-capture", choices=("full", "slim", "none"), default="slim")
     parser.add_argument("--final-state-dom", choices=("full", "slim", "both"), default="both")
     parser.add_argument("--dom-diff-max-entries", type=int, default=200)
+    parser.add_argument("--dom-diff-verbosity", choices=("compact", "full"), default="compact")
     parser.add_argument("--collapse-text-chars", type=int, default=500)
     parser.add_argument("--validate-diff", action="store_true")
     parser.add_argument("--keep-observations", action="store_true", help="write model-facing observation_before/after and observation_diff files per step")
