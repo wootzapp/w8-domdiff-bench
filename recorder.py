@@ -1040,6 +1040,10 @@ def frame_coverage_from_tree(frame_tree_result: dict[str, Any], projection: dict
         for node in projection.get("nodes", []) or []:
             if isinstance(node, dict) and node.get("source") == "js_iframe" and node.get("frame"):
                 js_iframe_frames.add(str(node.get("frame")))
+    has_projected_document = bool(isinstance(projection, dict) and (projection.get("nodes") or projection.get("url")))
+    if not frames and has_projected_document:
+        frames = [{"id": "main", "url": str(projection.get("url") or ""), "depth": 0, "source": "projection_fallback"}]
+        child_frames = []
     traversed = 1 + len(js_iframe_frames) if frames else len(js_iframe_frames)
     coverage = "main_frame_plus_same_origin_iframes" if js_iframe_frames else "main_frame_only"
     return {
@@ -1753,7 +1757,35 @@ def _subtree_nodes(root: dict[str, Any], children: dict[str, list[dict[str, Any]
     return out
 
 
-def collapse_subtree_entry(root: dict[str, Any], nodes_by_key: dict[str, dict[str, Any]], *, text_chars: int = 500) -> dict[str, Any]:
+def _subtree_size(root: dict[str, Any], children: dict[str, list[dict[str, Any]]]) -> int:
+    return 1 + len(_subtree_nodes(root, children))
+
+
+def collapse_candidate_roots(changed_keys: set[str], nodes_by_key: dict[str, dict[str, Any]], *, max_document_fraction: float = 0.60) -> list[str]:
+    children = _children_by_parent(nodes_by_key)
+    total_nodes = max(1, len(nodes_by_key))
+    initial = [k for k in changed_keys if str(nodes_by_key[k].get("parent") or "") not in changed_keys]
+    out: list[str] = []
+    queue = list(initial)
+    seen: set[str] = set()
+    while queue:
+        key = queue.pop(0)
+        if key in seen or key not in nodes_by_key:
+            continue
+        seen.add(key)
+        node = nodes_by_key[key]
+        child_keys = [str(child.get("k")) for child in children.get(key, []) if str(child.get("k")) in changed_keys]
+        size = _subtree_size(node, children)
+        tag = str(node.get("tag") or "").lower()
+        too_broad = bool(child_keys and (tag in {"html", "body"} or size > max_document_fraction * total_nodes))
+        if too_broad:
+            queue[0:0] = child_keys
+        else:
+            out.append(key)
+    return out
+
+
+def collapse_subtree_entry(root: dict[str, Any], nodes_by_key: dict[str, dict[str, Any]], *, text_chars: int = 2000) -> dict[str, Any]:
     children = _children_by_parent(nodes_by_key)
     descendants = _subtree_nodes(root, children)
     texts: list[str] = []
@@ -1867,9 +1899,16 @@ def detect_cross_document(before_dom: dict[str, Any], after_dom: dict[str, Any],
     before_url = str((before_index.get("page") or {}).get("url") or before_dom.get("url") or before_frame.get("url") or "")
     after_url = str((after_index.get("page") or {}).get("url") or after_dom.get("url") or after_frame.get("url") or "")
     loader_changed = bool(before_loader and after_loader and before_loader != after_loader)
-    path_changed = not _is_blankish_url(before_url) and not _is_blankish_url(after_url) and _url_document_key(before_url) != _url_document_key(after_url)
-    cross = bool(loader_changed or path_changed)
-    return cross, {"from_url": before_url, "to_url": after_url, "from_loader": before_loader, "to_loader": after_loader, "loader_changed": loader_changed, "path_or_origin_changed": path_changed}
+    url_changed = bool(before_url and after_url and before_url != after_url)
+    path_changed = bool(url_changed and _url_document_key(before_url) != _url_document_key(after_url))
+    # about:blank, chrome-error://, and other error/empty documents are still
+    # documents. A transition from one of them to a content URL must use the
+    # cross-document path; otherwise same-document matching collapses the full
+    # page into an uninformative html/body subtree. Query/hash-only changes stay
+    # same-document unless the loader changed.
+    blankish_replacement = bool(url_changed and (_is_blankish_url(before_url) or _is_blankish_url(after_url)))
+    cross = bool(loader_changed or path_changed or blankish_replacement)
+    return cross, {"from_url": before_url, "to_url": after_url, "from_loader": before_loader, "to_loader": after_loader, "loader_changed": loader_changed, "path_or_origin_changed": path_changed, "blankish_replacement": blankish_replacement}
 
 
 def _visible_text_set(projection: dict[str, Any]) -> set[str]:
@@ -2302,14 +2341,14 @@ def render_dom_diff_text(diff: dict[str, Any]) -> str:
             for member_text in entry.get("member_text", [])[:20] if isinstance(entry.get("member_text"), list) else []:
                 lines.append(f"  +ITEM {_quote_short(member_text, 180)}")
         else:
-            lines.append(f"+[{entry.get('id', entry.get('k', ''))}] {entry.get('tag','node')} {_quote_short(entry.get('text') or entry.get('visible_text'), 220)}")
+            lines.append(f"+[{entry.get('id', entry.get('k', ''))}] {entry.get('tag','node')} {_quote_short(entry.get('text') or entry.get('visible_text'), 2000)}")
     for entry in diff.get("removed", []) if isinstance(diff.get("removed"), list) else []:
         if entry.get("kind") == "group":
             lines.append(f"-GROUP {entry.get('group_id','')} {entry.get('signature','')} x{entry.get('count',0)} {_quote_short(entry.get('text'), 240)}")
             for member_text in entry.get("member_text", [])[:20] if isinstance(entry.get("member_text"), list) else []:
                 lines.append(f"  -ITEM {_quote_short(member_text, 180)}")
         else:
-            lines.append(f"-[{entry.get('id', entry.get('k', ''))}] {entry.get('tag','node')} {_quote_short(entry.get('text') or entry.get('visible_text'), 220)}")
+            lines.append(f"-[{entry.get('id', entry.get('k', ''))}] {entry.get('tag','node')} {_quote_short(entry.get('text') or entry.get('visible_text'), 2000)}")
     for entry in diff.get("changed", []) if isinstance(diff.get("changed"), list) else []:
         changes = entry.get("changes") if isinstance(entry.get("changes"), dict) else {}
         facts = []
@@ -2372,7 +2411,7 @@ def build_compact_dom_diff(
     before_index: dict[str, Any] | None = None,
     after_index: dict[str, Any] | None = None,
     action: str = "",
-    collapse_text_chars: int = 500,
+    collapse_text_chars: int = 2000,
     validate_diff: bool = False,
     verbosity: str = "compact",
 ) -> dict[str, Any]:
@@ -2439,8 +2478,8 @@ def build_compact_dom_diff(
     removed_keys = before_keys - after_keys
     common_keys = before_keys & after_keys
 
-    added_roots = [k for k in added_keys if str(after_nodes[k].get("parent") or "") not in added_keys]
-    removed_roots = [k for k in removed_keys if str(before_nodes[k].get("parent") or "") not in removed_keys]
+    added_roots = collapse_candidate_roots(added_keys, after_nodes)
+    removed_roots = collapse_candidate_roots(removed_keys, before_nodes)
     added_entries = [collapse_subtree_entry(after_nodes[k], after_nodes, text_chars=collapse_text_chars) for k in added_roots]
     removed_entries = [collapse_subtree_entry(before_nodes[k], before_nodes, text_chars=collapse_text_chars) for k in removed_roots]
 

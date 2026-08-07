@@ -1575,7 +1575,7 @@ async def record_automated_step(
     dom_capture: str = "slim",
     dom_diff_max_entries: int = 200,
     observation_max_elements: int | None = None,
-    collapse_text_chars: int = 500,
+    collapse_text_chars: int = 2000,
     validate_diff: bool = False,
     keep_observations: bool = False,
     dom_diff_verbosity: str = "compact",
@@ -2217,7 +2217,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--final-state-dom", choices=("full", "slim", "both"), default="both")
     parser.add_argument("--dom-diff-max-entries", type=int, default=200)
     parser.add_argument("--dom-diff-verbosity", choices=("compact", "full"), default="compact")
-    parser.add_argument("--collapse-text-chars", type=int, default=500)
+    parser.add_argument("--collapse-text-chars", type=int, default=2000)
     parser.add_argument("--validate-diff", action="store_true")
     parser.add_argument("--keep-observations", action="store_true", help="write model-facing observation_before/after and observation_diff files per step")
     parser.add_argument("--resume", action="store_true")

@@ -178,7 +178,7 @@ This section is generated from the current `argparse` surface in `agent_browser/
 | `--final-state-dom` | `both` | `full`, `slim`, or `both` for final-state DOM capture. |
 | `--dom-diff-max-entries` | `200` | Per-list emitted-entry cap. True totals are still recorded. |
 | `--dom-diff-verbosity` | `compact` | `compact` writes the short-id compact diff. `full` writes the expanded debug form. |
-| `--collapse-text-chars` | `500` | Text budget for collapsed subtree/document summaries. |
+| `--collapse-text-chars` | `2000` | Text budget for collapsed subtree/document summaries. |
 | `--validate-diff` | `false` | Compare local compact diff counts against ChromiumRL `compareDOMState` operations. |
 | `--keep-observations` | `false` | Write per-step model-facing observations and observation diff files. |
 | `--capture-all-targets` | `false` | Legacy debug option; ignored by the reduced current layout. |

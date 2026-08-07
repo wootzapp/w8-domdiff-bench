@@ -50,6 +50,22 @@ async def eval_value(cdp: CDPConnection, expression: str, *, timeout: float = 5.
     return res.get("result", {}).get("value")
 
 
+async def wait_for_visible_dialog(cdp: CDPConnection, *, timeout: float = 4.0) -> bool:
+    deadline = time.perf_counter() + timeout
+    expr = """(() => {
+      const m = document.querySelector('#modal,.modal,[role=dialog]');
+      if (!m) return false;
+      const r = m.getBoundingClientRect();
+      const cs = getComputedStyle(m);
+      return !!(r.width && r.height && cs.display !== 'none' && cs.visibility !== 'hidden' && Number(cs.opacity || 1) !== 0);
+    })()"""
+    while time.perf_counter() < deadline:
+        if await eval_value(cdp, expr):
+            return True
+        await asyncio.sleep(0.1)
+    return False
+
+
 async def click_selector(cdp: CDPConnection, selector: str) -> None:
     expr = rf"""
     (() => {{
@@ -146,7 +162,7 @@ async def click_button_by_text(cdp: CDPConnection, needles: list[str], *, allow_
         await cdp.send("Input.dispatchMouseEvent", {"type": kind, "x": x, "y": y, **extra}, use_session=True, timeout=5.0)
 
 
-async def capture_pair(cdp: CDPConnection, task_dir: Path, step: int, action_name: str, action_coro, *, validate_diff: bool, collapse_text_chars: int = 500) -> dict:
+async def capture_pair(cdp: CDPConnection, task_dir: Path, step: int, action_name: str, action_coro, *, validate_diff: bool, collapse_text_chars: int = 2000) -> dict:
     step_dir = task_dir / f"step_{step:03d}"
     before_dir = step_dir / ".before_tmp"
     after_dir = step_dir / ".after_tmp"
@@ -320,6 +336,22 @@ async def run(args):
         ok, reason = compact_full_equivalent_core(full, compact, ["Exact Product", "£19.63", "In stock (18 available)"])
         await add_result(task, "regress-compact-full-equivalence", ok, reason)
 
+        # Regression: first navigation from about:blank is a document replacement,
+        # not a same-document full-page add collapsed at html/body.
+        task = out / "diff-first-navigation"
+        write_json(task / "manifest.json", {"task_id":"diff-first-navigation", "kind":"dom-diff-benchmark"})
+        await navigate(cdp, "about:blank")
+        diff = await capture_pair(cdp, task, 1, "navigate first page", lambda: navigate(cdp, "https://books.toscrape.com/"), validate_diff=args.validate_diff, collapse_text_chars=args.collapse_text_chars)
+        added_ok, added_reason = assert_added_text_contains(diff, ["Books to Scrape", "Travel", "Mystery"])
+        added_total = max(1, int((diff.get("stats") or {}).get("added_total", 0) or 0))
+        broad_roots = []
+        for section in ("added", "removed"):
+            for entry in diff.get(section, []) if isinstance(diff.get(section), list) else []:
+                if isinstance(entry, dict) and int(entry.get("descendant_count", 0) or 0) > 0.60 * added_total:
+                    broad_roots.append(entry.get("id") or entry.get("k") or entry.get("tag"))
+        ok = bool(diff.get("cross_document")) and added_ok and not broad_roots
+        await add_result(task, "diff-first-navigation", ok, "ok" if ok else f"cross_document={diff.get('cross_document')} {added_reason} broad_roots={broad_roots}", diff, broad_roots=broad_roots)
+
         # Unit-level controlled checkbox.
         task = out / "diff-checkbox"
         write_json(task / "manifest.json", {"task_id":"diff-checkbox", "kind":"dom-diff-benchmark"})
@@ -348,7 +380,7 @@ async def run(args):
             with contextlib.suppress(Exception):
                 await cdp.send("Storage.clearDataForOrigin", {"origin": "https://the-internet.herokuapp.com", "storageTypes": "all"}, use_session=True, timeout=5.0)
             await navigate(cdp, args.real_modal_url, timeout=15.0)
-            modal_visible = await eval_value(cdp, "(() => { const m=document.querySelector('#modal,.modal,[role=dialog]'); if(!m) return false; const r=m.getBoundingClientRect(); const cs=getComputedStyle(m); return !!(r.width && r.height && cs.display !== 'none' && cs.visibility !== 'hidden' && Number(cs.opacity || 1) !== 0); })()")
+            modal_visible = await wait_for_visible_dialog(cdp, timeout=4.0)
             if not modal_visible:
                 raise RecorderError("real modal precondition failed: modal is not visible before capture")
             diff = await capture_pair(cdp, task, 1, "dismiss live consent", lambda: click_button_by_text(cdp, ["accept", "agree", "allow all", "reject", "decline", "continue", "close", "x", "×"], allow_unlabeled=False), validate_diff=args.validate_diff, collapse_text_chars=args.collapse_text_chars)
@@ -412,10 +444,14 @@ async def run(args):
         # Real dynamic same-document UI change on a public Selenium test page.
         task = out / "diff-dynamic"
         write_json(task / "manifest.json", {"task_id":"diff-dynamic", "kind":"dom-diff-benchmark"})
-        await navigate(cdp, "https://the-internet.herokuapp.com/add_remove_elements/")
-        diff = await capture_pair(cdp, task, 1, "click add element", lambda: click_button_by_text(cdp, ["add element"]), validate_diff=args.validate_diff)
-        ok = not diff.get("cross_document") and diff.get("stats", {}).get("added_total", 0) > 0 and "delete" in diff_text(diff)
-        await add_result(task, "diff-dynamic", ok, "ok" if ok else "no same-document Delete button insertion", diff)
+        try:
+            dynamic_url = "https://www.selenium.dev/selenium/web/javascriptPage.html"
+            await navigate(cdp, dynamic_url)
+            diff = await capture_pair(cdp, task, 1, "click update div", lambda: click_selector(cdp, "#updatediv"), validate_diff=args.validate_diff)
+            ok = not diff.get("cross_document") and diff.get("stats", {}).get("changed_total", 0) > 0 and "fish and chips" in diff_text(diff)
+            await add_result(task, "diff-dynamic", ok, "ok" if ok else "no same-document dynamic text mutation", diff)
+        except Exception as error:
+            summary.append({"id":"diff-dynamic", "ok":False, "reason":str(error), "url":"https://www.selenium.dev/selenium/web/javascriptPage.html"})
 
         # Pure scroll noise floor. active/current changes are retained as flagged_changes, not unflagged semantic changes.
         task = out / "diff-scroll"
@@ -443,7 +479,7 @@ if __name__ == "__main__":
     parser.add_argument("--cdp-url", default="http://127.0.0.1:49325")
     parser.add_argument("--output-root", default="diagnostics/v6/diff_benchmarks")
     parser.add_argument("--validate-diff", action="store_true")
-    parser.add_argument("--collapse-text-chars", type=int, default=500)
+    parser.add_argument("--collapse-text-chars", type=int, default=2000)
     parser.add_argument("--dom-diff-verbosity", choices=("compact", "full"), default="compact")
     parser.add_argument("--real-modal-url", default="https://the-internet.herokuapp.com/entry_ad")
     asyncio.run(run(parser.parse_args()))
