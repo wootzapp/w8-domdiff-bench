@@ -92,6 +92,7 @@ Allowed actions:
 - {"action":"click","selector":"button[name='add']","thoughts":"..."}
 - {"action":"type","text":"search query","thoughts":"..."}
 - {"action":"fill","ref":"e3","text":"input text","thoughts":"..."}
+- {"action":"select","ref":"e3","text":"Option 2","thoughts":"..."}
 - {"action":"press","key":"Enter","thoughts":"..."}
 - {"action":"scroll","pixels":700,"thoughts":"..."}  // positive = down, negative = up
 - {"action":"wait","seconds":2,"thoughts":"..."}
@@ -99,6 +100,9 @@ Allowed actions:
 
 Decision rules:
 1. Use current refs when possible. Coordinates are internal to the runner; do not output coordinates.
+   For native dropdown/select controls, use the `select` action instead of repeatedly clicking the closed dropdown UI.
+   For ordinary forms/search/login pages, after filling the final field, prefer pressing Enter from
+   the focused field to submit; if Enter fails or focus is unclear, use a visible submit button.
 2. Elements marked above fold or below fold are on the page but off screen. You may target their ref
    directly; the runner scrolls it into view automatically. Do not scroll only to reach a ref already
    listed in the observation.
@@ -113,22 +117,29 @@ Decision rules:
    broken and change strategy.
 7. When fewer than 5 steps remain, either complete the task or terminate with failure and explain
    the blocker. Do not start new exploration.
-8. Before returning success, quote in final_answer the specific visible text or state from the current
+8. For ordinal/list tasks (for example first/third/eleventh item), count items in page order from
+   the current observation and quote the item text that proves the ordinal. Do not infer an ordinal
+   from a nearby visible item.
+9. For tasks that say to scroll/load until more content appears, do not return success merely because
+   the page scrolled. Verify that additional content was added or that the requested ordinal item is
+   now present after the load. If no new content appears after two waits/strategy changes, terminate
+   with failure and explain.
+10. Before returning success, quote in final_answer the specific visible text or state from the current
    observation proving completion. If you cannot quote it, the task is not complete.
 """
 
-KEY_CODES = {
-    "Enter": "Enter",
-    "Escape": "Escape",
-    "Tab": "Tab",
-    "Backspace": "Backspace",
-    "Delete": "Delete",
-    "Home": "Home",
-    "End": "End",
-    "ArrowDown": "ArrowDown",
-    "ArrowUp": "ArrowUp",
-    "ArrowLeft": "ArrowLeft",
-    "ArrowRight": "ArrowRight",
+KEY_EVENTS = {
+    "Enter": {"key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13, "text": "\r", "unmodifiedText": "\r"},
+    "Escape": {"key": "Escape", "code": "Escape", "windowsVirtualKeyCode": 27, "nativeVirtualKeyCode": 27},
+    "Tab": {"key": "Tab", "code": "Tab", "windowsVirtualKeyCode": 9, "nativeVirtualKeyCode": 9, "text": "\t", "unmodifiedText": "\t"},
+    "Backspace": {"key": "Backspace", "code": "Backspace", "windowsVirtualKeyCode": 8, "nativeVirtualKeyCode": 8},
+    "Delete": {"key": "Delete", "code": "Delete", "windowsVirtualKeyCode": 46, "nativeVirtualKeyCode": 46},
+    "Home": {"key": "Home", "code": "Home", "windowsVirtualKeyCode": 36, "nativeVirtualKeyCode": 36},
+    "End": {"key": "End", "code": "End", "windowsVirtualKeyCode": 35, "nativeVirtualKeyCode": 35},
+    "ArrowDown": {"key": "ArrowDown", "code": "ArrowDown", "windowsVirtualKeyCode": 40, "nativeVirtualKeyCode": 40},
+    "ArrowUp": {"key": "ArrowUp", "code": "ArrowUp", "windowsVirtualKeyCode": 38, "nativeVirtualKeyCode": 38},
+    "ArrowLeft": {"key": "ArrowLeft", "code": "ArrowLeft", "windowsVirtualKeyCode": 37, "nativeVirtualKeyCode": 37},
+    "ArrowRight": {"key": "ArrowRight", "code": "ArrowRight", "windowsVirtualKeyCode": 39, "nativeVirtualKeyCode": 39},
 }
 
 
@@ -177,6 +188,80 @@ def get_observation_dict(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(observation, dict):
         raise RecorderError(f"ChromiumRL.getAgentObservation returned unexpected payload: {payload}")
     return observation
+
+
+FORM_CONTROL_TAGS = {"input", "select", "textarea", "option"}
+BLOCKABLE_TAGS = {"button", "input", "select", "textarea", "summary"}
+BLOCKABLE_ROLES = {
+    "button", "checkbox", "radio", "tab", "menuitem", "combobox",
+    "searchbox", "textbox", "switch", "slider", "spinbutton",
+}
+
+
+def is_actionable_for_blocking(element: dict[str, Any]) -> bool:
+    """Return whether isHitTestable=false should be interpreted as overlay blocking.
+
+    ChromiumRL can mark visible text/container elements as not hit-testable even when
+    no overlay exists. Overlay detection must only count elements a user could
+    reasonably act on; otherwise normal content pages look blocked and the model
+    changes strategy incorrectly. Native option nodes are handled through the
+    select action, not by clicking the OS dropdown surface.
+    """
+    tag = str(element.get("tag") or element.get("nodeName") or "").lower()
+    if tag == "option":
+        return False
+    role = str(element.get("role") or "").lower()
+    if tag in BLOCKABLE_TAGS or role in BLOCKABLE_ROLES:
+        return True
+    if element.get("onclick") or element.get("tabindex") not in (None, "", -1, "-1"):
+        return True
+    # Plain anchors frequently have an accessibility/link box whose centre is not
+    # the hit-testable child surface. Treating every such anchor as overlay-blocked
+    # creates false global overlay warnings on normal product grids and article lists.
+    return False
+
+
+def merge_js_form_controls(primary_payload: dict[str, Any], js_payload: dict[str, Any]) -> int:
+    """Augment model observations with generic form controls JS can see but ChromiumRL omits.
+
+    ChromiumRL's accessibility-oriented observation can drop unlabeled native controls.
+    The DOM/diff pipeline still sees them, but the model cannot act on controls that
+    are absent from its observation.  This merge is source-generic and only adds
+    form controls by stable DOM identity; it does not use site-specific selectors.
+    """
+    primary_obs = get_observation_dict(primary_payload)
+    js_obs = get_observation_dict(js_payload)
+    primary_elements = primary_obs.setdefault("elements", [])
+    if not isinstance(primary_elements, list):
+        primary_obs["elements"] = primary_elements = []
+    seen = set()
+    for element in primary_elements:
+        if not isinstance(element, dict):
+            continue
+        for key in ("selector", "cssSelector", "xpath"):
+            value = element.get(key)
+            if value not in (None, "", [], {}):
+                seen.add((key, str(value)))
+    added = 0
+    for element in js_obs.get("elements", []) or []:
+        if not isinstance(element, dict):
+            continue
+        tag = str(element.get("tag") or "").lower()
+        if tag not in FORM_CONTROL_TAGS:
+            continue
+        identity = next(((key, str(element.get(key))) for key in ("selector", "cssSelector", "xpath") if element.get(key) not in (None, "", [], {})), None)
+        if identity and identity in seen:
+            continue
+        clone = dict(element)
+        clone["source"] = clone.get("source") or "js_form_control"
+        primary_elements.append(clone)
+        if identity:
+            seen.add(identity)
+        added += 1
+    if added:
+        primary_obs.setdefault("stats", {})["jsFormControlsMerged"] = added
+        primary_payload["js_form_controls_merged"] = added
+    return added
 
 
 def first_number(*values: Any) -> float | None:
@@ -264,6 +349,8 @@ def normalize_action(action: dict[str, Any]) -> dict[str, Any]:
         "open": "navigate",
         "left_click": "click",
         "key": "press",
+        "choose": "select",
+        "select_option": "select",
     }
     normalized["action"] = aliases.get(name, name)
     normalized.setdefault("thoughts", "Automated browser action")
@@ -275,7 +362,7 @@ def action_signature(action: dict[str, Any]) -> dict[str, Any]:
 
     name = action_name(action)
     signature: dict[str, Any] = {"action": name}
-    for key in ("ref", "selector", "url", "key", "pixels", "text"):
+    for key in ("ref", "selector", "url", "key", "pixels", "text", "value"):
         if key in action:
             value = action.get(key)
             if isinstance(value, str):
@@ -584,6 +671,14 @@ class DesktopWootzAgent:
                 if observation_source == "chromiumrl":
                     raise
                 payload = await js_payload(str(error))
+        if observation_source in {"auto", "cross_check"} and payload.get("source") == "chromiumrl":
+            try:
+                js_controls = await collect_js_observation(self.cdp, label="snapshot_form_controls")
+                added_controls = merge_js_form_controls(payload, js_controls)
+                if added_controls:
+                    log_event(self.cdp, "observation_augmented", source="js_form_control", added=added_controls, scope="model_snapshot")
+            except Exception as error:
+                log_event(self.cdp, "warning", warning="js_form_control_merge_failed", error=str(error))
         trim_observation_context(payload)
         observation = get_observation_dict(payload)
         elements = observation.get("elements", [])
@@ -617,7 +712,7 @@ class DesktopWootzAgent:
                 pos = element_position(element, viewport_height)
                 if pos == "in viewport":
                     total_in_view += 1
-                    if element.get("isHitTestable") is False:
+                    if is_actionable_for_blocking(element) and element.get("isHitTestable") is False:
                         blocked_in_view += 1
                 sections.setdefault(pos, []).append((ref, element))
         total_above = len(sections.get("above fold", []))
@@ -647,7 +742,7 @@ class DesktopWootzAgent:
                     covered_text.add(" ".join(label.split()).lower())
                 href = short(element.get("href"), 90)
                 href_text = f" href={json.dumps(href, ensure_ascii=False)}" if href else ""
-                blocked = " [blocked]" if section_name == "in viewport" and element.get("isHitTestable") is False else ""
+                blocked = " [blocked]" if section_name == "in viewport" and is_actionable_for_blocking(element) and element.get("isHitTestable") is False else ""
                 lines.append(f"  [{ref}] {role}{blocked} {json.dumps(label, ensure_ascii=False)}{href_text}")
             if len(items) > 80:
                 lines.append(f"  ... {len(items) - 80} more {section_name} elements omitted")
@@ -777,49 +872,78 @@ class DesktopWootzAgent:
         except Exception as error:
             log_event(self.cdp, "warning", warning="fill_verify_failed", error=str(error))
 
+    async def _dispatch_key(self, event_type: str, params: dict[str, Any]) -> None:
+        event_params = dict(params)
+        if event_type == "keyUp":
+            event_params.pop("text", None)
+            event_params.pop("unmodifiedText", None)
+        await self.cdp.send(
+            "Input.dispatchKeyEvent",
+            {"type": event_type, **event_params},
+            use_session=True,
+            timeout=TIMEOUT_INPUT,
+        )
+
     async def press(self, key: str) -> None:
         if not key:
             raise RecorderError("press/key action requires key")
         if key in {"Control+A", "Ctrl+A", "Meta+A", "Command+A"}:
-            await self.cdp.send(
-                "Input.dispatchKeyEvent",
-                {"type": "keyDown", "key": "Control", "code": "ControlLeft", "modifiers": 2},
-                use_session=True,
-                timeout=TIMEOUT_INPUT,
-            )
-            await self.cdp.send(
-                "Input.dispatchKeyEvent",
-                {"type": "keyDown", "key": "a", "code": "KeyA", "modifiers": 2},
-                use_session=True,
-                timeout=TIMEOUT_INPUT,
-            )
-            await self.cdp.send(
-                "Input.dispatchKeyEvent",
-                {"type": "keyUp", "key": "a", "code": "KeyA", "modifiers": 2},
-                use_session=True,
-                timeout=TIMEOUT_INPUT,
-            )
-            await self.cdp.send(
-                "Input.dispatchKeyEvent",
-                {"type": "keyUp", "key": "Control", "code": "ControlLeft"},
-                use_session=True,
-                timeout=TIMEOUT_INPUT,
-            )
+            modifier_name = "Meta" if key in {"Meta+A", "Command+A"} else "Control"
+            modifier_code = "MetaLeft" if modifier_name == "Meta" else "ControlLeft"
+            modifier_bit = 4 if modifier_name == "Meta" else 2
+            modifier_vk = 91 if modifier_name == "Meta" else 17
+            await self._dispatch_key("keyDown", {"key": modifier_name, "code": modifier_code, "windowsVirtualKeyCode": modifier_vk, "nativeVirtualKeyCode": modifier_vk, "modifiers": modifier_bit})
+            await self._dispatch_key("keyDown", {"key": "a", "code": "KeyA", "windowsVirtualKeyCode": 65, "nativeVirtualKeyCode": 65, "modifiers": modifier_bit})
+            await self._dispatch_key("keyUp", {"key": "a", "code": "KeyA", "windowsVirtualKeyCode": 65, "nativeVirtualKeyCode": 65, "modifiers": modifier_bit})
+            await self._dispatch_key("keyUp", {"key": modifier_name, "code": modifier_code, "windowsVirtualKeyCode": modifier_vk, "nativeVirtualKeyCode": modifier_vk})
             return
-        code = KEY_CODES.get(key, key)
-        params = {"key": key, "code": code}
-        await self.cdp.send(
-            "Input.dispatchKeyEvent",
-            {"type": "keyDown", **params},
-            use_session=True,
-            timeout=TIMEOUT_INPUT,
-        )
-        await self.cdp.send(
-            "Input.dispatchKeyEvent",
-            {"type": "keyUp", **params},
-            use_session=True,
-            timeout=TIMEOUT_INPUT,
-        )
+        params = KEY_EVENTS.get(key)
+        if params is None and len(key) == 1:
+            upper = key.upper()
+            params = {"key": key, "code": "Key" + upper if upper.isalpha() else key, "windowsVirtualKeyCode": ord(upper), "nativeVirtualKeyCode": ord(upper), "text": key, "unmodifiedText": key}
+        if params is None:
+            params = {"key": key, "code": key}
+        await self._dispatch_key("keyDown", params)
+        await self._dispatch_key("keyUp", params)
+
+    async def select_option(self, *, ref: str | None = None, selector: str | None = None, text: str = "", value: str = "") -> dict[str, Any]:
+        element = None
+        if ref:
+            if self._last_snapshot is None or ref not in self._last_snapshot.refs:
+                raise RecorderError(f"ref {ref!r} is not in the current observation")
+            element = self._last_snapshot.refs[ref]
+        selector_value = selector or ((element or {}).get("selector") or (element or {}).get("cssSelector"))
+        xpath_value = (element or {}).get("xpath")
+        expression = f"""
+        (() => {{
+          const selector = {json.dumps(selector_value)};
+          const xpath = {json.dumps(xpath_value)};
+          const desiredText = {json.dumps(text)}.trim().toLowerCase();
+          const desiredValue = {json.dumps(value)};
+          const byXPath = (path) => path ? document.evaluate(path, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue : null;
+          let el = selector ? document.querySelector(selector) : null;
+          if (!el && xpath) el = byXPath(xpath);
+          if (!el) return {{error: 'select target not found'}};
+          let select = el.tagName && el.tagName.toLowerCase() === 'select' ? el : el.closest && el.closest('select');
+          if (!select) return {{error: 'target is not inside a select element', tag: el.tagName}};
+          const options = Array.from(select.options || []);
+          let option = null;
+          if (desiredValue) option = options.find(o => o.value === desiredValue);
+          if (!option && desiredText) option = options.find(o => (o.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase() === desiredText || (o.textContent || '').toLowerCase().includes(desiredText));
+          if (!option && el.tagName && el.tagName.toLowerCase() === 'option') option = el;
+          if (!option) return {{error: 'option not found', options: options.map(o => ({{text: (o.textContent || '').trim(), value: o.value}})).slice(0, 20)}};
+          select.value = option.value;
+          for (const o of options) o.selected = (o === option);
+          select.dispatchEvent(new Event('input', {{bubbles:true}}));
+          select.dispatchEvent(new Event('change', {{bubbles:true}}));
+          return {{text: (option.textContent || '').trim(), value: option.value, selectedIndex: select.selectedIndex}};
+        }})()
+        """
+        response = await self.cdp.send("Runtime.evaluate", {"expression": expression, "returnByValue": True, "awaitPromise": True}, use_session=True, timeout=TIMEOUT_EVALUATE)
+        result = response.get("result", {}).get("value") or response.get("result", {}).get("result", {}).get("value")
+        if not isinstance(result, dict) or result.get("error"):
+            raise RecorderError(f"select failed: {result}")
+        return result
 
     async def scroll(self, pixels: float, coordinate: Any = None) -> None:
         if coordinate is not None:
@@ -861,7 +985,7 @@ class DesktopWootzAgent:
             if self._last_snapshot is None or ref not in self._last_snapshot.refs:
                 raise RecorderError(f"ref {ref!r} is not in the current observation")
             element = self._last_snapshot.refs[ref]
-            if element.get("isInViewport") is not False and element.get("isHitTestable") is False:
+            if element.get("isInViewport") is not False and is_actionable_for_blocking(element) and element.get("isHitTestable") is False:
                 self.last_action_details["blocked_refused"] = True
                 raise RecorderError(f"ref {ref!r} is blocked by an overlay (isHitTestable=false); dismiss the overlay first")
             center = element_center(element)
@@ -932,7 +1056,13 @@ class DesktopWootzAgent:
             use_session=True,
             timeout=TIMEOUT_EVALUATE,
         )
-        value = response.get("result", {}).get("result", {}).get("value", {})
+        result = response.get("result", {}) if isinstance(response, dict) else {}
+        if isinstance(result.get("result"), dict):
+            value = result.get("result", {}).get("value")
+        else:
+            value = result.get("value")
+        if value is None:
+            value = {}
         if not isinstance(value, dict) or value.get("error"):
             raise RecorderError(str(value.get("error") if isinstance(value, dict) else value))
         x = value.get("x")
@@ -966,6 +1096,14 @@ class DesktopWootzAgent:
         elif name == "press":
             key = str(normalized.get("key") or (normalized.get("keys") or [""])[0]).strip()
             await self.press(key)
+        elif name == "select":
+            selected = await self.select_option(
+                ref=normalized.get("ref"),
+                selector=normalized.get("selector"),
+                text=str(normalized.get("text") or normalized.get("label") or ""),
+                value=str(normalized.get("value") or ""),
+            )
+            normalized["selected"] = selected
         elif name == "scroll":
             await self.scroll(float(normalized.get("pixels", normalized.get("deltaY", 0))))
         elif name == "wait":

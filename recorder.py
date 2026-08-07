@@ -709,7 +709,7 @@ async def reset_chromiumrl_tracing(cdp: CDPConnection, *, full_tracing: bool = F
 JS_OBSERVATION_EXPRESSION = r"""
 (() => {
   const t0 = performance.now();
-  const SEL = 'a[href],button,input,select,textarea,summary,[role=button],[role=link],' +
+  const SEL = 'a[href],button,input,select,textarea,option,summary,[role=button],[role=link],' +
               '[role=checkbox],[role=radio],[role=tab],[role=menuitem],[role=combobox],' +
               '[role=searchbox],[role=textbox],[onclick],[tabindex]:not([tabindex="-1"]),' +
               '[contenteditable=""],[contenteditable=true]';
@@ -728,23 +728,36 @@ JS_OBSERVATION_EXPRESSION = r"""
     const out = [];
     for (const el of root.querySelectorAll(SEL)) {
       if (performance.now() - t0 > 1200) return {out, truncated: true};
-      const r = el.getBoundingClientRect();
+      const tag = el.tagName.toLowerCase();
+      const anchor = tag === 'option' && el.parentElement ? el.parentElement : el;
+      const r = anchor.getBoundingClientRect();
       if (!r.width || !r.height) continue;
-      const cs = getComputedStyle(el);
+      const cs = getComputedStyle(anchor);
       if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
       if (el.disabled || el.getAttribute('aria-hidden') === 'true') continue;
-      const name = (el.getAttribute('aria-label') || el.innerText || el.value ||
-                    el.placeholder || el.title || el.alt || '').replace(/\s+/g,' ').trim();
+      const labelText = (() => {
+        if (el.labels && el.labels.length) return Array.from(el.labels).map(l => l.innerText || '').join(' ');
+        const closest = el.closest && el.closest('label');
+        if (closest) return closest.innerText || '';
+        if ((el.type === 'checkbox' || el.type === 'radio') && el.nextSibling) return el.nextSibling.textContent || '';
+        return '';
+      })();
+      const name = (el.getAttribute('aria-label') || labelText || el.innerText ||
+                    (tag === 'option' ? el.textContent : '') || el.placeholder || el.title || el.alt ||
+                    (tag !== 'input' || !['checkbox','radio'].includes(String(el.type || '').toLowerCase()) ? el.value : '') || '').replace(/\s+/g,' ').trim();
       const cx = ox + r.left + r.width / 2, cy = oy + r.top + r.height / 2;
-      out.push({
-        tag: el.tagName.toLowerCase(), role: el.getAttribute('role') || '',
+      const item = {
+        tag, role: el.getAttribute('role') || '',
         accessibleName: name.slice(0, 120), href: el.getAttribute('href') || '',
         value: (el.value || '').toString().slice(0, 80), xpath: xpath(el),
         bounds: { x: ox + r.left, y: oy + r.top, width: r.width, height: r.height },
         centerX: cx, centerY: cy,
         isInViewport: cy >= 0 && cy <= vh && cx >= 0 && cx <= vw,
-        isVisible: true, isHitTestable: true
-      });
+        isVisible: true, isHitTestable: tag !== 'option'
+      };
+      if ('checked' in el) item.checked = !!el.checked;
+      if ('selected' in el) item.selected = !!el.selected;
+      out.push(item);
       if (out.length >= 300) return {out, truncated: true};
     }
     return {out, truncated: false};

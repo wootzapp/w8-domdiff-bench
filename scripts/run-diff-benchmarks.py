@@ -14,6 +14,8 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from agent_browser.desktop_agent import DesktopWootzAgent, SYSTEM_PROMPT, is_actionable_for_blocking  # noqa: E402
+
 from recorder import (  # noqa: E402
     CDPConnection,
     RecorderError,
@@ -189,6 +191,45 @@ async def run(args):
         cdp.log_path = out / "log.jsonl"
         await enable_page_domains(cdp)
         await reset_chromiumrl_tracing(cdp)
+        agent = DesktopWootzAgent(cdp)
+
+        # Regression: CDP key dispatch must include real virtual key codes.
+        task = out / "regress-key-enter"
+        write_json(task / "manifest.json", {"task_id":"regress-key-enter", "kind":"runner-regression"})
+        await navigate(cdp, data_url("""<input id='x' autofocus><script>window.events=[]; const x=document.getElementById('x'); x.addEventListener('keydown', e=>events.push('down:'+e.key+':'+e.keyCode)); x.addEventListener('change', e=>events.push('change:'+x.value));</script>"""))
+        await agent.fill(selector="#x", text="abc")
+        await agent.press("Enter")
+        key_state = await eval_value(cdp, "({value:x.value, events})")
+        ok = isinstance(key_state, dict) and key_state.get("value") == "abc" and "down:Enter:13" in (key_state.get("events") or []) and "change:abc" in (key_state.get("events") or [])
+        await add_result(task, "regress-key-enter", ok, "ok" if ok else json.dumps(key_state, ensure_ascii=False))
+
+        # Regression: model observations must include unlabeled native form controls.
+        task = out / "regress-form-observation"
+        write_json(task / "manifest.json", {"task_id":"regress-form-observation", "kind":"runner-regression"})
+        await navigate(cdp, data_url("""<form><input type='checkbox'> checkbox 1 <select id='s'><option>Please select</option><option value='2'>Option 2</option></select></form>"""))
+        snap = await agent.snapshot(observation_source="auto", observation_max_elements=250)
+        has_checkbox = any((e.get("tag") == "input" and "checkbox" in (e.get("accessibleName") or "").lower()) for e in snap.refs.values())
+        option_ref = next((r for r,e in snap.refs.items() if e.get("tag") == "option" and "Option 2" in (e.get("accessibleName") or "")), None)
+        selected = await agent.select_option(ref=option_ref, text="Option 2") if option_ref else {}
+        selected_value = await eval_value(cdp, "document.querySelector('#s').value")
+        ok = bool(has_checkbox and option_ref and selected_value == "2")
+        await add_result(task, "regress-form-observation", ok, "ok" if ok else f"has_checkbox={has_checkbox} option_ref={option_ref} selected={selected} value={selected_value}")
+
+        # Regression: plain anchors with false hit-test metadata must not create overlay warnings.
+        task = out / "regress-overlay-classifier"
+        write_json(task / "manifest.json", {"task_id":"regress-overlay-classifier", "kind":"runner-regression"})
+        ok = (
+            not is_actionable_for_blocking({"tag":"a", "href":"/product", "isHitTestable":False})
+            and is_actionable_for_blocking({"tag":"button", "isHitTestable":False})
+            and is_actionable_for_blocking({"role":"checkbox", "isHitTestable":False})
+        )
+        await add_result(task, "regress-overlay-classifier", ok, "ok" if ok else "anchor/button/checkbox blocking classification mismatch")
+
+        # Regression: prompt keeps generic grounding rules for ordinal and load-more tasks.
+        task = out / "regress-prompt-grounding"
+        write_json(task / "manifest.json", {"task_id":"regress-prompt-grounding", "kind":"runner-regression"})
+        ok = "ordinal/list tasks" in SYSTEM_PROMPT and "scroll/load until more content appears" in SYSTEM_PROMPT
+        await add_result(task, "regress-prompt-grounding", ok, "ok" if ok else "missing ordinal/load-more grounding rule")
 
         # Unit-level controlled checkbox.
         task = out / "diff-checkbox"
