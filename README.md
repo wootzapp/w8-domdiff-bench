@@ -267,7 +267,7 @@ Final-state DOM diff is intentionally absent. Use the last step's `dom_diff.json
 Canonical example on disk:
 
 ```text
-tasks/task-v7-books-check-003
+tasks/task-v8-layout-both-001
 ```
 
 Validate a task folder:
