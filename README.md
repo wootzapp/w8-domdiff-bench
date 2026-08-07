@@ -74,7 +74,7 @@ nano .env.agent-browser
 Set:
 
 ```text
-AGENT_BROWSER_MODEL=gpt-4.1
+AGENT_BROWSER_MODEL=gpt-5.1
 OPENAI_API_KEY=<your key>
 ```
 

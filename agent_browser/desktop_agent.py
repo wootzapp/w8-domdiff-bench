@@ -1321,6 +1321,40 @@ async def clear_browser_data_for_fresh_task(cdp: CDPConnection) -> dict[str, Any
     return result
 
 
+async def preflight_openai_model(*, api_key: str, model: str, timeout: float = 20.0) -> dict[str, Any]:
+    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+    url = base_url + "/models"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    last_error: BaseException | None = None
+    data: dict[str, Any] | None = None
+    for attempt in range(1, 4):
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session:
+                async with session.get(url, headers=headers) as response:
+                    text = await response.text()
+                    if response.status >= 400:
+                        raise RecorderError(f"OpenAI model preflight failed HTTP {response.status}: {text[:1000]}")
+                    data = json.loads(text)
+                    break
+        except RecorderError:
+            raise
+        except json.JSONDecodeError as error:
+            raise RecorderError("OpenAI model preflight failed: /models did not return JSON") from error
+        except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+            last_error = error
+            if attempt < 3:
+                await asyncio.sleep(attempt)
+                continue
+    if data is None:
+        detail = repr(last_error) if last_error is not None else "unknown error"
+        raise RecorderError(f"OpenAI model preflight failed after 3 attempts: {detail}")
+    ids = sorted(str(item.get("id")) for item in data.get("data", []) if isinstance(item, dict) and item.get("id"))
+    if model not in ids:
+        available = ", ".join(ids) if ids else "<none returned>"
+        raise RecorderError(f"AGENT_BROWSER_MODEL {model!r} is not available from {base_url}/models. Available model ids: {available}")
+    return {"ok": True, "model": model, "available_count": len(ids)}
+
+
 async def call_openai_json(
     *,
     api_key: str,
@@ -1361,7 +1395,13 @@ async def call_openai_json(
                     if not isinstance(content, str) or not content.strip():
                         raise RecorderError(f"OpenAI response had no JSON content: {data}")
                     try:
-                        return normalize_action(json.loads(content))
+                        action = normalize_action(json.loads(content))
+                        usage = data.get("usage")
+                        if isinstance(usage, dict):
+                            action["_openai_usage"] = usage
+                        if data.get("model"):
+                            action["_openai_response_model"] = data.get("model")
+                        return action
                     except json.JSONDecodeError as error:
                         raise RecorderError(f"OpenAI did not return valid JSON: {content[:1000]}") from error
             except (aiohttp.ClientError, asyncio.TimeoutError) as error:
@@ -1905,7 +1945,7 @@ def create_verifier_bundle(task_dir: Path) -> dict[str, Any]:
     for step_dir in sorted(task_dir.glob("step_*")):
         if not step_dir.is_dir():
             continue
-        for name in ("action.json", "after.jpg", "before.jpg", "dom_after.json.gz", "dom_before.json.gz", "dom_diff.json", "page_state.json", "observation_before.json.gz", "observation_after.json.gz", "observation_diff.json"):
+        for name in ("action.json", "after.jpg", "before.jpg", "dom_after.json.gz", "dom_before.json.gz", "dom_diff.json", "dom_diff.txt", "page_state.json", "observation_before.json.gz", "observation_after.json.gz", "observation_diff.json"):
             p = step_dir / name
             if p.exists():
                 include.append(p)
@@ -1954,6 +1994,8 @@ async def run(args: argparse.Namespace) -> None:
         raise RecorderError("OPENAI_API_KEY is missing. Add it to /data/aayush/task-recorder/.env.agent-browser")
     if not model:
         raise RecorderError("AGENT_BROWSER_MODEL is missing. Add it to /data/aayush/task-recorder/.env.agent-browser")
+    preflight = await preflight_openai_model(api_key=api_key, model=model)
+    print(f"OpenAI model preflight ok: {preflight['model']} ({preflight['available_count']} models visible)")
 
     task_dir = initialize_task(
         Path(args.output_root),
