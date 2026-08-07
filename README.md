@@ -78,6 +78,8 @@ AGENT_BROWSER_MODEL=gpt-5.1
 OPENAI_API_KEY=<your key>
 ```
 
+Cost planning: the 10-task gpt-5.1 acceptance run on 2026-08-07 used about `$0.171` total, or `$0.017` per task at GPT-5.1 pricing of `$1.25 / 1M` input tokens, `$0.125 / 1M` cached input tokens, and `$10 / 1M` output tokens. At that measured rate, a 1,000-task recording run is about `$17.10`. Actual cost varies with page size, step count, cache hits, and model pricing changes.
+
 Do not commit `.env.agent-browser` if it contains secrets.
 
 Run a task:
