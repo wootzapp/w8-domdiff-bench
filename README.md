@@ -287,6 +287,9 @@ Do not confuse these:
 - `dom_diff.json` is the compact semantic diff computed from DOM projections.
 - `dom_diff.txt` is a line-oriented rendering of `dom_diff.json`, not a separate evidence source.
 
+Verifier integrations should use `dom_diff_schema.py` as the supported contract.
+It exposes `validate()`, `is_cross_document()`, and `iter_evidence_entries()` so external consumers do not need to branch directly on same-document vs cross-document JSON shapes. See `SCHEMA.md` for the field-level contract and examples.
+
 ### 1. Capture: `capture_state()` and `chromiumrl_call()`
 
 The runner captures DOM state with `ChromiumRL.saveDOMState` through `capture_state()` in `recorder.py`. ChromiumRL calls go through `chromiumrl_call()`, which can rebind/retry and records failures instead of silently hanging the run.

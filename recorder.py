@@ -23,8 +23,10 @@ from urllib.parse import urlsplit, urlunsplit
 
 import aiohttp
 
+from dom_diff_schema import ARTIFACT_VERSION
 
-SCHEMA_VERSION = "1.0"
+
+SCHEMA_VERSION = ARTIFACT_VERSION
 TASK_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 COORDINATE_ACTIONS = {"click", "left_click", "scroll", "mouse_move", "fill"}
 
@@ -2425,6 +2427,7 @@ def build_compact_dom_diff(
         "compareDOMState": {"timing": compare_timing or {}, "summary": ((compare_result or {}).get("result") or compare_result or {}).get("summary", {}) if isinstance(compare_result, dict) else {}},
     }
     base: dict[str, Any] = {
+        "artifact_version": SCHEMA_VERSION,
         "schema_version": SCHEMA_VERSION,
         "method": "local_slim_dom_semantic_diff",
         "captured_at": utc_now(),
