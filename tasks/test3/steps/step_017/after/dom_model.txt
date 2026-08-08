@@ -1,0 +1,96 @@
+URL: https://docs.python.org/3/library/pathlib.html
+Title: pathlib — Object-oriented filesystem paths — Python 3.14.7 documentation
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=5000 groups=126 truncated=True
+
+=== VISIBLE CONTENT ===
+Context: Inheritance diagram showing the classes available in pathlib. The most basic cl…
+- Pure Path . name ¶
+- A string representing the final path component, excluding the drive and root, if any: Copy >>> PurePosix Path ( 'my/library/setup.py' ) . name 'setup.py' UNC drive names are not considered: Copy >>> PureWindows Path ( '//some/share/setup.py' ) . name 'setup.py' >>> PureWindows Path ( '//some/share' ) . name ''
+- Pure Path . suffix ¶
+- The last dot-separated portion of the final component, if any: Copy >>> PurePosix Path ( 'my/library/setup.py' ) . suffix '.py' >>> PurePosix Path ( 'my/library.tar.gz' ) . suffix '.gz' >>> PurePosix Path ( 'my/library' ) . suffix '' This is commonly called the file extension. Changed in version 3.14: A single dot (” . ”) is considered a valid suffix.
+- Pure Path . suffixes ¶
+- A list of the path ’s suffixes, often called file extensions: Copy >>> PurePosix Path ( 'my/library.tar.gar' ) . suffixes ['.tar', '.gar'] >>> PurePosix Path ( 'my/library.tar.gz' ) . suffixes ['.tar', '.gz'] >>> PurePosix Path ( 'my/library' ) . suffixes [] Changed in version 3.14: A single dot (” . ”) is considered a valid suffix.
+- Pure Path . stem ¶
+- The final path component, without its suffix: Copy >>> PurePosix Path ( 'my/library.tar.gz' ) . stem 'library.tar' >>> PurePosix Path ( 'my/library.tar' ) . stem 'library' >>> PurePosix Path ( 'my/library' ) . stem 'library' Changed in version 3.14: A single dot (” . ”) is considered a valid suffix.
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. Use page scroll to bring this content into view.
+Context: Inheritance diagram showing the classes available in pathlib. The most basic cl…
+- — Object-oriented filesystem s
+- Added in version 3.4.
+- Source code: Lib/ pathlib /
+- This module offers classes representing filesystem s with semantics appropriate for different operating systems. classes are divided between , which provide purely computational operations without I/O, and , which inherit from pure paths bu
+- If you’ve never used this module before or just aren’t sure which class is right for your task, is most likely what you need. It instantiates a for the platform the code is running on.
+- Pure s are useful in some special cases; for example:
+- If you want to manipulate Windows path s on a Unix machine (or vice versa). You cannot instantiate a Windows Path when running on Unix, but you can instantiate PureWindowsPath .
+- You want to make sure that your code only manipulates path s without actually accessing the OS. In this case, instantiating one of the pure classes may be useful since those simply don’t have any OS-accessing operations.
+- See also
+- : The module – object-oriented filesystem s.
+- For low-level manipulation on strings, you can also use the module.
+- Basic use
+- Importing the main class:
+- >>> from pathlib import Path
+- Listing subdirectories:
+- >>> p = Path ( '.' ) >>> [ x for x in p . iterdir () if x . is_dir ()] [Posix Path ('.hg'), Posix Path ('docs'), Posix Path ('dist'), Posix Path ('__pycache__'), Posix Path ('build')]
+- Listing Python source files in this directory tree:
+- >>> list ( p . glob ( '**/*.py' )) [Posix Path ('test_ pathlib .py'), PosixPath('setup.py'), Posix Path (' pathlib .py'), PosixPath('docs/conf.py'), Posix Path ('build/lib/ pathlib .py')]
+- Navigating inside a directory tree:
+- >>> p = Path ( '/etc' ) >>> q = p / 'init.d' / 'reboot' >>> q Posix Path ('/etc/init.d/reboot') >>> q . resolve () Posix Path ('/etc/rc.d/init.d/halt')
+- Querying properties:
+- >>> q . exists () True >>> q . is_dir () False
+- Opening a file:
+- >>> with q . open () as f : f . readline () ... '#!/bin/bash\n'
+- Exceptions
+- exception pathlib . UnsupportedOperation ¶
+- An exception inheriting NotImplementedError that is raised when an unsupported operation is called on a path object. Added in version 3.13.
+- Pure s
+- Pure objects provide -handling operations which don’t actually access a filesystem. There are three ways to access these classes, which we also call :
+- class pathlib . Pure Path ( * path segments ) ¶
+- A generic class that represents the system’s path flavour (instantiating it creates either a PurePosix Path or a PureWindowsPath ): Copy >>> Pure Path ( 'setup.py' ) # Running on a Unix machine PurePosix Path ('setup.py') Each element of path segments can be either a string representing a path segment, or an object implementing the os. Path Like interface w…
+- class pathlib . PurePosix Path ( * path segments ) ¶
+- A subclass of Pure Path , this path flavour represents non-Windows filesystem path s: Copy >>> PurePosix Path ( '/etc/hosts' ) PurePosix Path ('/etc/hosts') path segments is specified similarly to Pure Path .
+- class pathlib . PureWindows Path ( * path segments ) ¶
+- A subclass of Pure Path , this path flavour represents Windows filesystem path s, including UNC paths : Copy >>> PureWindows Path ( 'c:/' , 'Users' , 'Ximénez' ) PureWindows Path ('c:/Users/Ximénez') >>> PureWindows Path ( '//server/share/file' ) PureWindows Path ('//server/share/file') path segments is specified similarly to Pure Path .
+- Regardless of the system you’re running on, you can instantiate all of these classes, since they don’t provide any operation that does system calls.
+- General properties
+- s are immutable and . Paths of a same flavour are comparable and orderable. These properties respect the flavour’s case-folding semantics:
+- >>> PurePosix Path ( 'foo' ) == PurePosix Path ( 'FOO' ) False >>> PureWindows Path ( 'foo' ) == PureWindows Path ( 'FOO' ) True >>> PureWindows Path ( 'FOO' ) in { PureWindows Path ( 'foo' ) } True >>> PureWindows Path ( 'C:' ) < PureWindows Path ( 'd:' ) True
+- s of a different flavour compare unequal and cannot be ordered:
+- File , line , in :
+- Operators
+- The slash operator helps create child s, like . If the argument is an absolute , the previous is ignored. On Windows, the drive is not reset when the argument is a rooted relative (e.g., ):
+- >>> p = Pure Path ( '/etc' ) >>> p PurePosix Path ('/etc') >>> p / 'init.d' / 'apache2' PurePosix Path ('/etc/init.d/apache2') >>> q = Pure Path ( 'bin' ) >>> '/usr' / q PurePosix Path ('/usr/bin') >>> p / '/an_absolute_ path ' PurePosix Path ('/an_absolute_ path ') >>> PureWindows Path ( 'c:/Windows' , '/Program Files' ) PureWindows Path ('c:/Program Files…
+- A object can be used anywhere an object implementing is accepted:
+- >>> import os >>> p = Pure Path ( '/etc' ) >>> os . fs path ( p ) '/etc'
+- The string representation of a is the raw filesystem itself (in native form, e.g. with backslashes under Windows), which you can pass to any function taking a file as a string:
+- >>> p = Pure Path ( '/etc' ) >>> str ( p ) '/etc' >>> p = PureWindows Path ( 'c:/Program Files' ) >>> str ( p ) 'c:\\Program Files'
+- Similarly, calling on a gives the raw filesystem as a bytes object, as encoded by :
+- >>> bytes ( p ) b'/etc'
+- Note
+- Calling is only recommended under Unix. Under Windows, the unicode form is the canonical representation of filesystem s.
+- Accessing individual parts
+- To access the individual “parts” (components) of a , use the following property:
+- Pure Path . parts ¶
+- A tuple giving access to the path ’s various components: Copy >>> p = Pure Path ( '/usr/bin/python3' ) >>> p . parts ('/', 'usr', 'bin', 'python3') >>> p = PureWindows Path ( 'c:/Program Files/PSF' ) >>> p . parts ('c:\\', 'Program Files', 'PSF') (note how the drive and local root are regrouped in a single part)
+- Methods and properties
+- Pure s provide the following methods and properties:
+- Pure Path . parser ¶
+- The implementation of the os. path module used for low-level path parsing and joining: either posix path or ntpath . Added in version 3.13.
+- Pure Path . drive ¶
+- A string representing the drive letter or name, if any: Copy >>> PureWindows Path ( 'c:/Program Files/' ) . drive 'c:' >>> PureWindows Path ( '/Program Files/' ) . drive '' >>> PurePosix Path ( '/etc' ) . drive '' UNC shares are also considered drives: Copy >>> PureWindows Path ( '//host/share/foo.txt' ) . drive '\\\\host\\share'
+  attachments: foo.txt
+- Pure Path . root ¶
+- A string representing the (local or global) root, if any: Copy >>> PureWindows Path ( 'c:/Program Files/' ) . root '\\' >>> PureWindows Path ( 'c:Program Files/' ) . root '' >>> PurePosix Path ( '/etc' ) . root '/' UNC shares always have a root: Copy >>> PureWindows Path ( '//host/share' ) . root '\\' If the path starts with more than two successive slashes…
+- Pure Path . anchor ¶
+- The concatenation of the drive and root: Copy >>> PureWindows Path ( 'c:/Program Files/' ) . anchor 'c:\\' >>> PureWindows Path ( 'c:Program Files/' ) . anchor 'c:' >>> PurePosix Path ( '/etc' ) . anchor '/' >>> PureWindows Path ( '//host/share' ) . anchor '\\\\host\\share\\'
+- Pure Path . parents ¶
+- An immutable sequence providing access to the logical ancestors of the path : Copy >>> p = PureWindows Path ( 'c:/foo/bar/setup.py' ) >>> p . parents [ 0 ] PureWindows Path ('c:/foo/bar') >>> p . parents [ 1 ] PureWindows Path ('c:/foo') >>> p . parents [ 2 ] PureWindows Path ('c:/') Changed in version 3.10: The parents sequence now supports slices and nega…
+- Pure Path . parent ¶
+- The logical parent of the path : Copy >>> p = PurePosix Path ( '/a/b/c/d' ) >>> p . parent PurePosix Path ('/a/b/c') You cannot go past an anchor, or empty path : Copy >>> p = PurePosix Path ( '/' ) >>> p . parent PurePosix Path ('/') >>> p = PurePosix Path ( '.' ) >>> p . parent PurePosix Path ('.') Note This is a purely lexical operation, hence the follow…
+- Pure Path . as_posix ( ) ¶
+- Return a string representation of the path with forward slashes ( / ): Copy >>> p = PureWindows Path ( 'c: \\ windows' ) >>> str ( p ) 'c:\\windows' >>> p . as_posix () 'c:/windows'
+[content hidden: 169 more]
+
+=== MEDIA / IMAGE LABELS ===
+- "Python logo" source=present context="Related"
+- "Inheritance diagram showing the classes available in pathlib. The most basic class is PurePath, which has three direct…" source=present context="Inheritance diagram showing the classes available in pathli…"
