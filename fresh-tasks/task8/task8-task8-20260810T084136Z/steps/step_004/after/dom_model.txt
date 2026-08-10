@@ -1,0 +1,190 @@
+URL: https://playwright.dev/docs/aria-snapshots
+Title: Snapshot testing | Playwright
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=2203 groups=131 truncated=True
+
+=== VISIBLE CONTENT ===
+- Ctrl
+Context: Docs sidebar
+- Getting Started Installation Writing tests Generating tests Running and debugging tests Trace viewer Setting up CI VS Code
+  actions: [4207] link "Getting Started"
+- Release notes
+- Canary releases
+- Playwright Test Agents Annotations Command line Configuration Configuration (use) Emulation Fixtures Global setup and teardown Parallelism Parameterize tests Projects Reporters Retries Sharding Timeouts TypeScript UI Mode Web server
+  actions: [4236] link "Playwright Test"
+Context: Breadcrumbs
+- Guides Snapshot testing On this page Snapshot testing Overview ​ With Playwright's Snapshot testing you can assert the accessibility tree of a page against a predefined snapshot template. await page . goto ( 'https://playwright.dev/' ) ; await expect ( page ) . toMatchAriaSnapshot ( ` - banner: - heading /Playwright enables reliable end-to-end/ [level=1] -…
+- Home page
+- Guides
+- Snapshot testing
+- Overview ​
+- With Playwright's Snapshot testing you can assert the accessibility tree of a page against a predefined snapshot template.
+- [4501] await page . goto ( 'https://playwright.dev/' ) ; await expect ( page ) . toMatchAriaSnapshot ( ` - banner: - heading /Playwright enables reliable end-to-end/ [level=1] - link "Get started": - /url: /docs/intro - link "Star microsoft/playwright on GitHub": - /url: https://github.com/microsoft/playwright - link /[\\d]+k\\+ stargazers on GitHub/ ` ) ;
+- Watch Getting started with ARIA Snapshots
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [4428] Docs sidebar.
+Context: Breadcrumbs
+- Assertion testing vs Snapshot testing ​
+- Snapshot testing and assertion testing serve different purposes in test automation:
+- Assertion testing ​
+- Assertion testing is a targeted approach where you assert specific values or conditions about elements or components. For instance, with Playwright, expect(locator).toHaveText() verifies that an element contains the expected text, and expect(locator).toHaveValue() confirms that an input field has the expected value. Assertion tests are specific and generall…
+- Advantages
+- Clarity : The intent of the test is explicit and easy to understand.
+- Specificity : Tests focus on particular aspects of functionality, making them more robust against unrelated changes.
+- Debugging : Failures provide targeted feedback, pointing directly to the problematic aspect.
+- Disadvantages
+- Verbose for complex outputs : Writing assertions for complex data structures or large outputs can be cumbersome and error-prone.
+- Maintenance overhead : As code evolves, manually updating assertions can be time-consuming.
+- Snapshot testing captures a “snapshot” or representation of the entire state of an element, component, or data at a given moment, which is then saved for future comparisons. When re-running tests, the current state is compared to the snapshot, and if there are differences, the test fails. This approach is especially useful for complex or dynamic structures,…
+- Simplifies complex outputs : For example, testing a UI component's rendered output can be tedious with traditional assertions. Snapshots capture the entire output for easy comparison.
+- Quick Feedback loop : Developers can easily spot unintended changes in the output.
+- Encourages consistency : Helps maintain consistent output as code evolves.
+- Over-Reliance : It can be tempting to accept changes to snapshots without fully understanding them, potentially hiding bugs.
+- Granularity : Large snapshots may be hard to interpret when differences arise, especially if minor changes affect large portions of the output.
+- Suitability : Not ideal for highly dynamic content where outputs change frequently or unpredictably.
+- When to use ​
+- Snapshot testing is ideal for: UI testing of whole pages and components. Broad structural checks for complex UI components. Regression testing for outputs that rarely change structure.
+- Assertion testing is ideal for: Core logic validation. Computed value testing. Fine-grained tests requiring precise conditions.
+- By combining snapshot testing for broad, structural checks and assertion testing for specific functionality, you can achieve a well-rounded testing strategy.
+- Aria snapshots ​
+- In Playwright, aria snapshots provide a YAML representation of the accessibility tree of a page. These snapshots can be stored and compared later to verify if the page structure remains consistent or meets defined expectations.
+- The YAML format describes the hierarchical structure of accessible elements on the page, detailing roles , attributes , values , and text content . The structure follows a tree-like syntax, where each node represents an accessible element, and indentation indicates nested elements.
+- roles
+- values
+- text content
+- Each accessible element in the tree is represented as a YAML node:
+- - role "name" [ attribute=value ]
+- role : Specifies the ARIA or HTML role of the element (e.g., heading , list , listitem , button ).
+- : Accessible name of the element. Quoted strings indicate exact values, are used for regular expression.
+- : Attributes and values, in square brackets, represent specific ARIA attributes, such as , , , , , , or .
+- These values are derived from ARIA attributes or calculated based on HTML semantics. To inspect the accessibility tree structure of a page, use the Chrome DevTools Accessibility Tab .
+- Snapshot matching ​
+- The expect(page).toMatchAriaSnapshot() assertion method in Playwright compares the accessible structure of the page with a predefined aria snapshot template, helping validate the page's state against testing requirements. You can also use expect(locator).toMatchAriaSnapshot() to match a specific part of the page.
+- For the following DOM:
+- title
+- You can match it using the following snapshot template:
+- await expect ( page ) . toMatchAriaSnapshot ( ` - heading "title" ` ) ;
+- When matching, the snapshot template is compared to the current accessibility tree of the page:
+- If the tree structure matches the template, the test passes; otherwise, it fails, indicating a mismatch between expected and actual accessibility states.
+- The comparison is case-sensitive and collapses whitespace, so indentation and line breaks are ignored.
+- The comparison is order-sensitive, meaning the order of elements in the snapshot template must match the order in the page's accessibility tree.
+- Partial matching ​
+- You can perform partial matches on nodes by omitting attributes or accessible names, enabling verification of specific parts of the accessibility tree without requiring exact matches. This flexibility is helpful for dynamic or irrelevant attributes.
+- Submit
+- - button
+- In this example, the button role is matched, but the accessible name ("Submit") is not specified, allowing the test to pass regardless of the button's label.
+- For elements with ARIA attributes like or , omitting these attributes allows partial matching, focusing solely on role and hierarchy.
+- < input type = " checkbox " checked >
+- aria snapshot (partial match)
+- - checkbox
+- In this partial match, the attribute is ignored, so the test will pass regardless of the checkbox state.
+- Similarly, you can partially match children in lists or groups by omitting specific list items or nested elements.
+- Feature A Feature B Feature C
+- - list - listitem : Feature B
+- Partial matches let you create flexible snapshot tests that verify essential page structure without enforcing specific content or attributes.
+- Strict matching ​
+- By default, a template containing the subset of children will be matched:
+- The property can be used to control how child elements are matched:
+- contain (default): Matches if all specified children are present in order
+- equal : Matches if the children exactly match the specified list in order
+- deep-equal : Matches if the children exactly match the specified list in order, including nested children
+- Following snapshot will fail due to Feature C not being in the template:
+- - list - /children : equal - listitem : Feature A - listitem : Feature B
+- Setting mode globally
+[content hidden: 112 more reason=max_content_blocks]
+
+=== MEDIA / IMAGE LABELS ===
+- "Playwright logo" source=present
+
+=== USEFUL PAGE ACTIONS ===
+[80] button "Search (Control+k)"
+[6154] link "Overview"
+[6161] link "Assertion testing vs Snapshot testing"
+[6155] link "Assertion testing"
+[6156] link "Snapshot testing"
+[6157] link "When to use"
+[6163] link "Aria snapshots"
+[6170] link "Snapshot matching"
+[6164] link "Partial matching"
+[6165] link "Strict matching"
+[6166] link "Matching with regular expressions"
+[6180] link "Generating snapshots"
+[6172] link "Generating snapshots with the Playwright code generator"
+[6175] link "Updating snapshots with and the flag"
+[6176] link "Using page.ariaSnapshot() and locator.ariaSnapshot()"
+[6198] link "Accessibility tree examples"
+[other actions hidden: 9]
+=== SECONDARY / DEBUG ACTIONS ===
+[41] link "Skip to main content" <a> role=link context="region: Skip to main content" state=not-hit-testable hit=False viewport=True sourceOrder=696 bounds=(x=1351 y=16 w=99.203125 h=95.171875) reason=not_hit_testable
+[4428] scroll-region "Getting Started Installation Writing tests Generating tests Running and debugging tests Trace viewer Setting up CI VS Code Release notes Canary releases Playwright Test Agents Annotations Command line Configuration Conf…" actions=scroll <nav> role=generic context="generic: Docs sidebar" hit=True viewport=True sourceOrder=765 bounds=(x=0 y=60 w=300 h=697) reason=broad/noisy
+[4294] link "Guides" <a> role=button context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=889 bounds=(x=8 y=1132 w=282 h=32) reason=not_hit_testable
+[4296] link "Library" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=894 bounds=(x=20 y=1168 w=270 h=32) reason=not_hit_testable
+[4298] link "Accessibility testing" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=898 bounds=(x=20 y=1204 w=270 h=32) reason=not_hit_testable
+[4300] link "Actions" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=902 bounds=(x=20 y=1240 w=270 h=32) reason=not_hit_testable
+[4302] link "Assertions" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=906 bounds=(x=20 y=1276 w=270 h=32) reason=not_hit_testable
+[4304] link "API testing" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=910 bounds=(x=20 y=1312 w=270 h=32) reason=not_hit_testable
+[4306] link "Authentication" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=914 bounds=(x=20 y=1348 w=270 h=32) reason=not_hit_testable
+[4308] link "Auto-waiting" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=918 bounds=(x=20 y=1384 w=270 h=32) reason=not_hit_testable
+[4310] link "Best Practices" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=922 bounds=(x=20 y=1420 w=270 h=32) reason=not_hit_testable
+[4312] link "Browsers" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=926 bounds=(x=20 y=1456 w=270 h=32) reason=not_hit_testable
+[4314] link "Chrome extensions" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=930 bounds=(x=20 y=1492 w=270 h=32) reason=not_hit_testable
+[4316] link "Clock" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=934 bounds=(x=20 y=1528 w=270 h=32) reason=not_hit_testable
+[4318] link "Component testing" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=938 bounds=(x=20 y=1564 w=270 h=32) reason=not_hit_testable
+[4320] link "Debugging Tests" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=942 bounds=(x=20 y=1600 w=270 h=32) reason=not_hit_testable
+[4322] link "Dialogs" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=946 bounds=(x=20 y=1636 w=270 h=32) reason=not_hit_testable
+[4324] link "Downloads" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=950 bounds=(x=20 y=1672 w=270 h=32) reason=not_hit_testable
+[4326] link "Evaluating JavaScript" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=954 bounds=(x=20 y=1708 w=270 h=32) reason=not_hit_testable
+[4328] link "Events" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=958 bounds=(x=20 y=1744 w=270 h=32) reason=not_hit_testable
+[4330] link "Extensibility" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=962 bounds=(x=20 y=1780 w=270 h=32) reason=not_hit_testable
+[4332] link "Frames" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=966 bounds=(x=20 y=1816 w=270 h=32) reason=not_hit_testable
+[4334] link "Handles" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=970 bounds=(x=20 y=1852 w=270 h=32) reason=not_hit_testable
+[4336] link "Isolation" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=974 bounds=(x=20 y=1888 w=270 h=32) reason=not_hit_testable
+[4338] link "Locators" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=978 bounds=(x=20 y=1924 w=270 h=32) reason=not_hit_testable
+[4340] link "Mock APIs" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=982 bounds=(x=20 y=1960 w=270 h=32) reason=not_hit_testable
+[4342] link "Mock browser APIs" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=986 bounds=(x=20 y=1996 w=270 h=32) reason=not_hit_testable
+[4344] link "Navigations" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=990 bounds=(x=20 y=2032 w=270 h=32) reason=not_hit_testable
+[4346] link "Network" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=994 bounds=(x=20 y=2068 w=270 h=32) reason=not_hit_testable
+[4348] link "Other locators" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=998 bounds=(x=20 y=2104 w=270 h=32) reason=not_hit_testable
+[4350] link "Pages" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1002 bounds=(x=20 y=2140 w=270 h=32) reason=not_hit_testable
+[4352] link "Page object models" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1006 bounds=(x=20 y=2176 w=270 h=32) reason=not_hit_testable
+[4354] link "Screenshots" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1010 bounds=(x=20 y=2212 w=270 h=32) reason=not_hit_testable
+[4356] link "Service Workers" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1014 bounds=(x=20 y=2248 w=270 h=32) reason=not_hit_testable
+[4358] link "Snapshot testing" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1018 bounds=(x=20 y=2284 w=270 h=32) reason=not_hit_testable
+[4360] link "Test generator" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1022 bounds=(x=20 y=2320 w=270 h=32) reason=not_hit_testable
+[4362] link "Touch events (legacy)" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1026 bounds=(x=20 y=2356 w=270 h=32) reason=not_hit_testable
+[4364] link "Trace viewer" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1030 bounds=(x=20 y=2392 w=270 h=32) reason=not_hit_testable
+[4366] link "Videos" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1034 bounds=(x=20 y=2428 w=270 h=32) reason=not_hit_testable
+[4368] link "Visual comparisons" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1038 bounds=(x=20 y=2464 w=270 h=32) reason=not_hit_testable
+[4370] link "WebView2" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1042 bounds=(x=20 y=2500 w=270 h=32) reason=not_hit_testable
+[4412] link "Migration" <a> role=button context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1047 bounds=(x=8 y=2536 w=282 h=32) reason=not_hit_testable
+[4415] link "Integrations" <a> role=button context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1052 bounds=(x=8 y=2572 w=282 h=32) reason=not_hit_testable
+[4418] link "Supported languages" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1056 bounds=(x=8 y=2608 w=282 h=32) reason=not_hit_testable
+[6149] link "Previous « Service Workers" <a> role=link context="generic: Breadcrumbs / generic: Docs pages" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3957 bounds=(x=316 y=14479.234375 w=370.125 h=75.5) reason=not_hit_testable
+[6150] link "Next Test generator »" <a> role=link context="generic: Breadcrumbs / generic: Docs pages" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3962 bounds=(x=702.125 y=14479.234375 w=370.125 h=75.5) reason=not_hit_testable
+[6207] scroll-region "Overview Assertion testing vs Snapshot testing Assertion testing Snapshot testing When to use Aria snapshots Snapshot matching Partial matching Strict matching Matching with regular expressions Generating snapshots Gene…" actions=scroll <div> role=generic context="generic: Breadcrumbs" hit=True viewport=True sourceOrder=3968 bounds=(x=1104.25 y=76 w=230.75 h=665) reason=broad/noisy
+[6182] link "Headings with level attributes" <a> role=link context="generic: generic / generic: generic / generic: generic" state=not-hit-testable hit=False viewport=True sourceOrder=4026 bounds=(x=1137.25 y=760.84375 w=171.75 h=42.21875) reason=not_hit_testable
+[6183] link "Text nodes" <a> role=link context="generic: generic / generic: generic / generic: generic" state=not-hit-testable hit=False viewport=True sourceOrder=4029 bounds=(x=1137.25 y=811.0625 w=171.75 h=21.109375) reason=not_hit_testable
+[6184] link "Inline multiline text" <a> role=link context="generic: generic / generic: generic / generic: generic" state=not-hit-testable hit=False viewport=True sourceOrder=4032 bounds=(x=1137.25 y=840.171875 w=171.75 h=21.109375) reason=not_hit_testable
+[6185] link "Links" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4035 bounds=(x=1137.25 y=869.28125 w=171.75 h=21.109375) reason=not_hit_testable
+[6186] link "Text boxes" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4038 bounds=(x=1137.25 y=898.390625 w=171.75 h=21.109375) reason=not_hit_testable
+[6187] link "Lists with items" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4041 bounds=(x=1137.25 y=927.5 w=171.75 h=21.109375) reason=not_hit_testable
+[6188] link "Grouped elements" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4044 bounds=(x=1137.25 y=956.609375 w=171.75 h=21.109375) reason=not_hit_testable
+[6189] link "Attributes and states" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4047 bounds=(x=1137.25 y=985.71875 w=171.75 h=21.109375) reason=not_hit_testable
+[1504] link "Getting started" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4057 bounds=(x=121.5 y=14661.734375 w=144.03125 h=18) reason=not_hit_testable
+[1506] link "Playwright Training" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4060 bounds=(x=121.5 y=14693.734375 w=200.734375 h=18) reason=not_hit_testable
+[1510] link "Learn Videos" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4065 bounds=(x=121.5 y=14725.734375 w=115.21875 h=18) reason=not_hit_testable
+[1512] link "Feature Videos" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4068 bounds=(x=121.5 y=14757.734375 w=134.421875 h=18) reason=not_hit_testable
+[1517] link "Stack Overflow" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4075 bounds=(x=501.5 y=14661.734375 w=152.71875 h=18) reason=not_hit_testable
+[1521] link "Discord" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4080 bounds=(x=501.5 y=14693.734375 w=85.515625 h=18) reason=not_hit_testable
+[1525] link "X" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4085 bounds=(x=501.5 y=14725.734375 w=27.90625 h=18) reason=not_hit_testable
+[1529] link "LinkedIn" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4090 bounds=(x=501.5 y=14757.734375 w=95.109375 h=18) reason=not_hit_testable
+[1536] link "GitHub" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4099 bounds=(x=881.5 y=14661.734375 w=75.90625 h=18) reason=not_hit_testable
+[1540] link "YouTube" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4104 bounds=(x=881.5 y=14693.734375 w=85.515625 h=18) reason=not_hit_testable
+[1544] link "Blog" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4109 bounds=(x=881.5 y=14725.734375 w=56.703125 h=18) reason=not_hit_testable
+[1548] link "Ambassadors" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4114 bounds=(x=881.5 y=14757.734375 w=105.625 h=18) reason=not_hit_testable
+[1550] link "Microsoft Privacy Statement" <a> role=link context="generic: (opens in new tab) / generic: (opens in new tab) / generic: (opens in new tab)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4117 bounds=(x=881.5 y=14789.734375 w=277.546875 h=18) reason=not_hit_testable
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[4428] Docs sidebar — 300x697
+[6207] Breadcrumbs content — 230x665
