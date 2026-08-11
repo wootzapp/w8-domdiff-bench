@@ -1,0 +1,151 @@
+URL: https://playwright.dev/docs/release-notes#version-1621
+Title: Release notes | Playwright
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=5000 groups=293 truncated=True
+
+=== VISIBLE CONTENT ===
+- Ctrl
+Context: Docs sidebar
+- Getting Started Installation Writing tests Generating tests Running and debugging tests Trace viewer Setting up CI VS Code
+  actions: [40504] link "Getting Started"
+- Release notes
+- Canary releases
+- Playwright Test Agents Annotations Command line Configuration Configuration (use) Emulation Fixtures Global setup and teardown Parallelism Parameterize tests Projects Reporters Retries Sharding Timeouts TypeScript UI Mode Web server
+  actions: [40506] link "Playwright Test"
+Context: Breadcrumbs
+- Release notes On this page Release notes Version 1.62 ​ 🧱 New component testing model ​ Component testing moves to a stories and galleries model. A story wraps your component in one specific scenario — hard-coded props, mock data, providers — and a gallery page that you serve renders stories on demand. The new fixtures.mount() fixture navigates to the galle…
+- Home page
+- Version 1.62 ​
+- 🧱 New component testing model ​
+- moves to a model. A wraps your component in one specific scenario — hard-coded props, mock data, providers — and a
+- page that you serve renders stories on demand. The new fixture navigates to the gallery, mounts a story by id, and returns a scoped to the story's root element:
+- [28391] test ( 'click should expand' , async ( { mount } ) => { const component = await mount ( 'components/Expandable/Stateful' ) ; await component . getByRole ( 'button' ) . click ( ) ; await expect ( component . getByTestId ( 'expanded' ) ) . toHaveValue ( 'true' ) ; } ) ;
+- Pass a story type as a template argument to type-check its props, and use / on the returned locator to re-render or tear down within a test.
+- 🛑 Cancel operations with AbortSignal ​
+- Most operations and web-first assertions now accept a option that takes an , letting you cancel long-running actions, navigations, waits, and assertions:
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [5436] Docs sidebar.
+Context: Breadcrumbs
+- const controller = new AbortController ( ) ; setTimeout ( ( ) => controller . abort ( ) , 1000 ) ; await page . getByRole ( 'button' , { name : 'Submit' } ) . click ( { signal : controller . signal } ) ; await expect ( page . getByText ( 'Done' ) ) . toBeVisible ( { signal : controller . signal } ) ;
+- Providing a signal does not disable the default timeout; pass to disable it.
+- 🖼️ WebP screenshots ​
+- and can now store snapshots in the WebP format — just give the snapshot a name:
+- // Visual comparisons store the golden snapshot as lossless WebP. await expect ( page ) . toHaveScreenshot ( 'homepage.webp' ) ; // Standalone screenshots can trade quality for size with lossy WebP. await page . screenshot ( { path : 'homepage.webp' , quality : 50 } ) ;
+  attachments: homepage.webp, homepage.webp
+- and also accept as a , where quality (the default) is lossless and lower values use lossy compression.
+- 🧩 Custom test filtering with Reporter.preprocess() ​
+- New hook runs after the configuration is resolved and before , letting a reporter mark individual tests as skipped, excluded, fixed, or failing through a object:
+- class MyReporter { async preprocess ( { config , suite , testRun } ) { for ( const test of suite . allTests ( ) ) { if ( shouldSkip ( test ) ) testRun . skip ( test ) ; } } }
+- 🔁 Isolated retries ​
+- New controls when failed tests are retried. The default retries as soon as a worker is free; runs all retries at the end, one by one in a single worker, to minimize interference with the rest of the suite:
+- export default defineConfig ( { retries : 2 , retryStrategy : 'isolated' , } ) ;
+- New APIs ​
+- Browser and Context ​
+- New option includes the context's virtual WebAuthn (passkeys) in the storage state, so they can be persisted and re-seeded into later contexts.
+- Actions ​
+- New option ( | ) on actions to opt out of Playwright's automatic scroll-into-view.
+- Network ​
+- New returns resource timing information for an API response.
+- Evaluation ​
+- New waits until a function — called with the matching element — returns a truthy value.
+- page.evaluate() and related methods now accept functions as evaluate arguments.
+- page.addInitScript() / browserContext.addInitScript() now accept functions as init-script arguments.
+- Command line & MCP ​
+- Playwright now bundles the server and , runnable via and .
+- Reporters ​
+- The HTML report's grouping — previously only a UI toggle — can now be enabled from the config with the new reporter option:
+- export default defineConfig ( { reporter : [ [ 'html' , { mergeFiles : true } ] ] , } ) ;
+- Announcements ​
+- 📋 The clipboard is now isolated from the operating system in headless mode, so tests that use no longer read or overwrite the clipboard of the machine running them.
+- ⚠️ Debian 11 is not supported anymore.
+- Browser Versions ​
+- Chromium 151.0.7922.34
+- Mozilla Firefox 153.0
+- WebKit 26.5
+- This version was also tested against the following stable channels:
+- Google Chrome 151
+- Microsoft Edge 151
+- Version 1.61 ​
+- 🔑 WebAuthn passkeys ​
+- New virtual authenticator, available via , lets tests register passkeys and answer / ceremonies in the page — no real hardware key required, works in all browsers:
+- const context = await browser . newContext ( ) ; // Seed a passkey your backend provisioned for a test user. await context . credentials . create ( 'example.com' , { id : credentialId , userHandle , privateKey , publicKey , } ) ; await context . credentials . install ( ) ; const page = await context . newPage ( ) ; await page . goto ( 'https://example.com/l…
+- You can also let the app register a passkey once in a setup test, read it back with , and seed it into later tests — see for details.
+- 🗃️ Web Storage ​
+- New API, available via and , reads and writes the page's storage for the current origin:
+- await page . localStorage . setItem ( 'token' , 'abc' ) ; const token = await page . localStorage . getItem ( 'token' ) ; const items = await page . sessionStorage . items ( ) ;
+- and mirror the browser-side and .
+- Browser and Screencast ​
+- New option in controls where artifacts such as traces and downloads are stored when attached to an existing browser.
+- New option in controls the cursor decoration rendered for pointer actions.
+- The callback in now receives a of when the frame was presented by the browser.
+- Test runner ​
+- The option now supports the same set of modes as : new , and values. See the for which runs are recorded and kept in each mode.
+- Supported expect.soft.poll(...) .
+- New — a snapshot of from the runner process, handy for reading custom arguments passed after the separator.
+- New mirrors the config option, so reporters can explain why a flaky run failed.
+- now lists each sub-error of an as a separate entry.
+- New command line shorthand for .
+- 🛠️ Other improvements ​
+- Playwright now supports Ubuntu 26.04.
+- HAR and trace recordings now include WebSocket requests.
+- Chromium 149.0.7827.55
+- Mozilla Firefox 151.0
+- Google Chrome 149
+- Microsoft Edge 149
+[content hidden: 436 more reason=max_content_blocks]
+
+=== MEDIA / IMAGE LABELS ===
+- "Playwright logo" source=present
+
+=== USEFUL PAGE ACTIONS ===
+[5421] button "Search (Control+k)"
+[other actions hidden: 9]
+=== SECONDARY / DEBUG ACTIONS ===
+[5383] link "Skip to main content" <a> role=link context="region: Skip to main content" state=not-hit-testable hit=False viewport=True sourceOrder=473 bounds=(x=1351 y=16 w=99.203125 h=95.171875) reason=not_hit_testable
+[5436] scroll-region "Getting Started Installation Writing tests Generating tests Running and debugging tests Trace viewer Setting up CI VS Code Release notes Canary releases Playwright Test Agents Annotations Command line Configuration Conf…" actions=scroll <nav> role=generic context="generic: Docs sidebar" hit=True viewport=True sourceOrder=542 bounds=(x=0 y=60 w=300 h=753) reason=broad/noisy
+[40508] link "Guides" <a> role=button context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=666 bounds=(x=8 y=1132 w=282 h=32) reason=not_hit_testable
+[5535] link "Library" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=671 bounds=(x=20 y=1168 w=270 h=32) reason=not_hit_testable
+[5538] link "Accessibility testing" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=675 bounds=(x=20 y=1204 w=270 h=32) reason=not_hit_testable
+[5541] link "Actions" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=679 bounds=(x=20 y=1240 w=270 h=32) reason=not_hit_testable
+[5544] link "Assertions" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=683 bounds=(x=20 y=1276 w=270 h=32) reason=not_hit_testable
+[1768] link "API testing" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=687 bounds=(x=20 y=1312 w=270 h=32) reason=not_hit_testable
+[5549] link "Authentication" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=691 bounds=(x=20 y=1348 w=270 h=32) reason=not_hit_testable
+[5552] link "Auto-waiting" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=695 bounds=(x=20 y=1384 w=270 h=32) reason=not_hit_testable
+[5555] link "Best Practices" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=699 bounds=(x=20 y=1420 w=270 h=32) reason=not_hit_testable
+[5558] link "Browsers" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=703 bounds=(x=20 y=1456 w=270 h=32) reason=not_hit_testable
+[5561] link "Chrome extensions" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=707 bounds=(x=20 y=1492 w=270 h=32) reason=not_hit_testable
+[5564] link "Clock" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=711 bounds=(x=20 y=1528 w=270 h=32) reason=not_hit_testable
+[5567] link "Component testing" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=715 bounds=(x=20 y=1564 w=270 h=32) reason=not_hit_testable
+[5570] link "Debugging Tests" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=719 bounds=(x=20 y=1600 w=270 h=32) reason=not_hit_testable
+[5573] link "Dialogs" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=723 bounds=(x=20 y=1636 w=270 h=32) reason=not_hit_testable
+[5576] link "Downloads" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=727 bounds=(x=20 y=1672 w=270 h=32) reason=not_hit_testable
+[5579] link "Evaluating JavaScript" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=731 bounds=(x=20 y=1708 w=270 h=32) reason=not_hit_testable
+[5582] link "Events" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=735 bounds=(x=20 y=1744 w=270 h=32) reason=not_hit_testable
+[5585] link "Extensibility" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=739 bounds=(x=20 y=1780 w=270 h=32) reason=not_hit_testable
+[5588] link "Frames" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=743 bounds=(x=20 y=1816 w=270 h=32) reason=not_hit_testable
+[5591] link "Handles" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=747 bounds=(x=20 y=1852 w=270 h=32) reason=not_hit_testable
+[5594] link "Isolation" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=751 bounds=(x=20 y=1888 w=270 h=32) reason=not_hit_testable
+[5597] link "Locators" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=755 bounds=(x=20 y=1924 w=270 h=32) reason=not_hit_testable
+[5600] link "Mock APIs" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=759 bounds=(x=20 y=1960 w=270 h=32) reason=not_hit_testable
+[5603] link "Mock browser APIs" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=763 bounds=(x=20 y=1996 w=270 h=32) reason=not_hit_testable
+[5606] link "Navigations" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=767 bounds=(x=20 y=2032 w=270 h=32) reason=not_hit_testable
+[5609] link "Network" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=771 bounds=(x=20 y=2068 w=270 h=32) reason=not_hit_testable
+[5612] link "Other locators" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=775 bounds=(x=20 y=2104 w=270 h=32) reason=not_hit_testable
+[5615] link "Pages" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=779 bounds=(x=20 y=2140 w=270 h=32) reason=not_hit_testable
+[5618] link "Page object models" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=783 bounds=(x=20 y=2176 w=270 h=32) reason=not_hit_testable
+[5621] link "Screenshots" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=787 bounds=(x=20 y=2212 w=270 h=32) reason=not_hit_testable
+[5624] link "Service Workers" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=791 bounds=(x=20 y=2248 w=270 h=32) reason=not_hit_testable
+[5627] link "Snapshot testing" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=795 bounds=(x=20 y=2284 w=270 h=32) reason=not_hit_testable
+[5630] link "Test generator" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=799 bounds=(x=20 y=2320 w=270 h=32) reason=not_hit_testable
+[5633] link "Touch events (legacy)" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=803 bounds=(x=20 y=2356 w=270 h=32) reason=not_hit_testable
+[5636] link "Trace viewer" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=807 bounds=(x=20 y=2392 w=270 h=32) reason=not_hit_testable
+[5639] link "Videos" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=811 bounds=(x=20 y=2428 w=270 h=32) reason=not_hit_testable
+[5642] link "Visual comparisons" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=815 bounds=(x=20 y=2464 w=270 h=32) reason=not_hit_testable
+[5645] link "WebView2" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=819 bounds=(x=20 y=2500 w=270 h=32) reason=not_hit_testable
+[40510] link "Migration" <a> role=button context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=824 bounds=(x=8 y=2536 w=282 h=32) reason=not_hit_testable
+[40512] link "Integrations" <a> role=button context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=829 bounds=(x=8 y=2572 w=282 h=32) reason=not_hit_testable
+[5656] link "Supported languages" <a> role=link context="generic: Docs sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=833 bounds=(x=8 y=2608 w=282 h=32) reason=not_hit_testable
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[5436] Docs sidebar — 300x753
