@@ -303,9 +303,11 @@ class ModelSnapshotRenderer:
 
         self.action_nodes = self.collect_action_nodes()
         self.action_labels: set[str] = {
-            key
-            for key in (norm_key(self.text(node)) for node, _actions in self.action_nodes)
-            if key
+            norm_key(self.text(node))
+            for node, actions in self.action_nodes
+            if actions != ["scroll"]
+            and not self.is_broad_action(node, actions)
+            and norm_key(self.text(node))
         }
         self.generated_action_ids: dict[str, str] = {}
         next_id = 1
@@ -384,10 +386,19 @@ class ModelSnapshotRenderer:
         # real text becomes invisible. Order: own text, then subtree text when it
         # carries more than the label does, then the label.
         direct = clean(node.get("directText"))
-        if direct:
-            return direct
         accessible = clean(node.get("accessibleName"))
         subtree = clean(node.get("subtreeText"))
+        # A captured directText value can itself be clipped or be only the
+        # beginning of a richer subtree fact. Prefer the subtree only when it
+        # demonstrably contains the direct fact; this preserves the protection
+        # against unrelated inherited accessible names.
+        if direct and subtree and len(subtree) > len(direct):
+            direct_key = norm_key(direct)
+            subtree_key = norm_key(subtree)
+            if node.get("truncated") is True or (direct_key and direct_key in subtree_key):
+                return subtree
+        if direct:
+            return direct
         if subtree and len(subtree) > len(accessible):
             return subtree
         for value in (accessible, subtree, clean(node.get("description"))):
@@ -1053,7 +1064,10 @@ class ModelSnapshotRenderer:
             self.include_offscreen_content
             and node.get("inViewport") is False
             and not self.action_types(node)
-            and self.has_ancestor_role_or_tag(node, {"navigation", "toolbar", "header", "footer", "menu"})
+            and self.has_ancestor_role_or_tag(
+                node,
+                {"nav", "aside", "navigation", "toolbar", "header", "footer", "menu"},
+            )
         ):
             return False
         if tag in {"html", "body"} or tag in TABLE_TAGS or tag in MEDIA_TAGS:
@@ -1130,7 +1144,7 @@ class ModelSnapshotRenderer:
                 continue
             full = self.text(node)
             text = clip(full, self.max_text_chars)
-            if ref and len(text) >= len(full):
+            if ref and node.get("truncated") is not True and len(text) >= len(full):
                 whole_refs.add(ref)
             key = norm_key(text)
             if not key or key in seen:
@@ -1186,7 +1200,9 @@ class ModelSnapshotRenderer:
                     if rest_key and rest_key not in seen:
                         remaining_keys.add(rest_key)
                 if remaining_keys:
-                    target_lines.append(f"[content hidden: {len(remaining_keys)} more]")
+                    target_lines.append(
+                        f"[content hidden: {len(remaining_keys)} more reason=max_content_blocks]"
+                    )
                 break
         lines: list[str] = []
         if visible_lines:

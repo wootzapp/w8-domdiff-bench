@@ -358,6 +358,8 @@ class FullSnapshotRenderer:
         tag = self.node_tag(node)
         if tag == "#text":
             return self.include_text_nodes
+        if self.has_explicit_text_fact(node):
+            return True
         if tag in TEXT_USEFUL_TAGS:
             return True
         if self.node_boundary(node):
@@ -390,6 +392,8 @@ class FullSnapshotRenderer:
         if self.node_boundary(node):
             return False
         if self.node_role(node) not in {"", "generic", "none"}:
+            return False
+        if self.has_explicit_text_fact(node):
             return False
         attrs = attr_map(node)
         meaningful_attrs = {
