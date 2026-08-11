@@ -8,8 +8,7 @@ This is the merged/clean renderer for task environments:
   - separates primary actions from secondary/debug actions using generic facts;
   - preserves href/src/alt/title/aria labels as labels, without app-specific code.
 
-This file is generic. It does not contain Slack, Docs, Sheets, Amazon, or task
-specific selectors.
+This renderer uses only generic facts present in the structured snapshot.
 """
 
 from __future__ import annotations
@@ -60,6 +59,8 @@ BROAD_CONTAINER_TAGS = {"html", "body", "main", "section", "article", "div"}
 # A role-less text node at or below this length that repeats an interactive
 # element's label is treated as chrome rather than page content.
 CHROME_LABEL_MAX_CHARS = 40
+# Renderer limits below bound model-facing context only. The raw dom.json and
+# full renderer remain available, and every hidden section reports its count.
 LOW_VALUE_LABELS = {
     "",
     "toggle",
@@ -133,6 +134,7 @@ REACTION_TOKEN_RE = re.compile(r"(?:\+1|👍|👀|🙏|🎉|🔥|✅|❌)$")
 
 
 def load_snapshot(path: Path) -> dict[str, Any]:
+    """Load wrapped or bare structured-snapshot JSON and reject other shapes."""
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError("Input JSON must be an object")
@@ -147,6 +149,7 @@ def load_snapshot(path: Path) -> dict[str, Any]:
 
 
 def clean(value: Any, *, fix_mojibake: bool = True) -> str:
+    """Normalize captured text, HTML labels, entities, whitespace, and mojibake."""
     text = "" if value is None else str(value)
     if fix_mojibake:
         for bad, good in COMMON_MOJIBAKE_REPLACEMENTS.items():
@@ -165,16 +168,19 @@ def clean(value: Any, *, fix_mojibake: bool = True) -> str:
 
 
 def clip(text: str, limit: int) -> str:
+    """Clip model-facing text with an ellipsis; non-positive limits are unlimited."""
     if limit <= 0 or len(text) <= limit:
         return text
     return text[: max(0, limit - 1)].rstrip() + "…"
 
 
 def norm_key(text: str) -> str:
+    """Create a case-insensitive punctuation-free key for semantic deduplication."""
     return re.sub(r"\W+", "", text.lower())
 
 
 def dedupe(items: Iterable[str]) -> list[str]:
+    """Remove empty and repeated strings while preserving their first occurrence."""
     out: list[str] = []
     seen: set[str] = set()
     for item in items:
@@ -187,6 +193,7 @@ def dedupe(items: Iterable[str]) -> list[str]:
 
 
 def attr_map(node: dict[str, Any]) -> dict[str, str]:
+    """Convert selectedAttributes records into a normalized lookup mapping."""
     attrs: dict[str, str] = {}
     raw = node.get("selectedAttributes", [])
     if isinstance(raw, list):
@@ -201,6 +208,7 @@ def attr_map(node: dict[str, Any]) -> dict[str, str]:
 
 
 def bounds_text(bounds: Any) -> str:
+    """Render available geometry fields for optional debug action context."""
     if not isinstance(bounds, dict):
         return ""
     x = bounds.get("x")
@@ -232,6 +240,7 @@ class ModelSnapshotRenderer:
         suppress_authoring: bool = False,
         chrome_label_max_chars: int = CHROME_LABEL_MAX_CHARS,
     ):
+        """Index the snapshot and configure explicit model-context budgets."""
         self.snapshot = snapshot
         self.max_actions = max_actions
         self.max_secondary_actions = max_secondary_actions
@@ -321,24 +330,28 @@ class ModelSnapshotRenderer:
         self.rendered_content_text_keys: set[str] = set()
 
     def source_order(self, node: dict[str, Any]) -> int:
+        """Return numeric document order, using zero for malformed input."""
         try:
             return int(node.get("sourceOrder", 0) or 0)
         except Exception:
             return 0
 
     def node_index(self, node: dict[str, Any]) -> int | None:
+        """Return the capture index used for actions when it is numeric."""
         try:
             return int(node.get("index"))
         except Exception:
             return None
 
     def action_types(self, node: dict[str, Any]) -> list[str]:
+        """Merge node-local and snapshot-level action declarations."""
         own = dedupe(node.get("actionTypes", []) if isinstance(node.get("actionTypes"), list) else [])
         index = self.node_index(node)
         mapped = self.action_map.get(index, []) if index is not None else []
         return dedupe([*own, *mapped])
 
     def action_id(self, node: dict[str, Any]) -> str:
+        """Prefer stable backendNodeId, then capture index, then a synthetic id."""
         # Prefer the browser's stable per-node identifier. `index`/`ref` are the
         # node's position in the capture list, so inserting or removing any earlier
         # node renumbers everything after it: an agent reusing an id from the
@@ -357,6 +370,7 @@ class ModelSnapshotRenderer:
         return self.generated_action_ids.get(str(node.get("ref", "")), "A?")
 
     def ancestors(self, node: dict[str, Any]) -> list[dict[str, Any]]:
+        """Walk parentRef links outward until the root or a missing parent."""
         out: list[dict[str, Any]] = []
         parent_ref = node.get("parentRef")
         while parent_ref is not None:
@@ -368,6 +382,7 @@ class ModelSnapshotRenderer:
         return out
 
     def descendants(self, ref: str) -> set[str]:
+        """Collect descendant refs iteratively with cycle protection."""
         found: set[str] = set()
         stack = list(self.children.get(ref, []))
         while stack:
@@ -380,6 +395,7 @@ class ModelSnapshotRenderer:
         return found
 
     def text(self, node: dict[str, Any]) -> str:
+        """Choose the richest own semantic text without exposing raw URLs."""
         # A node's own rendered text wins over an inherited accessible name.
         # Accessible names propagate up the AX tree, so a content row can end up
         # labelled by a descendant control (e.g. an avatar's hover label) and its
@@ -414,15 +430,19 @@ class ModelSnapshotRenderer:
         return ""
 
     def node_tag(self, node: dict[str, Any]) -> str:
+        """Return a normalized lowercase tag."""
         return clean(node.get("tag"), fix_mojibake=False).lower()
 
     def node_role(self, node: dict[str, Any]) -> str:
+        """Return a normalized lowercase accessibility role."""
         return clean(node.get("role"), fix_mojibake=False).lower()
 
     def node_ref(self, node: dict[str, Any]) -> str:
+        """Return the snapshot-local ref as text, or an empty string."""
         return str(node.get("ref", "") or "")
 
     def action_kind(self, node: dict[str, Any], actions: list[str]) -> str:
+        """Classify raw action facts into a concise model-facing control kind."""
         tag = self.node_tag(node)
         role = self.node_role(node)
         attrs = attr_map(node)
@@ -446,6 +466,7 @@ class ModelSnapshotRenderer:
         return "action"
 
     def visibility_notes(self, node: dict[str, Any]) -> list[str]:
+        """List captured visibility blockers without inferring absent flags."""
         notes: list[str] = []
         if node.get("visible") is False:
             notes.append("hidden")
@@ -458,6 +479,7 @@ class ModelSnapshotRenderer:
         return notes
 
     def compact_node_label(self, node: dict[str, Any], *, limit: int = 80) -> str:
+        """Build a short semantic label for context headings and debug actions."""
         label = clean(node.get("accessibleName")) or clean(node.get("directText")) or clean(node.get("description"))
         if not label:
             attrs = attr_map(node)
@@ -468,6 +490,7 @@ class ModelSnapshotRenderer:
         return clip(label, limit)
 
     def region_context(self, node: dict[str, Any], *, limit: int = 160) -> str:
+        """Summarize up to three useful ancestors while skipping inert wrappers."""
         parts: list[str] = []
         seen: set[str] = set()
         for ancestor in self.ancestors(node):
@@ -523,22 +546,25 @@ class ModelSnapshotRenderer:
         return ""
 
     def has_ancestor_role_or_tag(self, node: dict[str, Any], values: set[str]) -> bool:
+        """Check whether any ancestor tag or role belongs to a supplied set."""
         for ancestor in self.ancestors(node):
             if self.node_tag(ancestor) in values or self.node_role(ancestor) in values:
                 return True
         return False
 
     def is_low_value_content_text(self, text: str) -> bool:
+        """Recognize generic loading, authoring, and status chrome text."""
         return bool(LOW_VALUE_CONTENT_RE.match(clean(text)))
 
     def is_date_like_text(self, text: str) -> bool:
+        """Recognize standalone day-month-year separators used in timelines."""
         return bool(re.match(r"^\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4}$", clean(text)))
 
     def parse_message_like_text(self, text: str) -> dict[str, str] | None:
         """Parse common chat/timeline rows into model-readable fields.
 
         This intentionally uses only rendered text patterns. It does not depend on
-        Slack classes, authored archive selectors, or task-specific names. If the
+        implementation-specific classes, authored selectors, or external labels. If the
         text does not look like a message row, the renderer leaves it as normal
         content.
         """
@@ -578,6 +604,7 @@ class ModelSnapshotRenderer:
         }
 
     def normalize_attachment_label(self, label: str) -> str:
+        """Normalize generic attachment labels using visible text patterns."""
         value = clean(label)
         # Some apps render card labels with no space before a media type:
         # "ReleaseBriefCanvas" -> "ReleaseBrief Canvas". Keep this generic; it
@@ -590,6 +617,7 @@ class ModelSnapshotRenderer:
         text: str,
         controls: list[tuple[dict[str, Any], list[str]]],
     ) -> list[str]:
+        """Extract file/media labels while preserving meaningful duplicate filenames."""
         labels: list[str] = []
 
         # Preserve duplicates found in the rendered text. Two identical
@@ -627,6 +655,7 @@ class ModelSnapshotRenderer:
         return labels
 
     def text_without_attachment_labels(self, text: str, attachments: list[str]) -> str:
+        """Remove plain file-token duplication without deleting rich attachment text."""
         stripped = clean(text)
         for label in attachments:
             # Only remove simple file tokens from body text. Rich attachment
@@ -649,6 +678,7 @@ class ModelSnapshotRenderer:
         prefix: str = "-",
         attachments: list[str] | None = None,
     ) -> list[str]:
+        """Format ordinary content or parsed message rows with attachment metadata."""
         attachment_labels = attachments or []
         parsed = self.parse_message_like_text(text)
         if not parsed:
@@ -671,6 +701,7 @@ class ModelSnapshotRenderer:
         return lines
 
     def low_value_nested_control(self, node: dict[str, Any], actions: list[str], parent_text: str) -> bool:
+        """Suppress nested metadata controls while retaining genuine activation inputs."""
         label = self.text(node)
         if any(action in actions for action in ("type", "focus", "select", "toggle", "upload")):
             return False
@@ -696,18 +727,21 @@ class ModelSnapshotRenderer:
         return bool(label_key and label_key in parent_key and len(label) <= self.chrome_label_max_chars)
 
     def is_readable_item(self, node: dict[str, Any]) -> bool:
+        """Recognize list-item boundaries from tag, role, or semantic boundary."""
         tag = clean(node.get("tag"), fix_mojibake=False).lower()
         role = clean(node.get("role"), fix_mojibake=False).lower()
         semantic = clean(node.get("semanticBoundary"), fix_mojibake=False).lower()
         return tag == "li" or role == "listitem" or semantic == "listitem"
 
     def nearest_readable_item(self, node: dict[str, Any]) -> dict[str, Any] | None:
+        """Return the closest ancestor that represents a readable repeated item."""
         for ancestor in self.ancestors(node):
             if self.is_readable_item(ancestor):
                 return ancestor
         return None
 
     def is_broad_action(self, node: dict[str, Any], actions: list[str]) -> bool:
+        """Identify container-wide actions that are unusable or excessively noisy."""
         tag = clean(node.get("tag"), fix_mojibake=False).lower()
         role = clean(node.get("role"), fix_mojibake=False).lower()
         text = self.text(node)
@@ -726,6 +760,7 @@ class ModelSnapshotRenderer:
         return False
 
     def is_primary_action(self, node: dict[str, Any], actions: list[str]) -> bool:
+        """Require visible, hit-testable, labeled controls for the primary list."""
         if str(node.get("ref", "")) in self.suppressed_refs:
             return False
         if self.is_broad_action(node, actions):
@@ -758,6 +793,7 @@ class ModelSnapshotRenderer:
         return False
 
     def collect_action_nodes(self) -> list[tuple[dict[str, Any], list[str]]]:
+        """Collect every declared action in deterministic index/document order."""
         rows: list[tuple[dict[str, Any], list[str]]] = []
         for node in self.nodes:
             actions = self.action_types(node)
@@ -768,6 +804,7 @@ class ModelSnapshotRenderer:
         return rows
 
     def group_nested_actions(self) -> dict[str, list[tuple[dict[str, Any], list[str]]]]:
+        """Attach useful descendant controls to their nearest readable item."""
         grouped: dict[str, list[tuple[dict[str, Any], list[str]]]] = {}
         for node, actions in self.action_nodes:
             if not self.is_primary_action(node, actions):
@@ -789,6 +826,7 @@ class ModelSnapshotRenderer:
         return grouped
 
     def nested_action_rank(self, node: dict[str, Any]) -> tuple[int, int]:
+        """Rank inputs and activation controls ahead of restated navigation links."""
         tag = self.node_tag(node)
         role = self.node_role(node)
         label = self.text(node)
@@ -805,6 +843,7 @@ class ModelSnapshotRenderer:
         return (rank, self.source_order(node))
 
     def is_useful_nested_action(self, node: dict[str, Any], actions: list[str], parent_text: str) -> bool:
+        """Keep nested controls that add an operation not already conveyed by text."""
         label = self.text(node)
         label_key = norm_key(label)
         parent_key = norm_key(parent_text)
@@ -829,6 +868,7 @@ class ModelSnapshotRenderer:
         return True
 
     def action_line(self, node: dict[str, Any], actions: list[str], *, include_debug: bool = False) -> str:
+        """Render one executable id with semantic label and optional debug facts."""
         label = clip(self.text(node), 140 if not include_debug else 220)
         ref = str(node.get("ref", ""))
         tag = clean(node.get("tag"), fix_mojibake=False) or "?"
@@ -876,6 +916,7 @@ class ModelSnapshotRenderer:
         return " ".join(bits)
 
     def action_priority(self, node: dict[str, Any], actions: list[str]) -> tuple[int, int]:
+        """Prioritize direct task controls over tabs, toolbars, and broad navigation."""
         label = self.text(node)
         kind = self.action_kind(node, actions)
         role = self.node_role(node)
@@ -952,6 +993,7 @@ class ModelSnapshotRenderer:
         return tokens
 
     def attr_int(self, node: dict[str, Any], name: str) -> int | None:
+        """Parse one selected attribute as an integer, returning None on failure."""
         value = attr_map(node).get(name)
         try:
             return int(str(value))
@@ -959,6 +1001,7 @@ class ModelSnapshotRenderer:
             return None
 
     def has_deeper_treeitem_in_same_tree(self, node: dict[str, Any]) -> bool:
+        """Detect concrete nested tree destinations when ranking top-level categories."""
         # ====CHANGED==== Generic tree-navigation priority. If a tree contains
         # deeper items, compact model output should prefer those concrete nested
         # destinations over top-level categories/tabs. This is structural: ARIA
@@ -983,6 +1026,7 @@ class ModelSnapshotRenderer:
         return False
 
     def render_header(self) -> list[str]:
+        """Render page identity, action-id guidance, and compact capture statistics."""
         stats = self.snapshot.get("stats", {}) if isinstance(self.snapshot.get("stats"), dict) else {}
         lines = [
             f"URL: {clean(self.snapshot.get('url'))}",
@@ -998,6 +1042,7 @@ class ModelSnapshotRenderer:
         return lines
 
     def table_rows(self, table: dict[str, Any]) -> list[list[str]]:
+        """Extract ordered cell text from semantic or HTML table rows."""
         table_ref = str(table.get("ref", ""))
         refs = self.descendants(table_ref)
         rows = [
@@ -1025,6 +1070,7 @@ class ModelSnapshotRenderer:
         return rendered
 
     def render_tables(self) -> tuple[list[str], set[str]]:
+        """Render bounded table rows and return refs covered by the table section."""
         tables = [node for node in self.nodes if clean(node.get("tag"), fix_mojibake=False).lower() == "table"]
         tables.sort(key=self.source_order)
         lines: list[str] = []
@@ -1047,6 +1093,7 @@ class ModelSnapshotRenderer:
         return lines, covered
 
     def is_content_node(self, node: dict[str, Any], covered: set[str]) -> bool:
+        """Select readable semantic or own-text nodes while filtering duplicated chrome."""
         ref = str(node.get("ref", ""))
         if ref in covered or ref in self.suppressed_refs:
             return False
@@ -1122,6 +1169,7 @@ class ModelSnapshotRenderer:
         return False
 
     def render_content(self, covered: set[str]) -> tuple[list[str], set[str]]:
+        """Render deduplicated visible/offscreen content within the configured block cap."""
         candidates = [node for node in self.nodes if self.is_content_node(node, covered)]
         candidates.sort(key=self.source_order)
         visible_lines: list[str] = []
@@ -1223,6 +1271,7 @@ class ModelSnapshotRenderer:
         return lines, rendered_refs
 
     def render_media(self, covered: set[str]) -> list[str]:
+        """Render unique media labels not already represented by content text."""
         rows: list[str] = []
         seen: set[str] = set()
         item_count = 0
@@ -1265,6 +1314,7 @@ class ModelSnapshotRenderer:
         return rows
 
     def render_actions(self, rendered_content_refs: set[str]) -> list[str]:
+        """Render prioritized global actions after excluding content-nested controls."""
         nested_refs = {
             str(control.get("ref"))
             for item_ref in rendered_content_refs
@@ -1334,6 +1384,7 @@ class ModelSnapshotRenderer:
         return lines
 
     def scroll_region_rows(self) -> list[tuple[float, dict[str, Any]]]:
+        """Return visible substantial scroll regions ordered by viewport area."""
         regions: list[tuple[float, dict[str, Any]]] = []
         for node in self.nodes:
             ref = self.node_ref(node)
@@ -1359,6 +1410,7 @@ class ModelSnapshotRenderer:
         return regions
 
     def scroll_region_label(self, node: dict[str, Any]) -> str:
+        """Name a scroll pane from its own accessible identity, not subtree content."""
         # Name the pane, not its contents. `text()` deliberately prefers a node's own
         # and subtree text (right for message rows, useless here -- a region's subtree
         # is the whole pane). The accessible name is what identifies which pane it is.
@@ -1411,6 +1463,7 @@ class ModelSnapshotRenderer:
         return lines
 
     def render(self) -> str:
+        """Assemble header, tables, content, media, actions, and scroll regions."""
         sections: list[list[str]] = [self.render_header()]
         table_lines, covered = self.render_tables()
         if table_lines:
@@ -1435,6 +1488,7 @@ class ModelSnapshotRenderer:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
+    """Parse model-render budgets; they never modify the captured source JSON."""
     parser = argparse.ArgumentParser(description="Render a ChromiumRL structured snapshot for model context")
     parser.add_argument("input", type=Path, help="Input structured snapshot JSON")
     parser.add_argument("-o", "--output", type=Path, help="Optional output TXT path")
@@ -1460,6 +1514,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Load one snapshot, apply configured projection limits, and write text."""
     args = parse_args(sys.argv[1:] if argv is None else argv)
     rendered = ModelSnapshotRenderer(
         load_snapshot(args.input),

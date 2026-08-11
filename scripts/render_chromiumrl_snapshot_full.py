@@ -6,8 +6,7 @@ Use this when you want to see the raw browser facts in a readable TXT form:
 nodes, hierarchy, actions, attributes, states, bounds, visibility, hit testing,
 tables/media-like nodes, and snapshot stats.
 
-This is intentionally generic. It does not know about Slack, Google Docs,
-Sheets, Amazon, or any task/environment-specific selectors.
+This renderer uses only generic facts present in the structured snapshot.
 """
 
 from __future__ import annotations
@@ -81,6 +80,7 @@ COMMON_MOJIBAKE_REPLACEMENTS = {
 
 
 def load_snapshot(path: Path) -> dict[str, Any]:
+    """Load wrapped or bare structured-snapshot JSON and reject other shapes."""
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError("Input JSON must be an object")
@@ -96,6 +96,7 @@ def load_snapshot(path: Path) -> dict[str, Any]:
 
 
 def clean(value: Any, *, fix_mojibake: bool = True) -> str:
+    """Normalize whitespace and optionally repair known capture encoding artifacts."""
     text = "" if value is None else str(value)
     if fix_mojibake:
         for bad, good in COMMON_MOJIBAKE_REPLACEMENTS.items():
@@ -104,16 +105,19 @@ def clean(value: Any, *, fix_mojibake: bool = True) -> str:
 
 
 def clip(text: str, limit: int) -> str:
+    """Clip one rendered field with an ellipsis; zero or negative means unlimited."""
     if limit <= 0 or len(text) <= limit:
         return text
     return text[: max(0, limit - 1)].rstrip() + "…"
 
 
 def norm_text_key(text: str) -> str:
+    """Build a case-insensitive punctuation-free key for text deduplication."""
     return re.sub(r"\W+", "", text.lower())
 
 
 def attr_map(node: dict[str, Any]) -> dict[str, str]:
+    """Convert selectedAttributes records into a last-value-wins mapping."""
     attrs: dict[str, str] = {}
     raw = node.get("selectedAttributes", [])
     if isinstance(raw, list):
@@ -128,6 +132,7 @@ def attr_map(node: dict[str, Any]) -> dict[str, str]:
 
 
 def state_map(node: dict[str, Any]) -> dict[str, str]:
+    """Convert captured accessibility state records into a mapping."""
     states: dict[str, str] = {}
     raw = node.get("states", [])
     if isinstance(raw, list):
@@ -142,6 +147,7 @@ def state_map(node: dict[str, Any]) -> dict[str, str]:
 
 
 def dedupe(items: Iterable[str]) -> list[str]:
+    """Remove empty and repeated strings while preserving source order."""
     out: list[str] = []
     seen: set[str] = set()
     for item in items:
@@ -154,6 +160,7 @@ def dedupe(items: Iterable[str]) -> list[str]:
 
 
 def bounds_text(bounds: Any) -> str:
+    """Render available x/y/width/height facts without inventing missing values."""
     if not isinstance(bounds, dict):
         return ""
     keys = ("x", "y", "width", "height")
@@ -183,6 +190,7 @@ class FullSnapshotRenderer:
         include_inert_wrappers: bool,
         include_diff: bool,
     ):
+        """Index nodes, hierarchy, and actions for loss-aware debug rendering."""
         self.snapshot = snapshot
         self.max_text_chars = max_text_chars
         self.text_mode = text_mode
@@ -218,24 +226,28 @@ class FullSnapshotRenderer:
         self.printed_subtree_keys: set[str] = set()
 
     def source_order(self, node: dict[str, Any]) -> int:
+        """Return numeric document order, falling back to zero for malformed data."""
         try:
             return int(node.get("sourceOrder", 0) or 0)
         except Exception:
             return 0
 
     def node_index(self, node: dict[str, Any]) -> int | None:
+        """Return a numeric capture index when ChromiumRL supplied one."""
         try:
             return int(node.get("index"))
         except Exception:
             return None
 
     def action_types(self, node: dict[str, Any]) -> list[str]:
+        """Merge node-local and snapshot action-index facts without duplicates."""
         own = dedupe(node.get("actionTypes", []) if isinstance(node.get("actionTypes"), list) else [])
         index = self.node_index(node)
         mapped = self.action_map.get(index, []) if index is not None else []
         return dedupe([*own, *mapped])
 
     def roots(self) -> list[dict[str, Any]]:
+        """Resolve declared roots, or infer parentless nodes when roots are absent."""
         root_refs = [str(ref) for ref in self.snapshot.get("roots", []) or []]
         roots = [self.by_ref[ref] for ref in root_refs if ref in self.by_ref]
         if roots:
@@ -243,6 +255,7 @@ class FullSnapshotRenderer:
         return [node for node in self.nodes if not node.get("parentRef")]
 
     def primary_text(self, node: dict[str, Any], *, allow_subtree: bool = False) -> str:
+        """Choose a compact label from semantic text, attributes, and optional subtree."""
         for key in ("accessibleName", "directText", "description"):
             value = clean(node.get(key))
             if value:
@@ -258,12 +271,14 @@ class FullSnapshotRenderer:
         return ""
 
     def bool_flag(self, node: dict[str, Any], key: str) -> str:
+        """Render captured booleans as true/false and missing facts as question marks."""
         value = node.get(key)
         if isinstance(value, bool):
             return "true" if value else "false"
         return "?"
 
     def render_header(self) -> list[str]:
+        """Render snapshot identity, URL, counts, roots, and capture statistics."""
         stats = self.snapshot.get("stats", {}) if isinstance(self.snapshot.get("stats"), dict) else {}
         lines = [
             "=== SNAPSHOT ===",
@@ -294,6 +309,7 @@ class FullSnapshotRenderer:
         return lines
 
     def render_actions_index(self) -> list[str]:
+        """Optionally render an index-sorted actionable-node diagnostic section."""
         if not self.include_action_index:
             return []
         lines = ["=== ACTION INDEX ==="]
@@ -324,19 +340,24 @@ class FullSnapshotRenderer:
         return lines
 
     def has_children(self, node: dict[str, Any]) -> bool:
+        """Check both reconstructed parent links and raw childRefs for children."""
         ref = str(node.get("ref"))
         return bool(self.children.get(ref) or node.get("childRefs"))
 
     def node_tag(self, node: dict[str, Any]) -> str:
+        """Return a normalized lowercase tag for structural classification."""
         return clean(node.get("tag"), fix_mojibake=False).lower()
 
     def node_role(self, node: dict[str, Any]) -> str:
+        """Return a normalized lowercase accessibility role."""
         return clean(node.get("role"), fix_mojibake=False).lower()
 
     def node_boundary(self, node: dict[str, Any]) -> str:
+        """Return a normalized ChromiumRL semantic-boundary label."""
         return clean(node.get("semanticBoundary"), fix_mojibake=False).lower()
 
     def is_broad_container(self, node: dict[str, Any]) -> bool:
+        """Identify non-control containers whose inherited text is usually repetitive."""
         tag = self.node_tag(node)
         role = self.node_role(node)
         return tag in TEXT_CONTAINER_TAGS and tag not in TEXT_USEFUL_TAGS and role not in {
@@ -353,6 +374,7 @@ class FullSnapshotRenderer:
         }
 
     def should_print_text_fields(self, node: dict[str, Any]) -> bool:
+        """Apply text-mode and semantic rules without hiding useful leaf/control text."""
         if self.text_mode == "none":
             return False
         tag = self.node_tag(node)
@@ -373,6 +395,7 @@ class FullSnapshotRenderer:
         return False
 
     def has_explicit_text_fact(self, node: dict[str, Any]) -> bool:
+        """Distinguish a node's own captured text facts from inherited subtree text."""
         return bool(
             clean(node.get("accessibleName"))
             or clean(node.get("description"))
@@ -380,6 +403,7 @@ class FullSnapshotRenderer:
         )
 
     def is_inert_wrapper(self, node: dict[str, Any]) -> bool:
+        """Collapse fact-free div/span wrappers unless raw wrapper output was requested."""
         if self.include_inert_wrappers:
             return False
         tag = self.node_tag(node)
@@ -418,6 +442,7 @@ class FullSnapshotRenderer:
         return True
 
     def should_print_subtree_text(self, node: dict[str, Any], subtree_text: str, already_printed: list[str]) -> tuple[bool, str]:
+        """Decide whether subtree text adds evidence or only duplicates ancestors/fields."""
         if self.text_mode == "all":
             return True, ""
         if self.text_mode == "none":
@@ -451,6 +476,7 @@ class FullSnapshotRenderer:
         return True, ""
 
     def render_node_line(self, node: dict[str, Any], depth: int) -> list[str]:
+        """Render one node's identity, geometry, text, attributes, states, and refs."""
         indent = "  " * depth
         ref = clean(node.get("ref"), fix_mojibake=False)
         index = self.node_index(node)
@@ -526,10 +552,12 @@ class FullSnapshotRenderer:
         return lines
 
     def render_tree(self) -> list[str]:
+        """Render the hierarchy once, then expose any nodes unreachable from roots."""
         lines = ["=== NODE TREE ==="]
         seen: set[str] = set()
 
         def walk(node: dict[str, Any], depth: int) -> None:
+            """Depth-first render with cycle protection and transparent wrapper collapse."""
             ref = str(node.get("ref"))
             if self.node_tag(node) == "#text" and not self.include_text_nodes:
                 return
@@ -560,11 +588,13 @@ class FullSnapshotRenderer:
         return lines
 
     def render_diff(self) -> list[str]:
+        """Optionally preserve a native snapshot diff for debugging only."""
         if not self.include_diff or not isinstance(self.snapshot.get("diff"), dict):
             return []
         return ["=== DIFF ===", json.dumps(self.snapshot["diff"], ensure_ascii=False, indent=2)]
 
     def render(self) -> str:
+        """Assemble enabled sections into one deterministic newline-terminated file."""
         sections = [
             self.render_header(),
             self.render_actions_index(),
@@ -575,6 +605,7 @@ class FullSnapshotRenderer:
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
+    """Parse debug-render options; caps affect TXT display, never source JSON."""
     parser = argparse.ArgumentParser(description="Render a ChromiumRL structured snapshot as full TXT")
     parser.add_argument("input", type=Path, help="Input structured snapshot JSON")
     parser.add_argument("-o", "--output", type=Path, help="Optional output TXT path")
@@ -623,6 +654,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Render to a file or stdout and treat a closed output pipe as success."""
     args = parse_args(sys.argv[1:] if argv is None else argv)
     rendered = FullSnapshotRenderer(
         load_snapshot(args.input),
