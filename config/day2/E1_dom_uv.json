@@ -1,0 +1,47 @@
+{
+  "experiment_id": "E1",
+  "experiment_name": "Planned DOM Universal Verifier Execution",
+  "execution_authorized": false,
+  "status": "planned_not_run",
+  "dataset": {
+    "name": "microsoft/CUAVerifierBench",
+    "configuration": "trajectories",
+    "split": "fara7b_om2w_browserbase",
+    "expected_rows": 106
+  },
+  "verifier": {
+    "entry_point": "repo/fara-dom-verifier/webeval/scripts/verify_trajectories.py",
+    "evidence_mode": "dom",
+    "evidence_schema_version": "dom-trajectory-manifest/v2",
+    "verifier_schema_version": "mmrubric-result/v2",
+    "prompt_version": "mmrubric-prompts/v1",
+    "judge_provider": "openai",
+    "judge_model": "gpt-5.2",
+    "action_rubric_model": "o4-mini",
+    "rubric_threshold": 0.8,
+    "max_images_per_criterion": 5,
+    "dom_frame_char_budget": 16000,
+    "dom_context_char_budget": 48000,
+    "dom_top_k": null,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome",
+    "processes": 1
+  },
+  "paper_deviations": [
+    "Uses semantic DOM evidence instead of screenshot evidence."
+  ],
+  "input_policy": {
+    "allow_only": [
+      "task_id",
+      "instruction",
+      "init_url",
+      "web_surfer_log",
+      "semantic_dom_manifest",
+      "semantic_dom_snapshots",
+      "semantic_dom_diffs",
+      "final_answer",
+      "is_aborted"
+    ],
+    "forbid_human_labels_and_stored_verifier_outputs": true
+  }
+}

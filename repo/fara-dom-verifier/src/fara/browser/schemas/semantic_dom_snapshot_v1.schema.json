@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://microsoft.github.io/fara/schemas/semantic_dom_snapshot_v1.schema.json",
+  "title": "Fara semantic DOM snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "canonicalizer_version",
+    "snapshot_id",
+    "ordinal",
+    "url",
+    "title",
+    "captured_at",
+    "hash",
+    "nodes",
+    "coverage"
+  ],
+  "properties": {
+    "schema_version": {"const": "semantic-dom-snapshot/v1"},
+    "canonicalizer_version": {"type": "string"},
+    "snapshot_id": {"type": "string", "pattern": "^snapshot-[0-9]{4,}$"},
+    "ordinal": {"type": "integer", "minimum": 0},
+    "url": {"type": "string"},
+    "title": {"type": "string"},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "hash": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "nodes": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/node"}
+    },
+    "coverage": {"$ref": "#/$defs/coverage"}
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "parent_key",
+        "frame_path",
+        "role",
+        "name",
+        "text",
+        "value",
+        "tag",
+        "states"
+      ],
+      "properties": {
+        "key": {"type": "string", "pattern": "^node:[a-f0-9]{24}$"},
+        "parent_key": {"type": ["string", "null"]},
+        "frame_path": {"type": "string"},
+        "role": {"type": "string"},
+        "name": {"type": "string"},
+        "text": {"type": "string"},
+        "value": {"type": "string"},
+        "tag": {"type": "string"},
+        "states": {"type": "object"}
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "rendered_dom",
+        "nodes_seen",
+        "nodes_captured",
+        "node_limit",
+        "text_limit",
+        "truncated",
+        "same_origin_frames",
+        "open_shadow_roots",
+        "cross_origin_frames",
+        "canvas_count",
+        "image_without_alt_count",
+        "unsupported",
+        "errors"
+      ],
+      "properties": {
+        "status": {"enum": ["complete", "partial", "truncated", "failed"]},
+        "rendered_dom": {"type": "boolean"},
+        "nodes_seen": {"type": "integer", "minimum": 0},
+        "nodes_captured": {"type": "integer", "minimum": 0},
+        "node_limit": {"type": "integer", "minimum": 1},
+        "text_limit": {"type": "integer", "minimum": 1},
+        "truncated": {"type": "boolean"},
+        "same_origin_frames": {"type": "integer", "minimum": 0},
+        "open_shadow_roots": {"type": "integer", "minimum": 0},
+        "cross_origin_frames": {"type": "array", "items": {"type": "string"}},
+        "canvas_count": {"type": "integer", "minimum": 0},
+        "image_without_alt_count": {"type": "integer", "minimum": 0},
+        "unsupported": {"type": "array", "items": {"type": "string"}},
+        "errors": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

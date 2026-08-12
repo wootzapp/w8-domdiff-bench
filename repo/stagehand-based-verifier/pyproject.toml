@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stagehand-based-verifier"
+version = "0.1.0"
+description = "Standalone Universal-Verifier-style evaluation over Stagehand semantic trajectories"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+  "openai>=1.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+stagehand-verify = "stagehand_verifier.cli:main"
+stagehand-prepare = "stagehand_verifier.preparation:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stagehand_verifier"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
