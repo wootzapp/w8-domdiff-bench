@@ -16,7 +16,9 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit
+
+from artifacts import normalized_http_url
 
 # Shared recorder exception keeps adapter failures compatible with runner/CLI
 # error handling without importing either higher-level module.
@@ -56,14 +58,6 @@ def agent_browser_session_name(task_id: str, process_id: int) -> str:
     """Build a short unique name that stays below Unix socket path limits."""
     digest = hashlib.sha256(task_id.encode("utf-8")).hexdigest()[:16]
     return f"rec-{digest}-{process_id}"
-
-
-def normalized_http_url(value: str) -> str:
-    """Normalize a valid CDP HTTP endpoint while rejecting other URL schemes."""
-    parsed = urlsplit(value.strip().rstrip("/"))
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise RunnerError(f"invalid CDP URL: {value!r}")
-    return urlunsplit((parsed.scheme, parsed.netloc, "", "", ""))
 
 
 class AgentBrowserClient:
@@ -274,7 +268,11 @@ class AgentBrowserClient:
         return ref[1:] if ref.startswith("@") else ref
 
     async def execute(self, decision: dict[str, Any]) -> dict[str, Any] | str:
-        """Map one validated model action to exactly one official CLI operation."""
+        """Map one action to official CLI operations and report normalized input.
+
+        Most actions issue one CLI operation. A ref-targeted scroll first hovers
+        the ref and then issues the wheel operation so nested panes can receive it.
+        """
         action = str(decision["action"])
         ref = self.action_ref(decision.get("id"))
         selector = f"@{ref}" if ref else ""
@@ -307,14 +305,24 @@ class AgentBrowserClient:
                 else float(decision.get("pixels"))
             )
             direction = "down" if raw_pixels >= 0 else "up"
-            arguments = ["scroll", direction, str(max(1, round(abs(raw_pixels))))]
+            magnitude = max(1, round(abs(raw_pixels)))
+            arguments = ["scroll", direction, str(magnitude)]
+            hover_issued = bool(selector)
             if selector:
                 # scroll --selector accepts CSS, whereas @eN is an agent-browser
                 # snapshot ref. Hovering a ref places the pointer over that
                 # element; the subsequent wheel command is then dispatched to
                 # the element under the pointer, including nested scroll panes.
                 await self._invoke(["hover", selector])
-            return await self._invoke(arguments)
+            result = await self._invoke(arguments)
+            assert isinstance(result, dict)
+            return {
+                **result,
+                "normalized_parameters": {
+                    "pixels": magnitude if direction == "down" else -magnitude,
+                },
+                "hover_issued": hover_issued,
+            }
         if action == "wait":
             raw_seconds = (
                 1.0
@@ -322,5 +330,10 @@ class AgentBrowserClient:
                 else float(decision.get("seconds"))
             )
             milliseconds = round(1000 * min(10.0, max(0.0, raw_seconds)))
-            return await self._invoke(["wait", str(milliseconds)])
+            result = await self._invoke(["wait", str(milliseconds)])
+            assert isinstance(result, dict)
+            return {
+                **result,
+                "normalized_parameters": {"seconds": milliseconds / 1000},
+            }
         raise RunnerError(f"action {action!r} is not executable")

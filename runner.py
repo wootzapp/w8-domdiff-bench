@@ -27,9 +27,115 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, TextIO
-from urllib.parse import urlsplit, urlunsplit
 
 import aiohttp
+
+from artifacts import (
+    append_json_line,
+    normalized_http_url,
+    utc_now,
+    write_json,
+    write_json_lines,
+    write_text,
+)
+from backfill import (
+    apply_diff_metadata,
+    backfill_run,
+    diff_report_summary,
+    previous_dom_diff_state,
+    update_step_diff_metadata,
+)
+from capture import (
+    FULL_RENDERER,
+    MODEL_RENDERER,
+    ROOT,
+    CDPClient,
+    CDPError,
+    CaptureBundle,
+    PageLanguageState,
+    action_observation_context,
+    action_progress,
+    agent_browser_control_signature,
+    agent_browser_ref_line,
+    agent_browser_target_identity,
+    attach_agent_browser_observation,
+    attach_agent_browser_observation_error,
+    capture_after_action_bundle,
+    capture_bundle,
+    capture_call,
+    capture_structured_snapshot,
+    chromiumrl_action_coordinate,
+    comparable_page_url,
+    copy_bundle,
+    english_locale_path_url,
+    ensure_english_page,
+    file_version,
+    is_cdp_transport_error,
+    is_english_language,
+    is_recoverable_action_error,
+    materialize_bundle,
+    normalized_observation_text,
+    page_language_state,
+    preserve_original_renders,
+    recorded_action_coordinate,
+    render_stored_snapshot,
+    renderer_versions,
+    rewrite_ws_url,
+    run_renderer,
+    structured_snapshot_action_coordinate,
+    synchronize_recorder_target,
+    verify_agent_browser_action,
+)
+from dom_diff import (
+    DOM_DIFF_FIELDS,
+    DOM_DIFF_INTERVAL,
+    DOM_DIFF_SOURCE,
+    MAX_COLLAPSE_CONTROLS,
+    MAX_COLLAPSE_DOCUMENT_SHARE,
+    MAX_COLLAPSE_TEXT_CHARS,
+    MAX_DOM_DIFF_JSON_BYTES,
+    MAX_MODEL_DOM_DIFF_ENTRIES,
+    MAX_TERMINATION_REVIEW_DIFF_ENTRIES_PER_STEP,
+    ORDER_INSENSITIVE_DOM_FIELDS,
+    SnapshotIdentityError,
+    bounded_dom_diff_for_model,
+    bounded_dom_diff_history_for_review,
+    build_snapshot_path_index,
+    canonical_dom_value,
+    child_paths,
+    clean_dom_text,
+    collapse_visible_text,
+    collision_node,
+    compared_node_fields,
+    compress_tree_operation,
+    condense_repeated_groups,
+    dom_diff_record,
+    dom_diff_text,
+    dropped_entry_summary,
+    entry_priority,
+    entry_text_fragment,
+    load_snapshot_file,
+    match_relocated_paths,
+    meaningful_diff_node,
+    model_diff_entry_summary,
+    node_delta,
+    node_tag,
+    numeric_bounds,
+    operation_subtree,
+    path_distance,
+    repeated_signature,
+    same_document_except_fragment,
+    semantic_fingerprint,
+    snapshot_endpoint,
+    stable_node_anchor,
+    truncate_diff_entries,
+    unsafe_identity_record,
+    viewport_delta,
+    viewport_membership,
+    viewport_node_text,
+    visible_document_text,
+    write_dom_diff_files,
+)
 
 # Local adapter: supplies the browser-facing observation and action interface.
 # ChromiumRL capture and recorder artifacts remain owned by this module.
@@ -44,31 +150,21 @@ from agent_browser import (
 from prompts import SYSTEM_PROMPT, TERMINATION_REVIEW_PROMPT
 # Shared exception: lets the CLI and adapter report failures consistently.
 from recorder_errors import RunnerError
+from trajectory import (
+    TRAJECTORY_SCHEMA_VERSION,
+    WEBSURFER_ACTION_MAP,
+    generate_trajectory_artifacts,
+    step_directory_number,
+    websurfer_action,
+)
 
 
-ROOT = Path(__file__).resolve().parent
-# Local renderer entry points are invoked as checked subprocesses so their CLI
-# output and failures remain isolated from task orchestration state.
-FULL_RENDERER = ROOT / "scripts" / "render_chromiumrl_snapshot_full.py"
-MODEL_RENDERER = ROOT / "scripts" / "render_chromiumrl_snapshot_model.py"
 TASK_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 DEFAULT_NOVNC_URL = "http://[::1]:39084/vnc.html?resize=scale&autoconnect=1&path=websockify"
 MAX_TASK_MEMORY_CHARS = 8000
 MAX_ACTION_THOUGHT_CHARS = 1200
 # These schema limits bound model-authored bookkeeping, not captured DOM evidence.
 # They prevent an accidental full response from being copied into every action row.
-TRAJECTORY_SCHEMA_VERSION = "1.0"
-WEBSURFER_ACTION_MAP = {
-    "navigate": "visit_url",
-    "click": "left_click",
-    "fill": "type",
-    "type": "type",
-    # Preserve exact executed actions that have no legacy renaming rule.
-    "select": "select",
-    "press": "key",
-    "scroll": "scroll",
-    "wait": "wait",
-}
 ACTION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -128,60 +224,6 @@ TERMINATION_REVIEW_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
-class CDPError(RunnerError):
-    def __init__(self, method: str, error: Any):
-        """Attach the failed protocol method and raw CDP error to the exception."""
-        super().__init__(f"CDP command {method} failed: {error}")
-        self.method = method
-        self.error = error
-
-
-def is_cdp_transport_error(error: BaseException) -> bool:
-    """Recognize connection-loss messages that are safe to reconnect around."""
-    detail = str(error).lower()
-    return any(
-        marker in detail
-        for marker in (
-            "cdp websocket closed",
-            "cdp websocket is not connected",
-            "cannot write to closing transport",
-        )
-    )
-
-
-def is_recoverable_action_error(error: BaseException) -> bool:
-    """Return whether an action hit a transient browser-state failure.
-
-    Dynamic pages can replace an element after a snapshot is captured but before
-    the next action reaches CDP. The failed action remains recorded; the runner
-    can then continue from the fresh after-action snapshot instead of treating a
-    transient stale node or action timeout as a terminal task failure.
-    """
-    if isinstance(error, TimeoutError):
-        return True
-    if isinstance(error, AgentBrowserError):
-        detail = error.error.lower()
-        return any(
-            marker in detail
-            for marker in (
-                "not found",
-                "no element",
-                "stale",
-                "covered",
-                "intercepts pointer events",
-                "could not compute box model",
-                "timeout",
-                "timed out",
-            )
-        )
-    return False
-
-
-def utc_now() -> str:
-    """Return a millisecond-resolution UTC timestamp in JSON-friendly form."""
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-
-
 def load_env(path: Path) -> None:
     """Load simple KEY=VALUE entries without overriding the caller's environment."""
     if not path.exists():
@@ -195,45 +237,6 @@ def load_env(path: Path) -> None:
         value = value.strip().strip('"').strip("'")
         if key and key not in os.environ:
             os.environ[key] = value
-
-
-def write_json(path: Path, value: Any) -> None:
-    """Atomically write indented UTF-8 JSON, creating parent directories."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(path)
-
-
-def append_json_line(path: Path, value: Any) -> None:
-    """Append one compact JSON object to an audit JSONL stream."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(value, ensure_ascii=False) + "\n")
-
-
-def write_json_lines(path: Path, rows: list[dict[str, Any]]) -> None:
-    """Atomically write JSONL so a failed export cannot leave a partial file."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(
-        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
-        encoding="utf-8",
-    )
-    temporary.replace(path)
-
-
-def json_line_count(value: Any) -> int:
-    """Measure the line count of the exact pretty-printed JSON representation."""
-    return len((json.dumps(value, ensure_ascii=False, indent=2) + "\n").splitlines())
-
-
-def write_text(path: Path, value: str) -> None:
-    """Atomically replace a UTF-8 text artifact."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(value, encoding="utf-8")
-    temporary.replace(path)
 
 
 def safe_task_id(value: str) -> str:
@@ -292,2808 +295,6 @@ def prompt_for_human_intervention(
     }
 
 
-def normalized_http_url(value: str) -> str:
-    """Validate a CDP HTTP endpoint and discard any accidental path/query."""
-    parsed = urlsplit(value.strip().rstrip("/"))
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise RunnerError(f"invalid CDP URL: {value!r}")
-    return urlunsplit((parsed.scheme, parsed.netloc, "", "", ""))
-
-
-def rewrite_ws_url(value: str, http_url: str) -> str:
-    """Keep CDP's websocket path while replacing its externally unusable host."""
-    source = urlsplit(value)
-    target = urlsplit(http_url)
-    scheme = "wss" if target.scheme == "https" else "ws"
-    return urlunsplit((scheme, target.netloc, source.path, source.query, ""))
-
-
-def comparable_page_url(value: str) -> str:
-    """Normalize only URL spelling differences that cannot identify a tab."""
-    text = value.strip()
-    parsed = urlsplit(text)
-    if parsed.scheme not in {"http", "https"}:
-        return text
-    path = parsed.path or "/"
-    return urlunsplit(
-        (
-            parsed.scheme.lower(),
-            parsed.netloc.lower(),
-            path,
-            parsed.query,
-            parsed.fragment,
-        )
-    )
-
-
-class CDPClient:
-    def __init__(
-        self,
-        http_url: str,
-        timeout: float = 30.0,
-        *,
-        keep_existing_tabs: bool = False,
-        browser_language: str = "",
-        browser_accept_language: str = "",
-    ):
-        """Configure one flattened CDP session and its tab/locale policy."""
-        self.http_url = normalized_http_url(http_url)
-        self.timeout = timeout
-        self.keep_existing_tabs = keep_existing_tabs
-        self.browser_language = browser_language
-        self.browser_accept_language = browser_accept_language
-        self.http: aiohttp.ClientSession | None = None
-        self.ws: aiohttp.ClientWebSocketResponse | None = None
-        self.reader: asyncio.Task[None] | None = None
-        self.next_id = 0
-        self.pending: dict[int, tuple[str, asyncio.Future[dict[str, Any]]]] = {}
-        self.session_id = ""
-        self.target: dict[str, Any] = {}
-        self.connection_report: dict[str, Any] = {}
-
-    async def _enable_attached_target(self) -> dict[str, Any]:
-        """Enable required domains and best-effort English locale overrides."""
-        for method in ("Page.enable", "DOM.enable", "Runtime.enable", "ChromiumRL.enable"):
-            await self.call(method)
-        locale_setup: dict[str, Any] = {}
-        for label, method, params in (
-            ("network_enable", "Network.enable", {}),
-            (
-                "accept_language_header",
-                "Network.setExtraHTTPHeaders",
-                {"headers": {"Accept-Language": self.browser_accept_language}},
-            ),
-            (
-                "locale_override",
-                "Emulation.setLocaleOverride",
-                {"locale": self.browser_language},
-            ),
-        ):
-            if label == "accept_language_header" and not self.browser_accept_language:
-                locale_setup[label] = {"status": "skipped", "reason": "empty configuration"}
-                continue
-            if label == "locale_override" and not self.browser_language:
-                locale_setup[label] = {"status": "skipped", "reason": "empty configuration"}
-                continue
-            try:
-                await self.call(method, params)
-                locale_setup[label] = {
-                    "status": "ok",
-                    "value": next(iter(params.values()), None),
-                }
-            except Exception as error:
-                locale_setup[label] = {
-                    "status": "error",
-                    "error": f"{type(error).__name__}: {error}",
-                }
-        return locale_setup
-
-    async def __aenter__(self) -> "CDPClient":
-        """Connect on context entry and clean up if connection setup fails."""
-        try:
-            await self.connect()
-        except BaseException:
-            await self.close()
-            raise
-        return self
-
-    async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> None:
-        """Always release websocket and HTTP resources on context exit."""
-        await self.close()
-
-    async def _open_browser_transport(self) -> None:
-        """Open the browser-level CDP websocket used to enumerate/attach targets."""
-        self.http = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=self.timeout)
-        )
-        async with self.http.get(
-            self.http_url + "/json/version", headers={"Host": "localhost"}
-        ) as response:
-            if response.status != 200:
-                raise RunnerError(f"CDP /json/version returned HTTP {response.status}")
-            version = await response.json()
-        ws_value = version.get("webSocketDebuggerUrl")
-        if not ws_value:
-            raise RunnerError("CDP did not expose webSocketDebuggerUrl")
-        self.ws = await self.http.ws_connect(rewrite_ws_url(str(ws_value), self.http_url))
-        self.reader = asyncio.create_task(self._read_messages())
-
-    async def connect(self) -> None:
-        """Create a clean task tab, close stale task tabs, and attach ChromiumRL."""
-        await self._open_browser_transport()
-
-        targets = (await self.call("Target.getTargets", attached=False)).get("targetInfos", [])
-        pages = [
-            item
-            for item in targets
-            if item.get("type") == "page"
-            and not str(item.get("url", "")).startswith("devtools://")
-        ]
-        pages.sort(
-            key=lambda item: (
-                0
-                if str(item.get("url", "")).startswith(("http://", "https://"))
-                else 1
-            )
-        )
-        cleanup: dict[str, Any] = {
-            "page_targets_found": len(pages),
-            "page_target_urls": [str(item.get("url", "")) for item in pages],
-            "keep_existing_tabs": self.keep_existing_tabs,
-            "fresh_target_created": False,
-            "closed_count": 0,
-            "closed_targets": [],
-            "close_errors": [],
-            "warnings": [],
-        }
-        if len(pages) > 10:
-            cleanup["warnings"].append(
-                f"found {len(pages)} live page targets; prior runs may have left browser state behind"
-            )
-
-        if self.keep_existing_tabs:
-            if not pages:
-                raise RunnerError("browser exposes no page target")
-            self.target = pages[0]
-        else:
-            created = await self.call(
-                "Target.createTarget",
-                {"url": "about:blank"},
-                attached=False,
-            )
-            fresh_target_id = str(created.get("targetId", ""))
-            if not fresh_target_id:
-                raise RunnerError("Target.createTarget returned no targetId")
-            refreshed = (
-                await self.call("Target.getTargets", attached=False)
-            ).get("targetInfos", [])
-            self.target = next(
-                (
-                    item
-                    for item in refreshed
-                    if str(item.get("targetId", "")) == fresh_target_id
-                ),
-                {
-                    "targetId": fresh_target_id,
-                    "type": "page",
-                    "title": "",
-                    "url": "about:blank",
-                },
-            )
-            cleanup["fresh_target_created"] = True
-            cleanup["fresh_target_id"] = fresh_target_id
-            stale_pages = [
-                item
-                for item in refreshed
-                if item.get("type") == "page"
-                and str(item.get("targetId", "")) != fresh_target_id
-                and not str(item.get("url", "")).startswith("devtools://")
-            ]
-            closed_target_ids: set[str] = set()
-            cleanup_passes = 0
-            cleanup_timeout_seconds = 5.0
-            cleanup_deadline = time.monotonic() + cleanup_timeout_seconds
-            while stale_pages and time.monotonic() < cleanup_deadline:
-                cleanup_passes += 1
-                for page in stale_pages:
-                    target_id = str(page.get("targetId", ""))
-                    url = str(page.get("url", ""))
-                    try:
-                        result = await self.call(
-                            "Target.closeTarget",
-                            {"targetId": target_id},
-                            attached=False,
-                        )
-                        if result.get("success") is False:
-                            raise RunnerError(
-                                "Target.closeTarget returned success=false"
-                            )
-                        if target_id not in closed_target_ids:
-                            cleanup["closed_targets"].append(
-                                {"target_id": target_id, "url": url}
-                            )
-                            closed_target_ids.add(target_id)
-                    except Exception as error:
-                        cleanup["close_errors"].append(
-                            {
-                                "target_id": target_id,
-                                "url": url,
-                                "error": f"{type(error).__name__}: {error}",
-                            }
-                        )
-                await asyncio.sleep(0.25)
-                remaining_targets = (
-                    await self.call("Target.getTargets", attached=False)
-                ).get("targetInfos", [])
-                stale_pages = [
-                    item
-                    for item in remaining_targets
-                    if item.get("type") == "page"
-                    and str(item.get("targetId", "")) != fresh_target_id
-                    and not str(item.get("url", "")).startswith("devtools://")
-                ]
-            cleanup["cleanup_passes"] = cleanup_passes
-            cleanup["cleanup_timeout_seconds"] = cleanup_timeout_seconds
-            cleanup["closed_count"] = len(cleanup["closed_targets"])
-            cleanup["remaining_page_targets"] = [
-                {
-                    "target_id": str(item.get("targetId", "")),
-                    "url": str(item.get("url", "")),
-                }
-                for item in stale_pages
-            ]
-            if stale_pages:
-                remaining = ", ".join(
-                    str(item.get("targetId", "")) for item in stale_pages
-                )
-                raise RunnerError(
-                    "could not close all previous task page targets: " + remaining
-                )
-            await self.call(
-                "Target.activateTarget",
-                {"targetId": fresh_target_id},
-                attached=False,
-            )
-
-        cleanup["selected_target_id"] = self.target.get("targetId")
-        cleanup["selected_target_url"] = str(self.target.get("url", ""))
-        attached = await self.call(
-            "Target.attachToTarget",
-            {"targetId": self.target["targetId"], "flatten": True},
-            attached=False,
-        )
-        self.session_id = str(attached["sessionId"])
-        locale_setup = await self._enable_attached_target()
-        self.connection_report = {
-            "tab_cleanup": cleanup,
-            "locale_setup": locale_setup,
-            "target_switches": [],
-        }
-
-    async def reconnect_active_page(
-        self, active_page: AgentBrowserPage
-    ) -> dict[str, Any]:
-        """Reopen only the browser transport and reattach to the active task tab."""
-        previous_target_id = str(self.target.get("targetId", ""))
-        previous_target_url = str(self.target.get("url", ""))
-        await self.close()
-        self.session_id = ""
-        self.target = {}
-        await self._open_browser_transport()
-        report = await self.synchronize_target(active_page)
-        report.update(
-            transport_reconnected=True,
-            disconnected_target_id=previous_target_id,
-            disconnected_target_url=previous_target_url,
-        )
-        self.connection_report.setdefault("transport_reconnects", []).append(dict(report))
-        return report
-
-    async def synchronize_target(self, active_page: AgentBrowserPage) -> dict[str, Any]:
-        """Attach ChromiumRL capture to agent-browser's active page target.
-
-        agent-browser follows a newly opened tab automatically, while a flattened
-        CDP session remains attached to the page it originally selected. Match
-        the official active-tab URL/title against live page targets and reattach
-        before capturing. Ambiguous matches fail loudly instead of recording
-        evidence from the wrong page.
-        """
-        targets = (await self.call("Target.getTargets", attached=False)).get(
-            "targetInfos", []
-        )
-        pages = [
-            item
-            for item in targets
-            if item.get("type") == "page"
-            and not str(item.get("url", "")).startswith("devtools://")
-        ]
-        active_key = comparable_page_url(active_page.url)
-        candidates = [
-            item
-            for item in pages
-            if comparable_page_url(str(item.get("url", ""))) == active_key
-        ]
-        if len(candidates) > 1 and active_page.title:
-            title_matches = [
-                item
-                for item in candidates
-                if str(item.get("title", "")).strip() == active_page.title.strip()
-            ]
-            if title_matches:
-                candidates = title_matches
-        if not candidates:
-            raise RunnerError(
-                "agent-browser active tab has no matching CDP page target: "
-                f"tab={active_page.tab_id!r} url={active_page.url!r} "
-                f"title={active_page.title!r}"
-            )
-        if len(candidates) != 1:
-            raise RunnerError(
-                "agent-browser active tab matches multiple CDP page targets; "
-                "refusing to capture an ambiguous page: "
-                f"tab={active_page.tab_id!r} url={active_page.url!r} "
-                f"title={active_page.title!r} matches={len(candidates)}"
-            )
-
-        selected = candidates[0]
-        old_target_id = str(self.target.get("targetId", ""))
-        new_target_id = str(selected.get("targetId", ""))
-        report: dict[str, Any] = {
-            "agent_browser_tab_id": active_page.tab_id,
-            "agent_browser_url": active_page.url,
-            "agent_browser_title": active_page.title,
-            "previous_target_id": old_target_id,
-            "previous_target_url": str(self.target.get("url", "")),
-            "selected_target_id": new_target_id,
-            "selected_target_url": str(selected.get("url", "")),
-            "switched": new_target_id != old_target_id,
-        }
-        if new_target_id == old_target_id:
-            self.target = selected
-            return report
-
-        old_session_id = self.session_id
-        if old_session_id:
-            try:
-                await self.call(
-                    "Target.detachFromTarget",
-                    {"sessionId": old_session_id},
-                    attached=False,
-                )
-            except Exception as error:
-                report["detach_error"] = f"{type(error).__name__}: {error}"
-        attached = await self.call(
-            "Target.attachToTarget",
-            {"targetId": new_target_id, "flatten": True},
-            attached=False,
-        )
-        self.session_id = str(attached["sessionId"])
-        self.target = selected
-        report["locale_setup"] = await self._enable_attached_target()
-        self.connection_report.setdefault("target_switches", []).append(report)
-        return report
-
-    async def close(self) -> None:
-        """Cancel the reader and close both CDP transport resources idempotently."""
-        if self.reader is not None:
-            self.reader.cancel()
-            try:
-                await self.reader
-            except asyncio.CancelledError:
-                pass
-            self.reader = None
-        if self.ws is not None:
-            await self.ws.close()
-            self.ws = None
-        if self.http is not None:
-            await self.http.close()
-            self.http = None
-
-    async def _read_messages(self) -> None:
-        """Route CDP responses to pending calls and fail them if transport closes."""
-        assert self.ws is not None
-        async for message in self.ws:
-            if message.type != aiohttp.WSMsgType.TEXT:
-                if message.type in {aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR}:
-                    break
-                continue
-            payload = json.loads(message.data)
-            message_id = payload.get("id")
-            if isinstance(message_id, int) and message_id in self.pending:
-                _method, future = self.pending.pop(message_id)
-                if not future.done():
-                    future.set_result(payload)
-                continue
-        error = RunnerError("CDP websocket closed")
-        for _method, future in self.pending.values():
-            if not future.done():
-                future.set_exception(error)
-        self.pending.clear()
-
-    async def call(
-        self,
-        method: str,
-        params: dict[str, Any] | None = None,
-        *,
-        attached: bool = True,
-    ) -> dict[str, Any]:
-        """Send one CDP command to the page session or browser connection."""
-        if self.ws is None:
-            raise RunnerError("CDP websocket is not connected")
-        self.next_id += 1
-        message_id = self.next_id
-        request: dict[str, Any] = {"id": message_id, "method": method, "params": params or {}}
-        if attached and self.session_id:
-            request["sessionId"] = self.session_id
-        future: asyncio.Future[dict[str, Any]] = asyncio.get_running_loop().create_future()
-        self.pending[message_id] = (method, future)
-        try:
-            await self.ws.send_json(request)
-        except (aiohttp.ClientError, ConnectionError, RuntimeError) as error:
-            self.pending.pop(message_id, None)
-            if is_cdp_transport_error(error):
-                raise RunnerError(
-                    f"CDP websocket closed while sending {method}: {error}"
-                ) from error
-        try:
-            response = await asyncio.wait_for(future, timeout=self.timeout)
-        except BaseException:
-            self.pending.pop(message_id, None)
-            raise
-        if "error" in response:
-            raise CDPError(method, response["error"])
-        result = response.get("result", {})
-        return result if isinstance(result, dict) else {}
-
-@dataclass(frozen=True)
-class PageLanguageState:
-    url: str = ""
-    language: str = ""
-    english_alternate_url: str = ""
-    error: str = ""
-
-
-def is_english_language(value: str) -> bool:
-    """Accept plain English and any English BCP-47 regional variant."""
-    language = value.strip().lower().replace("_", "-")
-    return language == "en" or language.startswith("en-")
-
-
-def english_locale_path_url(value: str) -> str:
-    """Replace one BCP-47 locale path segment with en-US, generically."""
-    parsed = urlsplit(value)
-    parts = parsed.path.split("/")
-    for index, part in enumerate(parts):
-        if re.fullmatch(r"[A-Za-z]{2}-[A-Za-z]{2}", part) and not is_english_language(part):
-            parts[index] = "en-US"
-            return urlunsplit(
-                (parsed.scheme, parsed.netloc, "/".join(parts), parsed.query, parsed.fragment)
-            )
-    return ""
-
-
-async def page_language_state(cdp: CDPClient) -> PageLanguageState:
-    """Read the live document locale without changing ChromiumRL capture output."""
-    expression = """(() => {
-      const alternates = [...document.querySelectorAll('link[rel="alternate"][hreflang]')]
-        .map(node => ({
-          language: node.hreflang || '',
-          label: '',
-          url: node.href || '',
-          authoritative: true,
-        }));
-      const languageLinks = [...document.querySelectorAll('a[href]')]
-        .map(node => ({
-          language: node.hreflang || node.lang || '',
-          label: (node.innerText || node.textContent || node.getAttribute('aria-label') || '').trim(),
-          url: node.href || '',
-          authoritative: false,
-        }));
-      return {
-        url: location.href,
-        language: document.documentElement.lang || '',
-        alternates: [...alternates, ...languageLinks],
-      };
-    })()"""
-    try:
-        result = await cdp.call(
-            "Runtime.evaluate",
-            {"expression": expression, "returnByValue": True},
-        )
-        value = (result.get("result") or {}).get("value")
-        if not isinstance(value, dict):
-            raise RunnerError("Runtime.evaluate returned no page-language object")
-        candidates = [
-            item
-            for item in value.get("alternates", []) or []
-            if isinstance(item, dict)
-            and (
-                is_english_language(str(item.get("language", "")))
-                or bool(
-                    re.fullmatch(
-                        r"english(?:\s*\([^)]*\))?",
-                        clean_dom_text(item.get("label")),
-                        re.IGNORECASE,
-                    )
-                )
-            )
-            and str(item.get("url", "")).startswith(("http://", "https://"))
-        ]
-        candidates.sort(
-            key=lambda item: (
-                0 if item.get("authoritative") is True else 1,
-                0 if str(item.get("language", "")).lower().replace("_", "-") == "en-us" else 1,
-                0 if str(item.get("language", "")).lower() == "en" else 1,
-                0 if clean_dom_text(item.get("label")).lower() == "english" else 1,
-            )
-        )
-        return PageLanguageState(
-            url=str(value.get("url", "")),
-            language=str(value.get("language", "")).strip(),
-            english_alternate_url=str(candidates[0]["url"]) if candidates else "",
-        )
-    except Exception as error:
-        return PageLanguageState(error=f"{type(error).__name__}: {error}")
-
-
-async def ensure_english_page(
-    cdp: CDPClient,
-    agent_browser: "AgentBrowserClient",
-    *,
-    settle_seconds: float,
-    max_redirects: int = 2,
-) -> tuple[PageLanguageState, list[dict[str, str]]]:
-    """Follow authoritative English alternates before exposing a page to the model."""
-    redirects: list[dict[str, str]] = []
-    state = await page_language_state(cdp)
-    for _ in range(max(0, max_redirects)):
-        if not state.language or is_english_language(state.language):
-            break
-        candidate = state.english_alternate_url or english_locale_path_url(state.url)
-        if not candidate or candidate == state.url:
-            break
-        redirects.append(
-            {
-                "from_url": state.url,
-                "from_language": state.language,
-                "to_url": candidate,
-            }
-        )
-        await agent_browser.execute({"action": "navigate", "url": candidate})
-        await asyncio.sleep(settle_seconds)
-        state = await page_language_state(cdp)
-    return state, redirects
-
-
-async def synchronize_recorder_target(
-    cdp: CDPClient,
-    agent_browser: AgentBrowserClient,
-    *,
-    attempts: int = 3,
-) -> dict[str, Any]:
-    """Keep capture and action sessions on the same active page.
-
-    A popup target can appear before Target.getTargets exposes its final URL.
-    Retry the official active-tab lookup and target match briefly, but never
-    fall back to capturing the previously attached page.
-    """
-    last_error: BaseException | None = None
-    for attempt in range(1, max(1, attempts) + 1):
-        try:
-            active_page = await agent_browser.active_page()
-            return await cdp.synchronize_target(active_page)
-        except AgentBrowserError as error:
-            last_error = error
-            if attempt < attempts:
-                await agent_browser.reconnect()
-                await asyncio.sleep(0.25 * attempt)
-        except RunnerError as error:
-            last_error = error
-            transport_lost = is_cdp_transport_error(error)
-            if transport_lost:
-                try:
-                    active_page = await agent_browser.active_page()
-                    report = await cdp.reconnect_active_page(active_page)
-                    report["synchronization_attempt"] = attempt
-                    return report
-                except (AgentBrowserError, RunnerError, OSError) as reconnect_error:
-                    last_error = reconnect_error
-            if attempt < attempts:
-                await asyncio.sleep(0.25 * attempt)
-    assert last_error is not None
-    raise RunnerError(
-        f"could not synchronize recorder to agent-browser active tab after "
-        f"{max(1, attempts)} attempts: {last_error}"
-    ) from last_error
-
-
-@dataclass
-class CaptureBundle:
-    snapshot: dict[str, Any]
-    snapshot_path: Path
-    model_text: str
-    screenshot_path: Path
-    agent_browser_text: str = ""
-    agent_browser_action_text: str = ""
-    agent_browser_refs: frozenset[str] = field(default_factory=frozenset)
-    agent_browser_targets: dict[str, dict[str, str]] = field(default_factory=dict)
-    agent_browser_path: Path | None = None
-    agent_browser_action_path: Path | None = None
-    agent_browser_snapshot_command: tuple[str, ...] = field(default_factory=tuple)
-    agent_browser_action_snapshot_command: tuple[str, ...] = field(default_factory=tuple)
-    document_language: str = ""
-    document_url: str = ""
-
-    def executable_agent_browser_text(self) -> str:
-        """Prefer the interactive-only ref snapshot used for executable actions."""
-        return self.agent_browser_action_text or self.agent_browser_text
-
-
-def run_renderer(arguments: list[str]) -> None:
-    """Run a renderer as a checked subprocess and surface its stderr on failure."""
-    completed = subprocess.run(
-        [sys.executable, *arguments],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
-    if completed.returncode != 0:
-        raise RunnerError(f"renderer failed: {completed.stderr.strip()}")
-
-
-def render_stored_snapshot(snapshot_path: Path) -> None:
-    """Regenerate both text projections from one stored structured snapshot."""
-    full_path = snapshot_path.with_name("dom_full.txt")
-    model_path = snapshot_path.with_name("dom_model.txt")
-    run_renderer(
-        [
-            str(FULL_RENDERER),
-            str(snapshot_path),
-            "--output",
-            str(full_path),
-            "--include-action-index",
-            "--include-child-refs",
-        ]
-    )
-    run_renderer(
-        [
-            str(MODEL_RENDERER),
-            str(snapshot_path),
-            "--output",
-            str(model_path),
-            "--include-offscreen-content",
-            "--include-secondary",
-            "--max-secondary-actions",
-            "160",
-        ]
-    )
-
-
-def file_version(path: Path) -> dict[str, str]:
-    """Return a content hash so artifacts identify the exact renderer source."""
-    return {
-        "file": path.name,
-        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-    }
-
-
-def renderer_versions() -> dict[str, dict[str, str]]:
-    """Content-addressed renderer version used for model and audit text."""
-    return {
-        "full": file_version(FULL_RENDERER),
-        "model": file_version(MODEL_RENDERER),
-    }
-
-
-def preserve_original_renders(snapshot_path: Path) -> list[str]:
-    """Preserve the first observed render before an opt-in backfill rerender."""
-    preserved: list[str] = []
-    for name in ("dom_full.txt", "dom_model.txt"):
-        current = snapshot_path.with_name(name)
-        original = snapshot_path.with_name(name.replace(".txt", ".original.txt"))
-        if current.exists() and not original.exists():
-            current.replace(original)
-            preserved.append(str(original))
-    return preserved
-
-
-async def capture_call(
-    cdp: CDPClient,
-    method: str,
-    params: dict[str, Any],
-    *,
-    attempts: int = 2,
-) -> dict[str, Any]:
-    """Retry a read-only capture command only when its response times out."""
-    for attempt in range(1, attempts + 1):
-        try:
-            return await cdp.call(method, params)
-        except TimeoutError as error:
-            if attempt == attempts:
-                raise RunnerError(f"{method} timed out after {attempts} attempts") from error
-            await asyncio.sleep(0.5 * attempt)
-    raise AssertionError("unreachable")
-
-
-async def capture_structured_snapshot(
-    cdp: CDPClient,
-    *,
-    max_nodes: int,
-    max_text_chars: int,
-) -> dict[str, Any]:
-    """Capture the sole raw DOM evidence through captureStructuredSnapshot.
-
-    Offscreen nodes are requested so recorded evidence does not depend only on
-    the current viewport. DOM diffs remain a pure comparison of stored JSON.
-    """
-    params: dict[str, Any] = {
-        "inViewportOnly": False,
-        "maxNodes": max_nodes,
-        "maxTextChars": max_text_chars,
-        "includeOffscreen": True,
-    }
-    result = await capture_call(
-        cdp,
-        "ChromiumRL.captureStructuredSnapshot",
-        params,
-    )
-    snapshot = result.get("snapshot")
-    if not isinstance(snapshot, dict):
-        raise RunnerError(f"unexpected ChromiumRL snapshot response: {result}")
-    return snapshot
-
-
-async def materialize_bundle(
-    cdp: CDPClient,
-    directory: Path,
-    snapshot: dict[str, Any],
-) -> CaptureBundle:
-    """Atomically materialize one snapshot, screenshot, and two text views."""
-    screenshot_result = await capture_call(
-        cdp,
-        "Page.captureScreenshot",
-        {"format": "png", "fromSurface": True, "captureBeyondViewport": False},
-    )
-    screenshot_data = screenshot_result.get("data")
-    if not isinstance(screenshot_data, str):
-        raise RunnerError("Page.captureScreenshot returned no image")
-    language_state = await page_language_state(cdp)
-
-    # Do not materialize a partial after/ directory if the CDP transport drops
-    # between snapshot and screenshot capture; the caller can reconnect and retry.
-    directory.mkdir(parents=True, exist_ok=False)
-    snapshot_path = directory / "dom.json"
-    write_json(snapshot_path, {"result": {"snapshot": snapshot}})
-    screenshot_path = directory / "screenshot.png"
-    screenshot_path.write_bytes(base64.b64decode(screenshot_data))
-    render_stored_snapshot(snapshot_path)
-    model_path = directory / "dom_model.txt"
-    return CaptureBundle(
-        snapshot=snapshot,
-        snapshot_path=snapshot_path,
-        model_text=model_path.read_text(encoding="utf-8"),
-        screenshot_path=screenshot_path,
-        document_language=language_state.language,
-        document_url=language_state.url,
-    )
-
-async def capture_after_action_bundle(
-    cdp: CDPClient,
-    agent_browser: AgentBrowserClient,
-    directory: Path,
-    *,
-    max_nodes: int,
-    max_text_chars: int,
-    attempts: int = 3,
-) -> tuple[CaptureBundle, list[dict[str, Any]]]:
-    """Capture after an action, reattaching only if the CDP transport was lost."""
-    reconnects: list[dict[str, Any]] = []
-    for attempt in range(1, max(1, attempts) + 1):
-        try:
-            snapshot = await capture_structured_snapshot(
-                cdp,
-                max_nodes=max_nodes,
-                max_text_chars=max_text_chars,
-            )
-            bundle = await materialize_bundle(cdp, directory, snapshot)
-            return bundle, reconnects
-        except RunnerError as error:
-            if not is_cdp_transport_error(error) or attempt >= max(1, attempts):
-                raise
-            reconnect = await synchronize_recorder_target(cdp, agent_browser)
-            reconnect["capture_attempt"] = attempt
-            reconnects.append(reconnect)
-            await asyncio.sleep(0.75 * attempt)
-    raise AssertionError("unreachable")
-
-
-
-async def capture_bundle(
-    cdp: CDPClient,
-    directory: Path,
-    *,
-    max_nodes: int,
-    max_text_chars: int,
-) -> CaptureBundle:
-    """Capture and materialize an ordinary before/initial evidence bundle."""
-    snapshot = await capture_structured_snapshot(
-        cdp,
-        max_nodes=max_nodes,
-        max_text_chars=max_text_chars,
-    )
-    return await materialize_bundle(cdp, directory, snapshot)
-
-
-async def attach_agent_browser_observation(
-    bundle: CaptureBundle,
-    agent_browser: AgentBrowserClient,
-    *,
-    attempts: int = 3,
-) -> CaptureBundle:
-    """Store the exact agent-browser ref snapshot supplied to the model."""
-    for attempt in range(1, max(1, attempts) + 1):
-        try:
-            observation = await agent_browser.snapshot()
-            action_observation = await agent_browser.snapshot(interactive=True)
-            break
-        except Exception:
-            if attempt >= max(1, attempts):
-                raise
-            await agent_browser.reconnect()
-            await asyncio.sleep(0.75 * attempt)
-    else:
-        raise AssertionError("unreachable")
-    path = bundle.snapshot_path.with_name("agent_browser.txt")
-    action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
-    write_text(path, observation.text)
-    write_text(action_path, action_observation.text)
-    return CaptureBundle(
-        snapshot=bundle.snapshot,
-        snapshot_path=bundle.snapshot_path,
-        model_text=bundle.model_text,
-        screenshot_path=bundle.screenshot_path,
-        agent_browser_text=observation.text,
-        agent_browser_action_text=action_observation.text,
-        agent_browser_refs=action_observation.refs,
-        agent_browser_targets=action_observation.targets,
-        agent_browser_path=path,
-        agent_browser_action_path=action_path,
-        agent_browser_snapshot_command=observation.command,
-        agent_browser_action_snapshot_command=action_observation.command,
-        document_language=bundle.document_language,
-        document_url=bundle.document_url,
-    )
-
-
-def attach_agent_browser_observation_error(
-    bundle: CaptureBundle,
-    error: BaseException,
-) -> CaptureBundle:
-    """Materialize a failed supplementary observation without losing the DOM diff."""
-    path = bundle.snapshot_path.with_name("agent_browser.txt")
-    action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
-    text = f"[agent-browser snapshot unavailable: {type(error).__name__}: {error}]\n"
-    write_text(path, text)
-    write_text(action_path, text)
-    return CaptureBundle(
-        snapshot=bundle.snapshot,
-        snapshot_path=bundle.snapshot_path,
-        model_text=bundle.model_text,
-        screenshot_path=bundle.screenshot_path,
-        agent_browser_text=text,
-        agent_browser_action_text=text,
-        agent_browser_refs=frozenset(),
-        agent_browser_targets={},
-        agent_browser_path=path,
-        agent_browser_action_path=action_path,
-        agent_browser_snapshot_command=(),
-        agent_browser_action_snapshot_command=(),
-        document_language=bundle.document_language,
-        document_url=bundle.document_url,
-    )
-
-
-def normalized_observation_text(value: Any) -> str:
-    """Normalize observation labels for conservative semantic comparisons."""
-    return re.sub(r"\s+", " ", "" if value is None else str(value)).strip().casefold()
-
-
-def agent_browser_ref_line(observation: str, ref: str) -> str:
-    """Find the exact observation line that defines an agent-browser ref."""
-    marker = re.compile(rf"\bref={re.escape(ref)}(?=[,\]\s]|$)")
-    return next((line.strip() for line in observation.splitlines() if marker.search(line)), "")
-
-
-def agent_browser_control_signature(line: str) -> str:
-    """Role/name portion of a snapshot line, excluding volatile ref and value."""
-    prefix = line.strip().lstrip("- ").split("[", 1)[0]
-    return normalized_observation_text(prefix)
-
-
-def agent_browser_target_identity(
-    decision: dict[str, Any],
-    bundle: CaptureBundle,
-) -> dict[str, str] | None:
-    """Return the semantic identity attached to the exact executable ref.
-
-    The role and name come from the same official agent-browser interactive
-    snapshot response whose ref is passed to the action. ChromiumRL refs are a
-    separate namespace and are deliberately not used for this mapping.
-    """
-    ref = AgentBrowserClient.action_ref(decision.get("id"))
-    if not ref:
-        return None
-    target = bundle.agent_browser_targets.get(ref, {})
-    return {
-        "ref": ref,
-        "role": str(target.get("role", "")),
-        "name": str(target.get("name", "")),
-    }
-
-
-async def chromiumrl_action_coordinate(
-    cdp: CDPClient,
-    target: dict[str, str] | None,
-) -> dict[str, Any] | None:
-    """Resolve only a target coordinate through getAgentObservation.
-
-    This supplementary call does not supply model evidence and is never written
-    as a DOM capture. Diff and baseline options are explicitly disabled. The
-    action ref and semantic identity continue to come from agent-browser; the
-    ChromiumRL response is consumed only to obtain the matching element centre.
-    """
-    if not target:
-        return None
-    role = clean_dom_text(target.get("role")).casefold()
-    name = clean_dom_text(target.get("name"))
-    if not name:
-        return None
-    result = await capture_call(
-        cdp,
-        "ChromiumRL.getAgentObservation",
-        {
-            "inViewportOnly": False,
-            "includeContent": False,
-            "includeDiff": False,
-            "updateBaseline": False,
-            "maxElements": 10000,
-            "maxInteractiveElements": 10000,
-            "maxContentBlocks": 0,
-            "maxDiffItems": 0,
-        },
-    )
-    observation = result.get("observation")
-    if not isinstance(observation, dict):
-        raise RunnerError(
-            f"unexpected ChromiumRL coordinate response: {result}"
-        )
-    elements = [
-        item for item in observation.get("elements", []) if isinstance(item, dict)
-    ]
-    normalized_name = normalized_observation_text(name)
-    name_matches = [
-        item
-        for item in elements
-        if normalized_observation_text(item.get("accessibleName")) == normalized_name
-    ]
-    exact_matches = [
-        item
-        for item in name_matches
-        if normalized_observation_text(item.get("role")) == role
-    ]
-    candidates = exact_matches or name_matches
-    hit_testable = [
-        item for item in candidates if item.get("isHitTestable") is True
-    ]
-    visible = [
-        item
-        for item in (hit_testable or candidates)
-        if item.get("isVisible") is not False
-    ]
-    preferred = hit_testable if len(hit_testable) == 1 else visible
-    if len(preferred) == 1:
-        match = preferred[0]
-        if exact_matches:
-            match_method = "exact_role_name"
-        else:
-            match_method = "unique_accessible_name"
-        if hit_testable:
-            match_method += "_hit_testable"
-    elif len(exact_matches) == 1:
-        match = exact_matches[0]
-        match_method = "exact_role_name"
-    elif not exact_matches and len(name_matches) == 1:
-        match = name_matches[0]
-        match_method = "unique_accessible_name"
-    else:
-        return {
-            "status": "ambiguous" if exact_matches or name_matches else "not_found",
-            "source": "ChromiumRL.getAgentObservation",
-            "match_method": None,
-            "candidate_count": len(candidates),
-        }
-    center_x = match.get("centerX")
-    center_y = match.get("centerY")
-    if not isinstance(center_x, (int, float)) or not isinstance(center_y, (int, float)):
-        bounds = match.get("bounds")
-        if isinstance(bounds, dict):
-            x = bounds.get("x")
-            y = bounds.get("y")
-            width = bounds.get("width")
-            height = bounds.get("height")
-            if all(isinstance(value, (int, float)) for value in (x, y, width, height)):
-                center_x = float(x) + float(width) / 2
-                center_y = float(y) + float(height) / 2
-    if not isinstance(center_x, (int, float)) or not isinstance(center_y, (int, float)):
-        return {
-            "status": "missing_geometry",
-            "source": "ChromiumRL.getAgentObservation",
-            "match_method": match_method,
-            "candidate_count": 1,
-        }
-    return {
-        "status": "resolved",
-        "source": "ChromiumRL.getAgentObservation",
-        "match_method": match_method,
-        "candidate_count": 1,
-        "coordinate": [int(round(float(center_x))), int(round(float(center_y)))],
-    }
-
-
-def structured_snapshot_action_coordinate(
-    snapshot: dict[str, Any],
-    target: dict[str, str] | None,
-) -> dict[str, Any] | None:
-    """Use existing structured-snapshot geometry when an action is omitted.
-
-    No additional snapshot is taken. This fallback is accepted only for one
-    visible, hit-testable node with the same semantic name. Agent-browser's
-    LabelText pseudo-role maps to an actual HTML label; all other role matches
-    use exact browser roles, with a unique-name fallback for cross-AX naming.
-    """
-    if not target:
-        return None
-    target_name = normalized_observation_text(target.get("name"))
-    target_role = normalized_observation_text(target.get("role"))
-    if not target_name:
-        return None
-    nodes = [
-        node for node in snapshot.get("nodes", []) if isinstance(node, dict)
-    ]
-    name_matches = [
-        node
-        for node in nodes
-        if normalized_observation_text(node.get("accessibleName")) == target_name
-        and node.get("visible") is not False
-        and node.get("hitTestable") is True
-    ]
-
-    def role_matches(node: dict[str, Any]) -> bool:
-        """Match exact roles, with agent-browser LabelText mapped to HTML label."""
-        node_role = normalized_observation_text(node.get("role"))
-        node_tag = normalized_observation_text(node.get("tag"))
-        if target_role == "labeltext":
-            return node_tag == "label"
-        return bool(target_role and node_role == target_role)
-
-    exact_matches = [node for node in name_matches if role_matches(node)]
-    candidates = exact_matches or name_matches
-    if len(candidates) != 1:
-        return {
-            "status": "ambiguous" if candidates else "not_found",
-            "source": "ChromiumRL.captureStructuredSnapshot.bounds",
-            "match_method": None,
-            "candidate_count": len(candidates),
-        }
-    node = candidates[0]
-    bounds = node.get("clippedBounds") or node.get("bounds")
-    if not isinstance(bounds, dict):
-        return {
-            "status": "missing_geometry",
-            "source": "ChromiumRL.captureStructuredSnapshot.bounds",
-            "match_method": (
-                "exact_role_name" if exact_matches else "unique_accessible_name"
-            ),
-            "candidate_count": 1,
-        }
-    values = [bounds.get(key) for key in ("x", "y", "width", "height")]
-    if not all(isinstance(value, (int, float)) for value in values):
-        return {
-            "status": "missing_geometry",
-            "source": "ChromiumRL.captureStructuredSnapshot.bounds",
-            "match_method": (
-                "exact_role_name" if exact_matches else "unique_accessible_name"
-            ),
-            "candidate_count": 1,
-        }
-    x, y, width, height = (float(value) for value in values)
-    return {
-        "status": "resolved",
-        "source": "ChromiumRL.captureStructuredSnapshot.bounds",
-        "match_method": (
-            "exact_role_name" if exact_matches else "unique_accessible_name"
-        ),
-        "candidate_count": 1,
-        "coordinate": [
-            int(round(x + width / 2)),
-            int(round(y + height / 2)),
-        ],
-    }
-
-
-async def recorded_action_coordinate(
-    cdp: CDPClient,
-    bundle: CaptureBundle,
-    target: dict[str, str] | None,
-) -> dict[str, Any] | None:
-    """Resolve action coordinates without changing DOM capture or diff inputs.
-
-    getAgentObservation is used only for center coordinates. Existing structured
-    snapshot bounds are a conservative fallback when that lookup is unavailable.
-    """
-    primary = await chromiumrl_action_coordinate(cdp, target)
-    if isinstance(primary, dict) and primary.get("status") == "resolved":
-        return primary
-    fallback = structured_snapshot_action_coordinate(bundle.snapshot, target)
-    if isinstance(fallback, dict) and fallback.get("status") == "resolved":
-        fallback["get_agent_observation"] = primary
-        return fallback
-    if isinstance(primary, dict) and isinstance(fallback, dict):
-        primary["structured_snapshot_fallback"] = fallback
-    return primary or fallback
-
-
-def action_observation_context(
-    decision: dict[str, Any],
-    bundle: CaptureBundle,
-) -> dict[str, str]:
-    """Describe an action target using the observation in which its ref exists.
-
-    Agent-browser refs are regenerated for every snapshot. A bare ref therefore
-    cannot identify a control across page changes. Pair it with the current
-    document URL and the control's generic role/name signature so action-history
-    checks compare observed controls rather than coincidentally equal ref strings.
-    """
-    ref = AgentBrowserClient.action_ref(decision.get("id"))
-    line = agent_browser_ref_line(bundle.executable_agent_browser_text(), ref) if ref else ""
-    target = agent_browser_target_identity(decision, bundle)
-    return {
-        "document_url": clean_dom_text(
-            bundle.snapshot.get("url") or bundle.document_url
-        ),
-        "control_signature": agent_browser_control_signature(line) if line else "",
-        "ref": target["ref"] if target else "",
-        "role": target["role"] if target else "",
-        "name": target["name"] if target else "",
-    }
-
-
-def verify_agent_browser_action(
-    decision: dict[str, Any],
-    before: CaptureBundle,
-    after: CaptureBundle,
-) -> dict[str, Any]:
-    """Check writable-control results using the next official CLI observation."""
-    action = clean_dom_text(decision.get("action")).lower()
-    if action not in {"fill", "type", "select"}:
-        return {"applicable": False, "status": "not_applicable"}
-    requested = clean_dom_text(decision.get("text"))
-    ref = AgentBrowserClient.action_ref(decision.get("id"))
-    result: dict[str, Any] = {
-        "applicable": True,
-        "action": action,
-        "ref": ref or None,
-        "requested_text": requested,
-    }
-    if not ref:
-        result.update(
-            status="unavailable",
-            reason="focused control has no attributable snapshot ref",
-        )
-        return result
-    before_line = agent_browser_ref_line(before.executable_agent_browser_text(), ref)
-    if not before_line:
-        result.update(
-            status="unavailable",
-            reason="target ref is absent from the before-action observation",
-        )
-        return result
-    signature = agent_browser_control_signature(before_line)
-    same_ref_line = agent_browser_ref_line(after.executable_agent_browser_text(), ref)
-    candidates = [
-        line.strip()
-        for line in after.executable_agent_browser_text().splitlines()
-        if signature and agent_browser_control_signature(line) == signature
-    ]
-    if same_ref_line and agent_browser_control_signature(same_ref_line) == signature:
-        line = same_ref_line
-    else:
-        matching_value = [
-            line
-            for line in candidates
-            if requested
-            and normalized_observation_text(requested) in normalized_observation_text(line)
-        ]
-        line = matching_value[0] if len(matching_value) == 1 else candidates[0] if len(candidates) == 1 else ""
-    if not line:
-        result.update(
-            status="unavailable",
-            reason="control identity is not unique in the after-action observation",
-        )
-        return result
-    result["control_signature"] = signature
-    result["observed_line"] = line[:500]
-    if requested and normalized_observation_text(requested) in normalized_observation_text(line):
-        result["status"] = "verified"
-    else:
-        result.update(
-            status="mismatch",
-            reason="requested value is not visible on the target control",
-        )
-    return result
-
-
-def action_progress(
-    before: CaptureBundle,
-    after: CaptureBundle,
-    diff_record: dict[str, Any],
-) -> dict[str, bool]:
-    """Conservative progress facts; any changed evidence prevents a false stall."""
-    before_url = clean_dom_text(before.snapshot.get("url") or before.document_url)
-    after_url = clean_dom_text(after.snapshot.get("url") or after.document_url)
-    screenshot_changed = (
-        before.screenshot_path.exists()
-        and after.screenshot_path.exists()
-        and before.screenshot_path.read_bytes() != after.screenshot_path.read_bytes()
-    )
-    observation_changed = bool(
-        before.executable_agent_browser_text()
-        and after.executable_agent_browser_text()
-        and before.executable_agent_browser_text() != after.executable_agent_browser_text()
-        and not after.executable_agent_browser_text().startswith(
-            "[agent-browser snapshot unavailable:"
-        )
-    )
-    result = {
-        "url_changed": before_url != after_url,
-        "semantic_dom_changed": int(
-            diff_record.get("semantic_change_count", diff_record.get("change_count")) or 0
-        )
-        > 0,
-        "viewport_content_changed": int(diff_record.get("viewport_change_count") or 0) > 0,
-        "agent_browser_observation_changed": observation_changed,
-        "screenshot_changed": screenshot_changed,
-    }
-    result["made_progress"] = any(result.values())
-    return result
-
-
-def snapshot_endpoint(snapshot: dict[str, Any]) -> dict[str, Any]:
-    """Select the stable endpoint metadata stored beside each diff."""
-    return {
-        "snapshot_id": snapshot.get("snapshotId"),
-        "document_revision": snapshot.get("documentRevision"),
-        "url": snapshot.get("url"),
-    }
-
-
-DOM_DIFF_SOURCE = "runner_snapshot_diff"
-DOM_DIFF_INTERVAL = "before_snapshot_to_after_snapshot"
-DOM_DIFF_FIELDS = (
-    "tag",
-    "role",
-    "accessibleName",
-    "directText",
-    "selectedAttributes",
-    "states",
-    "actionTypes",
-    "semanticBoundary",
-)
-ORDER_INSENSITIVE_DOM_FIELDS = {"selectedAttributes", "states", "actionTypes"}
-
-
-class SnapshotIdentityError(RunnerError):
-    def __init__(self, side: str, problems: list[dict[str, Any]]):
-        """Carry every path-safety problem instead of emitting a misleading diff."""
-        super().__init__(f"{side} snapshot cannot be assigned safe unique node paths")
-        self.side = side
-        self.problems = problems
-
-
-def load_snapshot_file(path: Path) -> dict[str, Any]:
-    """Accept wrapped and bare captureStructuredSnapshot JSON formats."""
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise RunnerError(f"snapshot file is not a JSON object: {path}")
-    result = data.get("result")
-    if isinstance(result, dict) and isinstance(result.get("snapshot"), dict):
-        return result["snapshot"]
-    if isinstance(data.get("snapshot"), dict):
-        return data["snapshot"]
-    if isinstance(data.get("nodes"), list):
-        return data
-    raise RunnerError(f"snapshot file has no result.snapshot, snapshot, or nodes[]: {path}")
-
-
-def clean_dom_text(value: Any) -> str:
-    """Normalize whitespace for matching while preserving visible characters."""
-    return re.sub(r"\s+", " ", "" if value is None else str(value)).strip()
-
-
-def node_tag(node: dict[str, Any]) -> str:
-    """Return a path-safe lowercase tag, using '?' when capture omitted it."""
-    return clean_dom_text(node.get("tag") or "?").lower().replace("/", "_")
-
-
-def canonical_dom_value(field: str, value: Any) -> Any:
-    """Canonicalize unordered node facts so array ordering is not a false change."""
-    if field not in ORDER_INSENSITIVE_DOM_FIELDS or not isinstance(value, list):
-        return value
-    normalized = [
-        {key: item[key] for key in sorted(item)} if isinstance(item, dict) else item
-        for item in value
-    ]
-    return sorted(
-        normalized,
-        key=lambda item: json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
-    )
-
-
-def compared_node_fields(node: dict[str, Any], *, omit_empty: bool = False) -> dict[str, Any]:
-    """Select semantic fields; geometry, ids, order, and subtreeText are excluded."""
-    fields: dict[str, Any] = {}
-    for field in DOM_DIFF_FIELDS:
-        value = canonical_dom_value(field, node.get(field))
-        if omit_empty and value in (None, "", [], {}):
-            continue
-        fields[field] = value
-    return fields
-
-
-def collision_node(node: dict[str, Any]) -> dict[str, Any]:
-    """Keep enough raw identity facts to diagnose an unsafe path collision."""
-    return {
-        "ref": node.get("ref"),
-        "parentRef": node.get("parentRef"),
-        "childRefs": node.get("childRefs"),
-        **compared_node_fields(node, omit_empty=True),
-    }
-
-
-def stable_node_anchor(node: dict[str, Any]) -> str:
-    """Return a short own-content discriminator without inherited AX labels.
-
-    Accessible names routinely propagate from a focused descendant to broad
-    ancestors. Using those inherited labels in every ancestor segment renames a
-    whole tree when a modal opens. Own direct text is safe; an accessible name is
-    used only for a leaf, semantic node, or real non-scroll control.
-    """
-    direct = clean_dom_text(node.get("directText"))
-    value = direct
-    if not value:
-        role = clean_dom_text(node.get("role")).lower()
-        semantic = clean_dom_text(node.get("semanticBoundary")).lower()
-        actions = [
-            clean_dom_text(action).lower()
-            for action in node.get("actionTypes", []) or []
-            if clean_dom_text(action).lower() != "scroll"
-        ]
-        has_children = bool(node.get("childRefs") or [])
-        meaningful_role = role not in {
-            "",
-            "application",
-            "document",
-            "generic",
-            "main",
-            "none",
-        }
-        if not has_children or semantic or actions or meaningful_role:
-            value = clean_dom_text(node.get("accessibleName"))
-    value = value.casefold()
-    return re.sub(r"[^a-z0-9]+", "-", value).strip("-")[:20]
-
-
-def build_snapshot_path_index(
-    snapshot: dict[str, Any], *, side: str
-) -> tuple[dict[str, dict[str, Any]], dict[str, int]]:
-    """Build unique content-anchored paths and reject inconsistent trees.
-
-    Own text anchors keep siblings stable after insertions. Duplicate or missing
-    anchors fall back to sibling positions; any remaining collision fails loudly.
-    """
-    nodes = [node for node in snapshot.get("nodes", []) if isinstance(node, dict)]
-    by_ref: dict[str, dict[str, Any]] = {}
-    problems: list[dict[str, Any]] = []
-    for node in nodes:
-        raw_ref = node.get("ref")
-        if raw_ref in (None, ""):
-            problems.append({"kind": "missing_ref", "nodes": [collision_node(node)]})
-            continue
-        ref = str(raw_ref)
-        if ref in by_ref:
-            problems.append(
-                {
-                    "kind": "duplicate_ref",
-                    "ref": ref,
-                    "nodes": [collision_node(by_ref[ref]), collision_node(node)],
-                }
-            )
-            continue
-        by_ref[ref] = node
-
-    node_position = {ref: position for position, ref in enumerate(by_ref)}
-
-    def child_order(ref: str) -> tuple[int, int]:
-        """Order unlisted children by captured source order, then input position."""
-        try:
-            source_order = int(by_ref[ref].get("sourceOrder", node_position[ref]) or node_position[ref])
-        except (TypeError, ValueError):
-            source_order = node_position[ref]
-        return source_order, node_position[ref]
-
-    children_from_parent: dict[str, list[str]] = {ref: [] for ref in by_ref}
-    for ref, node in by_ref.items():
-        parent_ref = node.get("parentRef")
-        if parent_ref is not None and str(parent_ref) in by_ref:
-            children_from_parent[str(parent_ref)].append(ref)
-
-    ordered_children: dict[str, list[str]] = {}
-    for ref, node in by_ref.items():
-        child_refs = [str(value) for value in node.get("childRefs", []) or []]
-        duplicate_children = sorted({value for value in child_refs if child_refs.count(value) > 1})
-        if duplicate_children:
-            problems.append(
-                {
-                    "kind": "duplicate_child_ref",
-                    "parent_ref": ref,
-                    "child_refs": duplicate_children,
-                    "nodes": [collision_node(node)],
-                }
-            )
-        listed_children: list[str] = []
-        for child_ref in child_refs:
-            child = by_ref.get(child_ref)
-            if child is None:
-                continue
-            if str(child.get("parentRef")) != ref:
-                problems.append(
-                    {
-                        "kind": "parent_child_disagreement",
-                        "parent_ref": ref,
-                        "child_ref": child_ref,
-                        "nodes": [collision_node(node), collision_node(child)],
-                    }
-                )
-                continue
-            if child_ref not in listed_children:
-                listed_children.append(child_ref)
-
-        all_children = children_from_parent[ref]
-        if set(listed_children) == set(all_children):
-            ordered_children[ref] = listed_children
-        else:
-            # captureStructuredSnapshot can clip a large parent's childRefs when
-            # maxNodes is reached while still returning some of those children.
-            # parentRef preserves containment; sourceOrder reconstructs their
-            # document order without using either value as a cross-snapshot key.
-            ordered_children[ref] = sorted(all_children, key=child_order)
-
-    root_refs: list[str] = []
-    for value in snapshot.get("roots", []) or []:
-        ref = str(value)
-        if ref in by_ref and ref not in root_refs:
-            root_refs.append(ref)
-    for ref, node in by_ref.items():
-        parent_ref = node.get("parentRef")
-        if (parent_ref is None or str(parent_ref) not in by_ref) and ref not in root_refs:
-            root_refs.append(ref)
-
-    identity_stats = {
-        "nodes": len(by_ref),
-        "anchored_nodes": 0,
-        "positional_nodes": 0,
-        "duplicate_anchor_bases": 0,
-        "duplicate_anchor_nodes": 0,
-        "path_collisions": 0,
-    }
-    paths_by_ref: dict[str, str] = {}
-    visiting: set[str] = set()
-
-    def sibling_segments(refs: list[str]) -> dict[str, str]:
-        """Assign anchored path segments, numbering only duplicate anchors/tags."""
-        bases = [
-            (node_tag(by_ref[ref]), stable_node_anchor(by_ref[ref]))
-            for ref in refs
-        ]
-        totals = Counter(base for base in bases if base[1])
-        duplicate_bases = {base: count for base, count in totals.items() if count > 1}
-        identity_stats["duplicate_anchor_bases"] += len(duplicate_bases)
-        identity_stats["duplicate_anchor_nodes"] += sum(duplicate_bases.values())
-        anchored_seen: Counter[tuple[str, str]] = Counter()
-        positional_seen: Counter[str] = Counter()
-        segments: dict[str, str] = {}
-        for ref, (tag, anchor) in zip(refs, bases):
-            if anchor:
-                anchored_seen[(tag, anchor)] += 1
-                segments[ref] = f"{tag}{{{anchor}}}[{anchored_seen[(tag, anchor)]}]"
-                identity_stats["anchored_nodes"] += 1
-            else:
-                positional_seen[tag] += 1
-                segments[ref] = f"{tag}[{positional_seen[tag]}]"
-                identity_stats["positional_nodes"] += 1
-        return segments
-
-    def walk(ref: str, path: str) -> None:
-        """Traverse once while detecting cycles and multiply reached nodes."""
-        if ref in visiting:
-            problems.append({"kind": "cycle", "path": path, "nodes": [collision_node(by_ref[ref])]})
-            return
-        if ref in paths_by_ref:
-            problems.append(
-                {
-                    "kind": "node_reached_more_than_once",
-                    "path": path,
-                    "existing_path": paths_by_ref[ref],
-                    "nodes": [collision_node(by_ref[ref])],
-                }
-            )
-            return
-        visiting.add(ref)
-        paths_by_ref[ref] = path
-        child_refs = ordered_children.get(ref, [])
-        child_segments = sibling_segments(child_refs)
-        for child_ref in child_refs:
-            walk(child_ref, f"{path}/{child_segments[child_ref]}")
-        visiting.remove(ref)
-
-    root_segments = sibling_segments(root_refs)
-    for ref in root_refs:
-        walk(ref, root_segments[ref])
-
-    unreachable = [ref for ref in by_ref if ref not in paths_by_ref]
-    if unreachable:
-        problems.append(
-            {
-                "kind": "unreachable_nodes",
-                "nodes": [collision_node(by_ref[ref]) for ref in unreachable],
-            }
-        )
-    refs_by_path: dict[str, list[str]] = {}
-    for ref, path in paths_by_ref.items():
-        refs_by_path.setdefault(path, []).append(ref)
-    for path, refs in refs_by_path.items():
-        if len(refs) > 1:
-            identity_stats["path_collisions"] += 1
-            problems.append(
-                {
-                    "kind": "path_collision",
-                    "path": path,
-                    "nodes": [collision_node(by_ref[ref]) for ref in refs],
-                }
-            )
-    if problems:
-        raise SnapshotIdentityError(side, problems)
-    return {path: by_ref[ref] for ref, path in paths_by_ref.items()}, identity_stats
-
-
-def snapshot_path_index(snapshot: dict[str, Any], *, side: str) -> dict[str, dict[str, Any]]:
-    """Convenience wrapper returning only the validated path-to-node mapping."""
-    return build_snapshot_path_index(snapshot, side=side)[0]
-
-
-def visible_document_text(snapshot: dict[str, Any]) -> list[str]:
-    """Collect ordered unique visible facts for cross-document text deltas."""
-    rows: list[tuple[int, str]] = []
-    for position, node in enumerate(snapshot.get("nodes", []) or []):
-        if not isinstance(node, dict) or node.get("visible") is False:
-            continue
-        direct = clean_dom_text(node.get("directText"))
-        subtree = clean_dom_text(node.get("subtreeText"))
-        text = direct
-        # ChromiumRL can explicitly mark a node truncated while retaining its
-        # complete logical row in subtreeText. Prefer that row only when it is
-        # a bounded enrichment of the node's own text; this recovers trailing
-        # facts without emitting full-page ancestor subtrees.
-        if (
-            node.get("truncated") is True
-            and direct
-            and len(subtree) > len(direct)
-            and len(subtree) <= max(1200, len(direct) * 4)
-        ):
-            text = subtree
-        if not text:
-            role = clean_dom_text(node.get("role")).lower()
-            boundary = clean_dom_text(node.get("semanticBoundary")).lower()
-            is_fact_node = not (node.get("childRefs") or []) or bool(role or boundary or node.get("actionTypes"))
-            if is_fact_node:
-                text = clean_dom_text(node.get("accessibleName") or node.get("subtreeText"))
-        if text:
-            try:
-                order = int(node.get("sourceOrder", position) or position)
-            except (TypeError, ValueError):
-                order = position
-            rows.append((order, text))
-    seen: set[str] = set()
-    result: list[str] = []
-    for _order, text in sorted(rows, key=lambda row: row[0]):
-        if text not in seen:
-            seen.add(text)
-            result.append(text)
-    return result
-
-
-def viewport_node_text(node: dict[str, Any]) -> str:
-    """Return a node's own readable viewport fact, never inherited subtree text."""
-    text = clean_dom_text(node.get("directText"))
-    if not text:
-        role = clean_dom_text(node.get("role")).lower()
-        boundary = clean_dom_text(node.get("semanticBoundary")).lower()
-        actions = node.get("actionTypes") if isinstance(node.get("actionTypes"), list) else []
-        is_semantic = bool(role or boundary or actions or not (node.get("childRefs") or []))
-        if is_semantic:
-            text = clean_dom_text(node.get("accessibleName"))
-    if len(text) > MAX_COLLAPSE_TEXT_CHARS:
-        return text[: MAX_COLLAPSE_TEXT_CHARS - 1].rstrip() + "…"
-    return text
-
-
-def viewport_membership(node: dict[str, Any]) -> bool | None:
-    """Combine structured-snapshot viewport facts without inventing a viewport."""
-    if node.get("visible") is False:
-        return False
-    signals = [
-        node.get(field)
-        for field in ("inViewport", "hitTestable")
-        if isinstance(node.get(field), bool)
-    ]
-    if not signals:
-        return None
-    return any(signals)
-
-
-def numeric_bounds(node: dict[str, Any]) -> tuple[float, float, float, float] | None:
-    """Parse usable x/y/width/height geometry or return None for partial bounds."""
-    bounds = node.get("bounds")
-    if not isinstance(bounds, dict):
-        return None
-    try:
-        x, y, width, height = (float(bounds[key]) for key in ("x", "y", "width", "height"))
-        return x, y, width, height
-    except (KeyError, TypeError, ValueError):
-        return None
-
-
-def viewport_delta(
-    before_index: dict[str, dict[str, Any]],
-    after_index: dict[str, dict[str, Any]],
-) -> dict[str, Any] | None:
-    """Compact viewport evidence derived from the same two structured snapshots.
-
-    Geometry is summarized rather than emitted per node. Readable text is emitted
-    only when ChromiumRL's own inViewport/hitTestable facts cross the viewport
-    boundary, so a scroll can expose its evidence without turning every shifted
-    descendant into a normal semantic node change.
-    """
-    entered_nodes = 0
-    exited_nodes = 0
-    in_viewport_changed = 0
-    hit_testable_changed = 0
-    entered_rows: list[tuple[int, str]] = []
-    exited_rows: list[tuple[int, str]] = []
-    movement_counts: Counter[tuple[float, float]] = Counter()
-    geometry_compared = 0
-    shifted_nodes = 0
-    dimension_changed_nodes = 0
-
-    for fallback_order, path in enumerate(sorted(set(before_index) & set(after_index))):
-        before_node = before_index[path]
-        after_node = after_index[path]
-        before_member = viewport_membership(before_node)
-        after_member = viewport_membership(after_node)
-        if (
-            isinstance(before_node.get("inViewport"), bool)
-            and isinstance(after_node.get("inViewport"), bool)
-            and before_node.get("inViewport") != after_node.get("inViewport")
-        ):
-            in_viewport_changed += 1
-        if (
-            isinstance(before_node.get("hitTestable"), bool)
-            and isinstance(after_node.get("hitTestable"), bool)
-            and before_node.get("hitTestable") != after_node.get("hitTestable")
-        ):
-            hit_testable_changed += 1
-        if before_member is not None and after_member is not None and before_member != after_member:
-            selected_node = after_node if after_member else before_node
-            text = viewport_node_text(selected_node)
-            try:
-                order = int(selected_node.get("sourceOrder", fallback_order) or fallback_order)
-            except (TypeError, ValueError):
-                order = fallback_order
-            if after_member:
-                entered_nodes += 1
-                if text:
-                    entered_rows.append((order, text))
-            else:
-                exited_nodes += 1
-                if text:
-                    exited_rows.append((order, text))
-
-        before_bounds = numeric_bounds(before_node)
-        after_bounds = numeric_bounds(after_node)
-        if before_bounds is None or after_bounds is None:
-            continue
-        geometry_compared += 1
-        dx = round(after_bounds[0] - before_bounds[0], 1)
-        dy = round(after_bounds[1] - before_bounds[1], 1)
-        if abs(dx) >= 0.5 or abs(dy) >= 0.5:
-            shifted_nodes += 1
-            movement_counts[(dx, dy)] += 1
-        if abs(after_bounds[2] - before_bounds[2]) >= 0.5 or abs(
-            after_bounds[3] - before_bounds[3]
-        ) >= 0.5:
-            dimension_changed_nodes += 1
-
-    def unique_text(rows: list[tuple[int, str]]) -> list[str]:
-        """Preserve document order while removing repeated viewport labels."""
-        seen: set[str] = set()
-        result: list[str] = []
-        for _order, text in sorted(rows, key=lambda row: (row[0], row[1])):
-            key = clean_dom_text(text).casefold()
-            if not key or key in seen:
-                continue
-            seen.add(key)
-            result.append(text)
-        return result
-
-    entered_text = unique_text(entered_rows)
-    exited_text = unique_text(exited_rows)
-    dominant_shift: dict[str, Any] | None = None
-    if movement_counts:
-        (dx, dy), count = sorted(
-            movement_counts.items(),
-            key=lambda item: (-item[1], -abs(item[0][0]) - abs(item[0][1]), item[0]),
-        )[0]
-        dominant_shift = {
-            "delta_x": dx,
-            "delta_y": dy,
-            "matched_nodes": count,
-            "share_of_shifted_nodes_percent": round((count / shifted_nodes) * 100, 2),
-        }
-
-    if not (
-        entered_nodes
-        or exited_nodes
-        or in_viewport_changed
-        or hit_testable_changed
-        or shifted_nodes
-        or dimension_changed_nodes
-    ):
-        return None
-    return {
-        "aggregation": "structured_snapshot_viewport_flags_and_dominant_geometry_shift",
-        "viewport_state": {
-            "entered_nodes": entered_nodes,
-            "exited_nodes": exited_nodes,
-            "in_viewport_changed_nodes": in_viewport_changed,
-            "hit_testable_changed_nodes": hit_testable_changed,
-            "entered_text_total": len(entered_text),
-            "exited_text_total": len(exited_text),
-        },
-        "geometry": {
-            "compared_nodes": geometry_compared,
-            "shifted_nodes": shifted_nodes,
-            "stationary_nodes": max(0, geometry_compared - shifted_nodes),
-            "dimension_changed_nodes": dimension_changed_nodes,
-            "movement_clusters_total": len(movement_counts),
-            "dominant_shift": dominant_shift,
-            "per_node_geometry_emitted": False,
-        },
-        "visible_text_entered": entered_text,
-        "visible_text_exited": exited_text,
-    }
-
-
-MAX_COLLAPSE_DOCUMENT_SHARE = 0.60  # Never hide most of a document under one root.
-MAX_COLLAPSE_TEXT_CHARS = 300  # Per collapsed-root preview; raw snapshots remain whole.
-MAX_COLLAPSE_CONTROLS = 20  # Interactive samples per root; total count is also recorded.
-# Persist every semantic entry. The stored corpus demonstrated that an entry
-# count cap discards field-level evidence while all uncapped artifacts still fit
-# below the reviewed line threshold. Oversized artifacts are made loud instead
-# of being silently shortened.
-# Persisted diffs are not cut at this size: it is an audit warning threshold.
-MAX_DOM_DIFF_JSON_BYTES = 500 * 1024
-# These two caps affect only valid JSON summaries sent back to the model/reviewer.
-# dom_diff.json and dom_diff.txt retain every emitted semantic entry.
-MAX_MODEL_DOM_DIFF_ENTRIES = 32
-MAX_TERMINATION_REVIEW_DIFF_ENTRIES_PER_STEP = 8
-
-
-def meaningful_diff_node(node: dict[str, Any]) -> bool:
-    """Structural wrappers without semantic facts are counted but not emitted."""
-    return bool(
-        clean_dom_text(node.get("directText"))
-        or clean_dom_text(node.get("accessibleName"))
-        or node.get("selectedAttributes")
-        or node.get("states")
-        or node.get("actionTypes")
-    )
-
-
-def node_delta(path: str, node: dict[str, Any]) -> dict[str, Any]:
-    """Render one meaningful node as an added/removed diff entry."""
-    result: dict[str, Any] = {
-        "kind": "node",
-        "path": path,
-        "node": compared_node_fields(node, omit_empty=True),
-    }
-    if node.get("repeatedGroupId") not in (None, ""):
-        result["repeated_group_id"] = node.get("repeatedGroupId")
-        if node.get("repeatedItemIndex") is not None:
-            result["repeated_item_index"] = node.get("repeatedItemIndex")
-    return result
-
-
-def child_paths(index: dict[str, dict[str, Any]]) -> dict[str, list[str]]:
-    """Derive path children from slash-delimited validated node paths."""
-    children: dict[str, list[str]] = {path: [] for path in index}
-    for path in index:
-        parent, separator, _segment = path.rpartition("/")
-        if separator and parent in children:
-            children[parent].append(path)
-    for rows in children.values():
-        rows.sort()
-    return children
-
-
-def operation_subtree(root: str, selected: set[str], children: dict[str, list[str]]) -> list[str]:
-    """Return selected descendants of an added/removed root in tree order."""
-    found: list[str] = []
-    stack = [root]
-    while stack:
-        path = stack.pop()
-        if path not in selected:
-            continue
-        found.append(path)
-        stack.extend(reversed(children.get(path, [])))
-    return found
-
-
-def collapse_visible_text(
-    root: str,
-    members: list[str],
-    index: dict[str, dict[str, Any]],
-) -> str:
-    """Keep a bounded, deduplicated text preview for one collapsed subtree."""
-    node = index[root]
-    text = clean_dom_text(node.get("subtreeText") or node.get("directText") or node.get("accessibleName"))
-    if not text:
-        fragments: list[str] = []
-        for path in members:
-            fragment = clean_dom_text(index[path].get("directText") or index[path].get("accessibleName"))
-            if fragment and fragment not in fragments:
-                fragments.append(fragment)
-            if len(fragments) >= 5:
-                break
-        text = " | ".join(fragments)
-    if len(text) > MAX_COLLAPSE_TEXT_CHARS:
-        text = text[: MAX_COLLAPSE_TEXT_CHARS - 1].rstrip() + "…"
-    return text
-
-
-def compress_tree_operation(
-    selected: set[str],
-    index: dict[str, dict[str, Any]],
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Collapse complete added/removed subtrees without hiding most of a document."""
-    children = child_paths(index)
-    roots = [
-        path
-        for path in sorted(selected)
-        if not (path.rpartition("/")[1] and path.rpartition("/")[0] in selected)
-    ]
-    emitted: list[dict[str, Any]] = []
-    stats: dict[str, Any] = {
-        "noise_nodes_skipped": 0,
-        "collapsed_descendants": 0,
-        "collapse_roots": [],
-    }
-    document_nodes = max(1, len(index))
-
-    def emit_root(path: str) -> None:
-        """Collapse one subtree unless it exceeds the document-share guard."""
-        members = operation_subtree(path, selected, children)
-        meaningful_members = [member for member in members if meaningful_diff_node(index[member])]
-        if not meaningful_members:
-            stats["noise_nodes_skipped"] += len(members)
-            return
-        share = len(members) / document_nodes
-        selected_children = [child for child in children.get(path, []) if child in selected]
-        if share > MAX_COLLAPSE_DOCUMENT_SHARE and selected_children:
-            if meaningful_diff_node(index[path]):
-                emitted.append(node_delta(path, index[path]))
-            else:
-                stats["noise_nodes_skipped"] += 1
-            for child in selected_children:
-                emit_root(child)
-            return
-        if len(members) == 1:
-            if meaningful_diff_node(index[path]):
-                emitted.append(node_delta(path, index[path]))
-            else:
-                stats["noise_nodes_skipped"] += 1
-            return
-
-        interactive: list[str] = []
-        for member in members:
-            node = index[member]
-            actions = node.get("actionTypes") if isinstance(node.get("actionTypes"), list) else []
-            if not actions:
-                continue
-            label = clean_dom_text(node.get("directText") or node.get("accessibleName"))[:120]
-            interactive.append(
-                f"{member} | actions={','.join(str(action) for action in actions)} | label={label}"
-            )
-            if len(interactive) >= MAX_COLLAPSE_CONTROLS:
-                break
-        entry = node_delta(path, index[path])
-        entry.update(
-            {
-                "kind": "subtree",
-                "descendant_count": len(members) - 1,
-                "subtree_node_count": len(members),
-                "document_percent": round(share * 100, 2),
-                "visible_text": collapse_visible_text(path, members, index),
-                "interactive_descendants": interactive,
-                "interactive_descendants_total": sum(
-                    1 for member in members if index[member].get("actionTypes")
-                ),
-            }
-        )
-        emitted.append(entry)
-        stats["collapsed_descendants"] += len(members) - 1
-        stats["collapse_roots"].append(
-            {
-                "path": path,
-                "descendant_count": len(members) - 1,
-                "document_percent": round(share * 100, 2),
-            }
-        )
-
-    for root in roots:
-        emit_root(root)
-    return emitted, stats
-
-
-def repeated_signature(entry: dict[str, Any]) -> str:
-    """Describe the generic shape of a repeated-group diff entry."""
-    node = entry.get("node") if isinstance(entry.get("node"), dict) else {}
-    fields = entry.get("fields") if isinstance(entry.get("fields"), dict) else {}
-    signature = {
-        "kind": entry.get("kind", "node"),
-        "tag": node.get("tag"),
-        "role": node.get("role"),
-        "changed_fields": sorted(fields),
-    }
-    return json.dumps(signature, sort_keys=True, separators=(",", ":"))
-
-
-def condense_repeated_groups(
-    entries: list[dict[str, Any]], operation: str
-) -> tuple[list[dict[str, Any]], int]:
-    """Combine same-shaped repeated items while preserving samples and counts."""
-    buckets: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    for entry in entries:
-        group_id = entry.get("repeated_group_id")
-        if group_id in (None, ""):
-            continue
-        buckets.setdefault((str(group_id), repeated_signature(entry)), []).append(entry)
-    condensed: list[dict[str, Any]] = []
-    consumed: set[int] = set()
-    members_condensed = 0
-    for entry in entries:
-        if id(entry) in consumed:
-            continue
-        group_id = entry.get("repeated_group_id")
-        bucket = buckets.get((str(group_id), repeated_signature(entry)), []) if group_id not in (None, "") else []
-        if len(bucket) < 2:
-            condensed.append(entry)
-            continue
-        consumed.update(id(item) for item in bucket)
-        members_condensed += len(bucket)
-        sample: list[str] = []
-        for item in bucket[:3]:
-            sample.append(
-                f"path={item.get('path')} visible_text={clean_dom_text(item.get('visible_text'))[:120]}"
-            )
-        condensed.append(
-            {
-                "kind": "repeated_group",
-                "operation": operation,
-                "repeated_group_id": group_id,
-                "signature": json.loads(repeated_signature(entry)),
-                "count": len(bucket),
-                "item_indices": [
-                    item.get("repeated_item_index")
-                    for item in bucket
-                    if item.get("repeated_item_index") is not None
-                ],
-                "sample_paths": [item.get("path") for item in bucket[:5]],
-                "sample_summaries": sample,
-            }
-        )
-    return condensed, members_condensed
-
-
-def semantic_fingerprint(node: dict[str, Any]) -> str:
-    """Serialize compared semantic facts for conservative relocation matching."""
-    return json.dumps(
-        compared_node_fields(node, omit_empty=True),
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-
-
-def path_distance(before_path: str, after_path: str) -> tuple[int, int, str, str]:
-    """Structural distance used only among already-identical semantic nodes."""
-    before_parts = before_path.split("/")
-    after_parts = after_path.split("/")
-    common = 0
-    for before_part, after_part in zip(before_parts, after_parts):
-        if before_part != after_part:
-            break
-        common += 1
-    return (
-        len(before_parts) + len(after_parts) - (2 * common),
-        abs(len(before_parts) - len(after_parts)),
-        before_path,
-        after_path,
-    )
-
-
-def match_relocated_paths(old_paths: list[str], new_paths: list[str]) -> list[tuple[str, str]]:
-    """Pair duplicate semantic nodes by nearest tree position, not arbitrary zip order."""
-    candidates = sorted(
-        (path_distance(old_path, new_path), old_path, new_path)
-        for old_path in old_paths
-        for new_path in new_paths
-    )
-    paired_old: set[str] = set()
-    paired_new: set[str] = set()
-    pairs: list[tuple[str, str]] = []
-    for _distance, old_path, new_path in candidates:
-        if old_path in paired_old or new_path in paired_new:
-            continue
-        paired_old.add(old_path)
-        paired_new.add(new_path)
-        pairs.append((old_path, new_path))
-        if len(pairs) >= min(len(old_paths), len(new_paths)):
-            break
-    return pairs
-
-
-def entry_text_fragment(entry: dict[str, Any], *, limit: int = 180) -> str:
-    """Recoverable semantic summary for ranked selection and dropped evidence."""
-    candidates: list[str] = []
-    for key in ("visible_text", "sample_summaries"):
-        value = entry.get(key)
-        if isinstance(value, list):
-            candidates.extend(clean_dom_text(item) for item in value)
-        else:
-            candidates.append(clean_dom_text(value))
-    node = entry.get("node") if isinstance(entry.get("node"), dict) else {}
-    for key in ("directText", "accessibleName"):
-        candidates.append(clean_dom_text(node.get(key)))
-    fields = entry.get("fields") if isinstance(entry.get("fields"), dict) else {}
-    for key in ("directText", "accessibleName", "selectedAttributes", "states", "actionTypes"):
-        change = fields.get(key)
-        if not isinstance(change, dict):
-            continue
-        for side in ("after", "before"):
-            value = change.get(side)
-            if value not in (None, "", [], {}):
-                candidates.append(clean_dom_text(json.dumps(value, ensure_ascii=False)))
-    fragment = next((value for value in candidates if value), "")
-    return fragment if len(fragment) <= limit else fragment[: limit - 1].rstrip() + "…"
-
-
-def entry_priority(entry: dict[str, Any]) -> tuple[int, int, int, int, str]:
-    """Semantic facts outrank wrapper/path-only entries before truncation."""
-    fragment = entry_text_fragment(entry)
-    fields = entry.get("fields") if isinstance(entry.get("fields"), dict) else {}
-    node = entry.get("node") if isinstance(entry.get("node"), dict) else {}
-    has_action = bool(node.get("actionTypes") or "actionTypes" in fields)
-    has_state = bool(node.get("states") or "states" in fields)
-    has_numeric = bool(re.search(r"(?<!\w)[+-]?\d+(?:[.,]\d+)?(?!\w)", fragment))
-    has_text = bool(fragment)
-    score = (8 if has_action else 0) + (6 if has_state else 0) + (4 if has_numeric else 0) + (2 if has_text else 0)
-    return (-score, -int(has_text), -int(has_numeric), -int(has_state or has_action), str(entry.get("path", "")))
-
-
-def dropped_entry_summary(operation: str, entry: dict[str, Any]) -> dict[str, Any]:
-    """Retain paths and text for any entry omitted from a bounded prompt view."""
-    paths = entry.get("sample_paths") if isinstance(entry.get("sample_paths"), list) else []
-    path = clean_dom_text(entry.get("path"))
-    return {
-        "operation": operation,
-        "kind": entry.get("kind", "node"),
-        "paths": [path] if path else [str(item) for item in paths],
-        "text_fragment": entry_text_fragment(entry),
-    }
-
-
-def truncate_diff_entries(
-    added: list[dict[str, Any]],
-    removed: list[dict[str, Any]],
-    changed: list[dict[str, Any]],
-    *,
-    max_entries: int | None = None,
-) -> tuple[
-    list[dict[str, Any]],
-    list[dict[str, Any]],
-    list[dict[str, Any]],
-    dict[str, int],
-    list[dict[str, Any]],
-]:
-    """Balance and rank optional bounded output without starving an operation.
-
-    Persisted diffs call this with ``max_entries=None``. A numeric limit is used
-    only by bounded consumers, and every omitted item receives a recoverable
-    path/text summary.
-    """
-    operations = {"added": added, "removed": removed, "changed": changed}
-    ranked = {operation: sorted(rows, key=entry_priority) for operation, rows in operations.items()}
-    before = {operation: len(rows) for operation, rows in ranked.items()}
-    nonempty = [operation for operation, rows in ranked.items() if rows]
-    kept: dict[str, list[dict[str, Any]]] = {operation: [] for operation in operations}
-    selected_ids: set[int] = set()
-    limit = None if max_entries is None else max(0, int(max_entries))
-
-    if limit is None or sum(before.values()) <= limit:
-        kept = ranked
-        selected_ids = {id(entry) for rows in kept.values() for entry in rows}
-    elif limit and nonempty:
-        guaranteed_share = max(1, limit // (2 * len(nonempty)))
-        for operation in nonempty:
-            for entry in ranked[operation][:guaranteed_share]:
-                kept[operation].append(entry)
-                selected_ids.add(id(entry))
-        remaining = limit - len(selected_ids)
-        candidates = sorted(
-            (
-                entry_priority(entry),
-                operation,
-                position,
-                entry,
-            )
-            for operation in nonempty
-            for position, entry in enumerate(ranked[operation])
-            if id(entry) not in selected_ids
-        )
-        for _priority, operation, _position, entry in candidates[:remaining]:
-            kept[operation].append(entry)
-            selected_ids.add(id(entry))
-        for rows in kept.values():
-            rows.sort(key=entry_priority)
-    truncated = {
-        operation: before[operation] - len(kept[operation])
-        for operation in ("added", "removed", "changed")
-    }
-    dropped = [
-        dropped_entry_summary(operation, entry)
-        for operation, rows in ranked.items()
-        for entry in rows
-        if id(entry) not in selected_ids
-    ]
-    return kept["added"], kept["removed"], kept["changed"], truncated, dropped
-
-
-def model_diff_entry_summary(operation: str, entry: dict[str, Any]) -> dict[str, Any]:
-    """Compact one diff entry without cutting its JSON representation."""
-    summary: dict[str, Any] = {
-        "operation": operation,
-        "kind": entry.get("kind", "node"),
-    }
-    for key in ("path", "path_before", "path_after"):
-        value = clean_dom_text(entry.get(key))
-        if value:
-            summary[key] = value[:400]
-    sample_paths = entry.get("sample_paths")
-    if isinstance(sample_paths, list) and sample_paths:
-        summary["sample_paths"] = [clean_dom_text(path)[:400] for path in sample_paths[:3]]
-    fragment = entry_text_fragment(entry, limit=320)
-    if fragment:
-        summary["text_fragment"] = fragment
-    fields = entry.get("fields")
-    if isinstance(fields, dict) and fields:
-        summary["changed_fields"] = sorted(str(name) for name in fields)
-    node = entry.get("node")
-    if isinstance(node, dict):
-        facts: dict[str, Any] = {}
-        for key in ("tag", "role", "semanticBoundary"):
-            value = clean_dom_text(node.get(key))
-            if value:
-                facts[key] = value
-        for key in ("actionTypes", "states"):
-            value = node.get(key)
-            if value not in (None, [], {}):
-                facts[key] = value
-        if facts:
-            summary["node"] = facts
-    for key in ("count", "descendant_count", "document_percent", "signature"):
-        if entry.get(key) not in (None, ""):
-            summary[key] = entry[key]
-    return summary
-
-
-def bounded_dom_diff_for_model(
-    record: dict[str, Any] | None,
-    *,
-    max_entries: int = MAX_MODEL_DOM_DIFF_ENTRIES,
-) -> dict[str, Any]:
-    """Build valid, bounded JSON evidence from a potentially large DOM diff."""
-    if not isinstance(record, dict) or not record:
-        return {}
-
-    compression = record.get("compression") if isinstance(record.get("compression"), dict) else {}
-    diff = record.get("diff") if isinstance(record.get("diff"), dict) else {}
-    text_delta = diff.get("text_delta") if isinstance(diff.get("text_delta"), dict) else {}
-    summary: dict[str, Any] = {
-        "status": record.get("status"),
-        "action_type": record.get("action_type"),
-        "totals": record.get("totals", {}),
-        "emitted_counts": record.get("emitted_counts", {}),
-        "entries_truncated": compression.get(
-            "entries_truncated", text_delta.get("truncated", {})
-        ),
-    }
-
-    viewport = diff.get("viewport_delta") if isinstance(diff.get("viewport_delta"), dict) else {}
-    if viewport:
-        summary["viewport_delta"] = {
-            "aggregation": viewport.get("aggregation"),
-            "viewport_state": viewport.get("viewport_state", {}),
-            "geometry": viewport.get("geometry", {}),
-        }
-
-    operations: dict[str, list[dict[str, Any]]] = {}
-    for operation in ("added", "removed", "changed"):
-        rows = diff.get(operation)
-        if isinstance(rows, list):
-            operations[operation] = [row for row in rows if isinstance(row, dict)]
-    for operation, key in (("added_text", "added"), ("removed_text", "removed")):
-        rows = text_delta.get(key)
-        if isinstance(rows, list):
-            operations[operation] = [
-                {
-                    "kind": "text",
-                    "path": f"{operation}[{position}]",
-                    "node": {"directText": clean_dom_text(value)},
-                }
-                for position, value in enumerate(rows, start=1)
-                if clean_dom_text(value)
-            ]
-    for operation, key in (
-        ("viewport_entered", "visible_text_entered"),
-        ("viewport_exited", "visible_text_exited"),
-    ):
-        rows = viewport.get(key)
-        if isinstance(rows, list):
-            operations[operation] = [
-                {
-                    "kind": "viewport_text",
-                    "path": f"{operation}[{position}]",
-                    "node": {"directText": clean_dom_text(value)},
-                }
-                for position, value in enumerate(rows, start=1)
-                if clean_dom_text(value)
-            ]
-
-    ranked = {
-        operation: sorted(rows, key=entry_priority)
-        for operation, rows in operations.items()
-        if rows
-    }
-    available = {operation: len(rows) for operation, rows in ranked.items()}
-    selected: dict[str, list[dict[str, Any]]] = {operation: [] for operation in ranked}
-    selected_keys: set[tuple[str, int]] = set()
-    nonempty = list(ranked)
-    limit = max(0, int(max_entries))
-    if limit and sum(available.values()) <= limit:
-        selected = {operation: list(rows) for operation, rows in ranked.items()}
-    elif limit and nonempty:
-        guaranteed_share = max(1, limit // (2 * len(nonempty)))
-        for operation in nonempty:
-            for position, entry in enumerate(ranked[operation][:guaranteed_share]):
-                selected[operation].append(entry)
-                selected_keys.add((operation, position))
-        remaining = max(0, limit - sum(len(rows) for rows in selected.values()))
-        candidates = sorted(
-            (
-                entry_priority(entry),
-                operation,
-                position,
-                entry,
-            )
-            for operation, rows in ranked.items()
-            for position, entry in enumerate(rows)
-            if (operation, position) not in selected_keys
-        )
-        for _priority, operation, _position, entry in candidates[:remaining]:
-            selected[operation].append(entry)
-
-    included = {operation: len(rows) for operation, rows in selected.items()}
-    summary["model_evidence"] = {
-        "entry_limit": limit,
-        "available_counts": available,
-        "included_counts": included,
-        "entries_truncated": {
-            operation: available[operation] - included.get(operation, 0)
-            for operation in available
-        },
-        "selection": "balanced_operation_share_then_entry_priority",
-        "entries": [
-            model_diff_entry_summary(operation, entry)
-            for operation, rows in selected.items()
-            for entry in sorted(rows, key=entry_priority)
-        ],
-    }
-    return summary
-
-
-def bounded_dom_diff_history_for_review(
-    records: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """Keep evidence from every executed step in valid, bounded JSON.
-
-    The artifact itself is never truncated. Only the separate reviewer prompt is
-    bounded per step, so an early source page remains available in cross-site
-    tasks without allowing one large navigation diff to consume the whole input.
-    """
-    history: list[dict[str, Any]] = []
-    for step, record in enumerate(records, start=1):
-        if not isinstance(record, dict):
-            continue
-        history.append(
-            {
-                "step": step,
-                "before": record.get("before", {}),
-                "after": record.get("after", {}),
-                "evidence": bounded_dom_diff_for_model(
-                    record,
-                    max_entries=MAX_TERMINATION_REVIEW_DIFF_ENTRIES_PER_STEP,
-                ),
-            }
-        )
-    return history
-
-
-def unsafe_identity_record(
-    before_snapshot: dict[str, Any],
-    after_snapshot: dict[str, Any],
-    errors: list[SnapshotIdentityError],
-    *,
-    action_type: str | None = None,
-) -> dict[str, Any]:
-    """Emit an explicit non-diff record when node identity cannot be trusted."""
-    return {
-        "source": DOM_DIFF_SOURCE,
-        "interval": DOM_DIFF_INTERVAL,
-        "status": "unsafe_node_identity",
-        "action_type": action_type,
-        "geometry_excluded": True,
-        "covers_live_control_state": False,
-        "before": snapshot_endpoint(before_snapshot),
-        "after": snapshot_endpoint(after_snapshot),
-        "change_count": 0,
-        "totals": {"added": 0, "removed": 0, "changed": 0, "changes": 0},
-        "emitted_counts": {"added": 0, "removed": 0, "changed": 0, "changes": 0},
-        "diff": {
-            "errors": [
-                {"side": error.side, "message": str(error), "problems": error.problems}
-                for error in errors
-            ]
-        },
-    }
-
-
-def same_document_except_fragment(before_url: str, after_url: str) -> bool:
-    """Return whether only the URL fragment may differ."""
-    before = urlsplit(before_url)
-    after = urlsplit(after_url)
-    return (
-        before.scheme.lower(),
-        before.netloc.lower(),
-        before.path,
-        before.query,
-    ) == (
-        after.scheme.lower(),
-        after.netloc.lower(),
-        after.path,
-        after.query,
-    )
-
-
-def dom_diff_record(
-    before_snapshot: dict[str, Any],
-    after_snapshot: dict[str, Any],
-    *,
-    action_type: str | None = None,
-) -> dict[str, Any]:
-    """Compute a deterministic semantic diff from two stored snapshots.
-
-    Cross-document navigation uses a text delta because node paths cannot carry
-    identity across documents. Fragment-only navigation stays in the same-node
-    path so newly visible viewport text is retained.
-    """
-    before_endpoint = snapshot_endpoint(before_snapshot)
-    after_endpoint = snapshot_endpoint(after_snapshot)
-    indexes: dict[str, dict[str, dict[str, Any]]] = {}
-    identity_stats: dict[str, dict[str, int]] = {}
-    identity_errors: list[SnapshotIdentityError] = []
-    for side, snapshot in (("before", before_snapshot), ("after", after_snapshot)):
-        try:
-            indexes[side], identity_stats[side] = build_snapshot_path_index(snapshot, side=side)
-        except SnapshotIdentityError as error:
-            identity_errors.append(error)
-    if identity_errors:
-        return unsafe_identity_record(
-            before_snapshot, after_snapshot, identity_errors, action_type=action_type
-        )
-
-    common_metadata = {
-        "source": DOM_DIFF_SOURCE,
-        "interval": DOM_DIFF_INTERVAL,
-        "action_type": action_type,
-        "geometry_excluded": True,
-        "covers_live_control_state": False,
-        "identity": {
-            "strategy": "own_content_or_semantic_anchor_with_positional_fallback",
-            "before": identity_stats["before"],
-            "after": identity_stats["after"],
-        },
-    }
-
-    if before_endpoint["url"] != after_endpoint["url"] and not same_document_except_fragment(
-        before_endpoint["url"], after_endpoint["url"]
-    ):
-        before_nodes = [node for node in before_snapshot.get("nodes", []) if isinstance(node, dict)]
-        after_nodes = [node for node in after_snapshot.get("nodes", []) if isinstance(node, dict)]
-        before_text = visible_document_text(before_snapshot)
-        after_text = visible_document_text(after_snapshot)
-        before_text_set = set(before_text)
-        after_text_set = set(after_text)
-        removed_text = [text for text in before_text if text not in after_text_set]
-        added_text = [text for text in after_text if text not in before_text_set]
-        totals = {
-            "removed_nodes": len(before_nodes),
-            "added_nodes": len(after_nodes),
-            "removed_text": len(removed_text),
-            "added_text": len(added_text),
-        }
-        change_count = len(before_nodes) + len(after_nodes)
-        # Navigation is already represented as a compact text delta rather than
-        # node records. Keep all unique captured text so relevant evidence is not
-        # lost to an arbitrary per-side prefix cap.
-        # Preserve each captured row verbatim: clipping by character count can
-        # remove the decisive tail of an otherwise retained fact while saving
-        # no JSON/TXT lines at all.
-        emitted_removed_text = list(removed_text)
-        emitted_added_text = list(added_text)
-        return {
-            **common_metadata,
-            "status": "document_replaced",
-            "before": before_endpoint,
-            "after": after_endpoint,
-            "change_count": change_count,
-            "totals": totals,
-            "emitted_counts": {
-                "removed_nodes": 0,
-                "added_nodes": 0,
-                "removed_text": len(emitted_removed_text),
-                "added_text": len(emitted_added_text),
-            },
-            "diff": {
-                "navigation": {"from": before_endpoint["url"], "to": after_endpoint["url"]},
-                "removed_node_count": len(before_nodes),
-                "added_node_count": len(after_nodes),
-                "text_delta": {
-                    "removed": emitted_removed_text,
-                    "added": emitted_added_text,
-                    "removed_total": len(removed_text),
-                    "added_total": len(added_text),
-                    "truncated": {"removed": 0, "added": 0},
-                },
-            },
-        }
-
-    before_index = indexes["before"]
-    after_index = indexes["after"]
-    before_keys = set(before_index)
-    after_keys = set(after_index)
-    added_keys = after_keys - before_keys
-    removed_keys = before_keys - after_keys
-    raw_added_before_relocation_match = len(added_keys)
-    raw_removed_before_relocation_match = len(removed_keys)
-    removed_by_fingerprint: dict[str, list[str]] = {}
-    added_by_fingerprint: dict[str, list[str]] = {}
-    for path in sorted(removed_keys):
-        if meaningful_diff_node(before_index[path]):
-            removed_by_fingerprint.setdefault(semantic_fingerprint(before_index[path]), []).append(path)
-    for path in sorted(added_keys):
-        if meaningful_diff_node(after_index[path]):
-            added_by_fingerprint.setdefault(semantic_fingerprint(after_index[path]), []).append(path)
-    relocated_nodes_suppressed = 0
-    for fingerprint, old_paths in removed_by_fingerprint.items():
-        new_paths = added_by_fingerprint.get(fingerprint, [])
-        for old_path, new_path in match_relocated_paths(old_paths, new_paths):
-            removed_keys.discard(old_path)
-            added_keys.discard(new_path)
-            relocated_nodes_suppressed += 1
-    raw_changed: list[dict[str, Any]] = []
-    subtree_text_changes_ignored = 0
-    for path in sorted(before_keys & after_keys):
-        before_fields = compared_node_fields(before_index[path])
-        after_fields = compared_node_fields(after_index[path])
-        field_changes = {
-            field: {"before": before_fields[field], "after": after_fields[field]}
-            for field in DOM_DIFF_FIELDS
-            if before_fields[field] != after_fields[field]
-        }
-        if field_changes:
-            entry: dict[str, Any] = {"kind": "node", "path": path, "fields": field_changes}
-            after_node = after_index[path]
-            if after_node.get("repeatedGroupId") not in (None, ""):
-                entry["repeated_group_id"] = after_node.get("repeatedGroupId")
-                if after_node.get("repeatedItemIndex") is not None:
-                    entry["repeated_item_index"] = after_node.get("repeatedItemIndex")
-            raw_changed.append(entry)
-        elif clean_dom_text(before_index[path].get("subtreeText")) != clean_dom_text(
-            after_index[path].get("subtreeText")
-        ):
-            subtree_text_changes_ignored += 1
-
-    added, added_stats = compress_tree_operation(added_keys, after_index)
-    removed, removed_stats = compress_tree_operation(removed_keys, before_index)
-    changed: list[dict[str, Any]] = []
-    changed_noise_skipped = 0
-    for entry in raw_changed:
-        path = str(entry["path"])
-        if meaningful_diff_node(before_index[path]) or meaningful_diff_node(after_index[path]):
-            changed.append(entry)
-        else:
-            changed_noise_skipped += 1
-    added, added_group_members = condense_repeated_groups(added, "added")
-    removed, removed_group_members = condense_repeated_groups(removed, "removed")
-    changed, changed_group_members = condense_repeated_groups(changed, "changed")
-    viewport = viewport_delta(before_index, after_index)
-    viewport_state = (
-        viewport.get("viewport_state")
-        if isinstance(viewport, dict) and isinstance(viewport.get("viewport_state"), dict)
-        else {}
-    )
-    viewport_change_count = int(viewport_state.get("entered_text_total") or 0) + int(
-        viewport_state.get("exited_text_total") or 0
-    )
-    emitted_before_truncation = {
-        "added": len(added),
-        "removed": len(removed),
-        "changed": len(changed),
-    }
-    added, removed, changed, entries_truncated, dropped_entries = truncate_diff_entries(
-        added, removed, changed
-    )
-
-    totals = {
-        "added": len(added_keys),
-        "removed": len(removed_keys),
-        "changed": len(raw_changed),
-        "semantic_changes": len(added_keys) + len(removed_keys) + len(raw_changed),
-        "viewport_text_changed": viewport_change_count,
-        "changes": len(added_keys) + len(removed_keys) + len(raw_changed) + viewport_change_count,
-    }
-    emitted_counts = {
-        "added": len(added),
-        "removed": len(removed),
-        "changed": len(changed),
-        "viewport_text_changed": viewport_change_count,
-        "changes": len(added) + len(removed) + len(changed) + viewport_change_count,
-    }
-    status = "changes_present" if totals["semantic_changes"] else "no_dom_change"
-    if not totals["semantic_changes"] and viewport_change_count:
-        status = "viewport_content_changed"
-    elif not totals["changes"] and str(action_type or "").lower() == "scroll":
-        status = "no_semantic_change_scroll"
-    diff: dict[str, Any] = {"added": added, "removed": removed, "changed": changed}
-    if viewport:
-        diff["viewport_delta"] = viewport
-    return {
-        **common_metadata,
-        "status": status,
-        "before": before_endpoint,
-        "after": after_endpoint,
-        "change_count": totals["changes"],
-        "semantic_change_count": totals["semantic_changes"],
-        "viewport_change_count": viewport_change_count,
-        "totals": totals,
-        "emitted_counts": emitted_counts,
-        "compression": {
-            "subtree_text_changes_ignored": subtree_text_changes_ignored,
-            "raw_added_before_relocation_match": raw_added_before_relocation_match,
-            "raw_removed_before_relocation_match": raw_removed_before_relocation_match,
-            "relocated_nodes_suppressed": relocated_nodes_suppressed,
-            "relocation_matching": "structural_nearest_within_semantic_fingerprint",
-            "noise_nodes_skipped": (
-                added_stats["noise_nodes_skipped"]
-                + removed_stats["noise_nodes_skipped"]
-                + changed_noise_skipped
-            ),
-            "collapsed_descendants": (
-                added_stats["collapsed_descendants"] + removed_stats["collapsed_descendants"]
-            ),
-            "repeated_group_members_condensed": (
-                added_group_members + removed_group_members + changed_group_members
-            ),
-            "emitted_before_truncation": emitted_before_truncation,
-            "entries_truncated": entries_truncated,
-            "entry_limit": None,
-            "truncation_selection": "none_all_semantic_entries_emitted",
-            "dropped_entries": dropped_entries,
-            "max_collapse_document_percent": max(
-                (
-                    float(item["document_percent"])
-                    for item in [
-                        *added_stats["collapse_roots"],
-                        *removed_stats["collapse_roots"],
-                    ]
-                ),
-                default=0.0,
-            ),
-            "collapse_roots": [
-                *(
-                    f"operation=added path={item['path']} "
-                    f"descendant_count={item['descendant_count']} "
-                    f"document_percent={item['document_percent']}"
-                    for item in added_stats["collapse_roots"]
-                ),
-                *(
-                    f"operation=removed path={item['path']} "
-                    f"descendant_count={item['descendant_count']} "
-                    f"document_percent={item['document_percent']}"
-                    for item in removed_stats["collapse_roots"]
-                ),
-            ],
-        },
-        "diff": diff,
-    }
-
-
-def dom_diff_text(record: dict[str, Any]) -> str:
-    """Render the JSON diff as one verifier-friendly fact per line."""
-    def encoded(value: Any) -> str:
-        """Serialize nested facts deterministically on a single line."""
-        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-
-    lines = [
-        f"source: {record.get('source')}",
-        f"interval: {record.get('interval')}",
-        f"status: {record.get('status')}",
-        f"action_type: {record.get('action_type')}",
-        f"geometry_excluded: {str(bool(record.get('geometry_excluded'))).lower()}",
-        f"covers_live_control_state: {str(bool(record.get('covers_live_control_state'))).lower()}",
-        f"before: {encoded(record.get('before'))}",
-        f"after: {encoded(record.get('after'))}",
-        f"change_count: {record.get('change_count', 0)}",
-        f"totals: {encoded(record.get('totals', {}))}",
-        f"emitted_counts: {encoded(record.get('emitted_counts', {}))}",
-        f"identity: {encoded(record.get('identity', {}))}",
-        f"compression: {encoded(record.get('compression', {}))}",
-    ]
-    diff = record.get("diff") if isinstance(record.get("diff"), dict) else {}
-    if record.get("status") == "document_replaced":
-        lines.append(f"navigation: {encoded(diff.get('navigation'))}")
-        lines.append(f"removed_node_count: {diff.get('removed_node_count', 0)}")
-        lines.append(f"added_node_count: {diff.get('added_node_count', 0)}")
-        text_delta = diff.get("text_delta") if isinstance(diff.get("text_delta"), dict) else {}
-        lines.extend(f"text_removed: {encoded(text)}" for text in text_delta.get("removed", []) or [])
-        lines.extend(f"text_added: {encoded(text)}" for text in text_delta.get("added", []) or [])
-    elif record.get("status") == "unsafe_node_identity":
-        lines.extend(f"identity_error: {encoded(error)}" for error in diff.get("errors", []) or [])
-    else:
-        lines.extend(f"node_added: {encoded(item)}" for item in diff.get("added", []) or [])
-        lines.extend(f"node_removed: {encoded(item)}" for item in diff.get("removed", []) or [])
-        for item in diff.get("changed", []) or []:
-            path = item.get("path")
-            fields = item.get("fields") if isinstance(item.get("fields"), dict) else {}
-            for field, change in fields.items():
-                lines.append(f"node_changed: path={encoded(path)} field={field} change={encoded(change)}")
-        viewport = diff.get("viewport_delta") if isinstance(diff.get("viewport_delta"), dict) else {}
-        if viewport:
-            lines.append(f"viewport_state: {encoded(viewport.get('viewport_state', {}))}")
-            lines.append(f"viewport_geometry: {encoded(viewport.get('geometry', {}))}")
-            lines.extend(
-                f"visible_text_entered: {encoded(text)}"
-                for text in viewport.get("visible_text_entered", []) or []
-            )
-            lines.extend(
-                f"visible_text_exited: {encoded(text)}"
-                for text in viewport.get("visible_text_exited", []) or []
-            )
-    return "\n".join(lines).rstrip() + "\n"
-
-
-def write_dom_diff_files(
-    before_path: Path,
-    after_path: Path,
-    json_path: Path,
-    *,
-    action_type: str | None = None,
-) -> dict[str, Any]:
-    """Generate matching JSON/TXT diffs and record size without truncating them."""
-    record = dom_diff_record(
-        load_snapshot_file(before_path),
-        load_snapshot_file(after_path),
-        action_type=action_type,
-    )
-    record["artifact"] = {
-        "max_json_bytes": MAX_DOM_DIFF_JSON_BYTES,
-        "json_bytes": 0,
-        "json_lines": 0,
-        "over_size_limit": False,
-    }
-    # The metadata itself contributes bytes and can change digit width. Settle
-    # both informational LOC and the enforced byte measurement before writing.
-    for _ in range(5):
-        serialized = json.dumps(record, ensure_ascii=False, indent=2) + "\n"
-        record["artifact"]["json_lines"] = len(serialized.splitlines())
-        record["artifact"]["json_bytes"] = len(serialized.encode("utf-8"))
-        record["artifact"]["over_size_limit"] = (
-            record["artifact"]["json_bytes"] > MAX_DOM_DIFF_JSON_BYTES
-        )
-    write_json(json_path, record)
-    write_text(json_path.with_suffix(".txt"), dom_diff_text(record))
-    return record
-
-
-def copy_bundle(bundle: CaptureBundle, directory: Path) -> CaptureBundle:
-    """Copy one immutable evidence bundle into an action's before directory."""
-    directory.mkdir(parents=True, exist_ok=False)
-    snapshot_path = directory / "dom.json"
-    screenshot_path = directory / "screenshot.png"
-    shutil.copy2(bundle.snapshot_path, snapshot_path)
-    shutil.copy2(bundle.snapshot_path.with_name("dom_full.txt"), directory / "dom_full.txt")
-    shutil.copy2(bundle.snapshot_path.with_name("dom_model.txt"), directory / "dom_model.txt")
-    shutil.copy2(bundle.screenshot_path, screenshot_path)
-    agent_browser_path: Path | None = None
-    if bundle.agent_browser_path is not None:
-        agent_browser_path = directory / "agent_browser.txt"
-        shutil.copy2(bundle.agent_browser_path, agent_browser_path)
-    agent_browser_action_path: Path | None = None
-    if bundle.agent_browser_action_path is not None:
-        agent_browser_action_path = directory / "agent_browser_actions.txt"
-        shutil.copy2(bundle.agent_browser_action_path, agent_browser_action_path)
-    return CaptureBundle(
-        snapshot=bundle.snapshot,
-        snapshot_path=snapshot_path,
-        model_text=bundle.model_text,
-        screenshot_path=screenshot_path,
-        agent_browser_text=bundle.agent_browser_text,
-        agent_browser_action_text=bundle.agent_browser_action_text,
-        agent_browser_refs=bundle.agent_browser_refs,
-        agent_browser_targets=bundle.agent_browser_targets,
-        agent_browser_path=agent_browser_path,
-        agent_browser_action_path=agent_browser_action_path,
-        agent_browser_snapshot_command=bundle.agent_browser_snapshot_command,
-        agent_browser_action_snapshot_command=(
-            bundle.agent_browser_action_snapshot_command
-        ),
-        document_language=bundle.document_language,
-        document_url=bundle.document_url,
-    )
-
-
 def response_text(response: dict[str, Any]) -> str:
     """Extract output text from either convenience or structured Responses fields."""
     direct = response.get("output_text")
@@ -3121,7 +322,19 @@ def chromiumrl_evidence_for_model(text: str) -> str:
     numeric action namespace in the prompt creates ambiguity without adding
     evidence.
     """
-    return re.sub(r"\[(?:A)?\d+\]", "[non-executable-dom-id]", text)
+    blocked_prefixes = (
+        "Use only ids from this observation.",
+        'Use: scroll("down"',
+        "Not currently clickable. To interact with these rows, scroll",
+    )
+    filtered = "\n".join(
+        line
+        for line in text.splitlines()
+        if not line.lstrip().startswith(blocked_prefixes)
+    )
+    if text.endswith("\n"):
+        filtered += "\n"
+    return re.sub(r"\[(?:A)?\d+\]", "[non-executable-dom-id]", filtered)
 
 
 def browser_decision(decision: dict[str, Any]) -> dict[str, Any]:
@@ -3131,269 +344,6 @@ def browser_decision(decision: dict[str, Any]) -> dict[str, Any]:
         for key, value in decision.items()
         if key not in {"memory", "thought"}
     }
-
-
-def websurfer_action(
-    action_record: dict[str, Any],
-) -> tuple[str, dict[str, Any], str]:
-    """Map one confirmed execution to a self-contained WebSurfer action.
-
-    Ref-based arguments carry both the exact executed ref and the semantic
-    role/name returned for that ref by the same pre-action agent-browser
-    snapshot. No ChromiumRL identifier is inferred or joined here.
-    """
-    raw_action = action_record.get("action")
-    if not isinstance(raw_action, dict):
-        raise RunnerError("action record has no structured executed action")
-    source_action = clean_dom_text(raw_action.get("action"))
-    mapped_action = WEBSURFER_ACTION_MAP.get(source_action)
-    if mapped_action is None:
-        raise RunnerError(
-            f"executed action {source_action!r} has no confirmed WebSurfer mapping"
-        )
-    thought = action_record.get("thought")
-    if not isinstance(thought, str) or not thought.strip():
-        raise RunnerError("executed action has no verbatim accepted thought")
-
-    arguments: dict[str, Any] = {"action": mapped_action}
-    if source_action == "navigate":
-        url = str(raw_action.get("url", "")).strip()
-        if not url.startswith(("http://", "https://")):
-            raise RunnerError("executed navigate action has no valid URL")
-        arguments["url"] = url
-    elif source_action in {"click", "fill", "type", "select", "scroll"}:
-        ref = AgentBrowserClient.action_ref(raw_action.get("id"))
-        if ref:
-            target = action_record.get("target")
-            if not isinstance(target, dict):
-                raise RunnerError(f"ref-based action {ref!r} has no semantic target")
-            exact_target = {
-                "ref": str(target.get("ref", "")),
-                "role": str(target.get("role", "")),
-                "name": str(target.get("name", "")),
-            }
-            if exact_target["ref"] != ref:
-                raise RunnerError(
-                    f"executed ref {ref!r} does not match target ref "
-                    f"{exact_target['ref']!r}"
-                )
-            if not exact_target["role"].strip() or not exact_target["name"].strip():
-                raise RunnerError(
-                    f"ref-based action {ref!r} lacks its DOM-derived role/name"
-                )
-            arguments["ref"] = ref
-            arguments["target"] = exact_target
-            coordinate_capture = action_record.get("coordinate_capture")
-            coordinate = (
-                coordinate_capture.get("coordinate")
-                if isinstance(coordinate_capture, dict)
-                else None
-            )
-            if (
-                isinstance(coordinate, list)
-                and len(coordinate) == 2
-                and all(isinstance(value, (int, float)) for value in coordinate)
-            ):
-                arguments["coordinate"] = coordinate
-            elif source_action == "click":
-                raise RunnerError(
-                    f"executed click {ref!r} has no resolved pre-action coordinate"
-                )
-        elif source_action in {"click", "fill", "select"}:
-            raise RunnerError(f"executed {source_action} action has no ref")
-        if source_action in {"fill", "type", "select"}:
-            arguments["text"] = "" if raw_action.get("text") is None else str(
-                raw_action.get("text")
-            )
-        if source_action == "scroll":
-            arguments["pixels"] = (
-                800.0
-                if raw_action.get("pixels") is None
-                else float(raw_action.get("pixels"))
-            )
-    elif source_action == "press":
-        key = "" if raw_action.get("key") is None else str(raw_action.get("key"))
-        if not key:
-            raise RunnerError("executed press action has no key")
-        arguments["key"] = key
-    elif source_action == "wait":
-        seconds = (
-            1.0
-            if raw_action.get("seconds") is None
-            else float(raw_action.get("seconds"))
-        )
-        arguments["seconds"] = seconds
-
-    arguments["thoughts"] = thought
-    return mapped_action, arguments, thought
-
-
-def step_directory_number(path: Path) -> int:
-    """Parse and validate the numeric suffix used for chronological step order."""
-    match = re.fullmatch(r"step_(\d+)", path.name)
-    if not match:
-        raise RunnerError(f"invalid recorded step directory name: {path.name}")
-    return int(match.group(1))
-
-
-def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
-    """Generate trajectory.jsonl and web_surfer.log only after full validation."""
-    run_dir = run_dir.resolve()
-    if not run_dir.is_dir():
-        raise RunnerError(f"run directory does not exist: {run_dir}")
-    manifest_path = run_dir / "manifest.json"
-    manifest: dict[str, Any] = {}
-    if manifest_path.exists():
-        loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
-        if isinstance(loaded, dict):
-            manifest = loaded
-    task_id = str(manifest.get("task_id") or run_dir.name)
-    steps_root = run_dir / "steps"
-    child_directories = (
-        [path for path in steps_root.iterdir() if path.is_dir()]
-        if steps_root.is_dir()
-        else []
-    )
-    step_dirs = sorted(
-        (
-            path
-            for path in child_directories
-            if re.fullmatch(r"step_\d+", path.name)
-        ),
-        key=step_directory_number,
-    )
-
-    trajectory_rows: list[dict[str, Any]] = []
-    websurfer_rows: list[dict[str, Any]] = []
-    errors: list[dict[str, Any]] = [
-        {
-            "step": path.name,
-            "error": "RunnerError: unrecognized directory under steps/",
-        }
-        for path in child_directories
-        if not re.fullmatch(r"step_\d+", path.name)
-    ]
-    for action_number, step_dir in enumerate(step_dirs, start=1):
-        try:
-            recorded_step = step_directory_number(step_dir)
-            if recorded_step != action_number:
-                raise RunnerError(
-                    f"executed step sequence is not contiguous: expected "
-                    f"step_{action_number:03d}, found {step_dir.name}"
-                )
-            action_path = step_dir / "action.json"
-            diff_path = step_dir / "dom_diff.json"
-            diff_text_path = step_dir / "dom_diff.txt"
-            for required in (action_path, diff_path, diff_text_path):
-                if not required.exists():
-                    raise RunnerError(
-                        f"required executed-action artifact is missing: "
-                        f"{required.relative_to(run_dir)}"
-                    )
-            action_record = json.loads(action_path.read_text(encoding="utf-8"))
-            diff_record = json.loads(diff_path.read_text(encoding="utf-8"))
-            if not isinstance(action_record, dict) or not isinstance(diff_record, dict):
-                raise RunnerError("action or DOM-diff record is not a JSON object")
-            result = action_record.get("action_result")
-            if (
-                action_record.get("action_succeeded") is not True
-                or action_record.get("action_error") not in (None, "")
-                or not isinstance(result, dict)
-                or result.get("success") is not True
-            ):
-                raise RunnerError(
-                    "browser execution was not confirmed successful; verifier "
-                    "dataset generation requires a rerun"
-                )
-
-            mapped_action, arguments, thought = websurfer_action(action_record)
-            before_endpoint = (
-                diff_record.get("before")
-                if isinstance(diff_record.get("before"), dict)
-                else {}
-            )
-            after_endpoint = (
-                diff_record.get("after")
-                if isinstance(diff_record.get("after"), dict)
-                else {}
-            )
-            before_url = str(before_endpoint.get("url", ""))
-            after_url = str(after_endpoint.get("url", ""))
-            if not after_url:
-                raise RunnerError("DOM diff has no after-action URL")
-            timestamp = str(action_record.get("started_at", ""))
-            if not timestamp:
-                raise RunnerError("executed action has no timestamp")
-
-            trajectory_rows.append(
-                {
-                    "schema_version": TRAJECTORY_SCHEMA_VERSION,
-                    "task_id": task_id,
-                    "action_number": action_number,
-                    "step": recorded_step,
-                    "source_step": step_dir.name,
-                    "timestamp": timestamp,
-                    "thought": thought,
-                    "action": mapped_action,
-                    "arguments": arguments,
-                    "before_url": before_url,
-                    "after_url": after_url,
-                    "dom_diff": str(diff_path.relative_to(run_dir)),
-                    "dom_diff_text": str(diff_text_path.relative_to(run_dir)),
-                }
-            )
-            message_arguments = {
-                key: value for key, value in arguments.items() if key != "thoughts"
-            }
-            message = (
-                f"\nThought #{action_number}: {thought}"
-                f"\nAction #{action_number}: executing tool {mapped_action!r} "
-                f"with arguments "
-                f"{json.dumps(message_arguments, ensure_ascii=False, separators=(',', ':'))}"
-            )
-            websurfer_rows.append(
-                {
-                    "timestamp": timestamp,
-                    "type": "WebSurferEvent",
-                    "source": "WebSurfer",
-                    "message": message,
-                    "action": mapped_action,
-                    "arguments": arguments,
-                    "url": after_url,
-                }
-            )
-        except (OSError, ValueError, TypeError, json.JSONDecodeError, RunnerError) as error:
-            errors.append(
-                {
-                    "step": step_dir.name,
-                    "error": f"{type(error).__name__}: {error}",
-                }
-            )
-
-    report: dict[str, Any] = {
-        "schema_version": TRAJECTORY_SCHEMA_VERSION,
-        "status": "invalid" if errors else "complete",
-        "executed_step_directories": len(step_dirs),
-        "exported_actions": 0 if errors else len(trajectory_rows),
-        "errors": errors,
-        "trajectory": None if errors else "trajectory.jsonl",
-        "web_surfer_log": None if errors else "web_surfer.log",
-        "self_contained_action_targets": True,
-        "requires_action_json_after_export": False,
-    }
-    if errors:
-        # Never leave a previously generated trajectory looking valid after the
-        # source run has failed validation. These files are derived artifacts;
-        # action.json and dom_diff.* remain the authoritative recording.
-        for stale_path in (
-            run_dir / "trajectory.jsonl",
-            run_dir / "web_surfer.log",
-        ):
-            stale_path.unlink(missing_ok=True)
-        return report
-    write_json_lines(run_dir / "trajectory.jsonl", trajectory_rows)
-    write_json_lines(run_dir / "web_surfer.log", websurfer_rows)
-    return report
 
 
 def compact_model_response(response: dict[str, Any]) -> dict[str, Any]:
@@ -3421,19 +371,7 @@ def parse_decision(text: str) -> dict[str, Any]:
         decision = json.loads(value[start : end + 1])
     if not isinstance(decision, dict):
         raise RunnerError("model action must be a JSON object")
-    allowed = {
-        "navigate",
-        "back",
-        "click",
-        "fill",
-        "type",
-        "select",
-        "press",
-        "scroll",
-        "wait",
-        "request_human",
-        "terminate",
-    }
+    allowed = set(ACTION_SCHEMA["properties"]["action"]["enum"])
     action = decision.get("action")
     if action not in allowed:
         raise RunnerError(f"unsupported model action: {action!r}")
@@ -3679,14 +617,25 @@ def action_rejection_reason(
         for item in recent_actions
         if isinstance(item.get("action"), dict)
         and isinstance(item.get("progress"), dict)
-        and item.get("action_succeeded", True) is True
+        and (
+            item.get("action_succeeded", True) is True
+            or (
+                item["action"].get("action") == "request_human"
+                and item.get("human_intervention_status") == "resumed"
+            )
+        )
     ]
     if (
         action == "terminate"
         and str(decision.get("status", "")).lower() == "success"
         and not completed
     ):
-        return "successful termination requires at least one confirmed browser action"
+        return (
+            "successful termination requires at least one confirmed browser action; "
+            "execute one action that brings the requested evidence into the visible "
+            "viewport, such as scrolling the relevant item into view, then propose "
+            "termination again"
+        )
 
     def signature(
         value: dict[str, Any],
@@ -3749,235 +698,6 @@ def action_rejection_reason(
         if candidate in stalled_signatures:
             return "action would retry a recently stalled strategy without observable progress"
     return ""
-
-
-def previous_dom_diff_state(path: Path) -> str:
-    """Classify broken/missing evidence separately from valid semantic zero."""
-    if not path.exists():
-        return "missing"
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return "invalid_json"
-    if value in (None, [], {}):
-        return "empty_payload"
-    if not isinstance(value, dict):
-        return "legacy_non_object"
-    if value.get("native_diff_available") is False:
-        return "missing_native_diff"
-    if value.get("diff") in (None, [], {}):
-        return "empty_diff_payload"
-    try:
-        change_count = int(value.get("change_count", 0) or 0)
-    except (TypeError, ValueError):
-        return "invalid_change_count"
-    return "semantic_zero" if change_count == 0 else "changes_present"
-
-
-def diff_report_summary(record: dict[str, Any]) -> dict[str, Any]:
-    """Return compact backfill diagnostics without replacing the full artifact."""
-    diff = record.get("diff") if isinstance(record.get("diff"), dict) else {}
-    summary: dict[str, Any] = {
-        "status": record.get("status"),
-        "change_count": record.get("change_count", 0),
-        "totals": record.get("totals", {}),
-    }
-    if record.get("status") == "document_replaced":
-        summary["navigation"] = diff.get("navigation")
-        text_delta = diff.get("text_delta") if isinstance(diff.get("text_delta"), dict) else {}
-        summary["sample_removed_text"] = (text_delta.get("removed") or [])[:3]
-        summary["sample_added_text"] = (text_delta.get("added") or [])[:3]
-    else:
-        summary["sample_added_paths"] = [item.get("path") for item in (diff.get("added") or [])[:3]]
-        summary["sample_removed_paths"] = [item.get("path") for item in (diff.get("removed") or [])[:3]]
-        summary["sample_changed_paths"] = [item.get("path") for item in (diff.get("changed") or [])[:3]]
-    return summary
-
-
-def apply_diff_metadata(manifest: dict[str, Any]) -> None:
-    """Record the local snapshot-diff contract and explicitly excluded fields."""
-    manifest["dom_diff_source"] = DOM_DIFF_SOURCE
-    manifest["dom_diff_format"] = "snapshot_path_diff_v2"
-    manifest["dom_diff_identity"] = (
-        "tag plus normalized own directText or semantic-node accessibility anchor with occurrence index; "
-        "tag sibling-position fallback for broad nodes and nodes without own content anchors"
-    )
-    manifest["dom_diff_compared_fields"] = list(DOM_DIFF_FIELDS)
-    manifest["dom_diff_geometry_excluded"] = True
-    manifest["dom_diff_covers_live_control_state"] = False
-    manifest["dom_diff_max_json_bytes"] = MAX_DOM_DIFF_JSON_BYTES
-    manifest.pop("dom_diff_max_json_lines", None)
-    manifest["dom_diff_excluded_fields"] = [
-        "bounds",
-        "clippedBounds",
-        "sourceOrder",
-        "index",
-        "confidence",
-        "ref",
-        "nodeId",
-        "backendNodeId",
-    ]
-    manifest.pop("dom_diff_capture_parameters", None)
-
-
-def update_step_diff_metadata(step_record: dict[str, Any], step_dir: Path, run_dir: Path, record: dict[str, Any]) -> None:
-    """Synchronize one action/manifest step with its regenerated diff metrics."""
-    step_record["dom_diff"] = str((step_dir / "dom_diff.json").relative_to(run_dir))
-    step_record["dom_diff_text"] = str((step_dir / "dom_diff.txt").relative_to(run_dir))
-    step_record["dom_diff_status"] = record["status"]
-    step_record["dom_diff_change_count"] = record["change_count"]
-    artifact = record.get("artifact") if isinstance(record.get("artifact"), dict) else {}
-    step_record["dom_diff_json_lines"] = int(artifact.get("json_lines") or 0)
-    step_record["dom_diff_json_bytes"] = int(artifact.get("json_bytes") or 0)
-    step_record["dom_diff_over_size_limit"] = bool(artifact.get("over_size_limit"))
-    step_record.pop("dom_diff_over_line_limit", None)
-
-
-def backfill_run(run_dir: Path, *, rerender: bool = False) -> dict[str, Any]:
-    """Recompute stored diffs without a browser; rerendering is opt-in.
-
-    Existing model/full renders are preserved before an explicit rerender so the
-    evidence originally consumed by the action model is never silently replaced.
-    """
-    run_dir = run_dir.resolve()
-    if not run_dir.is_dir():
-        raise RunnerError(f"backfill run directory does not exist: {run_dir}")
-    manifest_path = run_dir / "manifest.json"
-    manifest: dict[str, Any] = {}
-    if manifest_path.exists():
-        loaded_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        if not isinstance(loaded_manifest, dict):
-            raise RunnerError(f"manifest is not a JSON object: {manifest_path}")
-        manifest = loaded_manifest
-    apply_diff_metadata(manifest)
-    current_renderer_versions = renderer_versions()
-    manifest.setdefault("model_input_renderer", {"status": "unknown_legacy"})
-
-    manifest_steps = {
-        int(item.get("step")): item
-        for item in manifest.get("steps", []) or []
-        if isinstance(item, dict) and isinstance(item.get("step"), int)
-    }
-    complete = 0
-    unsafe = 0
-    status_counts: Counter[str] = Counter()
-    rerendered_snapshots = 0
-    preserved_original_renders: list[str] = []
-    incomplete: list[str] = []
-    previous_diff_state_counts: Counter[str] = Counter()
-    previously_broken_repaired: list[dict[str, Any]] = []
-    semantic_zero_recomputed: list[str] = []
-    oversized_diffs: list[dict[str, Any]] = []
-    if rerender:
-        for snapshot_path in sorted(run_dir.rglob("dom.json")):
-            preserved = preserve_original_renders(snapshot_path)
-            preserved_original_renders.extend(
-                str(Path(path).relative_to(run_dir)) for path in preserved
-            )
-            render_stored_snapshot(snapshot_path)
-            rerendered_snapshots += 1
-    steps_root = run_dir / "steps"
-    step_dirs = sorted(path for path in steps_root.glob("step_*") if path.is_dir()) if steps_root.exists() else []
-    for step_dir in step_dirs:
-        before_path = step_dir / "before" / "dom.json"
-        after_path = step_dir / "after" / "dom.json"
-        if not before_path.exists() or not after_path.exists():
-            incomplete.append(str(step_dir.relative_to(run_dir)))
-            continue
-        diff_path = step_dir / "dom_diff.json"
-        previous_state = previous_dom_diff_state(diff_path)
-        previous_diff_state_counts[previous_state] += 1
-        action_path = step_dir / "action.json"
-        action_record: dict[str, Any] | None = None
-        action_type: str | None = None
-        if action_path.exists():
-            loaded_action = json.loads(action_path.read_text(encoding="utf-8"))
-            if isinstance(loaded_action, dict):
-                action_record = loaded_action
-                action_value = action_record.get("action")
-                if isinstance(action_value, dict):
-                    action_type = clean_dom_text(action_value.get("action")) or None
-                elif isinstance(action_value, str):
-                    action_type = clean_dom_text(action_value) or None
-                if action_type is None:
-                    action_type = clean_dom_text(action_record.get("action_type")) or None
-        record = write_dom_diff_files(
-            before_path, after_path, diff_path, action_type=action_type
-        )
-        complete += 1
-        status_counts[str(record["status"])] += 1
-        if record["status"] == "unsafe_node_identity":
-            unsafe += 1
-        artifact = record.get("artifact") if isinstance(record.get("artifact"), dict) else {}
-        if artifact.get("over_size_limit"):
-            oversized_diffs.append(
-                {
-                    "step": step_dir.name,
-                    "json_lines": int(artifact.get("json_lines") or 0),
-                    "json_bytes": int(artifact.get("json_bytes") or 0),
-                    "max_json_bytes": MAX_DOM_DIFF_JSON_BYTES,
-                }
-            )
-        try:
-            step_number = int(step_dir.name.removeprefix("step_"))
-        except ValueError:
-            step_number = -1
-        if previous_state in {
-            "missing",
-            "invalid_json",
-            "empty_payload",
-            "missing_native_diff",
-            "empty_diff_payload",
-            "invalid_change_count",
-        } and record["change_count"]:
-            previously_broken_repaired.append(
-                {"step": step_dir.name, **diff_report_summary(record)}
-            )
-        if previous_state == "semantic_zero":
-            semantic_zero_recomputed.append(step_dir.name)
-        if action_record is not None:
-            action_record.setdefault("model_input_renderer", {"status": "unknown_legacy"})
-            if rerender:
-                action_record["backfill_renderer"] = current_renderer_versions
-            update_step_diff_metadata(action_record, step_dir, run_dir, record)
-            write_json(action_path, action_record)
-        if step_number in manifest_steps:
-            manifest_steps[step_number].setdefault(
-                "model_input_renderer", {"status": "unknown_legacy"}
-            )
-            if rerender:
-                manifest_steps[step_number]["backfill_renderer"] = current_renderer_versions
-            update_step_diff_metadata(manifest_steps[step_number], step_dir, run_dir, record)
-
-    manifest["dom_diff_backfill"] = {
-        "completed_at": utc_now(),
-        "complete_steps": complete,
-        "unsafe_identity_steps": unsafe,
-        "status_counts": dict(status_counts),
-        "rerender_requested": rerender,
-        "rerendered_snapshots": rerendered_snapshots,
-        "backfill_renderer": current_renderer_versions if rerender else None,
-        "preserved_original_renders": preserved_original_renders,
-        "previous_diff_state_counts": dict(previous_diff_state_counts),
-        "incomplete_step_directories": incomplete,
-        "oversized_diffs": oversized_diffs,
-    }
-    if manifest_path.exists() or manifest:
-        write_json(manifest_path, manifest)
-    return {
-        "run_directory": str(run_dir),
-        "complete_steps_backfilled": complete,
-        "unsafe_identity_steps": unsafe,
-        "status_counts": dict(status_counts),
-        "rerender_requested": rerender,
-        "rerendered_snapshots": rerendered_snapshots,
-        "preserved_original_renders": preserved_original_renders,
-        "previous_diff_state_counts": dict(previous_diff_state_counts),
-        "incomplete_step_directories": incomplete,
-        "previously_broken_repaired": previously_broken_repaired,
-        "semantic_zero_recomputed": semantic_zero_recomputed,
-        "oversized_diffs": oversized_diffs,
-    }
 
 
 async def run(args: argparse.Namespace) -> int:
@@ -4083,6 +803,9 @@ async def run(args: argparse.Namespace) -> int:
             "novnc_url": args.novnc_url if args.allow_human_intervention else None,
             "count": 0,
         },
+        "post_action_language_redirect": bool(
+            args.post_action_language_redirect
+        ),
         "status": "running",
     }
     apply_diff_metadata(manifest)
@@ -4138,7 +861,7 @@ async def run(args: argparse.Namespace) -> int:
                 write_json(run_dir / "manifest.json", manifest)
 
             if args.capture_only:
-                current = await capture_bundle(
+                await capture_bundle(
                     cdp,
                     run_dir / "initial",
                     max_nodes=args.snapshot_max_nodes,
@@ -4216,14 +939,26 @@ async def run(args: argparse.Namespace) -> int:
                     )
                     if not rejection_reason:
                         break
-                    recent_actions.append(
-                        {
-                            "step": step,
-                            "model_turn": step,
-                            "rejected_action": browser_decision(decision),
-                            "reason": rejection_reason,
-                        }
-                    )
+                    rejected_decision = browser_decision(decision)
+                    rejected_entry: dict[str, Any] = {
+                        "step": step,
+                        "model_turn": step,
+                        "rejected_action": rejected_decision,
+                        "reason": rejection_reason,
+                    }
+                    if recent_actions:
+                        previous_rejection = recent_actions[-1]
+                        if (
+                            previous_rejection.get("rejected_action")
+                            == rejected_decision
+                            and previous_rejection.get("reason") == rejection_reason
+                        ):
+                            rejected_entry["repetition_note"] = (
+                                "This proposal and rejection reason are identical to "
+                                "the immediately preceding attempt; choose a different "
+                                "action that addresses the rejection reason."
+                            )
+                    recent_actions.append(rejected_entry)
                 else:
                     final = {
                         "status": "failure",
@@ -4306,6 +1041,7 @@ async def run(args: argparse.Namespace) -> int:
                         executable_coordinate_capture = {
                             "status": "error",
                             "source": "ChromiumRL.getAgentObservation",
+                            "coordinate_source": "get_agent_observation",
                             "phase": "before_action",
                             "error": f"{type(error).__name__}: {error}",
                         }
@@ -4416,12 +1152,14 @@ async def run(args: argparse.Namespace) -> int:
                 ):
                     previous_coordinate_capture = executable_coordinate_capture
                     try:
-                        fallback_capture = await recorded_action_coordinate(
-                            cdp,
-                            before,
+                        fallback_capture = structured_snapshot_action_coordinate(
+                            before.snapshot,
                             executable_action_target,
                         )
                         if isinstance(fallback_capture, dict):
+                            fallback_capture["coordinate_source"] = (
+                                "structured_snapshot_bounds"
+                            )
                             fallback_capture["phase"] = (
                                 "after_action_same_document_fallback"
                             )
@@ -4434,7 +1172,7 @@ async def run(args: argparse.Namespace) -> int:
                             executable_coordinate_capture["after_action_error"] = (
                                 f"{type(error).__name__}: {error}"
                             )
-                if not action_error:
+                if not action_error and args.post_action_language_redirect:
                     try:
                         _language_state, language_redirects = await ensure_english_page(
                             cdp,
@@ -4570,6 +1308,12 @@ async def run(args: argparse.Namespace) -> int:
                     ),
                     "before_document_language": before.document_language,
                     "after_document_language": after.document_language,
+                    "before_document_language_error": (
+                        before.document_language_error or None
+                    ),
+                    "after_document_language_error": (
+                        after.document_language_error or None
+                    ),
                 }
                 if human_intervention_record is not None:
                     step_record["human_intervention"] = {
@@ -4578,6 +1322,11 @@ async def run(args: argparse.Namespace) -> int:
                             (step_dir / "human_intervention.json").relative_to(run_dir)
                         ),
                     }
+                if language_redirects:
+                    manifest.setdefault("warnings", []).append(
+                        f"step {recorded_step}: compatibility-mode post-action "
+                        "language redirect made this diff cover more than one navigation"
+                    )
                 if action_verification.get("status") == "mismatch":
                     manifest.setdefault("warnings", []).append(
                         f"step {recorded_step}: requested control value was not verified in the after-action observation"
@@ -4594,19 +1343,25 @@ async def run(args: argparse.Namespace) -> int:
                 current = after
                 previous_dom_diff = diff_record
                 dom_diff_history.append(diff_record)
-                recent_actions.append(
-                    {
-                        "step": recorded_step,
-                        "model_turn": step,
-                        "action": executable_decision,
-                        "action_context": executable_action_context,
-                        "action_error": action_error or None,
-                        "action_succeeded": action_succeeded,
-                        "dom_diff_change_count": diff_record["change_count"],
-                        "action_verification": action_verification,
-                        "progress": progress,
-                    }
-                )
+                recent_action = {
+                    "step": recorded_step,
+                    "model_turn": step,
+                    "action": executable_decision,
+                    "action_context": executable_action_context,
+                    "action_error": action_error or None,
+                    "action_succeeded": action_succeeded,
+                    "dom_diff_change_count": diff_record["change_count"],
+                    "action_verification": action_verification,
+                    "progress": progress,
+                }
+                if (
+                    executable_decision["action"] == "request_human"
+                    and isinstance(action_result, dict)
+                ):
+                    recent_action["human_intervention_status"] = action_result.get(
+                        "status"
+                    )
+                recent_actions.append(recent_action)
                 if diff_record["status"] == "unsafe_node_identity":
                     final = {
                         "status": "failure",
@@ -4649,6 +1404,11 @@ async def run(args: argparse.Namespace) -> int:
             manifest["final"] = final
             trajectory_export = generate_trajectory_artifacts(run_dir)
             manifest["trajectory_export"] = trajectory_export
+            if trajectory_export.get("skipped"):
+                manifest.setdefault("warnings", []).append(
+                    "verifier trajectory export skipped "
+                    f"{len(trajectory_export['skipped'])} human intervention step(s)"
+                )
             if trajectory_export["status"] != "complete":
                 manifest.setdefault("warnings", []).append(
                     "verifier trajectory export is invalid; rerun the task "
@@ -4734,6 +1494,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=os.environ.get("RUNNER_NOVNC_URL", DEFAULT_NOVNC_URL),
         help="Local noVNC URL printed when human intervention is requested",
     )
+    language_redirect_group = parser.add_mutually_exclusive_group()
+    language_redirect_group.add_argument(
+        "--post-action-language-redirect",
+        dest="post_action_language_redirect",
+        action="store_true",
+        help=(
+            "Compatibility mode: permit an automatic English redirect between "
+            "an action and its after-state capture"
+        ),
+    )
+    language_redirect_group.add_argument(
+        "--no-post-action-language-redirect",
+        dest="post_action_language_redirect",
+        action="store_false",
+        help="Keep each recorded after-state limited to the executed browser action",
+    )
+    parser.set_defaults(post_action_language_redirect=False)
     parser.add_argument(
         "--keep-existing-tabs",
         action="store_true",
@@ -4814,6 +1591,13 @@ def main(argv: list[str] | None = None) -> int:
                 if not isinstance(manifest, dict):
                     raise RunnerError(f"manifest is not a JSON object: {manifest_path}")
                 manifest["trajectory_export"] = report
+                if report.get("skipped"):
+                    warning = (
+                        "verifier trajectory export skipped "
+                        f"{len(report['skipped'])} human intervention step(s)"
+                    )
+                    if warning not in manifest.setdefault("warnings", []):
+                        manifest["warnings"].append(warning)
                 if report["status"] == "complete":
                     manifest["warnings"] = [
                         warning

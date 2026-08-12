@@ -382,6 +382,7 @@ def build_runner_command(
     env_file: Path,
     allow_human_intervention: bool,
     novnc_url: str,
+    post_action_language_redirect: bool = False,
     model: str = "",
     max_steps: int = 80,
 ) -> list[str]:
@@ -410,6 +411,11 @@ def build_runner_command(
     ]
     if allow_human_intervention:
         command.append("--allow-human-intervention")
+    command.append(
+        "--post-action-language-redirect"
+        if post_action_language_redirect
+        else "--no-post-action-language-redirect"
+    )
     selected_model = model.strip() or str(definition.get("model") or "").strip()
     if selected_model:
         command.extend(["--model", selected_model])
@@ -442,6 +448,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--model", default="")
     parser.add_argument("--max-steps", type=int, default=80)
     parser.add_argument("--novnc-url")
+    language_redirect_group = parser.add_mutually_exclusive_group()
+    language_redirect_group.add_argument(
+        "--post-action-language-redirect",
+        dest="post_action_language_redirect",
+        action="store_true",
+        help="Enable compatibility-mode automatic locale redirects after actions",
+    )
+    language_redirect_group.add_argument(
+        "--no-post-action-language-redirect",
+        dest="post_action_language_redirect",
+        action="store_false",
+        help="Keep post-action locale redirects disabled (the default)",
+    )
+    parser.set_defaults(post_action_language_redirect=False)
     parser.add_argument(
         "--no-human-intervention",
         action="store_true",
@@ -511,6 +531,7 @@ def main(argv: list[str] | None = None) -> int:
         env_file=args.env_file.resolve(),
         allow_human_intervention=not args.no_human_intervention,
         novnc_url=novnc_url,
+        post_action_language_redirect=args.post_action_language_redirect,
         model=args.model,
         max_steps=args.max_steps,
     )
