@@ -18,9 +18,7 @@ from webeval.rubric_agent.dom_diff_text_compaction import (
 
 
 _TOKEN_RE = re.compile(r"[\w°%$€£¥]+(?:[-./'][\w°%$€£¥]+)*", re.UNICODE)
-_NUMBER_RE = re.compile(
-    r"(?<!\w)[+-]?(?:\d[\d,.'’]*)(?:[ \t]?(?:%|[A-Za-z°²³]+))?"
-)
+_NUMBER_RE = re.compile(r"(?<!\w)[+-]?(?:\d[\d,.'’]*)(?:[ \t]?(?:%|[A-Za-z°²³]+))?")
 _QUOTED_RE = re.compile(r'["“”]([^"“”]{2,160})["“”]')
 _IMPORTANT_RE = re.compile(
     r"\b(error|failed|warning|invalid|success|confirmed|complete|completed|"
@@ -79,9 +77,15 @@ def _terms_from_text(value: str) -> list[str]:
     normalized = _matching(value)
     tokens = _tokens(normalized)
     terms = list(tokens)
-    terms.extend(match.group(1).strip().casefold() for match in _QUOTED_RE.finditer(value))
-    terms.extend(match.group(0).strip().casefold() for match in _NUMBER_RE.finditer(value))
-    terms.extend(f"{tokens[index]} {tokens[index + 1]}" for index in range(len(tokens) - 1))
+    terms.extend(
+        match.group(1).strip().casefold() for match in _QUOTED_RE.finditer(value)
+    )
+    terms.extend(
+        match.group(0).strip().casefold() for match in _NUMBER_RE.finditer(value)
+    )
+    terms.extend(
+        f"{tokens[index]} {tokens[index + 1]}" for index in range(len(tokens) - 1)
+    )
     return terms
 
 
@@ -187,6 +191,7 @@ class PackedTextEvidence:
     omission_receipts: tuple[OmissionReceipt, ...]
     retrieval_omissions: tuple[OmissionReceipt, ...] = ()
     criterion_chunk_assignments: Mapping[int, tuple[str, ...]] | None = None
+    criterion_frame_assignments: Mapping[int, tuple[int, ...]] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -197,10 +202,20 @@ class PackedTextEvidence:
             "records_omitted_by_budget": self.records_omitted_by_budget,
             "budget_receipt": self.budget_receipt.to_dict(),
             "omission_receipts": [item.to_dict() for item in self.omission_receipts],
-            "retrieval_omissions": [item.to_dict() for item in self.retrieval_omissions],
+            "retrieval_omissions": [
+                item.to_dict() for item in self.retrieval_omissions
+            ],
             "criterion_chunk_assignments": {
                 str(key): list(value)
-                for key, value in sorted((self.criterion_chunk_assignments or {}).items())
+                for key, value in sorted(
+                    (self.criterion_chunk_assignments or {}).items()
+                )
+            },
+            "criterion_frame_assignments": {
+                str(key): list(value)
+                for key, value in sorted(
+                    (self.criterion_frame_assignments or {}).items()
+                )
             },
         }
 
@@ -216,6 +231,40 @@ class _Candidate:
     stable_order: tuple[Any, ...]
 
 
+def _criterion_frame_assignments(
+    selected: Sequence[_Candidate],
+    criterion_indices: Iterable[int],
+    candidate_frame_indices: Mapping[str, set[int]],
+) -> dict[int, tuple[int, ...]]:
+    """Project one final selected chunk set into criterion citation allowlists."""
+    return {
+        criterion_idx: tuple(
+            sorted(
+                {
+                    frame_idx
+                    for item in selected
+                    if criterion_idx in item.criterion_indices
+                    for frame_idx in candidate_frame_indices.get(item.item_id, ())
+                }
+            )
+        )
+        for criterion_idx in criterion_indices
+    }
+
+
+def _allowed_frames_lines(
+    assignments: Mapping[int, Sequence[int]],
+) -> tuple[str, ...]:
+    """Render only criterion IDs and their zero-based FRAME citation IDs."""
+    return (
+        "ALLOWED FRAMES",
+        *(
+            f"C{criterion_idx}=[{','.join(str(index) for index in indices)}]"
+            for criterion_idx, indices in sorted(assignments.items())
+        ),
+    )
+
+
 def build_text_retrieval_terms(
     *,
     task: str,
@@ -225,7 +274,10 @@ def build_text_retrieval_terms(
 ) -> list[str]:
     values = [task, predicted_output]
     for item in rubric_items:
-        values.extend(str(item.get(key) or "") for key in ("criterion", "description", "condition"))
+        values.extend(
+            str(item.get(key) or "")
+            for key in ("criterion", "description", "condition")
+        )
     output: list[str] = []
     seen: set[str] = set()
     for value in values:
@@ -294,8 +346,18 @@ def build_criterion_query(
 
 def _frame_search_text(frame: CompactDOMDiffTextFrame) -> str:
     return "\n".join(
-        [frame.before_url, frame.after_url, frame.status, *(chunk.search_text for chunk in frame.chunks)]
+        [
+            frame.before_url,
+            frame.after_url,
+            frame.status,
+            *(chunk.search_text for chunk in frame.chunks),
+        ]
     )
+
+
+def _frame_step_header(frame_idx: int, frame: CompactDOMDiffTextFrame) -> str:
+    """Render the validator citation ID separately from chronology."""
+    return f"FRAME {frame_idx} | {step_header(frame)}"
 
 
 def _score_text(search_text: str, query: CriterionQuery) -> tuple[int, tuple[str, ...]]:
@@ -315,7 +377,10 @@ def _score_text(search_text: str, query: CriterionQuery) -> tuple[int, tuple[str
         reasons.append("error_or_confirmation")
     score = min(
         10,
-        overlap + min(4, phrase_hits * 2) + min(5, number_hits * 3) + (2 if "error_or_confirmation" in reasons else 0),
+        overlap
+        + min(4, phrase_hits * 2)
+        + min(5, number_hits * 3)
+        + (2 if "error_or_confirmation" in reasons else 0),
     )
     return int(score), tuple(reasons)
 
@@ -400,11 +465,15 @@ def build_selection_receipts(
                 frame_reasons = (*frame_reasons, "document_replaced")
             if any(record.record.operation == "changed" for record in frame.records):
                 frame_reasons = (*frame_reasons, "semantic_state_change")
-            reasons.extend(f"step_{frame.action_ordinal}:{reason}" for reason in frame_reasons)
+            reasons.extend(
+                f"step_{frame.action_ordinal}:{reason}" for reason in frame_reasons
+            )
         receipts.append(
             SelectionReceipt(
                 criterion_idx=criterion_idx,
-                selected_steps=tuple(frames[index].action_ordinal for index in selected),
+                selected_steps=tuple(
+                    frames[index].action_ordinal for index in selected
+                ),
                 selected_frame_indices=tuple(selected),
                 scores=tuple(
                     int(relevance_scores.get(index, {}).get(criterion_idx, 0))
@@ -432,7 +501,9 @@ def _safe_evidence_budget(
     )
     if any(value < 0 for value in values) or model_context_window_tokens <= 0:
         raise ValueError("Context and reserve token values must be non-negative")
-    safe_prompt = model_context_window_tokens - completion_reserve_tokens - prompt_headroom_tokens
+    safe_prompt = (
+        model_context_window_tokens - completion_reserve_tokens - prompt_headroom_tokens
+    )
     evidence = safe_prompt - fixed_prompt_tokens
     if safe_prompt <= 0 or evidence <= 0:
         raise ValueError("Fixed prompt/reserves leave no safe evidence capacity")
@@ -452,7 +523,9 @@ def _adaptive_pack(
     fixed_prompt_tokens: int,
     allow_budget_expansion: bool,
     model: str,
-) -> tuple[str, tuple[_Candidate, ...], tuple[OmissionReceipt, ...], AdaptiveBudgetReceipt]:
+) -> tuple[
+    str, tuple[_Candidate, ...], tuple[OmissionReceipt, ...], AdaptiveBudgetReceipt
+]:
     if starting_target_tokens <= 0:
         raise ValueError("starting_target_tokens must be positive")
     estimator = TokenEstimator(model)
@@ -499,7 +572,9 @@ def _adaptive_pack(
             omitted.append(removed)
             text = render(selected, True)
         if estimator.count(text) > max_evidence:
-            raise ValueError(f"{stage} mandatory context-limit warning cannot fit safely")
+            raise ValueError(
+                f"{stage} mandatory context-limit warning cannot fit safely"
+            )
 
     selected_ids = {item.item_id for item in selected}
     ranked = {item.item_id: index for index, item in enumerate(ordered, start=1)}
@@ -531,7 +606,9 @@ def _adaptive_pack(
         max_evidence_tokens=max_evidence,
         effective_evidence_tokens=included_tokens,
         expansion_tokens=expansion,
-        expansion_reason=("semantic_evidence_exceeded_starting_target" if expansion else None),
+        expansion_reason=(
+            "semantic_evidence_exceeded_starting_target" if expansion else None
+        ),
         included_estimated_tokens=included_tokens,
         omitted_estimated_tokens=omitted_tokens,
         overflow=bool(omission_receipts),
@@ -583,15 +660,23 @@ def render_batched_relevance_evidence(
         "ALL ACTION-ALIGNED REFINED DOM-DIFF TEXT FRAMES",
         *(
             line
-            for frame in frames
-            for line in (step_header(frame), page_line(frame), coverage_line(frame))
+            for frame_idx, frame in enumerate(frames)
+            for line in (
+                _frame_step_header(frame_idx, frame),
+                page_line(frame),
+                coverage_line(frame),
+            )
         ),
     ]
-    queries = _global_queries(task=task, rubric=rubric, predicted_output=predicted_output)
+    queries = _global_queries(
+        task=task, rubric=rubric, predicted_output=predicted_output
+    )
     first_records: dict[tuple[Any, ...], tuple[CompactChunk, ...]] = {}
     for frame in frames:
         for compact_record in frame.records:
-            first_records.setdefault(compact_record.record.semantic_key(), compact_record.chunks)
+            first_records.setdefault(
+                compact_record.record.semantic_key(), compact_record.chunks
+            )
     candidates: list[_Candidate] = []
     for ledger_record in ledger.records:
         steps = ",".join(str(step) for step in ledger_record.occurs_at_steps)
@@ -607,7 +692,9 @@ def render_batched_relevance_evidence(
             ledger_chunk = replace(chunk, source_refs=ledger_refs)
             scores = [_score_text(chunk.search_text, query) for query in queries]
             score = max((value[0] for value in scores), default=0)
-            reasons = tuple(dict.fromkeys(reason for _, found in scores for reason in found))
+            reasons = tuple(
+                dict.fromkeys(reason for _, found in scores for reason in found)
+            )
             if chunk.operation in {"navigation", "changed"}:
                 score = max(score, chunk.priority)
                 reasons = (*reasons, "semantic_hard_retention")
@@ -731,7 +818,9 @@ def render_packed_analysis_evidence(
     model: str = "gpt-5.2",
 ) -> PackedTextEvidence:
     selected_indices = tuple(
-        sorted({frame_idx for indices in grouped_frames.values() for frame_idx in indices})
+        sorted(
+            {frame_idx for indices in grouped_frames.values() for frame_idx in indices}
+        )
     )
     mandatory = [
         "SELECTED REFINED DOM-DIFF TEXT EVIDENCE LIBRARY",
@@ -740,7 +829,7 @@ def render_packed_analysis_evidence(
             line
             for index in selected_indices
             for line in (
-                step_header(frames[index]),
+                _frame_step_header(index, frames[index]),
                 page_line(frames[index]),
                 coverage_line(frames[index]),
             )
@@ -756,6 +845,7 @@ def render_packed_analysis_evidence(
         for criterion_idx in sorted(grouped_frames)
     }
     candidate_by_id: dict[str, _Candidate] = {}
+    candidate_frame_indices: dict[str, set[int]] = {}
     retrieval_omissions: list[OmissionReceipt] = []
     criterion_candidates: dict[int, list[str]] = {index: [] for index in grouped_frames}
     estimator = TokenEstimator(model)
@@ -785,11 +875,7 @@ def render_packed_analysis_evidence(
         ]
         # A measured three-record deterministic floor prevents empty criterion
         # context without reviving the old eight-record over-selection.
-        retained = (
-            qualified
-            if qualified
-            else ranked[:DETERMINISTIC_FALLBACK_RECORDS]
-        )
+        retained = qualified if qualified else ranked[:DETERMINISTIC_FALLBACK_RECORDS]
         retained_ids = {chunk.chunk_id for _, chunk, _ in retained}
         for rank, (score, chunk, reasons) in enumerate(ranked, start=1):
             if chunk.chunk_id not in retained_ids:
@@ -811,6 +897,7 @@ def render_packed_analysis_evidence(
                 )
                 continue
             criterion_candidates[criterion_idx].append(chunk.chunk_id)
+            candidate_frame_indices.setdefault(chunk.chunk_id, set()).add(frame_idx)
             existing = candidate_by_id.get(chunk.chunk_id)
             if existing is None:
                 candidate_by_id[chunk.chunk_id] = _Candidate(
@@ -839,9 +926,24 @@ def render_packed_analysis_evidence(
                     stable_order=existing.stable_order,
                 )
 
-    def render(selected: Sequence[_Candidate], overflow: bool) -> str:
+    def render(
+        selected: Sequence[_Candidate],
+        overflow: bool,
+        *,
+        frame_assignments: Mapping[int, Sequence[int]] | None = None,
+    ) -> str:
+        visible_assignments = (
+            frame_assignments
+            if frame_assignments is not None
+            else _criterion_frame_assignments(
+                selected,
+                criterion_candidates,
+                candidate_frame_indices,
+            )
+        )
         lines = [
             *mandatory,
+            *_allowed_frames_lines(visible_assignments),
             *(
                 f"{render_criterion_assignment_tag(item.criterion_indices)} {item.text}"
                 for item in selected
@@ -870,12 +972,24 @@ def render_packed_analysis_evidence(
     selected_ids = {item.item_id for item in selected}
     assignments = {
         criterion_idx: tuple(
-            chunk_id
-            for chunk_id in chunk_ids
-            if chunk_id in selected_ids
+            chunk_id for chunk_id in chunk_ids if chunk_id in selected_ids
         )
         for criterion_idx, chunk_ids in criterion_candidates.items()
     }
+    # Compute the final mapping exactly once from the post-pack selected set.
+    # This same object feeds both the model-visible block and the validator.
+    frame_assignments = _criterion_frame_assignments(
+        selected,
+        criterion_candidates,
+        candidate_frame_indices,
+    )
+    text = render(
+        selected,
+        bool(omissions),
+        frame_assignments=frame_assignments,
+    )
+    if estimator.count(text) != budget.included_estimated_tokens:
+        raise RuntimeError("Final ALLOWED FRAMES rendering drifted from adaptive packing")
     return PackedTextEvidence(
         text=text,
         estimated_tokens=estimator.count(text),
@@ -886,4 +1000,5 @@ def render_packed_analysis_evidence(
         omission_receipts=omissions,
         retrieval_omissions=tuple(retrieval_omissions),
         criterion_chunk_assignments=assignments,
+        criterion_frame_assignments=frame_assignments,
     )

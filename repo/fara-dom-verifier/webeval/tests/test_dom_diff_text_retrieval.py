@@ -77,6 +77,23 @@ def _rubric():
     }
 
 
+def _displayed_allowed_frames(
+    text: str, criterion_count: int
+) -> dict[int, tuple[int, ...]]:
+    lines = text.splitlines()
+    start = lines.index("ALLOWED FRAMES") + 1
+    output: dict[int, tuple[int, ...]] = {}
+    for line in lines[start : start + criterion_count]:
+        criterion, raw_values = line.split("=", 1)
+        assert criterion.startswith("C")
+        assert raw_values.startswith("[") and raw_values.endswith("]")
+        values = raw_values[1:-1]
+        output[int(criterion[1:])] = tuple(
+            int(value) for value in values.split(",") if value
+        )
+    return output
+
+
 def test_terms_preserve_phrases_numbers_dates_and_units() -> None:
     terms = build_text_retrieval_terms(
         task="Report a price in USD and release date",
@@ -126,7 +143,9 @@ def test_local_relevance_is_stable_and_has_all_criteria() -> None:
     )
     assert first == second
     assert list(first) == [0, 1, 2]
-    assert all({0, 1, "screenshot_idx", "evidence_idx"} == set(row) for row in first.values())
+    assert all(
+        {0, 1, "screenshot_idx", "evidence_idx"} == set(row) for row in first.values()
+    )
 
 
 def test_selection_receipt_preserves_top_k_steps() -> None:
@@ -139,7 +158,11 @@ def test_selection_receipt_preserves_top_k_steps() -> None:
     )
     grouped = {0: [0, 1], 1: [1]}
     receipts = build_selection_receipts(
-        frames, grouped, scores, _rubric(), predicted_output="Microsoft Studios 7/6/2022"
+        frames,
+        grouped,
+        scores,
+        _rubric(),
+        predicted_output="Microsoft Studios 7/6/2022",
     )
     assert receipts[0].selected_frame_indices == (0, 1)
     assert receipts[0].selected_steps == (1, 2)
@@ -162,7 +185,9 @@ def test_soft_starting_target_expands_without_context_omissions() -> None:
     assert not packed.budget_receipt.overflow
     assert not packed.omission_receipts
     assert packed.estimated_tokens <= packed.budget_receipt.max_evidence_tokens
-    assert all("starting_target" not in item.reason for item in packed.omission_receipts)
+    assert all(
+        "starting_target" not in item.reason for item in packed.omission_receipts
+    )
 
 
 def test_disabling_expansion_fails_instead_of_dropping_for_soft_cap() -> None:
@@ -233,7 +258,9 @@ def test_ledger_context_receipts_keep_every_cross_step_occurrence() -> None:
         source_line_sha256="two",
     )
     record2 = replace(record1, record_id="s2r1", source_spans=(span2,))
-    frame1 = compact_text_frame(replace(source, records=(record1,)), max_chunk_tokens=40)
+    frame1 = compact_text_frame(
+        replace(source, records=(record1,)), max_chunk_tokens=40
+    )
     frame2 = compact_text_frame(
         replace(
             source,
@@ -246,7 +273,11 @@ def test_ledger_context_receipts_keep_every_cross_step_occurrence() -> None:
     )
     packed = render_batched_relevance_evidence(
         [frame1, frame2],
-        {"items": [{"criterion": "criterion fact", "description": "exact", "max_points": 1}]},
+        {
+            "items": [
+                {"criterion": "criterion fact", "description": "exact", "max_points": 1}
+            ]
+        },
         task="Report criterion facts",
         predicted_output="",
         starting_target_tokens=20,
@@ -257,7 +288,9 @@ def test_ledger_context_receipts_keep_every_cross_step_occurrence() -> None:
     )
     ledger_omissions = list(packed.omission_receipts)
     assert ledger_omissions
-    assert all({"s1:L20", "s2:L20"} <= set(item.source_refs) for item in ledger_omissions)
+    assert all(
+        {"s1:L20", "s2:L20"} <= set(item.source_refs) for item in ledger_omissions
+    )
 
 
 def test_mandatory_envelope_overflow_fails_before_model_call() -> None:
@@ -289,10 +322,22 @@ def test_packed_analysis_is_criterion_specific_and_auditable() -> None:
         fixed_prompt_tokens=2000,
     )
     assert packed.frame_indices == (0, 1, 2)
+    assert "FRAME 0 | STEP 1 " in packed.text
+    assert "FRAME 1 | STEP 2 " in packed.text
+    assert "FRAME 2 | STEP 3 " in packed.text
+    assert packed.criterion_frame_assignments == {
+        0: (2,),
+        1: (1,),
+    }
     assert set(packed.criterion_chunk_assignments) == {0, 1}
     assert packed.criterion_chunk_assignments[0]
     assert packed.criterion_chunk_assignments[1]
-    assert "CRITERION EVIDENCE ASSIGNMENTS" not in packed.text
+    assert _displayed_allowed_frames(packed.text, 2) == dict(
+        packed.criterion_frame_assignments
+    )
+    assert "ALLOWED FRAMES\nC0=[2]\nC1=[1]" in packed.text
+    allowed_block = packed.text.split("ALLOWED FRAMES\n", 1)[1].splitlines()[:2]
+    assert all("STEP" not in line and "s1r" not in line and "L" not in line for line in allowed_block)
     observed: dict[int, list[str]] = {0: [], 1: []}
     for line in packed.text.splitlines():
         if not line.startswith("C["):
@@ -304,9 +349,37 @@ def test_packed_analysis_is_criterion_specific_and_auditable() -> None:
     assert {
         key: tuple(value) for key, value in observed.items()
     } == packed.criterion_chunk_assignments
-    assert {
-        item.reason for item in packed.retrieval_omissions
-    } <= {"criterion_not_retrieved", "below_relevance_threshold"}
+    assert {item.reason for item in packed.retrieval_omissions} <= {
+        "criterion_not_retrieved",
+        "below_relevance_threshold",
+    }
+
+
+def test_context_omitted_frames_are_removed_from_final_criterion_allowlists() -> None:
+    frames = _frames()
+    packed = render_packed_analysis_evidence(
+        frames,
+        {0: [0, 2], 1: [1]},
+        _rubric(),
+        predicted_output="Microsoft Studios 7/6/2022",
+        starting_target_tokens=10,
+        model_context_window_tokens=500,
+        completion_reserve_tokens=100,
+        prompt_headroom_tokens=50,
+        fixed_prompt_tokens=100,
+    )
+    assert packed.budget_receipt.overflow
+    assert packed.omission_receipts
+    assert packed.criterion_frame_assignments == {
+        0: (),
+        1: (1,),
+    }
+    assert _displayed_allowed_frames(packed.text, 2) == {
+        0: (),
+        1: (1,),
+    }
+    assert "ALLOWED FRAMES\nC0=[]\nC1=[1]" in packed.text
+    assert all(item.reason == "context_limit" for item in packed.omission_receipts)
 
 
 def test_criterion_assignment_tag_round_trips_without_lexical_ranges() -> None:
@@ -467,8 +540,13 @@ def test_five_frame_ledger_preserves_headers_and_discrete_occurrences() -> None:
         prompt_headroom_tokens=100,
         fixed_prompt_tokens=500,
     )
-    assert sum(line.startswith("STEP ") for line in packed.text.splitlines()) == 5
-    assert "@1,2,3,4,5 [s1r1] +DOC \"Shared chronological fact\"" in packed.text
+    headers = [line for line in packed.text.splitlines() if line.startswith("FRAME ")]
+    assert len(headers) == 5
+    assert all(
+        header.startswith(f"FRAME {frame_idx} | STEP {frame_idx + 1} ")
+        for frame_idx, header in enumerate(headers)
+    )
+    assert '@1,2,3,4,5 [s1r1] +DOC "Shared chronological fact"' in packed.text
 
 
 def test_budget_inputs_change_receipts() -> None:
@@ -482,12 +560,8 @@ def test_budget_inputs_change_receipts() -> None:
         prompt_headroom_tokens=500,
         fixed_prompt_tokens=1000,
     )
-    first = render_batched_relevance_evidence(
-        **common, starting_target_tokens=100
-    )
-    second = render_batched_relevance_evidence(
-        **common, starting_target_tokens=200
-    )
+    first = render_batched_relevance_evidence(**common, starting_target_tokens=100)
+    second = render_batched_relevance_evidence(**common, starting_target_tokens=200)
     assert first.budget_receipt.starting_target_tokens == 100
     assert second.budget_receipt.starting_target_tokens == 200
     assert first.budget_receipt.to_dict() != second.budget_receipt.to_dict()

@@ -88,6 +88,8 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
         self._text_runtime_metrics = {
             "pipeline": "parse_normalize_compact_retrieve_pack",
             "requests": [],
+            "relevance_validation_failures": [],
+            "packed_analysis_validation_failures": [],
             "selection_receipts": [],
             "retrieval_term_count": 0,
             "audit_receipts": [],
@@ -127,6 +129,12 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
                         (evidence.criterion_chunk_assignments or {}).items()
                     )
                 },
+                "criterion_frame_assignments": {
+                    str(key): list(value)
+                    for key, value in sorted(
+                        (evidence.criterion_frame_assignments or {}).items()
+                    )
+                },
             }
         )
 
@@ -159,14 +167,17 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
             raw_tokens = estimator.count(
                 Path(frame.text_path).read_text(encoding="utf-8", errors="strict")
             )
-            frame_diagnostics.append({
-                "step": frame.action_ordinal,
-                "starting_target_tokens": self._frame_starting_tokens,
-                "raw_evidence_estimated_tokens": raw_tokens,
-                "full_compact_estimated_tokens": compact_tokens,
-                "starting_target_exceeded": compact_tokens > self._frame_starting_tokens,
-                "records_or_chunks_omitted_for_starting_target": 0,
-            })
+            frame_diagnostics.append(
+                {
+                    "step": frame.action_ordinal,
+                    "starting_target_tokens": self._frame_starting_tokens,
+                    "raw_evidence_estimated_tokens": raw_tokens,
+                    "full_compact_estimated_tokens": compact_tokens,
+                    "starting_target_exceeded": compact_tokens
+                    > self._frame_starting_tokens,
+                    "records_or_chunks_omitted_for_starting_target": 0,
+                }
+            )
         self._text_runtime_metrics["frame_budget_diagnostics"] = frame_diagnostics
         self._text_runtime_metrics["raw_evidence_estimated_tokens"] = sum(
             item["raw_evidence_estimated_tokens"] for item in frame_diagnostics
@@ -198,7 +209,9 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
             }
             for frame in frames
         ]
-        return json.dumps(rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return json.dumps(
+            rows, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
 
     async def _generate_dom_retrieval_terms(
         self,
@@ -308,10 +321,12 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
                 validation_attempt=attempt,
                 unit="all_frames",
             )
+            raw_response: str | None = None
             try:
-                raw = json.loads(
-                    await self._call_llm(messages, self._gpt5_client, json_output=True)
+                raw_response = await self._call_llm(
+                    messages, self._gpt5_client, json_output=True
                 )
+                raw = json.loads(raw_response)
                 rows = raw.get("frames") if isinstance(raw, dict) else None
                 if not isinstance(rows, list) or len(rows) != len(frames):
                     raise ValueError(f"Expected {len(frames)} relevance rows")
@@ -327,11 +342,22 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
                         if not 0 <= value <= 10:
                             raise ValueError("Relevance score outside [0,10]")
                         normalized[criterion_idx] = value
-                    normalized.update(screenshot_idx=expected_idx, evidence_idx=expected_idx)
+                    normalized.update(
+                        screenshot_idx=expected_idx, evidence_idx=expected_idx
+                    )
                     result[expected_idx] = normalized
                 return result
             except Exception as exc:
                 last_error = exc
+                self._text_runtime_metrics.setdefault(
+                    "relevance_validation_failures", []
+                ).append(
+                    {
+                        "validation_attempt": attempt,
+                        "raw_rejected_response": raw_response,
+                        "validation_error": str(exc),
+                    }
+                )
                 messages.append(
                     {
                         "role": "user",
@@ -427,6 +453,16 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
         )
         if estimator.count(prompt) > packed.budget_receipt.safe_prompt_limit_tokens:
             raise ValueError("Packed refined-text analysis exceeds safe model context")
+        final_allowed_by_criterion = {
+            criterion_idx: list(
+                (packed.criterion_frame_assignments or {}).get(criterion_idx, ())
+            )
+            for criterion_idx in criterion_indices
+        }
+        self._text_runtime_metrics["final_criterion_frame_assignments"] = {
+            str(key): list(value)
+            for key, value in sorted(final_allowed_by_criterion.items())
+        }
         messages = self.DEFAULT_SYSTEM_MESSAGES + [{"role": "user", "content": prompt}]
         last_error: Exception | None = None
         for attempt in range(1, self.config.max_iters + 1):
@@ -437,15 +473,71 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
                 validation_attempt=attempt,
                 unit="selected_frames",
             )
+            raw_response: str | None = None
+            validation_criterion_idx: int | None = None
+            validation_allowed_indices: list[int] = []
+            validation_returned_indices: list[int] = []
+            validation_rejected_indices: list[int] = []
+            citation_failures: list[dict[str, Any]] = []
             try:
-                raw = json.loads(
-                    await self._call_llm(messages, self._gpt5_client, json_output=True)
+                raw_response = await self._call_llm(
+                    messages, self._gpt5_client, json_output=True
                 )
-                analyses = self._normalize_batched_analysis_response(raw, criterion_indices)
+                raw = json.loads(raw_response)
+                analyses = self._normalize_batched_analysis_response(
+                    raw, criterion_indices
+                )
                 if analyses is None or len(analyses) != len(criterion_indices):
                     raise ValueError("Wrong packed analysis count")
+                normalized_citations: dict[int, list[int]] = {}
+                for analysis, expected_idx in zip(analyses, criterion_indices):
+                    validation_criterion_idx = expected_idx
+                    returned_idx = analysis.get("criterion_idx", expected_idx)
+                    if returned_idx != expected_idx:
+                        raise ValueError(
+                            f"Expected criterion_idx={expected_idx}, got {returned_idx}"
+                        )
+                    status = str(analysis.get("evidence_status") or "")
+                    if status not in _EVIDENCE_STATUSES:
+                        raise ValueError(f"Invalid evidence status {status!r}")
+                    allowed = final_allowed_by_criterion[expected_idx]
+                    returned = analysis.get("evidence_indices", allowed)
+                    if not isinstance(returned, list):
+                        raise ValueError("evidence_indices must be a list")
+                    normalized_indices = [int(index) for index in returned]
+                    rejected_indices = sorted(
+                        {index for index in normalized_indices if index not in allowed}
+                    )
+                    normalized_citations[expected_idx] = normalized_indices
+                    if rejected_indices:
+                        validation_error = (
+                            f"Criterion {expected_idx} may cite only FRAME indices "
+                            f"{allowed}; rejected FRAME indices {rejected_indices}"
+                        )
+                        citation_failures.append(
+                            {
+                                "validation_attempt": attempt,
+                                "criterion_idx": expected_idx,
+                                "criterion": str(
+                                    rubric["items"][expected_idx].get("criterion") or ""
+                                ),
+                                "returned_indices": list(normalized_indices),
+                                "rejected_indices": rejected_indices,
+                                "allowed_indices": list(allowed),
+                                "raw_rejected_response": raw_response,
+                                "validation_error": validation_error,
+                            }
+                        )
+                if citation_failures:
+                    raise ValueError(
+                        ". ".join(
+                            failure["validation_error"]
+                            for failure in citation_failures
+                        )
+                    )
                 result: Dict[int, List[Dict]] = {idx: [] for idx in criterion_indices}
                 for analysis, expected_idx in zip(analyses, criterion_indices):
+                    validation_criterion_idx = expected_idx
                     returned_idx = analysis.pop("criterion_idx", expected_idx)
                     if returned_idx != expected_idx:
                         raise ValueError(
@@ -454,13 +546,12 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
                     status = str(analysis.get("evidence_status") or "")
                     if status not in _EVIDENCE_STATUSES:
                         raise ValueError(f"Invalid evidence status {status!r}")
-                    allowed = filtered.get(expected_idx, [])
-                    returned = analysis.pop("evidence_indices", allowed)
-                    if not isinstance(returned, list):
-                        raise ValueError("evidence_indices must be a list")
-                    normalized_indices = [int(index) for index in returned]
-                    if any(index not in allowed for index in normalized_indices):
-                        raise ValueError("Packed analysis cited an unassigned frame")
+                    allowed = final_allowed_by_criterion[expected_idx]
+                    validation_allowed_indices = list(allowed)
+                    analysis.pop("evidence_indices", None)
+                    normalized_indices = normalized_citations[expected_idx]
+                    validation_returned_indices = list(normalized_indices)
+                    validation_rejected_indices = []
                     if not normalized_indices:
                         normalized_indices = list(allowed)
                     frame_idx = normalized_indices[0] if normalized_indices else 0
@@ -478,18 +569,45 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
                 return result
             except Exception as exc:
                 last_error = exc
+                if citation_failures:
+                    self._text_runtime_metrics.setdefault(
+                        "packed_analysis_validation_failures", []
+                    ).extend(citation_failures)
+                else:
+                    criterion_text = None
+                    if validation_criterion_idx is not None:
+                        criterion_text = str(
+                            rubric["items"][validation_criterion_idx].get("criterion")
+                            or ""
+                        )
+                    self._text_runtime_metrics.setdefault(
+                        "packed_analysis_validation_failures", []
+                    ).append(
+                        {
+                            "validation_attempt": attempt,
+                            "criterion_idx": validation_criterion_idx,
+                            "criterion": criterion_text,
+                            "returned_indices": validation_returned_indices,
+                            "rejected_indices": validation_rejected_indices,
+                            "allowed_indices": validation_allowed_indices,
+                            "raw_rejected_response": raw_response,
+                            "validation_error": str(exc),
+                        }
+                    )
                 messages.append(
                     {
                         "role": "user",
                         "content": (
-                            f"Error: {exc}. Return one valid analysis for every criterion."
+                            f"Error: {exc}. evidence_indices must use displayed FRAME "
+                            "values only, never STEP values. Return one valid analysis "
+                            "for every criterion."
                         ),
                     }
                 )
         logger.warning("Packed refined-text analysis failed: %s", last_error)
         result = {idx: [] for idx in criterion_indices}
         for criterion_idx in criterion_indices:
-            allowed = filtered.get(criterion_idx, [])
+            allowed = final_allowed_by_criterion[criterion_idx]
             frame_idx = allowed[0] if allowed else 0
             step = frames[frame_idx].action_ordinal if frames else 0
             result[criterion_idx].append(
@@ -530,9 +648,16 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
             )
             analyses = evidence_by_criterion.get(criterion_idx, [])
             if not analyses:
-                lines.extend(["No refined DOM-diff text evidence was selected for this criterion.", ""])
+                lines.extend(
+                    [
+                        "No refined DOM-diff text evidence was selected for this criterion.",
+                        "",
+                    ]
+                )
                 continue
-            for analysis in sorted(analyses, key=lambda item: item.get("evidence_idx", 0)):
+            for analysis in sorted(
+                analyses, key=lambda item: item.get("evidence_idx", 0)
+            ):
                 frame_idx = int(analysis.get("evidence_idx", 0))
                 steps = analysis.get("steps") or [frame_idx + 1]
                 lines.extend(

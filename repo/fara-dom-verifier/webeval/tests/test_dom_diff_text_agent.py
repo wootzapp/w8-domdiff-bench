@@ -3,10 +3,12 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
+import webeval.rubric_agent.dom_diff_text_agent as dom_diff_text_agent_module
 from webeval.rubric_agent.dom_diff_agent import DOMDiffMMRubricAgent
 from webeval.rubric_agent.dom_diff_text_agent import DOMDiffTextMMRubricAgent
 from webeval.rubric_agent.dom_diff_text_compaction import compact_text_frame
@@ -71,7 +73,9 @@ def _compact_frame():
 
 def test_agent_is_thin_and_inherits_shared_downstream_orchestration() -> None:
     assert "_generate_reply" not in DOMDiffTextMMRubricAgent.__dict__
-    assert DOMDiffTextMMRubricAgent._generate_reply is DOMDiffMMRubricAgent._generate_reply
+    assert (
+        DOMDiffTextMMRubricAgent._generate_reply is DOMDiffMMRubricAgent._generate_reply
+    )
     expected_hooks = {
         "_load_dom_evidence",
         "_compact_dom_trajectory_metadata",
@@ -101,12 +105,14 @@ def test_load_records_soft_frame_exceedance_without_omission() -> None:
     assert diagnostic["starting_target_exceeded"] is True
     assert diagnostic["records_or_chunks_omitted_for_starting_target"] == 0
     assert diagnostic["raw_evidence_estimated_tokens"] > 0
-    assert agent.text_runtime_metrics()["raw_evidence_estimated_tokens"] == diagnostic[
-        "raw_evidence_estimated_tokens"
-    ]
-    assert agent.text_runtime_metrics()["model_compact_estimated_tokens"] == diagnostic[
-        "full_compact_estimated_tokens"
-    ]
+    assert (
+        agent.text_runtime_metrics()["raw_evidence_estimated_tokens"]
+        == diagnostic["raw_evidence_estimated_tokens"]
+    )
+    assert (
+        agent.text_runtime_metrics()["model_compact_estimated_tokens"]
+        == diagnostic["full_compact_estimated_tokens"]
+    )
     metadata = agent._compact_dom_trajectory_metadata(frames, limit=1)
     assert "source_records" not in metadata
     assert "coverage_warnings" in metadata
@@ -133,14 +139,11 @@ def test_global_dom_top_k_cannot_drop_chronological_steps() -> None:
 def test_batched_relevance_retries_then_returns_all_frame_rows() -> None:
     agent = _agent()
     agent._reset_text_metrics()
+    rejected_response = json.dumps({"frames": []})
     responses = [
-        json.dumps({"frames": []}),
+        rejected_response,
         json.dumps(
-            {
-                "frames": [
-                    {"evidence_idx": 0, "criterion_0": 10, "criterion_1": 9}
-                ]
-            }
+            {"frames": [{"evidence_idx": 0, "criterion_0": 10, "criterion_1": 9}]}
         ),
     ]
     prompts: list[str] = []
@@ -159,6 +162,8 @@ def test_batched_relevance_retries_then_returns_all_frame_rows() -> None:
     assert len(prompts) == 2
     assert result[0][0] == 10 and result[0][1] == 9
     assert "refined DOM-diff text" in prompts[0]
+    assert "FRAME 0 | STEP 1 " in prompts[0]
+    assert "never the STEP value" in prompts[0]
     metrics = agent.text_runtime_metrics()
     assert [request["validation_attempt"] for request in metrics["requests"]] == [1, 2]
     assert all(
@@ -166,16 +171,28 @@ def test_batched_relevance_retries_then_returns_all_frame_rows() -> None:
         <= request["budget"]["safe_prompt_limit_tokens"]
         for request in metrics["requests"]
     )
+    assert metrics["relevance_validation_failures"] == [
+        {
+            "validation_attempt": 1,
+            "raw_rejected_response": rejected_response,
+            "validation_error": "Expected 1 relevance rows",
+        }
+    ]
 
 
 def test_packed_analysis_returns_standard_downstream_schema() -> None:
     agent = _agent()
     agent._reset_text_metrics()
+    calls = 0
 
     async def fake_call(messages, client, json_output=False):
+        nonlocal calls
         del client, json_output
+        calls += 1
         assert "ASSIGNMENT: C[criterion indexes]" in messages[-1]["content"]
-        assert "CRITERION EVIDENCE ASSIGNMENTS" not in messages[-1]["content"]
+        assert "ALLOWED FRAMES\nC0=[0]\nC1=[0]" in messages[-1]["content"]
+        assert "must be a subset" in messages[-1]["content"]
+        assert "FRAME 0 | STEP 1 " in messages[-1]["content"]
         return json.dumps(
             {
                 "analyses": [
@@ -211,11 +228,15 @@ def test_packed_analysis_returns_standard_downstream_schema() -> None:
             "Initial URL",
             "Action history",
             "Microsoft Studios; 7/6/2022",
-            relevance_scores={
-                0: {0: 10, 1: 9, "evidence_idx": 0, "screenshot_idx": 0}
-            },
+            relevance_scores={0: {0: 10, 1: 9, "evidence_idx": 0, "screenshot_idx": 0}},
         )
     )
+    assert calls == 1
+    assert [
+        request["validation_attempt"]
+        for request in agent.text_runtime_metrics()["requests"]
+    ] == [1]
+    assert not agent.text_runtime_metrics()["packed_analysis_validation_failures"]
     assert set(result) == {0, 1}
     for criterion_idx in result:
         analysis = result[criterion_idx][0]
@@ -228,12 +249,15 @@ def test_unassigned_citation_exhaustion_returns_unknown() -> None:
     agent = _agent(max_iters=2)
     agent._reset_text_metrics()
     calls = 0
+    prompts: list[str] = []
+    responses: list[str] = []
 
     async def fake_call(messages, client, json_output=False):
         nonlocal calls
-        del messages, client, json_output
+        del client, json_output
         calls += 1
-        return json.dumps(
+        prompts.append(messages[-1]["content"])
+        response = json.dumps(
             {
                 "analyses": [
                     {
@@ -243,12 +267,15 @@ def test_unassigned_citation_exhaustion_returns_unknown() -> None:
                         "criterion_analysis": "Invalid assignment.",
                         "discrepancies": "None",
                         "environment_issues_confirmed": False,
-                        "evidence_indices": [99],
+                        "evidence_indices": [1],
                     }
                     for criterion_idx in range(2)
                 ]
             }
         )
+
+        responses.append(response)
+        return response
 
     agent._call_llm = fake_call
     result = asyncio.run(
@@ -264,6 +291,102 @@ def test_unassigned_citation_exhaustion_returns_unknown() -> None:
     )
     assert calls == 2
     assert all(result[index][0]["evidence_status"] == "unknown" for index in result)
+    assert "Criterion 0 may cite only FRAME indices [0]" in prompts[1]
+    assert "Criterion 1 may cite only FRAME indices [0]" in prompts[1]
+    assert "never STEP values" in prompts[1]
+    failures = agent.text_runtime_metrics()["packed_analysis_validation_failures"]
+    assert len(failures) == 4
+    assert failures[0] == {
+        "validation_attempt": 1,
+        "criterion_idx": 0,
+        "criterion": "Report the publisher",
+        "returned_indices": [1],
+        "rejected_indices": [1],
+        "allowed_indices": [0],
+        "raw_rejected_response": responses[0],
+        "validation_error": "Criterion 0 may cite only FRAME indices [0]; rejected FRAME indices [1]",
+    }
+    assert failures[1]["validation_attempt"] == 1
+    assert failures[1]["criterion_idx"] == 1
+    assert failures[1]["allowed_indices"] == [0]
+    assert failures[1]["rejected_indices"] == [1]
+
+
+def test_context_omitted_frame_cannot_be_cited(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    agent = _agent(max_iters=1)
+    agent._reset_text_metrics()
+    frame = _compact_frame()
+    packed = dom_diff_text_agent_module.render_packed_analysis_evidence(
+        [frame.compact],
+        {0: [0], 1: [0]},
+        _rubric(),
+        predicted_output="Microsoft Studios; 7/6/2022",
+        starting_target_tokens=10,
+        model_context_window_tokens=250,
+        completion_reserve_tokens=50,
+        prompt_headroom_tokens=25,
+        fixed_prompt_tokens=50,
+    )
+    assert packed.omission_receipts
+    assert packed.criterion_frame_assignments == {0: (), 1: ()}
+    assert "ALLOWED FRAMES\nC0=[]\nC1=[]" in packed.text
+    assert "C0=[0]" not in packed.text
+    assert "C1=[0]" not in packed.text
+    packed = replace(
+        packed,
+        budget_receipt=replace(
+            packed.budget_receipt,
+            safe_prompt_limit_tokens=32000,
+        ),
+    )
+
+    def fake_renderer(*args, **kwargs):
+        del args, kwargs
+        return packed
+
+    async def fake_call(messages, client, json_output=False):
+        del messages, client, json_output
+        return json.dumps(
+            {
+                "analyses": [
+                    {
+                        "criterion_idx": criterion_idx,
+                        "evidence_status": "supported",
+                        "evidence_text": "Cites an omitted frame.",
+                        "criterion_analysis": "Invalid after final packing.",
+                        "discrepancies": "None",
+                        "environment_issues_confirmed": False,
+                        "evidence_indices": [0],
+                    }
+                    for criterion_idx in range(2)
+                ]
+            }
+        )
+
+    monkeypatch.setattr(
+        dom_diff_text_agent_module,
+        "render_packed_analysis_evidence",
+        fake_renderer,
+    )
+    agent._call_llm = fake_call
+    result = asyncio.run(
+        agent._analyze_dom_evidence_batched(
+            [frame],
+            _rubric(),
+            {0: [0], 1: [0]},
+            "Report publisher and date",
+            "Initial URL",
+            "Action history",
+            "Microsoft Studios; 7/6/2022",
+        )
+    )
+    assert all(result[index][0]["evidence_status"] == "unknown" for index in result)
+    failures = agent.text_runtime_metrics()["packed_analysis_validation_failures"]
+    assert len(failures) == 2
+    assert all(failure["allowed_indices"] == [] for failure in failures)
+    assert all(failure["rejected_indices"] == [0] for failure in failures)
 
 
 def test_final_evidence_text_changes_only_modality_terminology() -> None:
@@ -362,12 +485,16 @@ def test_inherited_step_4_5_onward_runs_without_text_specific_branch() -> None:
         item["post_image_justification"] = "Explicit text evidence matches."
         scored["total_max_points"] = 5
         scored["total_earned_points"] = 5
-        return scored, 1.0, {
-            "step6_rescoring_summary": {},
-            "step7_penalty_criteria": [],
-            "step7_reasoning": "No unsolicited side effects.",
-            "step7_requires_penalty": False,
-        }
+        return (
+            scored,
+            1.0,
+            {
+                "step6_rescoring_summary": {},
+                "step7_penalty_criteria": [],
+                "step7_reasoning": "No unsolicited side effects.",
+                "step7_requires_penalty": False,
+            },
+        )
 
     async def fake_outcome(*args, **kwargs):
         del args, kwargs

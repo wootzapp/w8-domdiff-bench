@@ -99,7 +99,9 @@ def discover_dom_diff_text_paths(
             raise ValueError(f"Duplicate refined DOM diff ordinal {ordinal}")
         by_ordinal[ordinal] = child
     if malformed:
-        raise ValueError(f"Noncanonical refined DOM diff filenames: {sorted(malformed)}")
+        raise ValueError(
+            f"Noncanonical refined DOM diff filenames: {sorted(malformed)}"
+        )
     expected = list(range(1, action_count + 1))
     actual = sorted(by_ordinal)
     if actual != expected:
@@ -122,7 +124,9 @@ def reject_forbidden_evidence(candidate_path: str | Path) -> None:
         if path.suffix.casefold() in _IMAGE_SUFFIXES:
             forbidden.append(relative)
             continue
-        if lower in _FORBIDDEN_EXACT or any(marker in lower for marker in _FORBIDDEN_MARKERS):
+        if lower in _FORBIDDEN_EXACT or any(
+            marker in lower for marker in _FORBIDDEN_MARKERS
+        ):
             forbidden.append(relative)
     if forbidden:
         raise ValueError(
@@ -156,13 +160,20 @@ def validate_control_files(
 ) -> None:
     """Require the approved root-level control files and one canonical task."""
     root = Path(candidate_path).resolve()
-    task_files = sorted(
-        path for path in root.glob("task_data*.json") if path.is_file()
-    )
+    task_files = sorted(path for path in root.glob("task_data*.json") if path.is_file())
     expected_task = root / "task_data.json"
-    if task_files != [expected_task]:
+    allowed_task_files = {
+        expected_task,
+        root / "task_data_with_canonical_rubric.json",
+    }
+    unexpected_task_files = [
+        path for path in task_files if path not in allowed_task_files
+    ]
+    if expected_task not in task_files or unexpected_task_files:
         raise ValueError(
-            f"Expected exactly task_data.json in {root}; "
+            f"Expected task_data.json and optionally "
+            f"task_data_with_canonical_rubric.json in {root}; "
+            f"unexpected {[path.name for path in unexpected_task_files]}; "
             f"found {[path.name for path in task_files]}"
         )
     log_files = [
@@ -259,19 +270,24 @@ def validate_frozen_rubric(task_data: Mapping[str, Any]) -> tuple[str, float]:
     denominator = 0.0
     for index, item in enumerate(items):
         points = item["max_points"]
-        if not isinstance(points, (int, float)) or isinstance(points, bool) or points <= 0:
+        if (
+            not isinstance(points, (int, float))
+            or isinstance(points, bool)
+            or points <= 0
+        ):
             raise ValueError(f"Frozen rubric item {index} max_points must be positive")
         denominator += float(points)
-    encoded = json.dumps(rubric, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(
+        rubric, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest(), denominator
 
 
 def semantic_action_definitions() -> dict[str, set[str]]:
     """Return a verifier-local copy; the FARA source mapping is never mutated."""
     definitions = {
-        name: set(arguments) for name, arguments in _BASE_FARA_ACTION_DEFINITIONS.items()
+        name: set(arguments)
+        for name, arguments in _BASE_FARA_ACTION_DEFINITIONS.items()
     }
     for name in ("left_click", "type", "scroll"):
         definitions[name].update({"ref", "target"})
@@ -302,7 +318,9 @@ def _create_text_datapoint(
         if not isinstance(arguments, dict):
             raise ValueError(f"Action {ordinal} arguments must be an object")
         action_name = str(arguments.get("action") or event.get("action") or "")
-        action_args = {key: value for key, value in arguments.items() if key != "action"}
+        action_args = {
+            key: value for key, value in arguments.items() if key != "action"
+        }
         action_id = str(ordinal)
         events.append(ComputerObservation(url=str(event.get("url") or "")))
         events.append(
@@ -332,7 +350,9 @@ def _create_text_datapoint(
         task=task,
         solver_log=SolverLog(
             events=events,
-            status=SolverStatus.ABORTED if candidate.is_aborted else SolverStatus.COMPLETE,
+            status=SolverStatus.ABORTED
+            if candidate.is_aborted
+            else SolverStatus.COMPLETE,
             outcome=Outcome(answer=candidate.final_answer),
         ),
         metadata=DataPointMetadata(run_id=candidate.path.name),
@@ -415,14 +435,18 @@ def validate_text_input_paths(input_dict: dict[str, Any], action_count: int) -> 
             if action.get(key)
         }
         if forbidden:
-            raise ValueError(f"Action {ordinal} exposes forbidden text-mode evidence: {forbidden}")
+            raise ValueError(
+                f"Action {ordinal} exposes forbidden text-mode evidence: {forbidden}"
+            )
         declared.append(str(Path(path).resolve(strict=False)))
     expected = [
         str(Path(path).resolve(strict=False))
         for path in input_dict.get("declared_evidence_paths") or []
     ]
     if declared != expected:
-        raise ValueError("Declared text evidence paths do not match action-aligned paths")
+        raise ValueError(
+            "Declared text evidence paths do not match action-aligned paths"
+        )
 
 
 def validate_action_frame_alignment(
@@ -476,7 +500,9 @@ def _semantic_event(event: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("Action arguments must be objects")
     excluded = {"coordinate", "ref", "target"}
     normalized_arguments = {
-        key: value for key, value in arguments.items() if key not in excluded and key != "action"
+        key: value
+        for key, value in arguments.items()
+        if key not in excluded and key != "action"
     }
     return {
         "action": normalize_log_action_name(event.get("action")),
@@ -509,5 +535,8 @@ def validate_cross_modality_semantic_pair(
     ):
         if _semantic_event(dom_event) != _semantic_event(screenshot_event):
             raise ValueError(f"Paired semantic action differs at ordinal {ordinal}")
-    if dom.final_answer != screenshot.final_answer or dom.is_aborted != screenshot.is_aborted:
+    if (
+        dom.final_answer != screenshot.final_answer
+        or dom.is_aborted != screenshot.is_aborted
+    ):
         raise ValueError("Paired semantic final answers differ")

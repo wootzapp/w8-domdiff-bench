@@ -21,11 +21,15 @@ SCRIPT = DOM_REPO / "webeval" / "scripts" / "verify_trajectories_dom_diff_text.p
 SUMMARY_RUNNER = (
     DOM_REPO / "webeval" / "scripts" / "verify_trajectories_dom_diff_summary.py"
 )
-SUMMARY_RUNNER_SHA256 = "2c3cff38f17a40427a3ff06db08d8eaf3f666ed23a3a17958063504108302d58"
+SUMMARY_RUNNER_SHA256 = (
+    "2c3cff38f17a40427a3ff06db08d8eaf3f666ed23a3a17958063504108302d58"
+)
 
 
 def _load_runner():
-    spec = importlib.util.spec_from_file_location("verify_trajectories_dom_diff_text_test", SCRIPT)
+    spec = importlib.util.spec_from_file_location(
+        "verify_trajectories_dom_diff_text_test", SCRIPT
+    )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -96,7 +100,9 @@ def _args(eval_config: Path) -> dict:
     }
 
 
-def test_runner_import_has_no_client_logging_or_artifact_side_effects(tmp_path: Path) -> None:
+def test_runner_import_has_no_client_logging_or_artifact_side_effects(
+    tmp_path: Path,
+) -> None:
     before_handlers = tuple(logging.getLogger().handlers)
     before_files = set(tmp_path.rglob("*"))
     module = _load_runner()
@@ -141,13 +147,63 @@ def test_preflight_failure_occurs_before_client_initialization(
 
 def test_frozen_preflight_succeeds_without_constructing_clients(tmp_path: Path) -> None:
     task = _copy_task(tmp_path)
-    _install_frozen_rubric(task)
+    runtime_task_data = _install_frozen_rubric(task)
+    (task / "task_data_with_canonical_rubric.json").write_text(
+        json.dumps([runtime_task_data]), encoding="utf-8"
+    )
     trajectory, task_data, input_dict, frames = runner.preflight_trajectory(task)
     assert trajectory.path == task
     assert task_data["precomputed_rubric"] == input_dict["precomputed_rubric"]
     assert input_dict["frozen_input_denominator"] == 10
     assert len(frames) == 1
     assert runner._GLOBAL_AGENT is None
+
+
+def test_sidecar_is_allowed_but_never_used_as_frozen_rubric_fallback(
+    tmp_path: Path,
+) -> None:
+    task = _copy_task(tmp_path)
+    base_payload = json.loads((task / "task_data.json").read_text(encoding="utf-8"))
+    sidecar_payload = json.loads(json.dumps(base_payload))
+    sidecar_task = (
+        sidecar_payload[0] if isinstance(sidecar_payload, list) else sidecar_payload
+    )
+    sidecar_task["precomputed_rubric"] = {
+        "items": [
+            {
+                "criterion": "Sidecar-only criterion",
+                "description": "This must not enter verifier input implicitly.",
+                "max_points": 1,
+                "earned_points": "",
+                "justification": "",
+            }
+        ]
+    }
+    (task / "task_data_with_canonical_rubric.json").write_text(
+        json.dumps(sidecar_payload), encoding="utf-8"
+    )
+
+    with pytest.raises(
+        ValueError, match="Scoring requires a task-specific frozen precomputed_rubric"
+    ):
+        runner.preflight_trajectory(task)
+
+    _, input_dict, _ = dom_diff_text_adapter.preflight_dom_diff_text_bundle(
+        task,
+        base_payload[0] if isinstance(base_payload, list) else base_payload,
+        require_frozen_rubric=False,
+    )
+    assert input_dict["precomputed_rubric"] is None
+
+
+def test_unexpected_task_data_json_is_still_rejected(tmp_path: Path) -> None:
+    task = _copy_task(tmp_path)
+    (task / "task_data_backup.json").write_text("{}", encoding="utf-8")
+    task_data = json.loads((task / "task_data.json").read_text(encoding="utf-8"))[0]
+    with pytest.raises(ValueError, match="task_data_backup.json"):
+        dom_diff_text_adapter.preflight_dom_diff_text_bundle(
+            task, task_data, require_frozen_rubric=False
+        )
 
 
 def test_exact_control_file_contract_rejects_alternate_log_name(tmp_path: Path) -> None:
@@ -184,9 +240,10 @@ def test_cache_identity_covers_source_rubric_endpoint_and_every_text_budget(
     original, original_config = runner._verifier_identity(args, task)
     assert original_config["source_text_sha256"]
     assert original_config["frozen_rubric_sha256"] is None
-    assert original_config["eval_config_sha256"] == hashlib.sha256(
-        config.read_bytes()
-    ).hexdigest()
+    assert (
+        original_config["eval_config_sha256"]
+        == hashlib.sha256(config.read_bytes()).hexdigest()
+    )
 
     budget_keys = (
         "text_frame_starting_tokens",
@@ -276,7 +333,9 @@ def test_runner_plumbing_counts_usage_logical_calls_attempts_and_retries() -> No
     ) == {"prompt_tokens": 5, "completion_tokens": 5}
 
 
-def test_local_action_mapping_matches_protected_source_before_target_extensions() -> None:
+def test_local_action_mapping_matches_protected_source_before_target_extensions() -> (
+    None
+):
     tree = ast.parse((DOM_REPO / "src" / "fara" / "fara_agent.py").read_text())
     source_mapping = None
     for node in tree.body:
@@ -292,4 +351,6 @@ def test_local_action_mapping_matches_protected_source_before_target_extensions(
 
 
 def test_protected_summary_runner_hash_is_unchanged() -> None:
-    assert hashlib.sha256(SUMMARY_RUNNER.read_bytes()).hexdigest() == SUMMARY_RUNNER_SHA256
+    assert (
+        hashlib.sha256(SUMMARY_RUNNER.read_bytes()).hexdigest() == SUMMARY_RUNNER_SHA256
+    )
