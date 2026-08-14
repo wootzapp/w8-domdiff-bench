@@ -3,6 +3,7 @@
 # Re-export the adapter's public surface so callers do not depend on its internal
 # file layout.
 from .client import (
+    AgentBrowserBaseError,
     AgentBrowserClient,
     AgentBrowserError,
     AgentBrowserObservation,
@@ -12,6 +13,7 @@ from .client import (
 )
 
 __all__ = [
+    "AgentBrowserBaseError",
     "AgentBrowserClient",
     "AgentBrowserError",
     "AgentBrowserObservation",

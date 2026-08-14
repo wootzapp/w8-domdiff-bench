@@ -140,6 +140,7 @@ from dom_diff import (
 # Local adapter: supplies the browser-facing observation and action interface.
 # ChromiumRL capture and recorder artifacts remain owned by this module.
 from agent_browser import (
+    AgentBrowserBaseError,
     AgentBrowserClient,
     AgentBrowserError,
     AgentBrowserObservation,
@@ -148,7 +149,7 @@ from agent_browser import (
 )
 # Local prompt module: keeps model policy text separate from orchestration code.
 from prompts import SYSTEM_PROMPT, TERMINATION_REVIEW_PROMPT
-# Shared exception: lets the CLI and adapter report failures consistently.
+# Recorder-local exception; standalone adapter errors are caught separately.
 from recorder_errors import RunnerError
 from trajectory import (
     TRAJECTORY_SCHEMA_VERSION,
@@ -327,11 +328,27 @@ def chromiumrl_evidence_for_model(text: str) -> str:
         'Use: scroll("down"',
         "Not currently clickable. To interact with these rows, scroll",
     )
-    filtered = "\n".join(
-        line
-        for line in text.splitlines()
-        if not line.lstrip().startswith(blocked_prefixes)
-    )
+    scroll_region_entry = re.compile(r"^\[[^\]]+\]\s+.+\s+—\s+")
+    scroll_region_hidden = re.compile(r"^\[scrollable regions hidden:\s*\d+\s+more\]$")
+    filtered_lines: list[str] = []
+    in_scroll_regions = False
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped == "=== SCROLLABLE REGIONS ===":
+            in_scroll_regions = True
+            continue
+        if in_scroll_regions:
+            if not stripped:
+                continue
+            if stripped.startswith('Use: scroll("down"'):
+                continue
+            if scroll_region_entry.match(stripped) or scroll_region_hidden.match(stripped):
+                continue
+            in_scroll_regions = False
+        if stripped.startswith(blocked_prefixes):
+            continue
+        filtered_lines.append(line)
+    filtered = "\n".join(filtered_lines)
     if text.endswith("\n"):
         filtered += "\n"
     return re.sub(r"\[(?:A)?\d+\]", "[non-executable-dom-id]", filtered)
@@ -1610,7 +1627,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.output_dir:
             raise RunnerError("--output-dir is required for live and capture-only runs")
         return asyncio.run(run_with_interrupt_handlers(args))
-    except (RunnerError, CDPError, OSError, json.JSONDecodeError) as error:
+    except (AgentBrowserBaseError, RunnerError, CDPError, OSError, json.JSONDecodeError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 

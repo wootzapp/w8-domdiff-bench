@@ -19,6 +19,7 @@ from urllib.parse import urlsplit, urlunsplit
 import aiohttp
 
 from agent_browser import (
+    AgentBrowserBaseError,
     AgentBrowserClient,
     AgentBrowserError,
     AgentBrowserObservation,
@@ -886,7 +887,7 @@ async def synchronize_recorder_target(
         try:
             active_page = await agent_browser.active_page()
             return await cdp.synchronize_target(active_page)
-        except AgentBrowserError as error:
+        except AgentBrowserBaseError as error:
             last_error = error
             if attempt < attempts:
                 await agent_browser.reconnect()
@@ -900,7 +901,7 @@ async def synchronize_recorder_target(
                     report = await cdp.reconnect_active_page(active_page)
                     report["synchronization_attempt"] = attempt
                     return report
-                except (AgentBrowserError, RunnerError, OSError) as reconnect_error:
+                except (AgentBrowserBaseError, RunnerError, OSError) as reconnect_error:
                     last_error = reconnect_error
             if attempt < attempts:
                 await asyncio.sleep(0.25 * attempt)

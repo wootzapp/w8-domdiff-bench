@@ -16,19 +16,25 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
-
-from artifacts import normalized_http_url
-
-# Shared recorder exception keeps adapter failures compatible with runner/CLI
-# error handling without importing either higher-level module.
-from recorder_errors import RunnerError
+from urllib.parse import urlsplit, urlunsplit
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-class AgentBrowserError(RunnerError):
+class AgentBrowserBaseError(Exception):
+    """Base error raised by the standalone agent-browser adapter."""
+
+
+def normalized_http_url(value: str) -> str:
+    """Validate a CDP HTTP endpoint and discard any accidental path/query."""
+    parsed = urlsplit(value.strip().rstrip("/"))
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise AgentBrowserBaseError(f"invalid CDP URL: {value!r}")
+    return urlunsplit((parsed.scheme, parsed.netloc, "", "", ""))
+
+
+class AgentBrowserError(AgentBrowserBaseError):
     """An official agent-browser command failed."""
 
     def __init__(self, command: list[str], error: str):
@@ -74,7 +80,7 @@ class AgentBrowserClient:
         """Configure one named official-CLI session attached to an existing CDP."""
         self.command = shlex.split(command)
         if not self.command:
-            raise RunnerError("--agent-browser-command must not be empty")
+            raise AgentBrowserBaseError("--agent-browser-command must not be empty")
         self.session = session
         self.timeout = timeout
         parsed = urlsplit(normalized_http_url(cdp_url))
@@ -281,7 +287,7 @@ class AgentBrowserClient:
         if action == "navigate":
             url = "" if decision.get("url") is None else str(decision.get("url")).strip()
             if not url.startswith(("http://", "https://")):
-                raise RunnerError("navigate requires an http(s) URL")
+                raise AgentBrowserBaseError("navigate requires an http(s) URL")
             return await self._invoke(["open", url])
         if action == "back":
             return await self._invoke(["back"])
@@ -336,4 +342,4 @@ class AgentBrowserClient:
                 **result,
                 "normalized_parameters": {"seconds": milliseconds / 1000},
             }
-        raise RunnerError(f"action {action!r} is not executable")
+        raise AgentBrowserBaseError(f"action {action!r} is not executable")

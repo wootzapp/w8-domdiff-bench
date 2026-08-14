@@ -20,6 +20,32 @@ the whole contract, which is why it is one file: the boundary is narrow by
 design, and keeping it narrow is what makes the action driver replaceable and
 the recordings auditable.
 
+## Standalone use
+
+The Python package is self-contained and imports only the standard library. It
+does not import `runner.py`, `capture.py`, `artifacts.py`, or any other recorder
+module. To use it independently, a consumer needs:
+
+- the npm `agent-browser` package installed at the pinned version;
+- a browser exposing an HTTP(S) CDP endpoint; and
+- an `AgentBrowserClient` configured with `command`, `session`, `cdp_url`, and
+  `timeout`.
+
+```python
+from agent_browser import AgentBrowserClient
+
+client = AgentBrowserClient(
+    "./node_modules/.bin/agent-browser",
+    session="my-session",
+    cdp_url="http://127.0.0.1:9222",
+    timeout=30,
+)
+```
+
+Call `await client.connect()` before taking snapshots or executing actions, and
+`await client.close()` when finished. ChromiumRL and recorder modules are not
+required for this adapter boundary.
+
 ## The two id namespaces
 
 This is the most common source of confusion when reading the code.
