@@ -12,12 +12,25 @@ The **agent-browser CLI** decides nothing — it observes the page and executes
 actions. The model picks an action from an accessibility snapshot and refers to
 elements by the `@eN` refs that snapshot provides.
 
-**ChromiumRL** captures the evidence. Before and after every action, the recorder
-takes a structured snapshot of the page through CDP, saves a screenshot, and
-computes the semantic difference between the two snapshots.
+**ChromiumRL** captures the evidence and computes the live diff. Before an
+action, the recorder calls `captureStructuredSnapshot`. After the action it
+calls `captureSnapshotDiff`, which captures the after-state and compares both
+snapshots inside the browser. The host saves the returned snapshot and diff.
 
 The model never sees a page state that wasn't recorded, and every recorded
 diff corresponds to exactly one executed action.
+
+## Model Input Policy
+
+Both the action model and the termination reviewer are DOM-only. Their Responses
+API payloads contain text evidence only: the executable agent-browser snapshot,
+the masked ChromiumRL model projection, bounded DOM-diff evidence, task memory,
+and recent action outcomes. Screenshots are never attached to either model call.
+
+Screenshots are still captured before and after every action and stored unchanged
+as baseline-verifier artifacts. They also remain available to the recorder's
+byte-level `action_progress` signal; removing them from model context does not
+change capture, progress detection, or the artifact layout. Manifests record `model_input_policy: "dom_only"`.
 
 ## Project Layout
 
@@ -35,15 +48,13 @@ diff corresponds to exactly one executed action.
 - `capture.py` — everything that touches the browser: the CDP connection,
   structured snapshots, screenshots, action coordinates, and keeping capture
   attached to the tab agent-browser is actually on
-- `dom_diff.py` — compares two stored snapshots and produces the diff. Pure
-  functions, no browser involved, which is why it can be tested offline
+- `dom_diff.py` — renders browser-produced diffs and builds bounded model and
+  reviewer projections; it never compares snapshots or writes artifacts
 - `trajectory.py` — turns confirmed actions into `trajectory.jsonl` and
   `web_surfer.log`
-- `backfill.py` — recomputes diffs for runs already on disk, without a browser
-- `artifacts.py` — atomic JSON and text writers, so a crash can't leave a
-  half-written file
+- `recorder_support.py` — shared recorder exception, URL validation, timestamps,
+  and atomic writers, so a crash can't leave a half-written file
 - `prompts.py` — the model's instructions, and the separate termination reviewer
-- `recorder_errors.py` — shared exception type
 
 **Browser adapter**
 
@@ -57,8 +68,9 @@ diff corresponds to exactly one executed action.
   text for inspection
 - `scripts/render_chromiumrl_snapshot_model.py` — a shorter version of the same
   snapshot, written for the model
-- `tests/` — offline regression tests, no browser or network needed
-- `ChromiumRL.pdl` — protocol reference for the CDP domain used here
+- `tests/` — unit tests for recorder behavior and artifact persistence
+- `chromium_files/` — the prepared browser `.cc`, `.h`, and sole authoritative
+  `ChromiumRL.pdl` used by protocol-declaration checks and browser builds
 
 ## View the Browser Through an SSH Tunnel
 
@@ -117,8 +129,9 @@ For each action the model proposes, the runner:
 3. copies the current evidence into `steps/step_NNN/before/`
 4. runs the action through agent-browser
 5. reattaches capture to whatever tab is now active
-6. captures the new state into `steps/step_NNN/after/`
-7. diffs the two snapshots and writes `dom_diff.json` and `dom_diff.txt`
+6. calls `ChromiumRL.captureSnapshotDiff`, which captures the new state and
+   computes the diff in the browser
+7. writes the returned after-state, `dom_diff.json`, and `dom_diff.txt`
 
 When the model wants to finish, a second model call reviews the proposed answer
 against the recorded evidence and can send the run back for more work. That
@@ -138,25 +151,63 @@ A completed run contains:
 
 Every executed action creates a contiguous `steps/step_NNN/` directory containing
 `action.json`, before/after screenshots, before/after DOM captures, and
-`dom_diff.json` plus `dom_diff.txt`.
+`dom_diff.json` plus `dom_diff.txt`. The action record and manifest step include
+`dom_diff_engine`, identifying `ChromiumRL.captureSnapshotDiff` plus the browser
+version.
 
 An absent trajectory or WebSurfer file means the run was interrupted or failed
 validation and should not be used as a completed verifier recording. A valid
 zero-action result may have empty trajectory files when the starting page itself
 supplies a conclusive result or a permitted stopping condition.
 
-## Diffs Without a Browser
+## Live Diff Persistence
 
-Diffs are computed from the stored snapshots, not from browser state, so they can
-be regenerated at any time:
+Every step computes its diff inside the browser with
+`ChromiumRL.captureSnapshotDiff`. The recorder has no post-run snapshot
+comparison or diff-generation path. If the live command fails, that step's diff
+remains missing.
 
 ```bash
-python runner.py --backfill-run /path/to/recordings/<run-id>
 python runner.py --build-trajectory-run /path/to/recordings/<run-id>
 ```
 
-The first recomputes every `dom_diff.json`. The second revalidates a run and
-regenerates its trajectory files. Neither needs a browser.
+The trajectory command validates existing artifacts and regenerates only
+`trajectory.jsonl` and `web_surfer.log`; it cannot create or replace a diff.
+
+The browser response is normalized before persistence. `runner.py` orders known
+top-level fields, restores floating-point types only at declared float paths,
+rejects unknown top-level fields, and appends byte/line audit metadata. Nested
+objects and arrays are preserved as returned by the browser.
+
+## Evidence Capping Policy
+
+`dom.json` is the authoritative DOM evidence. Chromium capture uses these ceilings: `maxNodes` and cumulative `maxTextChars`, direct text
+at 240 characters, subtree text at 500, selected-attribute values at 160,
+selected attributes at 12, and `childRefs` at 80. The recorder requests 7,000
+nodes and 200,000 text characters. It does not apply another DOM cap after the
+browser returns the snapshot.
+
+Three capture losses are silent to artifact consumers: selected attributes
+beyond the first 12 have no counter; values over 160 characters or matching
+`LooksLikeLargeStructuredValue` are skipped entirely rather than truncated; and
+nodes rejected by `IsStructuredSnapshotCandidate` have no counter. Per-node
+direct/subtree clipping sets the node's `truncated` flag. Snapshot
+`stats.truncated` is ambiguous: one boolean covers the 7,000-node request,
+cumulative `maxTextChars`, and the 80-child clip.
+
+The two renderer scripts cap only the `dom_full.txt` and `dom_model.txt`
+projections. They never modify `dom.json`. Content may be absent from both text
+projections without a hidden-count marker, but it remains present in the
+authoritative `dom.json` unless one of the browser capture ceilings above
+removed it first.
+
+The recorder maintains a no-post-capture-truncation invariant for persisted DOM
+and diff payloads. `tests/test_browser_diff_persistence.py` checks the runner's
+import graph and permits only the live per-step diff writer. Every current diff
+has `entry_limit: null`, zero `entries_truncated`, and empty
+`dropped_entries`. `MAX_DOM_DIFF_JSON_BYTES` is written as
+`artifact.max_json_bytes` and drives `artifact.over_size_limit`; it is warning
+metadata and never shortens JSON or TXT output.
 
 ## Browser and Task Lifecycle
 
@@ -164,9 +215,9 @@ regenerates its trajectory files. Neither needs a browser.
 The browser profile remains available across tasks. At the beginning of each
 task, the launcher:
 
-1. stops an earlier recorder process and its child processes;
+1. stops any active recorder process and its child processes;
 2. creates and activates one fresh browser tab;
-3. closes normal tabs left by earlier tasks; and
+3. closes normal tabs left by prior tasks; and
 4. attaches action execution and ChromiumRL capture to the fresh tab.
 
 Starting another task while one is running interrupts the older run. Its manifest

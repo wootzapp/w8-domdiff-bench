@@ -24,7 +24,7 @@ from urllib.parse import urlsplit
 # one canonical implementation across direct and wrapper-based invocations.
 from runner import DEFAULT_NOVNC_URL, load_env, safe_task_id
 # Shared exception avoids defining a second CLI-only error hierarchy.
-from recorder_errors import RunnerError
+from recorder_support import RunnerError
 
 
 ROOT = Path(__file__).resolve().parent
@@ -41,6 +41,7 @@ RUNTIME_ROOT = ROOT / ".runtime"
 ACTIVE_RUN_PATH = RUNTIME_ROOT / "active-run.json"
 TRANSITION_LOCK_PATH = RUNTIME_ROOT / "task-transition.lock"
 DEFAULT_STOP_TIMEOUT_SECONDS = 15.0
+PROFILE_TASK_COUNT_PATH = "/home/wootz/.task-recorder-dom-diff-task-count"
 # This grace period lets the old runner flush its manifest before SIGKILL; the
 # CLI exposes an override for unusually slow filesystems.
 
@@ -189,6 +190,93 @@ def ensure_browser_service(env_file: Path) -> None:
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip()
         raise RunnerError(f"could not start persistent browser service: {detail}")
+
+
+def restart_browser_service(env_file: Path) -> None:
+    """Restart one managed browser process without recreating its container or profile."""
+    ensure_browser_service(env_file)
+    command = [
+        "docker",
+        "compose",
+        "--env-file",
+        str(env_file),
+        "restart",
+        "wootz-desktop",
+    ]
+    completed = subprocess.run(
+        command,
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        raise RunnerError(f"could not restart browser service at task boundary: {detail}")
+    ensure_browser_service(env_file)
+
+
+def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
+    """Atomically claim one task slot for this container-lifetime profile."""
+    inspected = subprocess.run(
+        ["docker", "inspect", container_name],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if inspected.returncode != 0:
+        detail = inspected.stderr.strip() or inspected.stdout.strip()
+        raise RunnerError(f"could not inspect browser container provenance: {detail}")
+    try:
+        values = json.loads(inspected.stdout)
+        container = values[0]
+        container_id = str(container["Id"])
+        container_created_at = str(container["Created"])
+    except (json.JSONDecodeError, IndexError, KeyError, TypeError) as error:
+        raise RunnerError("docker inspect returned invalid container provenance") from error
+
+    counted = subprocess.run(
+        ["docker", "exec", container_name, "sh", "-c",
+         f"test -f {PROFILE_TASK_COUNT_PATH} && cat {PROFILE_TASK_COUNT_PATH} || printf 0"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if counted.returncode != 0:
+        detail = counted.stderr.strip() or counted.stdout.strip()
+        raise RunnerError(f"could not read browser profile task count: {detail}")
+    try:
+        tasks_previously_run = int(counted.stdout.strip() or "0")
+    except ValueError as error:
+        raise RunnerError("browser profile task count is not an integer") from error
+    if tasks_previously_run < 0:
+        raise RunnerError("browser profile task count must not be negative")
+
+    next_count = tasks_previously_run + 1
+    updated = subprocess.run(
+        [
+            "docker", "exec", container_name, "sh", "-c",
+            'set -eu; path="$1"; value="$2"; umask 077; '
+            'printf "%s\n" "$value" > "${path}.tmp"; mv "${path}.tmp" "$path"',
+            "task-recorder-profile-counter", PROFILE_TASK_COUNT_PATH, str(next_count),
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if updated.returncode != 0:
+        detail = updated.stderr.strip() or updated.stdout.strip()
+        raise RunnerError(f"could not update browser profile task count: {detail}")
+    return {
+        "container_id": container_id,
+        "container_created_at": container_created_at,
+        "profile_fresh_at_run_start": tasks_previously_run == 0,
+        "tasks_previously_run_in_container": tasks_previously_run,
+    }
 
 
 def task_name_slug(value: str) -> str:
@@ -547,9 +635,6 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         print("Dry run complete; browser task was not started.")
         return 0
-    if not args.no_browser_start:
-        ensure_browser_service(args.env_file.resolve())
-
     process: subprocess.Popen[str] | None = None
     with task_transition_lock():
         takeover = stop_previous_run(timeout=args.previous_run_stop_timeout)
@@ -559,10 +644,20 @@ def main(argv: list[str] | None = None) -> int:
                 f"{takeover['status']} "
                 f"(run={takeover.get('run_id')}, pid={takeover.get('pid')})"
             )
+        if not args.no_browser_start:
+            restart_browser_service(args.env_file.resolve())
+        profile_provenance = claim_browser_profile_provenance(
+            os.environ.get("CONTAINER_NAME", "task-recorder-dom-diff-browser")
+        )
+        runner_environment = os.environ.copy()
+        runner_environment["RUNNER_BROWSER_PROFILE_PROVENANCE"] = json.dumps(
+            profile_provenance, separators=(",", ":")
+        )
         process = subprocess.Popen(
             command,
             cwd=ROOT,
             text=True,
+            env=runner_environment,
             start_new_session=True,
         )
         start_ticks = process_start_ticks(process.pid)

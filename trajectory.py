@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from agent_browser import AgentBrowserClient
-from artifacts import write_json_lines
+from recorder_support import RunnerError, write_json_lines
 from dom_diff import clean_dom_text
-from recorder_errors import RunnerError
 
 
 TRAJECTORY_SCHEMA_VERSION = "1.0"
@@ -328,5 +327,4 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
     write_json_lines(run_dir / "trajectory.jsonl", trajectory_rows)
     write_json_lines(run_dir / "web_surfer.log", websurfer_rows)
     return report
-
 

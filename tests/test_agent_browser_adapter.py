@@ -10,11 +10,25 @@ from unittest.mock import AsyncMock, MagicMock, patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+import capture  # noqa: E402
 import runner  # noqa: E402
 from agent_browser import AgentBrowserClient  # noqa: E402
 
 
 class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
+    async def test_live_snapshot_diff_timeout_is_not_retried(self) -> None:
+        cdp = MagicMock()
+        cdp.call = AsyncMock(side_effect=TimeoutError("deadline"))
+        with self.assertRaisesRegex(runner.RunnerError, "timed out after 1 attempts"):
+            await capture.capture_snapshot_diff(
+                cdp,
+                {"nodes": []},
+                action_type="click",
+                max_nodes=7000,
+                max_text_chars=200000,
+            )
+        cdp.call.assert_awaited_once()
+
     def test_runner_reexports_structured_client(self) -> None:
         self.assertIs(runner.AgentBrowserClient, AgentBrowserClient)
 
@@ -204,6 +218,35 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             target,
             {"ref": "e29", "role": "button", "name": "Search"},
+        )
+
+    def test_ref_target_identity_recovers_missing_metadata_from_exact_ref_line(
+        self,
+    ) -> None:
+        bundle = runner.CaptureBundle(
+            snapshot=dict(url="https://example.test"),
+            snapshot_path=Path("dom.json"),
+            model_text="",
+            screenshot_path=Path("screenshot.png"),
+            agent_browser_action_text=(
+                '      - LabelText "Beginner(1,277)" [ref=e220] clickable\n'
+                '        - checkbox "Beginner(1,277)" [ref=e302]\n'
+            ),
+            agent_browser_refs=frozenset({"e220", "e302"}),
+            agent_browser_targets={
+                "e220": {"role": "LabelText", "name": ""},
+                "e302": {"role": "checkbox", "name": "Beginner(1,277)"},
+            },
+        )
+
+        target = runner.agent_browser_target_identity(
+            {"action": "click", "id": "e220"},
+            bundle,
+        )
+
+        self.assertEqual(
+            target,
+            {"ref": "e220", "role": "LabelText", "name": "Beginner(1,277)"},
         )
 
     async def test_non_transport_cdp_send_error_is_raised_immediately(self) -> None:
@@ -575,9 +618,42 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("Use only ids from this observation.", model_text)
         self.assertNotIn('Use: scroll("down"', model_text)
         self.assertNotIn("Not currently clickable.", model_text)
-        self.assertIn("=== SCROLLABLE REGIONS ===", model_text)
-        self.assertIn("[non-executable-dom-id] page content", model_text)
+        self.assertNotIn("=== SCROLLABLE REGIONS ===", model_text)
+        self.assertNotIn("page content", model_text)
         self.assertIn("Visible result text", model_text)
+
+    def test_model_prompt_removes_complete_scroll_region_block_without_changing_stored_output(
+        self,
+    ) -> None:
+        text = (
+            "=== ADDITIONAL CAPTURED CONTENT ===\n"
+            "Not currently clickable. To interact with these rows, scroll [7528] page content.\n"
+            "Recorded offscreen evidence\n"
+            "=== SCROLLABLE REGIONS ===\n"
+            'Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).\n'
+            "[7528] page content — 1200x800\n"
+            "[A1] Results pane (list) — 640x480\n"
+            "[Promotion] Sponsored panel — 320x240\n"
+            "[scrollable regions hidden: 4 more]\n"
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            stored_path = Path(temp_dir) / "dom_model.txt"
+            stored_path.write_text(text, encoding="utf-8")
+            stored_before = stored_path.read_bytes()
+
+            model_text = runner.chromiumrl_evidence_for_model(
+                stored_path.read_text(encoding="utf-8")
+            )
+
+            self.assertEqual(stored_path.read_bytes(), stored_before)
+        self.assertIn("=== ADDITIONAL CAPTURED CONTENT ===", model_text)
+        self.assertIn("Recorded offscreen evidence", model_text)
+        self.assertNotIn("To interact with these rows, scroll", model_text)
+        self.assertNotIn("=== SCROLLABLE REGIONS ===", model_text)
+        self.assertNotIn("[7528]", model_text)
+        self.assertNotIn("[A1]", model_text)
+        self.assertNotIn("[Promotion]", model_text)
+        self.assertNotIn("scrollable regions hidden", model_text)
 
     def test_model_prompt_hides_non_executable_dom_ids_without_losing_values(self) -> None:
         text = (

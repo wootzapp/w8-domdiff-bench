@@ -25,9 +25,8 @@ from agent_browser import (
     AgentBrowserObservation,
     AgentBrowserPage,
 )
-from artifacts import normalized_http_url, write_json, write_text
+from recorder_support import RunnerError, normalized_http_url, write_json, write_text
 from dom_diff import clean_dom_text, same_document_except_fragment
-from recorder_errors import RunnerError
 
 
 ROOT = Path(__file__).resolve().parent
@@ -261,6 +260,26 @@ def agent_browser_control_signature(line: str) -> str:
     return normalized_observation_text(prefix)
 
 
+def agent_browser_line_identity(line: str) -> dict[str, str]:
+    """Parse the generic role/name shown on one agent-browser snapshot line."""
+    match = re.match(
+        r'^\s*-\s*(?P<role>\S+)(?:\s+(?P<name>"(?:\\.|[^"\\])*"))?\s+\[',
+        line,
+    )
+    if not match:
+        return {"role": "", "name": ""}
+    raw_name = match.group("name")
+    name = ""
+    if raw_name:
+        try:
+            parsed_name = json.loads(raw_name)
+        except (TypeError, ValueError):
+            parsed_name = ""
+        if isinstance(parsed_name, str):
+            name = parsed_name
+    return {"role": match.group("role"), "name": name}
+
+
 def agent_browser_target_identity(
     decision: dict[str, Any],
     bundle: CaptureBundle,
@@ -275,10 +294,19 @@ def agent_browser_target_identity(
     if not ref:
         return None
     target = bundle.agent_browser_targets.get(ref, {})
+    role = str(target.get("role", ""))
+    name = str(target.get("name", ""))
+    if not clean_dom_text(role) or not clean_dom_text(name):
+        line = agent_browser_ref_line(bundle.executable_agent_browser_text(), ref)
+        line_identity = agent_browser_line_identity(line)
+        if not clean_dom_text(role):
+            role = line_identity["role"]
+        if not clean_dom_text(name):
+            name = line_identity["name"]
     return {
         "ref": ref,
-        "role": str(target.get("role", "")),
-        "name": str(target.get("name", "")),
+        "role": role,
+        "name": name,
     }
 
 
@@ -538,18 +566,6 @@ def renderer_versions() -> dict[str, dict[str, str]]:
     }
 
 
-def preserve_original_renders(snapshot_path: Path) -> list[str]:
-    """Preserve the first observed render before an opt-in backfill rerender."""
-    preserved: list[str] = []
-    for name in ("dom_full.txt", "dom_model.txt"):
-        current = snapshot_path.with_name(name)
-        original = snapshot_path.with_name(name.replace(".txt", ".original.txt"))
-        if current.exists() and not original.exists():
-            current.replace(original)
-            preserved.append(str(original))
-    return preserved
-
-
 async def capture_call(
     cdp: CDPClient,
     method: str,
@@ -574,10 +590,11 @@ async def capture_structured_snapshot(
     max_nodes: int,
     max_text_chars: int,
 ) -> dict[str, Any]:
-    """Capture the sole raw DOM evidence through captureStructuredSnapshot.
+    """Capture an initial or before-action snapshot through ChromiumRL.
 
     Offscreen nodes are requested so recorded evidence does not depend only on
-    the current viewport. DOM diffs remain a pure comparison of stored JSON.
+    the current viewport. After actions, captureSnapshotDiff owns both capture
+    and comparison.
     """
     params: dict[str, Any] = {
         "inViewportOnly": False,
@@ -594,6 +611,39 @@ async def capture_structured_snapshot(
     if not isinstance(snapshot, dict):
         raise RunnerError(f"unexpected ChromiumRL snapshot response: {result}")
     return snapshot
+
+
+async def capture_snapshot_diff(
+    cdp: CDPClient,
+    before_snapshot: dict[str, Any],
+    *,
+    action_type: str | None,
+    max_nodes: int,
+    max_text_chars: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Capture the after-state and compute its diff inside ChromiumRL."""
+    params: dict[str, Any] = {
+        "beforeSnapshot": before_snapshot,
+        "inViewportOnly": False,
+        "maxNodes": max_nodes,
+        "maxTextChars": max_text_chars,
+        "includeOffscreen": True,
+    }
+    if action_type:
+        params["actionType"] = action_type
+    result = await capture_call(
+        cdp,
+        "ChromiumRL.captureSnapshotDiff",
+        params,
+        attempts=1,
+    )
+    after_snapshot = result.get("afterSnapshot")
+    diff = result.get("diff")
+    if not isinstance(after_snapshot, dict) or not isinstance(diff, dict):
+        raise RunnerError(
+            f"unexpected ChromiumRL captureSnapshotDiff response: {result}"
+        )
+    return after_snapshot, diff
 
 
 async def materialize_bundle(
@@ -652,6 +702,40 @@ async def capture_after_action_bundle(
             )
             bundle = await materialize_bundle(cdp, directory, snapshot)
             return bundle, reconnects
+        except RunnerError as error:
+            if not is_cdp_transport_error(error) or attempt >= max(1, attempts):
+                raise
+            reconnect = await synchronize_recorder_target(cdp, agent_browser)
+            reconnect["capture_attempt"] = attempt
+            reconnects.append(reconnect)
+            await asyncio.sleep(0.75 * attempt)
+    raise AssertionError("unreachable")
+
+
+async def capture_after_action_diff_bundle(
+    cdp: CDPClient,
+    agent_browser: AgentBrowserClient,
+    directory: Path,
+    before_snapshot: dict[str, Any],
+    *,
+    action_type: str | None,
+    max_nodes: int,
+    max_text_chars: int,
+    attempts: int = 3,
+) -> tuple[CaptureBundle, dict[str, Any], list[dict[str, Any]]]:
+    """Capture and diff after an action, reattaching on transport loss."""
+    reconnects: list[dict[str, Any]] = []
+    for attempt in range(1, max(1, attempts) + 1):
+        try:
+            snapshot, diff = await capture_snapshot_diff(
+                cdp,
+                before_snapshot,
+                action_type=action_type,
+                max_nodes=max_nodes,
+                max_text_chars=max_text_chars,
+            )
+            bundle = await materialize_bundle(cdp, directory, snapshot)
+            return bundle, diff, reconnects
         except RunnerError as error:
             if not is_cdp_transport_error(error) or attempt >= max(1, attempts):
                 raise
@@ -952,6 +1036,7 @@ class CDPClient:
         self.keep_existing_tabs = keep_existing_tabs
         self.browser_language = browser_language
         self.browser_accept_language = browser_accept_language
+        self.browser_version = ""
         self.http: aiohttp.ClientSession | None = None
         self.ws: aiohttp.ClientWebSocketResponse | None = None
         self.reader: asyncio.Task[None] | None = None
@@ -1022,10 +1107,17 @@ class CDPClient:
             if response.status != 200:
                 raise RunnerError(f"CDP /json/version returned HTTP {response.status}")
             version = await response.json()
+        self.browser_version = str(version.get("Browser", ""))
         ws_value = version.get("webSocketDebuggerUrl")
         if not ws_value:
             raise RunnerError("CDP did not expose webSocketDebuggerUrl")
-        self.ws = await self.http.ws_connect(rewrite_ws_url(str(ws_value), self.http_url))
+        # ChromiumRL may return complete multi-megabyte snapshots and diffs. The
+        # default aiohttp receive ceiling is 4 MiB, so leave protocol payload
+        # sizing to ChromiumRL and the caller rather than truncating transport.
+        self.ws = await self.http.ws_connect(
+            rewrite_ws_url(str(ws_value), self.http_url),
+            max_msg_size=0,
+        )
         self.reader = asyncio.create_task(self._read_messages())
 
     async def connect(self) -> None:
@@ -1175,6 +1267,7 @@ class CDPClient:
         self.session_id = str(attached["sessionId"])
         locale_setup = await self._enable_attached_target()
         self.connection_report = {
+            "browser_version": self.browser_version,
             "tab_cleanup": cleanup,
             "locale_setup": locale_setup,
             "target_switches": [],

@@ -2,15 +2,14 @@
 """Generic model-driven runner for a ChromiumRL desktop browser.
 
 DOM evidence comes directly from ChromiumRL.captureStructuredSnapshot.
-Per-action DOM changes are derived deterministically from the stored before and
-after structured snapshots, with no browser-resident diff state.
+Per-action DOM changes are computed inside ChromiumRL while it captures the
+after structured snapshot. The host only persists the returned evidence.
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
-import base64
 import hashlib
 import json
 import os
@@ -30,20 +29,14 @@ from typing import Any, Callable, TextIO
 
 import aiohttp
 
-from artifacts import (
+from recorder_support import (
+    RunnerError,
     append_json_line,
     normalized_http_url,
     utc_now,
     write_json,
     write_json_lines,
     write_text,
-)
-from backfill import (
-    apply_diff_metadata,
-    backfill_run,
-    diff_report_summary,
-    previous_dom_diff_state,
-    update_step_diff_metadata,
 )
 from capture import (
     FULL_RENDERER,
@@ -61,6 +54,7 @@ from capture import (
     attach_agent_browser_observation,
     attach_agent_browser_observation_error,
     capture_after_action_bundle,
+    capture_after_action_diff_bundle,
     capture_bundle,
     capture_call,
     capture_structured_snapshot,
@@ -76,7 +70,6 @@ from capture import (
     materialize_bundle,
     normalized_observation_text,
     page_language_state,
-    preserve_original_renders,
     recorded_action_coordinate,
     render_stored_snapshot,
     renderer_versions,
@@ -87,54 +80,13 @@ from capture import (
     verify_agent_browser_action,
 )
 from dom_diff import (
-    DOM_DIFF_FIELDS,
-    DOM_DIFF_INTERVAL,
-    DOM_DIFF_SOURCE,
-    MAX_COLLAPSE_CONTROLS,
-    MAX_COLLAPSE_DOCUMENT_SHARE,
-    MAX_COLLAPSE_TEXT_CHARS,
     MAX_DOM_DIFF_JSON_BYTES,
-    MAX_MODEL_DOM_DIFF_ENTRIES,
     MAX_TERMINATION_REVIEW_DIFF_ENTRIES_PER_STEP,
-    ORDER_INSENSITIVE_DOM_FIELDS,
-    SnapshotIdentityError,
     bounded_dom_diff_for_model,
     bounded_dom_diff_history_for_review,
-    build_snapshot_path_index,
-    canonical_dom_value,
-    child_paths,
     clean_dom_text,
-    collapse_visible_text,
-    collision_node,
-    compared_node_fields,
-    compress_tree_operation,
-    condense_repeated_groups,
-    dom_diff_record,
     dom_diff_text,
-    dropped_entry_summary,
-    entry_priority,
-    entry_text_fragment,
-    load_snapshot_file,
-    match_relocated_paths,
-    meaningful_diff_node,
-    model_diff_entry_summary,
-    node_delta,
-    node_tag,
-    numeric_bounds,
-    operation_subtree,
-    path_distance,
-    repeated_signature,
     same_document_except_fragment,
-    semantic_fingerprint,
-    snapshot_endpoint,
-    stable_node_anchor,
-    truncate_diff_entries,
-    unsafe_identity_record,
-    viewport_delta,
-    viewport_membership,
-    viewport_node_text,
-    visible_document_text,
-    write_dom_diff_files,
 )
 
 # Local adapter: supplies the browser-facing observation and action interface.
@@ -150,7 +102,6 @@ from agent_browser import (
 # Local prompt module: keeps model policy text separate from orchestration code.
 from prompts import SYSTEM_PROMPT, TERMINATION_REVIEW_PROMPT
 # Recorder-local exception; standalone adapter errors are caught separately.
-from recorder_errors import RunnerError
 from trajectory import (
     TRAJECTORY_SCHEMA_VERSION,
     WEBSURFER_ACTION_MAP,
@@ -166,6 +117,169 @@ MAX_TASK_MEMORY_CHARS = 8000
 MAX_ACTION_THOUGHT_CHARS = 1200
 # These schema limits bound model-authored bookkeeping, not captured DOM evidence.
 # They prevent an accidental full response from being copied into every action row.
+
+
+def browser_profile_provenance_from_environment() -> dict[str, Any]:
+    """Load container-lifetime profile metadata claimed by task_cli."""
+    raw = os.environ.get("RUNNER_BROWSER_PROFILE_PROVENANCE", "")
+    if not raw:
+        return {
+            "container_id": None,
+            "container_created_at": None,
+            "profile_fresh_at_run_start": None,
+            "tasks_previously_run_in_container": None,
+        }
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as error:
+        raise RunnerError("RUNNER_BROWSER_PROFILE_PROVENANCE is invalid JSON") from error
+    expected = {
+        "container_id",
+        "container_created_at",
+        "profile_fresh_at_run_start",
+        "tasks_previously_run_in_container",
+    }
+    if not isinstance(value, dict) or set(value) != expected:
+        raise RunnerError("RUNNER_BROWSER_PROFILE_PROVENANCE has invalid fields")
+    if not isinstance(value["container_id"], str) or not value["container_id"]:
+        raise RunnerError("browser container id is missing")
+    if not isinstance(value["container_created_at"], str) or not value["container_created_at"]:
+        raise RunnerError("browser container creation time is missing")
+    if not isinstance(value["profile_fresh_at_run_start"], bool):
+        raise RunnerError("browser profile freshness must be boolean")
+    count = value["tasks_previously_run_in_container"]
+    if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+        raise RunnerError("browser prior task count must be a non-negative integer")
+    return value
+
+
+def apply_diff_metadata(
+    manifest: dict[str, Any],
+    *,
+    diff_engine: dict[str, Any],
+) -> None:
+    """Record the live browser snapshot-diff contract in a run manifest."""
+    manifest["dom_diff_engine"] = dict(diff_engine)
+    manifest["dom_diff_source"] = "runner_snapshot_diff"
+    manifest["dom_diff_format"] = "snapshot_path_diff_v2"
+    manifest["dom_diff_identity"] = (
+        "tag plus normalized own directText or semantic-node accessibility anchor with occurrence index; "
+        "tag sibling-position fallback for broad nodes and nodes without own content anchors"
+    )
+    manifest["dom_diff_compared_fields"] = [
+        "tag",
+        "role",
+        "accessibleName",
+        "directText",
+        "selectedAttributes",
+        "states",
+        "actionTypes",
+        "semanticBoundary",
+    ]
+    manifest["dom_diff_geometry_excluded"] = True
+    manifest["dom_diff_covers_live_control_state"] = False
+    manifest["dom_diff_max_json_bytes"] = MAX_DOM_DIFF_JSON_BYTES
+    manifest.pop("dom_diff_max_json_lines", None)
+    manifest["dom_diff_excluded_fields"] = [
+        "bounds",
+        "clippedBounds",
+        "sourceOrder",
+        "index",
+        "confidence",
+        "ref",
+        "nodeId",
+        "backendNodeId",
+    ]
+    manifest.pop("dom_diff_capture_parameters", None)
+
+
+_BROWSER_DOM_DIFF_KEY_ORDER = (
+    "source",
+    "interval",
+    "action_type",
+    "geometry_excluded",
+    "covers_live_control_state",
+    "identity",
+    "status",
+    "before",
+    "after",
+    "change_count",
+    "semantic_change_count",
+    "viewport_change_count",
+    "totals",
+    "emitted_counts",
+    "compression",
+    "diff",
+)
+
+
+def _restore_browser_diff_float_fields(record: dict[str, Any]) -> None:
+    """Preserve Python artifact spelling for protocol numbers that may be integral."""
+    def restore(container: Any, key: str) -> None:
+        if not isinstance(container, dict):
+            return
+        value = container.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            container[key] = float(value)
+
+    compression = record.get("compression")
+    restore(compression, "max_collapse_document_percent")
+    diff = record.get("diff")
+    indexes = diff.get("indexes") if isinstance(diff, dict) else None
+    subtrees = indexes.get("subtrees") if isinstance(indexes, dict) else None
+    if isinstance(subtrees, list):
+        for subtree in subtrees:
+            restore(subtree, "document_percent")
+    viewport = diff.get("viewport_delta") if isinstance(diff, dict) else None
+    geometry = viewport.get("geometry") if isinstance(viewport, dict) else None
+    shift = geometry.get("dominant_shift") if isinstance(geometry, dict) else None
+    for key in ("delta_x", "delta_y", "share_of_shifted_nodes_percent"):
+        restore(shift, key)
+
+
+def _prepare_browser_dom_diff_record(
+    browser_diff: dict[str, Any],
+) -> dict[str, Any]:
+    """Normalize one browser-produced diff without writing any artifact."""
+    if not isinstance(browser_diff, dict):
+        raise RunnerError("ChromiumRL.captureSnapshotDiff returned no diff object")
+    unexpected = set(browser_diff) - set(_BROWSER_DOM_DIFF_KEY_ORDER)
+    if unexpected:
+        raise RunnerError(
+            "ChromiumRL.captureSnapshotDiff returned unexpected diff keys: "
+            + ", ".join(sorted(unexpected))
+        )
+    # A JSON round trip detaches the CDP response before host-only metadata is added.
+    detached = json.loads(json.dumps(browser_diff, ensure_ascii=False))
+    record = {key: detached[key] for key in _BROWSER_DOM_DIFF_KEY_ORDER if key in detached}
+    _restore_browser_diff_float_fields(record)
+    record["artifact"] = {
+        "max_json_bytes": MAX_DOM_DIFF_JSON_BYTES,
+        "json_bytes": 0,
+        "json_lines": 0,
+        "over_size_limit": False,
+    }
+    for _ in range(5):
+        serialized = json.dumps(record, ensure_ascii=False, indent=2) + "\n"
+        record["artifact"]["json_lines"] = len(serialized.splitlines())
+        record["artifact"]["json_bytes"] = len(serialized.encode("utf-8"))
+        record["artifact"]["over_size_limit"] = (
+            record["artifact"]["json_bytes"] > MAX_DOM_DIFF_JSON_BYTES
+        )
+    return record
+
+
+def write_browser_dom_diff_files(
+    browser_diff: dict[str, Any],
+    json_path: Path,
+) -> dict[str, Any]:
+    """Persist a live browser-computed step diff without recomputing it."""
+    record = _prepare_browser_dom_diff_record(browser_diff)
+    write_json(json_path, record)
+    write_text(json_path.with_suffix(".txt"), dom_diff_text(record))
+    return record
+
+
 ACTION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -483,7 +597,6 @@ class ModelClient:
             "language gate: switch the site to English before doing task work or terminating "
             "successfully."
         )
-        image_url = "data:image/png;base64," + base64.b64encode(bundle.screenshot_path.read_bytes()).decode("ascii")
         payload = {
             "model": self.model,
             "instructions": SYSTEM_PROMPT,
@@ -492,7 +605,6 @@ class ModelClient:
                     "role": "user",
                     "content": [
                         {"type": "input_text", "text": prompt},
-                        {"type": "input_image", "image_url": image_url, "detail": "auto"},
                     ],
                 }
             ],
@@ -542,10 +654,6 @@ class ModelClient:
             f"{prior_evidence_text or '[]'}\n\n"
             f"recent_action_outcomes:\n{json.dumps(recent_actions[-8:], ensure_ascii=False)}"
         )
-        image_url = (
-            "data:image/png;base64,"
-            + base64.b64encode(bundle.screenshot_path.read_bytes()).decode("ascii")
-        )
         payload = {
             "model": self.model,
             "instructions": TERMINATION_REVIEW_PROMPT,
@@ -554,7 +662,6 @@ class ModelClient:
                     "role": "user",
                     "content": [
                         {"type": "input_text", "text": prompt},
-                        {"type": "input_image", "image_url": image_url, "detail": "auto"},
                     ],
                 }
             ],
@@ -758,6 +865,7 @@ async def run(args: argparse.Namespace) -> int:
         "task": args.task or "capture-only",
         "created_at": utc_now(),
         "browser_image": os.environ.get("IMAGE", "devjangid/wootzapp-chromium-desktop:latest"),
+        "browser_profile_provenance": browser_profile_provenance_from_environment(),
         "dom_capture_parameters": {
             "max_nodes": args.snapshot_max_nodes,
             "max_text_chars": args.snapshot_max_text_chars,
@@ -781,6 +889,7 @@ async def run(args: argparse.Namespace) -> int:
         "renderer_files": [FULL_RENDERER.name, MODEL_RENDERER.name],
         "renderer_versions": current_renderer_versions,
         "model_input_renderer": current_renderer_versions["model"],
+        "model_input_policy": "dom_only",
         "model_context": {
             "full_agent_browser_evidence": "stored unchanged in agent_browser.txt",
             "action_namespace": "official agent-browser snapshot --interactive",
@@ -825,7 +934,11 @@ async def run(args: argparse.Namespace) -> int:
         ),
         "status": "running",
     }
-    apply_diff_metadata(manifest)
+    live_diff_engine: dict[str, Any] = {
+        "name": "ChromiumRL.captureSnapshotDiff",
+        "browser_version": None,
+    }
+    apply_diff_metadata(manifest, diff_engine=live_diff_engine)
     write_json(run_dir / "manifest.json", manifest)
 
     try:
@@ -844,6 +957,8 @@ async def run(args: argparse.Namespace) -> int:
                     }
                 )
             manifest["browser_session"] = cdp.connection_report
+            live_diff_engine["browser_version"] = cdp.browser_version or None
+            apply_diff_metadata(manifest, diff_engine=live_diff_engine)
             session_warnings = cdp.connection_report.get("tab_cleanup", {}).get("warnings", [])
             if session_warnings:
                 manifest.setdefault("warnings", []).extend(session_warnings)
@@ -1198,20 +1313,23 @@ async def run(args: argparse.Namespace) -> int:
                         )
                     except Exception as error:
                         language_guard_error = f"{type(error).__name__}: {error}"
-                after, capture_reconnects = await capture_after_action_bundle(
-                    cdp,
-                    agent_browser,
-                    step_dir / "after",
-                    max_nodes=args.snapshot_max_nodes,
-                    max_text_chars=args.snapshot_max_text_chars,
+                action_type = clean_dom_text(executable_decision.get("action")) or None
+                after, browser_diff, capture_reconnects = (
+                    await capture_after_action_diff_bundle(
+                        cdp,
+                        agent_browser,
+                        step_dir / "after",
+                        before.snapshot,
+                        action_type=action_type,
+                        max_nodes=args.snapshot_max_nodes,
+                        max_text_chars=args.snapshot_max_text_chars,
+                    )
                 )
                 if capture_reconnects:
                     target_sync["capture_reconnects"] = capture_reconnects
-                diff_record = write_dom_diff_files(
-                    before.snapshot_path,
-                    after.snapshot_path,
+                diff_record = write_browser_dom_diff_files(
+                    browser_diff,
                     step_dir / "dom_diff.json",
-                    action_type=clean_dom_text(executable_decision.get("action")) or None,
                 )
                 agent_browser_snapshot_error = ""
                 try:
@@ -1300,6 +1418,7 @@ async def run(args: argparse.Namespace) -> int:
                     "after_snapshot": str(after.snapshot_path.relative_to(run_dir)),
                     "dom_diff": str((step_dir / "dom_diff.json").relative_to(run_dir)),
                     "dom_diff_text": str((step_dir / "dom_diff.txt").relative_to(run_dir)),
+                    "dom_diff_engine": dict(live_diff_engine),
                     "dom_diff_status": diff_record["status"],
                     "dom_diff_change_count": diff_record["change_count"],
                     "dom_diff_json_lines": int(artifact.get("json_lines") or 0),
@@ -1457,7 +1576,7 @@ async def run(args: argparse.Namespace) -> int:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Load environment defaults, then parse run/backfill/export CLI modes."""
+    """Load environment defaults, then parse live-run and export CLI modes."""
     pre = argparse.ArgumentParser(add_help=False)
     pre.add_argument("--env-file", default=".env")
     known, _ = pre.parse_known_args(argv)
@@ -1466,11 +1585,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run browser tasks and diff stored ChromiumRL structured snapshots")
     parser.add_argument("--env-file", default=known.env_file)
     parser.add_argument(
-        "--backfill-run",
-        type=Path,
-        help="Regenerate dom_diff.json and dom_diff.txt from stored snapshots in one existing run directory",
-    )
-    parser.add_argument(
         "--build-trajectory-run",
         type=Path,
         help=(
@@ -1478,19 +1592,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "plus web_surfer.log from confirmed executed actions"
         ),
     )
-    rerender_group = parser.add_mutually_exclusive_group()
-    rerender_group.add_argument(
-        "--rerender",
-        action="store_true",
-        help="Opt in to regenerating dom_full.txt and dom_model.txt during backfill",
-    )
-    rerender_group.add_argument(
-        "--no-rerender",
-        dest="rerender",
-        action="store_false",
-        help="Regenerate only diffs during backfill (the default)",
-    )
-    parser.set_defaults(rerender=False)
     parser.add_argument("--task")
     parser.add_argument("--task-id")
     parser.add_argument("--source-task-id")
@@ -1588,17 +1689,9 @@ async def run_with_interrupt_handlers(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Dispatch offline backfill/export modes or run one live browser task."""
+    """Dispatch offline trajectory export or run one live browser task."""
     try:
         args = parse_args(argv)
-        if args.backfill_run is not None and args.build_trajectory_run is not None:
-            raise RunnerError(
-                "--backfill-run and --build-trajectory-run are mutually exclusive"
-            )
-        if args.backfill_run is not None:
-            report = backfill_run(args.backfill_run, rerender=args.rerender)
-            print(json.dumps(report, ensure_ascii=False, indent=2))
-            return 2 if report["unsafe_identity_steps"] or report["incomplete_step_directories"] else 0
         if args.build_trajectory_run is not None:
             run_dir = args.build_trajectory_run.resolve()
             report = generate_trajectory_artifacts(run_dir)
