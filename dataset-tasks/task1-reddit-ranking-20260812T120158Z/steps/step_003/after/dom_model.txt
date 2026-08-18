@@ -1,0 +1,297 @@
+URL: https://www.reddit.com/r/LocalLLaMA/top/
+Title: LocalLlama
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=3394 groups=103 truncated=False
+
+=== TABLES ===
+Table 1: rows=10 columns=2
+  Metric | Value
+  Decode (best client-side, 4096 tok) | 26.76 t/s
+  Decode (server-side typical) | 23-24 t/s
+  Decode (peak 3s window) | 35.27 t/s
+  Prefill | (2209-token prompt)
+  Plain decode (no spec, same engine) | (llama-bench)
+  Plain prefill (no spec, same engine) | (llama-bench)
+  DSpark acceptance | 0.586, mean accepted len 3.93
+  Context | 131,072 (q8_0 KV)
+  GPU util | ~92%, CPU ~1%
+Table 2: rows=7 columns=6
+  Platform | Engine | Backend | Spec | Decode | Prefill @2K
+  Strix Halo | llama.cpp v0.6.1 | Vulkan | none | 18.33 t/s | 254 t/s
+  Strix Halo | ds4 (upstream) | ROCm | none | 12.5 t/s | 122 t/s
+  DGX Spark | ds4 (upstream) | CUDA | none | 14.2 t/s | 392 t/s
+  DGX Spark | Entrpi/ds4 fork | CUDA | none | 20.0 t/s | ~960 t/s
+  Strix Halo | llama.cpp v0.6.1 | Vulkan | DSpark | 26.76 t/s | ~236 t/s
+  DGX Spark | Entrpi/ds4 fork v0.5.6 | CUDA | DSpark | 27.3 t/s | ~960 t/s
+Table 3: rows=3 columns=3
+  KV type | 1024 tok | 4096 tok
+  f16 65k | 21.99 t/s | 19.32 t/s
+  q8_0 131k | 20.70 t/s | 22.74 t/s
+Table 4: rows=5 columns=3
+  Metric | q8_0 vs bf16 (mine, Moby Dick) | erazortt's DS4F (wikitext)
+  Same top-p | (2.16% flip) | 87.19% (13% flip)
+  KLD mean | 0.0126 | 0.1459
+  KLD 99.9% | 0.81 | 4.535
+  RMS Δp | 5.12% | 11.88%
+Table 5: rows=6 columns=6
+  Model | Quant · active | tg | pp | Max ctx | Notes
+  gpt-oss-20B | MXFP4 · 3.6B MoE | 120 | 2000 | 131K | 503 t/s batched; launch-overhead bound single-stream
+  gpt-oss-120B | MXFP4 · 5.1B MoE | 78 | 1244 | 131K | q8 KV; fastest coder
+  Qwen3.6-35B-A3B | Q6_K +MTP · 3B MoE | 110 | 1700 | 262K | little-MoE default (MTP tg optimistic)
+  Qwen3.6-27B | Q5_K_M +MTP · dense | 47 | 812 | 262K | 29 tg without MTP
+  gemma-4-31B | Q8_0 · dense | 23 | 767 | 262K | Q8 beats Q6_K on speed quality
+Table 6: rows=7 columns=6
+  Model | Quant · active | tg | pp | Max ctx | Notes
+  gpt-oss-120B | MXFP4 · 5.1B MoE | 85 | 1870 | 131K | 2nd card buys +48% pp only, tg slightly improved
+  Laguna-S 2.1 | Q4_K_M · 8B MoE | 59 | 968 | 262K | "just works" fork, fast
+  GLM-4.5-Air | Q6_K · 12B MoE | 39 | 1181 | 131K | smart 2-card partner
+  MiniMax-M2.7 | IQ4_XS · 10B MoE | 38 | 800 | 160K | q8 KV; only 4-bit fit on 2 cards
+  Gemma-4-31B-StyleTune | Q8_0 · dense | 23 | ~760 | 131K | 50 ms warm TTFT swa full, mem hog
+  Mistral-Medium-3.5 128B | Q4_K_XL · | 9.8 | 200 | 262K | Dense >30B dead end, too slow
+Table 7: rows=4 columns=6
+  Model | Quant · active | tg | pp | Max ctx | Notes
+  DeepSeek V4-Flash 0731 | Q4_K_XL · 13B MoE (MLA) | ~29 | ~365 | 1M | plain no-spec; huge ctx, tiny MLA KV
+  MiniMax-M2.7 | Q4_K_M · 10B MoE | 47 | 1135 | 192K | beats the IQ4_XS (+29% pp, better quality)
+  Hy3 | Q4_K_M · 16B MoE | 29.5 | 315 | 65K | ? deleted ? V4-Flash speed with 16× less ctx
+Table 8: rows=3 columns=6
+  Model | Quant · active | tg | pp | Max ctx | Notes
+  DeepSeek V4-Flash 0731 | Q4_K_XL · 13B MoE | 29 | ~450 | 1M | plain no-spec
+  same + BF16 DSpark drafter | speculative | 33 | 400 | 1M | 37 code / 28 prose
+Table 9: rows=7 columns=3
+  prompt | TinyTitle | Supra Title 50M
+  How does AI work? | AI Work | AI Basics Explained
+  How to make a discord server? | Discord Server | Discord Server Creation
+  What's the best way to learn French quickly? | Best Way to French Quickly | Learning French Tips
+  Explain quantum computing like I'm five | Quantum Computing Like | Quantum Computing Basics
+  Can you explain the difference between TCP and UDP? | TCP and UDP Differences | TCP Vs UDP Comparison
+  36 liters of diesel fuel is worth €18. The tank of this pickup truck can hold 80 liters. How much does it cost to fill the tank? | Diesel Cost Calculation | Diesel Fuel Tank Cost
+Table 10: rows=3 columns=3
+  model | file | peak rss
+  TinyTitle | 1.98 MB | 4.89 MiB
+  Supra Title 50M (Q1_0, llama.cpp) | 19.6 MB | ~126 MiB
+
+=== VISIBLE CONTENT ===
+Context: Community actions
+- r/LocalLLaMA https://x.com/localllamasub
+Context: Author: u/danielhanchen
+- Open sort options
+- Now
+- Today
+- This Week
+- This Month
+- This Year
+- All Time
+- Community highlights
+- Best Local LLMs - August 2026 112 votes • 120 comments
+- 3 Repost Introducing Unsloth Desktop app u/danielhanchen • 21 hr. ago Introducing Unsloth Desktop app News
+- Advertisement: What if AI ran the busywork?
+- What if AI ran the busywork?
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [99] page content.
+Context: Author: u/danielhanchen
+- clickup.com
+- View More
+- 1 Repost All the more reason not to use Closed Models ... Claude now officially "marks" AI-generated content ... steganographically, apparently ... and there are false positives already u/johnnyApplePRNG • 17 hr. ago All the more reason not to use Closed Models ... Claude now officially "marks" AI-generated content ... steganographically, apparently ... and…
+- Repost It's the final countdown, baby! Qwen is out in just over 7 hours! u/LegacyRemaster • 4 hr. ago It's the final countdown, baby! Qwen is out in just over 7 hours! New Model
+- Repost nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16 · Hugging Face u/coder543 • 23 hr. ago nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16 · Hugging Face New Model https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
+- Advertisement: LTX-2.5 is Here
+- LTX-2.5 is Here
+- ltx.io
+- Repost RTX 6000 PRO price raised to $16,000 USD on the Nvidia website u/Norwood_Reaper_ • 6 hr. ago RTX 6000 PRO price raised to $16,000 USD on the Nvidia website News https://marketplace.nvidia.com/en-us/enterprise/laptops-workstations/nvidia-rtx-pro-6000-blackwell-workstation-edition/
+- Repost Anthropic, OpenAI, Google, Meta, Microsoft, and Mistral all signed the EU Code of Practice on Transparency of AI-Generated Content u/Bestlife73 • 12 hr. ago Anthropic, OpenAI, Google, Meta, Microsoft, and Mistral all signed the EU Code of Practice on Transparency of AI-Generated Content Discussion
+- Repost The small open weight models are scarier in AI development u/Informal-Trouble2183 • 1 day ago The small open weight models are scarier in AI development Discussion Imagine if your everyday laptop could run an AI model smart enough to take care of 90% of your work—totally private, lightning fast, and completely free of monthly fees. That is the exact…
+Context: Author: u/Informal-Trouble2183
+- The small open weight models are scarier in AI development
+- 1 day ago
+- Imagine if your everyday laptop could run an AI model smart enough to take care of 90% of your work—totally private, lightning fast, and completely free of monthly fees. That is the exact tipping point of history where the AI bubble bursts completely.
+- I bet this is the nightmare for OpenAI and Anthropic. Not everybody has resources to host big open weight models, but everybody can host small ones like Qwen 3.6.
+- Are we reaching there soon 🔜
+Context: Author: u/danielhanchen
+- Repost Encrypted reasoning from ClosedAI et al 100% recoverable u/Dany0 • 20 hr. ago Encrypted reasoning from ClosedAI et al 100% recoverable News https://stolen-thoughts.com/
+- Advertisement: Stuck in academia and wondering what's next? Make the switch to Data Science, Data Engineering, or AI Engineering. Full-time, remote, 4–6 months. 100% funded if you're unemployed.
+- Stuck in academia and wondering what's next? Make the switch to Data Science, Data Engineering, or AI Engineering. Full-time, remote, 4–6 months. 100% funded if you're unemployed.
+- course.neuefische.de
+- Learn More
+- Repost I will be parting with my 4x Spark Cluster. u/Aroochacha • 16 hr. ago I will be parting with my 4x Spark Cluster. Other Laid off then my partner of 10 years said he's leaving, have to move, etc... I will post the r/hardwareswap link when I make it. I'm willing to add some incentive for r/LocalLLaMA folks. I will also add the super node configs and al…
+Context: Author: u/Aroochacha
+- I will be parting with my 4x Spark Cluster.
+- 16 hr. ago
+- Laid off then my partner of 10 years said he's leaving, have to move, etc...
+- I will post the link when I make it. I'm willing to add some incentive for folks.
+- I will also add the super node configs and all the cool stuff that may not be apparent that you can do with each. (Especially for the top 1-2% post members.)
+- As for my hobbies (optimizing multi-node LLM frameworks etc.) I can emulate on my workstation.
+Context: Author: u/danielhanchen
+- Repost We quantized DeepSeek V4 0731 and benchmarked it against popular quants on 8× RTX 5090 u/gladkos • 14 hr. ago We quantized DeepSeek V4 0731 and benchmarked it against popular quants on 8× RTX 5090 New Model
+- 2 Repost 366 t/s Qwen3.6 27B NVFP4 on v100s u/Simple_Library_2700 • 16 hr. ago 366 t/s Qwen3.6 27B NVFP4 on v100s News These are single stream numbers Following on from my previous post about v100s ( here ) and inspired by this comment ( here ) I decided to work on kernels that allow for an extremely fast path for Nvfp4 weights on sm70 and almost free deep…
+Context: Author: u/Simple_Library_2700
+- These are single stream numbers
+- Following on from my previous post about v100s ( ) and inspired by this comment ( ) I decided to work on kernels that allow for an extremely fast path for Nvfp4 weights on sm70 and almost free deep speculation on sm70 as well.
+- Which leads me excitedly on to the launch of “v100-skinny” (cause the kernels are skinny)
+- My work and how to run can be found here: https://github.com/dnv2003/v100-skinny
+- Many caveats about the quoted number in the title are in the repo but it is the absolute best case for mtp that being extraction. However you can expect around 240 on structured generation like json and 200 on mtp friendly code (think boiler plate,patterns, html etc using the “flagship configuration of k=7”)
+Context: Author: u/danielhanchen
+- 1 Repost I built a weird, low-power llama.cpp server using an Intel N100 + RTX 5060Ti u/chiribe • 21 hr. ago I built a weird, low-power llama.cpp server using an Intel N100 + RTX 5060Ti Tutorial | Guide
+- 1 Repost New Muse-Glimmer-30B SoTA Quants - hopefully a new lineup :) u/KvAk_AKPlaysYT • 9 hr. ago New Muse-Glimmer-30B SoTA Quants - hopefully a new lineup :) New Model Hey Folks, I've been making quants for a while - recently I took a short break to get into hardcore research (submitted my first EMNLP paper during it!). Along the way, I built up a little…
+Context: Author: u/KvAk_AKPlaysYT
+- New Muse-Glimmer-30B SoTA Quants - hopefully a new lineup :)
+- 9 hr. ago
+- Hey Folks,
+- I've been making quants for a while - recently I took a short break to get into hardcore research (submitted my first EMNLP paper during it!). Along the way, I built up a little arsenal of quant-optim techniques: everything from novel, paper-pending tricks to some genuinely sick tensor-mapping algos.
+- I threw some of the secret sauce into the newly released Muse Glimmer 30B (META IS BACK!) and compared it to several OGs. I'm honestly shocked by how it never loses to any quant out there in every single VRAM class!
+- One of the coolest ones is my Q8 quant, it is smaller than UD-Q8_K_XL and 21% closer to BF16.
+- Full methodology is on the card - eval setup, CIs, held-out slices, the lot. Happy to answer questions in the comments.
+- Model: https://huggingface.co/AaryanK/Muse-Glimmer-30B-GGUF
+- I still had headroom left but ran out of compute credits :( Being a solo undergrad sophomore, I can't exactly spend H100 money that often, which is why the "hopefully" in the title :)
+- I'm looking for internships in AI agent orchestration and model inference. If this work looks relevant to your team: linkedin.com/in/theaaryankapoor
+- I plan on doing a write-up soon to describe some of the secret sauce!
+- Better inference to you!
+Context: Author: u/danielhanchen
+- Advertisement: 3D AI is getting better. Use code rtRODIN to test for free.
+- 3D AI is getting better. Use code rtRODIN to test for free.
+- hyper3d.ai
+- Redditors appreciate Hyper3D for its ability to generate high-fidelity sculpts, which significantly accelerates the 3D workflow and saves time.
+- New 3D AI Model Generates High-Fidelity Sculpt-Level r/TopologyAI • 84 upvotes
+- We’re bringing better topology and UV generation into Hyper3D Rodin soon r/TopologyAI • 16 upvotes
+- A transforming robot truck r/hyper3d_rodin • 8 upvotes
+- Repost I put Gemma 4 E4B and E2B into an e-reader so I can ask my weird questions and share my thoughts in private directly in app. u/Boopity_Boob • 22 hr. ago I put Gemma 4 E4B and E2B into an e-reader so I can ask my weird questions and share my thoughts in private directly in app. Discussion
+- Repost Local Benchmark : Muse Glimmer 30B vs Qwen 3.6 27B vs Gemma4 31B (and many other models and finetunes) u/WonderRico • 16 hr. ago Local Benchmark : Muse Glimmer 30B vs Qwen 3.6 27B vs Gemma4 31B (and many other models and finetunes) Resources
+- 1 Repost DeepSeek V4 Flash 0731 at 27+ t/s decode on Strix Halo — Vulkan + DSpark full guide u/stereohype • 19 hr. ago DeepSeek V4 Flash 0731 at 27+ t/s decode on Strix Halo — Vulkan + DSpark full guide Resources Been benchmarking DSv4 Flash 0731 on a Flow Z13 (Ryzen AI MAX+ 395, Radeon 8060S / gfx1151, 128GB LPDDR5X) for the past week. Figured I'd share wh…
+Context: Author: u/stereohype
+- DeepSeek V4 Flash 0731 at 27+ t/s decode on Strix Halo — Vulkan + DSpark full guide
+- 19 hr. ago
+- Been benchmarking DSv4 Flash 0731 on a Flow Z13 (Ryzen AI MAX+ 395, Radeon 8060S / gfx1151, 128GB LPDDR5X) for the past week. Figured I'd share what actually works and what doesn't — there are a lot of gotchas on this hardware.
+- Results
+- Best client-side observation (bench-kv.sh streaming, 4096-token generation). Server-side timing ( ) for similar runs consistently shows 23-24 t/s. See gotcha #7.
+- 131k context runs on — a speed/context trade that costs quality (~2% top-token flips vs bf16 on predictable prose, more on harder text; full measurement in gotcha #1).
+- Cross-platform comparison
+- Both Strix Halo and DGX Spark are unified-memory APUs with similar LPDDR5X bandwidth (~256 GB/s vs 273 GB/s).
+[content hidden: 192 more reason=max_content_blocks]
+
+=== MEDIA / IMAGE LABELS ===
+- "User Avatar" source=present
+- "https://styles.redditmedia.com/t5_81eyvm/styles/communityIcon_cumnsvx9kzma1.png?width=128&frame=1&auto=webp&s=546be7d3a…" source=present context="Community actions"
+- "u/ClickUp_App avatar" context="Author: u/danielhanchen"
+- "https://cf.preview.redd.it/8wkte1qneneh1.png?width=640&crop=smart&auto=webp&s=410409ededc5085a6c842d1c055a3c4f62064cc1" source=present context="Author: u/danielhanchen"
+- "u/ltx_model avatar" context="Author: u/danielhanchen"
+- "u/Neue_Fische avatar" source=present context="Author: u/danielhanchen"
+- "https://cf.preview.redd.it/j8laaqm496gh1.png?width=640&crop=smart&auto=webp&s=90d1664a832561c062a20fdb77f662fc34d11761" source=present context="Author: u/danielhanchen"
+- "u/Hyper3D_RodinAI avatar" context="Author: u/danielhanchen"
+- "u/Dry_Rabbit_1123 avatar" source=present context="Author: u/Dry_Rabbit_1123"
+- "u/deutschlandwasgeht avatar" context="Author: u/danielhanchen"
+- "https://cf.preview.redd.it/015yjbm2tbgh1.png?width=640&crop=smart&auto=webp&s=c4c5c7c1776bbd0e72c88d42fd6b92d1e99f9ad3" source=present context="Author: u/danielhanchen"
+- "Hilf mit deiner Idee oder deinem Projekt, Deutschland endlich einfacher zu machen. Wähl eines der Top Bürokratieproblem…" source=present context="Author: u/danielhanchen"
+- "u/Public_Umpire_1099 avatar" source=present context="Author: u/Public_Umpire_1099"
+- "u/Any-Chipmunk5480 avatar" source=present context="Author: u/Any-Chipmunk5480"
+- "r/LocalLLaMA - Can Gemma and Qwen models catch hallucinations by looking at their own logprobs?" context="Author: u/Any-Chipmunk5480"
+- "u/GrungeWerX avatar" context="Author: u/GrungeWerX"
+- "u/m94301 avatar" source=present context="Author: u/m94301"
+- "u/CodeRabbitAI avatar" context="Author: u/danielhanchen"
+- "https://cf.preview.redd.it/65q379k969eh1.png?width=640&crop=smart&auto=webp&s=686a14e0120099159520b47cf9762816598afc03" source=present context="Author: u/danielhanchen"
+- "Cut code review time & bugs in half, instantly. Reviews for AI-powered teams who move fast (but don’t break things)" source=present context="Author: u/danielhanchen"
+[media hidden: more than 20 items]
+
+=== USEFUL PAGE ACTIONS ===
+[15541] clickable "1 Please search before asking"
+[49531] button "Open chat"
+[49475] link "Open inbox"
+[15153] button "Open user actions"
+[14802] link "Create Post"
+[15135] link "u/ClickUp_App"
+[15146] link "Promoted"
+[other actions hidden: 25]
+=== SECONDARY / DEBUG ACTIONS ===
+[100] link "Skip to main content" actions=click,scroll <a> role=link state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=133 bounds=(x=7.98828125 y=-1016.25 w=162.03125 h=40.5078125) reason=not_hit_testable
+[49739] link "u/ltx_model" <a> role=link context="generic: Author: u/coder543 / generic: u/ltx_model avatar / generic: u/ltx_model avatar" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2577 bounds=(x=460.3515625 y=2751.97265625 w=96.50390625 h=23.984375) reason=not_hit_testable
+[49750] link "Promoted" <a> role=link context="generic: Author: u/coder543 / generic: u/ltx_model avatar / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2606 bounds=(x=573.046875 y=2747.96875 w=51.9140625 h=31.9921875) reason=not_hit_testable
+[49757] button "Open user actions" <button> role=button context="generic: u/ltx_model avatar / generic: Open user actions / generic: Open user actions" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2624 bounds=(x=1135.41015625 y=2747.96875 w=31.9921875 h=31.9921875) reason=not_hit_testable
+[50109] link "u/Neue_Fische" <a> role=link context="generic: Author: u/coder543 / generic: u/Neue_Fische avatar / generic: u/Neue_Fische avatar" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3519 bounds=(x=460.3515625 y=4641.875 w=114.47265625 h=23.984375) reason=not_hit_testable
+[50682] link "u/Hyper3D_RodinAI" <a> role=link context="generic: Author: u/coder543 / generic: u/Hyper3D_RodinAI avatar / generic: u/Hyper3D_RodinAI avatar" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4831 bounds=(x=460.3515625 y=7514.6484375 w=142.40234375 h=23.984375) reason=not_hit_testable
+[50777] link "About Redditor Highlights" <a> role=link context="generic: Author: u/danielhanchen / generic: Author: u/coder543 / generic: u/Hyper3D_RodinAI avatar" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5096 bounds=(x=460.3515625 y=8211.2890625 w=700.05859375 h=15.99609375) reason=not_hit_testable
+[51295] button "Repost" <button> role=button context="generic: Author: u/coder543 / generic: Author: u/TacticalRock / generic: Author: u/TacticalRock" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6310 bounds=(x=621.42578125 y=10157.55859375 w=42.48046875 h=31.9921875) reason=not_hit_testable
+[51304] link "FYI: Muse Glimmer Chat Template Got Updated Recently" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/TacticalRock / generic: Author: u/TacticalRock" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6331 bounds=(x=444.35546875 y=9982.1484375 w=732.05078125 h=211.38671875) reason=not_hit_testable
+[51312] link "Author: u/TacticalRock" <a> role=link context="generic: Author: u/TacticalRock / generic: Author: u/TacticalRock / generic: Author: u/TacticalRock" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6348 bounds=(x=460.3515625 y=9986.15234375 w=111.73828125 h=23.984375) reason=not_hit_testable
+[51358] link "Flair: News" <a> role=link context="generic: Author: u/TacticalRock / generic: Author: u/TacticalRock / generic: Flair: News" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6472 bounds=(x=460.3515625 y=10067.08984375 w=41.9921875 h=15) reason=not_hit_testable
+[51363] link "Source: https://huggingface.co/meta-models/Muse-Glimmer-30B/blob/main/chat_template.jinja Seems to be a deduplication. Not sure how it alters model performance but it did get updated FWIW. Side note: good orchestrator m…" <a> role=link context="generic: Author: u/TacticalRock / generic: Author: u/TacticalRock / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6483 bounds=(x=460.3515625 y=10085.5859375 w=700.05859375 h=63.984375) reason=not_hit_testable
+[51369] link "https://huggingface.co/meta-models/Muse-Glimmer-30B/blob/main/chat_template.jinja" <a> role=link context="link: Source: Seems to be a deduplication. Not sure how it alters model per… / generic: Source: / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6492 bounds=(x=512.44140625 y=10088.0859375 w=531.66015625 h=15) reason=not_hit_testable
+[51385] link "Revision Prompting: Trades slow (decoded) output tokens for cheap (prefilled) input tokens." <a> role=link context="generic: Author: u/coder543 / generic: Author: u/Dry_Rabbit_1123 / generic: Author: u/Dry_Rabbit_1123" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6533 bounds=(x=444.35546875 y=10202.75390625 w=732.05078125 h=295.390625) reason=not_hit_testable
+[51393] link "Author: u/Dry_Rabbit_1123" <a> role=link context="generic: Author: u/Dry_Rabbit_1123 / generic: Author: u/Dry_Rabbit_1123 / generic: Author: u/Dry_Rabbit_1123" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6550 bounds=(x=460.3515625 y=10206.7578125 w=135.29296875 h=23.984375) reason=not_hit_testable
+[51433] link "Flair: Tutorial | Guide" <a> role=link context="generic: Author: u/Dry_Rabbit_1123 / generic: Author: u/Dry_Rabbit_1123 / generic: Flair: Tutorial | Guide" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6657 bounds=(x=460.3515625 y=10311.69921875 w=93.3203125 h=15) reason=not_hit_testable
+[51438] link "TL;DR: If you re-run the same prompt whenever the input changes, try sending the old input/output plus a diff of the input, and ask the model for a patch to the output. You generate ~2-10x fewer output tokens, and the u…" <a> role=link context="generic: Author: u/Dry_Rabbit_1123 / generic: Author: u/Dry_Rabbit_1123 / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6668 bounds=(x=460.3515625 y=10330.1953125 w=700.05859375 h=123.984375) reason=not_hit_testable
+[51446] link "https://revisionprompting.info" <a> role=link context="link: TL;DR: If you re-run the same prompt whenever the input changes, try… / generic: generic / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6683 bounds=(x=642.734375 y=10392.6953125 w=178.7890625 h=15) reason=not_hit_testable
+[51474] link "u/deutschlandwasgeht" <a> role=link context="generic: Author: u/coder543 / generic: u/deutschlandwasgeht avatar / generic: u/deutschlandwasgeht avatar" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6747 bounds=(x=460.3515625 y=10515.3515625 w=159.0234375 h=23.984375) reason=not_hit_testable
+[51528] link "[llama.cpp PR #26608] Ling-3.0 support (unmerged)" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/Public_Umpire_1099 / generic: Author: u/Public_Umpire_1099" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6887 bounds=(x=444.35546875 y=11289.74609375 w=732.05078125 h=271.38671875) reason=not_hit_testable
+[51536] link "Author: u/Public_Umpire_1099" <a> role=link context="generic: Author: u/Public_Umpire_1099 / generic: Author: u/Public_Umpire_1099 / generic: Author: u/Public_Umpire_1099" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6904 bounds=(x=460.3515625 y=11293.75 w=155.95703125 h=23.984375) reason=not_hit_testable
+[51576] link "Flair: Discussion" <a> role=link context="generic: Author: u/Public_Umpire_1099 / generic: Author: u/Public_Umpire_1099 / generic: Flair: Discussion" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7011 bounds=(x=460.3515625 y=11374.6875 w=69.98046875 h=15) reason=not_hit_testable
+[51581] link "aetherbird has done some great work getting Ling-3.0 to work in llama.cpp. The architecture is generally identical to deepseekv2. I recently added a microscopic 40 line PR to his that adds support for the Tiny model, wo…" <a> role=link context="generic: Author: u/Public_Umpire_1099 / generic: Author: u/Public_Umpire_1099 / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7022 bounds=(x=460.3515625 y=11393.18359375 w=700.05859375 h=123.984375) reason=not_hit_testable
+[51589] link "https://github.com/ggml-org/llama.cpp/pull/26608" <a> role=link context="link: aetherbird has done some great work getting Ling-3.0 to work in llama… / generic: generic / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7035 bounds=(x=460.3515625 y=11455.68359375 w=605.52734375 h=35) reason=not_hit_testable
+[51604] link "Muse Glimmer 30B running locally in-browser with custom WebGPU kernels at ~25 tok/s on an M4 Max (same speed as llama.cpp)" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/xenovatech / generic: Author: u/xenovatech" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7074 bounds=(x=444.35546875 y=11570.3515625 w=732.05078125 h=600.48828125) reason=not_hit_testable
+[51612] link "Author: u/xenovatech" <a> role=link context="generic: Author: u/xenovatech / generic: Author: u/xenovatech / generic: Author: u/xenovatech" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7091 bounds=(x=460.3515625 y=11574.35546875 w=104.62890625 h=23.984375) reason=not_hit_testable
+[51661] link "Flair: New Model" <a> role=link context="generic: Author: u/xenovatech / generic: Author: u/xenovatech / generic: Flair: New Model" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7224 bounds=(x=460.3515625 y=11679.296875 w=71.9921875 h=15) reason=not_hit_testable
+[51699] link "Can Gemma and Qwen models catch hallucinations by looking at their own logprobs?" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/Any-Chipmunk5480 / generic: Author: u/Any-Chipmunk5480" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7322 bounds=(x=444.35546875 y=12180.05859375 w=732.05078125 h=711.40625) reason=not_hit_testable
+[51707] link "Author: u/Any-Chipmunk5480" <a> role=link context="generic: Author: u/Any-Chipmunk5480 / generic: Author: u/Any-Chipmunk5480 / generic: Author: u/Any-Chipmunk5480" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7339 bounds=(x=460.3515625 y=12184.0625 w=150.5859375 h=23.984375) reason=not_hit_testable
+[51778] link "What unique, custom QOL upgrades have you given your local agents?" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/GrungeWerX / generic: Author: u/GrungeWerX" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7524 bounds=(x=444.35546875 y=12900.68359375 w=732.05078125 h=271.38671875) reason=not_hit_testable
+[51786] link "Author: u/GrungeWerX" <a> role=link context="generic: Author: u/GrungeWerX / generic: Author: u/GrungeWerX / generic: Author: u/GrungeWerX" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7541 bounds=(x=460.3515625 y=12904.6875 w=111.71875 h=23.984375) reason=not_hit_testable
+[51831] link "When I recently started my agentic journey, I hit a number of walls, the first being tool use eating up way too much context. Also, LM Studio had super slow prompt processing speeds w/Qwen 3.6 27B. I ended up switching…" <a> role=link context="generic: Author: u/GrungeWerX / generic: Author: u/GrungeWerX / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7659 bounds=(x=460.3515625 y=13004.12109375 w=700.05859375 h=123.984375) reason=not_hit_testable
+[51862] button "1 Repost" <button> role=button context="generic: Author: u/coder543 / generic: Author: u/m94301 / generic: Author: u/m94301" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7736 bounds=(x=621.42578125 y=13416.69921875 w=53.125 h=31.9921875) reason=not_hit_testable
+[51872] link "I tested the CMP170HX" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/m94301 / generic: Author: u/m94301" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7760 bounds=(x=444.35546875 y=13181.2890625 w=732.05078125 h=271.38671875) reason=not_hit_testable
+[51880] link "Author: u/m94301" <a> role=link context="generic: Author: u/m94301 / generic: Author: u/m94301 / generic: Author: u/m94301" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7777 bounds=(x=460.3515625 y=13185.29296875 w=82.63671875 h=23.984375) reason=not_hit_testable
+[51925] link "Lots of rumor and misinfo bouncing around, so I put some of these old mining cards to the test. I used 4 of the 8GB cards, set to 64GB each. Lots of models fit entirely on a single card, and you can also run several sma…" <a> role=link context="generic: Author: u/m94301 / generic: Author: u/m94301 / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7895 bounds=(x=460.3515625 y=13284.7265625 w=700.05859375 h=123.984375) reason=not_hit_testable
+[52120] link "u/CodeRabbitAI" <a> role=link context="generic: Author: u/coder543 / generic: u/CodeRabbitAI avatar / generic: u/CodeRabbitAI avatar" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8336 bounds=(x=460.3515625 y=13469.8828125 w=119.765625 h=23.984375) reason=not_hit_testable
+[52174] link "Hidden Reasoning from Claude and GPT are Decoded, and it is interesting" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/Zealousideal_Sort74 / generic: Author: u/Zealousideal_Sort74" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8476 bounds=(x=444.35546875 y=14050.0390625 w=732.05078125 h=271.38671875) reason=not_hit_testable
+[52182] link "Author: u/Zealousideal_Sort74" <a> role=link context="generic: Author: u/Zealousideal_Sort74 / generic: Author: u/Zealousideal_Sort74 / generic: Author: u/Zealousideal_Sort74" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8493 bounds=(x=460.3515625 y=14054.04296875 w=155.2734375 h=23.984375) reason=not_hit_testable
+[52230] link "Yesteday a paper showed a gap that allows to see 100% of the reasoning tokens form ALL Claude and GPT models . check it out, they have published lots of example reasonings. this is very relevant for open soruce; for the…" <a> role=link context="generic: Author: u/Zealousideal_Sort74 / generic: Author: u/Zealousideal_Sort74 / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8620 bounds=(x=460.3515625 y=14153.4765625 w=700.05859375 h=123.984375) reason=not_hit_testable
+[52236] link "Stealing Reasoning Traces from Proprietary LLM APIs" <a> role=link context="link: Yesteday a paper showed a gap that allows to see 100% of the reasonin… / generic: Yesteday a paper showed a gap that allows to see 10…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8629 bounds=(x=509.3359375 y=14175.9765625 w=335.01953125 h=15) reason=not_hit_testable
+[52256] link "According to AMD, Arm, and Microsoft, agentic AI could push CPU-to-GPU ratios from 1:4 to even1:1" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/ocean_protocol / generic: Author: u/ocean_protocol" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8678 bounds=(x=444.35546875 y=14330.64453125 w=732.05078125 h=295.390625) reason=not_hit_testable
+[52264] link "Author: u/ocean_protocol" <a> role=link context="generic: Author: u/ocean_protocol / generic: Author: u/ocean_protocol / generic: Author: u/ocean_protocol" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8695 bounds=(x=460.3515625 y=14334.6484375 w=127.9296875 h=23.984375) reason=not_hit_testable
+[52309] link "In OCP APAC 2026, Tai AMD SVP of compute and enterprise AI said agents don't cut GPU demand but they just pile on a whole extra layer of orchestration, retrieval, and tool-calling work that runs on CPUs instead And the…" <a> role=link context="generic: Author: u/ocean_protocol / generic: Author: u/ocean_protocol / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8813 bounds=(x=460.3515625 y=14458.0859375 w=700.05859375 h=123.984375) reason=not_hit_testable
+[52319] link "https://www.digitimes.com/news/a20260812VL224/amd-apac-cpu-2026-infrastructure.html" <a> role=link context="link: In OCP APAC 2026, Tai AMD SVP of compute and enterprise AI said agent… / generic: Sauce: / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8830 bounds=(x=460.3515625 y=14640.5859375 w=557.34375 h=15) reason=not_hit_testable
+[52333] link "CJK Manga/Manhwa/Manhua 150M OCR model (hayai-ocr-v2) outperforming PaddleOCR-VL-For-Manga" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/KingDutchIsBad455 / generic: Author: u/KingDutchIsBad455" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8867 bounds=(x=444.35546875 y=14635.25390625 w=732.05078125 h=255.390625) reason=not_hit_testable
+[52341] link "Author: u/KingDutchIsBad455" <a> role=link context="generic: Author: u/KingDutchIsBad455 / generic: Author: u/KingDutchIsBad455 / generic: Author: u/KingDutchIsBad455" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8884 bounds=(x=460.3515625 y=14639.2578125 w=151.9140625 h=23.984375) reason=not_hit_testable
+[52392] link "I trained a custom model with a custom decoder and siglip2-naflex vision encoder that performs better than PaddleOCR-VL-For-Manga while being more than 10x faster and smaller. Please try it out at hayai-ocr-v2 and let m…" <a> role=link context="generic: Author: u/KingDutchIsBad455 / generic: Author: u/KingDutchIsBad455 / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9019 bounds=(x=460.3515625 y=14762.6953125 w=700.05859375 h=83.984375) reason=not_hit_testable
+[52398] link "hayai-ocr-v2" <a> role=link context="link: I trained a custom model with a custom decoder and siglip2-naflex vis… / generic: I trained a custom model with a custom decoder and…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9028 bounds=(x=1034.765625 y=14785.1953125 w=76.953125 h=15) reason=not_hit_testable
+[52414] link "Toy project: a chat title model that fits in 5 MiB of ram" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/H-L_echelle / generic: Author: u/H-L_echelle" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9070 bounds=(x=444.35546875 y=14899.86328125 w=732.05078125 h=271.38671875) reason=not_hit_testable
+[52422] link "Author: u/H-L_echelle" <a> role=link context="generic: Author: u/H-L_echelle / generic: Author: u/H-L_echelle / generic: Author: u/H-L_echelle" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9087 bounds=(x=460.3515625 y=14903.8671875 w=105.95703125 h=23.984375) reason=not_hit_testable
+[52473] link "Not even sure if I'm allowed to post this, what with the \"completely/primarily LLM generated copy\" rule (the post itself is fine, but the repo/model I'm sharing definitely is, whoops) and the whole limit self-promotion…" <a> role=link context="generic: Author: u/H-L_echelle / generic: Author: u/H-L_echelle / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9222 bounds=(x=460.3515625 y=15003.30078125 w=700.05859375 h=123.984375) reason=not_hit_testable
+[52534] link "https://huggingface.co/azomDev/TinyTitle" <a> role=link context="link: Not even sure if I'm allowed to post this, what with the \"completely/… / generic: I don't know if people would even want it on Huggin…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9359 bounds=(x=460.3515625 y=15481.796875 w=255.46875 h=15) reason=not_hit_testable
+[52539] link "https://github.com/azomDev/TinyTitle" <a> role=link context="link: Not even sure if I'm allowed to post this, what with the \"completely/… / generic: Repo: / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9367 bounds=(x=460.3515625 y=15521.796875 w=229.0234375 h=15) reason=not_hit_testable
+[52571] link "Ling-3.0-flash quant ladder on one DGX Spark: the whole thing sits in a 32 to 40 tok/s band" <a> role=link context="generic: Author: u/coder543 / generic: Author: u/AcanthisittaOk1699 / generic: Author: u/AcanthisittaOk1699" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9404 bounds=(x=444.35546875 y=15180.46875 w=732.05078125 h=566.03515625) reason=not_hit_testable
+[52579] link "Author: u/AcanthisittaOk1699" <a> role=link context="generic: Author: u/AcanthisittaOk1699 / generic: Author: u/AcanthisittaOk1699 / generic: Author: u/AcanthisittaOk1699" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9421 bounds=(x=460.3515625 y=15184.47265625 w=149.94140625 h=23.984375) reason=not_hit_testable
+[52735] clickable <faceplate-partial> role=generic context="generic: Home / generic: Author: u/danielhanchen / generic: Author: u/danielhanchen" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9611 bounds=(x=444.35546875 y=15751.73828125 w=732.05078125 h=191.9921875) reason=not_hit_testable
+[15347] scroll-region "https://x.com/localllamasub Created Mar 10, 2023 3 years ago Public Anyone can view, post, and comment to this community 912K 19K User flair IntelligentRecord419 Select your community flair llama.cpp ollama exllama vllm…" actions=scroll <div> role=generic context="generic: Home" hit=True viewport=True sourceOrder=9619 bounds=(x=1200.390625 y=191.953125 w=315.99609375 h=959.23828125) reason=broad/noisy
+[15684] link <a> role=link context="generic: Promotion / generic: Community information / generic: Community information" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10466 bounds=(x=1216.38671875 y=1261.03515625 w=271.50390625 h=15) reason=not_hit_testable
+[15691] link <a> role=link context="generic: Promotion / generic: Community information / generic: Community information" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10482 bounds=(x=1216.38671875 y=1477.91015625 w=271.50390625 h=15) reason=not_hit_testable
+[15698] link "Message Mods" <a> role=link context="generic: Promotion / generic: Community information / generic: Community information" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10498 bounds=(x=1216.38671875 y=1557.63671875 w=271.50390625 h=31.9921875) reason=not_hit_testable
+[15717] link "u/HOLUPREDICTIONS" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: u/HOLUPREDICTIONS avatar / generic: Flair: :X: Sorcerer Supreme" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10537 bounds=(x=1256.3671875 y=1603.61328125 w=145.625 h=20) reason=not_hit_testable
+[15738] link "u/AskGrok" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: u/AskGrok avatar / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10591 bounds=(x=1256.3671875 y=1679.5703125 w=65.0390625 h=20) reason=not_hit_testable
+[15761] link "u/ArcaneThoughts" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: none / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10651 bounds=(x=1256.3671875 y=1735.52734375 w=113.84765625 h=20) reason=not_hit_testable
+[15778] link "u/Lissanro" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: u/Lissanro avatar / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10693 bounds=(x=1256.3671875 y=1775.48828125 w=64.2578125 h=20) reason=not_hit_testable
+[15825] link "u/townofsalemfangay" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: none / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10807 bounds=(x=1256.3671875 y=1815.44921875 w=131.640625 h=20) reason=not_hit_testable
+[15841] link "u/XMasterrrr" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: u/XMasterrrr avatar / generic: Flair: LocalLLaMA Home Server Final Boss 😎" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10848 bounds=(x=1256.3671875 y=1855.41015625 w=77.3828125 h=20) reason=not_hit_testable
+[15866] link "u/rm-rf-rm" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: Flair: :Discord: / generic: Flair: :Discord:" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10914 bounds=(x=1256.3671875 y=1931.3671875 w=61.85546875 h=20) reason=not_hit_testable
+[15887] link "u/WithoutReason1729" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: u/WithoutReason1729 avatar / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10967 bounds=(x=1256.3671875 y=1971.328125 w=137.8515625 h=20) reason=not_hit_testable
+[15935] link "u/No_Afternoon_4260" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: Flair: llama.cpp / generic: Flair: llama.cpp" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11082 bounds=(x=1256.3671875 y=2011.2890625 w=136.328125 h=20) reason=not_hit_testable
+[15954] link "u/ttkciar" <a> role=link context="none: u/HOLUPREDICTIONS avatar / none: u/ttkciar avatar / generic: Flair: llama.cpp" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11130 bounds=(x=1256.3671875 y=2051.25 w=48.7109375 h=20) reason=not_hit_testable
+[15962] link "View all moderators" <a> role=link context="generic: Promotion / generic: Community information / generic: Community information" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11157 bounds=(x=1216.38671875 y=2097.2265625 w=271.50390625 h=31.9921875) reason=not_hit_testable
+[15972] link "Admin Tattler" <a> role=link context="generic: Community information / none: none / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11183 bounds=(x=1208.3984375 y=2192.44140625 w=287.48046875 h=39.9609375) reason=not_hit_testable
+[15982] link "Bot Bouncer" <a> role=link context="generic: Community information / none: none / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11208 bounds=(x=1208.3984375 y=2232.40234375 w=287.48046875 h=39.9609375) reason=not_hit_testable
+[15999] link "Reddit Rules" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11256 bounds=(x=1200.390625 y=2336.34765625 w=68.515625 h=13.75) reason=not_hit_testable
+[16002] link "Privacy Policy" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11265 bounds=(x=1276.89453125 y=2336.34765625 w=74.47265625 h=13.75) reason=not_hit_testable
+[16005] link "User Agreement" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11274 bounds=(x=1359.35546875 y=2336.34765625 w=86.484375 h=13.75) reason=not_hit_testable
+[16008] link "Accessibility" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11283 bounds=(x=1200.390625 y=2360.33203125 w=65.15625 h=13.75) reason=not_hit_testable
+[16011] link "Impressum" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11292 bounds=(x=1273.53515625 y=2360.33203125 w=59.19921875 h=13.75) reason=not_hit_testable
+[16013] link "Reddit, Inc. © 2026. All rights reserved." <a> role=link context="generic: Promotion / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11299 bounds=(x=1200.390625 y=2384.31640625 w=207.65625 h=13.75) reason=not_hit_testable
+[504] scroll-region "Start a community GAMES ON REDDIT Social Poker Call Their Bluff! 138K monthly players Discover More CUSTOM FEEDS Create Custom Feed RECENT r/LocalLLaMA COMMUNITIES Manage Communities RESOURCES About Reddit Advertise Dev…" actions=scroll <reddit-sidebar-nav> role=generic context="generic: Home / generic: Primary" state=not-hit-testable hit=False viewport=True sourceOrder=11361 bounds=(x=0 y=55.99609375 w=270.7421875 h=959.23828125) reason=broad/noisy
+[78] link "Advertise" <a> role=link context="generic: generic / generic: generic / none: none" state=not-hit-testable hit=False viewport=True sourceOrder=12030 bounds=(x=15.99609375 y=997.3828125 w=218.26171875 h=39.9609375) reason=not_hit_testable
+[81] link "Developer Platform" <a> role=link context="generic: generic / generic: generic / none: none" state=not-hit-testable hit=False viewport=True sourceOrder=12066 bounds=(x=15.99609375 y=1037.34375 w=218.26171875 h=39.9609375) reason=not_hit_testable
+[84] link "Reddit Pro BETA" <a> role=link context="generic: generic / generic: generic / none: none" state=not-hit-testable hit=False viewport=True sourceOrder=12102 bounds=(x=15.99609375 y=1077.3046875 w=218.26171875 h=39.9609375) reason=not_hit_testable
+[87] link "Help" <a> role=link context="generic: generic / generic: generic / none: none" state=not-hit-testable hit=False viewport=True sourceOrder=12146 bounds=(x=15.99609375 y=1117.265625 w=218.26171875 h=39.9609375) reason=not_hit_testable
+[90] link "Blog" <a> role=link context="generic: generic / generic: generic / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=12182 bounds=(x=15.99609375 y=1157.2265625 w=218.26171875 h=39.9609375) reason=not_hit_testable
+[93] link "Careers" <a> role=link context="generic: generic / generic: generic / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=12218 bounds=(x=15.99609375 y=1197.1875 w=218.26171875 h=39.9609375) reason=not_hit_testable
+[96] link "Press" <a> role=link context="generic: generic / generic: generic / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=12254 bounds=(x=15.99609375 y=1237.1484375 w=218.26171875 h=39.9609375) reason=not_hit_testable
+[580] link "Best of Reddit" <a> role=link context="generic: generic / generic: generic / none: none" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=12291 bounds=(x=15.99609375 y=1302.34375 w=218.26171875 h=39.9609375) reason=not_hit_testable
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[99] page content — 1688x15943
+[15347] Promotion — 315x959
+[504] Primary — 270x959

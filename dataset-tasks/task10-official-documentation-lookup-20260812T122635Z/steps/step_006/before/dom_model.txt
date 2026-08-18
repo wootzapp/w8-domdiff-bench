@@ -1,0 +1,323 @@
+URL: https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/models/inference
+Title: Generate content with the Gemini API | Gemini Enterprise Agent Platform | Google Cloud Documentation
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=3171 groups=91 truncated=True
+
+=== TABLES ===
+Table 1: rows=9 columns=2
+  Parameters
+  cachedContent | Optional: string The name of the cached content used as context to serve the prediction. Format: projects/{project}/locations/{location}/cachedContents/{cachedContent}
+  contents | Required: Content The content of the current conversation with the model. For single-turn queries, this is a single instance. For multi-turn queries, this is a repeated field that…
+  systemInstruction | Optional: Content Instructions for the model to steer it toward better performance. For example, "Answer as concisely as possible" or "Don't use technical terms in your response".…
+  tools | Optional. A piece of code that enables the system to interact with external systems to perform an action, or set of actions, outside of knowledge and scope of the model. See Funct…
+  toolConfig | Optional. See Function calling .
+  safetySettings | Optional: SafetySetting Per request settings for blocking unsafe content. Enforced on GenerateContentResponse.candidates .
+  generationConfig | Optional: GenerationConfig Generation configuration settings.
+  labels | Optional: string Metadata that you can add to the API call in the format of key-value pairs.
+Table 2: rows=3 columns=2
+  Parameters
+  role | string The identity of the entity that creates the message. The following values are supported: user : This indicates that the message is sent by a real person, typically a user-g…
+  parts | Part A list of ordered parts that make up a single message. Different parts may have different IANA MIME types . For limits on the inputs, such as the maximum number of tokens or…
+Table 3: rows=10 columns=2
+  Parameters
+  text | Optional: string A text prompt or code snippet.
+  inlineData | Optional: Blob Inline data in raw bytes.
+  fileData | Optional: fileData Data stored in a file.
+  functionCall | Optional: FunctionCall . It contains a string representing the FunctionDeclaration.name field and a structured JSON object containing any parameters for the function call predicte…
+  functionResponse | Optional: FunctionResponse . The result output of a FunctionCall that contains a string representing the FunctionDeclaration.name field and a structured JSON object containing any…
+  thought | Optional: boolean Indicates whether the part represents the model's thought process or reasoning.
+  thoughtSignature | Optional: string (bytes format) An opaque signature for the thought so it can be reused in subsequent requests. A base64-encoded string.
+  videoMetadata | Optional: VideoMetadata For video input, the start and end offset of the video in Duration format, and the frame rate of the video . For example, to specify a 10 second clip start…
+  mediaResolution | Optional: MediaResolution Per-part media resolution for the input media. Controls how input media is processed. If specified, this overrides the mediaResolution setting in generat…
+Table 4: rows=3 columns=2
+  Parameters
+  mimeType | The media type of the file specified in the or fields. Acceptable values include the following:
+  data | bytes The base64 encoding of the image, PDF, or video to include inline in the prompt. When including media inline, you must also specify the media type ( mimeType ) of the data.…
+Table 5: rows=3 columns=2
+  Parameters
+  mimeType | string IANA MIME type of the data.
+  fileUri | string The URI or URL of the file to include in the prompt. Acceptable values include the following: Cloud Storage bucket URI: The object must either be publicly readable or resid…
+Table 6: rows=3 columns=2
+  Parameters
+  name | string The name of the function to call.
+  args | Struct The function parameters and values in JSON object format. See Function calling for parameter details.
+Table 7: rows=3 columns=2
+  Parameters
+  name | string The name of the function to call.
+  response | Struct The function response in JSON object format.
+Table 8: rows=4 columns=2
+  Parameters
+  startOffset | Optional: google.protobuf.Duration The start offset of the video.
+  endOffset | Optional: google.protobuf.Duration The end offset of the video.
+  fps | Optional: double The frame rate of the video sent to the model. Defaults to 1.0 if not specified. The minimum accepted value is as low as, but not including, 0.0 . The maximum val…
+Table 9: rows=4 columns=2
+  Parameters
+  category | The safety category to configure a threshold for. Acceptable values include the following:
+  threshold | Optional: HarmBlockThreshold The threshold for blocking responses that could belong to the specified safety category based on probability. OFF BLOCK_NONE BLOCK_LOW_AND_ABOVE BLOCK…
+  method | Optional: HarmBlockMethod Specify if the threshold is used for probability or severity score. If not specified, the threshold is used for probability score.
+Table 10: rows=6 columns=2
+  Parameters
+  HARM_CATEGORY_UNSPECIFIED | The harm category is unspecified.
+  HARM_CATEGORY_HATE_SPEECH | The harm category is hate speech.
+  HARM_CATEGORY_DANGEROUS_CONTENT | The harm category is dangerous content.
+  HARM_CATEGORY_HARASSMENT | The harm category is harassment.
+  HARM_CATEGORY_SEXUALLY_EXPLICIT | The harm category is sexually explicit content.
+Table 11: rows=7 columns=2
+  Parameters
+  HARM_BLOCK_THRESHOLD_UNSPECIFIED | Unspecified harm block threshold.
+  BLOCK_LOW_AND_ABOVE | Block low threshold and higher (i.e. block more).
+  BLOCK_MEDIUM_AND_ABOVE | Block medium threshold and higher.
+  BLOCK_ONLY_HIGH | Block only high threshold (i.e. block less).
+  BLOCK_NONE | Block none.
+  OFF | Switches off safety if all categories are turned OFF
+Table 12: rows=4 columns=2
+  Parameters
+  HARM_BLOCK_METHOD_UNSPECIFIED | The harm block method is unspecified.
+  SEVERITY | The harm block method uses both probability and severity scores.
+  PROBABILITY | The harm block method uses the probability score.
+Table 13: rows=17 columns=2
+  Parameters
+  temperature | is the recommended starting value for temperature.
+  topP | Optional: float If specified, nucleus sampling is used. Top-P changes how the model selects tokens for output. Tokens are selected from the most (see top-K) to least probable unti…
+  topK | Optional: float Specifies the top-k sampling threshold. The model considers only the top k most probable tokens for the next token. This can be useful for generating more coherent…
+  candidateCount | Optional: int The number of response variations to return. For each request, you're charged for the output tokens of all candidates, but are only charged once for the input tokens…
+  maxOutputTokens | Optional: int Maximum number of tokens that can be generated in the response. A token is approximately four characters. 100 tokens correspond to roughly 60-80 words. Specify a low…
+  stopSequences | Optional: List[string] Specifies a list of strings that tells the model to stop generating text if one of the strings is encountered in the response. If a string appears multiple…
+  presencePenalty | Optional: float Positive penalties. Positive values penalize tokens that already appear in the generated text, increasing the probability of generating more diverse content. The m…
+  frequencyPenalty | Optional: float Positive values penalize tokens that repeatedly appear in the generated text, decreasing the probability of repeating content. This maximum value for frequencyPena…
+  responseMimeType | Optional: string (enum) The output response MIME type of the generated candidate text. The following MIME types are supported: application/json : JSON response in the candidates.…
+  responseSchema | Optional: schema The schema that generated candidate text must follow. For more information, see Control generated output . To use this parameter, you must specify a supported MIM…
+  seed | Optional: int When seed is fixed to a specific value, the model makes a best effort to provide the same response for repeated requests. Deterministic output isn't guaranteed. Also…
+  responseLogprobs | Optional: boolean If true, returns the log probabilities of the tokens that were chosen by the model at each step. By default, this parameter is set to false .
+  logprobs | Optional: int Returns the log probabilities of the top candidate tokens at each generation step. The model's chosen token might not be the same as the top candidate token at each…
+  audioTimestamp | Optional: boolean Enables timestamp understanding for audio-only files. This is a preview feature.
+  thinkingConfig | Optional: object Configuration for the model's thinking process for Gemini 2.5 and higher models. The thinkingConfig object contains the following fields: thinkingBudget : integer…
+  mediaResolution | Optional: MediaResolution Controls how input media is processed. LOW reduces tokens per image/video, possibly losing detail but allowing longer videos in context. Supported values…
+Table 14: rows=20 columns=2
+  Response element | Description
+  modelVersion | The model and version used for generation. For example: .
+  text | The generated text.
+  finishReason | The reason why the model stopped generating tokens. If empty, the model has not stopped generating the tokens. Because the response uses the prompt for context, it's not possible…
+  category | The safety category to configure a threshold for. Acceptable values include the following:
+  probability | The harm probability levels in the content.
+  blocked | A boolean flag associated with a safety attribute that indicates if the model's input or output was blocked.
+  startIndex | An integer that specifies where a citation starts in the . The is in bytes and calculated from the response encoded in UTF-8.
+  endIndex | An integer that specifies where a citation ends in the . The is in bytes and calculated from the response encoded in UTF-8.
+  url | The URL of a citation source. Examples of a URL source might be a news website or a GitHub repository.
+  title | The title of a citation source. Examples of source titles might be that of a news article or a book.
+  license | The license associated with a citation.
+  publicationDate | The date a citation was published. Its valid formats are , , and .
+  avgLogprobs | Average log probability of the candidate.
+  logprobsResult | Returns the top candidate tokens ( ) and the actual chosen tokens ( ) at each step.
+  token | Generative AI models break down text data into tokens for processing, which can be characters, words, or phrases.
+  logProbability | A log probability value that indicates the model's confidence for a particular token.
+  promptTokenCount | Number of tokens in the request.
+  candidatesTokenCount | Number of tokens in the response(s).
+  totalTokenCount | Number of tokens in the request and response(s).
+
+=== VISIBLE CONTENT ===
+Context: On this page
+- Home Documentation AI and ML Gemini Enterprise Agent Platform Was this helpful? Send feedback Generate content with the Gemini API Stay organized with collections Save and categorize content based on your preferences . On this page Get started Supported models Parameter list Request body Response body Examples Text Generation Using multimodal prompt Streami…
+Context: Breadcrumb
+- The request body contains data with the following parameters:
+- contents
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [19008] Breadcrumb content.
+Context: Learn more about how Google uses cookies. Opens in a new tab.
+- docs.cloud.google.com uses cookies from Google to deliver and enhance the quality of its services and to analyze traffic. Learn more
+- Gemini Enterprise Agent Platform
+Context: Breadcrumb
+- Generate content with the Gemini API Stay organized with collections Save and categorize content based on your preferences .
+- Use or to generate content with Gemini.
+- The Gemini model family includes models that work with multimodal prompt requests. The term multimodal indicates that you can use more than one modality, or type of input, in a prompt. Models that aren't multimodal accept prompts only with text. Modalities can include text, audio, video, and more.
+- Get started Copy link to this section: Get started
+- To get started generating content with Gemini, do the following:
+- Create a Google Cloud account .
+- Review this document to learn about the Gemini model request body , parameters , and response body . To see some sample requests, see Examples .
+- To learn how to send a request to the Gemini API by using a programming language SDK or the REST API, see the Gemini API quickstart .
+- Supported models Copy link to this section: Supported models
+- All Gemini models support content generation.
+- Parameter list Copy link to this section: Parameter list
+- See for implementation details.
+- Request body Copy link to this section: Request body
+- { "cachedContent" : s tr i n g , "contents" : [ { "role" : s tr i n g , "parts" : [ { // Union field data can be only one of the following: "text" : s tr i n g , "inlineData" : { "mimeType" : s tr i n g , "data" : s tr i n g }, "fileData" : { "mimeType" : s tr i n g , "fileUri" : s tr i n g }, // End of list of possible types for union field data. "thought"…
+- "cachedContent"
+- "role"
+- // Union field data can be only one of the following:
+- "inlineData"
+- "fileUri"
+- // End of list of possible types for union field data.
+- "thought"
+- boolea
+- "thoughtSignature"
+- "startOffset"
+- "seconds"
+- ger
+- "nanos"
+- "endOffset"
+- "fps"
+- double
+- "mediaResolution"
+- MediaResolu
+- "systemInstruction"
+- "functionDeclarations"
+- "description"
+- "safetySettings"
+- mber
+- "topK"
+- "candidateCount"
+- "maxOutputTokens"
+- "presencePenalty"
+- "frequencyPenalty"
+- "stopSequences"
+- "seed"
+- "audioTimestamp"
+- "thinkingConfig"
+- "thinkingBudget"
+- "thinkingLevel"
+- "labels"
+- The base structured data type containing multi-part content of a message.
+- This class consists of two main properties: and . The property denotes the individual producing the content, while the property contains multiple elements, each representing a segment of data within a message.
+- parts
+- A data type containing media that is part of a multi-part message.
+- blob
+- Content blob. If possible send as text rather than raw bytes.
+- FileData
+- URI or web-URL data.
+- functionCall
+- A predicted returned from the model that contains a string representing the and a structured JSON object containing the parameters and their values.
+- functionResponse
+- The resulting output from a FunctionCall that contains a string representing the FunctionDeclaration.name . Also contains a structured JSON object with the output from the function (and uses it as context for the model). This should contain the result of a FunctionCall made based on model prediction.
+- FunctionDeclaration.name
+- videoMetadata
+- Metadata describing the input video content.
+- safetySetting
+- harmCategory
+- Harm categories that block content.
+- harmBlockThreshold
+- Probability thresholds levels used to block a response.
+- harmBlockMethod
+- A probability threshold that blocks a response based on a combination of probability and severity.
+- generationConfig
+- Configuration settings used when generating the prompt.
+- Response body
+- { "candidates" : [ { "content" : { "parts" : [ { "text" : string } ] }, "finishReason" : enum ( FinishReason ), "safetyRatings" : [ { "category" : enum ( HarmCategory ), "probability" : enum ( HarmProbability ), "blocked" : boolean } ], "citationMetadata" : { "citations" : [ { "startIndex" : integer , "endIndex" : integer , "uri" : string , "title" : string…
+[content hidden: 49 more reason=max_content_blocks]
+
+=== MEDIA / IMAGE LABELS ===
+- "Google Cloud Documentation" source=present context="Learn more about how Google uses cookies. Opens in a new ta…"
+- "https://www.gstatic.com/images/branding/productlogos/gemini_2025/v1/192px.svg" source=present context="Learn more about how Google uses cookies. Opens in a new ta…"
+
+=== SECONDARY / DEBUG ACTIONS ===
+[4585] link "Skip to main content" <a> role=link state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=126 bounds=(x=-6830 y=-5665 w=50 h=2) reason=not_hit_testable
+[19797] clickable "docs.cloud.google.com uses cookies from Google to deliver and enhance the quality of its services and to analyze traffic. Learn more Hide" <div> role=region context="generic: Learn more about how Google uses cookies. Opens in a new tab. / generic: Learn more about how Google uses cookies. Opens in a new…" state=offscreen hit=True viewport=False sourceOrder=132 bounds=(x=0 y=749 w=1351 h=64) reason=broad/noisy
+[19796] button "Hide" <button> role=button context="generic: Learn more about how Google uses cookies. Opens in a new tab. / generic: Learn more about how Google uses cookies. Opens in a new…" state=offscreen hit=True viewport=False sourceOrder=138 bounds=(x=1239 y=761 w=96 h=40) reason=broad/noisy
+[4596] link "Google Cloud Documentation" <a> role=link context="generic: Learn more about how Google uses cookies. Opens in a new tab. / banner: Open menu" state=offscreen hit=True viewport=False sourceOrder=159 bounds=(x=24 y=8 w=185 h=32) reason=broad/noisy
+[4605] link "Technology areas" <a> role=link context="generic: Upper tabs / generic: Upper tabs / generic: Technology areas, selected" state=offscreen hit=True viewport=False sourceOrder=182 bounds=(x=249 y=0 w=131.5625 h=48) reason=broad/noisy
+[4606] button "Dropdown menu for Technology areas" <button> role=button context="generic: Upper tabs / generic: Upper tabs / generic: Technology areas, selected" state=offscreen hit=True viewport=False sourceOrder=185 bounds=(x=380.5625 y=0 w=48 h=48) reason=broad/noisy
+[4652] link "Cross-product tools" <a> role=link context="generic: Upper tabs / generic: Upper tabs / generic: Dropdown menu for Cross-product tools" state=offscreen hit=True viewport=False sourceOrder=321 bounds=(x=428.5625 y=0 w=149.421875 h=48) reason=broad/noisy
+[4653] button "Dropdown menu for Cross-product tools" <button> role=button context="generic: Upper tabs / generic: Upper tabs / generic: Dropdown menu for Cross-product tools" state=offscreen hit=True viewport=False sourceOrder=324 bounds=(x=577.984375 y=0 w=48 h=48) reason=broad/noisy
+[4676] search-input "Search" actions=click,type,focus,select <input> role=combobox context="banner: Open menu / generic: Open search / generic: Open search" state=offscreen hit=True viewport=False sourceOrder=401 bounds=(x=767.203125 y=6 w=200 h=36) reason=broad/noisy
+[4689] link "Console" <a> role=link context="generic: Learn more about how Google uses cookies. Opens in a new tab. / banner: Open menu" state=offscreen hit=True viewport=False sourceOrder=438 bounds=(x=975.203125 y=6 w=107.328125 h=36) reason=broad/noisy
+[21435] link "Sign in" <a> role=link context="generic: Learn more about how Google uses cookies. Opens in a new tab. / banner: Open menu / generic: generic" state=offscreen hit=True viewport=False sourceOrder=499 bounds=(x=1276.375 y=6 w=58.625 h=36) reason=broad/noisy
+[4716] link <a> role=link context="generic: Learn more about how Google uses cookies. Opens in a new tab. / banner: Open menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=516 bounds=(x=24 y=14 w=40 h=32) reason=not_hit_testable
+[4725] link "Start free" <a> role=link context="generic: Learn more about how Google uses cookies. Opens in a new tab. / banner: Open menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=542 bounds=(x=1217.46875 y=12 w=109.53125 h=36) reason=not_hit_testable
+[4730] link "Overview" <a> role=link context="generic: Lower tabs / generic: Lower tabs / generic: Overview, selected" state=offscreen hit=True viewport=False sourceOrder=562 bounds=(x=6 y=48 w=98.796875 h=48) reason=broad/noisy
+[4732] link "Studio" <a> role=link context="generic: Lower tabs / generic: Lower tabs / generic: generic" state=offscreen hit=True viewport=False sourceOrder=567 bounds=(x=104.796875 y=48 w=77.453125 h=48) reason=broad/noisy
+[4734] link "Agents" <a> role=link context="generic: Lower tabs / generic: Lower tabs / generic: generic" state=offscreen hit=True viewport=False sourceOrder=572 bounds=(x=182.25 y=48 w=82.203125 h=48) reason=broad/noisy
+[4736] link "Models" <a> role=link context="generic: Lower tabs / generic: Lower tabs / generic: generic" state=offscreen hit=True viewport=False sourceOrder=577 bounds=(x=264.453125 y=48 w=83.46875 h=48) reason=broad/noisy
+[4738] link "Notebooks" <a> role=link context="generic: Lower tabs / generic: Lower tabs / generic: generic" state=offscreen hit=True viewport=False sourceOrder=582 bounds=(x=347.921875 y=48 w=107.109375 h=48) reason=broad/noisy
+[4740] button "Pricing" <button> role=button context="generic: Lower tabs / generic: Lower tabs / generic: submenu" state=offscreen hit=True viewport=False sourceOrder=587 bounds=(x=455.03125 y=48 w=86.6875 h=48) reason=broad/noisy
+[4752] link "Engineering Blog" <a> role=link context="generic: Lower tabs / generic: Lower tabs / generic: generic" state=offscreen hit=True viewport=False sourceOrder=622 bounds=(x=541.71875 y=48 w=145.453125 h=48) reason=broad/noisy
+[4753] scroll-region "Technology areas More Overview Studio Agents Models Notebooks Pricing More Engineering Blog Cross-product tools More Console Home Platform overview Agent Platform documentation Studio Agents Models Notebooks Code Mender…" actions=scroll <devsite-book-nav> role=generic context="generic: Learn more about how Google uses cookies. Opens in a new tab." state=offscreen hit=True viewport=False sourceOrder=644 bounds=(x=0 y=96 w=269 h=653) reason=broad/noisy
+[4756] search-input "Type to filter" actions=click,type,focus <input> role=searchbox context="generic: Learn more about how Google uses cookies. Opens in a new tab. / generic: Type to filter" state=offscreen hit=True viewport=False sourceOrder=650 bounds=(x=24 y=120 w=213 h=32) reason=broad/noisy
+[4820] link "Home" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=827 bounds=(x=0 y=-42 w=253 h=24) reason=not_hit_testable
+[4823] link "Platform overview" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=832 bounds=(x=0 y=-18 w=253 h=24) reason=not_hit_testable
+[3597] link "Studio" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=844 bounds=(x=0 y=54 w=253 h=24) reason=not_hit_testable
+[4831] link "Agents" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=849 bounds=(x=0 y=78 w=253 h=24) reason=not_hit_testable
+[4834] link "Models" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=854 bounds=(x=0 y=102 w=253 h=24) reason=not_hit_testable
+[4837] link "Notebooks" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=859 bounds=(x=0 y=126 w=253 h=24) reason=not_hit_testable
+[4842] button "Code Mender" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=867 bounds=(x=0 y=150 w=253 h=24) reason=not_hit_testable
+[4870] link "All APIs and reference" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=912 bounds=(x=0 y=222 w=253 h=24) reason=broad/noisy
+[4875] button "gcloud CLI reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=920 bounds=(x=0 y=246 w=253 h=24) reason=broad/noisy
+[4902] button "Client libraries" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=958 bounds=(x=0 y=270 w=253 h=24) reason=broad/noisy
+[4964] button "Agent Platform in express mode" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=1046 bounds=(x=0 y=294 w=253 h=24) reason=broad/noisy
+[5009] button "REST API reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=1113 bounds=(x=0 y=318 w=253 h=24) reason=broad/noisy
+[10952] button "RPC API reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9380 bounds=(x=0 y=342 w=253 h=24) reason=broad/noisy
+[11051] button "Model API guides" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9523 bounds=(x=0 y=366 w=253 h=24) reason=broad/noisy
+[11053] scroll-region "Gemini API Generate content Function calling Prompt classes Grounding Code execution API Live API API errors Embeddings API Text embeddings Multimodal embeddings Lyria music generation API Batch prediction API Tuning AP…" actions=scroll <ul> role=generic context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9528 bounds=(x=0 y=390 w=261 h=384) reason=broad/noisy
+[11057] button "Gemini API" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9533 bounds=(x=0 y=390 w=253 h=24) reason=broad/noisy
+[11059] scroll-region "Generate content Function calling Prompt classes Grounding Code execution API Live API API errors" actions=scroll <ul> role=generic context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9538 bounds=(x=0 y=414 w=261 h=168) reason=broad/noisy
+[11061] link "Generate content" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9540 bounds=(x=0 y=414 w=253 h=24) reason=broad/noisy
+[11064] link "Function calling" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9544 bounds=(x=0 y=438 w=253 h=24) reason=broad/noisy
+[11067] link "Prompt classes" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9548 bounds=(x=0 y=462 w=253 h=24) reason=broad/noisy
+[11070] link "Grounding" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9552 bounds=(x=0 y=486 w=253 h=24) reason=broad/noisy
+[11073] link "Code execution API" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9556 bounds=(x=0 y=510 w=253 h=24) reason=broad/noisy
+[11076] link "Live API" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9560 bounds=(x=0 y=534 w=253 h=24) reason=broad/noisy
+[11080] link "API errors" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9565 bounds=(x=0 y=558 w=253 h=24) reason=broad/noisy
+[11085] button "Embeddings API" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9572 bounds=(x=0 y=582 w=253 h=24) reason=broad/noisy
+[11095] link "Lyria music generation API" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9587 bounds=(x=0 y=606 w=253 h=24) reason=broad/noisy
+[11098] link "Batch prediction API" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9591 bounds=(x=0 y=630 w=253 h=24) reason=broad/noisy
+[11101] link "Tuning API" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9595 bounds=(x=0 y=654 w=253 h=24) reason=broad/noisy
+[11104] link "Gen AI evaluation API" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9599 bounds=(x=0 y=678 w=253 h=24) reason=broad/noisy
+[11109] button "RAG API" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9606 bounds=(x=0 y=702 w=253 h=24) reason=broad/noisy
+[11123] link "Count Tokens API" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=9626 bounds=(x=0 y=726 w=253 h=24) reason=broad/noisy
+[11126] link "Interactions API" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9632 bounds=(x=0 y=750 w=253 h=24) reason=not_hit_testable
+[11130] link "Long-running operations" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9638 bounds=(x=0 y=774 w=253 h=24) reason=not_hit_testable
+[11135] button "MCP reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9646 bounds=(x=0 y=798 w=253 h=24) reason=not_hit_testable
+[11321] button "Google Cloud Pipelines Components reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9899 bounds=(x=0 y=822 w=253 h=40) reason=not_hit_testable
+[11370] button "Neural Architecture Search reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9967 bounds=(x=0 y=862 w=253 h=24) reason=not_hit_testable
+[11385] button "Agent Gateway REST API reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9990 bounds=(x=0 y=886 w=253 h=24) reason=not_hit_testable
+[11398] button "Notebooks API reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10010 bounds=(x=0 y=910 w=253 h=24) reason=not_hit_testable
+[11915] button "Vector Search REST API reference" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10744 bounds=(x=0 y=934 w=253 h=24) reason=not_hit_testable
+[12282] link "All resources" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11275 bounds=(x=0 y=1006 w=253 h=24) reason=not_hit_testable
+[12285] link "Glossary" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11280 bounds=(x=0 y=1030 w=253 h=24) reason=not_hit_testable
+[12288] link "Billing questions" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11285 bounds=(x=0 y=1054 w=253 h=24) reason=not_hit_testable
+[12293] button "Agent-related support and resources" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11293 bounds=(x=0 y=1078 w=253 h=24) reason=not_hit_testable
+[12308] button "Model-related support and resources" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11316 bounds=(x=0 y=1102 w=253 h=24) reason=not_hit_testable
+[12378] link "Agent Platform and zero data retention" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11418 bounds=(x=0 y=1126 w=253 h=40) reason=not_hit_testable
+[12381] link "Release notes" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11423 bounds=(x=0 y=1166 w=253 h=24) reason=not_hit_testable
+[12384] link "Name changes from Vertex AI" <a> role=link context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11428 bounds=(x=0 y=1190 w=253 h=24) reason=not_hit_testable
+[12389] button "Pricing" <div> role=button context="generic: Side menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=11436 bounds=(x=0 y=1214 w=253 h=24) reason=not_hit_testable
+[18923] button "Hide side navigation" <button> role=button context="generic: Learn more about how Google uses cookies. Opens in a new tab." state=offscreen hit=True viewport=False sourceOrder=11638 bounds=(x=221 y=693 w=40 h=40) reason=broad/noisy
+[12464] scroll-region "On this page Get started Supported models Parameter list Request body Response body Examples Text Generation Using multimodal prompt Streaming text response What's next" actions=scroll <devsite-toc> role=navigation context="generic: Learn more about how Google uses cookies. Opens in a new tab. / generic: On this page / main: On this page" state=offscreen hit=True viewport=False sourceOrder=11649 bounds=(x=1191 y=120 w=136 h=304) reason=broad/noisy
+[19953] link "Get started" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11656 bounds=(x=1207 y=140 w=112 h=24) reason=broad/noisy
+[19956] link "Supported models" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11660 bounds=(x=1207 y=164 w=112 h=24) reason=broad/noisy
+[19959] link "Parameter list" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11664 bounds=(x=1207 y=188 w=112 h=24) reason=broad/noisy
+[19963] link "Request body" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11669 bounds=(x=1219 y=212 w=100 h=24) reason=broad/noisy
+[19966] link "Response body" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11673 bounds=(x=1219 y=236 w=100 h=24) reason=broad/noisy
+[19969] link "Examples" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11677 bounds=(x=1207 y=260 w=112 h=24) reason=broad/noisy
+[19973] link "Text Generation" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11682 bounds=(x=1219 y=284 w=100 h=24) reason=broad/noisy
+[19976] link "Using multimodal prompt" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11686 bounds=(x=1219 y=308 w=100 h=56) reason=broad/noisy
+[19979] link "Streaming text response" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11690 bounds=(x=1219 y=364 w=100 h=40) reason=broad/noisy
+[19982] link "What's next" <a> role=link context="navigation: On this page / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=11694 bounds=(x=1207 y=404 w=112 h=20) reason=broad/noisy
+[17749] link "Creative Commons Attribution 4.0 License" <a> role=link context="generic: Breadcrumb / generic: generic / generic: Except as otherwise noted, the content of this page is licensed under…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18718 bounds=(x=713.421875 y=17240 w=243.71875 h=15) reason=not_hit_testable
+[17750] link "Apache 2.0 License" <a> role=link context="generic: Breadcrumb / generic: generic / generic: Except as otherwise noted, the content of this page is licensed under…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18721 bounds=(x=350.734375 y=17260 w=112.84375 h=15) reason=not_hit_testable
+[17751] link "Google Developers Site Policies" <a> role=link context="generic: Breadcrumb / generic: generic / generic: Except as otherwise noted, the content of this page is licensed under…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18724 bounds=(x=581.953125 y=17260 w=182.5 h=15) reason=not_hit_testable
+[17765] link "See all products" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18762 bounds=(x=293 y=17410 w=99.734375 h=32) reason=not_hit_testable
+[18516] link "Google Cloud pricing" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18768 bounds=(x=293 y=17442 w=129.59375 h=32) reason=not_hit_testable
+[18518] link "Google Cloud Marketplace" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18774 bounds=(x=293 y=17474 w=164.4375 h=32) reason=not_hit_testable
+[18520] link "Contact sales" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18780 bounds=(x=293 y=17506 w=85.3125 h=32) reason=not_hit_testable
+[18525] link "Community forums" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18795 bounds=(x=557.5 y=17410 w=120 h=32) reason=not_hit_testable
+[18527] link "Support" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18801 bounds=(x=557.5 y=17442 w=49.40625 h=32) reason=not_hit_testable
+[18531] link "System status" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18813 bounds=(x=557.5 y=17506 w=88.875 h=32) reason=not_hit_testable
+[18536] link "GitHub" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18828 bounds=(x=822 y=17410 w=43.09375 h=32) reason=not_hit_testable
+[18538] link "Getting Started with Google Cloud" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18834 bounds=(x=822 y=17442 w=211.03125 h=32) reason=not_hit_testable
+[18540] link "Code samples" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18840 bounds=(x=822 y=17474 w=88.921875 h=32) reason=not_hit_testable
+[18542] link "Cloud Architecture Center" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18846 bounds=(x=822 y=17506 w=159.9375 h=32) reason=not_hit_testable
+[18544] link "Training and Certification" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18852 bounds=(x=822 y=17538 w=156.265625 h=32) reason=not_hit_testable
+[18549] link "Blog" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18867 bounds=(x=1086.5 y=17410 w=27.984375 h=32) reason=not_hit_testable
+[18551] link "Events" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18873 bounds=(x=1086.5 y=17442 w=41.4375 h=32) reason=not_hit_testable
+[18553] link "X (Twitter)" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18879 bounds=(x=1086.5 y=17474 w=65.140625 h=32) reason=not_hit_testable
+[18555] link "Google Cloud on YouTube" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18885 bounds=(x=1086.5 y=17506 w=160.828125 h=32) reason=not_hit_testable
+[18557] link "Google Cloud Tech on YouTube" <a> role=link context="generic: Footer links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18891 bounds=(x=1086.5 y=17538 w=194.15625 h=32) reason=not_hit_testable
+[18563] link "About Google" <a> role=link context="generic: Utility links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18910 bounds=(x=293 y=17619 w=84.953125 h=16) reason=not_hit_testable
+[18565] link "Privacy" <a> role=link context="generic: Utility links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18916 bounds=(x=397.375 y=17619 w=45.234375 h=16) reason=not_hit_testable
+[18567] link "Site terms" <a> role=link context="generic: Utility links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18922 bounds=(x=462.03125 y=17619 w=63.453125 h=16) reason=not_hit_testable
+[18569] link "Google Cloud terms" <a> role=link context="generic: Utility links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18928 bounds=(x=544.90625 y=17619 w=123.515625 h=16) reason=not_hit_testable
+[18573] link "Our third decade of climate action: join us" <a> role=link context="generic: Utility links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18940 bounds=(x=687.84375 y=17619 w=258.53125 h=16) reason=not_hit_testable
+[18576] link "Subscribe" <a> role=link context="generic: Utility links / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=18949 bounds=(x=1064.625 y=17651 w=112.53125 h=36) reason=not_hit_testable
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[19008] Breadcrumb content — 792x925
