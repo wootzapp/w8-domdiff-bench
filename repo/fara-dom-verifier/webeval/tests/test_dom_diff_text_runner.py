@@ -89,6 +89,8 @@ def _args(eval_config: Path) -> dict:
         "text_frame_starting_tokens": 1500,
         "text_trajectory_starting_tokens": 16000,
         "text_analysis_starting_tokens": 24000,
+        "text_s3_cap_enabled": False,
+        "text_s3_prompt_cap_tokens": 10000,
         "text_max_chunk_tokens": 256,
         "text_allow_budget_expansion": True,
         "text_model_context_window_tokens": 128000,
@@ -230,6 +232,27 @@ def test_runner_rejects_global_frame_top_k() -> None:
         )
 
 
+def test_s3_cap_is_explicit_and_default_off() -> None:
+    default = runner.parse_args(
+        ["--input", "unused", "--eval-config", "unused"]
+    )
+    assert default.text_s3_cap_enabled is False
+    assert default.text_s3_prompt_cap_tokens == 10000
+    enabled = runner.parse_args(
+        [
+            "--input",
+            "unused",
+            "--eval-config",
+            "unused",
+            "--experimental-text-s3-cap",
+            "--text-s3-prompt-cap-tokens",
+            "15000",
+        ]
+    )
+    assert enabled.text_s3_cap_enabled is True
+    assert enabled.text_s3_prompt_cap_tokens == 15000
+
+
 def test_cache_identity_covers_source_rubric_endpoint_and_every_text_budget(
     tmp_path: Path,
 ) -> None:
@@ -262,6 +285,15 @@ def test_cache_identity_covers_source_rubric_endpoint_and_every_text_budget(
     changed = dict(args)
     changed["text_allow_budget_expansion"] = False
     assert runner._verifier_identity(changed, task)[0] != original
+    changed = dict(args)
+    changed["text_s3_prompt_cap_tokens"] += 1
+    assert runner._verifier_identity(changed, task)[0] == original
+    changed = dict(args)
+    changed["text_s3_cap_enabled"] = True
+    enabled_identity = runner._verifier_identity(changed, task)[0]
+    assert enabled_identity != original
+    changed["text_s3_prompt_cap_tokens"] += 1
+    assert runner._verifier_identity(changed, task)[0] != enabled_identity
 
     _install_frozen_rubric(task)
     rubric_identity, rubric_config = runner._verifier_identity(args, task)

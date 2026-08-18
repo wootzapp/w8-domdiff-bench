@@ -192,6 +192,11 @@ class PackedTextEvidence:
     retrieval_omissions: tuple[OmissionReceipt, ...] = ()
     criterion_chunk_assignments: Mapping[int, tuple[str, ...]] | None = None
     criterion_frame_assignments: Mapping[int, tuple[int, ...]] | None = None
+    # Internal records retained by the existing retrieval/context packer.
+    # The default-off S3 cap operates on this exact already-selected set.
+    model_records: tuple["ModelEvidenceRecord", ...] = ()
+    experimental_s3_cap_receipt: Mapping[str, Any] | None = None
+
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -217,7 +222,26 @@ class PackedTextEvidence:
                     (self.criterion_frame_assignments or {}).items()
                 )
             },
+            **(
+                {"experimental_s3_cap_receipt": dict(self.experimental_s3_cap_receipt)}
+                if self.experimental_s3_cap_receipt is not None
+                else {}
+            ),
         }
+
+
+@dataclass(frozen=True)
+class ModelEvidenceRecord:
+    """One complete record already selected by the DOM-text stage."""
+
+    item_id: str
+    text: str
+    chunk: CompactChunk
+    score: int
+    reasons: tuple[str, ...]
+    criterion_indices: tuple[int, ...]
+    frame_indices: tuple[int, ...]
+    stable_order: tuple[Any, ...]
 
 
 @dataclass(frozen=True)
@@ -229,6 +253,25 @@ class _Candidate:
     reasons: tuple[str, ...]
     criterion_indices: tuple[int, ...]
     stable_order: tuple[Any, ...]
+
+
+def _as_model_records(
+    selected: Sequence[_Candidate],
+    candidate_frame_indices: Mapping[str, Iterable[int]],
+) -> tuple[ModelEvidenceRecord, ...]:
+    return tuple(
+        ModelEvidenceRecord(
+            item_id=item.item_id,
+            text=item.text,
+            chunk=item.chunk,
+            score=item.score,
+            reasons=item.reasons,
+            criterion_indices=item.criterion_indices,
+            frame_indices=tuple(sorted(candidate_frame_indices.get(item.item_id, ()))),
+            stable_order=item.stable_order,
+        )
+        for item in selected
+    )
 
 
 def _criterion_frame_assignments(
@@ -672,6 +715,10 @@ def render_batched_relevance_evidence(
         task=task, rubric=rubric, predicted_output=predicted_output
     )
     first_records: dict[tuple[Any, ...], tuple[CompactChunk, ...]] = {}
+    frame_index_by_step = {
+        frame.action_ordinal: frame_idx for frame_idx, frame in enumerate(frames)
+    }
+    candidate_frame_indices: dict[str, set[int]] = {}
     for frame in frames:
         for compact_record in frame.records:
             first_records.setdefault(
@@ -688,6 +735,11 @@ def render_batched_relevance_evidence(
             )
         )
         chunks = first_records[ledger_record.record.semantic_key()]
+        applicable_frames = {
+            frame_index_by_step[step]
+            for step in ledger_record.occurs_at_steps
+            if step in frame_index_by_step
+        }
         for chunk in chunks:
             ledger_chunk = replace(chunk, source_refs=ledger_refs)
             scores = [_score_text(chunk.search_text, query) for query in queries]
@@ -709,6 +761,7 @@ def render_batched_relevance_evidence(
                 if query.criterion_idx >= 0
                 and _passes_relevance_threshold(value[0], value[1])
             )
+            candidate_frame_indices.setdefault(chunk.chunk_id, set()).update(applicable_frames)
             candidates.append(
                 _Candidate(
                     item_id=chunk.chunk_id,
@@ -799,6 +852,7 @@ def render_batched_relevance_evidence(
         budget_receipt=budget,
         omission_receipts=omissions,
         retrieval_omissions=retrieval_omissions,
+        model_records=_as_model_records(selected, candidate_frame_indices),
     )
 
 
@@ -1001,4 +1055,5 @@ def render_packed_analysis_evidence(
         retrieval_omissions=tuple(retrieval_omissions),
         criterion_chunk_assignments=assignments,
         criterion_frame_assignments=frame_assignments,
+        model_records=_as_model_records(selected, candidate_frame_indices),
     )

@@ -18,6 +18,7 @@ from webeval.rubric_agent.dom_diff_text_evidence import (
     DOMDiffTextEvidenceFrame,
     load_dom_diff_text_frames,
 )
+from webeval.rubric_agent.dom_diff_text_s3_capping import apply_s3_prompt_cap
 from webeval.rubric_agent.dom_diff_text_prompts import (
     DOM_DIFF_TEXT_GROUNDING_RULES,
     TEXT_BATCHED_RELEVANCE_PROMPT,
@@ -83,6 +84,14 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
     @property
     def _allow_budget_expansion(self) -> bool:
         return bool(self._setting("text_allow_budget_expansion", True))
+    @property
+    def _s3_cap_enabled(self) -> bool:
+        return bool(self._setting("text_s3_cap_enabled", False))
+
+    @property
+    def _s3_prompt_cap_tokens(self) -> int:
+        return int(self._setting("text_s3_prompt_cap_tokens", 10000))
+
 
     def _reset_text_metrics(self) -> None:
         self._text_runtime_metrics = {
@@ -117,6 +126,11 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
                 "tokenizer": evidence.tokenizer,
                 "records_omitted_by_context_limit": evidence.records_omitted_by_budget,
                 "budget": evidence.budget_receipt.to_dict(),
+                **(
+                    {"experimental_s3_cap": evidence.experimental_s3_cap_receipt}
+                    if evidence.experimental_s3_cap_receipt is not None
+                    else {}
+                ),
                 "context_limit_omissions": [
                     item.to_dict() for item in evidence.omission_receipts
                 ],
@@ -288,6 +302,15 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
             rubric_criteria=rubric_text,
             grounding_rules=DOM_DIFF_TEXT_GROUNDING_RULES,
         )
+        def render_relevance_prompt(text: str) -> str:
+            return TEXT_BATCHED_RELEVANCE_PROMPT.substitute(
+                task_definition=task,
+                init_url_context=init_url_context,
+                text_frames=text,
+                rubric_criteria=rubric_text,
+                grounding_rules=DOM_DIFF_TEXT_GROUNDING_RULES,
+            )
+
         evidence = render_batched_relevance_evidence(
             compact_frames,
             rubric,
@@ -301,14 +324,21 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
             allow_budget_expansion=self._allow_budget_expansion,
             model=self._judge_model_name,
         )
-        prompt = TEXT_BATCHED_RELEVANCE_PROMPT.substitute(
-            task_definition=task,
-            init_url_context=init_url_context,
-            text_frames=evidence.text,
-            rubric_criteria=rubric_text,
-            grounding_rules=DOM_DIFF_TEXT_GROUNDING_RULES,
-        )
-        if estimator.count(prompt) > evidence.budget_receipt.safe_prompt_limit_tokens:
+        if self._s3_cap_enabled:
+            evidence = apply_s3_prompt_cap(
+                evidence,
+                compact_frames,
+                stage="relevance",
+                total_prompt_cap_tokens=self._s3_prompt_cap_tokens,
+                empty_prompt_tokens=estimator.count(empty_prompt),
+                render_prompt=render_relevance_prompt,
+                model=self._judge_model_name,
+            )
+        prompt = render_relevance_prompt(evidence.text)
+        prompt_tokens = estimator.count(prompt)
+        if self._s3_cap_enabled and prompt_tokens > self._s3_prompt_cap_tokens:
+            raise ValueError("Batched text relevance prompt exceeds S3 hard cap")
+        if prompt_tokens > evidence.budget_receipt.safe_prompt_limit_tokens:
             raise ValueError("Batched text relevance prompt exceeds safe model context")
         messages = self.DEFAULT_SYSTEM_MESSAGES + [{"role": "user", "content": prompt}]
         criterion_count = len(rubric["items"])
@@ -428,6 +458,17 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
             criteria_info_block=criteria_block,
             grounding_rules=DOM_DIFF_TEXT_GROUNDING_RULES,
         )
+        def render_analysis_prompt(text: str) -> str:
+            return TEXT_PACKED_ANALYSIS_PROMPT.substitute(
+                task_definition=task,
+                init_url_context=init_url_context,
+                action_history=action_history,
+                agent_predicted_output=predicted_output,
+                packed_evidence=text,
+                criteria_info_block=criteria_block,
+                grounding_rules=DOM_DIFF_TEXT_GROUNDING_RULES,
+            )
+
         packed = render_packed_analysis_evidence(
             compact_frames,
             filtered,
@@ -442,16 +483,21 @@ class DOMDiffTextMMRubricAgent(DOMDiffMMRubricAgent):
             allow_budget_expansion=self._allow_budget_expansion,
             model=self._judge_model_name,
         )
-        prompt = TEXT_PACKED_ANALYSIS_PROMPT.substitute(
-            task_definition=task,
-            init_url_context=init_url_context,
-            action_history=action_history,
-            agent_predicted_output=predicted_output,
-            packed_evidence=packed.text,
-            criteria_info_block=criteria_block,
-            grounding_rules=DOM_DIFF_TEXT_GROUNDING_RULES,
-        )
-        if estimator.count(prompt) > packed.budget_receipt.safe_prompt_limit_tokens:
+        if self._s3_cap_enabled:
+            packed = apply_s3_prompt_cap(
+                packed,
+                compact_frames,
+                stage="analysis",
+                total_prompt_cap_tokens=self._s3_prompt_cap_tokens,
+                empty_prompt_tokens=estimator.count(empty_prompt),
+                render_prompt=render_analysis_prompt,
+                model=self._judge_model_name,
+            )
+        prompt = render_analysis_prompt(packed.text)
+        prompt_tokens = estimator.count(prompt)
+        if self._s3_cap_enabled and prompt_tokens > self._s3_prompt_cap_tokens:
+            raise ValueError("Packed refined-text analysis exceeds S3 hard cap")
+        if prompt_tokens > packed.budget_receipt.safe_prompt_limit_tokens:
             raise ValueError("Packed refined-text analysis exceeds safe model context")
         final_allowed_by_criterion = {
             criterion_idx: list(

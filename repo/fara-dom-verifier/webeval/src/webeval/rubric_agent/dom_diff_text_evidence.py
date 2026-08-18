@@ -87,6 +87,8 @@ _NODE_PAYLOAD_KEYS = {
         "kind",
         "node",
         "path",
+        "repeated_group_id",
+        "repeated_item_index",
         "visible_text",
         "subtree_node_count",
         "descendant_count",

@@ -176,6 +176,12 @@ def _verifier_identity(
             _text_source_digest(trajectory_dir) if trajectory_dir is not None else None
         ),
     }
+    if args_dict.get("text_s3_cap_enabled", False):
+        config["experimental_text_s3_cap"] = {
+            "policy": "dom_diff_summary_s3",
+            "relevance_prompt_cap_tokens": args_dict["text_s3_prompt_cap_tokens"],
+            "analysis_prompt_cap_tokens": args_dict["text_s3_prompt_cap_tokens"],
+        }
     encoded = json.dumps(config, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()[:16], config
 
@@ -309,6 +315,10 @@ def _pool_init(args_dict: Dict[str, Any]) -> None:
                 "text_trajectory_starting_tokens"
             ],
             text_analysis_starting_tokens=args_dict["text_analysis_starting_tokens"],
+            text_s3_cap_enabled=args_dict.get("text_s3_cap_enabled", False),
+            text_s3_prompt_cap_tokens=args_dict.get(
+                "text_s3_prompt_cap_tokens", 10000
+            ),
             text_max_chunk_tokens=args_dict["text_max_chunk_tokens"],
             text_allow_budget_expansion=args_dict["text_allow_budget_expansion"],
             text_model_context_window_tokens=args_dict[
@@ -539,6 +549,16 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser.add_argument("--text-frame-starting-tokens", type=int, default=1500)
     parser.add_argument("--text-trajectory-starting-tokens", type=int, default=16000)
     parser.add_argument("--text-analysis-starting-tokens", type=int, default=24000)
+    parser.add_argument(
+        "--experimental-text-s3-cap",
+        action="store_true",
+        dest="text_s3_cap_enabled",
+        help=(
+            "Default-off experiment: apply summary-S3 field clipping and a "
+            "hard total prompt cap after current DOM-text retrieval."
+        ),
+    )
+    parser.add_argument("--text-s3-prompt-cap-tokens", type=int, default=10000)
     parser.add_argument("--text-max-chunk-tokens", type=int, default=256)
     parser.add_argument(
         "--text-model-context-window-tokens", type=int, default=128000
@@ -572,6 +592,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         "text_frame_starting_tokens",
         "text_trajectory_starting_tokens",
         "text_analysis_starting_tokens",
+        "text_s3_prompt_cap_tokens",
         "text_max_chunk_tokens",
         "text_model_context_window_tokens",
         "text_relevance_completion_reserve_tokens",
@@ -668,6 +689,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         "text_frame_starting_tokens": args.text_frame_starting_tokens,
         "text_trajectory_starting_tokens": args.text_trajectory_starting_tokens,
         "text_analysis_starting_tokens": args.text_analysis_starting_tokens,
+        "text_s3_cap_enabled": args.text_s3_cap_enabled,
+        "text_s3_prompt_cap_tokens": args.text_s3_prompt_cap_tokens,
         "text_max_chunk_tokens": args.text_max_chunk_tokens,
         "text_allow_budget_expansion": args.text_allow_budget_expansion,
         "text_model_context_window_tokens": args.text_model_context_window_tokens,

@@ -72,6 +72,35 @@ def test_parse_preserves_direction_state_and_line_provenance() -> None:
     assert frame.audit.repeated_group_sample_paths == ("html[1]/body[1]/a[1]",)
 
 
+def test_subtree_repeated_group_metadata_is_audit_only(tmp_path: Path) -> None:
+    source = (FIXTURES / "changes_present" / "dom_diff1.txt").read_text()
+    source = source.replace(
+        "\"path\":\"html[1]/body[1]/p[1]\",\"visible_text\"",
+        "\"path\":\"html[1]/body[1]/p[1]\",\"repeated_group_id\":\"rg7\","
+        "\"repeated_item_index\":2,\"visible_text\"",
+        1,
+    )
+    path = tmp_path / "dom_diff1.txt"
+    path.write_text(source, encoding="utf-8")
+
+    frame = parse_dom_diff_text(path, task_id="task", action_ordinal=1)
+    raw_subtree = next(
+        item["value"]
+        for item in frame.audit.raw_records
+        if item["family"] == "node_removed"
+    )
+    assert raw_subtree["repeated_group_id"] == "rg7"
+    assert raw_subtree["repeated_item_index"] == 2
+
+    model_subtree = next(
+        record.to_model_dict()
+        for record in frame.records
+        if record.operation == "removed" and record.scope == "subtree"
+    )
+    assert "repeated_group_id" not in model_subtree
+    assert "repeated_item_index" not in model_subtree
+
+
 def test_document_replacement_is_explicit_navigation() -> None:
     frame = parse_dom_diff_text(
         FIXTURES / "document_replaced" / "dom_diff1.txt",
