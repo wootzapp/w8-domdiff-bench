@@ -1,0 +1,454 @@
+- generic
+  - generic [ref=e1] clickable [onclick]
+    - alert
+      - StaticText "loading…"
+    - log
+  - generic [ref=e2] clickable [onclick]
+    - dialog "Media viewer" [ref=e3] clickable [onclick]
+      - group "OPERATIONS.md"
+        - button "Parth Bisen" [ref=e4]
+        - generic
+          - StaticText "5 months ago– OPERATIONS.md"
+        - document "OPERATIONS.md" [ref=e10] focusable [tabindex]
+          - heading "Daytona Runner Manager — Operations Guide" [level=1, ref=e11]
+          - blockquote
+            - paragraph
+              - StaticText "A drop-in replacement for the Helm-managed "
+              - code
+                - StaticText "daytona-runnermanager"
+              - StaticText " deployment. Deployed in the "
+              - code
+                - StaticText "tools"
+              - StaticText " namespace, uses the same DB, API tokens, and RBAC."
+          - separator
+          - heading "What It Does" [level=2, ref=e12]
+          - paragraph
+            - StaticText "The runner manager is the bridge between "
+            - strong
+              - StaticText "Kubernetes nodes"
+            - StaticText " and the "
+            - strong
+              - StaticText "Daytona platform"
+            - StaticText ". When a new node joins the cluster, this system registers it as a “runner” — a machine that can host developer sandboxes. It then monitors runners, distributes snapshots, and handles scaling."
+          - code
+            - StaticText "┌─────────────────────────────────────────────────────────────────────┐\n│                        Runner Manager                               │\n│                                                                     │\n│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ │\n│  │  Health   │ │ Snapshot │ │  Scale   │ │Compactor │ │ Orphan   │ │\n│  │  Check   │ │  Distrib │ │ Reconcile│ │          │ │ Cleanup  │ │\n│  │  (10s)   │ │  (5m)    │ │  (20s)   │ │  (2m)    │ │  (5m)    │ │\n│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ │\n│       │             │            │             │            │       │\n│  ┌────┴─────────────┴────────────┴─────────────┴────────────┴────┐ │\n│  │                     Node Watcher (continuous)                  │ │\n│  └───────────────────────────────┬───────────────────────────────┘ │\n│                                  │                                 │\n│  ┌───────────────┐  ┌────────────┴──────────┐  ┌───────────────┐  │\n│  │  Daytona API  │  │   Kubernetes API      │  │  PostgreSQL   │  │\n│  │  (runners)    │  │   (nodes, pods)       │  │  (state)      │  │\n│  └───────────────┘  └───────────────────────┘  └───────────────┘  │\n│                                                                     │\n│  ┌──────────────────────────────────────────────────────────────┐  │\n│  │              HTTP API + Dashboard (:8080)                     │  │\n│  └──────────────────────────────────────────────────────────────┘  │\n└─────────────────────────────────────────────────────────────────────┘\n"
+          - separator
+          - heading "Feature Flags (Safe Rollout)" [level=2, ref=e13]
+          - paragraph
+            - StaticText "The manager starts in "
+            - strong
+              - StaticText "read-only mode"
+            - StaticText ". Every write operation is gated behind a feature flag that can be toggled at runtime via "
+            - code
+              - StaticText "POST /features"
+            - StaticText " without a restart. Feature state persists across pod restarts via a K8s ConfigMap."
+          - table
+            - rowgroup
+              - row
+                - columnheader "Flag" [ref=e167]
+                - columnheader "What It Does" [ref=e168]
+                - columnheader "Default" [ref=e169]
+            - row
+              - cell "healthCheck" [ref=e31]
+                - code
+              - cell "Marks runners unresponsive in DB after 3 consecutive failures" [ref=e32]
+              - cell "off" [ref=e33]
+            - row
+              - cell "snapshotDistribution" [ref=e34]
+                - code
+              - cell "Triggers snapshot pulls on runners that are missing snapshots" [ref=e35]
+              - cell "off" [ref=e36]
+            - row
+              - cell "scaleReconciliation" [ref=e37]
+                - code
+              - cell "Auto-scales up when average availability drops below 75%" [ref=e38]
+              - cell "off" [ref=e39]
+            - row
+              - cell "nodeRegistration" [ref=e40]
+                - code
+              - cell "Registers new K8s nodes as runners with Daytona API" [ref=e41]
+              - cell "off" [ref=e42]
+            - row
+              - cell "scaleApi" [ref=e43]
+                - code
+              - cell "Enables POST /scale/up and /scale/down endpoints" [ref=e44]
+                - StaticText "Enables "
+                - code
+                - StaticText " and "
+                - code
+                - StaticText " endpoints"
+              - cell "off" [ref=e45]
+            - row
+              - cell "autoCleanup" [ref=e46]
+                - code
+              - cell "Decommissions runners after extended health failures" [ref=e47]
+              - cell "off" [ref=e48]
+            - row
+              - cell "autoCompact" [ref=e49]
+                - code
+              - cell "Consolidates sandboxes onto fewer runners, scales down empties" [ref=e50]
+              - cell "off" [ref=e51]
+            - row
+              - cell "orphanCleanup" [ref=e52]
+                - code
+              - cell "Cordons and deletes nodes that never registered as runners" [ref=e53]
+              - cell "off" [ref=e54]
+          - paragraph
+            - StaticText "Toggle example:"
+          - code
+            - StaticText "curl -X POST http://daytona-runner-manager:8080/features \\\n  -H 'Authorization: Bearer <auth_key>' \\\n  -d '{\"healthCheck\": true, \"nodeRegistration\": true}'\n"
+          - separator
+          - heading "How a Runner Gets Registered" [level=2, ref=e14]
+          - paragraph
+            - StaticText "This is the most critical flow — it’s what turns a bare K8s node into a functioning Daytona runner."
+          - code
+            - StaticText "  K8s Node joins cluster\n  (label: daytona-sandbox-c=true)\n         │\n         ▼\n  ┌──────────────────────┐\n  │   Node Watcher       │  detects new node via K8s informer\n  │   (or Scale-Up API)  │\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Read Node Capacity  │  CPU, memory, disk from\n  │  from K8s            │  node.Status.Allocatable\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  POST /api/runners   │  Register with Daytona API\n  │  to Daytona API      │  → gets back runner ID + API key\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Write capacity      │  Ensure DB has real CPU/mem/disk\n  │  to DB               │  (not -1)\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Wait for runner     │  DaemonSet pod must be Running\n  │  DaemonSet pod       │  (up to 60s)\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Write API key to    │  kubectl exec into daemonset pod:\n  │  /mnt/token.txt      │  echo -n '<key>' > /host-token/token.txt\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Restart DaemonSet   │  Delete pod so it restarts and\n  │  pod                 │  reads the token at boot\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Trigger snapshot    │  POST /snapshots/pull for each\n  │  pulls               │  snapshot to the new runner\n  └──────────┬───────────┘\n             │\n             ▼\n        Runner Ready\n    (authenticated, has snapshots,\n     can receive sandboxes)\n"
+          - paragraph
+            - strong
+              - StaticText "Why the pod restart?"
+            - StaticText " The runner daemonset reads its API key from "
+            - code
+              - StaticText "CONFIG_FILE_PATH=/host-token/token.txt"
+            - StaticText " only at startup. Since the daemonset pod starts before we can write the token, we write it and then restart the pod so it picks it up."
+          - separator
+          - heading "Scale-Up Flow (Karpenter Integration)" [level=2, ref=e15]
+          - paragraph
+            - StaticText "When we need more capacity (either via API or auto-reconciliation), we work with Karpenter to provision new EC2 instances."
+          - code
+            - StaticText "  Scale-Up Request\n  (API or auto-reconcile)\n         │\n         ▼\n  ┌──────────────────────┐\n  │  Check Guards        │  Block if:\n  │                      │  • Pending placeholder pods exist\n  │                      │  • Unregistered nodes < 15min old\n  │                      │  • Up-cooldown active (5min)\n  └──────────┬───────────┘\n             │ (passed)\n             ▼\n  ┌──────────────────────┐\n  │  Create placeholder  │  Lightweight pod with node selector\n  │  pod                 │  (daytona-sandbox-c=true)\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Karpenter detects   │  Pod is unschedulable →\n  │  pending pod         │  Karpenter provisions EC2 instance\n  │                      │  (~90 seconds)\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Node joins, pod     │  Pod gets scheduled to new node\n  │  gets scheduled      │\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐\n  │  Register runner     │  (see registration flow above)\n  │                      │\n  └──────────┬───────────┘\n             │\n             ▼\n  ┌──────────────────────┐     ┌────────────────────────┐\n  │  Success             │     │  Failure               │\n  │  → runner ready      │     │  → delete placeholder  │\n  │                      │     │  → cordon node         │\n  │                      │     │  → orphan cleanup      │\n  │                      │     │    handles the rest     │\n  └──────────────────────┘     └────────────────────────┘\n"
+          - paragraph
+            - strong
+              - StaticText "Scale-up guard"
+            - StaticText " is the key fix that prevents cascading orphan nodes. Before, the guard only checked for Pending placeholder pods. Karpenter provisions so fast that pods were already Running, causing the auto-scaler to keep firing. Now we also check for unregistered nodes younger than 15 minutes."
+          - separator
+          - heading "Orphan Node Cleanup" [level=2, ref=e16]
+          - paragraph
+            - StaticText "Orphan nodes are K8s nodes with the runner label that never got a registered runner. They can happen from failed scale-ups, crashes, or manual node additions."
+          - code
+            - StaticText "  Every 5 minutes, scan all nodes with\n  daytona-sandbox-c=true label\n         │\n         ▼\n  ┌─────────────────────────────────────────────┐\n  │  For each node:                             │\n  │                                             │\n  │  Has active runner in DB? ──────► Skip      │\n  │         │ (no)                              │\n  │         ▼                                   │\n  │  Age < 15 min? ────────────────► Skip       │\n  │         │ (no)                   (still      │\n  │         ▼                        registering)│\n  │  Not cordoned + age > 15min?                │\n  │         │ (yes)                             │\n  │         ▼                                   │\n  │  PHASE 1: Cordon + drain                    │\n  │           (give it one more cycle)          │\n  │                                             │\n  │  Already cordoned + age > 30min?            │\n  │         │ (yes)                             │\n  │         ▼                                   │\n  │  PHASE 2: Delete node object                │\n  │           → Karpenter terminates EC2        │\n  │           → Decommission runner in DB       │\n  └─────────────────────────────────────────────┘\n"
+          - separator
+          - heading "Compactor (Auto-Consolidation)" [level=2, ref=e17]
+          - paragraph
+            - StaticText "The compactor reduces cost by packing sandboxes onto fewer runners and scaling down empty ones."
+          - code
+            - StaticText "  Every 2 minutes:\n         │\n         ▼\n  ┌──────────────────────────────┐\n  │  Count active sandboxes      │\n  │  per runner                  │\n  └──────────┬───────────────────┘\n             │\n             ▼\n  ┌──────────────────────────────┐\n  │  Calculate needed runners:   │\n  │                              │\n  │  capacity = nodeAllocCPU     │\n  │             ÷ avgSandboxCPU  │\n  │                              │\n  │  needed = ⌈ totalSandboxes   │\n  │             ÷ capacity ⌉     │\n  │                              │\n  │  needed = max(needed,        │\n  │               minRunners)    │\n  │                              │\n  │  drain = readyRunners        │\n  │          - needed            │\n  └──────────┬───────────────────┘\n             │ (drain > 0)\n             ▼\n  ┌──────────────────────────────┐\n  │  Select runners to drain:    │\n  │  • Fewest sandboxes first    │\n  │  • Only if all sandboxes     │\n  │    are idle (>30min)         │\n  │  • Verify remaining capacity │\n  │    can absorb the load       │\n  └──────────┬───────────────────┘\n             │\n             ▼\n  ┌──────────────────────────────┐\n  │  Migrate sandboxes:          │\n  │                              │\n  │  stop → wait backup →        │\n  │  restart → verify moved      │\n  │                              │\n  │  (state machine, max 2       │\n  │   concurrent, 3 retries)     │\n  └──────────┬───────────────────┘\n             │\n             ▼\n  ┌──────────────────────────────┐\n  │  Scale down empty runners:   │\n  │  • Decommission in DB        │\n  │  • Cordon + drain node       │\n  │  • Karpenter terminates EC2  │\n  └──────────────────────────────┘\n"
+          - paragraph
+            - strong
+              - StaticText "Capacity math"
+            - StaticText ": Uses real CPU from K8s node allocatable resources. If a runner’s DB capacity is -1 (not yet reported), falls back to querying the K8s node directly."
+          - separator
+          - heading "Health Monitoring" [level=2, ref=e18]
+          - code
+            - StaticText "  Every 10 seconds, for each ready runner:\n\n  GET http://<runner-ip>:3000/\n         │\n         ├─ Success: reset failure counter\n         │           GET /info for detailed metrics\n         │           (CPU%, memory%, allocated resources)\n         │\n         └─ Failure: increment counter\n                    │\n                    ├─ counter >= 3: mark \"unresponsive\" in DB\n                    │\n                    └─ counter >= auto_cleanup_threshold:\n                       decommission runner, clean up DB entries\n"
+          - separator
+          - heading "Snapshot Distribution" [level=2, ref=e19]
+          - paragraph
+            - strong
+              - StaticText "Goal"
+            - StaticText ": Every snapshot must exist on every ready runner."
+          - code
+            - StaticText "  Every 5 minutes:\n\n  1. List all unique snapshots (from snapshot_runner table)\n  2. List all ready runners\n  3. Find gaps: (runner, snapshot) pairs not in \"ready\" state\n  4. For each gap:\n     • Insert snapshot_runner record (state: pulling_snapshot)\n     • POST /snapshots/pull to runner (authenticated with runner's API key)\n"
+          - separator
+          - heading "API Reference" [level=2, ref=e20]
+          - heading "No Auth Required" [level=3, ref=e21]
+          - table
+            - rowgroup
+              - row
+                - columnheader "Method" [ref=e170]
+                - columnheader "Path" [ref=e171]
+                - columnheader "Description" [ref=e172]
+            - row
+              - cell "GET" [ref=e55]
+              - cell "/" [ref=e56]
+                - code
+              - cell "Web dashboard (HTML)" [ref=e57]
+            - row
+              - cell "GET" [ref=e58]
+              - cell "/dashboard/data" [ref=e59]
+                - code
+              - cell "Dashboard data (JSON)" [ref=e60]
+            - row
+              - cell "GET" [ref=e61]
+              - cell "/health" [ref=e62]
+                - code
+              - cell "Liveness probe ({\"status\":\"ok\"})" [ref=e63]
+                - StaticText "Liveness probe ("
+                - code
+                - StaticText ")"
+            - row
+              - cell "GET" [ref=e64]
+              - cell "/metrics" [ref=e65]
+                - code
+              - cell "Prometheus metrics" [ref=e66]
+          - heading "Auth Required (Authorization: Bearer <auth_key>)" [level=3, ref=e22]
+            - StaticText "Auth Required ("
+            - code
+              - StaticText "Authorization: Bearer <auth_key>"
+            - StaticText ")"
+          - table
+            - rowgroup
+              - row
+                - columnheader "Method" [ref=e173]
+                - columnheader "Path" [ref=e174]
+                - columnheader "Description" [ref=e175]
+            - row
+              - cell "GET" [ref=e67]
+              - cell "/runners" [ref=e68]
+                - code
+              - cell "List all runners with capacity/state" [ref=e69]
+            - row
+              - cell "GET" [ref=e70]
+              - cell "/features" [ref=e71]
+                - code
+              - cell "Current feature flag state" [ref=e72]
+            - row
+              - cell "POST" [ref=e73]
+              - cell "/features" [ref=e74]
+                - code
+              - cell "Toggle feature flags" [ref=e75]
+            - row
+              - cell "POST" [ref=e76]
+              - cell "/scale/up" [ref=e77]
+                - code
+              - cell "Scale up N runners ({\"count\": 1})" [ref=e78]
+                - StaticText "Scale up N runners ("
+                - code
+                  - StaticText "{\"count\": 1}"
+                - StaticText ")"
+            - row
+              - cell "POST" [ref=e79]
+              - cell "/scale/down" [ref=e80]
+                - code
+              - cell "Scale down N runners ({\"count\": 1} or {\"runner_ids\": [...]})" [ref=e81]
+                - StaticText "Scale down N runners ("
+                - code
+                  - StaticText "{\"count\": 1}"
+                - StaticText " or "
+                - code
+                  - StaticText "{\"runner_ids\": [...]}"
+            - row
+              - cell "POST" [ref=e82]
+              - cell "/trigger/snapshots" [ref=e83]
+              - cell "Manually trigger snapshot distribution" [ref=e84]
+            - row
+              - cell "POST" [ref=e85]
+              - cell "/trigger/compact" [ref=e86]
+              - cell "Manually trigger compaction" [ref=e87]
+          - separator
+          - heading "Database Tables Used" [level=2, ref=e23]
+          - paragraph
+            - StaticText "The manager reads and writes to these existing Daytona tables (no schema changes):"
+          - table
+            - rowgroup
+              - row
+                - columnheader "Table" [ref=e176]
+                - columnheader "Usage" [ref=e177]
+            - row
+              - cell "runner" [ref=e88]
+              - cell "Register, update state/capacity, mark unschedulable/decommissioned" [ref=e89]
+            - row
+              - cell "snapshot_runner" [ref=e90]
+              - cell "Track which snapshots are on which runners, trigger pulls" [ref=e91]
+            - row
+              - cell "sandbox" [ref=e92]
+              - cell "Read sandbox counts and states for compactor/scale-down decisions" [ref=e93]
+          - separator
+          - heading "RBAC Requirements" [level=2, ref=e24]
+          - paragraph
+            - StaticText "The manager runs as ServiceAccount "
+            - code
+              - StaticText "daytona-runnermanager"
+            - StaticText " in the "
+            - code
+              - StaticText "tools"
+            - StaticText " namespace."
+          - paragraph
+            - strong
+              - StaticText "ClusterRole"
+            - StaticText " (cluster-scoped, for nodes):"
+          - table
+            - rowgroup
+              - row
+                - columnheader "Resource" [ref=e178]
+                - columnheader "Verbs" [ref=e179]
+            - row
+              - cell "nodes" [ref=e94]
+              - cell "get, list, watch, update, patch, delete" [ref=e95]
+          - paragraph
+            - strong
+              - StaticText "Role"
+            - StaticText " (namespace-scoped, for pods/configmaps):"
+          - table
+            - rowgroup
+              - row
+                - columnheader "Resource" [ref=e180]
+                - columnheader "Verbs" [ref=e181]
+            - row
+              - cell "pods" [ref=e96]
+              - cell "get, list, create, delete, watch" [ref=e97]
+            - row
+              - cell "pods/exec" [ref=e98]
+              - cell "create" [ref=e99]
+            - row
+              - cell "configmaps" [ref=e100]
+              - cell "get, list, create, update, patch, delete, watch" [ref=e101]
+            - row
+              - cell "deployments, daemonsets" [ref=e102]
+              - cell "get, list, update, patch" [ref=e103]
+          - paragraph
+            - StaticText "The "
+            - strong
+              - StaticText "bold"
+            - StaticText " verbs are additions over the original Helm chart RBAC:"
+          - list
+            - listitem [level=1]
+              - ListMarker "• "
+              - code
+              - StaticText ": orphan cleanup deletes node objects to trigger Karpenter EC2 termination"
+            - listitem [level=1]
+              - ListMarker "• "
+              - code
+              - StaticText ": token delivery writes API keys into runner daemonset pods"
+          - separator
+          - heading "Configuration" [level=2, ref=e25]
+          - paragraph
+            - StaticText "The manager reads from "
+            - code
+              - StaticText "config.yaml"
+            - StaticText " (mounted via ConfigMap) with environment variable overrides:"
+          - table
+            - rowgroup
+              - row
+                - columnheader "Config" [ref=e182]
+                - columnheader "Env Override" [ref=e183]
+                - columnheader "Default" [ref=e184]
+                - columnheader "Description" [ref=e185]
+            - row
+              - cell "daytona.api_url" [ref=e104]
+              - cell "SERVER_URL" [ref=e105]
+              - cell "—" [ref=e106]
+              - cell "Daytona API URL (required)" [ref=e107]
+            - row
+              - cell "daytona.api_token" [ref=e108]
+              - cell "API_TOKEN" [ref=e109]
+              - cell "—" [ref=e110]
+              - cell "Auth token (required)" [ref=e111]
+            - row
+              - cell "runner.default_region" [ref=e112]
+              - cell "REGION_ID" [ref=e113]
+              - cell "us" [ref=e114]
+              - cell "Runner region" [ref=e115]
+            - row
+              - cell "runner.api_port" [ref=e116]
+              - cell "RUNNER_API_PORT" [ref=e117]
+              - cell "3000" [ref=e118]
+              - cell "Runner daemonset API port" [ref=e119]
+            - row
+              - cell "scale.min_runners" [ref=e120]
+              - cell "—" [ref=e121]
+              - cell "1" [ref=e122]
+              - cell "Minimum runners for auto-scale" [ref=e123]
+            - row
+              - cell "scale.availability_threshold" [ref=e124]
+              - cell "—" [ref=e125]
+              - cell "75.0" [ref=e126]
+              - cell "Scale up when avg score < this" [ref=e127]
+            - row
+              - cell "compactor.min_runners" [ref=e128]
+              - cell "—" [ref=e129]
+              - cell "2" [ref=e130]
+              - cell "Never compact below this count" [ref=e131]
+            - row
+              - cell "monitoring.failure_threshold" [ref=e132]
+              - cell "—" [ref=e133]
+              - cell "3" [ref=e134]
+              - cell "Failures before marking unresponsive" [ref=e135]
+            - row
+              - cell "api.auth_key" [ref=e136]
+              - cell "API_AUTH_KEY" [ref=e137]
+              - cell "—" [ref=e138]
+              - cell "Bearer token for API auth" [ref=e139]
+          - separator
+          - heading "Deployment" [level=2, ref=e26]
+          - heading "Current State" [level=3, ref=e27]
+          - list
+            - listitem [level=1]
+              - ListMarker "• "
+              - StaticText "Custom manager: "
+              - code
+              - StaticText " (1 replica, active)"
+            - listitem [level=1]
+              - ListMarker "• "
+              - StaticText "Helm manager: "
+              - code
+              - StaticText " (0 replicas, disabled)"
+          - heading "Rollback" [level=3, ref=e28]
+          - paragraph
+            - StaticText "If the custom manager has issues, immediate rollback with zero data loss:"
+          - code
+            - StaticText "kubectl scale deployment/daytona-runner-manager --replicas=0 -n tools\nkubectl scale deployment/daytona-runnermanager --replicas=1 -n tools\n"
+          - paragraph
+            - StaticText "All runners continue working during rollback — they’re already authenticated with valid tokens."
+          - heading "Karpenter Integration" [level=3, ref=e29]
+          - list
+            - listitem [level=1]
+              - ListMarker "• "
+              - StaticText "Karpenter handles: EC2 provisioning, AZ distribution, instance type selection, node expiry (30 days)"
+            - listitem [level=1]
+              - ListMarker "• "
+              - StaticText "Runner manager handles: placeholder pods to trigger provisioning, registration after node joins, cleanup when nodes leave"
+            - listitem [level=1]
+              - ListMarker "• "
+              - code
+                - StaticText "consolidateAfter: 30m"
+              - StaticText " — Karpenter removes empty nodes after 30 minutes"
+          - separator
+          - heading "What Changed vs. Original Runner Manager" [level=2, ref=e30]
+          - table
+            - rowgroup
+              - row
+                - columnheader "Problem" [ref=e186]
+                - columnheader "Original" [ref=e187]
+                - columnheader "This Manager" [ref=e188]
+            - row
+              - cell "Dead runners after node failures" [ref=e140]
+              - cell "Manual SQL cleanup" [ref=e141]
+              - cell "Auto-detected and decommissioned" [ref=e142]
+            - row
+              - cell "Cascading scale-ups (orphan nodes)" [ref=e143]
+              - cell "Only checked Pending pods" [ref=e144]
+              - cell "Also checks unregistered nodes < 15min" [ref=e145]
+            - row
+              - cell "Failed scale-up cleanup" [ref=e146]
+              - cell "Orphan nodes left forever" [ref=e147]
+              - cell "Immediate cleanup on failure + background orphan loop" [ref=e148]
+            - row
+              - cell "Runner capacity in DB" [ref=e149]
+              - cell "Often -1" [ref=e150]
+              - cell "Read from K8s node allocatable resources" [ref=e151]
+            - row
+              - cell "Snapshot gaps" [ref=e152]
+              - cell "Not actively enforced" [ref=e153]
+              - cell "Every 5 minutes, all snapshots on all runners" [ref=e154]
+            - row
+              - cell "Scaling decisions" [ref=e155]
+              - cell "Manual or basic" [ref=e156]
+              - cell "Capacity-based with real CPU math" [ref=e157]
+            - row
+              - cell "Idle runner consolidation" [ref=e158]
+              - cell "None" [ref=e159]
+              - cell "Compactor migrates sandboxes and scales down empties" [ref=e160]
+            - row
+              - cell "Observability" [ref=e161]
+              - cell "Logs only" [ref=e162]
+              - cell "Web dashboard + Prometheus metrics + feature flags" [ref=e163]
+            - row
+              - cell "Safe rollout" [ref=e164]
+              - cell "Full replacement" [ref=e165]
+              - cell "Feature flags, read-only by default" [ref=e166]
+        - toolbar "Media controls"
+          - button "Download" [ref=e6]
+          - button "Copy markdown" [ref=e7]
+          - button "Open in new window" [ref=e8]
+          - button "More actions" [ref=e9]
+        - button "Close" [ref=e5]
