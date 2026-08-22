@@ -1,0 +1,125 @@
+"""Prompts used only by the refined DOM-diff text verifier."""
+
+from string import Template
+
+
+DOM_DIFF_TEXT_GROUNDING_RULES = """
+GROUNDING RULES FOR REFINED DOM-DIFF TEXT EVIDENCE:
+- The evidence is a deterministic compact projection of recorder-produced,
+  action-aligned dom_diffN.txt files.
+- Added, removed, changed, viewport-entered, and viewport-exited records are
+  distinct operations. Never cancel or equate their directions.
+- Operation markers are compact but exact: +DOC/-DOC are document text
+  additions/removals; +VIEW/-VIEW are viewport entry/exit; +EL/-EL are element
+  additions/removals; ~EL is a state/attribute change; NAV is navigation.
+- A -DOC record proves that its text existed in the before-state at that
+  chronological step before the transition removed it. Likewise, -VIEW proves
+  the text was in the viewport before it exited. These remain valid historical
+  observations; do not ignore them merely because a later state removed them.
+- Document additions/removals are not equivalent to viewport entry/exit.
+- State transitions mean only their explicit before and after values.
+- [record-or-chunk-id] is a stable audit join key and adds no semantic fact.
+- On multi-step evidence, @1,3 means observed at steps 1 and 3 only; it does
+  not prove continuous presence between those steps. A one-step evidence line
+  inherits the sole STEP header and therefore omits redundant @step notation.
+- In analysis evidence, C[0,2] is the complete criterion assignment for that
+  line. A criterion may use only lines whose C[...] tag contains its index.
+- FRAME is the zero-based model/validator citation ID. STEP is the one-based
+  chronological action ordinal. Use FRAME values for evidence_idx and
+  evidence_indices; never substitute STEP values.
+- Source refs, hashes, paths, occurrence details, and merge mappings remain in
+  audit receipts and are intentionally absent from model-facing lines.
+- COVERAGE warnings describe recorder limits or true model-context omissions.
+  If missing coverage prevents a safe conclusion, use unknown.
+- "Not observed" is not proof that a fact is absent from the website or page.
+- Before accepting an agent claim that a required field was not provided,
+  search every evidence line assigned to that criterion across all allowed
+  frames, including earlier +DOC/-DOC and +VIEW/-VIEW observations. Required
+  values may be expressed in ordinary prose rather than as a literal labeled
+  field. For example, "on exhibit in X" explicitly supplies a location and
+  "published by X" explicitly supplies a publisher even without `Location:`
+  or `Publisher:` labels. This is interpretation of explicit source text, not
+  invention of a parser-generated fact.
+- If an assigned record explicitly supplies a value that the final answer says
+  was missing or unavailable, classify that claim as contradicted or partial,
+  quote the conflicting text, and do not award missing-field credit.
+- Action history and the agent final answer are claims/context, not browser-state
+  evidence.
+- Use contradicted only when an explicit retained record conflicts with a claim.
+- Do not infer structured relationships or unsupported facts that the source did
+  not explicitly represent. The judge, not the parser, performs interpretation.
+""".strip()
+
+
+TEXT_BATCHED_RELEVANCE_PROMPT = Template(
+    """
+Rank every action-aligned refined DOM-diff text frame against every rubric
+criterion.
+
+Task:
+$task_definition
+$init_url_context
+
+Retrieved compact text evidence across all steps:
+$text_frames
+
+Rubric criteria:
+$rubric_criteria
+
+$grounding_rules
+
+Return JSON as {"frames": [...]}. Include exactly one object for every FRAME in
+ascending FRAME order. Each object must contain evidence_idx equal to the
+displayed zero-based FRAME value, never the STEP value, and one integer score
+from 0 to 10 for every criterion using keys criterion_0, criterion_1, and so
+on. Do not omit low-relevance frames. Relevance means an explicit retained
+record at that chronological step could support or contradict a criterion.
+""".strip()
+)
+
+
+TEXT_PACKED_ANALYSIS_PROMPT = Template(
+    """
+Analyze packed refined DOM-diff text evidence against every listed rubric
+criterion. The evidence library is sent once. Every evidence line begins with
+a C[...] tag identifying exactly which criteria may use that line. The ALLOWED
+FRAMES block gives the complete FRAME allowlist for each criterion after final
+evidence packing.
+
+Task:
+$task_definition
+$init_url_context
+
+Action history (context only; not browser-state evidence):
+$action_history
+
+Agent final answer (claim to verify; not evidence):
+$agent_predicted_output
+
+Packed refined DOM-diff text evidence:
+$packed_evidence
+
+Criteria:
+$criteria_info_block
+
+$grounding_rules
+
+Return JSON as {"analyses": [...]}, with exactly one entry for every criterion
+in ascending criterion_idx order. Every entry must contain:
+- criterion_idx: integer
+- evidence_status: one of "supported", "contradicted", "partial", "unknown"
+- evidence_text: concise, non-empty description with applicable step numbers
+- criterion_analysis: concise, non-empty explanation
+- discrepancies: non-empty string; use "None explicitly shown" when applicable
+- environment_issues_confirmed: boolean
+- evidence_indices: array containing applicable displayed zero-based FRAME
+  values only; it must be a subset of that criterion's displayed ALLOWED FRAMES
+  list; never put STEP values in this array
+
+For conditional criteria also include condition_verification as a boolean. Use
+only evidence lines assigned to the criterion's index and cite only assigned
+FRAME values from that criterion's ALLOWED FRAMES list. STEP remains chronology
+only and must never be returned in evidence_indices. Do not turn not-observed
+evidence into proof of absence. Keep text fields brief.
+""".strip()
+)
