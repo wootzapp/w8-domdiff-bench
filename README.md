@@ -15,7 +15,9 @@ elements by the `@eN` refs that snapshot provides.
 **ChromiumRL** captures the evidence and computes the live diff. Before an
 action, the recorder calls `captureStructuredSnapshot`. After the action it
 calls `captureSnapshotDiff`, which captures the after-state and compares both
-snapshots inside the browser. The host saves the returned snapshot and diff.
+snapshots inside the browser. Each captured snapshot is passed to `getModelDOM`,
+which produces the fixed model-facing text projection inside the browser. The
+host saves the returned snapshot, projection, and diff.
 
 The model never sees a page state that wasn't recorded, and every recorded
 diff corresponds to exactly one executed action.
@@ -66,8 +68,8 @@ change capture, progress detection, or the artifact layout. Manifests record `mo
 
 - `scripts/render_chromiumrl_snapshot_full.py` — turns a snapshot into readable
   text for inspection
-- `scripts/render_chromiumrl_snapshot_model.py` — a shorter version of the same
-  snapshot, written for the model
+- `scripts/render_chromiumrl_snapshot_model.py` — the unchanged regression
+  oracle for the browser-produced model projection
 - `tests/` — unit tests for recorder behavior and artifact persistence
 - `chromium_files/` — the prepared browser `.cc`, `.h`, and sole authoritative
   `ChromiumRL.pdl` used by protocol-declaration checks and browser builds
@@ -131,7 +133,9 @@ For each action the model proposes, the runner:
 5. reattaches capture to whatever tab is now active
 6. calls `ChromiumRL.captureSnapshotDiff`, which captures the new state and
    computes the diff in the browser
-7. writes the returned after-state, `dom_diff.json`, and `dom_diff.txt`
+7. calls `ChromiumRL.getModelDOM` for the returned after-state
+8. writes the returned after-state and model projection, `dom_diff.json`, and
+   `dom_diff.txt`
 
 When the model wants to finish, a second model call reviews the proposed answer
 against the recorded evidence and can send the run back for more work. That
@@ -195,11 +199,12 @@ direct/subtree clipping sets the node's `truncated` flag. Snapshot
 `stats.truncated` is ambiguous: one boolean covers the 7,000-node request,
 cumulative `maxTextChars`, and the 80-child clip.
 
-The two renderer scripts cap only the `dom_full.txt` and `dom_model.txt`
-projections. They never modify `dom.json`. Content may be absent from both text
-projections without a hidden-count marker, but it remains present in the
-authoritative `dom.json` unless one of the browser capture ceilings above
-removed it first.
+The full-text renderer and Chromium's model-text renderer cap only the
+`dom_full.txt` and `dom_model.txt` projections. They never modify `dom.json`.
+The unchanged Python model renderer applies the same limits as a regression
+oracle. Content may be absent from both text projections without a hidden-count
+marker, but it remains present in the authoritative `dom.json` unless one of
+the browser capture ceilings above removed it first.
 
 The recorder maintains a no-post-capture-truncation invariant for persisted DOM
 and diff payloads. `tests/test_browser_diff_persistence.py` checks the runner's
