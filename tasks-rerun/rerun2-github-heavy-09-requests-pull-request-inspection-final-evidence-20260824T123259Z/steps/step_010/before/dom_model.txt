@@ -1,0 +1,175 @@
+URL: https://github.com/psf/requests/pull/7586/files
+Title: fix: honor ports in IPv4 no_proxy entries by PEliet · Pull Request #7586 · psf/requests · GitHub
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=569 groups=45 truncated=False
+
+=== TABLES ===
+Table 1: rows=17 columns=3
+  Original file line number | Diff line number | Diff line change
+  Expand Up | @@ -837,11 +837,15 @@ def get_proxy(key: str) -> str | None:
+   |  | no_proxy_hosts = (host for host in no_proxy.replace(" ", "").split(",") if host)
+   |  | if is_ipv4_address(hostname):
+   |  | host_with_port = hostname
+   |  | if parsed.port:
+   |  | host_with_port += f":{parsed.port}"
+   |  | for proxy_ip in no_proxy_hosts:
+   |  | if is_valid_cidr(proxy_ip):
+   |  | if address_in_network(hostname, proxy_ip):
+   |  | return True
+   |  | elif hostname == proxy_ip:
+   |  | elif hostname == proxy_ip or host_with_port == proxy_ip :
+   |  | # If no_proxy ip was defined in plain IP notation instead of cidr notation &
+   |  | # matches the IP of the index
+   |  | return True
+  Expand Down | 
+Table 2: rows=16 columns=3
+  Original file line number | Diff line number | Diff line change
+  Expand Up | @@ -844,6 +844,17 @@ def test_should_bypass_proxies_no_proxy(url, expected, monkeypatch):
+   |  | assert should_bypass_proxies(url, no_proxy=no_proxy) == expected
+   |  | @pytest.mark.parametrize(
+   |  | "url, no_proxy, expected",
+   |  | (
+   |  | ("http://192.168.0.1:5000/", "192.168.0.1:5000", True),
+   |  | ("http://192.168.0.1:5001/", "192.168.0.1:5000", False),
+   |  | ),
+   |  | )
+   |  | def test_should_bypass_proxies_ipv4_port(url, no_proxy, expected):
+   |  | assert should_bypass_proxies(url, no_proxy=no_proxy) == expected
+   |  | @pytest.mark.parametrize(
+   |  | "url, expected",
+   |  | (
+  Expand Down | 
+
+=== VISIBLE CONTENT ===
+Context: Close navigation menu
+- Navigation Menu
+Context: Global
+- Platform AI CODE CREATION GitHub Copilot Write better code with AI GitHub Copilot app Direct agents from issue to merge MCP Registry Integrate external tools DEVELOPER WORKFLOWS Actions Automate any workflow Codespaces Instant dev environments Issues Plan and track work Code Review Manage code changes Code Quality Enforce quality at merge APPLICATION SECURITY GitHub Advanced Security Find and fix vulnerabilities Code security Secure your code as you build Secret protection Stop leaks before they
+  actions: [41942] button "Platform"
+- Solutions BY COMPANY SIZE Enterprises Small and medium teams Startups Nonprofits BY USE CASE App Modernization DevSecOps DevOps CI/CD View all use cases BY INDUSTRY Healthcare Financial services Manufacturing Government View all industries View all solutions
+  actions: [42074] button "Solutions"
+- Resources EXPLORE BY TOPIC AI Software Development DevOps Security View all topics EXPLORE BY TYPE Customer stories Events & webinars Ebooks & reports Business insights GitHub Skills SUPPORT & SERVICES Documentation Customer support Community forum Trust center Partners View all resources
+  actions: [42147] button "Resources"
+- Open Source COMMUNITY GitHub Sponsors Fund open source developers PROGRAMS Security Lab Maintainer Community Accelerator GitHub Stars Archive Program REPOSITORIES Topics Trending Collections
+  actions: [42226] button "Open Source"
+- Enterprise ENTERPRISE SOLUTIONS Enterprise platform AI-powered developer platform AVAILABLE ADD-ONS GitHub Advanced Security Enterprise-grade security features Copilot for Business Enterprise-grade AI features Premium Support Enterprise-grade 24/7 support
+  actions: [42284] button "Enterprise"
+- Pricing
+Context: Close navigation menu
+- Sign in
+- Sign up
+Context: Please reload this page
+- Public
+- Notifications You must be signed in to change notification settings
+- Fork 10.1k
+- 10.1k
+- You must be signed in to star a repository
+  actions: [42428] link "You must be signed in to star a repository"
+- Star
+- 54.3k
+Context: Repository
+- Code
+- Issues 147
+- Issues
+- 147
+- Pull requests 86
+- Pull requests
+- 86
+- Actions
+- Wiki
+- Security and quality 4
+- Security and quality
+- 4
+- Insights
+Context: Please reload this page
+- fix: honor ports in IPv4 no_proxy entries #7586
+- fix: honor ports in IPv4 no_proxy entries
+- #7586
+- [42559] New issue
+- Open
+- wants to merge commit into from
+- 1
+- psf
+- main
+- PEliet
+- fix/no-proxy-ip-port
+Context: Pull request tabs
+- 2
+- 1
+- 0
+Context: Please reload this page
+- [42736] Changes from all commits
+- all commits
+- [42761] File filter
+- [42788] Conversations
+- [42848] Diff settings
+Context: File Tree
+- src/requests src/requests/utils.py utils.py
+  actions: [42946] button "src/requests"
+- src/requests
+Context: File
+- src/requests/utils.py utils.py
+- utils.py
+Context: File Tree
+- tests tests/test_utils.py test_utils.py
+  actions: [42974] button "tests"
+- tests
+Context: File
+- tests/test_utils.py test_utils.py
+- test_utils.py
+Context: Please reload this page
+- 6 changes: 5 additions & 1 deletion
+- [43051] Show options
+- 11 changes: 11 additions & 0 deletions
+- Show options
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [42917] Filter changed files.
+Context: Please reload this page
+- Uh oh! There was an error while loading. Please reload this page .
+
+=== USEFUL PAGE ACTIONS ===
+[41698] text-input "Filter changed files" actions=click,type,focus
+[42330] button "Search or jump to, type / to search"
+[42340] link "Sign in"
+[41053] button "Hide file tree"
+[43015] button "Toggle diff contents"
+[43021] button "Expand all"
+[41054] link "Expand Up"
+[41055] link "Expand Down"
+[41922] link "Homepage"
+[42343] link "Sign up"
+[42394] link "psf"
+[42397] link "requests"
+[43035] link "src/requests/utils.py"
+[43037] button "Copy"
+[other actions hidden: 5]
+=== READ-ONLY CONTROL EVIDENCE ===
+- Appearance settings
+- Conversation 2
+- Commits 1
+- Checks 0
+- Files changed
+=== SECONDARY / DEBUG ACTIONS ===
+[41886] link "Skip to content" <a> role=link state=not-hit-testable hit=False viewport=True sourceOrder=303 bounds=(x=0 y=0 w=1 h=1) reason=not_hit_testable
+[42675] scroll-region "Conversation 2 Commits 1 Checks 0 Files changed" actions=scroll <nav> role=generic context="generic: Sign up for GitHub / generic: Sign up for GitHub / generic: Pull request tabs" hit=True viewport=True sourceOrder=1698 bounds=(x=16 y=308 w=1319 h=40) reason=broad/noisy
+[42917] scroll-region "src/requests src/requests/utils.py utils.py tests tests/test_utils.py test_utils.py" actions=scroll <div> role=generic context="generic: Sign up for GitHub / generic: Sign up for GitHub / generic: Please reload this page" hit=True viewport=True sourceOrder=2315 bounds=(x=32 y=408 w=296 h=405) reason=broad/noisy
+[43180] button "Toggle diff contents" <button> role=button context="generic: Sign up for GitHub / generic: Please reload this page / generic: Toggle diff contents" state=not-hit-testable hit=False viewport=True sourceOrder=2908 bounds=(x=358 y=850.828125 w=22 h=26) reason=not_hit_testable
+[43186] button "Expand all" <button> role=button context="generic: Sign up for GitHub / generic: Please reload this page / generic: Toggle diff contents" state=not-hit-testable hit=False viewport=True sourceOrder=2923 bounds=(x=387.203125 y=848 w=16 h=32) reason=not_hit_testable
+[43200] link "tests/test_utils.py" <a> role=link context="generic: Sign up for GitHub / generic: Please reload this page / generic: Toggle diff contents" state=not-hit-testable hit=False viewport=True sourceOrder=2953 bounds=(x=484.21875 y=848 w=136.828125 h=32) reason=not_hit_testable
+[43202] button "Copy" <clipboard-copy> role=button context="generic: Sign up for GitHub / generic: Please reload this page / generic: Toggle diff contents" state=not-hit-testable hit=False viewport=True sourceOrder=2958 bounds=(x=629.046875 y=857 w=16 h=14) reason=not_hit_testable
+[41056] link "Expand Up" <a> role=link context="generic: Expand Up / generic: Expand Up / generic: Expand Up" state=not-hit-testable hit=False viewport=True sourceOrder=3063 bounds=(x=345 y=885 w=101 h=28) reason=not_hit_testable
+[41057] link "Expand Down" <a> role=link context="generic: Expand Up / generic: Expand Down / generic: Expand Down" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3287 bounds=(x=345 y=1253 w=101 h=28) reason=not_hit_testable
+[43387] link "GitHub Homepage" <a> role=link context="contentinfo: GitHub Homepage" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3430 bounds=(x=251.5625 y=1362 w=24 h=26) reason=not_hit_testable
+[43395] link "Terms" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3451 bounds=(x=405.125 y=1368 w=32.671875 h=14) reason=not_hit_testable
+[43397] link "Privacy" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3457 bounds=(x=453.796875 y=1368 w=39.34375 h=14) reason=not_hit_testable
+[43399] link "Security" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3463 bounds=(x=509.140625 y=1368 w=43.359375 h=14) reason=not_hit_testable
+[43401] link "Status" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3469 bounds=(x=568.5 y=1368 w=34.03125 h=14) reason=not_hit_testable
+[43403] link "Community" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3475 bounds=(x=618.53125 y=1368 w=60.6875 h=14) reason=not_hit_testable
+[43405] link "Docs" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3481 bounds=(x=695.21875 y=1368 w=27.34375 h=14) reason=not_hit_testable
+[43407] link "Contact" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3487 bounds=(x=738.5625 y=1368 w=41.359375 h=14) reason=not_hit_testable
+[43410] button "Manage cookies" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3495 bounds=(x=795.921875 y=1366 w=87.390625 h=18) reason=not_hit_testable
+[43413] button "Do not share my personal information" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3504 bounds=(x=899.3125 y=1366 w=200.109375 h=18) reason=not_hit_testable
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[42917] Filter changed files — 296x405
