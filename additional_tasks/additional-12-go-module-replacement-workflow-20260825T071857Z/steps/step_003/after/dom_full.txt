@@ -1,0 +1,982 @@
+=== SNAPSHOT ===
+url: https://go.dev/doc/tutorial/call-module-code
+title: Call your code from another module - The Go Programming Language
+snapshot_id: cdbb490f-f88a-4fd8-8b29-7bb96f7a9342
+document_revision: 1085
+nodes_returned: 476
+actions_returned: 0
+stats: rawNodes=1085 returnedNodes=476 textChars=24246 groups=23 droppedHidden=305 droppedOffscreen=0 droppedDuplicate=0 truncated=False
+roots: n1
+
+=== ACTION INDEX ===
+[6] ref=e6 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Go"
+[9] ref=e9 <a> role=link actions=click visible=true viewport=true hit=false occluded=false "Skip to main content"
+[14] ref=e14 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Why Go"
+[17] ref=e17 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Learn"
+[20] ref=e20 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Docs"
+[23] ref=e23 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Packages"
+[26] ref=e26 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Community"
+[31] ref=e31 <a> role=link actions=click visible=true viewport=true hit=false occluded=false "Go."
+[35] ref=e35 <a> role=link actions=click visible=true viewport=true hit=false occluded=false "Why Go navigate_next"
+[43] ref=e43 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "navigate_before Why Go"
+[49] ref=e49 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Case Studies"
+[52] ref=e52 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Use Cases"
+[55] ref=e55 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Security"
+[58] ref=e58 <a> role=link actions=click visible=true viewport=true hit=false occluded=false "Learn"
+[61] ref=e61 <a> role=link actions=click visible=true viewport=true hit=false occluded=false "Docs navigate_next"
+[69] ref=e69 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "navigate_before Docs"
+[75] ref=e75 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Go Spec"
+[78] ref=e78 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Go User Manual"
+[81] ref=e81 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Standard library"
+[84] ref=e84 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Release Notes"
+[87] ref=e87 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Effective Go"
+[90] ref=e90 <a> role=link actions=click visible=true viewport=true hit=false occluded=false "Packages"
+[93] ref=e93 <a> role=link actions=click visible=true viewport=true hit=false occluded=false "Community navigate_next"
+[101] ref=e101 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "navigate_before Community"
+[107] ref=e107 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Recorded Talks"
+[110] ref=e110 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Meetups open_in_new"
+[115] ref=e115 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Conferences open_in_new"
+[120] ref=e120 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Go blog"
+[123] ref=e123 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Go project"
+[128] ref=e128 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "https://groups.google.com/g/golang-nuts"
+[130] ref=e130 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "https://github.com/golang"
+[132] ref=e132 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "https://bsky.app/profile/golang.org"
+[134] ref=e134 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "https://hachyderm.io/@golang"
+[136] ref=e136 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "https://twitter.com/golang"
+[138] ref=e138 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "https://www.reddit.com/r/golang/"
+[140] ref=e140 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "https://invite.slack.golangbridge.org/"
+[142] ref=e142 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "https://stackoverflow.com/tags/go"
+[148] ref=e148 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Documentation"
+[151] ref=e151 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Tutorials"
+[154] ref=e154 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Call your code from another module"
+[160] ref=e160 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "previous section"
+[176] ref=e176 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Create a Go module"
+[186] ref=g186 <pre> role=generic actions=scroll visible=true viewport=true hit=true occluded=false "<home>/ |-- greetings/ |-- hello/"
+[190] ref=g190 <pre> role=generic actions=scroll visible=true viewport=true hit=true occluded=false "cd .. mkdir hello cd hello"
+[196] ref=e196 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "go mod init command"
+[206] ref=g206 <pre> role=generic actions=scroll visible=true viewport=true hit=false occluded=false "$ go mod init example.com/hello go: creating new go.mod: module example.com/hello"
+[217] ref=g217 <pre> role=generic actions=scroll visible=true viewport=true hit=false occluded=false "package main import ( "fmt" "example.com/greetings" ) func main() { // Get a greeting message and print it. message := greetings.Hello("Gladys") fmt.Println(message) }"
+[235] ref=e235 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "fmt package"
+[278] ref=e278 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "go mod edit command"
+[289] ref=g289 <pre> role=generic actions=scroll visible=true viewport=false hit=false occluded=false "$ go mod edit -replace example.com/greetings=../greetings"
+[299] ref=e299 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "replace directive"
+[303] ref=g303 <pre> role=generic actions=scroll visible=true viewport=false hit=false occluded=false "module example.com/hello go 1.16"
+[309] ref=e309 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "go mod tidy command"
+[317] ref=g317 <pre> role=generic actions=scroll visible=true viewport=false hit=false occluded=false "$ go mod tidy go: found example.com/greetings in example.com/greetings v0.0.0-00010101000000-000000000000"
+[324] ref=g324 <pre> role=generic actions=scroll visible=true viewport=false hit=false occluded=false "module example.com/hello go 1.16 replace example.com/greetings => ../greetings"
+[330] ref=e330 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "require directive"
+[360] ref=g360 <pre> role=generic actions=scroll visible=true viewport=false hit=false occluded=false "require example.com/greetings v1.1.0"
+[364] ref=e364 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Module version numbering"
+[371] ref=g371 <pre> role=generic actions=scroll visible=true viewport=false hit=false occluded=false "$ go run . Hi, Gladys. Welcome!"
+[378] ref=e378 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "< Create a Go module"
+[380] ref=e380 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Return and handle an error >"
+[387] ref=e387 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Why Go"
+[389] ref=e389 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Use Cases"
+[391] ref=e391 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Case Studies"
+[394] ref=e394 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Get Started"
+[396] ref=e396 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Playground"
+[398] ref=e398 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Tour"
+[400] ref=e400 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Stack Overflow"
+[402] ref=e402 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Help"
+[405] ref=e405 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Packages"
+[407] ref=e407 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Standard Library"
+[409] ref=e409 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "About Go Packages"
+[411] ref=e411 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "pkg.go.dev API"
+[414] ref=e414 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "About"
+[416] ref=e416 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Download"
+[418] ref=e418 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Blog"
+[420] ref=e420 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Issue Tracker"
+[422] ref=e422 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Release Notes"
+[424] ref=e424 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Brand Guidelines"
+[426] ref=e426 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Code of Conduct"
+[429] ref=e429 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Connect"
+[431] ref=e431 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Bluesky"
+[433] ref=e433 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Mastodon"
+[435] ref=e435 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Twitter"
+[437] ref=e437 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "GitHub"
+[439] ref=e439 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Slack"
+[441] ref=e441 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "r/golang"
+[443] ref=e443 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Meetup"
+[445] ref=e445 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Golang Weekly"
+[453] ref=e453 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Copyright"
+[456] ref=e456 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Terms of Service"
+[459] ref=e459 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Privacy Policy"
+[462] ref=e462 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Report an Issue"
+[465] ref=e465 <button> role=button actions=click visible=true viewport=false hit=false occluded=false "Toggle theme"
+[467] ref=e467 <a> role=link actions=click visible=true viewport=false hit=false occluded=false "Google logo"
+[472] ref=e472 <a> role=link actions=click visible=true viewport=true hit=true occluded=false "Learn more."
+[475] ref=e475 <button> role=button actions=click visible=true viewport=true hit=true occluded=false "Okay"
+
+=== NODE TREE ===
+- ref=n1 index=1 <html> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=0.0 y=0.0 width=1351.0 height=813.0)
+  name: Go
+  child_refs: n2
+  - ref=n2 index=2 <body> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=0.0 y=0.0 width=1351.0 height=3042.0)
+    name: Go
+    child_refs: n3, n28, g144, n382, g469
+    - ref=n3 index=3 <header> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=0.0 y=0.0 width=1351.0 height=56.0)
+      name: Go
+      child_refs: n4
+      - ref=n4 index=4 <div> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=0.0 y=0.0 width=1351.0 height=56.0)
+        name: Go
+        child_refs: n5
+        - ref=n5 index=5 <nav> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=24.0 y=0.0 width=1303.0 height=56.0)
+          name: Go
+          child_refs: e6, n8, n11
+          - ref=e6 index=6 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=24.0 y=12.0 width=118.0 height=32.0)
+            name: Go
+            attrs: href="/"
+            child_refs: n7
+            - ref=n7 index=7 <img> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=24.0 y=12.0 width=82.0 height=32.0)
+              name: Go
+              attrs: src="/images/go-logo-white.svg" alt="Go"
+          - ref=n8 index=8 <div> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=142.0 y=28.0 width=0.0 height=0.0)
+            name: Skip to main content
+            child_refs: e9
+            - ref=e9 index=9 <a> role=link actions=click visible=true viewport=true hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=113.1 y=17.0 width=148.5 height=22.4)
+              name: Skip to main content
+              attrs: aria-label="Skip to main content" href="#main-content"
+              child_refs: n10
+          - ref=n11 index=11 <div> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=142.0 y=0.0 width=1185.0 height=56.0)
+            name: Why Go
+            child_refs: n12
+            - ref=n12 index=12 <ul> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=676.0 y=0.0 width=651.0 height=56.0)
+              name: Why Go
+              child_refs: g13, g16, g19, g22, g25
+              - ref=g13 index=13 <li> role=generic boundary=listitem group=rg1[0] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=681.0 y=0.0 width=129.8 height=56.0)
+                name: Why Go
+                subtree_text: Why Go arrow_drop_down Press Enter to activate/deactivate dropdown Case Studies Common problems companies solve with Go Use Cases Stories about how and why companies use Go Security How Go can help keep you secure by default
+                child_refs: e14
+                - ref=e14 index=14 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=681.0 y=0.0 width=129.8 height=56.0)
+                  name: Why Go
+                  subtree_text: Why Go arrow_drop_down
+                  attrs: href="#" aria-label="Why Go" aria-describedby="dropdown-description"
+                  child_refs: n15
+              - ref=g16 index=16 <li> role=generic boundary=listitem group=rg1[1] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=820.8 y=0.0 width=88.9 height=56.0)
+                name: Learn
+                subtree_text: Learn Press Enter to activate/deactivate dropdown
+                child_refs: e17
+                - ref=e17 index=17 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=820.8 y=0.0 width=88.9 height=56.0)
+                  name: Learn
+                  attrs: href="/learn/" aria-label="Learn" aria-describedby="dropdown-description"
+                  child_refs: n18
+              - ref=g19 index=19 <li> role=generic boundary=listitem group=rg1[2] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=919.7 y=0.0 width=111.1 height=56.0)
+                name: Docs
+                subtree_text: Docs arrow_drop_down Press Enter to activate/deactivate dropdown Go Spec The official Go language specification Go User Manual A complete introduction to building software with Go Standard library Reference documentation for Go's standard library Release Notes Learn what's new in each Go release Effective Go Tips for writing clear, performant, and idiomatic Go code
+                child_refs: e20
+                - ref=e20 index=20 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=919.7 y=0.0 width=111.1 height=56.0)
+                  name: Docs
+                  subtree_text: Docs arrow_drop_down
+                  attrs: href="#" aria-label="Docs" aria-describedby="dropdown-description"
+                  child_refs: n21
+              - ref=g22 index=22 <li> role=generic boundary=listitem group=rg1[3] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1040.8 y=0.0 width=118.3 height=56.0)
+                name: Packages
+                subtree_text: Packages Press Enter to activate/deactivate dropdown
+                child_refs: e23
+                - ref=e23 index=23 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1040.8 y=0.0 width=118.3 height=56.0)
+                  name: Packages
+                  attrs: href="https://pkg.go.dev" aria-label="Packages" aria-describedby="dropdown-description"
+                  child_refs: n24
+              - ref=g25 index=25 <li> role=generic boundary=listitem group=rg1[4] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1169.1 y=0.0 width=152.9 height=56.0)
+                name: Community
+                subtree_text: Community arrow_drop_down Press Enter to activate/deactivate dropdown Recorded Talks Videos from prior events Meetups open_in_new Meet other local Go developers Conferences open_in_new Learn and network with Go developers from around the world Go blog The Go project's official blog. Go project Get help and stay informed from Go Get connected
+                child_refs: e26
+                - ref=e26 index=26 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1169.1 y=0.0 width=152.9 height=56.0)
+                  name: Community
+                  subtree_text: Community arrow_drop_down
+                  attrs: href="#" aria-label="Community" aria-describedby="dropdown-description"
+                  child_refs: n27
+    - ref=n28 index=28 <aside> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1351.0 y=0.0 width=432.0 height=813.0)
+      name: Go.
+      child_refs: n29
+      - ref=n29 index=29 <nav> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1351.0 y=0.0 width=432.0 height=278.9)
+        name: Go.
+        child_refs: n30, n33
+        - ref=n30 index=30 <div> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1351.0 y=0.0 width=432.0 height=65.0)
+          name: Go.
+          child_refs: e31
+          - ref=e31 index=31 <a> role=link actions=click visible=true viewport=true hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1351.0 y=0.0 width=114.0 height=64.0)
+            name: Go.
+            attrs: href="/"
+            child_refs: n32
+            - ref=n32 index=32 <img> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1367.0 y=16.0 width=82.0 height=32.0)
+              name: Go.
+              attrs: src="/images/go-logo-blue.svg" alt="Go."
+        - ref=n33 index=33 <ul> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1351.0 y=73.0 width=432.0 height=205.9)
+          child_refs: g34, g57, g60, g89, g92
+          - ref=g34 index=34 <li> role=generic boundary=listitem group=rg2[0] visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1359.0 y=73.0 width=416.0 height=41.2)
+            subtree_text: Why Go navigate_next navigate_before Why Go Case Studies Use Cases Security
+            child_refs: e35, n40
+            - ref=e35 index=35 <a> role=link actions=click visible=true viewport=true hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1375.0 y=73.0 width=384.0 height=41.2)
+              name: Why Go navigate_next
+              attrs: href="#"
+              child_refs: n36, n38
+              - ref=n36 index=36 <span> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1383.0 y=83.0 width=65.0 height=20.0)
+                direct_text: Why Go
+                child_refs: n37
+              - ref=n38 index=38 <i> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1735.0 y=81.0 width=24.0 height=24.0)
+                direct_text: navigate_next
+                child_refs: n39
+            - ref=n41 index=41 <nav> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1783.0 y=0.0 width=432.0 height=196.6)
+              child_refs: n42, n47
+              - ref=e43 index=43 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=8.6 width=127.5 height=46.8)
+                name: navigate_before Why Go
+                direct_text: Why Go
+                attrs: href="#"
+                child_refs: n44, n46
+                - ref=n44 index=44 <i> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1815.0 y=20.0 width=24.0 height=24.0)
+                  direct_text: navigate_before
+                  child_refs: n45
+              - ref=n47 index=47 <ul> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1783.0 y=73.0 width=432.0 height=123.6)
+                child_refs: g48, g51, g54
+                - ref=g48 index=48 <li> role=generic boundary=listitem group=rg3[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=73.0 width=416.0 height=41.2)
+                  subtree_text: Case Studies
+                  child_refs: e49
+                  - ref=e49 index=49 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=73.0 width=384.0 height=41.2)
+                    name: Case Studies
+                    attrs: href="/solutions/case-studies"
+                    child_refs: n50
+                - ref=g51 index=51 <li> role=generic boundary=listitem group=rg3[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=114.2 width=416.0 height=41.2)
+                  subtree_text: Use Cases
+                  child_refs: e52
+                  - ref=e52 index=52 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=114.2 width=384.0 height=41.2)
+                    name: Use Cases
+                    attrs: href="/solutions/use-cases"
+                    child_refs: n53
+                - ref=g54 index=54 <li> role=generic boundary=listitem group=rg3[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=155.4 width=416.0 height=41.2)
+                  subtree_text: Security
+                  child_refs: e55
+                  - ref=e55 index=55 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=155.4 width=384.0 height=41.2)
+                    name: Security
+                    attrs: href="/security/"
+                    child_refs: n56
+          - ref=g57 index=57 <li> role=generic boundary=listitem group=rg2[1] visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1359.0 y=114.2 width=416.0 height=41.2)
+            subtree_text: Learn
+            child_refs: e58
+            - ref=e58 index=58 <a> role=link actions=click visible=true viewport=true hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1375.0 y=114.2 width=384.0 height=41.2)
+              name: Learn
+              attrs: href="/learn/"
+              child_refs: n59
+          - ref=g60 index=60 <li> role=generic boundary=listitem group=rg2[2] visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1359.0 y=155.4 width=416.0 height=41.2)
+            subtree_text: Docs navigate_next navigate_before Docs Go Spec Go User Manual Standard library Release Notes Effective Go
+            child_refs: e61, n66
+            - ref=e61 index=61 <a> role=link actions=click visible=true viewport=true hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1375.0 y=155.4 width=384.0 height=41.2)
+              name: Docs navigate_next
+              attrs: href="#"
+              child_refs: n62, n64
+              - ref=n62 index=62 <span> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1383.0 y=165.4 width=41.0 height=20.0)
+                direct_text: Docs
+                child_refs: n63
+              - ref=n64 index=64 <i> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1735.0 y=163.4 width=24.0 height=24.0)
+                direct_text: navigate_next
+                child_refs: n65
+            - ref=n67 index=67 <nav> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1783.0 y=0.0 width=432.0 height=278.9)
+              child_refs: n68, n73
+              - ref=e69 index=69 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=8.6 width=98.1 height=46.8)
+                name: navigate_before Docs
+                direct_text: Docs
+                attrs: href="#"
+                child_refs: n70, n72
+                - ref=n70 index=70 <i> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1815.0 y=20.0 width=24.0 height=24.0)
+                  direct_text: navigate_before
+                  child_refs: n71
+              - ref=n73 index=73 <ul> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1783.0 y=73.0 width=432.0 height=205.9)
+                child_refs: g74, g77, g80, g83, g86
+                - ref=g74 index=74 <li> role=generic boundary=listitem group=rg4[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=73.0 width=416.0 height=41.2)
+                  subtree_text: Go Spec
+                  child_refs: e75
+                  - ref=e75 index=75 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=73.0 width=384.0 height=41.2)
+                    name: Go Spec
+                    attrs: href="/ref/spec"
+                    child_refs: n76
+                - ref=g77 index=77 <li> role=generic boundary=listitem group=rg4[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=114.2 width=416.0 height=41.2)
+                  subtree_text: Go User Manual
+                  child_refs: e78
+                  - ref=e78 index=78 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=114.2 width=384.0 height=41.2)
+                    name: Go User Manual
+                    attrs: href="/doc"
+                    child_refs: n79
+                - ref=g80 index=80 <li> role=generic boundary=listitem group=rg4[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=155.4 width=416.0 height=41.2)
+                  subtree_text: Standard library
+                  child_refs: e81
+                  - ref=e81 index=81 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=155.4 width=384.0 height=41.2)
+                    name: Standard library
+                    attrs: href="https://pkg.go.dev/std"
+                    child_refs: n82
+                - ref=g83 index=83 <li> role=generic boundary=listitem group=rg4[3] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=196.6 width=416.0 height=41.2)
+                  subtree_text: Release Notes
+                  child_refs: e84
+                  - ref=e84 index=84 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=196.6 width=384.0 height=41.2)
+                    name: Release Notes
+                    attrs: href="/doc/devel/release"
+                    child_refs: n85
+                - ref=g86 index=86 <li> role=generic boundary=listitem group=rg4[4] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=237.8 width=416.0 height=41.2)
+                  subtree_text: Effective Go
+                  child_refs: e87
+                  - ref=e87 index=87 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=237.8 width=384.0 height=41.2)
+                    name: Effective Go
+                    attrs: href="/doc/effective_go"
+                    child_refs: n88
+          - ref=g89 index=89 <li> role=generic boundary=listitem group=rg2[3] visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1359.0 y=196.6 width=416.0 height=41.2)
+            subtree_text: Packages
+            child_refs: e90
+            - ref=e90 index=90 <a> role=link actions=click visible=true viewport=true hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1375.0 y=196.6 width=384.0 height=41.2)
+              name: Packages
+              attrs: href="https://pkg.go.dev"
+              child_refs: n91
+          - ref=g92 index=92 <li> role=generic boundary=listitem group=rg2[4] visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1359.0 y=237.8 width=416.0 height=41.2)
+            subtree_text: Community navigate_next navigate_before Community Recorded Talks Meetups open_in_new Conferences open_in_new Go blog Go project Get connected
+            child_refs: e93, n98
+            - ref=e93 index=93 <a> role=link actions=click visible=true viewport=true hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1375.0 y=237.8 width=384.0 height=41.2)
+              name: Community navigate_next
+              attrs: href="#"
+              child_refs: n94, n96
+              - ref=n94 index=94 <span> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1383.0 y=247.8 width=91.0 height=20.0)
+                direct_text: Community
+                child_refs: n95
+              - ref=n96 index=96 <i> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1735.0 y=245.8 width=24.0 height=24.0)
+                direct_text: navigate_next
+                child_refs: n97
+            - ref=n99 index=99 <nav> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1783.0 y=0.0 width=432.0 height=668.4)
+              child_refs: n100, n105
+              - ref=e101 index=101 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=8.6 width=159.2 height=46.8)
+                name: navigate_before Community
+                direct_text: Community
+                attrs: href="#"
+                child_refs: n102, n104
+                - ref=n102 index=102 <i> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1815.0 y=20.0 width=24.0 height=24.0)
+                  direct_text: navigate_before
+                  child_refs: n103
+              - ref=n105 index=105 <ul> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1783.0 y=73.0 width=432.0 height=595.4)
+                child_refs: g106, g109, g114, g119, g122, g125
+                - ref=g106 index=106 <li> role=generic boundary=listitem group=rg5[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=73.0 width=416.0 height=41.2)
+                  subtree_text: Recorded Talks
+                  child_refs: e107
+                  - ref=e107 index=107 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=73.0 width=384.0 height=41.2)
+                    name: Recorded Talks
+                    attrs: href="/talks/"
+                    child_refs: n108
+                - ref=g109 index=109 <li> role=generic boundary=listitem group=rg5[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=114.2 width=416.0 height=42.6)
+                  subtree_text: Meetups open_in_new
+                  child_refs: e110
+                  - ref=e110 index=110 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=114.2 width=384.0 height=42.6)
+                    name: Meetups open_in_new
+                    direct_text: Meetups
+                    attrs: href="https://www.meetup.com/pro/go"
+                    child_refs: n111, n112
+                    - ref=n112 index=112 <i> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1889.0 y=122.2 width=24.0 height=24.0)
+                      direct_text: open_in_new
+                      child_refs: n113
+                - ref=g114 index=114 <li> role=generic boundary=listitem group=rg5[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=156.8 width=416.0 height=42.6)
+                  subtree_text: Conferences open_in_new
+                  child_refs: e115
+                  - ref=e115 index=115 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=156.8 width=384.0 height=42.6)
+                    name: Conferences open_in_new
+                    direct_text: Conferences
+                    attrs: href="/wiki/Conferences"
+                    child_refs: n116, n117
+                    - ref=n117 index=117 <i> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1922.1 y=164.8 width=24.0 height=24.0)
+                      direct_text: open_in_new
+                      child_refs: n118
+                - ref=g119 index=119 <li> role=generic boundary=listitem group=rg5[3] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=199.4 width=416.0 height=41.2)
+                  subtree_text: Go blog
+                  child_refs: e120
+                  - ref=e120 index=120 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=199.4 width=384.0 height=41.2)
+                    name: Go blog
+                    attrs: href="/blog"
+                    child_refs: n121
+                - ref=g122 index=122 <li> role=generic boundary=listitem group=rg5[4] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=240.6 width=416.0 height=41.2)
+                  subtree_text: Go project
+                  child_refs: e123
+                  - ref=e123 index=123 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1807.0 y=240.6 width=384.0 height=41.2)
+                    name: Go project
+                    attrs: href="/help"
+                    child_refs: n124
+                - ref=g125 index=125 <li> role=generic boundary=listitem group=rg5[5] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=1791.0 y=281.8 width=416.0 height=386.7)
+                  subtree_text: Get connected
+                  child_refs: n126, e128, e130, e132, e134, e136, e138, e140, e142
+                  - ref=n126 index=126 <div> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1807.0 y=281.8 width=384.0 height=41.2)
+                    direct_text: Get connected
+                    child_refs: n127
+                  - ref=e128 index=128 <a> role=link group=rg6[0] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1831.0 y=330.9 width=336.0 height=41.2)
+                    attrs: href="https://groups.google.com/g/golang-nuts"
+                    child_refs: n129
+                    - ref=n129 index=129 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1839.0 y=338.9 width=18.0 height=18.0)
+                      attrs: src="/images/logos/social/google-groups.svg"
+                  - ref=e130 index=130 <a> role=link group=rg6[1] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1831.0 y=372.1 width=336.0 height=41.2)
+                    attrs: href="https://github.com/golang"
+                    child_refs: n131
+                    - ref=n131 index=131 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1839.0 y=382.1 width=16.0 height=16.0)
+                      attrs: src="/images/logos/social/github.svg"
+                  - ref=e132 index=132 <a> role=link group=rg6[2] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1831.0 y=413.3 width=336.0 height=41.2)
+                    attrs: href="https://bsky.app/profile/golang.org"
+                    child_refs: n133
+                    - ref=n133 index=133 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1839.0 y=423.3 width=16.0 height=16.0)
+                      attrs: src="/images/logos/social/bluesky.svg"
+                  - ref=e134 index=134 <a> role=link group=rg6[3] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1831.0 y=454.5 width=336.0 height=41.2)
+                    attrs: href="https://hachyderm.io/@golang"
+                    child_refs: n135
+                    - ref=n135 index=135 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1839.0 y=464.5 width=16.0 height=16.0)
+                      attrs: src="/images/logos/social/mastodon.svg"
+                  - ref=e136 index=136 <a> role=link group=rg6[4] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1831.0 y=495.7 width=336.0 height=41.2)
+                    attrs: href="https://twitter.com/golang"
+                    child_refs: n137
+                    - ref=n137 index=137 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1839.0 y=509.7 width=15.0 height=12.0)
+                      attrs: src="/images/logos/social/twitter.svg"
+                  - ref=e138 index=138 <a> role=link group=rg6[5] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1831.0 y=536.9 width=336.0 height=41.2)
+                    attrs: href="https://www.reddit.com/r/golang/"
+                    child_refs: n139
+                    - ref=n139 index=139 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1839.0 y=546.9 width=16.0 height=16.0)
+                      attrs: src="/images/logos/social/reddit.svg"
+                  - ref=e140 index=140 <a> role=link group=rg6[6] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1831.0 y=578.1 width=336.0 height=41.2)
+                    attrs: href="https://invite.slack.golangbridge.org/"
+                    child_refs: n141
+                    - ref=n141 index=141 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1839.0 y=593.1 width=11.0 height=11.0)
+                      attrs: src="/images/logos/social/slack.svg"
+                  - ref=e142 index=142 <a> role=link group=rg6[7] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1831.0 y=619.2 width=336.0 height=41.2)
+                    attrs: href="https://stackoverflow.com/tags/go"
+                    child_refs: n143
+                    - ref=n143 index=143 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1839.0 y=631.2 width=12.0 height=14.0)
+                      attrs: src="/images/logos/social/stack-overflow.svg"
+    - ref=g144 index=144 <main> role=generic boundary=landmark visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=true bounds=(x=0.0 y=56.0 width=1351.0 height=2541.0)
+      subtree_text: Documentation Tutorials Call your code from another module Call your code from another module In the previous section , you created a greetings module. In this section, you'll write code to make calls to the Hello function in the module you just wrote. You'll write code you can execute as an application, and which calls code in the greetings module. Note: This topic is part of a multi-part tutorial that begins with Create a Go module . Create a hello directory for your Go module source code. Thi
+      child_refs: g145
+      - ref=g145 index=145 <article> role=generic boundary=article visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=true bounds=(x=69.5 y=80.0 width=1212.0 height=2478.6)
+        child_refs: n146, n156, n158, n172, n178, n373, n375, n377
+        - ref=n146 index=146 <ol> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=93.5 y=80.0 width=1164.0 height=19.6)
+          child_refs: g147, g150, g153
+          - ref=g147 index=147 <li> role=generic boundary=listitem group=rg7[0] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=93.5 y=80.0 width=136.2 height=19.6)
+            subtree_text: Documentation
+            child_refs: e148
+            - ref=e148 index=148 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=93.5 y=80.0 width=94.2 height=19.6)
+              name: Documentation
+              attrs: href="/doc/"
+              child_refs: n149
+          - ref=g150 index=150 <li> role=generic boundary=listitem group=rg7[1] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=229.7 y=80.0 width=95.2 height=19.6)
+            subtree_text: Tutorials
+            child_refs: e151
+            - ref=e151 index=151 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=229.7 y=80.0 width=53.2 height=19.6)
+              name: Tutorials
+              attrs: href="/doc/tutorial/"
+              child_refs: n152
+          - ref=g153 index=153 <li> role=generic boundary=listitem group=rg7[2] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=324.8 y=80.0 width=235.5 height=19.6)
+            subtree_text: Call your code from another module
+            child_refs: e154
+            - ref=e154 index=154 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=324.8 y=80.0 width=222.6 height=19.6)
+              name: Call your code from another module
+              attrs: href="/doc/tutorial/call-module-code"
+              child_refs: n155
+        - ref=n156 index=156 <h1> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=93.5 y=123.6 width=1164.0 height=50.4)
+          name: Call your code from another module
+          child_refs: n157
+        - ref=n158 index=158 <p> role=generic group=rg8[0] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=93.5 y=190.0 width=1164.0 height=46.8)
+          direct_text: In the , you created a module. In this section, you'll write code to make calls to the function in the module you just wrote. You'll write code you can execute as an application, and which calls code in the module.
+          subtree_text: In the previous section , you created a greetings module. In this section, you'll write code to make calls to the Hello function in the module you just wrote. You'll write code you can execute as an application, and which calls code in the greetings module.
+          child_refs: n159, e160, n162, n163, n165, n166, n168, n169, n171
+          - ref=e160 index=160 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=138.0 y=192.0 width=115.6 height=17.0)
+            name: previous section
+            attrs: href="/doc/tutorial/create-module.html"
+            child_refs: n161
+          - ref=n163 index=163 <code> role=generic group=rg9[0] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=363.9 y=193.0 width=86.4 height=18.0)
+            direct_text: greetings
+            child_refs: n164
+          - ref=n166 index=166 <code> role=generic group=rg9[1] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=882.9 y=193.0 width=48.0 height=18.0)
+            direct_text: Hello
+            child_refs: n167
+          - ref=n169 index=169 <code> role=generic group=rg9[2] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=616.5 y=216.4 width=86.4 height=18.0)
+            direct_text: greetings
+            child_refs: n170
+        - ref=n172 index=172 <aside> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=93.5 y=256.8 width=800.0 height=35.6)
+          direct_text: This topic is part of a multi-part tutorial that begins with .
+          child_refs: n173, n175, e176
+          - ref=n173 index=173 <strong> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=103.5 y=265.8 width=35.8 height=16.0)
+            direct_text: Note:
+            child_refs: n174
+          - ref=e176 index=176 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=485.3 y=265.8 width=126.1 height=16.0)
+            name: Create a Go module
+            attrs: href="/doc/tutorial/create-module.html"
+            child_refs: n177
+        - ref=n178 index=178 <ol> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=93.5 y=312.4 width=1164.0 height=2169.4)
+          child_refs: g179, g192, g208, g210, g257, g366
+          - ref=g179 index=179 <li> role=generic boundary=listitem group=rg10[0] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=133.5 y=312.4 width=1124.0 height=275.7)
+            direct_text: Create a directory for your Go module source code. This is where you'll write your caller.
+            subtree_text: Create a hello directory for your Go module source code. This is where you'll write your caller. After you create this directory, you should have both a hello and a greetings directory at the same level in the hierarchy, like so: <home>/ |-- greetings/ |-- hello/ For example, if your command prompt is in the greetings directory, you could use the following commands: cd .. mkdir hello cd hello
+            child_refs: n180, n181, n183, n184, g186, n188, g190
+            - ref=n181 index=181 <code> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=199.3 y=315.4 width=48.0 height=18.0)
+              direct_text: hello
+              child_refs: n182
+            - ref=n184 index=184 <p> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=133.5 y=351.8 width=1124.0 height=22.4)
+              direct_text: After you create this directory, you should have both a hello and a greetings directory at the same level in the hierarchy, like so:
+              child_refs: n185
+            - ref=g186 index=186 <pre> role=generic boundary=scrollable actions=scroll visible=true viewport=true hit=true occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=133.5 y=390.1 width=1124.0 height=71.8)
+              direct_text: <home>/ |-- greetings/ |-- hello/
+              child_refs: n187
+            - ref=n188 index=188 <p> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=133.5 y=477.9 width=1124.0 height=22.4)
+              direct_text: For example, if your command prompt is in the greetings directory, you could use the following commands:
+              child_refs: n189
+            - ref=g190 index=190 <pre> role=generic boundary=scrollable actions=scroll visible=true viewport=true hit=true occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=133.5 y=516.3 width=1124.0 height=71.8)
+              direct_text: cd .. mkdir hello cd hello
+              child_refs: n191
+          - ref=g192 index=192 <li> role=generic boundary=listitem group=rg10[1] visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=133.5 y=601.4 width=1124.0 height=170.4)
+            direct_text: Enable dependency tracking for the code you're about to write.
+            subtree_text: Enable dependency tracking for the code you're about to write. To enable dependency tracking for your code, run the go mod init command , giving it the name of the module your code will be in. For the purposes of this tutorial, use example.com/hello for the module path. $ go mod init example.com/hello go: creating new go.mod: module example.com/hello
+            child_refs: n193, n194, n201, g206
+            - ref=n194 index=194 <p> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=133.5 y=639.8 width=1124.0 height=23.4)
+              direct_text: To enable dependency tracking for your code, run the , giving it the name of the module your code will be in.
+              subtree_text: To enable dependency tracking for your code, run the go mod init command , giving it the name of the module your code will be in.
+              child_refs: n195, e196, n200
+              - ref=e196 index=196 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=516.0 y=641.8 width=170.7 height=17.0)
+                name: go mod init command
+                direct_text: command
+                attrs: href="/ref/mod#go-mod-init"
+                child_refs: n197, n199
+                - ref=n197 index=197 <code> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=516.0 y=642.8 width=96.0 height=18.0)
+                  direct_text: go mod init
+                  child_refs: n198
+            - ref=n201 index=201 <p> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=133.5 y=679.1 width=1124.0 height=23.4)
+              direct_text: For the purposes of this tutorial, use for the module path.
+              subtree_text: For the purposes of this tutorial, use example.com/hello for the module path.
+              child_refs: n202, n203, n205
+              - ref=n203 index=203 <code> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=393.2 y=682.1 width=163.2 height=18.0)
+                direct_text: example.com/hello
+                child_refs: n204
+            - ref=g206 index=206 <pre> role=generic boundary=scrollable actions=scroll visible=true viewport=true hit=false occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=133.5 y=718.5 width=1124.0 height=53.2)
+              direct_text: $ go mod init example.com/hello go: creating new go.mod: module example.com/hello
+              child_refs: n207
+          - ref=g208 index=208 <li> role=generic boundary=listitem group=rg10[2] visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=133.5 y=785.0 width=1124.0 height=22.4)
+            direct_text: In your text editor, in the hello directory, create a file in which to write your code and call it hello.go.
+            child_refs: n209
+          - ref=g210 index=210 <li> role=generic boundary=listitem group=rg10[3] visible=true viewport=true hit=false occluded=false scroll=false confidence=0.82 truncated=true bounds=(x=133.5 y=807.4 width=1124.0 height=505.8)
+            direct_text: Write code to call the function, then print the function's return value.
+            subtree_text: Write code to call the Hello function, then print the function's return value. To do that, paste the following code into hello.go. package main import ( "fmt" "example.com/greetings" ) func main() { // Get a greeting message and print it. message := greetings.Hello("Gladys") fmt.Println(message) } In this code, you: Declare a main package. In Go, code executed as an application must be in a main package. Import two packages: example.com/greetings and the fmt package . This gives your code access
+            child_refs: n211, n212, n214, n215, g217, n219, n221
+            - ref=n212 index=212 <code> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=287.1 y=810.4 width=48.0 height=18.0)
+              direct_text: Hello
+              child_refs: n213
+            - ref=n215 index=215 <p> role=generic visible=true viewport=true hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=133.5 y=846.8 width=1124.0 height=22.4)
+              direct_text: To do that, paste the following code into hello.go.
+              child_refs: n216
+            - ref=g217 index=217 <pre> role=generic boundary=scrollable actions=scroll visible=true viewport=true hit=false occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=133.5 y=885.2 width=1124.0 height=257.7)
+              direct_text: package main import ( "fmt" "example.com/greetings" ) func main() { // Get a greeting message and print it. message := greetings.Hello("Gladys") fmt.Println(message) }
+              child_refs: n218
+            - ref=n219 index=219 <p> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=133.5 y=1158.9 width=1124.0 height=22.4)
+              direct_text: In this code, you:
+              child_refs: n220
+            - ref=n221 index=221 <ul> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=133.5 y=1197.3 width=1124.0 height=116.0)
+              child_refs: g222, g230, g249
+              - ref=g222 index=222 <li> role=generic boundary=listitem group=rg11[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=173.5 y=1197.3 width=1084.0 height=23.4)
+                direct_text: Declare a package. In Go, code executed as an application must be in a package.
+                subtree_text: Declare a main package. In Go, code executed as an application must be in a main package.
+                child_refs: n223, n224, n226, n227, n229
+                - ref=n224 index=224 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=246.4 y=1200.3 width=38.4 height=18.0)
+                  direct_text: main
+                  child_refs: n225
+                - ref=n227 index=227 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=731.3 y=1200.3 width=38.4 height=18.0)
+                  direct_text: main
+                  child_refs: n228
+              - ref=g230 index=230 <li> role=generic boundary=listitem group=rg11[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=true bounds=(x=173.5 y=1220.7 width=1084.0 height=69.2)
+                direct_text: Import two packages: and the . This gives your code access to functions in those packages. Importing (the package contained in the module you created earlier) gives you access to the function. You also import , with functions for handling i
+                subtree_text: Import two packages: example.com/greetings and the fmt package . This gives your code access to functions in those packages. Importing example.com/greetings (the package contained in the module you created earlier) gives you access to the Hello function. You also import fmt , with functions for handling input and output text (such as printing text to the console).
+                child_refs: n231, n232, n234, e235, n239, n240, n242, n243, n245, n246, n248
+                - ref=n232 index=232 <code> role=generic group=rg12[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=330.0 y=1223.7 width=201.6 height=18.0)
+                  direct_text: example.com/greetings
+                  child_refs: n233
+                - ref=e235 index=235 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=593.9 y=1222.7 width=93.8 height=17.0)
+                  name: fmt package
+                  direct_text: package
+                  attrs: href="https://pkg.go.dev/fmt/"
+                  child_refs: n236, n238
+                  - ref=n236 index=236 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=593.9 y=1223.7 width=28.8 height=18.0)
+                    direct_text: fmt
+                    child_refs: n237
+                - ref=n240 index=240 <code> role=generic group=rg12[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=173.5 y=1247.0 width=201.6 height=18.0)
+                  direct_text: example.com/greetings
+                  child_refs: n241
+                - ref=n243 index=243 <code> role=generic group=rg12[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=963.9 y=1247.0 width=48.0 height=18.0)
+                  direct_text: Hello
+                  child_refs: n244
+                - ref=n246 index=246 <code> role=generic group=rg12[3] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1195.2 y=1247.0 width=28.8 height=18.0)
+                  direct_text: fmt
+                  child_refs: n247
+              - ref=g249 index=249 <li> role=generic boundary=listitem group=rg11[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=173.5 y=1289.8 width=1084.0 height=23.4)
+                direct_text: Get a greeting by calling the package’s function.
+                subtree_text: Get a greeting by calling the greetings package’s Hello function.
+                child_refs: n250, n251, n253, n254, n256
+                - ref=n251 index=251 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=377.2 y=1292.8 width=86.4 height=18.0)
+                  direct_text: greetings
+                  child_refs: n252
+                - ref=n254 index=254 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=544.3 y=1292.8 width=48.0 height=18.0)
+                  direct_text: Hello
+                  child_refs: n255
+          - ref=g257 index=257 <li> role=generic boundary=listitem group=rg10[4] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=true bounds=(x=133.5 y=1329.2 width=1124.0 height=1046.7)
+            direct_text: Edit the module to use your local module.
+            subtree_text: Edit the example.com/hello module to use your local example.com/greetings module. For production use, you’d publish the example.com/greetings module from its repository (with a module path that reflected its published location), where Go tools could find it to download it. For now, because you haven't published the module yet, you need to adapt the example.com/hello module so it can find the example.com/greetings code on your local file system. To do that, use the go mod edit command to edit the
+            child_refs: n258, n259, n261, n262, n264, n265, n276, n286
+            - ref=n259 index=259 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=192.2 y=1332.2 width=163.2 height=18.0)
+              direct_text: example.com/hello
+              child_refs: n260
+            - ref=n262 index=262 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=537.8 y=1332.2 width=201.6 height=18.0)
+              direct_text: example.com/greetings
+              child_refs: n263
+            - ref=n265 index=265 <p> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=133.5 y=1368.6 width=1124.0 height=70.2)
+              direct_text: For production use, you’d publish the module from its repository (with a module path that reflected its published location), where Go tools could find it to download it. For now, because you haven't published the module yet, you need to ada
+              subtree_text: For production use, you’d publish the example.com/greetings module from its repository (with a module path that reflected its published location), where Go tools could find it to download it. For now, because you haven't published the module yet, you need to adapt the example.com/hello module so it can find the example.com/greetings code on your local file system.
+              child_refs: n266, n267, n269, n270, n272, n273, n275
+              - ref=n267 index=267 <code> role=generic group=rg13[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=400.3 y=1371.6 width=201.6 height=18.0)
+                direct_text: example.com/greetings
+                child_refs: n268
+              - ref=n270 index=270 <code> role=generic group=rg13[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=953.1 y=1395.0 width=163.2 height=18.0)
+                direct_text: example.com/hello
+                child_refs: n271
+              - ref=n273 index=273 <code> role=generic group=rg13[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=190.4 y=1418.4 width=201.6 height=18.0)
+                direct_text: example.com/greetings
+                child_refs: n274
+            - ref=n276 index=276 <p> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=133.5 y=1454.8 width=1124.0 height=45.8)
+              direct_text: To do that, use the to edit the module to redirect Go tools from its module path (where the module isn't) to the local directory (where it is).
+              subtree_text: To do that, use the go mod edit command to edit the example.com/hello module to redirect Go tools from its module path (where the module isn't) to the local directory (where it is).
+              child_refs: n277, e278, n282, n283, n285
+              - ref=e278 index=278 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=269.6 y=1456.8 width=170.7 height=17.0)
+                name: go mod edit command
+                direct_text: command
+                attrs: href="/ref/mod#go-mod-edit"
+                child_refs: n279, n281
+                - ref=n279 index=279 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=269.6 y=1457.8 width=96.0 height=18.0)
+                  direct_text: go mod edit
+                  child_refs: n280
+              - ref=n283 index=283 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=519.5 y=1457.8 width=163.2 height=18.0)
+                direct_text: example.com/hello
+                child_refs: n284
+            - ref=n286 index=286 <ol> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=true bounds=(x=133.5 y=1516.6 width=1124.0 height=859.4)
+              child_refs: g287, g307
+              - ref=g287 index=287 <li> role=generic boundary=listitem visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=173.5 y=1516.6 width=1084.0 height=258.0)
+                direct_text: From the command prompt in the hello directory, run the following command:
+                subtree_text: From the command prompt in the hello directory, run the following command: $ go mod edit -replace example.com/greetings=../greetings The command specifies that example.com/greetings should be replaced with ../greetings for the purpose of locating the dependency. After you run the command, the go.mod file in the hello directory should include a replace directive : module example.com/hello go 1.16 replace example.com/greetings => ../greetings
+                child_refs: n288, g289, n291, g303
+                - ref=g289 index=289 <pre> role=generic boundary=scrollable actions=scroll visible=true viewport=false hit=false occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=173.5 y=1552.2 width=1084.0 height=34.6)
+                  direct_text: $ go mod edit -replace example.com/greetings=../greetings
+                  child_refs: n290
+                - ref=n291 index=291 <p> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=173.5 y=1602.8 width=1084.0 height=46.8)
+                  direct_text: The command specifies that should be replaced with for the purpose of locating the dependency. After you run the command, the go.mod file in the hello directory should include a :
+                  subtree_text: The command specifies that example.com/greetings should be replaced with ../greetings for the purpose of locating the dependency. After you run the command, the go.mod file in the hello directory should include a replace directive :
+                  child_refs: n292, n293, n295, n296, n298, e299
+                  - ref=n293 index=293 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=378.0 y=1605.8 width=201.6 height=18.0)
+                    direct_text: example.com/greetings
+                    child_refs: n294
+                  - ref=n296 index=296 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=756.7 y=1605.8 width=115.2 height=18.0)
+                    direct_text: ../greetings
+                    child_refs: n297
+                  - ref=e299 index=299 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=684.0 y=1628.2 width=131.2 height=17.0)
+                    name: replace directive
+                    direct_text: directive
+                    attrs: href="/doc/modules/gomod-ref#replace"
+                    child_refs: n300, n302
+                    - ref=n300 index=300 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=684.0 y=1629.2 width=67.2 height=18.0)
+                      direct_text: replace
+                      child_refs: n301
+                - ref=g303 index=303 <pre> role=generic boundary=scrollable actions=scroll visible=true viewport=false hit=false occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=173.5 y=1665.6 width=1084.0 height=109.0)
+                  direct_text: module example.com/hello go 1.16
+                  subtree_text: module example.com/hello go 1.16 replace example.com/greetings => ../greetings
+                  child_refs: n304, n305
+                  - ref=n305 index=305 <ins> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=201.5 y=1749.0 width=358.2 height=15.0)
+                    direct_text: replace example.com/greetings => ../greetings
+                    child_refs: n306
+              - ref=g307 index=307 <li> role=generic boundary=listitem visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=true bounds=(x=173.5 y=1787.8 width=1084.0 height=588.1)
+                direct_text: From the command prompt in the hello directory, run the to synchronize the module's dependencies, adding those required by the code, but not yet tracked in the module.
+                subtree_text: From the command prompt in the hello directory, run the go mod tidy command to synchronize the example.com/hello module's dependencies, adding those required by the code, but not yet tracked in the module. $ go mod tidy go: found example.com/greetings in example.com/greetings v0.0.0-00010101000000-000000000000 After the command completes, the example.com/hello module's go.mod file should look like this: module example.com/hello go 1.16 replace example.com/greetings => ../greetings require exampl
+                child_refs: n308, e309, n313, n314, n316, g317, n319, g324, n328, n344, n349, g360, n362
+                - ref=e309 index=309 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=576.0 y=1789.8 width=170.7 height=17.0)
+                  name: go mod tidy command
+                  direct_text: command
+                  attrs: href="/ref/mod#go-mod-tidy"
+                  child_refs: n310, n312
+                  - ref=n310 index=310 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=576.0 y=1790.8 width=96.0 height=18.0)
+                    direct_text: go mod tidy
+                    child_refs: n311
+                - ref=n314 index=314 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=885.5 y=1790.8 width=163.2 height=18.0)
+                  direct_text: example.com/hello
+                  child_refs: n315
+                - ref=g317 index=317 <pre> role=generic boundary=scrollable group=rg14[0] actions=scroll visible=true viewport=false hit=false occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=173.5 y=1846.9 width=1084.0 height=53.2)
+                  direct_text: $ go mod tidy go: found example.com/greetings in example.com/greetings v0.0.0-00010101000000-000000000000
+                  child_refs: n318
+                - ref=n319 index=319 <p> role=generic group=rg15[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=173.5 y=1916.1 width=1084.0 height=23.4)
+                  direct_text: After the command completes, the module's go.mod file should look like this:
+                  subtree_text: After the command completes, the example.com/hello module's go.mod file should look like this:
+                  child_refs: n320, n321, n323
+                  - ref=n321 index=321 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=421.6 y=1919.1 width=163.2 height=18.0)
+                    direct_text: example.com/hello
+                    child_refs: n322
+                - ref=g324 index=324 <pre> role=generic boundary=scrollable group=rg14[1] actions=scroll visible=true viewport=false hit=false occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=173.5 y=1955.5 width=1084.0 height=146.2)
+                  direct_text: module example.com/hello go 1.16 replace example.com/greetings => ../greetings
+                  subtree_text: module example.com/hello go 1.16 replace example.com/greetings => ../greetings require example.com/greetings v0.0.0-00010101000000-000000000000
+                  child_refs: n325, n326
+                  - ref=n326 index=326 <ins> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=201.5 y=2076.0 width=509.5 height=15.0)
+                    direct_text: require example.com/greetings v0.0.0-00010101000000-000000000000
+                    child_refs: n327
+                - ref=n328 index=328 <p> role=generic group=rg15[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=173.5 y=2117.6 width=1084.0 height=46.8)
+                  direct_text: The command found the local code in the greetings directory, then added a to specify that requires . You created this dependency when you imported the package in hello.go.
+                  subtree_text: The command found the local code in the greetings directory, then added a require directive to specify that example.com/hello requires example.com/greetings . You created this dependency when you imported the greetings package in hello.go.
+                  child_refs: n329, e330, n334, n335, n337, n338, n340, n341, n343
+                  - ref=e330 index=330 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=708.7 y=2119.6 width=131.2 height=17.0)
+                    name: require directive
+                    direct_text: directive
+                    attrs: href="/doc/modules/gomod-ref#require"
+                    child_refs: n331, n333
+                    - ref=n331 index=331 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=708.7 y=2120.6 width=67.2 height=18.0)
+                      direct_text: require
+                      child_refs: n332
+                  - ref=n335 index=335 <code> role=generic group=rg16[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=947.5 y=2120.6 width=163.2 height=18.0)
+                    direct_text: example.com/hello
+                    child_refs: n336
+                  - ref=n338 index=338 <code> role=generic group=rg16[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=173.5 y=2144.0 width=201.6 height=18.0)
+                    direct_text: example.com/greetings
+                    child_refs: n339
+                  - ref=n341 index=341 <code> role=generic group=rg16[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=760.3 y=2144.0 width=86.4 height=18.0)
+                    direct_text: greetings
+                    child_refs: n342
+                - ref=n344 index=344 <p> role=generic group=rg15[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=173.5 y=2180.4 width=1084.0 height=44.8)
+                  direct_text: The number following the module path is a -- a generated number used in place of a semantic version number (which the module doesn't have yet).
+                  subtree_text: The number following the module path is a pseudo-version number -- a generated number used in place of a semantic version number (which the module doesn't have yet).
+                  child_refs: n345, n346, n348
+                  - ref=n346 index=346 <em> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=479.5 y=2182.4 width=168.1 height=17.0)
+                    direct_text: pseudo-version number
+                    child_refs: n347
+                - ref=n349 index=349 <p> role=generic group=rg15[3] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=173.5 y=2241.2 width=1084.0 height=45.8)
+                  direct_text: To reference a module, a go.mod file would typically omit the directive and use a directive with a tagged version number at the end.
+                  subtree_text: To reference a published module, a go.mod file would typically omit the replace directive and use a require directive with a tagged version number at the end.
+                  child_refs: n350, n351, n353, n354, n356, n357, n359
+                  - ref=n351 index=351 <em> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=280.2 y=2243.2 width=68.5 height=17.0)
+                    direct_text: published
+                    child_refs: n352
+                  - ref=n354 index=354 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=679.6 y=2244.2 width=67.2 height=18.0)
+                    direct_text: replace
+                    child_refs: n355
+                  - ref=n357 index=357 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=890.0 y=2244.2 width=67.2 height=18.0)
+                    direct_text: require
+                    child_refs: n358
+                - ref=g360 index=360 <pre> role=generic boundary=scrollable group=rg14[2] actions=scroll visible=true viewport=false hit=false occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=173.5 y=2303.0 width=1084.0 height=34.6)
+                  direct_text: require example.com/greetings v1.1.0
+                  child_refs: n361
+                - ref=n362 index=362 <p> role=generic group=rg15[4] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=173.5 y=2353.5 width=1084.0 height=22.4)
+                  direct_text: For more on version numbers, see .
+                  subtree_text: For more on version numbers, see Module version numbering .
+                  child_refs: n363, e364
+                  - ref=e364 index=364 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=422.5 y=2355.5 width=188.5 height=17.0)
+                    name: Module version numbering
+                    attrs: href="/doc/modules/version-numbers"
+                    child_refs: n365
+          - ref=g366 index=366 <li> role=generic boundary=listitem group=rg10[5] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=133.5 y=2391.9 width=1124.0 height=89.8)
+            direct_text: At the command prompt in the directory, run your code to confirm that it works.
+            subtree_text: At the command prompt in the hello directory, run your code to confirm that it works. $ go run . Hi, Gladys. Welcome!
+            child_refs: n367, n368, n370, g371
+            - ref=n368 index=368 <code> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=352.3 y=2394.9 width=48.0 height=18.0)
+              direct_text: hello
+              child_refs: n369
+            - ref=g371 index=371 <pre> role=generic boundary=scrollable actions=scroll visible=true viewport=false hit=false occluded=false scroll=true confidence=0.82 truncated=false bounds=(x=133.5 y=2428.6 width=1124.0 height=53.2)
+              direct_text: $ go run . Hi, Gladys. Welcome!
+              child_refs: n372
+        - ref=n373 index=373 <p> role=generic group=rg8[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=93.5 y=2497.8 width=1164.0 height=22.4)
+          direct_text: Congrats! You've written two functioning modules.
+          child_refs: n374
+        - ref=n375 index=375 <p> role=generic group=rg8[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=93.5 y=2536.2 width=1164.0 height=22.4)
+          direct_text: In the next topic, you'll add some error handling.
+          child_refs: n376
+        - ref=n377 index=377 <p> role=generic group=rg8[3] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=93.5 y=2574.6 width=1164.0 height=0.0)
+          subtree_text: < Create a Go module Return and handle an error >
+          child_refs: e378, e380
+          - ref=e378 index=378 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=93.5 y=2574.6 width=164.9 height=22.4)
+            name: < Create a Go module
+            attrs: href="/doc/tutorial/create-module.html"
+            child_refs: n379
+          - ref=e380 index=380 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1038.3 y=2574.6 width=219.2 height=22.4)
+            name: Return and handle an error >
+            attrs: href="/doc/tutorial/handle-errors.html"
+            child_refs: n381
+    - ref=n382 index=382 <footer> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=0.0 y=2597.0 width=1351.0 height=445.0)
+      name: The Go Gopher
+      child_refs: n383, n447
+      - ref=e387 index=387 <a> role=link group=rg18[0] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=93.5 y=2642.0 width=152.0 height=28.0)
+        name: Why Go
+        attrs: href="/solutions/" aria-describedby="footer-description"
+        child_refs: n388
+      - ref=e389 index=389 <a> role=link group=rg18[1] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=93.5 y=2678.0 width=152.0 height=32.0)
+        name: Use Cases
+        attrs: href="/solutions/use-cases" aria-describedby="footer-description"
+        child_refs: n390
+      - ref=e391 index=391 <a> role=link group=rg18[2] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=93.5 y=2710.0 width=152.0 height=32.0)
+        name: Case Studies
+        attrs: href="/solutions/case-studies" aria-describedby="footer-description"
+        child_refs: n392
+      - ref=e394 index=394 <a> role=link group=rg19[0] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=346.5 y=2642.0 width=152.0 height=28.0)
+        name: Get Started
+        attrs: href="/learn/" aria-describedby="footer-description"
+        child_refs: n395
+      - ref=e396 index=396 <a> role=link group=rg19[1] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=346.5 y=2678.0 width=152.0 height=32.0)
+        name: Playground
+        attrs: href="/play" aria-describedby="footer-description"
+        child_refs: n397
+      - ref=e398 index=398 <a> role=link group=rg19[2] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=346.5 y=2710.0 width=152.0 height=32.0)
+        name: Tour
+        attrs: href="/tour/" aria-describedby="footer-description"
+        child_refs: n399
+      - ref=e400 index=400 <a> role=link group=rg19[3] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=346.5 y=2742.0 width=152.0 height=32.0)
+        name: Stack Overflow
+        attrs: href="https://stackoverflow.com/questions/tagged/go?tab=Newest" aria-describedby="footer-description"
+        child_refs: n401
+      - ref=e402 index=402 <a> role=link group=rg19[4] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=346.5 y=2774.0 width=152.0 height=32.0)
+        name: Help
+        attrs: href="/help/" aria-describedby="footer-description"
+        child_refs: n403
+      - ref=e405 index=405 <a> role=link group=rg20[0] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=599.5 y=2642.0 width=152.0 height=28.0)
+        name: Packages
+        attrs: href="https://pkg.go.dev" aria-describedby="footer-description"
+        child_refs: n406
+      - ref=e407 index=407 <a> role=link group=rg20[1] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=599.5 y=2678.0 width=152.0 height=32.0)
+        name: Standard Library
+        attrs: href="/pkg/" aria-describedby="footer-description"
+        child_refs: n408
+      - ref=e409 index=409 <a> role=link group=rg20[2] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=599.5 y=2710.0 width=152.0 height=32.0)
+        name: About Go Packages
+        attrs: href="https://pkg.go.dev/about" aria-describedby="footer-description"
+        child_refs: n410
+      - ref=e411 index=411 <a> role=link group=rg20[3] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=599.5 y=2742.0 width=152.0 height=32.0)
+        name: pkg.go.dev API
+        attrs: href="https://pkg.go.dev/api" aria-describedby="footer-description"
+        child_refs: n412
+      - ref=e414 index=414 <a> role=link group=rg21[0] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=852.5 y=2642.0 width=152.0 height=28.0)
+        name: About
+        attrs: href="/project" aria-describedby="footer-description"
+        child_refs: n415
+      - ref=e416 index=416 <a> role=link group=rg21[1] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=852.5 y=2678.0 width=152.0 height=32.0)
+        name: Download
+        attrs: href="/dl/" aria-describedby="footer-description"
+        child_refs: n417
+      - ref=e418 index=418 <a> role=link group=rg21[2] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=852.5 y=2710.0 width=152.0 height=32.0)
+        name: Blog
+        attrs: href="/blog/" aria-describedby="footer-description"
+        child_refs: n419
+      - ref=e420 index=420 <a> role=link group=rg21[3] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=852.5 y=2742.0 width=152.0 height=32.0)
+        name: Issue Tracker
+        attrs: href="https://github.com/golang/go/issues" aria-describedby="footer-description"
+        child_refs: n421
+      - ref=e422 index=422 <a> role=link group=rg21[4] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=852.5 y=2774.0 width=152.0 height=32.0)
+        name: Release Notes
+        attrs: href="/doc/devel/release" aria-describedby="footer-description"
+        child_refs: n423
+      - ref=e424 index=424 <a> role=link group=rg21[5] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=852.5 y=2806.0 width=152.0 height=32.0)
+        name: Brand Guidelines
+        attrs: href="/brand" aria-describedby="footer-description"
+        child_refs: n425
+      - ref=e426 index=426 <a> role=link group=rg21[6] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=852.5 y=2838.0 width=152.0 height=32.0)
+        name: Code of Conduct
+        attrs: href="/conduct" aria-describedby="footer-description"
+        child_refs: n427
+      - ref=e429 index=429 <a> role=link group=rg22[0] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2642.0 width=152.0 height=28.0)
+        name: Connect
+        attrs: href="/wiki/#the-go-community" aria-describedby="footer-description"
+        child_refs: n430
+      - ref=e431 index=431 <a> role=link group=rg22[1] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2678.0 width=152.0 height=32.0)
+        name: Bluesky
+        attrs: href="https://bsky.app/profile/golang.org" aria-describedby="footer-description"
+        child_refs: n432
+      - ref=e433 index=433 <a> role=link group=rg22[2] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2710.0 width=152.0 height=32.0)
+        name: Mastodon
+        attrs: href="https://hachyderm.io/@golang" aria-describedby="footer-description"
+        child_refs: n434
+      - ref=e435 index=435 <a> role=link group=rg22[3] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2742.0 width=152.0 height=32.0)
+        name: Twitter
+        attrs: href="https://www.twitter.com/golang" aria-describedby="footer-description"
+        child_refs: n436
+      - ref=e437 index=437 <a> role=link group=rg22[4] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2774.0 width=152.0 height=32.0)
+        name: GitHub
+        attrs: href="https://github.com/golang" aria-describedby="footer-description"
+        child_refs: n438
+      - ref=e439 index=439 <a> role=link group=rg22[5] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2806.0 width=152.0 height=32.0)
+        name: Slack
+        attrs: href="https://invite.slack.golangbridge.org/" aria-describedby="footer-description"
+        child_refs: n440
+      - ref=e441 index=441 <a> role=link group=rg22[6] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2838.0 width=152.0 height=32.0)
+        name: r/golang
+        attrs: href="https://reddit.com/r/golang" aria-describedby="footer-description"
+        child_refs: n442
+      - ref=e443 index=443 <a> role=link group=rg22[7] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2870.0 width=152.0 height=32.0)
+        name: Meetup
+        attrs: href="https://www.meetup.com/pro/go" aria-describedby="footer-description"
+        child_refs: n444
+      - ref=e445 index=445 <a> role=link group=rg22[8] actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1105.5 y=2902.0 width=152.0 height=32.0)
+        name: Golang Weekly
+        attrs: href="https://golangweekly.com/" aria-describedby="footer-description"
+        child_refs: n446
+      - ref=n447 index=447 <div> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=0.0 y=2976.0 width=1351.0 height=66.0)
+        name: The Go Gopher
+        child_refs: n448
+        - ref=n448 index=448 <div> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=0.0 y=2976.0 width=1351.0 height=66.0)
+          name: The Go Gopher
+          child_refs: n449
+          - ref=n449 index=449 <div> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=24.0 y=2976.0 width=1303.0 height=66.0)
+            name: The Go Gopher
+            child_refs: n450, n451, e467
+            - ref=n450 index=450 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=24.0 y=2991.6 width=80.0 height=50.4)
+              name: The Go Gopher
+              attrs: src="/images/gophers/pilot-bust.svg" alt="The Go Gopher"
+            - ref=n451 index=451 <ul> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=104.0 y=2993.1 width=1150.5 height=32.8)
+              name: Toggle theme
+              child_refs: g452, g455, g458, g461, g464
+              - ref=g452 index=452 <li> role=generic boundary=listitem group=rg23[0] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=104.0 y=2999.5 width=91.9 height=20.0)
+                subtree_text: Copyright
+                child_refs: e453
+                - ref=e453 index=453 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=120.0 y=2999.7 width=59.9 height=19.6)
+                  name: Copyright
+                  attrs: href="/copyright" aria-describedby="footer-description"
+                  child_refs: n454
+              - ref=g455 index=455 <li> role=generic boundary=listitem group=rg23[1] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=195.9 y=2999.5 width=137.2 height=20.0)
+                subtree_text: Terms of Service
+                child_refs: e456
+                - ref=e456 index=456 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=212.9 y=2999.7 width=104.2 height=19.6)
+                  name: Terms of Service
+                  attrs: href="/tos" aria-describedby="footer-description"
+                  child_refs: n457
+              - ref=g458 index=458 <li> role=generic boundary=listitem group=rg23[2] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=333.2 y=2999.5 width=120.1 height=20.0)
+                subtree_text: Privacy Policy
+                child_refs: e459
+                - ref=e459 index=459 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=350.2 y=2999.7 width=87.1 height=19.6)
+                  name: Privacy Policy
+                  attrs: href="http://www.google.com/intl/en/policies/privacy/" aria-describedby="footer-description"
+                  child_refs: n460
+              - ref=g461 index=461 <li> role=generic boundary=listitem group=rg23[3] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=453.3 y=2999.5 width=131.8 height=20.0)
+                subtree_text: Report an Issue
+                child_refs: e462
+                - ref=e462 index=462 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=470.3 y=2999.7 width=98.8 height=19.6)
+                  name: Report an Issue
+                  attrs: href="/s/website-issue" aria-describedby="footer-description"
+                  child_refs: n463
+              - ref=g464 index=464 <li> role=generic boundary=listitem group=rg23[4] visible=true viewport=false hit=false occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=585.2 y=2999.5 width=69.0 height=20.0)
+                name: Toggle theme
+                child_refs: e465
+                - ref=e465 index=465 <button> role=button actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=602.2 y=2991.5 width=36.0 height=36.0)
+                  name: Toggle theme
+                  attrs: aria-label="Toggle theme"
+                  child_refs: n466
+                  - ref=n466 index=466 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=611.2 y=3000.5 width=18.0 height=18.0)
+                    name: System theme
+                    attrs: src="/images/icons/brightness_6_gm_grey_24dp.svg" alt="System theme"
+            - ref=e467 index=467 <a> role=link actions=click visible=true viewport=false hit=false occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1254.5 y=2997.2 width=72.5 height=24.0)
+              name: Google logo
+              attrs: href="https://google.com"
+              child_refs: n468
+              - ref=n468 index=468 <img> role=generic visible=true viewport=false hit=false occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=1254.5 y=2997.2 width=72.5 height=24.0)
+                name: Google logo
+                attrs: src="/images/google-white.png" alt="Google logo"
+    - ref=g469 index=469 <section> role=generic boundary=section visible=true viewport=true hit=true occluded=false scroll=false confidence=0.82 truncated=false bounds=(x=0.0 y=739.6 width=1351.0 height=73.4)
+      subtree_text: go.dev uses cookies from Google to deliver and enhance the quality of its services and to analyze traffic. Learn more. Okay
+      child_refs: n470, n474
+      - ref=n470 index=470 <div> role=generic visible=true viewport=true hit=true occluded=false scroll=false confidence=0.72 truncated=false bounds=(x=225.1 y=765.6 width=829.5 height=22.4)
+        direct_text: go.dev uses cookies from Google to deliver and enhance the quality of its services and to analyze traffic.
+        child_refs: n471, e472
+        - ref=e472 index=472 <a> role=link actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=968.3 y=767.6 width=86.3 height=17.0)
+          name: Learn more.
+          attrs: href="https://policies.google.com/technologies/cookies"
+          child_refs: n473
+      - ref=e475 index=475 <button> role=button actions=click visible=true viewport=true hit=true occluded=false scroll=false confidence=0.92 truncated=false bounds=(x=1070.6 y=756.6 width=55.3 height=40.4)
+        name: Okay
+        child_refs: n476
+=== UNREACHED NODES ===

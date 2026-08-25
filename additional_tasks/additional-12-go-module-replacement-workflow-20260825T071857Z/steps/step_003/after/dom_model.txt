@@ -1,0 +1,139 @@
+URL: https://go.dev/doc/tutorial/call-module-code
+Title: Call your code from another module - The Go Programming Language
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=476 groups=23 truncated=False
+
+=== VISIBLE CONTENT ===
+Context: Go
+- Why Go arrow_drop_down Press Enter to activate/deactivate dropdown Case Studies Common problems companies solve with Go Use Cases Stories about how and why companies use Go Security How Go can help keep you secure by default
+- Learn Press Enter to activate/deactivate dropdown
+- Docs arrow_drop_down Press Enter to activate/deactivate dropdown Go Spec The official Go language specification Go User Manual A complete introduction to building software with Go Standard library Reference documentation for Go's standard library Release Notes Learn what's new in each Go release Effective Go Tips for writing clear, performant, and idiomatic Go code
+- Packages Press Enter to activate/deactivate dropdown
+- Community arrow_drop_down Press Enter to activate/deactivate dropdown Recorded Talks Videos from prior events Meetups open_in_new Meet other local Go developers Conferences open_in_new Learn and network with Go developers from around the world Go blog The Go project's official blog. Go project Get help and stay informed from Go Get connected
+Context: Go.
+- Why Go navigate_next navigate_before Why Go Case Studies Use Cases Security
+- Learn
+- Docs navigate_next navigate_before Docs Go Spec Go User Manual Standard library Release Notes Effective Go
+- Packages
+- Community navigate_next navigate_before Community Recorded Talks Meetups open_in_new Conferences open_in_new Go blog Go project Get connected
+- Documentation Tutorials Call your code from another module Call your code from another module In the previous section , you created a greetings module. In this section, you'll write code to make calls to the Hello function in the module you just wrote. You'll write code you can execute as an application, and which calls code in the greetings module. Note: This topic is part of a multi-part tutorial that begins with Create a Go module . Create a hello directory for your Go module source code. Thi
+  evidence: module example.com/hello go 1.16 replace example.com/greetings => ../greetings
+  evidence: $ go mod tidy go: found example.com/greetings in example.com/greetings v0.0.0-00010101000000-000000000000
+  evidence: module example.com/hello go 1.16 replace example.com/greetings => ../greetings require example.com/greetings v0.0.0-00010101000000-000000000000
+  evidence: require example.com/greetings v1.1.0
+- Documentation
+- Tutorials
+- Call your code from another module
+- Call your code from another module
+- In the , you created a module. In this section, you'll write code to make calls to the function in the module you just wrote. You'll write code you can execute as an application, and which calls code in the module.
+- greetings
+- Hello
+- Note: This topic is part of a multi-part tutorial that begins with Create a Go module .
+- Create a directory for your Go module source code. This is where you'll write your caller.
+- hello
+- After you create this directory, you should have both a hello and a greetings directory at the same level in the hierarchy, like so:
+- / |-- greetings/ |-- hello/
+- For example, if your command prompt is in the greetings directory, you could use the following commands:
+- cd .. mkdir hello cd hello
+- Enable dependency tracking for the code you're about to write. To enable dependency tracking for your code, run the go mod init command , giving it the name of the module your code will be in. For the purposes of this tutorial, use example.com/hello for the module path. $ go mod init example.com/hello go: creating new go.mod: module example.com/hello
+- To enable dependency tracking for your code, run the , giving it the name of the module your code will be in.
+- For the purposes of this tutorial, use for the module path.
+- example.com/hello
+- $ go mod init example.com/hello go: creating new go.mod: module example.com/hello
+- In your text editor, in the hello directory, create a file in which to write your code and call it hello.go.
+- Write code to call the Hello function, then print the function's return value. To do that, paste the following code into hello.go. package main import ( "fmt" "example.com/greetings" ) func main() { // Get a greeting message and print it. message := greetings.Hello("Gladys") fmt.Println(message) } In this code, you: Declare a main package. In Go, code executed as an application must be in a main package. Import two packages: example.com/greetings and the fmt package . This gives your code access
+- Hello
+- To do that, paste the following code into hello.go.
+- package main import ( "fmt" "example.com/greetings" ) func main() { // Get a greeting message and print it. message := greetings.Hello("Gladys") fmt.Println(message) }
+- go.dev uses cookies from Google to deliver and enhance the quality of its services and to analyze traffic. Learn more.
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. Use page scroll to bring this content into view.
+- In this code, you:
+- Declare a package. In Go, code executed as an application must be in a package.
+- Import two packages: example.com/greetings and the fmt package . This gives your code access to functions in those packages. Importing example.com/greetings (the package contained in the module you created earlier) gives you access to the Hello function. You also import fmt , with functions for handling input and output text (such as printing text to the console).
+- example.com/greetings
+- Hello
+- Get a greeting by calling the package’s function.
+- greetings
+- Hello
+- Edit the example.com/hello module to use your local example.com/greetings module. For production use, you’d publish the example.com/greetings module from its repository (with a module path that reflected its published location), where Go tools could find it to download it. For now, because you haven't published the module yet, you need to adapt the example.com/hello module so it can find the example.com/greetings code on your local file system. To do that, use the go mod edit command to edit the
+- example.com/hello
+- example.com/greetings
+- For production use, you’d publish the example.com/greetings module from its repository (with a module path that reflected its published location), where Go tools could find it to download it. For now, because you haven't published the module yet, you need to adapt the example.com/hello module so it can find the example.com/greetings code on your local file system.
+- To do that, use the to edit the module to redirect Go tools from its module path (where the module isn't) to the local directory (where it is).
+- From the command prompt in the hello directory, run the following command: $ go mod edit -replace example.com/greetings=../greetings The command specifies that example.com/greetings should be replaced with ../greetings for the purpose of locating the dependency. After you run the command, the go.mod file in the hello directory should include a replace directive : module example.com/hello go 1.16 replace example.com/greetings => ../greetings
+- $ go mod edit -replace example.com/greetings=../greetings
+- The command specifies that should be replaced with for the purpose of locating the dependency. After you run the command, the go.mod file in the hello directory should include a :
+- example.com/greetings
+- ../greetings
+- module example.com/hello go 1.16 replace example.com/greetings => ../greetings
+- replace example.com/greetings => ../greetings
+- From the command prompt in the hello directory, run the go mod tidy command to synchronize the example.com/hello module's dependencies, adding those required by the code, but not yet tracked in the module. $ go mod tidy go: found example.com/greetings in example.com/greetings v0.0.0-00010101000000-000000000000 After the command completes, the example.com/hello module's go.mod file should look like this: module example.com/hello go 1.16 replace example.com/greetings => ../greetings require exampl
+  evidence: module example.com/hello go 1.16 replace example.com/greetings => ../greetings require example.com/greetings v0.0.0-00010101000000-000000000000
+  evidence: require example.com/greetings v1.1.0
+- example.com/hello
+- $ go mod tidy go: found example.com/greetings in example.com/greetings v0.0.0-00010101000000-000000000000
+- After the command completes, the module's go.mod file should look like this:
+- module example.com/hello go 1.16 replace example.com/greetings => ../greetings require example.com/greetings v0.0.0-00010101000000-000000000000
+- require example.com/greetings v0.0.0-00010101000000-000000000000
+- The command found the local code in the greetings directory, then added a to specify that requires . You created this dependency when you imported the package in hello.go.
+- example.com/greetings
+- greetings
+- The number following the module path is a -- a generated number used in place of a semantic version number (which the module doesn't have yet).
+- pseudo-version number
+- To reference a module, a go.mod file would typically omit the directive and use a directive with a tagged version number at the end.
+- published
+- require example.com/greetings v1.1.0
+- For more on version numbers, see Module version numbering .
+- At the command prompt in the directory, run your code to confirm that it works.
+- hello
+- $ go run . Hi, Gladys. Welcome!
+- Congrats! You've written two functioning modules.
+- In the next topic, you'll add some error handling.
+- < Create a Go module Return and handle an error >
+
+=== MEDIA / IMAGE LABELS ===
+- "The Go Gopher" source=present context="The Go Gopher"
+- "System theme" source=present context="The Go Gopher"
+- "Google logo" source=present context="The Go Gopher"
+
+=== USEFUL PAGE ACTIONS ===
+[2142] link "Go"
+[2623] button "Okay"
+=== SECONDARY / DEBUG ACTIONS ===
+[2145] link "Skip to Main Content" <a> role=link context="generic: Go / generic: Go" state=not-hit-testable hit=False viewport=True sourceOrder=74 bounds=(x=113.078125 y=17 w=148.53125 h=22.390625) reason=not_hit_testable
+[2247] link "Go." <a> role=link context="generic: Go. / generic: Go." state=not-hit-testable hit=False viewport=True sourceOrder=356 bounds=(x=1351 y=0 w=114 h=64) reason=not_hit_testable
+[2443] link "Why Go" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=897 bounds=(x=93.5 y=2641.953125 w=152 h=28) reason=not_hit_testable
+[2444] link "Use Cases" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=900 bounds=(x=93.5 y=2677.953125 w=152 h=32) reason=not_hit_testable
+[2108] link "Case Studies" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=903 bounds=(x=93.5 y=2709.953125 w=152 h=32) reason=not_hit_testable
+[2446] link "Get Started" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=909 bounds=(x=346.5 y=2641.953125 w=152 h=28) reason=not_hit_testable
+[2447] link "Playground" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=912 bounds=(x=346.5 y=2677.953125 w=152 h=32) reason=not_hit_testable
+[2448] link "Tour" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=915 bounds=(x=346.5 y=2709.953125 w=152 h=32) reason=not_hit_testable
+[2449] link "Stack Overflow" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=918 bounds=(x=346.5 y=2741.953125 w=152 h=32) reason=not_hit_testable
+[2450] link "Help" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=921 bounds=(x=346.5 y=2773.953125 w=152 h=32) reason=not_hit_testable
+[2452] link "Packages" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=927 bounds=(x=599.5 y=2641.953125 w=152 h=28) reason=not_hit_testable
+[2453] link "Standard Library" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=930 bounds=(x=599.5 y=2677.953125 w=152 h=32) reason=not_hit_testable
+[2454] link "About Go Packages" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=933 bounds=(x=599.5 y=2709.953125 w=152 h=32) reason=not_hit_testable
+[2455] link "pkg.go.dev API" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=936 bounds=(x=599.5 y=2741.953125 w=152 h=32) reason=not_hit_testable
+[2457] link "About" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=942 bounds=(x=852.5 y=2641.953125 w=152 h=28) reason=not_hit_testable
+[2458] link "Download" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=945 bounds=(x=852.5 y=2677.953125 w=152 h=32) reason=not_hit_testable
+[2459] link "Blog" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=948 bounds=(x=852.5 y=2709.953125 w=152 h=32) reason=not_hit_testable
+[2460] link "Issue Tracker" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=951 bounds=(x=852.5 y=2741.953125 w=152 h=32) reason=not_hit_testable
+[2461] link "Release Notes" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=954 bounds=(x=852.5 y=2773.953125 w=152 h=32) reason=not_hit_testable
+[2462] link "Brand Guidelines" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=957 bounds=(x=852.5 y=2805.953125 w=152 h=32) reason=not_hit_testable
+[2463] link "Code of Conduct" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=960 bounds=(x=852.5 y=2837.953125 w=152 h=32) reason=not_hit_testable
+[2465] link "Connect" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=966 bounds=(x=1105.5 y=2641.953125 w=152 h=28) reason=not_hit_testable
+[2466] link "Bluesky" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=969 bounds=(x=1105.5 y=2677.953125 w=152 h=32) reason=not_hit_testable
+[2467] link "Mastodon" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=972 bounds=(x=1105.5 y=2709.953125 w=152 h=32) reason=not_hit_testable
+[2468] link "Twitter" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=975 bounds=(x=1105.5 y=2741.953125 w=152 h=32) reason=not_hit_testable
+[2469] link "GitHub" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=978 bounds=(x=1105.5 y=2773.953125 w=152 h=32) reason=not_hit_testable
+[2470] link "Slack" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=981 bounds=(x=1105.5 y=2805.953125 w=152 h=32) reason=not_hit_testable
+[2471] link "r/golang" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=984 bounds=(x=1105.5 y=2837.953125 w=152 h=32) reason=not_hit_testable
+[2109] link "Meetup" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=987 bounds=(x=1105.5 y=2869.953125 w=152 h=32) reason=not_hit_testable
+[2472] link "Golang Weekly" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=990 bounds=(x=1105.5 y=2901.953125 w=152 h=32) reason=not_hit_testable
+[2480] link "Copyright" <a> role=link context="generic: The Go Gopher / generic: Toggle theme / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1012 bounds=(x=120 y=2999.65625 w=59.921875 h=19.59375) reason=not_hit_testable
+[2482] link "Terms of Service" <a> role=link context="generic: The Go Gopher / generic: Toggle theme / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1018 bounds=(x=212.921875 y=2999.65625 w=104.25 h=19.59375) reason=not_hit_testable
+[2484] link "Privacy Policy" <a> role=link context="generic: The Go Gopher / generic: Toggle theme / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1024 bounds=(x=350.171875 y=2999.65625 w=87.140625 h=19.59375) reason=not_hit_testable
+[2486] link "Report an Issue" <a> role=link context="generic: The Go Gopher / generic: Toggle theme / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1030 bounds=(x=470.3125 y=2999.65625 w=98.84375 h=19.59375) reason=not_hit_testable
+[2488] button "Toggle theme" <button> role=button context="generic: The Go Gopher / generic: Toggle theme / generic: Toggle theme" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1036 bounds=(x=602.15625 y=2991.453125 w=36 h=36) reason=not_hit_testable
+[2492] link "Google logo" <a> role=link context="generic: The Go Gopher" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1047 bounds=(x=1254.53125 y=2997.15625 w=72.46875 h=24) reason=not_hit_testable
