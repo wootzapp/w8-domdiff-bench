@@ -79,6 +79,7 @@ from capture import (
     synchronize_recorder_target,
     verify_agent_browser_action,
 )
+from htmlbench_profiles import profile_manifest, profile_names
 from dom_diff import (
     MAX_DOM_DIFF_JSON_BYTES,
     MAX_TERMINATION_REVIEW_DIFF_ENTRIES_PER_STEP,
@@ -643,6 +644,19 @@ class ModelClient:
             bounded_dom_diff_history_for_review(dom_diff_history),
             ensure_ascii=False,
         )
+        recent_text = json.dumps(recent_actions[-8:], ensure_ascii=False)
+        # Record each prompt section so the experiment can compare input size.
+        self.last_input_report = {
+            "kind": "termination_review",
+            "action_agent_browser_chars": len(action_text),
+            "chromiumrl_chars": len(bundle.model_text),
+            "chromiumrl_prompt_chars": len(chromiumrl_text),
+            "task_memory_chars": len(task_memory),
+            "dom_diff_history_chars": len(prior_evidence_text),
+            "recent_actions_chars": len(recent_text),
+            "observation_truncated": False,
+            "conversation_history_reused": False,
+        }
         prompt = (
             f"task:\n{task}\n\n"
             f"task_memory_from_prior_steps:\n{task_memory or '(none)'}\n\n"
@@ -652,7 +666,7 @@ class ModelClient:
             f"current_chromiumrl_evidence:\n{chromiumrl_text}\n\n"
             "recorded_prior_step_dom_diff_evidence (authoritative):\n"
             f"{prior_evidence_text or '[]'}\n\n"
-            f"recent_action_outcomes:\n{json.dumps(recent_actions[-8:], ensure_ascii=False)}"
+            f"recent_action_outcomes:\n{recent_text}"
         )
         payload = {
             "model": self.model,
@@ -865,6 +879,8 @@ async def run(args: argparse.Namespace) -> int:
         "task": args.task or "capture-only",
         "created_at": utc_now(),
         "browser_image": os.environ.get("IMAGE", "devjangid/wootzapp-chromium-desktop:latest"),
+        # Keep the active browser treatment with every run artifact.
+        "htmlbench_eval": profile_manifest(args.htmlbench_profile),
         "browser_profile_provenance": browser_profile_provenance_from_environment(),
         "dom_capture_parameters": {
             "max_nodes": args.snapshot_max_nodes,
@@ -947,6 +963,7 @@ async def run(args: argparse.Namespace) -> int:
             keep_existing_tabs=args.keep_existing_tabs,
             browser_language=args.browser_lang,
             browser_accept_language=args.browser_accept_language,
+            htmlbench_profile=args.htmlbench_profile,
         ) as cdp:
             if not args.capture_only:
                 await agent_browser.connect()
@@ -1120,6 +1137,7 @@ async def run(args: argparse.Namespace) -> int:
                             "proposed": proposed_termination,
                             "review": review,
                             "model_response": compact_model_response(review_response),
+                            "model_input": dict(model.last_input_report),
                         },
                     )
                     if review["verdict"] == "continue":
@@ -1584,6 +1602,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(description="Run browser tasks and diff stored ChromiumRL structured snapshots")
     parser.add_argument("--env-file", default=known.env_file)
+    parser.add_argument(
+        "--htmlbench-profile",
+        choices=profile_names(),
+        default=os.environ.get("HTMLBENCH_EVAL_PROFILE", "baseline"),
+        help="controlled browser flags and page-init treatment",
+    )
     parser.add_argument(
         "--build-trajectory-run",
         type=Path,

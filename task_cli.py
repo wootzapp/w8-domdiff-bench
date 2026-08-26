@@ -8,6 +8,7 @@ import fcntl
 import json
 import os
 import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -23,6 +24,7 @@ from urllib.parse import urlsplit
 # Local runner exports reused here so validation and environment handling have
 # one canonical implementation across direct and wrapper-based invocations.
 from runner import DEFAULT_NOVNC_URL, load_env, safe_task_id
+from htmlbench_profiles import apply_profile_environment, profile_names
 # Shared exception avoids defining a second CLI-only error hierarchy.
 from recorder_support import RunnerError
 
@@ -471,6 +473,7 @@ def build_runner_command(
     allow_human_intervention: bool,
     novnc_url: str,
     post_action_language_redirect: bool = False,
+    htmlbench_profile: str = "baseline",
     model: str = "",
     max_steps: int = 80,
 ) -> list[str]:
@@ -480,6 +483,8 @@ def build_runner_command(
         str(RUNNER),
         "--env-file",
         str(env_file),
+        "--htmlbench-profile",
+        htmlbench_profile,
         "--task",
         str(definition["instruction"]),
         "--task-id",
@@ -528,6 +533,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--catalog-url", help=argparse.SUPPRESS)
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument(
+        "--htmlbench-profile",
+        choices=profile_names(),
+        default="baseline",
+        help="isolated baseline or HTMLBench-derived browser treatment",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         required=True,
@@ -574,6 +585,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def resolve_env_relative_agent_browser(env_file: Path) -> str | None:
+    """Resolve a relative agent-browser command against its owning env file."""
+    configured = os.environ.get("AGENT_BROWSER_COMMAND", "").strip()
+    if not configured:
+        return None
+    command_parts = shlex.split(configured)
+    if not command_parts or Path(command_parts[0]).is_absolute():
+        return configured
+    candidate = env_file.resolve().parent / command_parts[0]
+    if not candidate.exists():
+        return configured
+    command_parts[0] = str(candidate.resolve())
+    resolved = shlex.join(command_parts)
+    os.environ["AGENT_BROWSER_COMMAND"] = resolved
+    return resolved
+
+
 def main(argv: list[str] | None = None) -> int:
     """Validate a task, preserve the browser, replace an old runner, and wait."""
     args = parse_args(argv)
@@ -584,6 +612,9 @@ def main(argv: list[str] | None = None) -> int:
         raise RunnerError("--previous-run-stop-timeout must not be negative")
 
     load_env(args.env_file)
+    resolve_env_relative_agent_browser(args.env_file)
+    # Select the browser treatment before Compose starts the container.
+    apply_profile_environment(args.htmlbench_profile)
     # Supplying either manual field selects manual mode and requires both. With
     # neither field, the positional task id is resolved through the catalog.
     manual_task = args.task is not None or args.start_url is not None
@@ -620,6 +651,7 @@ def main(argv: list[str] | None = None) -> int:
         allow_human_intervention=not args.no_human_intervention,
         novnc_url=novnc_url,
         post_action_language_redirect=args.post_action_language_redirect,
+        htmlbench_profile=args.htmlbench_profile,
         model=args.model,
         max_steps=args.max_steps,
     )
@@ -628,6 +660,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Task name: {task_name}")
     print(f"Start URL: {definition['start_url']}")
     print(f"Output: {output_dir / run_id}")
+    print(f"HTMLBench profile: {args.htmlbench_profile}")
     print(
         "Human intervention: "
         + ("enabled" if not args.no_human_intervention else "disabled")

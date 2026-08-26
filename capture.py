@@ -27,6 +27,7 @@ from agent_browser import (
 )
 from recorder_support import RunnerError, normalized_http_url, write_json, write_text
 from dom_diff import clean_dom_text, same_document_except_fragment
+from htmlbench_profiles import init_scripts_for_profile
 
 
 ROOT = Path(__file__).resolve().parent
@@ -1036,13 +1037,16 @@ class CDPClient:
         keep_existing_tabs: bool = False,
         browser_language: str = "",
         browser_accept_language: str = "",
+        htmlbench_profile: str = "baseline",
     ):
-        """Configure one flattened CDP session and its tab/locale policy."""
+        """Configure one flattened CDP session, locale, and init-script policy."""
         self.http_url = normalized_http_url(http_url)
         self.timeout = timeout
         self.keep_existing_tabs = keep_existing_tabs
         self.browser_language = browser_language
         self.browser_accept_language = browser_accept_language
+        self.htmlbench_profile = htmlbench_profile
+        self.init_scripts = init_scripts_for_profile(htmlbench_profile)
         self.browser_version = ""
         self.http: aiohttp.ClientSession | None = None
         self.ws: aiohttp.ClientWebSocketResponse | None = None
@@ -1058,6 +1062,35 @@ class CDPClient:
         for method in ("Page.enable", "DOM.enable", "Runtime.enable", "ChromiumRL.enable"):
             await self.call(method)
         locale_setup: dict[str, Any] = {}
+        initializer_setup: list[dict[str, Any]] = []
+        # Apply the selected helpers now and before every later navigation.
+        for script_name, script_source in self.init_scripts:
+            installed = await self.call(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {"source": script_source},
+            )
+            evaluated = await self.call(
+                "Runtime.evaluate",
+                {
+                    "expression": script_source,
+                    "awaitPromise": True,
+                    "returnByValue": True,
+                },
+            )
+            if evaluated.get("exceptionDetails"):
+                raise RunnerError(
+                    f"HTMLBench init script {script_name!r} failed: "
+                    f"{evaluated['exceptionDetails']}"
+                )
+            initializer_setup.append(
+                {
+                    "name": script_name,
+                    "new_document_identifier": installed.get("identifier"),
+                    "current_document_evaluated": True,
+                }
+            )
+        locale_setup["htmlbench_profile"] = self.htmlbench_profile
+        locale_setup["htmlbench_init_scripts"] = initializer_setup
         for label, method, params in (
             ("network_enable", "Network.enable", {}),
             (

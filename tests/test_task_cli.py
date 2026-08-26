@@ -46,6 +46,24 @@ class TaskCliTests(unittest.TestCase):
         self.assertFalse(runner_args.post_action_language_redirect)
         self.assertFalse(cli_args.post_action_language_redirect)
 
+    def test_agent_browser_command_is_resolved_from_env_file_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            env_root = Path(temporary)
+            binary = env_root / "node_modules" / ".bin" / "agent-browser"
+            binary.parent.mkdir(parents=True)
+            binary.touch()
+            env_file = env_root / "recorder.env"
+            env_file.touch()
+            with patch.dict(
+                task_cli.os.environ,
+                {"AGENT_BROWSER_COMMAND": "./node_modules/.bin/agent-browser --flag"},
+            ):
+                result = task_cli.resolve_env_relative_agent_browser(env_file)
+                configured = task_cli.os.environ["AGENT_BROWSER_COMMAND"]
+
+        self.assertEqual(result, f"{binary} --flag")
+        self.assertEqual(configured, f"{binary} --flag")
+
     def test_arbitrary_task_definition_is_validated(self) -> None:
         definition = task_cli.validate_task_definition(
             "Inspect the visible page.",

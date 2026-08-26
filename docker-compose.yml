@@ -1,17 +1,19 @@
-name: task-recorder-dom-diff
+# Each treatment gets its own Compose project and browser container.
+name: ${COMPOSE_PROJECT_NAME:-htmlbench-eval}
 
 # The model-driven runner stays host-side in runner.py. OPENAI_API_KEY and
 # OPENAI_MODEL are therefore not injected into this browser service.
 services:
   wootz-desktop:
     image: ${IMAGE:-wootz-runtime:snapshot-diff}
-    container_name: ${CONTAINER_NAME:-task-recorder-dom-diff-browser}
+    container_name: ${CONTAINER_NAME:-htmlbench-eval-baseline-browser}
     restart: unless-stopped
     shm_size: "2gb"
+    network_mode: bridge
     ports:
-      - "127.0.0.1:${CDP_HOST_PORT:-49335}:9222"
-      - "127.0.0.1:${NOVNC_HOST_PORT:-16191}:6080"
-      - "127.0.0.1:${VNC_HOST_PORT:-15911}:5900"
+      - "127.0.0.1:${CDP_HOST_PORT:-49345}:9222"
+      - "127.0.0.1:${NOVNC_HOST_PORT:-16192}:6080"
+      - "127.0.0.1:${VNC_HOST_PORT:-15912}:5900"
     environment:
       NOVNC_PORT: "6080"
       VNC_PORT: "5900"
@@ -22,6 +24,7 @@ services:
       LC_ALL: ${RECORDER_LC_ALL:-en_US.UTF-8}
       BROWSER_LANG: ${BROWSER_LANG:-en-US}
       BROWSER_ACCEPT_LANGUAGE: ${BROWSER_ACCEPT_LANGUAGE:-en-US,en;q=0.9}
+      # The selected profile passes these arguments to Chromium at startup.
       CHROMIUM_EXTRA_ARGS: "${CHROMIUM_EXTRA_ARGS:---lang=en-US}"
       CHROMIUM_HEADLESS: ${CHROMIUM_HEADLESS:-0}
       CHROMIUM_RESET_PROFILE: ${CHROMIUM_RESET_PROFILE:-0}
