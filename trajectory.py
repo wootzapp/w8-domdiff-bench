@@ -15,6 +15,9 @@ from dom_diff import clean_dom_text
 TRAJECTORY_SCHEMA_VERSION = "1.0"
 WEBSURFER_ACTION_MAP = {
     "navigate": "visit_url",
+    # WebSurfer has no dedicated history action. Represent the browser's
+    # back navigation with its standard keyboard form.
+    "back": "key",
     "click": "left_click",
     "fill": "type",
     "type": "type",
@@ -53,6 +56,8 @@ def websurfer_action(
         if not url.startswith(("http://", "https://")):
             raise RunnerError("executed navigate action has no valid URL")
         arguments["url"] = url
+    elif source_action == "back":
+        arguments["key"] = "ALT+LEFT"
     elif source_action in {"click", "fill", "type", "select", "scroll"}:
         ref = AgentBrowserClient.action_ref(raw_action.get("id"))
         if ref:
@@ -234,20 +239,19 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
                     }
                 )
                 continue
-            result = action_record.get("action_result")
-            if (
-                action_record.get("action_succeeded") is not True
-                or action_record.get("action_error") not in (None, "")
-                or not isinstance(result, dict)
-                or result.get("success") is not True
-            ):
-                raise RunnerError(
-                    "browser execution was not confirmed successful; verifier "
-                    "dataset generation requires a rerun"
-                )
-
             mapped_action, arguments, thought = websurfer_action(action_record)
             action_number = len(trajectory_rows) + 1
+            result = action_record.get("action_result")
+            execution_succeeded = (
+                action_record.get("action_succeeded") is True
+                and action_record.get("action_error") in (None, "")
+                and isinstance(result, dict)
+                and result.get("success") is True
+            )
+            execution_status = "success" if execution_succeeded else "failure"
+            execution_error = action_record.get("action_error")
+            if not execution_succeeded and not execution_error:
+                execution_error = "browser execution was not confirmed successful"
 
             trajectory_row = {
                 "schema_version": TRAJECTORY_SCHEMA_VERSION,
@@ -263,7 +267,10 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
                 "after_url": after_url,
                 "dom_diff": str(diff_path.relative_to(run_dir)),
                 "dom_diff_text": str(diff_text_path.relative_to(run_dir)),
+                "execution_status": execution_status,
             }
+            if execution_error:
+                trajectory_row["execution_error"] = str(execution_error)
             coordinate_capture = action_record.get("coordinate_capture")
             if (
                 source_action == "click"
@@ -283,17 +290,19 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
                 f"with arguments "
                 f"{json.dumps(message_arguments, ensure_ascii=False, separators=(',', ':'))}"
             )
-            websurfer_rows.append(
-                {
-                    "timestamp": timestamp,
-                    "type": "WebSurferEvent",
-                    "source": "WebSurfer",
-                    "message": message,
-                    "action": mapped_action,
-                    "arguments": arguments,
-                    "url": after_url,
-                }
-            )
+            websurfer_row = {
+                "timestamp": timestamp,
+                "type": "WebSurferEvent",
+                "source": "WebSurfer",
+                "message": message,
+                "action": mapped_action,
+                "arguments": arguments,
+                "url": after_url,
+                "execution_status": execution_status,
+            }
+            if execution_error:
+                websurfer_row["execution_error"] = str(execution_error)
+            websurfer_rows.append(websurfer_row)
         except (OSError, ValueError, TypeError, json.JSONDecodeError, RunnerError) as error:
             errors.append(
                 {

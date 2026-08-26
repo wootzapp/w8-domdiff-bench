@@ -32,8 +32,6 @@ from dom_diff import clean_dom_text, same_document_except_fragment
 ROOT = Path(__file__).resolve().parent
 FULL_RENDERER = ROOT / "scripts" / "render_chromiumrl_snapshot_full.py"
 MODEL_RENDERER = ROOT / "scripts" / "render_chromiumrl_snapshot_model.py"
-MODEL_DOM_COMMAND = "ChromiumRL.getModelDOM"
-MODEL_DOM_RENDERER_VERSION = "chromiumrl-model-dom-v1"
 
 class CDPError(RunnerError):
     def __init__(self, method: str, error: Any):
@@ -524,20 +522,6 @@ def run_renderer(arguments: list[str]) -> None:
         raise RunnerError(f"renderer failed: {completed.stderr.strip()}")
 
 
-def render_full_stored_snapshot(snapshot_path: Path) -> None:
-    """Render only the audit/full text projection from stored dom.json."""
-    run_renderer(
-        [
-            str(FULL_RENDERER),
-            str(snapshot_path),
-            "--output",
-            str(snapshot_path.with_name("dom_full.txt")),
-            "--include-action-index",
-            "--include-child-refs",
-        ]
-    )
-
-
 def render_stored_snapshot(snapshot_path: Path) -> None:
     """Regenerate both text projections from one stored structured snapshot."""
     full_path = snapshot_path.with_name("dom_full.txt")
@@ -562,6 +546,13 @@ def render_stored_snapshot(snapshot_path: Path) -> None:
             "--include-secondary",
             "--max-secondary-actions",
             "160",
+            # Zero is the renderer's documented unlimited value. The browser's
+            # captured dom.json is unchanged; these flags prevent this local
+            # model projection from discarding captured content or row tails.
+            "--max-content-blocks",
+            "0",
+            "--max-text-chars",
+            "0",
         ]
     )
 
@@ -578,10 +569,7 @@ def renderer_versions() -> dict[str, dict[str, str]]:
     """Content-addressed renderer version used for model and audit text."""
     return {
         "full": file_version(FULL_RENDERER),
-        "model": {
-            "command": MODEL_DOM_COMMAND,
-            "renderer_version": MODEL_DOM_RENDERER_VERSION,
-        },
+        "model": file_version(MODEL_RENDERER),
     }
 
 
@@ -665,31 +653,12 @@ async def capture_snapshot_diff(
     return after_snapshot, diff
 
 
-async def model_dom_from_snapshot(
-    cdp: CDPClient,
-    snapshot: dict[str, Any],
-) -> str:
-    """Render model-facing DOM inside Chromium from an existing snapshot."""
-    result = await capture_call(cdp, MODEL_DOM_COMMAND, {"snapshot": snapshot})
-    model_dom = result.get("modelDOM")
-    renderer_version = result.get("rendererVersion")
-    if not isinstance(model_dom, str):
-        raise RunnerError(f"unexpected {MODEL_DOM_COMMAND} response: {result}")
-    if renderer_version != MODEL_DOM_RENDERER_VERSION:
-        raise RunnerError(
-            f"unexpected {MODEL_DOM_COMMAND} rendererVersion: "
-            f"{renderer_version!r}"
-        )
-    return model_dom
-
-
 async def materialize_bundle(
     cdp: CDPClient,
     directory: Path,
     snapshot: dict[str, Any],
 ) -> CaptureBundle:
     """Atomically materialize one snapshot, screenshot, and two text views."""
-    model_text = await model_dom_from_snapshot(cdp, snapshot)
     screenshot_result = await capture_call(
         cdp,
         "Page.captureScreenshot",
@@ -707,13 +676,12 @@ async def materialize_bundle(
     write_json(snapshot_path, {"result": {"snapshot": snapshot}})
     screenshot_path = directory / "screenshot.png"
     screenshot_path.write_bytes(base64.b64decode(screenshot_data))
-    render_full_stored_snapshot(snapshot_path)
+    render_stored_snapshot(snapshot_path)
     model_path = directory / "dom_model.txt"
-    write_text(model_path, model_text)
     return CaptureBundle(
         snapshot=snapshot,
         snapshot_path=snapshot_path,
-        model_text=model_text,
+        model_text=model_path.read_text(encoding="utf-8"),
         screenshot_path=screenshot_path,
         document_language=language_state.language,
         document_url=language_state.url,

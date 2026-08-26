@@ -159,7 +159,7 @@ class TrajectoryExportTests(unittest.TestCase):
             self.assertFalse((run_dir / "trajectory.jsonl").exists())
             self.assertFalse((run_dir / "web_surfer.log").exists())
 
-    def test_one_failed_action_prevents_partial_outputs(self) -> None:
+    def test_failed_action_is_exported_with_explicit_failure_status(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             run_dir = Path(temporary)
             self.make_step(
@@ -180,10 +180,15 @@ class TrajectoryExportTests(unittest.TestCase):
 
             report = runner.generate_trajectory_artifacts(run_dir)
 
-            self.assertEqual(report["status"], "invalid")
-            self.assertEqual(report["exported_actions"], 0)
-            self.assertFalse((run_dir / "trajectory.jsonl").exists())
-            self.assertFalse((run_dir / "web_surfer.log").exists())
+            self.assertEqual(report["status"], "complete")
+            self.assertEqual(report["exported_actions"], 2)
+            trajectory = self.read_jsonl(run_dir / "trajectory.jsonl")
+            websurfer = self.read_jsonl(run_dir / "web_surfer.log")
+            self.assertEqual(trajectory[0]["execution_status"], "success")
+            self.assertEqual(trajectory[1]["execution_status"], "failure")
+            self.assertEqual(trajectory[1]["execution_error"], "action failed")
+            self.assertEqual(websurfer[1]["execution_status"], "failure")
+            self.assertEqual(websurfer[1]["execution_error"], "action failed")
 
     def test_human_intervention_step_is_skipped_without_hiding_actions(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -357,7 +362,7 @@ class TrajectoryExportTests(unittest.TestCase):
             self.assertEqual(trajectory[0]["arguments"]["target"]["ref"], "e3")
             self.assertEqual(trajectory[1]["arguments"]["seconds"], 1.5)
 
-    def test_unsupported_websurfer_mapping_fails_loudly(self) -> None:
+    def test_back_is_exported_as_standard_browser_history_key(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             run_dir = Path(temporary)
             self.make_step(
@@ -369,8 +374,13 @@ class TrajectoryExportTests(unittest.TestCase):
 
             report = runner.generate_trajectory_artifacts(run_dir)
 
-            self.assertEqual(report["status"], "invalid")
-            self.assertIn("no confirmed WebSurfer mapping", report["errors"][0]["error"])
+            self.assertEqual(report["status"], "complete")
+            trajectory = self.read_jsonl(run_dir / "trajectory.jsonl")
+            websurfer = self.read_jsonl(run_dir / "web_surfer.log")
+            self.assertEqual(trajectory[0]["action"], "key")
+            self.assertEqual(trajectory[0]["arguments"]["key"], "ALT+LEFT")
+            self.assertEqual(websurfer[0]["action"], "key")
+            self.assertEqual(websurfer[0]["arguments"]["key"], "ALT+LEFT")
 
     def test_action_schema_requires_distinct_thought(self) -> None:
         self.assertIn("thought", runner.ACTION_SCHEMA["required"])

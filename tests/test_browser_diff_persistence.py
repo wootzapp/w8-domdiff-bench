@@ -26,42 +26,62 @@ PERSISTED_PREFIX = (
     "after",
     "change_count",
 )
+
+
+def browser_diff_fixture(status: str, persisted_order: tuple[str, ...]) -> dict:
+    """Build an intentionally unordered, self-contained browser response."""
+    values = {
+        "source": "runner_snapshot_diff",
+        "interval": {"before": "before", "after": "after"},
+        "action_type": "click",
+        "geometry_excluded": True,
+        "covers_live_control_state": False,
+        "identity": {},
+        "status": status,
+        "before": {"url": "https://before.example/"},
+        "after": {"url": "https://after.example/"},
+        "change_count": 0,
+        "semantic_change_count": 0,
+        "viewport_change_count": 0,
+        "totals": {},
+        "emitted_counts": {},
+        "compression": {},
+        "diff": {},
+    }
+    return {
+        key: values[key]
+        for key in reversed(persisted_order)
+        if key != "artifact"
+    }
+
+
+FULL_PERSISTED_ORDER = PERSISTED_PREFIX + (
+    "semantic_change_count",
+    "viewport_change_count",
+    "totals",
+    "emitted_counts",
+    "compression",
+    "diff",
+    "artifact",
+)
+DOCUMENT_REPLACED_ORDER = PERSISTED_PREFIX + (
+    "totals",
+    "emitted_counts",
+    "diff",
+    "artifact",
+)
 PERSISTED_CASES = {
     "changes_present": (
-        ROOT
-        / "dataset-tasks/task11-arxiv-literature-search-20260812T122858Z"
-        / "steps/step_002/dom_diff.json",
-        PERSISTED_PREFIX
-        + (
-            "semantic_change_count",
-            "viewport_change_count",
-            "totals",
-            "emitted_counts",
-            "compression",
-            "diff",
-            "artifact",
-        ),
+        browser_diff_fixture("changes_present", FULL_PERSISTED_ORDER),
+        FULL_PERSISTED_ORDER,
     ),
     "document_replaced": (
-        ROOT
-        / "dataset-tasks/task1-reddit-ranking-20260812T120158Z"
-        / "steps/step_004/dom_diff.json",
-        PERSISTED_PREFIX + ("totals", "emitted_counts", "diff", "artifact"),
+        browser_diff_fixture("document_replaced", DOCUMENT_REPLACED_ORDER),
+        DOCUMENT_REPLACED_ORDER,
     ),
     "no_dom_change": (
-        ROOT
-        / "dataset-tasks/task23-scholar-literature-search-20260812T125558Z"
-        / "steps/step_004/dom_diff.json",
-        PERSISTED_PREFIX
-        + (
-            "semantic_change_count",
-            "viewport_change_count",
-            "totals",
-            "emitted_counts",
-            "compression",
-            "diff",
-            "artifact",
-        ),
+        browser_diff_fixture("no_dom_change", FULL_PERSISTED_ORDER),
+        FULL_PERSISTED_ORDER,
     ),
 }
 
@@ -219,15 +239,8 @@ class BrowserDiffPersistenceTests(unittest.TestCase):
             self.assertTrue(all(type(value) is int for value in record[counts_key].values()))
 
     def test_reorder_matches_literal_stored_order_for_all_status_shapes(self) -> None:
-        for status, (source_path, expected_order) in PERSISTED_CASES.items():
+        for status, (browser, expected_order) in PERSISTED_CASES.items():
             with self.subTest(status=status):
-                stored = json.loads(source_path.read_text(encoding="utf-8"))
-                self.assertEqual(tuple(stored), expected_order)
-                browser = {
-                    key: value
-                    for key, value in reversed(tuple(stored.items()))
-                    if key != "artifact"
-                }
                 with tempfile.TemporaryDirectory() as raw_directory:
                     output = Path(raw_directory) / "dom_diff.json"
                     runner.write_browser_dom_diff_files(browser, output)
