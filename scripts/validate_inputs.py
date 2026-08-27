@@ -1,0 +1,298 @@
+"""Fail-closed paired screenshot/DOM-model task validation."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+from dom_model.alignment import validate_alignment
+from dom_model.state_parser import load_dom_model_states
+from dom_model.trajectory_helpers import action_events, load_trajectory
+
+from .common import (
+    canonical_json_bytes,
+    load_canonical_rubric,
+    load_json,
+    load_one_task,
+    task_id,
+    task_init_url,
+    task_instruction,
+    validate_endpoint_configs,
+    validate_generation_metrics,
+    write_json,
+)
+
+
+SCREENSHOT_RE = re.compile(r"^screenshot_?(\d+)\.(?:png|jpe?g|webp)$", re.I)
+ACTION_NAMES = {
+    "left_click": "click", "click": "click", "type": "fill", "fill": "fill",
+    "visit_url": "navigate", "navigate": "navigate", "scroll": "scroll",
+}
+CONTROL_FILES = {"task_data.json", "web_surfer.log", "final_answer.json"}
+SIDECAR = "task_data_with_canonical_rubric.json"
+
+
+def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{line_number}: {exc}") from exc
+        if not isinstance(event, dict) or event.get("action") is None:
+            continue
+        arguments = event.get("arguments") or {}
+        if not isinstance(arguments, dict):
+            raise ValueError(f"{path}:{line_number}: arguments must be an object")
+        raw_name = str(arguments.get("action") or event.get("action") or "")
+        if raw_name not in ACTION_NAMES:
+            raise ValueError(f"{path}:{line_number}: unsupported action {raw_name!r}")
+        name = ACTION_NAMES[raw_name]
+        if mode == "screenshot" and name == "click":
+            coordinate = arguments.get("coordinate")
+            if not isinstance(coordinate, list) or len(coordinate) != 2 or not all(isinstance(v, (int, float)) for v in coordinate):
+                raise ValueError(f"{path}:{line_number}: screenshot click requires [x, y]")
+        if mode == "dom_model" and name in {"click", "fill"}:
+            if arguments.get("ref") is None and arguments.get("target") is None:
+                raise ValueError(f"{path}:{line_number}: DOM-model {name} requires ref or target")
+        signature: dict[str, Any] = {
+            "ordinal": len(actions) + 1,
+            "action": name,
+            "after_url": str(event.get("url") or ""),
+        }
+        if name == "navigate":
+            signature["url"] = str(arguments.get("url") or "")
+        elif name == "fill":
+            signature["text"] = arguments.get("text", arguments.get("value"))
+        elif name == "scroll":
+            for key in ("direction", "delta_x", "delta_y", "amount"):
+                if key in arguments:
+                    signature[key] = arguments[key]
+        target = arguments.get("target")
+        if isinstance(target, dict):
+            for key in ("role", "name"):
+                if target.get(key) is not None:
+                    signature[f"target_{key}"] = target[key]
+        if arguments.get("ref") is not None:
+            signature["ref"] = arguments["ref"]
+        actions.append(signature)
+    if not actions:
+        raise ValueError(f"No actions found in {path}")
+    return actions
+
+
+def compare_semantic_actions(screenshot: list[dict], dom_model: list[dict]) -> None:
+    if len(screenshot) != len(dom_model):
+        raise ValueError(f"Action count mismatch: screenshot={len(screenshot)}, DOM-model={len(dom_model)}")
+    optional = {
+        "navigate": {"url"}, "fill": {"text"},
+        "scroll": {"direction", "delta_x", "delta_y", "amount"},
+        "click": {"ref", "target_role", "target_name"},
+    }
+    for ordinal, (left, right) in enumerate(zip(screenshot, dom_model), start=1):
+        for key in {"action", "after_url"}:
+            if left.get(key) != right.get(key):
+                raise ValueError(f"Semantic action {ordinal} differs for {key}: {left.get(key)!r} != {right.get(key)!r}")
+        for key in optional.get(left["action"], set()):
+            if key in left and key in right and left[key] != right[key]:
+                raise ValueError(f"Semantic action {ordinal} differs for {key}: {left[key]!r} != {right[key]!r}")
+
+
+def ordered_screenshots(root: Path) -> list[Path]:
+    indexed: dict[int, Path] = {}
+    for child in root.iterdir():
+        if not child.is_file():
+            continue
+        match = SCREENSHOT_RE.fullmatch(child.name)
+        if not match:
+            continue
+        index = int(match.group(1))
+        if index in indexed:
+            raise ValueError(f"Duplicate screenshot index {index} in {root}")
+        indexed[index] = child
+    actual = sorted(indexed)
+    if actual != list(range(len(actual))):
+        raise ValueError(f"Screenshots must be contiguous from 0, got {actual}")
+    return [indexed[index] for index in actual]
+
+
+def load_answer(path: Path) -> dict[str, Any]:
+    answer = load_json(path)
+    if not isinstance(answer, dict) or not isinstance(answer.get("final_answer"), str):
+        raise ValueError(f"Final answer must be an object with final_answer text: {path}")
+    return answer
+
+
+def validate_sidecar(root: Path, task: dict, rubric: dict, *, required: bool) -> bool:
+    path = root / SIDECAR
+    if not path.is_file():
+        if required:
+            raise ValueError(f"Missing required frozen-rubric sidecar: {path}")
+        return False
+    sidecar = load_one_task(path)
+    embedded = sidecar.pop("precomputed_rubric", None)
+    base = dict(task)
+    base.pop("precomputed_rubric", None)
+    if canonical_json_bytes(sidecar) != canonical_json_bytes(base):
+        raise ValueError(f"Sidecar task fields differ from task_data.json: {path}")
+    if canonical_json_bytes(embedded) != canonical_json_bytes(rubric):
+        raise ValueError(f"Sidecar rubric differs from canonical rubric: {path}")
+    return True
+
+
+def _require_controls(root: Path, mode: str) -> None:
+    if not root.is_dir():
+        raise ValueError(f"Missing {mode} task directory: {root}")
+    for filename in CONTROL_FILES:
+        if not (root / filename).is_file():
+            raise ValueError(f"Missing {mode} control file: {root / filename}")
+
+
+def _require_allowed_files(root: Path, allowed: set[str], mode: str) -> None:
+    unexpected = sorted(
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file() and path.relative_to(root).as_posix() not in allowed
+    )
+    if unexpected:
+        raise ValueError(f"Unexpected {mode} task files: {unexpected}")
+
+
+def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) -> dict[str, Any]:
+    screenshot = Path(screenshot_task).resolve(strict=True)
+    dom = Path(dom_task).resolve(strict=True)
+    if screenshot.name != dom.name:
+        raise ValueError("Paired task folder aliases must match")
+    _require_controls(screenshot, "screenshot")
+    _require_controls(dom, "DOM-model")
+    screenshot_data = load_one_task(screenshot / "task_data.json")
+    dom_data = load_one_task(dom / "task_data.json")
+    if canonical_json_bytes(screenshot_data) != canonical_json_bytes(dom_data):
+        raise ValueError("task_data.json differs between modalities")
+    internal_id = task_id(screenshot_data)
+    if not internal_id or not task_instruction(screenshot_data) or not task_init_url(screenshot_data):
+        raise ValueError("Task data must contain task ID, instruction, and initial URL")
+    screenshot_actions = parse_actions(screenshot / "web_surfer.log", mode="screenshot")
+    dom_actions = parse_actions(dom / "web_surfer.log", mode="dom_model")
+    compare_semantic_actions(screenshot_actions, dom_actions)
+    screenshots = ordered_screenshots(screenshot)
+    if len(screenshots) != len(screenshot_actions) + 1:
+        raise ValueError("Screenshot task requires intentional N+1 states")
+    trajectory = load_trajectory(dom)
+    events = action_events(trajectory)
+    if len(events) != len(dom_actions):
+        raise ValueError("Microsoft trajectory parsing changed the DOM-model action count")
+    states = load_dom_model_states(dom, action_count=len(dom_actions))
+    alignment = validate_alignment(
+        task_id=internal_id,
+        initial_url=task_init_url(dom_data),
+        actions=events,
+        states=states,
+    )
+    screenshot_answer = load_answer(screenshot / "final_answer.json")
+    dom_answer = load_answer(dom / "final_answer.json")
+    for field in ("final_answer", "is_aborted"):
+        if screenshot_answer.get(field) != dom_answer.get(field):
+            raise ValueError(f"Final-answer field differs between modalities: {field}")
+    if "screenshots" in dom_answer or dom_answer.get("token_usage") != {}:
+        raise ValueError("DOM-model final answer must omit screenshots and contain token_usage: {}")
+    for reference in screenshot_answer.get("screenshots") or []:
+        if not isinstance(reference, str) or not (screenshot / reference).is_file():
+            raise ValueError(f"Missing screenshot referenced by final answer: {reference!r}")
+    return {
+        "task_id": internal_id,
+        "task_alias": screenshot.name,
+        "actions": len(dom_actions),
+        "screenshots": len(screenshots),
+        "dom_model_states": len(states),
+        "alignment": alignment.as_dict(),
+    }
+
+
+def validate_pair(
+    screenshot_task: str | Path,
+    dom_task: str | Path,
+    *,
+    rubric_file: str | Path,
+    generation_metrics: str | Path | None = None,
+    eval_config: str | Path | None = None,
+    require_sidecars: bool = True,
+) -> dict[str, Any]:
+    receipt = dataset_only_preflight(screenshot_task, dom_task)
+    screenshot = Path(screenshot_task).resolve(strict=True)
+    dom = Path(dom_task).resolve(strict=True)
+    screenshot_data = load_one_task(screenshot / "task_data.json")
+    dom_data = load_one_task(dom / "task_data.json")
+    frozen = load_canonical_rubric(rubric_file, expected_task_id=receipt["task_id"])
+    for label, task in (("screenshot", screenshot_data), ("DOM-model", dom_data)):
+        embedded = task.get("precomputed_rubric")
+        if embedded is not None and canonical_json_bytes(embedded) != canonical_json_bytes(frozen.rubric):
+            raise ValueError(f"{label} task-embedded rubric differs from canonical rubric")
+    screenshot_sidecar = validate_sidecar(screenshot, screenshot_data, frozen.rubric, required=require_sidecars)
+    dom_sidecar = validate_sidecar(dom, dom_data, frozen.rubric, required=require_sidecars)
+    screenshots = ordered_screenshots(screenshot)
+    states = load_dom_model_states(dom, action_count=receipt["actions"])
+    screenshot_allowed = CONTROL_FILES | {path.name for path in screenshots}
+    dom_allowed = CONTROL_FILES | {path.path.name for path in states}
+    if screenshot_sidecar:
+        screenshot_allowed.add(SIDECAR)
+    if dom_sidecar:
+        dom_allowed.add(SIDECAR)
+    _require_allowed_files(screenshot, screenshot_allowed, "screenshot")
+    _require_allowed_files(dom, dom_allowed, "DOM-model")
+    metrics_receipt = None
+    if generation_metrics is not None:
+        metrics_receipt = validate_generation_metrics(generation_metrics, frozen)
+    elif require_sidecars:
+        raise ValueError("Phase B requires --generation-metrics from Phase A")
+    receipt.update(
+        {
+            "frozen_rubric": str(frozen.path),
+            "frozen_rubric_sha256": frozen.sha256,
+            "criterion_order": [item["criterion"] for item in frozen.rubric["items"]],
+            "criterion_descriptions": [item["description"] for item in frozen.rubric["items"]],
+            "maximum_points": [float(item["max_points"]) for item in frozen.rubric["items"]],
+            "criterion_denominator": frozen.denominator,
+            "screenshot_sidecar_validated": screenshot_sidecar,
+            "dom_model_sidecar_validated": dom_sidecar,
+            "generation_metrics": str(Path(generation_metrics).resolve()) if generation_metrics else None,
+            "rubric_generation_calls_during_scoring": 0,
+            "endpoint_config": validate_endpoint_configs(eval_config) if eval_config else None,
+        }
+    )
+    return receipt
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--screenshot-task", required=True)
+    parser.add_argument("--dom-task", required=True)
+    parser.add_argument("--rubric-file", required=True)
+    parser.add_argument("--generation-metrics", required=True)
+    parser.add_argument("--eval-config")
+    parser.add_argument("--receipt")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    receipt = validate_pair(
+        args.screenshot_task,
+        args.dom_task,
+        rubric_file=args.rubric_file,
+        generation_metrics=args.generation_metrics,
+        eval_config=args.eval_config,
+    )
+    if args.receipt:
+        write_json(args.receipt, receipt)
+    print(json.dumps(receipt, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

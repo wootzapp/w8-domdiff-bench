@@ -1,0 +1,142 @@
+URL: https://github.com/psf/requests/pull/7506/files
+Title: `requests.help` static typing improvements by jorenham · Pull Request #7506 · psf/requests · GitHub
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=1005 groups=106 truncated=False
+
+=== TABLES ===
+Table 1: rows=64 columns=3
+  Original file line number | Diff line number | Diff line change
+  Expand Up | @@ -4,32 +4,39 @@
+   |  | import platform
+   |  | import ssl
+   |  | import sys
+   |  | from typing import Any
+   |  | from typing import TYPE_CHECKING , Any
+   |  | import idna
+   |  | import urllib3
+   |  | from . import __version__ as requests_version
+   |  | try :
+   |  | import charset_normalizer
+   |  | except ImportError :
+   |  | charset_normalizer = None
+   |  | try :
+   |  | if TYPE_CHECKING :
+   |  | import chardet
+   |  | except ImportError :
+   |  | chardet = None
+   |  | try :
+   |  | from urllib3 . contrib import pyopenssl
+   |  | except ImportError :
+   |  | pyopenssl = None
+   |  | OpenSSL = None
+   |  | cryptography = None
+   |  | else :
+   |  | import charset_normalizer
+   |  | import cryptography
+   |  | import OpenSSL
+   |  | from urllib3 . contrib import pyopenssl
+   |  | else :
+   |  | try :
+   |  | import charset_normalizer
+   |  | except ImportError :
+   |  | charset_normalizer = None
+   |  | try :
+   |  | import chardet
+   |  | except ImportError :
+   |  | chardet = None
+   |  | try :
+   |  | from urllib3 . contrib import pyopenssl
+   |  | except ImportError :
+   |  | pyopenssl = None
+   |  | OpenSSL = None
+   |  | cryptography = None
+   |  | else :
+   |  | import cryptography
+   |  | import OpenSSL
+   |  | def _implementation ():
+  Expand Down Expand Up | @@ -79,7 +86,7 @@ def info() -> dict[str, Any]:
+   |  | implementation_info = _implementation ()
+   |  | urllib3_info = { "version" : urllib3 . __version__ }
+   |  | charset_normalizer_info = { "version" : None }
+   |  | charset_normalizer_info : dict [ str , str | None ] = { "version" : None }
+   |  | chardet_info : dict [ str , str | None ] = { "version" : None }
+   |  | if charset_normalizer :
+   |  | charset_normalizer_info = { "version" : charset_normalizer . __version__ }
+  Expand Down Expand Up | @@ -123,7 +130,7 @@ def info() -> dict[str, Any]:
+   |  | }
+   |  | def main ():
+  [table rows hidden: 4 more]
+
+=== VISIBLE CONTENT ===
+Context: Close navigation menu
+- Navigation Menu
+Context: Global
+- Platform AI CODE CREATION GitHub Copilot Write better code with AI GitHub Copilot app Direct agents from issue to merge MCP Registry Integrate external tools DEVELOPER WORKFLOWS Actions Automate any workflow Codespaces Instant dev environments Issues Plan and track work Code Review Manage code changes Code Quality Enforce quality at merge APPLICATION SECURI…
+  actions: [81063] button "Platform"
+- Solutions BY COMPANY SIZE Enterprises Small and medium teams Startups Nonprofits BY USE CASE App Modernization DevSecOps DevOps CI/CD View all use cases BY INDUSTRY Healthcare Financial services Manufacturing Government View all industries View all solutions
+  actions: [81195] button "Solutions"
+- Resources EXPLORE BY TOPIC AI Software Development DevOps Security View all topics EXPLORE BY TYPE Customer stories Events & webinars Ebooks & reports Business insights GitHub Skills SUPPORT & SERVICES Documentation Customer support Community forum Trust center Partners View all resources
+  actions: [81268] button "Resources"
+- Open Source COMMUNITY GitHub Sponsors Fund open source developers PROGRAMS Security Lab Maintainer Community Accelerator GitHub Stars Archive Program REPOSITORIES Topics Trending Collections
+  actions: [81347] button "Open Source"
+- Enterprise ENTERPRISE SOLUTIONS Enterprise platform AI-powered developer platform AVAILABLE ADD-ONS GitHub Advanced Security Enterprise-grade security features Copilot for Business Enterprise-grade AI features Premium Support Enterprise-grade 24/7 support
+  actions: [81405] button "Enterprise"
+- Pricing
+Context: Please reload this page
+- Public
+- Sponsor Sponsor psf/requests External links https://www.python.org/psf/sponsorship/ Learn more about funding links in repositories . Report abuse
+  actions: [82815] button "Sponsor psf/requests"
+- Notifications You must be signed in to change notification settings
+- Fork 10.1k
+- You must be signed in to star a repository
+  actions: [80505] link "You must be signed in to star a repository"
+Context: Repository
+- Code
+- Issues 147
+- Pull requests 86
+- Actions
+- Wiki
+- Security and quality 4
+- Insights
+Context: Please reload this page
+- requests.help static typing improvements #7506
+- [80507] New issue
+- wants to merge commit into from
+- +26
+- −19
+- [81824] Changes from all commits
+- [81849] File filter
+- [81876] Conversations
+- [81904] Jump to
+- [81936] Diff settings
+- 45 changes: 26 additions & 19 deletions
+- [82051] Show options
+
+=== USEFUL PAGE ACTIONS ===
+[81450] button "Search or jump to, type / to search"
+[81459] link "Sign in"
+[82017] button "Toggle diff contents"
+[82023] button "Expand all"
+[80518] link "Expand Up"
+[81043] link "Homepage"
+[80497] link "Sign up"
+[81511] link "psf"
+[81514] link "requests"
+[82037] link "src/requests/help.py"
+[82039] button "Copy"
+[other actions hidden: 5]
+=== SECONDARY / DEBUG ACTIONS ===
+[81007] link "Skip to content" <a> role=link state=not-hit-testable hit=False viewport=True sourceOrder=302 bounds=(x=0 y=0 w=1 h=1) reason=not_hit_testable
+[81786] scroll-region "Conversation 4 Commits 1 Checks 32 Files changed 1" actions=scroll <nav> role=generic context="generic: Please reload this page / generic: Sign up for GitHub / generic: Sign up for GitHub" hit=True viewport=True sourceOrder=1782 bounds=(x=16 y=308 w=1216.59375 h=40) reason=broad/noisy
+[80519] link "Expand Down" <a> role=link context="generic: Expand Up / generic: Expand Down / generic: Expand Down Expand Up" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3511 bounds=(x=33 y=1598 w=101 h=20) reason=not_hit_testable
+[80520] link "Expand Up" <a> role=link context="generic: Expand Up / generic: Expand Down / generic: Expand Down Expand Up" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3522 bounds=(x=33 y=1618 w=101 h=20) reason=not_hit_testable
+[82547] link "GitHub Homepage" <a> role=link context="contentinfo: GitHub Homepage" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4074 bounds=(x=251.5625 y=2107 w=24 h=26) reason=not_hit_testable
+[82555] link "Terms" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4095 bounds=(x=405.125 y=2113 w=32.671875 h=14) reason=not_hit_testable
+[82557] link "Privacy" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4101 bounds=(x=453.796875 y=2113 w=39.34375 h=14) reason=not_hit_testable
+[82559] link "Security" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4107 bounds=(x=509.140625 y=2113 w=43.359375 h=14) reason=not_hit_testable
+[82561] link "Status" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4113 bounds=(x=568.5 y=2113 w=34.03125 h=14) reason=not_hit_testable
+[82563] link "Community" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4119 bounds=(x=618.53125 y=2113 w=60.6875 h=14) reason=not_hit_testable
+[82565] link "Docs" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4125 bounds=(x=695.21875 y=2113 w=27.34375 h=14) reason=not_hit_testable
+[82567] link "Contact" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4131 bounds=(x=738.5625 y=2113 w=41.359375 h=14) reason=not_hit_testable
+[82570] button "Manage cookies" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4139 bounds=(x=795.921875 y=2111 w=87.390625 h=18) reason=not_hit_testable
+[82573] button "Do not share my personal information" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4148 bounds=(x=899.3125 y=2111 w=200.109375 h=18) reason=not_hit_testable
