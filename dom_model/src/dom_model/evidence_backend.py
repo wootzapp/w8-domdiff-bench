@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from .grounding import (
+    EVIDENCE_ANALYSIS_GROUNDING_POLICY,
+    GROUNDING_POLICY_VERSION,
+    RELEVANCE_GROUNDING_POLICY,
+)
 from .schemas import DomModelState
 
 
@@ -32,6 +37,8 @@ Evidence rules:
 - This is a full ordered state, not a DOM diff.
 - {LIMITATIONS}
 
+{RELEVANCE_GROUNDING_POLICY}
+
 DOM-model evidence:
 {rendered_state if rendered_state is not None else state.model_text(action_count=action_count)}
 """
@@ -56,6 +63,8 @@ Return JSON with nonempty string fields screenshot_evidence, criterion_analysis,
 a boolean environment_issues_confirmed{conditional_output}.{conditional_check}
 The compatibility name screenshot_evidence means DOM-model evidence in this run.
 {LIMITATIONS}
+
+{EVIDENCE_ANALYSIS_GROUNDING_POLICY}
 
 DOM-model evidence:
 {rendered_state if rendered_state is not None else state.model_text(action_count=action_count)}
@@ -84,6 +93,8 @@ and boolean environment_issues_confirmed. Conditional criteria also require bool
 condition_verification. The compatibility name screenshot_evidence means DOM-model evidence.
 {LIMITATIONS}
 
+{EVIDENCE_ANALYSIS_GROUNDING_POLICY}
+
 DOM-model evidence:
 {rendered_state if rendered_state is not None else state.model_text(action_count=action_count)}
 """
@@ -92,6 +103,7 @@ DOM-model evidence:
 def base_audit(states: list[DomModelState]) -> dict[str, Any]:
     return {
         "evidence_mode": "dom_model",
+        "grounding_policy_version": GROUNDING_POLICY_VERSION,
         "complete_state_count": len(states),
         "final_state_index": states[-1].index if states else None,
         "states": [state.audit_dict() for state in states],

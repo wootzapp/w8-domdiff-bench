@@ -1,3 +1,4 @@
+from .grounding import REALITY_CHECK_GROUNDING_POLICY, RESCORING_GROUNDING_POLICY
 from .utils.error_taxonomy import (
     escape_for_template,
     extract_subcategory_bullets,
@@ -2250,3 +2251,13 @@ must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIA
 }}
 """
 )
+
+
+# The Microsoft prompt bodies above remain intact. These DOM-only contracts narrow how
+# their screenshot-oriented evidence language is interpreted when the evidence is a
+# structured DOM model. Scoring algorithms and output schemas remain unchanged.
+RUBRIC_REALITY_CHECK_PROMPT = (
+    REALITY_CHECK_GROUNDING_POLICY + "\n\n" + RUBRIC_REALITY_CHECK_PROMPT
+)
+MM_CRITERION_RESCORING_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + MM_CRITERION_RESCORING_PROMPT
+MM_RUBRIC_RESCORING_PROMPT = RESCORING_GROUNDING_POLICY + "\n\n" + MM_RUBRIC_RESCORING_PROMPT

@@ -3,6 +3,23 @@
 Run from the repository root. Shared orchestration needs both local packages;
 each Phase B child process is subsequently restricted to its own package.
 
+## Create the experiment-local environment
+
+```bash
+python3 -m venv benchmarks-2/.venv
+benchmarks-2/.venv/bin/python -m pip install --upgrade pip
+benchmarks-2/.venv/bin/python -m pip install -r benchmarks-2/requirements.txt
+cp benchmarks-2/.env.example benchmarks-2/.env
+# Edit benchmarks-2/.env and set OPENAI_API_KEY.
+```
+
+The local `.env` is ignored and must not be committed. Offline preflights and
+tests make no paid calls. The `.env` is needed only for an explicitly
+authorized `--execute` run.
+Only dependencies are installed: the verifier packages are loaded from their
+own isolated `src` directories through `PYTHONPATH`, preserving their fixed
+package manifests.
+
 ```bash
 export PYTHONDONTWRITEBYTECODE=1
 export PYTHONPATH="benchmarks-2/microsoft_verifier/src:benchmarks-2/dom_model/src:benchmarks-2"
@@ -28,7 +45,7 @@ The DOM folder must contain `task_data.json`, `web_surfer.log`,
 Offline preflight (prints a receipt and writes nothing):
 
 ```bash
-benchmarks/.venv/bin/python -m scripts.generate_frozen_rubric \
+benchmarks-2/.venv/bin/python -m scripts.generate_frozen_rubric \
   --screenshot-task benchmarks-2/data/data-new-screenshot/taskXX \
   --dom-task benchmarks-2/data/data-new-dom-model/taskXX
 ```
@@ -44,7 +61,7 @@ each staged task copy. Existing outputs require `--overwrite`.
 Offline preflight:
 
 ```bash
-benchmarks/.venv/bin/python -m scripts.run_comparison --task taskXX
+benchmarks-2/.venv/bin/python -m scripts.run_comparison --task taskXX
 ```
 
 This validates package manifests, paired task/action/final-answer identity,
@@ -80,13 +97,13 @@ exposes it.
 
 ```bash
 cd benchmarks-2/microsoft_verifier
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../../benchmarks/.venv/bin/python -m pytest -p no:cacheprovider -q
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../.venv/bin/python -m pytest -p no:cacheprovider -q
 
 cd ../dom_model
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../../benchmarks/.venv/bin/python -m pytest -p no:cacheprovider -q
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../.venv/bin/python -m pytest -p no:cacheprovider -q
 
 cd ..
 PYTHONDONTWRITEBYTECODE=1 \
 PYTHONPATH="microsoft_verifier/src:dom_model/src:." \
-../benchmarks/.venv/bin/python -m pytest -p no:cacheprovider -q scripts/tests
+.venv/bin/python -m pytest -p no:cacheprovider -q scripts/tests
 ```

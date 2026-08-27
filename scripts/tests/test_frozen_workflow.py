@@ -1,10 +1,74 @@
+import json
 from pathlib import Path
 
 import pytest
 
 from scripts.generate_frozen_rubric import main as generate_main
 from scripts.run_comparison import commands
-from scripts.validate_inputs import validate_pair
+from scripts.validate_inputs import compare_semantic_actions, parse_actions, validate_pair
+
+
+def test_screenshot_click_with_ref_does_not_require_coordinates(tmp_path):
+    log = tmp_path / "screenshot.log"
+    log.write_text(
+        json.dumps({"action": "left_click", "arguments": {"action": "left_click", "ref": "e107"}}) + "\n",
+        encoding="utf-8",
+    )
+
+    actions = parse_actions(log, mode="screenshot")
+
+    assert actions[0]["action"] == "click"
+    assert actions[0]["ref"] == "e107"
+
+
+def test_key_action_is_preserved_and_compared(tmp_path):
+    screenshot_log = tmp_path / "screenshot.log"
+    dom_log = tmp_path / "dom.log"
+    event = json.dumps({"action": "key", "arguments": {"action": "key", "key": "Enter"}}) + "\n"
+    screenshot_log.write_text(event, encoding="utf-8")
+    dom_log.write_text(event, encoding="utf-8")
+
+    screenshot_actions = parse_actions(screenshot_log, mode="screenshot")
+    dom_actions = parse_actions(dom_log, mode="dom_model")
+
+    assert screenshot_actions[0]["action"] == "key"
+    assert screenshot_actions[0]["key"] == "Enter"
+    compare_semantic_actions(screenshot_actions, dom_actions)
+
+
+def test_wait_action_is_preserved_and_compared(tmp_path):
+    screenshot_log = tmp_path / "screenshot.log"
+    dom_log = tmp_path / "dom.log"
+    event = json.dumps({"action": "wait", "arguments": {"action": "wait", "seconds": 1.0}}) + "\n"
+    screenshot_log.write_text(event, encoding="utf-8")
+    dom_log.write_text(event, encoding="utf-8")
+
+    screenshot_actions = parse_actions(screenshot_log, mode="screenshot")
+    dom_actions = parse_actions(dom_log, mode="dom_model")
+
+    assert screenshot_actions[0]["action"] == "wait"
+    assert screenshot_actions[0]["seconds"] == 1.0
+    compare_semantic_actions(screenshot_actions, dom_actions)
+
+
+def test_history_back_aliases_normalize_to_microsoft_action(tmp_path):
+    screenshot_log = tmp_path / "screenshot.log"
+    dom_log = tmp_path / "dom.log"
+    screenshot_log.write_text(
+        json.dumps({"action": "back", "arguments": {}}) + "\n",
+        encoding="utf-8",
+    )
+    dom_log.write_text(
+        json.dumps({"action": "history_back", "arguments": {}}) + "\n",
+        encoding="utf-8",
+    )
+
+    screenshot_actions = parse_actions(screenshot_log, mode="screenshot")
+    dom_actions = parse_actions(dom_log, mode="dom_model")
+    compare_semantic_actions(screenshot_actions, dom_actions)
+
+    assert screenshot_actions[0]["action"] == "history_back"
+    assert dom_actions[0]["action"] == "history_back"
 
 
 def test_generator_dry_run_has_zero_writes(pair_factory, capsys, tmp_path):

@@ -10,6 +10,7 @@ from typing import Any
 from .rubric_agent import MMRubricAgent
 
 from .evidence_backend import base_audit, batched_prompt, criterion_prompt, relevance_prompt
+from .grounding import validate_grounded_analysis
 from .schemas import DomModelState
 from .context_packing import pack_state
 from .state_parser import load_dom_model_states
@@ -273,6 +274,7 @@ class DomModelRubricAgent(MMRubricAgent):
                 )
                 analysis = json.loads(response_text)
                 self._validate_evidence_analysis(analysis, is_conditional)
+                validate_grounded_analysis(analysis)
                 analysis["screenshot_idx"] = state_idx
                 analysis["dom_model_state_idx"] = state_idx
                 return criterion_idx, analysis
@@ -444,6 +446,7 @@ class DomModelRubricAgent(MMRubricAgent):
                                 f"Entry {position}: expected criterion_idx={expected_idx}, got {returned_idx}"
                             )
                         self._validate_evidence_analysis(analysis, expected_idx in conditional)
+                        validate_grounded_analysis(analysis)
                     for analysis, expected_idx in zip(analyses, criterion_indices):
                         analysis.pop("criterion_idx", None)
                         analysis["screenshot_idx"] = state_idx

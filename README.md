@@ -9,6 +9,9 @@ modified by this experiment.
 
 ```text
 benchmarks-2/
+├── .env.example          # template for experiment-local credentials
+├── .venv/                # experiment-local Python environment (ignored)
+├── requirements.txt      # dependencies for the local environment
 ├── microsoft_verifier/   # complete, unchanged Microsoft screenshot package
 ├── dom_model/            # complete verifier package with DOM-model evidence hooks
 ├── scripts/              # shared Phase A/Phase B control plane and offline tests
@@ -53,6 +56,10 @@ Phase A invokes Microsoft's rubric workflow once, or validates an existing
 rubric import, and freezes one canonical rubric. It records its calls and tokens
 separately and writes identical sidecars only inside isolated staged dataset
 copies. Phase B passes the exact same `--rubric-file` path to both runners and
+
+The experiment is run with `benchmarks-2/.venv` and reads credentials from
+`benchmarks-2/.env`. It does not borrow the environment or credentials file
+from `benchmarks/`; setup commands are documented in the runbook.
 requires matching task ID, hash, criterion order, descriptions, maximum points,
 denominator, sidecars, and Phase A metrics. Normalized scoring artifacts require
 `rubric_generation_calls: 0`.

@@ -30,6 +30,9 @@ SCREENSHOT_RE = re.compile(r"^screenshot_?(\d+)\.(?:png|jpe?g|webp)$", re.I)
 ACTION_NAMES = {
     "left_click": "click", "click": "click", "type": "fill", "fill": "fill",
     "visit_url": "navigate", "navigate": "navigate", "scroll": "scroll",
+    "back": "history_back", "history_back": "history_back",
+    "wait": "wait",
+    "key": "key",
 }
 CONTROL_FILES = {"task_data.json", "web_surfer.log", "final_answer.json"}
 SIDECAR = "task_data_with_canonical_rubric.json"
@@ -55,8 +58,13 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
         name = ACTION_NAMES[raw_name]
         if mode == "screenshot" and name == "click":
             coordinate = arguments.get("coordinate")
-            if not isinstance(coordinate, list) or len(coordinate) != 2 or not all(isinstance(v, (int, float)) for v in coordinate):
-                raise ValueError(f"{path}:{line_number}: screenshot click requires [x, y]")
+            valid_coordinate = (
+                isinstance(coordinate, list)
+                and len(coordinate) == 2
+                and all(isinstance(v, (int, float)) for v in coordinate)
+            )
+            if not valid_coordinate and arguments.get("ref") is None and arguments.get("target") is None:
+                raise ValueError(f"{path}:{line_number}: screenshot click requires [x, y], ref, or target")
         if mode == "dom_model" and name in {"click", "fill"}:
             if arguments.get("ref") is None and arguments.get("target") is None:
                 raise ValueError(f"{path}:{line_number}: DOM-model {name} requires ref or target")
@@ -73,6 +81,10 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
             for key in ("direction", "delta_x", "delta_y", "amount"):
                 if key in arguments:
                     signature[key] = arguments[key]
+        elif name == "wait" and "seconds" in arguments:
+            signature["seconds"] = arguments["seconds"]
+        elif name == "key" and "key" in arguments:
+            signature["key"] = arguments["key"]
         target = arguments.get("target")
         if isinstance(target, dict):
             for key in ("role", "name"):
@@ -92,6 +104,8 @@ def compare_semantic_actions(screenshot: list[dict], dom_model: list[dict]) -> N
     optional = {
         "navigate": {"url"}, "fill": {"text"},
         "scroll": {"direction", "delta_x", "delta_y", "amount"},
+        "wait": {"seconds"},
+        "key": {"key"},
         "click": {"ref", "target_role", "target_name"},
     }
     for ordinal, (left, right) in enumerate(zip(screenshot, dom_model), start=1):
