@@ -34,8 +34,12 @@ class HTMLBenchProfileTests(unittest.TestCase):
         self.assertIn("--use-angle=swiftshader", profile.extra_browser_args)
         self.assertEqual(
             [name for name, _source in init_scripts_for_profile("htmlbench-full")],
-            ["page_safety", "canvas_focus"],
+            ["page_safety", "interaction_helper"],
         )
+        helper = dict(init_scripts_for_profile("htmlbench-full"))["interaction_helper"]
+        self.assertIn("window.__probe", helper)
+        self.assertIn("window.__drag", helper)
+        self.assertNotIn("<script", helper)
         manifest = profile_manifest("htmlbench-full")
         self.assertTrue(manifest["same_browser_image_as_baseline"])
         self.assertEqual(

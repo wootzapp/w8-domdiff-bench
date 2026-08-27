@@ -17,7 +17,13 @@ NUMERIC_METRICS = (
     "model_calls", "recorded_steps", "run_duration_seconds", "dom_model_bytes",
     "dom_model_chars", "dom_json_bytes", "dom_diff_json_bytes",
     "captured_nodes", "raw_nodes", "truncated_snapshots", "diff_changes",
-    "stored_run_bytes",
+    "stored_run_bytes", "official_postrun", "official_duration_seconds",
+    "official_static_html_chars", "official_render_data_bytes",
+    "official_visible_text_chars", "official_total_frames",
+    "official_keyframes", "official_keyframe_png_bytes",
+    "official_direct_cdp_capture_bytes",
+    "official_probe_errors", "official_generic_tests_total",
+    "official_generic_tests_passed", "official_artifact_bytes",
 )
 
 
@@ -122,6 +128,19 @@ def collect_run(manifest_path: Path, *, historical: bool = False) -> dict[str, A
         "truncated_snapshots": 0,
         "diff_changes": 0,
         "stored_run_bytes": 0,
+        "official_postrun": 0,
+        "official_duration_seconds": 0,
+        "official_static_html_chars": 0,
+        "official_render_data_bytes": 0,
+        "official_visible_text_chars": 0,
+        "official_total_frames": 0,
+        "official_keyframes": 0,
+        "official_keyframe_png_bytes": 0,
+        "official_direct_cdp_capture_bytes": 0,
+        "official_probe_errors": 0,
+        "official_generic_tests_total": 0,
+        "official_generic_tests_passed": 0,
+        "official_artifact_bytes": 0,
     }
     for state_dir in unique_state_directories(run_dir):
         model_path = state_dir / "dom_model.txt"
@@ -148,9 +167,39 @@ def collect_run(manifest_path: Path, *, historical: bool = False) -> dict[str, A
         diff = read_json(diff_path)
         if isinstance(diff, dict) and isinstance(diff.get("change_count"), int):
             values["diff_changes"] += diff["change_count"]
+    official_dir = run_dir / "htmlcure_official"
     values["stored_run_bytes"] = sum(
-        file_size(path) for path in run_dir.rglob("*") if path.is_file()
+        file_size(path)
+        for path in run_dir.rglob("*")
+        if path.is_file() and official_dir not in path.parents
     )
+    summary_path = official_dir / "summary.json"
+    if summary_path.exists():
+        official = read_json(summary_path)
+        if isinstance(official, dict):
+            values["official_postrun"] = 1
+            mapping = {
+                "duration_seconds": "official_duration_seconds",
+                "static_html_chars": "official_static_html_chars",
+                "render_data_bytes": "official_render_data_bytes",
+                "official_visible_text_chars": "official_visible_text_chars",
+                "total_frames_captured": "official_total_frames",
+                "keyframes_selected": "official_keyframes",
+                "keyframe_png_bytes": "official_keyframe_png_bytes",
+                "direct_cdp_capture_bytes": "official_direct_cdp_capture_bytes",
+                "generic_tests_total": "official_generic_tests_total",
+                "generic_tests_passed": "official_generic_tests_passed",
+            }
+            for source, target in mapping.items():
+                value = official.get(source)
+                if isinstance(value, (int, float)):
+                    values[target] = value
+            probe_errors = official.get("probe_errors")
+            if isinstance(probe_errors, list):
+                values["official_probe_errors"] = len(probe_errors)
+        values["official_artifact_bytes"] = sum(
+            file_size(path) for path in official_dir.rglob("*") if path.is_file()
+        )
     return values
 
 

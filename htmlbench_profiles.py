@@ -1,132 +1,88 @@
-"""Controlled HTMLBench-derived runtime profiles for recorder experiments."""
+"""Controlled profiles loaded from the pinned official HTMLCure checkout."""
 
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 
 HTMLCURE_COMMIT = "18d68e8f1e5c2bcef7f3c00bcab3147e2a99d4db"
+ROOT = Path(__file__).resolve().parent
+DEFAULT_HTMLCURE_ROOT = ROOT / ".runtime" / "HTMLCure"
 
-# The runtime already supplies --no-sandbox and --disable-gpu.
-HTMLBENCH_EXTRA_BROWSER_ARGS = (
-    "--disable-dev-shm-usage",
-    "--ignore-gpu-blocklist",
-    "--enable-webgl",
-    "--use-angle=swiftshader",
-    "--autoplay-policy=no-user-gesture-required",
-    "--use-fake-ui-for-media-stream",
-    "--blink-settings=imagesEnabled=false",
-)
 
-PAGE_SAFETY_SCRIPT = r"""
-(() => {
-  if (window.__htmlbenchEvalPageSafetyInstalled) return;
-  Object.defineProperty(window, '__htmlbenchEvalPageSafetyInstalled', {
-    configurable: false, enumerable: false, value: true,
-  });
-  const noop = () => {};
-  const makeParam = (value) => ({
-    value,
-    setValueAtTime: noop,
-    linearRampToValueAtTime: noop,
-    exponentialRampToValueAtTime: noop,
-    cancelScheduledValues: noop,
-  });
-  const makeNode = () => ({
-    connect() { return this; },
-    disconnect: noop, start: noop, stop: noop,
-    addEventListener: noop, removeEventListener: noop,
-    gain: makeParam(1), frequency: makeParam(440), detune: makeParam(0),
-    Q: makeParam(1), playbackRate: makeParam(1), buffer: null, loop: false,
-  });
-  class SilentAudioContext {
-    constructor() {
-      this.state = 'running';
-      this.currentTime = 0;
-      this.sampleRate = 44100;
-      this.destination = makeNode();
-    }
-    createOscillator() { return makeNode(); }
-    createGain() { return makeNode(); }
-    createBufferSource() { return makeNode(); }
-    createBiquadFilter() { return makeNode(); }
-    createAnalyser() { return makeNode(); }
-    createStereoPanner() { return makeNode(); }
-    createDynamicsCompressor() { return makeNode(); }
-    createDelay() { return makeNode(); }
-    createConvolver() { return makeNode(); }
-    createPeriodicWave() { return {}; }
-    createWaveShaper() { return makeNode(); }
-    createScriptProcessor() { return makeNode(); }
-    createBuffer(channels, length, sampleRate) {
-      return {
-        numberOfChannels: channels, length, sampleRate,
-        getChannelData() { return new Float32Array(length); },
-      };
-    }
-    resume() { this.state = 'running'; return Promise.resolve(); }
-    suspend() { this.state = 'suspended'; return Promise.resolve(); }
-    close() { this.state = 'closed'; return Promise.resolve(); }
-  }
-  try {
-    Object.defineProperty(window, 'AudioContext', {
-      configurable: true, writable: true, value: SilentAudioContext,
-    });
-    Object.defineProperty(window, 'webkitAudioContext', {
-      configurable: true, writable: true, value: SilentAudioContext,
-    });
-  } catch (_) {}
-  try {
-    if (window.HTMLMediaElement && window.HTMLMediaElement.prototype) {
-      window.HTMLMediaElement.prototype.play = function play() {
-        return Promise.resolve();
-      };
-    }
-  } catch (_) {}
-})();
-""".strip()
+def official_htmlcure_root() -> Path:
+    """Return the local checkout selected for exact official feature loading."""
+    return Path(
+        os.environ.get("HTMLCURE_OFFICIAL_ROOT", str(DEFAULT_HTMLCURE_ROOT))
+    ).resolve()
 
-CANVAS_FOCUS_SCRIPT = r"""
-(() => {
-  if (window.__htmlbenchEvalCanvasFocusInstalled) return;
-  Object.defineProperty(window, '__htmlbenchEvalCanvasFocusInstalled', {
-    configurable: false, enumerable: false, value: true,
-  });
-  const setupCanvas = () => {
-    document.querySelectorAll('canvas').forEach((canvas) => {
-      if (!canvas.hasAttribute('tabindex')) canvas.setAttribute('tabindex', '0');
-      canvas.style.outline = 'none';
-    });
-  };
-  const focusFirstCanvas = () => {
-    setupCanvas();
-    const canvas = document.querySelector('canvas');
-    if (canvas && document.activeElement !== canvas) canvas.focus();
-  };
-  document.addEventListener('click', (event) => {
-    setupCanvas();
-    const clicked = event.target && event.target.closest
-      ? event.target.closest('canvas') : null;
-    const canvas = clicked || document.querySelector('canvas');
-    if (canvas && document.activeElement !== canvas) canvas.focus();
-  }, true);
-  const begin = () => {
-    setupCanvas();
-    setTimeout(focusFirstCanvas, 500);
-    const root = document.documentElement || document.body;
-    if (root && window.MutationObserver) {
-      new MutationObserver(setupCanvas).observe(root, {childList: true, subtree: true});
-    }
-  };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', begin, {once: true});
-  } else {
-    begin();
-  }
-})();
-""".strip()
+
+def _official_constants() -> tuple[tuple[str, ...], int, int, str, str]:
+    """Import browser settings and scripts from the pinned official source."""
+    source_root = official_htmlcure_root()
+    if not (source_root / "htmleval").is_dir():
+        raise RuntimeError(
+            f"official HTMLCure checkout is missing at {source_root}"
+        )
+    if str(source_root) not in sys.path:
+        sys.path.insert(0, str(source_root))
+
+    from htmleval.concurrency.browser_pool import (  # type: ignore[import-not-found]
+        VIEWPORT_H,
+        VIEWPORT_W,
+        _BROWSER_ARGS,
+    )
+    from htmleval.core.page_safety import (  # type: ignore[import-not-found]
+        PAGE_SAFETY_INIT_SCRIPT,
+    )
+    from htmleval.phases.extract import (  # type: ignore[import-not-found]
+        _INTERACTION_HELPER,
+    )
+
+    return (
+        tuple(_BROWSER_ARGS),
+        VIEWPORT_W,
+        VIEWPORT_H,
+        PAGE_SAFETY_INIT_SCRIPT,
+        _INTERACTION_HELPER,
+    )
+
+
+def _interaction_helper_javascript(helper_html: str) -> str:
+    """Run the unchanged body-end helper when a live page's DOM is ready."""
+    open_end = helper_html.find(">")
+    close_start = helper_html.rfind("</script>")
+    if (
+        not helper_html.lstrip().startswith('<script data-eval-helper="interaction">')
+        or open_end < 0
+        or close_start <= open_end
+    ):
+        raise RuntimeError("official HTMLCure interaction helper has an unexpected form")
+    official_javascript = helper_html[open_end + 1 : close_start].strip()
+    return (
+        "(() => {\n"
+        "  const installOfficialHTMLCureHelper = () => {\n"
+        "    if (window.__probe && window.__probe.snapshot) return;\n"
+        f"{official_javascript}\n"
+        "  };\n"
+        "  if (document.readyState === 'loading') {\n"
+        "    document.addEventListener("
+        "'DOMContentLoaded', installOfficialHTMLCureHelper, {once: true});\n"
+        "  } else {\n"
+        "    installOfficialHTMLCureHelper();\n"
+        "  }\n"
+        "})();"
+    )
+
+
+def official_browser_settings() -> tuple[tuple[str, ...], int, int]:
+    """Expose the exact official arguments and default viewport."""
+    args, width, height, _, _ = _official_constants()
+    return args, width, height
 
 
 @dataclass(frozen=True)
@@ -136,15 +92,19 @@ class HTMLBenchProfile:
     port_offset: int
     extra_browser_args: tuple[str, ...] = ("--lang=en-US",)
     page_safety: bool = False
-    canvas_focus: bool = False
+    interaction_helper: bool = False
+    headless: bool = False
+    screen: str = "1365x768x24"
+    window_width: int = 1366
+    window_height: int = 900
 
     @property
     def init_script_names(self) -> tuple[str, ...]:
         names: list[str] = []
         if self.page_safety:
             names.append("page_safety")
-        if self.canvas_focus:
-            names.append("canvas_focus")
+        if self.interaction_helper:
+            names.append("interaction_helper")
         return tuple(names)
 
 
@@ -164,22 +124,48 @@ _PROFILES = {
         "htmlbench-flags",
         "HTMLBench launch flags, preserving the recorder's headed viewport.",
         2,
-        ("--lang=en-US", *HTMLBENCH_EXTRA_BROWSER_ARGS),
+        ("--lang=en-US", *_official_constants()[0][2:]),
     ),
     "htmlbench-scripts": HTMLBenchProfile(
         "htmlbench-scripts",
         "HTMLBench audio/media shim and automatic canvas focus only.",
         3,
         page_safety=True,
-        canvas_focus=True,
+        interaction_helper=True,
     ),
     "htmlbench-full": HTMLBenchProfile(
         "htmlbench-full",
         "Combined HTMLBench flags, audio/media shim, and canvas focus.",
         4,
-        ("--lang=en-US", *HTMLBENCH_EXTRA_BROWSER_ARGS),
+        ("--lang=en-US", *_official_constants()[0][2:]),
         page_safety=True,
-        canvas_focus=True,
+        interaction_helper=True,
+    ),
+    "htmlcure-helper": HTMLBenchProfile(
+        "htmlcure-helper",
+        "Exact official interaction helper only, with the current headed runtime.",
+        5,
+        interaction_helper=True,
+    ),
+    "htmlcure-headed": HTMLBenchProfile(
+        "htmlcure-headed",
+        "Exact official flags and scripts, with the current headed screen.",
+        6,
+        ("--lang=en-US", *_official_constants()[0][2:]),
+        page_safety=True,
+        interaction_helper=True,
+    ),
+    "htmlcure-runtime": HTMLBenchProfile(
+        "htmlcure-runtime",
+        "Official flags and scripts with Wootz headless 1280x720 runtime settings.",
+        7,
+        ("--lang=en-US", *_official_constants()[0][2:]),
+        page_safety=True,
+        interaction_helper=True,
+        headless=True,
+        screen=f"{_official_constants()[1]}x{_official_constants()[2]}x24",
+        window_width=_official_constants()[1],
+        window_height=_official_constants()[2],
     ),
 }
 
@@ -204,10 +190,16 @@ def init_scripts_for_profile(name: str) -> tuple[tuple[str, str], ...]:
     """Return page initialization scripts in deterministic installation order."""
     profile = get_profile(name)
     scripts: list[tuple[str, str]] = []
+    _, _, _, page_safety_script, interaction_helper = _official_constants()
     if profile.page_safety:
-        scripts.append(("page_safety", PAGE_SAFETY_SCRIPT))
-    if profile.canvas_focus:
-        scripts.append(("canvas_focus", CANVAS_FOCUS_SCRIPT))
+        scripts.append(("page_safety", page_safety_script))
+    if profile.interaction_helper:
+        scripts.append(
+            (
+                "interaction_helper",
+                _interaction_helper_javascript(interaction_helper),
+            )
+        )
     return tuple(scripts)
 
 
@@ -231,8 +223,10 @@ def apply_profile_environment(name: str) -> dict[str, str]:
             "?resize=scale&autoconnect=1&path=websockify"
         ),
         "CHROMIUM_EXTRA_ARGS": " ".join(profile.extra_browser_args),
-        "CHROMIUM_HEADLESS": "0",
-        "VNC_SCREEN": "1365x768x24",
+        "CHROMIUM_HEADLESS": "1" if profile.headless else "0",
+        "VNC_SCREEN": profile.screen,
+        "CHROMIUM_WINDOW_WIDTH": str(profile.window_width),
+        "CHROMIUM_WINDOW_HEIGHT": str(profile.window_height),
         "CHROMIUM_RESET_PROFILE": "1",
     }
     os.environ.update(values)
@@ -251,17 +245,20 @@ def profile_manifest(name: str) -> dict[str, Any]:
         "page_init_scripts": list(profile.init_script_names),
         "fresh_profile_per_run": True,
         "same_browser_image_as_baseline": True,
+        "official_source_root": str(official_htmlcure_root()),
         "runtime_environment": {
             key: os.environ.get(key)
             for key in (
                 "COMPOSE_PROJECT_NAME", "CONTAINER_NAME", "CDP_HOST_PORT",
                 "NOVNC_HOST_PORT", "VNC_HOST_PORT", "CHROMIUM_HEADLESS",
-                "CHROMIUM_RESET_PROFILE",
+                "CHROMIUM_RESET_PROFILE", "CHROMIUM_WINDOW_WIDTH",
+                "CHROMIUM_WINDOW_HEIGHT",
             )
         },
         "preserved_recorder_conditions": {
-            "headed": True,
-            "viewport": "1365x768",
+            "headed": not profile.headless,
+            "screen": profile.screen.rsplit("x", 1)[0],
+            "window_size": f"{profile.window_width}x{profile.window_height}",
             "capture": "ChromiumRL plus direct CDP screenshot",
         },
         "not_applied": {
@@ -274,9 +271,8 @@ def profile_manifest(name: str) -> dict[str, Any]:
             "html_rewrite": (
                 "live sites receive CDP init scripts; source HTML is not rewritten"
             ),
-            "synthetic_interaction_helpers": (
-                "agent-browser already performs native actions"
+            "frozen_htmlbench_cases": (
+                "released cases target generated HTMLBench pages, not these live tasks"
             ),
-            "window_probe": "ChromiumRL is the authoritative DOM evidence source",
         },
     }

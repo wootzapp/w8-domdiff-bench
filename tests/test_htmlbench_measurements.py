@@ -51,6 +51,24 @@ class HTMLBenchMeasurementTests(unittest.TestCase):
             (run / "steps" / "step_001" / "dom_diff.json").write_text(
                 json.dumps({"change_count": 5}), encoding="utf-8"
             )
+            official = run / "htmlcure_official"
+            official.mkdir()
+            (official / "summary.json").write_text(
+                json.dumps({
+                    "duration_seconds": 20.5,
+                    "static_html_chars": 1000,
+                    "render_data_bytes": 500,
+                    "official_visible_text_chars": 300,
+                    "total_frames_captured": 8,
+                    "keyframes_selected": 6,
+                    "keyframe_png_bytes": 900,
+                    "direct_cdp_capture_bytes": 700,
+                    "probe_errors": [{"probe": "example"}],
+                    "generic_tests_total": 4,
+                    "generic_tests_passed": 3,
+                }),
+                encoding="utf-8",
+            )
             measured = collect_run(run / "manifest.json")
             groups = grouped_summary([measured])
 
@@ -60,6 +78,11 @@ class HTMLBenchMeasurementTests(unittest.TestCase):
         self.assertEqual(measured["dom_model_bytes"], 8)
         self.assertEqual(measured["captured_nodes"], 4)
         self.assertEqual(measured["diff_changes"], 5)
+        self.assertEqual(measured["official_postrun"], 1)
+        self.assertEqual(measured["official_total_frames"], 8)
+        self.assertEqual(measured["official_direct_cdp_capture_bytes"], 700)
+        self.assertEqual(measured["official_probe_errors"], 1)
+        self.assertEqual(measured["official_generic_tests_passed"], 3)
         self.assertEqual(groups[0]["metrics"]["input_tokens"]["median"], 30.0)
 
 
