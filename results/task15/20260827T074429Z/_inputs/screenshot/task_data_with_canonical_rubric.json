@@ -1,0 +1,68 @@
+[
+  {
+    "task_id": "github-heavy-03-cpython-workflow-inspection-20260821T060844Z",
+    "confirmed_task": "Inspect the workflow files under python/cpython .github/workflows. Identify the workflow responsible for running the main test suite on pull requests. Report its file path, workflow name, trigger events, declared permissions, operating-system\n    matrix, Python-version matrix if present, and exact test command. Then identify the separate documentation workflow and report its file path and triggers. Stopping condition: stop after both workflows and every requested configuration field have been\n    verified directly from their YAML files. Constraints: stay within public GitHub pages; do not sign in; do not edit or download files; distinguish absent fields from fields that are present but empty.",
+    "website": "https://github.com/python/cpython/tree/main/.github/workflows",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Inspect .github/workflows YAML files in python/cpython repository (public GitHub UI)",
+          "description": "Agent navigates within the public GitHub UI to the python/cpython repository’s .github/workflows directory and opens the relevant workflow YAML files directly (not relying on memory). Full credit if the agent clearly indicates the inspected file path(s) and that details are taken from the YAML content. Full credit (do not penalize) if the agent attempts to access the YAML but is blocked by GitHub limitations (e.g., rate limit/CAPTCHA/page failing to load) and clearly reports what could not be verified. Partial credit if the agent inspects only some necessary files/sections or relies on snippets/search results without opening the YAML content.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Identify the workflow responsible for running the main test suite on pull requests",
+          "description": "Agent correctly identifies which workflow runs the main CPython test suite on PRs (not only lint/docs/specialized jobs) and reports its file path and YAML 'name'. Full credit if the identified workflow is well-supported by direct YAML evidence. If multiple workflows plausibly qualify (e.g., more than one runs tests on pull_request), full credit if the agent lists the candidate workflows and explains—using YAML content—why one is selected as the primary/main, or explicitly reports the ambiguity. Partial credit if the correct workflow is identified but path or name is missing/incorrect.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report trigger events for the main PR test workflow",
+          "description": "Agent reports the exact trigger events under 'on:' from the YAML for the identified main test workflow, including relevant filters (branches, paths, types) if present. Full credit if triggers match the YAML for the workflow(s) the agent identified. If YAML cannot be accessed due to GitHub blocking, full credit if the agent clearly states triggers could not be verified.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report declared permissions for the main PR test workflow (including absence vs empty)",
+          "description": "Agent reports the workflow-level 'permissions:' block exactly as declared in YAML and explicitly distinguishes: permissions field absent vs present-but-empty/null vs present-with-scopes. Full credit if correctly reported from YAML. If YAML cannot be accessed due to GitHub blocking, full credit if the agent clearly states permissions could not be verified.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report OS matrix and Python-version matrix (if present) for the main PR test workflow",
+          "description": "Agent reports the operating-system matrix (e.g., strategy.matrix.os and/or runs-on expressions) from YAML for the main test workflow and reports the Python-version matrix only if it exists (explicitly stating 'not present' if absent). Full credit if matrices are correctly extracted for the identified workflow(s). If YAML cannot be accessed due to GitHub blocking, full credit if the agent clearly states matrices could not be verified.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report the exact test command used by the main PR test workflow",
+          "description": "Agent reports the exact test command(s) as written in the YAML step(s) that execute the test suite (verbatim run lines and key flags). Full credit if command is quoted accurately from YAML for the identified workflow(s). Partial credit if the agent paraphrases but preserves the full effective command and flags. If YAML cannot be accessed due to GitHub blocking, full credit if the agent clearly states the command could not be verified.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Identify the separate documentation workflow and report its file path and triggers",
+          "description": "Agent identifies a distinct documentation-related workflow (docs build/check) and reports its YAML file path and 'on:' triggers exactly as declared. Full credit if it is clearly docs-focused and details are verified from YAML. If multiple doc workflows exist, full credit if the agent selects one clearly dedicated to documentation and/or reports multiple with their triggers. If YAML cannot be accessed due to GitHub blocking, full credit if the agent clearly states the docs workflow/triggers could not be verified.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Adhere to constraints: public GitHub only, no sign-in, no editing/downloading, stop after verifying both workflows",
+          "description": "Agent stays within publicly accessible GitHub pages, does not sign in, does not edit files, and does not download files; stops once both workflows and all requested fields are verified from YAML. Full credit if constraints are respected. Do not penalize if the agent cannot complete verification specifically due to GitHub access blocking/rate limits, provided it stops and clearly reports the limitation.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

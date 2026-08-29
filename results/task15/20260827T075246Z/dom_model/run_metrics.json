@@ -1,0 +1,904 @@
+{
+  "task_id": "github-heavy-03-cpython-workflow-inspection-20260821T060844Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/data/isha/msexecute/benchmarks-2/staged/task15/data-new-dom-model/task15",
+  "frozen_rubric_path": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "16d070221b4378ff6e347dfc9309b1d15a98e56d81ba0433ccd02a2079cda8bc",
+  "phase_a_generation_metrics": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "github-heavy-03-cpython-workflow-inspection-20260821T060844Z",
+    "actions": 2,
+    "dom_model_states": 3,
+    "initial_state": 0,
+    "final_state": 2,
+    "alignment": {
+      "task_id": "github-heavy-03-cpython-workflow-inspection-20260821T060844Z",
+      "action_count": 2,
+      "state_count": 3,
+      "initial_state": 0,
+      "final_state": 2,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e244",
+            "target": {
+              "ref": "e244",
+              "role": "link",
+              "name": "build.yml, (File)"
+            },
+            "thoughts": "Open build.yml first since it’s the likely workflow that runs the main test suite on pull requests and I must read its YAML contents directly."
+          },
+          "observed_after_url": "https://github.com/python/cpython/blob/main/.github/workflows/build.yml"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e231",
+            "target": {
+              "ref": "e231",
+              "role": "generic",
+              "name": "reusable-docs.yml"
+            },
+            "thoughts": "Need to open the reusable-docs workflow YAML to inspect its name and triggers for the separate documentation workflow."
+          },
+          "observed_after_url": "https://github.com/python/cpython/blob/main/.github/workflows/reusable-docs.yml"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "cbd1ca806427f6f3631ff412f0b47b692e28d671440f2e7730a4478807606ee5",
+          "after_sha256": "d06fe6111acf4905598530f1eb36e31e704d84ce03c2e14882032c7f1d538efe",
+          "before_url": "https://github.com/python/cpython/tree/main/.github/workflows",
+          "after_url": "https://github.com/python/cpython/blob/main/.github/workflows/build.yml"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "d06fe6111acf4905598530f1eb36e31e704d84ce03c2e14882032c7f1d538efe",
+          "after_sha256": "a5b36d2721b1f2fe326d736883c368263580342ac645cb31762b926908bc8542",
+          "before_url": "https://github.com/python/cpython/blob/main/.github/workflows/build.yml",
+          "after_url": "https://github.com/python/cpython/blob/main/.github/workflows/reusable-docs.yml"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e244' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e231' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "source_declares_truncation",
+          "message": "dom_model1: source_declares_truncation",
+          "action_ordinal": null,
+          "state_index": 1
+        },
+        {
+          "code": "source_declares_truncation",
+          "message": "dom_model2: source_declares_truncation",
+          "action_ordinal": null,
+          "state_index": 2
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "16d070221b4378ff6e347dfc9309b1d15a98e56d81ba0433ccd02a2079cda8bc",
+    "criterion_order": [
+      "Inspect .github/workflows YAML files in python/cpython repository (public GitHub UI)",
+      "Identify the workflow responsible for running the main test suite on pull requests",
+      "Report trigger events for the main PR test workflow",
+      "Report declared permissions for the main PR test workflow (including absence vs empty)",
+      "Report OS matrix and Python-version matrix (if present) for the main PR test workflow",
+      "Report the exact test command used by the main PR test workflow",
+      "Identify the separate documentation workflow and report its file path and triggers",
+      "Adhere to constraints: public GitHub only, no sign-in, no editing/downloading, stop after verifying both workflows"
+    ],
+    "maximum_points": [
+      3.0,
+      4.0,
+      3.0,
+      3.0,
+      4.0,
+      4.0,
+      4.0,
+      3.0
+    ],
+    "criterion_denominator": 28.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/benchmarks-2/dom_model/src/dom_model",
+      "files": 31,
+      "sha256": "0649c5fa659097468ad3c2404e0f07f076f6dbba3e22b138693556e10797c255"
+    }
+  },
+  "result": {
+    "process_score": 0.48214285714285715,
+    "total_earned_points": 13.5,
+    "total_max_points": 28.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 145.701
+  },
+  "criteria": [
+    {
+      "criterion": "Inspect .github/workflows YAML files in python/cpython repository (public GitHub UI)",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "final_justification": "The agent did inspect two workflow YAML files directly in GitHub’s blob view (build.yml and reusable-docs.yml). However, the screenshots show only the beginning of each file and explicitly indicate large hidden/truncated content, so the evidence supports only partial inspection rather than full-field verification. Still, criterion 0 is about inspecting YAML files in the public UI, which is satisfied.",
+      "penalty": false
+    },
+    {
+      "criterion": "Identify the workflow responsible for running the main test suite on pull requests",
+      "action_only_points": 4.0,
+      "final_points": 2.0,
+      "max_points": 4.0,
+      "final_justification": "Path and workflow name are verified, but the claim that this specific workflow is responsible for the main test suite on pull requests is not verified from visible YAML (no jobs/test step shown). This is a substantive gap (could be correct, but not verified per task). Reduce to partial credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report trigger events for the main PR test workflow",
+      "action_only_points": 3.0,
+      "final_points": 2.0,
+      "max_points": 3.0,
+      "final_justification": "Event types and branch filters listed are supported. The agent’s predicted output additionally asserted `paths: \"**\"` filters, which are not evidenced and may be wrong. Award most but not full credit because triggers were not reported strictly to what is verified and may include fabricated filter details.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report declared permissions for the main PR test workflow (including absence vs empty)",
+      "action_only_points": 1.0,
+      "final_points": 2.5,
+      "max_points": 3.0,
+      "final_justification": "The workflow-level permissions are present and the specific key/value `contents: read` is directly verified. The agent did not explicitly distinguish whether other scopes are absent vs merely not observed, but the core requested permissions field shown is correct. Minor incompleteness only.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report OS matrix and Python-version matrix (if present) for the main PR test workflow",
+      "action_only_points": 4.0,
+      "final_points": 0.5,
+      "max_points": 4.0,
+      "final_justification": "Agent reported specific OS matrix values and absence of python-version matrix without evidence visible in screenshots; this is effectively unverified and could be hallucinated. Score should be near zero because the requested matrices were not verified directly from YAML as required.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report the exact test command used by the main PR test workflow",
+      "action_only_points": 4.0,
+      "final_points": 0.0,
+      "max_points": 4.0,
+      "final_justification": "The agent provided an ‘exact test command’ (`./python -m test ${TESTOPTS}`) but there is no visual evidence of this line in the YAML shown. This is an unverified claim, so essentially no credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Identify the separate documentation workflow and report its file path and triggers",
+      "action_only_points": 4.0,
+      "final_points": 2.5,
+      "max_points": 4.0,
+      "final_justification": "The documentation workflow file path and that it triggers on workflow_call/workflow_dispatch/push are verified. However, the agent’s detailed push branches/paths filters are not verified from the truncated visible YAML and may be fabricated. Award partial credit for correctly identifying the docs workflow and the visible trigger event types.",
+      "penalty": false
+    },
+    {
+      "criterion": "Adhere to constraints: public GitHub only, no sign-in, no editing/downloading, stop after verifying both workflows",
+      "action_only_points": 3.0,
+      "final_points": 1.0,
+      "max_points": 3.0,
+      "final_justification": "Constraints about public GitHub/no sign-in/no editing/downloading appear met. But the stopping condition (‘stop after both workflows and every requested configuration field have been verified directly from their YAML files’) is not met because several fields (matrices, exact test command, full triggers) were not verified in visible YAML. Deduct for violating this requirement via overclaiming completion.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 11,
+    "o4-mini": 3,
+    "total": 14,
+    "api_attempts": 14,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 83975,
+      "completion_tokens": 6448,
+      "reasoning_tokens": 0,
+      "total_tokens": 90423
+    },
+    "o4-mini": {
+      "prompt_tokens": 18626,
+      "completion_tokens": 4175,
+      "reasoning_tokens": 2560,
+      "total_tokens": 22801
+    },
+    "combined": {
+      "prompt_tokens": 102601,
+      "completion_tokens": 10623,
+      "reasoning_tokens": 2560,
+      "total_tokens": 113224
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "complete_state_count": 3,
+    "final_state_index": 2,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/_inputs/dom_model/dom_model0.txt",
+        "sha256": "cbd1ca806427f6f3631ff412f0b47b692e28d671440f2e7730a4478807606ee5",
+        "byte_count": 23432,
+        "line_count": 222,
+        "estimated_tokens": 5850,
+        "url": "https://github.com/python/cpython/tree/main/.github/workflows",
+        "title": "cpython/.github/workflows at main · python/cpython · GitHub",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 35
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 36,
+            "end_line": 87
+          },
+          {
+            "heading": "ADDITIONAL CAPTURED CONTENT",
+            "start_line": 88,
+            "end_line": 134
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 135,
+            "end_line": 137
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 138,
+            "end_line": 164
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 165,
+            "end_line": 218
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 219,
+            "end_line": 222
+          }
+        ],
+        "control_refs": [
+          "64",
+          "110",
+          "150",
+          "192",
+          "221",
+          "256",
+          "13",
+          "321",
+          "325",
+          "334",
+          "338",
+          "579",
+          "303",
+          "52",
+          "240",
+          "242",
+          "588",
+          "59",
+          "5",
+          "248",
+          "251",
+          "309",
+          "593",
+          "595",
+          "597",
+          "599",
+          "601",
+          "603",
+          "607",
+          "613",
+          "630",
+          "636",
+          "639",
+          "641",
+          "650",
+          "652",
+          "654",
+          "656",
+          "other",
+          "53",
+          "6",
+          "1054",
+          "313",
+          "318",
+          "1291",
+          "582",
+          "605",
+          "643",
+          "782",
+          "784",
+          "786",
+          "788",
+          "790",
+          "797",
+          "800",
+          "802",
+          "804",
+          "806",
+          "808",
+          "815",
+          "824",
+          "831",
+          "840",
+          "847",
+          "850",
+          "852",
+          "854",
+          "856",
+          "863",
+          "866",
+          "868",
+          "870",
+          "872",
+          "879",
+          "883",
+          "894",
+          "897",
+          "899",
+          "901",
+          "908",
+          "915",
+          "922",
+          "926",
+          "928",
+          "14",
+          "943",
+          "950",
+          "965",
+          "980",
+          "995"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L222"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/_inputs/dom_model/dom_model1.txt",
+        "sha256": "d06fe6111acf4905598530f1eb36e31e704d84ce03c2e14882032c7f1d538efe",
+        "byte_count": 9160,
+        "line_count": 157,
+        "estimated_tokens": 2283,
+        "url": "https://github.com/python/cpython/blob/main/.github/workflows/build.yml",
+        "title": "cpython/.github/workflows/build.yml at main · python/cpython · GitHub",
+        "source_truncated": true,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 63
+          },
+          {
+            "heading": "ADDITIONAL CAPTURED CONTENT",
+            "start_line": 64,
+            "end_line": 110
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 111,
+            "end_line": 114
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 115,
+            "end_line": 141
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 142,
+            "end_line": 151
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 152,
+            "end_line": 157
+          }
+        ],
+        "control_refs": [
+          "64",
+          "110",
+          "150",
+          "192",
+          "221",
+          "256",
+          "13",
+          "321",
+          "325",
+          "334",
+          "338",
+          "5447",
+          "3760",
+          "content",
+          "4517",
+          "52",
+          "240",
+          "313",
+          "242",
+          "3640",
+          "3644",
+          "3686",
+          "3775",
+          "3780",
+          "3796",
+          "59",
+          "5",
+          "248",
+          "251",
+          "309",
+          "3631",
+          "3669",
+          "3670",
+          "3676",
+          "3677",
+          "3678",
+          "3679",
+          "3688",
+          "3694",
+          "3714",
+          "other",
+          "53",
+          "1054",
+          "303",
+          "318",
+          "1291",
+          "4523",
+          "7523"
+        ],
+        "warnings": [
+          "source_declares_truncation"
+        ],
+        "provenance": "m1:L1-L157"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/_inputs/dom_model/dom_model2.txt",
+        "sha256": "a5b36d2721b1f2fe326d736883c368263580342ac645cb31762b926908bc8542",
+        "byte_count": 8871,
+        "line_count": 155,
+        "estimated_tokens": 2211,
+        "url": "https://github.com/python/cpython/blob/main/.github/workflows/reusable-docs.yml",
+        "title": "cpython/.github/workflows/reusable-docs.yml at main · python/cpython · GitHub",
+        "source_truncated": true,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 63
+          },
+          {
+            "heading": "ADDITIONAL CAPTURED CONTENT",
+            "start_line": 64,
+            "end_line": 110
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 111,
+            "end_line": 113
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 114,
+            "end_line": 140
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 141,
+            "end_line": 149
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 150,
+            "end_line": 155
+          }
+        ],
+        "control_refs": [
+          "64",
+          "110",
+          "150",
+          "192",
+          "221",
+          "256",
+          "13",
+          "321",
+          "325",
+          "334",
+          "338",
+          "9305",
+          "3760",
+          "content",
+          "4517",
+          "52",
+          "240",
+          "313",
+          "242",
+          "3640",
+          "3644",
+          "3775",
+          "3780",
+          "3796",
+          "59",
+          "5",
+          "248",
+          "251",
+          "309",
+          "3631",
+          "7880",
+          "7881",
+          "7887",
+          "7888",
+          "7889",
+          "7890",
+          "3688",
+          "3694",
+          "3714",
+          "3757",
+          "other",
+          "53",
+          "1054",
+          "303",
+          "318",
+          "1291",
+          "4523"
+        ],
+        "warnings": [
+          "source_declares_truncation"
+        ],
+        "provenance": "m2:L1-L155"
+      }
+    ],
+    "estimated_evidence_tokens": 10344,
+    "context_omissions": [],
+    "coverage_limited": true,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [
+      {
+        "state_index": 1,
+        "warning": "source_declares_truncation"
+      },
+      {
+        "state_index": 2,
+        "warning": "source_declares_truncation"
+      }
+    ],
+    "relevance": {
+      "0": {
+        "0": 4,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 1,
+        "7": 7
+      },
+      "1": {
+        "0": 6,
+        "1": 7,
+        "2": 6,
+        "3": 6,
+        "4": 3,
+        "5": 1,
+        "6": 0,
+        "7": 8
+      },
+      "2": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 3,
+        "7": 6
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "7": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 0,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 30645,
+        "estimated_input_tokens": 7662,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 16136,
+        "estimated_input_tokens": 4034,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 15847,
+        "estimated_input_tokens": 3962,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          7
+        ],
+        "char_count": 18927,
+        "estimated_input_tokens": 4732,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          7
+        ],
+        "char_count": 16923,
+        "estimated_input_tokens": 4231,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          7
+        ],
+        "char_count": 31721,
+        "estimated_input_tokens": 7931,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "score_artifact": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/benchmarks-2/results/task15/20260827T075246Z/dom_model/run.log"
+}
