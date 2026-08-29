@@ -280,6 +280,119 @@ def write_browser_dom_diff_files(
     return record
 
 
+def quarantine_uncommitted_steps(
+    run_dir: Path,
+    manifest: dict[str, Any],
+) -> list[dict[str, str]]:
+    """Move partial action directories out of the authoritative step sequence.
+
+    A directory becomes a recorded step only after its action.json and DOM diff
+    have been written and its record has been appended to the manifest. If an
+    exception happens earlier, retain the partial files for diagnosis without
+    letting them create a gap or an extra verifier action.
+    """
+    steps_root = run_dir / "steps"
+    if not steps_root.is_dir():
+        return []
+    committed_names: set[str] = set()
+    manifest_steps = manifest.get("steps")
+    if isinstance(manifest_steps, list):
+        for row in manifest_steps:
+            if not isinstance(row, dict):
+                continue
+            number = row.get("step")
+            if isinstance(number, int) and number > 0:
+                committed_names.add(f"step_{number:03d}")
+
+    quarantined: list[dict[str, str]] = []
+    for step_dir in sorted(steps_root.iterdir()):
+        if (
+            not step_dir.is_dir()
+            or not re.fullmatch(r"step_\d+", step_dir.name)
+            or step_dir.name in committed_names
+        ):
+            continue
+        incomplete_root = run_dir / "incomplete_steps"
+        incomplete_root.mkdir(parents=True, exist_ok=True)
+        destination = incomplete_root / step_dir.name
+        suffix = 2
+        while destination.exists():
+            destination = incomplete_root / f"{step_dir.name}-{suffix}"
+            suffix += 1
+        step_dir.replace(destination)
+        quarantined.append(
+            {
+                "source": str(step_dir.relative_to(run_dir)),
+                "preserved_as": str(destination.relative_to(run_dir)),
+                "reason": "step failed before its manifest commit",
+            }
+        )
+    return quarantined
+
+
+def finalize_recording_artifacts(
+    run_dir: Path,
+    manifest: dict[str, Any],
+    final: dict[str, Any],
+    *,
+    manifest_status: str | None = None,
+    error: str | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Finalize every initialized live run from its committed action steps.
+
+    The final step number, manifest step count, trajectory rows, and WebSurfer
+    rows use the same committed-action sequence. Model turns remain available
+    separately because rejected decisions and termination reviews are not
+    executed browser actions.
+    """
+    quarantined = quarantine_uncommitted_steps(run_dir, manifest)
+    if quarantined:
+        manifest.setdefault("incomplete_steps", []).extend(quarantined)
+        manifest.setdefault("warnings", []).append(
+            f"preserved {len(quarantined)} uncommitted action step(s) outside steps/"
+        )
+
+    manifest_steps = manifest.get("steps")
+    committed_count = len(manifest_steps) if isinstance(manifest_steps, list) else 0
+    normalized_final = dict(final)
+    model_turn = normalized_final.get("model_turn", normalized_final.get("step"))
+    normalized_final["step"] = committed_count
+    if model_turn is not None:
+        normalized_final["model_turn"] = model_turn
+    normalized_final["recorded_steps"] = committed_count
+    write_json(run_dir / "final.json", normalized_final)
+
+    manifest["status"] = manifest_status or str(
+        normalized_final.get("status") or "failure"
+    )
+    manifest["completed_at"] = utc_now()
+    manifest["final"] = normalized_final
+    if error:
+        manifest["error"] = error
+    trajectory_export = generate_trajectory_artifacts(run_dir)
+    manifest["trajectory_export"] = trajectory_export
+    manifest["artifact_alignment"] = {
+        "committed_steps": committed_count,
+        "trajectory_actions": trajectory_export.get("exported_actions"),
+        "web_surfer_actions": trajectory_export.get("exported_actions"),
+        "human_intervention_steps_skipped": len(
+            trajectory_export.get("skipped") or []
+        ),
+    }
+    if trajectory_export.get("skipped"):
+        manifest.setdefault("warnings", []).append(
+            "verifier trajectory export skipped "
+            f"{len(trajectory_export['skipped'])} human intervention step(s)"
+        )
+    if trajectory_export["status"] != "complete":
+        manifest.setdefault("warnings", []).append(
+            "verifier trajectory export is invalid; rerun the task "
+            "before dataset generation"
+        )
+    write_json(run_dir / "manifest.json", manifest)
+    return normalized_final, trajectory_export
+
+
 ACTION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -869,7 +982,8 @@ async def run(args: argparse.Namespace) -> int:
         "dom_capture_parameters": {
             "max_nodes": args.snapshot_max_nodes,
             "max_text_chars": args.snapshot_max_text_chars,
-            "include_offscreen": True,
+            "in_viewport_only": True,
+            "include_offscreen": False,
         },
         "dom_capture_source": "ChromiumRL.captureStructuredSnapshot",
         "action_coordinate_capture": {
@@ -940,6 +1054,7 @@ async def run(args: argparse.Namespace) -> int:
     }
     apply_diff_metadata(manifest, diff_engine=live_diff_engine)
     write_json(run_dir / "manifest.json", manifest)
+    active_model_turn: int | None = None
 
     try:
         async with CDPClient(
@@ -1022,6 +1137,7 @@ async def run(args: argparse.Namespace) -> int:
             recorded_step = 0
 
             for step in range(1, args.max_steps + 1):
+                active_model_turn = step
                 for decision_attempt in range(1, 5):
                     memory_before = task_memory
                     decision, model_response = await model.decide(
@@ -1532,44 +1648,47 @@ async def run(args: argparse.Namespace) -> int:
 
             if final is None:
                 final = {"status": "failure", "final_answer": "maximum step count reached", "step": args.max_steps}
-            final.setdefault("model_turn", final.get("step"))
-            final["recorded_steps"] = recorded_step
-            write_json(run_dir / "final.json", final)
-            manifest["status"] = final["status"]
-            manifest["completed_at"] = utc_now()
-            manifest["final"] = final
-            trajectory_export = generate_trajectory_artifacts(run_dir)
-            manifest["trajectory_export"] = trajectory_export
-            if trajectory_export.get("skipped"):
-                manifest.setdefault("warnings", []).append(
-                    "verifier trajectory export skipped "
-                    f"{len(trajectory_export['skipped'])} human intervention step(s)"
-                )
-            if trajectory_export["status"] != "complete":
-                manifest.setdefault("warnings", []).append(
-                    "verifier trajectory export is invalid; rerun the task "
-                    "before dataset generation"
-                )
-            write_json(run_dir / "manifest.json", manifest)
+            final, _trajectory_export = finalize_recording_artifacts(
+                run_dir,
+                manifest,
+                final,
+            )
             print(run_dir)
             return 0 if final["status"] == "success" else 2
     except asyncio.CancelledError:
-        manifest["status"] = "interrupted"
-        manifest["completed_at"] = utc_now()
         manifest["interruption"] = {
             "reason": "runner received a shutdown signal",
-            "trajectory_exported": False,
+            "trajectory_exported": True,
         }
         manifest.setdefault("warnings", []).append(
             "run interrupted before completion; do not use it for verifier dataset generation"
         )
-        write_json(run_dir / "manifest.json", manifest)
+        finalize_recording_artifacts(
+            run_dir,
+            manifest,
+            {
+                "status": "failure",
+                "run_status": "interrupted",
+                "final_answer": "runner received a shutdown signal",
+                "model_turn": active_model_turn,
+            },
+            manifest_status="interrupted",
+        )
         raise
     except BaseException as error:
-        manifest["status"] = "error"
-        manifest["completed_at"] = utc_now()
-        manifest["error"] = f"{type(error).__name__}: {error}"
-        write_json(run_dir / "manifest.json", manifest)
+        error_text = f"{type(error).__name__}: {error}"
+        finalize_recording_artifacts(
+            run_dir,
+            manifest,
+            {
+                "status": "failure",
+                "run_status": "error",
+                "final_answer": error_text,
+                "model_turn": active_model_turn,
+            },
+            manifest_status="error",
+            error=error_text,
+        )
         raise
     finally:
         await agent_browser.close()

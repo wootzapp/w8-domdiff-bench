@@ -29,6 +29,53 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
             )
         cdp.call.assert_awaited_once()
 
+    async def test_structured_capture_uses_viewport_only_evidence(self) -> None:
+        cdp = MagicMock()
+        cdp.call = AsyncMock(return_value={"snapshot": {"nodes": []}})
+
+        await capture.capture_structured_snapshot(
+            cdp,
+            max_nodes=7000,
+            max_text_chars=200000,
+        )
+
+        cdp.call.assert_awaited_once_with(
+            "ChromiumRL.captureStructuredSnapshot",
+            {
+                "inViewportOnly": True,
+                "maxNodes": 7000,
+                "maxTextChars": 200000,
+                "includeOffscreen": False,
+            },
+        )
+
+    async def test_live_snapshot_diff_uses_same_viewport_boundary(self) -> None:
+        before = {"snapshotId": "before", "nodes": []}
+        cdp = MagicMock()
+        cdp.call = AsyncMock(
+            return_value={"afterSnapshot": {"nodes": []}, "diff": {}}
+        )
+
+        await capture.capture_snapshot_diff(
+            cdp,
+            before,
+            action_type="scroll",
+            max_nodes=7000,
+            max_text_chars=200000,
+        )
+
+        cdp.call.assert_awaited_once_with(
+            "ChromiumRL.captureSnapshotDiff",
+            {
+                "beforeSnapshot": before,
+                "inViewportOnly": True,
+                "maxNodes": 7000,
+                "maxTextChars": 200000,
+                "includeOffscreen": False,
+                "actionType": "scroll",
+            },
+        )
+
     def test_runner_reexports_structured_client(self) -> None:
         self.assertIs(runner.AgentBrowserClient, AgentBrowserClient)
 

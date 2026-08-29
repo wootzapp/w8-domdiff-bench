@@ -74,6 +74,79 @@ class TrajectoryExportTests(unittest.TestCase):
             if line
         ]
 
+    def test_error_finalization_preserves_only_committed_steps(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            run_dir = Path(temporary)
+            committed = self.make_step(
+                run_dir,
+                1,
+                action={"action": "navigate", "url": "https://example.test"},
+                thought="Open the public page.",
+            )
+            incomplete = run_dir / "steps" / "step_002"
+            (incomplete / "before").mkdir(parents=True)
+            runner.write_text(incomplete / "before" / "dom_model.txt", "partial\n")
+            manifest = {
+                "task_id": "fixture",
+                "status": "running",
+                "steps": [{"step": 1, "action": {"action": "navigate"}}],
+            }
+
+            final, report = runner.finalize_recording_artifacts(
+                run_dir,
+                manifest,
+                {
+                    "status": "failure",
+                    "run_status": "error",
+                    "final_answer": "JSONDecodeError: malformed model output",
+                    "model_turn": 3,
+                },
+                manifest_status="error",
+                error="JSONDecodeError: malformed model output",
+            )
+
+            self.assertTrue(committed.is_dir())
+            self.assertFalse(incomplete.exists())
+            self.assertTrue((run_dir / "incomplete_steps" / "step_002").is_dir())
+            self.assertEqual(final["step"], 1)
+            self.assertEqual(final["recorded_steps"], 1)
+            self.assertEqual(final["model_turn"], 3)
+            self.assertEqual(report["status"], "complete")
+            self.assertEqual(report["exported_actions"], 1)
+            self.assertEqual(len(self.read_jsonl(run_dir / "trajectory.jsonl")), 1)
+            self.assertEqual(len(self.read_jsonl(run_dir / "web_surfer.log")), 1)
+            saved_manifest = json.loads(
+                (run_dir / "manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(saved_manifest["status"], "error")
+            self.assertEqual(saved_manifest["artifact_alignment"]["committed_steps"], 1)
+            self.assertEqual(saved_manifest["artifact_alignment"]["web_surfer_actions"], 1)
+
+    def test_error_before_first_action_writes_empty_final_and_logs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            run_dir = Path(temporary)
+            manifest = {"task_id": "fixture", "status": "running", "steps": []}
+
+            final, report = runner.finalize_recording_artifacts(
+                run_dir,
+                manifest,
+                {
+                    "status": "failure",
+                    "run_status": "error",
+                    "final_answer": "CDP connection failed",
+                    "model_turn": None,
+                },
+                manifest_status="error",
+                error="CDP connection failed",
+            )
+
+            self.assertEqual(final["step"], 0)
+            self.assertEqual(final["recorded_steps"], 0)
+            self.assertEqual(report["status"], "complete")
+            self.assertTrue((run_dir / "final.json").is_file())
+            self.assertEqual((run_dir / "trajectory.jsonl").read_text(), "")
+            self.assertEqual((run_dir / "web_surfer.log").read_text(), "")
+
     def test_export_is_self_contained_and_preserves_verbatim_thought(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             run_dir = Path(temporary)

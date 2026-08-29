@@ -599,15 +599,14 @@ async def capture_structured_snapshot(
 ) -> dict[str, Any]:
     """Capture an initial or before-action snapshot through ChromiumRL.
 
-    Offscreen nodes are requested so recorded evidence does not depend only on
-    the current viewport. After actions, captureSnapshotDiff owns both capture
-    and comparison.
+    Capture only the current viewport. After actions, captureSnapshotDiff owns
+    both capture and comparison using the same evidence boundary.
     """
     params: dict[str, Any] = {
-        "inViewportOnly": False,
+        "inViewportOnly": True,
         "maxNodes": max_nodes,
         "maxTextChars": max_text_chars,
-        "includeOffscreen": True,
+        "includeOffscreen": False,
     }
     result = await capture_call(
         cdp,
@@ -631,10 +630,10 @@ async def capture_snapshot_diff(
     """Capture the after-state and compute its diff inside ChromiumRL."""
     params: dict[str, Any] = {
         "beforeSnapshot": before_snapshot,
-        "inViewportOnly": False,
+        "inViewportOnly": True,
         "maxNodes": max_nodes,
         "maxTextChars": max_text_chars,
-        "includeOffscreen": True,
+        "includeOffscreen": False,
     }
     if action_type:
         params["actionType"] = action_type
