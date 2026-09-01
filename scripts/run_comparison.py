@@ -38,6 +38,75 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "config/endpoints/openai/canonical"
 
 
+def _arg_value(command: list[str], flag: str, *, default: str | None = None) -> str:
+    if flag not in command:
+        if default is None:
+            raise ValueError(f"Missing controlled command argument: {flag}")
+        return default
+    index = command.index(flag)
+    if index + 1 >= len(command):
+        raise ValueError(f"Controlled command argument has no value: {flag}")
+    return command[index + 1]
+
+
+def validate_command_parity(run_commands: dict[str, list[str]]) -> dict[str, Any]:
+    """Fail before paid calls if verifier behavior differs beyond evidence I/O."""
+
+    screenshot = run_commands["microsoft_verifier"]
+    dom_model = run_commands["dom_model"]
+    controls = {
+        "judge_model": (
+            _arg_value(screenshot, "--judge-model"),
+            _arg_value(dom_model, "--judge-model"),
+        ),
+        "action_judge_model": (
+            _arg_value(screenshot, "--o4mini-model"),
+            _arg_value(dom_model, "--o4mini-model"),
+        ),
+        "rubric_threshold": (
+            _arg_value(screenshot, "--rubric-threshold"),
+            _arg_value(dom_model, "--rubric-threshold"),
+        ),
+        "max_evidence_items_per_criterion": (
+            _arg_value(screenshot, "--max-images-per-criterion"),
+            _arg_value(dom_model, "--max-evidence-per-criterion"),
+        ),
+        # Microsoft exposes no CLI flag for this copied-agent setting; its
+        # effective value is zero. DOM must explicitly match it.
+        "min_relevance_threshold": (
+            str(CANONICAL_SETTINGS["min_relevance_threshold"]),
+            _arg_value(dom_model, "--min-relevance-threshold"),
+        ),
+        "majority_vote_instances": (
+            _arg_value(screenshot, "--majority-vote-instances"),
+            _arg_value(dom_model, "--majority-vote-instances"),
+        ),
+        "success_criterion": (
+            _arg_value(screenshot, "--success"),
+            _arg_value(dom_model, "--success"),
+        ),
+    }
+    mismatches = {
+        name: {"microsoft_verifier": left, "dom_model": right}
+        for name, (left, right) in controls.items()
+        if left != right
+    }
+    redo = {
+        "microsoft_verifier": "--redo-eval" in screenshot,
+        "dom_model": "--redo-eval" in dom_model,
+    }
+    if len(set(redo.values())) != 1 or not all(redo.values()):
+        mismatches["redo_eval"] = redo
+    if mismatches:
+        raise ValueError(
+            "Verifier command parity failed; only evidence loading may differ: "
+            + json.dumps(mismatches, sort_keys=True)
+        )
+    return {
+        name: left for name, (left, _) in controls.items()
+    } | {"redo_eval": True}
+
+
 def _package_versions() -> dict[str, str]:
     versions: dict[str, str] = {}
     for name in ("openai", "tiktoken", "httpx", "Pillow", "pydantic", "azure-identity"):
@@ -123,7 +192,7 @@ def commands(
             "--o4mini-model", CANONICAL_ACTION_MODEL,
             "--rubric-threshold", str(CANONICAL_SETTINGS["rubric_threshold"]),
             "--max-evidence-per-criterion", str(CANONICAL_SETTINGS["max_evidence_items_per_criterion"]),
-            "--min-relevance-threshold", str(CANONICAL_SETTINGS["mm_keypoint_score_threshold"]),
+            "--min-relevance-threshold", str(CANONICAL_SETTINGS["min_relevance_threshold"]),
             "--dom-model-state-char-budget", "350000",
             "--majority-vote-instances", str(CANONICAL_SETTINGS["majority_vote_instances"]),
             "--success", str(CANONICAL_SETTINGS["success_criterion"]),
@@ -199,6 +268,7 @@ def main(argv: list[str] | None = None) -> int:
         eval_config=eval_config,
         run_root=run_root,
     )
+    parity_controls = validate_command_parity(run_commands)
     microsoft_rubric_arg = run_commands["microsoft_verifier"][run_commands["microsoft_verifier"].index("--rubric-file") + 1]
     dom_rubric_arg = run_commands["dom_model"][run_commands["dom_model"].index("--rubric-file") + 1]
     if microsoft_rubric_arg != dom_rubric_arg:
@@ -215,6 +285,11 @@ def main(argv: list[str] | None = None) -> int:
         "verifier_packages": packages,
         "runtime": _package_versions(),
         "commands": run_commands,
+        "verifier_parity": {
+            "status": "passed",
+            "only_intentional_difference": "evidence_loader_and_representation",
+            "controls": parity_controls,
+        },
         "source_inputs": {
             "screenshot": str(screenshot_source),
             "dom_model": str(dom_source),

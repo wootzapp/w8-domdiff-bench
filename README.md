@@ -50,6 +50,20 @@ locally; its intentional behavioral boundary is evidence loading, relevance,
 and analysis for ordered complete `dom_model0..N.txt` states. It does not use
 the existing DOM-diff verifier.
 
+## Verifier parity contract
+
+Both modes use the same judge models, rubric threshold, top-K evidence count,
+minimum relevance threshold (`0`, matching Microsoft's copied agent), majority
+vote count, success criterion, retry behavior, and fresh-evaluation control.
+Phase B validates these controls before creating clients or making paid calls.
+The only intentional runtime difference is the evidence loader and evidence
+representation: ordered screenshots versus ordered complete DOM-model states.
+
+Runs whose manifest passes `--min-relevance-threshold 3` to the DOM verifier
+predate this parity contract. Keep those artifacts for auditability, but do not
+use their score differences as final evidence-modality comparisons; rerun them
+under the zero-threshold parity contract.
+
 ## Frozen-rubric control
 
 Phase A invokes Microsoft's rubric workflow once, or validates an existing

@@ -234,7 +234,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--o4mini-model", default=CANONICAL_ACTION_MODEL)
     parser.add_argument("--rubric-threshold", type=float, default=0.8)
     parser.add_argument("--max-evidence-per-criterion", type=int, default=5)
-    parser.add_argument("--min-relevance-threshold", type=int, default=3)
+    # Keep Microsoft's native evidence-analysis behavior. A positive value
+    # drops low-relevance top-K states before analysis and would make the DOM
+    # verifier structurally different from the screenshot baseline.
+    parser.add_argument("--min-relevance-threshold", type=int, default=0)
     parser.add_argument("--majority-vote-instances", type=int, default=1)
     parser.add_argument("--dom-model-state-char-budget", type=int, default=350000)
     parser.add_argument("--success", choices=("outcome", "process", "both"), default="outcome")

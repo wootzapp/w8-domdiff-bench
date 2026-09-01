@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from scripts.generate_frozen_rubric import main as generate_main
-from scripts.run_comparison import commands
+from scripts.run_comparison import commands, validate_command_parity
 from scripts.validate_inputs import compare_semantic_actions, parse_actions, validate_pair
 
 
@@ -117,6 +117,36 @@ def test_both_commands_share_exact_rubric_and_redo_eval(tmp_path):
         values.append(command[command.index("--rubric-file") + 1])
         assert "--redo-eval" in command
     assert values == [str(rubric), str(rubric)]
+    parity = validate_command_parity(built)
+    assert parity["min_relevance_threshold"] == "0"
+    assert parity["max_evidence_items_per_criterion"] == "5"
+    assert parity["redo_eval"] is True
+
+
+def test_command_parity_rejects_dom_relevance_filter(tmp_path):
+    built = commands(
+        screenshot_task=tmp_path / "s", dom_task=tmp_path / "d",
+        rubric_file=tmp_path / "rubric.json",
+        generation_metrics=tmp_path / "metrics.json",
+        eval_config=tmp_path / "config", run_root=tmp_path / "run",
+    )
+    dom = built["dom_model"]
+    dom[dom.index("--min-relevance-threshold") + 1] = "3"
+    with pytest.raises(ValueError, match="min_relevance_threshold"):
+        validate_command_parity(built)
+
+
+def test_command_parity_rejects_any_shared_control_drift(tmp_path):
+    built = commands(
+        screenshot_task=tmp_path / "s", dom_task=tmp_path / "d",
+        rubric_file=tmp_path / "rubric.json",
+        generation_metrics=tmp_path / "metrics.json",
+        eval_config=tmp_path / "config", run_root=tmp_path / "run",
+    )
+    dom = built["dom_model"]
+    dom[dom.index("--rubric-threshold") + 1] = "0.9"
+    with pytest.raises(ValueError, match="rubric_threshold"):
+        validate_command_parity(built)
 
 
 def test_phase_a_rejects_protected_source_tree_as_staging_root():

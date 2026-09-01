@@ -16,6 +16,7 @@ def test_runner_requires_shared_canonical_rubric(tmp_path):
     assert args.rubric_file.endswith("rubric.json")
     assert args.generation_metrics.endswith("generation.json")
     assert args.output.endswith("results")
+    assert args.min_relevance_threshold == 0
 
 
 def test_runner_normalizes_verified_one_item_task_data_format(tmp_path):
