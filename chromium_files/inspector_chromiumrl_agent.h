@@ -136,8 +136,7 @@ class CORE_EXPORT InspectorChromiumRLAgent final
 
   protocol::Response getModelDOM(
       std::unique_ptr<protocol::ChromiumRL::StructuredPageSnapshot> snapshot,
-      String* model_dom,
-      String* renderer_version) override;
+      std::unique_ptr<protocol::ChromiumRL::ModelDOM>* model_dom) override;
 
   protocol::Response compareStructuredSnapshots(
       std::unique_ptr<protocol::ChromiumRL::StructuredPageSnapshot> before_snapshot,
@@ -268,7 +267,7 @@ class CORE_EXPORT InspectorChromiumRLAgent final
       protocol::ChromiumRL::StructuredPageSnapshot* after_snapshot,
       const std::optional<String>& action_type,
       std::unique_ptr<protocol::ChromiumRL::StructuredSnapshotDiff>* diff);
-  String BuildModelDOM(
+  std::unique_ptr<protocol::ChromiumRL::ModelDOM> BuildModelDOM(
       protocol::ChromiumRL::StructuredPageSnapshot* snapshot);
 
   Member<InspectedFrames> inspected_frames_;

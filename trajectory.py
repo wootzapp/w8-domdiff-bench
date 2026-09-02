@@ -8,8 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from agent_browser import AgentBrowserClient
-from recorder_support import RunnerError, write_json_lines
-from dom_diff import clean_dom_text
+from recorder_support import RunnerError, clean_dom_text, write_json_lines
 
 
 TRAJECTORY_SCHEMA_VERSION = "1.0"
@@ -149,8 +148,23 @@ def step_directory_number(path: Path) -> int:
     return int(match.group(1))
 
 
+def snapshot_url(snapshot_path: Path) -> str:
+    """Read one captured state URL from its stored structured snapshot."""
+    loaded = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        raise RunnerError("state snapshot is not a JSON object")
+    result = loaded.get("result")
+    snapshot = result.get("snapshot") if isinstance(result, dict) else None
+    if not isinstance(snapshot, dict):
+        raise RunnerError("state snapshot has no ChromiumRL snapshot object")
+    url = snapshot.get("url")
+    if not isinstance(url, str) or not url:
+        raise RunnerError("state snapshot has no document URL")
+    return url
+
+
 def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
-    """Generate trajectory.jsonl and web_surfer.log only after full validation."""
+    """Generate trajectory.jsonl and web_surfer.log from recorded states."""
     run_dir = run_dir.resolve()
     if not run_dir.is_dir():
         raise RunnerError(f"run directory does not exist: {run_dir}")
@@ -167,7 +181,7 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
         if steps_root.is_dir()
         else []
     )
-    step_dirs = sorted(
+    state_dirs = sorted(
         (
             path
             for path in child_directories
@@ -187,55 +201,47 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
         for path in child_directories
         if not re.fullmatch(r"step_\d+", path.name)
     ]
-    for expected_step, step_dir in enumerate(step_dirs, start=1):
+    for expected_state, state_dir in enumerate(state_dirs, start=1):
         try:
-            recorded_step = step_directory_number(step_dir)
-            if recorded_step != expected_step:
+            state_number = step_directory_number(state_dir)
+            if state_number != expected_state:
                 raise RunnerError(
-                    f"executed step sequence is not contiguous: expected "
-                    f"step_{expected_step:03d}, found {step_dir.name}"
+                    f"captured state sequence is not contiguous: expected "
+                    f"step_{expected_state:03d}, found {state_dir.name}"
                 )
-            action_path = step_dir / "action.json"
-            diff_path = step_dir / "dom_diff.json"
-            diff_text_path = step_dir / "dom_diff.txt"
-            for required in (action_path, diff_path, diff_text_path):
-                if not required.exists():
-                    raise RunnerError(
-                        f"required executed-action artifact is missing: "
-                        f"{required.relative_to(run_dir)}"
-                    )
+            snapshot_path = state_dir / "dom.json"
+            if not snapshot_path.exists():
+                raise RunnerError(
+                    f"required state artifact is missing: "
+                    f"{snapshot_path.relative_to(run_dir)}"
+                )
+            action_path = state_dir / "action.json"
+            if not action_path.exists():
+                continue
+            next_state_dir = steps_root / f"step_{state_number + 1:03d}"
+            next_snapshot_path = next_state_dir / "dom.json"
+            if not next_snapshot_path.exists():
+                raise RunnerError(
+                    f"action state has no following captured state: "
+                    f"{next_snapshot_path.relative_to(run_dir)}"
+                )
             action_record = json.loads(action_path.read_text(encoding="utf-8"))
-            diff_record = json.loads(diff_path.read_text(encoding="utf-8"))
-            if not isinstance(action_record, dict) or not isinstance(diff_record, dict):
-                raise RunnerError("action or DOM-diff record is not a JSON object")
+            if not isinstance(action_record, dict):
+                raise RunnerError("action record is not a JSON object")
             raw_action = action_record.get("action")
             if not isinstance(raw_action, dict):
                 raise RunnerError("action record has no structured executed action")
             source_action = clean_dom_text(raw_action.get("action"))
-            before_endpoint = (
-                diff_record.get("before")
-                if isinstance(diff_record.get("before"), dict)
-                else {}
-            )
-            after_endpoint = (
-                diff_record.get("after")
-                if isinstance(diff_record.get("after"), dict)
-                else {}
-            )
-            before_url = str(before_endpoint.get("url", ""))
-            after_url = str(after_endpoint.get("url", ""))
-            if not after_url:
-                raise RunnerError("DOM diff has no after-action URL")
+            source_url = snapshot_url(snapshot_path)
+            next_url = snapshot_url(next_snapshot_path)
             timestamp = str(action_record.get("started_at", ""))
             if not timestamp:
                 raise RunnerError("executed action has no timestamp")
             if source_action == "request_human":
                 skipped.append(
                     {
-                        "step": step_dir.name,
-                        "reason": (
-                            "human intervention step is not an executed browser action"
-                        ),
+                        "step": state_dir.name,
+                        "reason": "human intervention is not an executed browser action",
                     }
                 )
                 continue
@@ -257,16 +263,15 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
                 "schema_version": TRAJECTORY_SCHEMA_VERSION,
                 "task_id": task_id,
                 "action_number": action_number,
-                "step": recorded_step,
-                "source_step": step_dir.name,
+                "step": state_number,
+                "source_step": state_dir.name,
+                "next_step": next_state_dir.name,
                 "timestamp": timestamp,
                 "thought": thought,
                 "action": mapped_action,
                 "arguments": arguments,
-                "before_url": before_url,
-                "after_url": after_url,
-                "dom_diff": str(diff_path.relative_to(run_dir)),
-                "dom_diff_text": str(diff_text_path.relative_to(run_dir)),
+                "state_url": source_url,
+                "next_state_url": next_url,
                 "execution_status": execution_status,
             }
             if execution_error:
@@ -288,7 +293,7 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
                 f"\nThought #{action_number}: {thought}"
                 f"\nAction #{action_number}: executing tool {mapped_action!r} "
                 f"with arguments "
-                f"{json.dumps(message_arguments, ensure_ascii=False, separators=(',', ':'))}"
+                f"{json.dumps(message_arguments, ensure_ascii=False, separators=(",", ":"))}"
             )
             websurfer_row = {
                 "timestamp": timestamp,
@@ -297,7 +302,7 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
                 "message": message,
                 "action": mapped_action,
                 "arguments": arguments,
-                "url": after_url,
+                "url": next_url,
                 "execution_status": execution_status,
             }
             if execution_error:
@@ -306,7 +311,7 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
         except (OSError, ValueError, TypeError, json.JSONDecodeError, RunnerError) as error:
             errors.append(
                 {
-                    "step": step_dir.name,
+                    "step": state_dir.name,
                     "error": f"{type(error).__name__}: {error}",
                 }
             )
@@ -314,7 +319,7 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
     report: dict[str, Any] = {
         "schema_version": TRAJECTORY_SCHEMA_VERSION,
         "status": "invalid" if errors else "complete",
-        "executed_step_directories": len(step_dirs),
+        "captured_states": len(state_dirs),
         "exported_actions": 0 if errors else len(trajectory_rows),
         "errors": errors,
         "skipped": skipped,
@@ -324,9 +329,6 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
         "requires_action_json_after_export": False,
     }
     if errors:
-        # Never leave a previously generated trajectory looking valid after the
-        # source run has failed validation. These files are derived artifacts;
-        # action.json and dom_diff.* remain the authoritative recording.
         for stale_path in (
             run_dir / "trajectory.jsonl",
             run_dir / "web_surfer.log",
@@ -336,4 +338,3 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
     write_json_lines(run_dir / "trajectory.jsonl", trajectory_rows)
     write_json_lines(run_dir / "web_surfer.log", websurfer_rows)
     return report
-

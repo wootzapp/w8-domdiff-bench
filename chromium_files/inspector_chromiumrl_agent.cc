@@ -6195,9 +6195,9 @@ protocol::Response InspectorChromiumRLAgent::BuildStructuredSnapshotDiff(
 
 namespace {
 
-// Browser-side port of scripts/render_chromiumrl_snapshot_model.py at
-// renderer contract chromiumrl-model-dom-v1. It consumes only the supplied
-// protocol object and never reads or mutates the live document.
+// Browser-side port of scripts/render_chromiumrl_snapshot_model.py. It
+// consumes only the supplied protocol object and never reads or mutates the
+// live document.
 class StructuredModelDOMRenderer {
  public:
   using Node = protocol::ChromiumRL::PageNode;
@@ -6222,6 +6222,24 @@ class StructuredModelDOMRenderer {
                          return left->getSourceOrder() <
                                 right->getSourceOrder();
                        });
+
+      HashMap<String, Vector<Node*>> by_signature;
+      for (Node* child : entry.value) {
+        String semantic = child->hasSemanticBoundary()
+                              ? PythonLower(Clean(
+                                    child->getSemanticBoundary(String()), false))
+                              : String();
+        String signature = NodeTag(child) + "\n" + NodeRole(child) + "\n" +
+                           semantic;
+        by_signature.insert(signature, Vector<Node*>())
+            .stored_value->value.push_back(child);
+      }
+      for (const auto& repeated : by_signature) {
+        if (repeated.value.size() < 2)
+          continue;
+        for (Node* child : repeated.value)
+          repeated_item_refs_.insert(child->getRef());
+      }
     }
     BuildActionNodes();
     for (const ActionRow& row : action_nodes_) {
@@ -6236,18 +6254,17 @@ class StructuredModelDOMRenderer {
     GroupNestedActions();
   }
 
-  String Render();
+  std::unique_ptr<protocol::ChromiumRL::ModelDOM> Render();
 
  private:
   static constexpr int kMaxActions = 80;
   static constexpr int kMaxSecondaryActions = 160;
   static constexpr int kMaxNestedActions = 8;
-  static constexpr int kMaxContentBlocks = 80;
   static constexpr int kMaxTableRows = 60;
   static constexpr int kMaxMedia = 60;
   static constexpr int kMaxScrollRegions = 16;
   static constexpr int kMaxCellChars = 180;
-  static constexpr int kMaxTextChars = 700;
+  static constexpr int kMaxTextChars = 0;
   static constexpr int kChromeLabelMaxChars = 40;
   static constexpr bool kIncludeSecondary = true;
   static constexpr bool kIncludeOffscreenContent = true;
@@ -6299,6 +6316,19 @@ class StructuredModelDOMRenderer {
 
   static bool IsPythonWord(UChar32 value) {
     return value == '_' || u_isalnum(value);
+  }
+
+  static bool ContainsPythonDigit(const String& text) {
+    for (wtf_size_t offset = 0; offset < text.length();) {
+      wtf_size_t next = offset;
+      UChar32 value = CodePointAt(text, offset, &next);
+      offset = next;
+      int numeric_type =
+          u_getIntPropertyValue(value, UCHAR_NUMERIC_TYPE);
+      if (numeric_type == U_NT_DECIMAL || numeric_type == U_NT_DIGIT)
+        return true;
+    }
+    return false;
   }
 
   static bool IsAttachmentBoundaryCharacter(UChar32 value) {
@@ -6889,6 +6919,82 @@ class StructuredModelDOMRenderer {
     return nullptr;
   }
 
+  String SemanticOwnerRef(Node* node) const {
+    if (IsReadableItem(node))
+      return node->getRef();
+    Node* owner = NearestReadableItem(node);
+    if (!owner) {
+      for (Node* ancestor : Ancestors(node)) {
+        if (repeated_item_refs_.Contains(ancestor->getRef())) {
+          owner = ancestor;
+          break;
+        }
+      }
+    }
+    return owner ? owner->getRef() : String();
+  }
+
+  Vector<String> AdditionalContentEvidence(
+      Node* node,
+      const Vector<String>& emitted_lines) const {
+    String ref = node->getRef();
+    if (ref.empty())
+      return {};
+    String emitted_key = NormKey(Join(emitted_lines, " "));
+    String owner_ref = SemanticOwnerRef(node);
+    Vector<Node*> descendants;
+    for (const String& child_ref : Descendants(ref)) {
+      Node* child = FindNode(child_ref);
+      if (child)
+        descendants.push_back(child);
+    }
+    std::stable_sort(descendants.begin(), descendants.end(),
+                     [](Node* left, Node* right) {
+                       return left->getSourceOrder() < right->getSourceOrder();
+                     });
+    Vector<String> evidence;
+    HashSet<String> seen;
+    for (Node* child : descendants) {
+      if (ActionTypes(child).empty())
+        continue;
+      String child_owner_ref = SemanticOwnerRef(child);
+      if (!owner_ref.empty() && !child_owner_ref.empty() &&
+          child_owner_ref != owner_ref) {
+        continue;
+      }
+      HashMap<String, String> attrs = AttrMap(child);
+      auto attribute = [&attrs](const String& name) {
+        auto it = attrs.find(name);
+        return it == attrs.end() ? String() : it->value;
+      };
+      Vector<String> candidates = {
+          child->hasAccessibleName()
+              ? Clean(child->getAccessibleName(String()))
+              : String(),
+          attribute("aria-label"), attribute("value"), attribute("title"),
+          Text(child)};
+      bool has_state = false;
+      for (const auto& state : *child->getStates()) {
+        if (!Clean(state->getValue()).empty()) {
+          has_state = true;
+          break;
+        }
+      }
+      for (const String& candidate : candidates) {
+        String value = Clean(candidate);
+        if (!has_state && !ContainsPythonDigit(value))
+          continue;
+        String key = NormKey(value);
+        if (key.empty() || seen.Contains(key) || emitted_key.contains(key))
+          continue;
+        seen.insert(key);
+        evidence.push_back(value);
+        break;
+      }
+    }
+    return evidence;
+  }
+
   static bool ControlWord(const String& text) {
     static const base::NoDestructor<re2::RE2> pattern(
         "(?i)\\b(?:open|view|show|expand|details|more|download|submit|send|"
@@ -7269,7 +7375,8 @@ class StructuredModelDOMRenderer {
         IsOneOf(role, {"heading", "paragraph", "listitem", "alertdialog", "dialog"}) || semantic == "listitem") return true;
     String direct = node->hasDirectText() ? Clean(node->getDirectText(String())) : String();
     if (direct.empty()) return false;
-    return !(CodePointLength(direct) <= kChromeLabelMaxChars && MatchesActionLabel(direct));
+    return !(CodePointLength(direct) <= kChromeLabelMaxChars &&
+             MatchesActionLabel(direct) && !ContainsPythonDigit(text));
   }
 
   bool HasRenderedAncestor(Node* node, const HashSet<String>& rendered) const {
@@ -7545,11 +7652,16 @@ class StructuredModelDOMRenderer {
       Node* node = candidates[index];
       if (HasRenderedAncestor(node, whole)) continue;
       String full = Text(node), clipped = Clip(full, kMaxTextChars), ref = node->getRef();
-      if (!ref.empty() && !node->getTruncated() && CodePointLength(clipped) >= CodePointLength(full))
+      auto children_it = children_.find(ref);
+      bool is_leaf =
+          children_it == children_.end() || children_it->value.empty();
+      if (!ref.empty() && is_leaf && !node->getTruncated() &&
+          CodePointLength(clipped) >= CodePointLength(full))
         whole.insert(ref);
       String key = NormKey(clipped);
-      if (key.empty() || seen.Contains(key)) continue;
-      seen.insert(key);
+      String dedupe_key = SemanticOwnerRef(node) + "\n" + key;
+      if (key.empty() || seen.Contains(dedupe_key)) continue;
+      seen.insert(dedupe_key);
       rendered_content_text_keys_.insert(key);
       rendered_refs->insert(ref);
       bool is_visible = node->getVisible() && node->getInViewport();
@@ -7576,6 +7688,10 @@ class StructuredModelDOMRenderer {
       Vector<String> content_lines = FormatContent(full, prefix, controls);
       for (const String& line : content_lines)
         target.push_back(line);
+      for (const String& evidence :
+           AdditionalContentEvidence(node, content_lines)) {
+        target.push_back("  evidence: " + evidence);
+      }
       if (!useful.empty()) {
         Vector<String> control_lines;
         wtf_size_t shown = std::min<wtf_size_t>(useful.size(), kMaxNestedActions);
@@ -7584,17 +7700,6 @@ class StructuredModelDOMRenderer {
         target.push_back("  actions: " + Join(control_lines, "; "));
         if (useful.size() > shown)
           target.push_back("  [actions hidden: " + String::Number(useful.size() - shown) + " more]");
-      }
-      if (rendered_refs->size() >= kMaxContentBlocks) {
-        HashSet<String> remaining;
-        for (wtf_size_t rest = index + 1; rest < candidates.size(); ++rest) {
-          String rest_key = NormKey(Clip(Text(candidates[rest]), kMaxTextChars));
-          if (!rest_key.empty() && !seen.Contains(rest_key)) remaining.insert(rest_key);
-        }
-        if (!remaining.empty())
-          target.push_back("[content hidden: " + String::Number(remaining.size()) +
-                           " more reason=max_content_blocks]");
-        break;
       }
     }
     Vector<String> lines;
@@ -7706,9 +7811,52 @@ class StructuredModelDOMRenderer {
       int limit = std::min(kMaxActions, 25);
       lines.push_back("=== USEFUL PAGE ACTIONS ===");
       wtf_size_t shown = std::min<wtf_size_t>(compact.size(), limit);
-      for (wtf_size_t i = 0; i < shown; ++i) lines.push_back(ActionLine(compact[i].node, compact[i].actions));
+      HashSet<String> shown_refs;
+      for (wtf_size_t i = 0; i < shown; ++i) {
+        lines.push_back(ActionLine(compact[i].node, compact[i].actions));
+        shown_refs.insert(compact[i].node->getRef());
+      }
       wtf_size_t hidden = primary.size() - std::min(primary.size(), shown);
       if (hidden) lines.push_back("[other actions hidden: " + String::Number(hidden) + "]");
+
+      Vector<String> read_only_rows;
+      HashSet<String> seen_read_only;
+      for (const ActionRow& row : primary) {
+        if (shown_refs.Contains(row.node->getRef()))
+          continue;
+        Vector<String> facts = {Text(row.node)};
+        for (const auto& state : *row.node->getStates()) {
+          String name = Clean(state->getName(), false);
+          String value = Clean(state->getValue());
+          if (!name.empty() && !value.empty())
+            facts.push_back(name + "=" + value);
+        }
+        Vector<String> non_empty_facts;
+        for (const String& fact : facts) {
+          if (!fact.empty())
+            non_empty_facts.push_back(fact);
+        }
+        String fact = Clean(Join(non_empty_facts, "; "));
+        String fact_key = NormKey(fact);
+        if (fact_key.empty() || seen_read_only.Contains(fact_key))
+          continue;
+        bool represented = false;
+        for (const String& content_key : rendered_content_text_keys_) {
+          if (fact_key == content_key || content_key.contains(fact_key)) {
+            represented = true;
+            break;
+          }
+        }
+        if (represented)
+          continue;
+        seen_read_only.insert(fact_key);
+        read_only_rows.push_back("- " + fact);
+      }
+      if (!read_only_rows.empty()) {
+        lines.push_back("=== READ-ONLY CONTROL EVIDENCE ===");
+        for (const String& row : read_only_rows)
+          lines.push_back(row);
+      }
     }
     if (kIncludeSecondary && !secondary.empty()) {
       lines.push_back("=== SECONDARY / DEBUG ACTIONS ===");
@@ -7718,6 +7866,24 @@ class StructuredModelDOMRenderer {
                         " reason=" + secondary[i].reason);
       if (secondary.size() > shown)
         lines.push_back("[secondary actions hidden: " + String::Number(secondary.size() - shown) + " more]");
+    }
+
+    Vector<String> complete_control_text;
+    HashSet<String> seen_complete;
+    for (const ActionRow& row : action_nodes_) {
+      String full = Text(row.node);
+      if (CodePointLength(full) <= 220)
+        continue;
+      String key = NormKey(full);
+      if (key.empty() || seen_complete.Contains(key))
+        continue;
+      seen_complete.insert(key);
+      complete_control_text.push_back("- " + full);
+    }
+    if (!complete_control_text.empty()) {
+      lines.push_back("=== COMPLETE READ-ONLY CONTROL TEXT ===");
+      for (const String& row : complete_control_text)
+        lines.push_back(row);
     }
     return lines;
   }
@@ -7754,52 +7920,70 @@ class StructuredModelDOMRenderer {
   HashSet<String> action_labels_;
   HashMap<String, Vector<ActionRow>> nested_actions_;
   HashSet<String> rendered_content_text_keys_;
+  HashSet<String> repeated_item_refs_;
   mutable HashMap<Node*, String> text_cache_;
   mutable HashMap<Node*, String> tag_cache_;
   mutable HashMap<Node*, String> role_cache_;
   mutable HashMap<Node*, Vector<String>> action_types_cache_;
 };
 
-String StructuredModelDOMRenderer::Render() {
-  Vector<Vector<String>> sections;
-  sections.push_back(RenderHeader());
+std::unique_ptr<protocol::ChromiumRL::ModelDOM>
+StructuredModelDOMRenderer::Render() {
+  auto sections =
+      std::make_unique<protocol::Array<protocol::ChromiumRL::ModelDOMSection>>();
+  auto append_section = [&sections](const String& name,
+                                    const Vector<String>& lines) {
+    if (lines.empty())
+      return;
+    auto protocol_lines = std::make_unique<protocol::Array<String>>();
+    for (const String& line : lines)
+      protocol_lines->push_back(line);
+    sections->push_back(protocol::ChromiumRL::ModelDOMSection::create()
+                            .setName(name)
+                            .setLines(std::move(protocol_lines))
+                            .build());
+  };
+
+  append_section("header", RenderHeader());
   HashSet<String> covered;
   Vector<String> tables = RenderTables(&covered);
-  if (!tables.empty()) sections.push_back(tables);
+  append_section("tables", tables);
   HashSet<String> rendered;
   Vector<String> content = RenderContent(covered, &rendered);
-  if (!content.empty()) sections.push_back(content);
+  append_section("content", content);
   HashSet<String> media_covered = covered;
   for (const String& ref : rendered) {
     media_covered.insert(ref);
-    for (const String& child : Descendants(ref)) media_covered.insert(child);
+    for (const String& child : Descendants(ref))
+      media_covered.insert(child);
   }
   Vector<String> media = RenderMedia(media_covered);
-  if (!media.empty()) sections.push_back(media);
+  append_section("media", media);
   Vector<String> actions = RenderActions(rendered);
-  if (!actions.empty()) sections.push_back(actions);
+  append_section("actions", actions);
   Vector<String> scroll = RenderScrollRegions();
-  if (!scroll.empty()) sections.push_back(scroll);
-  Vector<String> rendered_sections;
-  for (const auto& section : sections) if (!section.empty()) rendered_sections.push_back(Join(section, "\n"));
-  return StripPythonWhitespace(Join(rendered_sections, "\n\n")) + "\n";
+  append_section("scroll_regions", scroll);
+
+  return protocol::ChromiumRL::ModelDOM::create()
+      .setRendererName("chromiumrl-model-dom")
+      .setSections(std::move(sections))
+      .build();
 }
 
 }  // namespace
 
-String InspectorChromiumRLAgent::BuildModelDOM(
+std::unique_ptr<protocol::ChromiumRL::ModelDOM>
+InspectorChromiumRLAgent::BuildModelDOM(
     protocol::ChromiumRL::StructuredPageSnapshot* snapshot) {
   return StructuredModelDOMRenderer(snapshot).Render();
 }
 
 protocol::Response InspectorChromiumRLAgent::getModelDOM(
     std::unique_ptr<protocol::ChromiumRL::StructuredPageSnapshot> snapshot,
-    String* model_dom,
-    String* renderer_version) {
+    std::unique_ptr<protocol::ChromiumRL::ModelDOM>* model_dom) {
   if (!snapshot)
     return protocol::Response::InvalidParams("snapshot is required");
   *model_dom = BuildModelDOM(snapshot.get());
-  *renderer_version = "chromiumrl-model-dom-v1";
   return protocol::Response::Success();
 }
 

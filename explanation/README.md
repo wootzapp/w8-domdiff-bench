@@ -13,7 +13,7 @@ The main design rule is separation of jobs. `agent-browser` observes controls an
 | Custom ChromiumRL CDP domain | Captures structured DOM, builds model DOM, computes live diffs, and supplies coordinate-only observations. | Declared in the sole PDL under `chromium_files/`. Live recorder uses `enable`, `captureStructuredSnapshot`, `getModelDOM`, `captureSnapshotDiff`, and supplementary `getAgentObservation`. | Inspect [`ChromiumRL.pdl`](../chromium_files/ChromiumRL.pdl) and the command calls in [`capture.py`](../capture.py). | [`inspector_chromiumrl_agent.cc`](../chromium_files/inspector_chromiumrl_agent.cc), [`inspector_chromiumrl_agent.h`](../chromium_files/inspector_chromiumrl_agent.h) |
 | agent-browser | Produces executable `eN` control references and performs browser actions. Stale refs or a disconnected session make an action unsafe. | Directly verified installed version `0.27.3`; connected to the same browser CDP endpoint as the recorder. | Run `./node_modules/.bin/agent-browser --version`; inspect each step's `agent_browser_actions.txt`. | [`agent_browser/client.py`](../agent_browser/client.py), [`package.json`](../package.json) |
 | OpenAI action model | Reads text evidence and returns one strict JSON action. API errors, invalid JSON, or a rejected action cause a retry or run failure. | Current ignored `.env` selects `gpt-5.1` through the Responses API at `https://api.openai.com/v1`. This is configurable, not hardcoded. | Check the non-secret `OPENAI_MODEL` and `OPENAI_BASE_URL` settings, then inspect `decisions.jsonl`. | [`runner.py`](../runner.py), class `ModelClient`; [`prompts.py`](../prompts.py) |
-| DOM-only model policy | Keeps screenshots out of both the actor and termination reviewer. | Directly verified in both Responses payloads: only `input_text` is attached. Manifest records `model_input_policy: dom_only`. | Inspect `ModelClient.decide()` and `ModelClient.review_termination()`. | [`runner.py`](../runner.py), [`prompts.py`](../prompts.py) |
+| DOM-only model policy | Keeps screenshots out of the action model. | Directly verified in the action Responses payload: only `input_text` is attached. Manifest records `model_input_policy: dom_only`. | Inspect `ModelClient.decide()`. | [`runner.py`](../runner.py), [`prompts.py`](../prompts.py) |
 | Live snapshot diff | Compares one before snapshot with the after snapshot captured after exactly one action. Failure leaves no valid committed step diff. | Browser command is `ChromiumRL.captureSnapshotDiff`; Python only orders, re-spells declared floats, adds audit metadata, and writes it. | Inspect `capture_snapshot_diff()` and `write_browser_dom_diff_files()`. | [`capture.py`](../capture.py), [`runner.py`](../runner.py), [`dom_diff.py`](../dom_diff.py) |
 | Model DOM projection | Converts one structured snapshot into compact reading evidence for the model. | Selection/grouping happens in Chromium through `getModelDOM`; the host saves JSON and only validates and joins sections into TXT. | Compare `dom_model.json` sections with `dom_model.txt`. | Browser C++, [`render_chromiumrl_model_dom.py`](../scripts/render_chromiumrl_model_dom.py) |
 | Artifact writer | Preserves one complete step and keeps numbering aligned. Partial steps are moved outside `steps/`. | JSON and text helpers use temporary files and atomic replacement. | Interrupt a scratch run and inspect `manifest.json`, `incomplete_steps/`, and contiguous `steps/`. | [`recorder_support.py`](../recorder_support.py), `finalize_recording_artifacts()` in [`runner.py`](../runner.py) |
@@ -31,7 +31,7 @@ Use this order if you need to study the system and answer questions about it:
 3. Learn the three evidence namespaces: structured DOM, model DOM, and agent-browser action refs.
 4. Memorize one action interval: current evidence, model decision, validation, action, after capture plus diff, and persistence.
 5. Learn which artifacts are original evidence and which are readable or verifier projections.
-6. Learn the failure boundaries: stale refs, wrong tab, missing diff, uncommitted step, rejected termination, and invalid trajectory export.
+6. Learn the failure boundaries: stale refs, wrong tab, missing diff, uncommitted step, locally rejected proposals, and invalid trajectory export.
 7. Use the common-questions section near the end as a self-test.
 
 When answering a question, first identify which layer owns it:
@@ -83,7 +83,7 @@ ChromiumRL captures the after-state and computes the diff in one command
 Python writes the step and uses the after-state as the next before-state
     |
     v
-repeat until a separate termination reviewer accepts the result
+repeat until the model returns terminate, then write the final outputs
 ```
 
 The order matters. The DOM diff is computed **after** the action. The model sees the previous completed action's diff when deciding the next action. It cannot see the future diff for an action it has not performed yet.
@@ -155,7 +155,7 @@ So current step snapshots contain only eligible nodes in the current viewport. I
 
 A screenshot is a picture of pixels. It is useful for visual comparison, but it does not naturally say “this pixel area is a button named Tomorrow.” A screenshot can show color, exact appearance, overlays, and images better than DOM text.
 
-This project stores screenshots but does **not** send them to the action model or termination reviewer. They are verifier artifacts and also support a byte-level “did the page image change?” progress signal.
+This project stores screenshots but does **not** send them to the action model. They are verifier artifacts and also support a byte-level “did the page image change?” progress signal.
 
 ### JSON, TXT, and JSONL
 
@@ -173,7 +173,7 @@ These are not all the same:
 - A **model turn** is one request asking the model what to do next.
 - A proposed action can be rejected before it runs.
 - A **recorded step** exists only for an action that enters the execution/capture path.
-- A termination review is a model turn, but it is not a browser action and creates no step.
+- A terminate decision is a model turn, but it is not a browser action and creates no step.
 
 This distinction prevents gaps. `step_001`, `step_002`, and `step_003` describe actual action intervals even if the model needed more than three decision turns.
 
@@ -190,7 +190,7 @@ The output is a browser-task recording that can answer:
 - What changed in the page after the action?
 - What facts did the model carry in memory?
 - Why did it stop?
-- Did a second model accept the final answer?
+- Which model decision supplied the final answer?
 - Can a verifier replay the sequence from saved evidence?
 
 The recorder is not meant to be a generic web scraper. It records a model-driven interaction one action at a time.
@@ -826,34 +826,13 @@ This is why normal free-form chat is not enough. The program needs one machine-r
 - never request help for login, payment, purchase, paywall, or forbidden work;
 - provide every requested result in the final answer.
 
-### The termination reviewer
+### Task completion
 
-When the actor proposes `terminate`, no browser action runs yet. A separate Responses API call uses `TERMINATION_REVIEW_PROMPT`.
+Before choosing `terminate`, the actor is instructed to check every requested
+field, filter, ordering rule, stopping condition, and constraint against its
+recorded evidence. The terminate JSON contains the final status and answer.
 
-It receives:
-
-1. the task;
-2. task memory;
-3. proposed status and final answer;
-4. current URL;
-5. current agent-browser evidence;
-6. current ChromiumRL evidence;
-7. a bounded projection from **every** completed step's diff, at up to eight entries per step;
-8. up to eight recent action outcomes.
-
-It returns either:
-
-```json
-{"verdict":"accept","reason":"..."}
-```
-
-or:
-
-```json
-{"verdict":"continue","reason":"..."}
-```
-
-The review is stored in `decisions.jsonl`. It is not a browser step.
+The recorder writes that result directly. Termination creates no browser step.
 
 ## 11. How actions are validated before execution
 
@@ -867,7 +846,6 @@ Checks include:
 - click/fill/select lacks an id;
 - the id is absent from the current agent-browser snapshot;
 - the ref has no matching current role/name identity;
-- a termination was just rejected and no evidence-gathering browser action happened;
 - successful termination has no confirmed browser action in the run;
 - the same no-progress activation is repeated;
 - the model is entering a two-action no-progress cycle;
@@ -935,7 +913,7 @@ For each model turn:
 
 1. The actor receives current DOM-only evidence.
 2. The runner validates the proposed action.
-3. If accepted and not termination, the runner resolves semantic target identity and tries to record a coordinate.
+3. For an executable browser action, the runner resolves semantic target identity and tries to record a coordinate.
 4. It increments the recorded step number.
 5. It copies the current bundle into `step_NNN/before/`.
 6. agent-browser executes the action.
@@ -951,9 +929,9 @@ There is no extra recapture between step N's after-state and step N+1's before-s
 
 ### Step H: finishing
 
-The actor proposes termination. The reviewer either returns `continue` or `accept`.
+The actor returns `terminate` with a status and final answer.
 
-On acceptance, maximum steps, interruption, model error, browser error, or another exception, the same finalization path:
+On termination, maximum steps, interruption, model error, browser error, or another exception, the same finalization path:
 
 1. moves uncommitted partial step directories to `incomplete_steps/`;
 2. writes `final.json`;
@@ -1024,11 +1002,11 @@ This is the run-level receipt. It includes:
 
 ### `decisions.jsonl`
 
-Contains every action proposal and every termination review, including rejected proposals. This is the best file for seeing model sampling behavior and why a proposal did not execute.
+Contains every action proposal, including locally rejected proposals. This is the best file for seeing model sampling behavior and why a proposal did not execute.
 
 ### `final.json`
 
-Contains success/failure, final answer, final committed step count, model turn, task memory, thought, and reviewer result when applicable. Every initialized run tries to produce this file, including error and interrupted runs.
+Contains success/failure, final answer, final committed step count, model turn, task memory, and thought. Every initialized run tries to produce this file, including error and interrupted runs.
 
 ### `action.json`
 
@@ -1136,7 +1114,7 @@ Human intervention steps are recorded but intentionally skipped as agent actions
 
 | File | Job |
 |---|---|
-| [`prompts.py`](../prompts.py) | Actor system prompt and separate termination reviewer prompt. |
+| [`prompts.py`](../prompts.py) | Model task and browser-action instructions. |
 | [`trajectory.py`](../trajectory.py) | Validates committed steps and exports trajectory/WebSurfer files. |
 | [`recorder_support.py`](../recorder_support.py) | Shared error, URL normalizer, UTC timestamp, and atomic JSON/text writers. |
 
@@ -1297,7 +1275,6 @@ The browser model renderer chooses how many action, table, media, and scroll-reg
 ### Prompt-only diff limits
 
 - actor previous-diff projection: up to 32 ranked entries;
-- reviewer: up to 8 ranked entries from each completed step.
 
 These limits do not change `dom_diff.json` or `dom_diff.txt`.
 
@@ -1305,8 +1282,7 @@ These limits do not change `dom_diff.json` or `dom_diff.txt`.
 
 - task memory: 8,000 characters;
 - one action thought: 1,200 characters;
-- actor output budget: 3,000 tokens;
-- reviewer output budget: 1,200 tokens.
+- actor output budget: 6,000 tokens.
 
 These bound model bookkeeping, not captured browser evidence.
 
@@ -1443,7 +1419,7 @@ If tomorrow's row is below the viewport, the model scrolls. A static page may pr
 
 ### Termination
 
-When “Tomorrow” and the high are in current or recorded visible evidence, the actor proposes a final answer. The reviewer checks the current evidence and prior-step diff history. If accepted, no extra step is created.
+When “Tomorrow” and the high are in current or recorded visible evidence, the actor returns `terminate` with the final answer. The recorder writes it without creating another browser step.
 
 ## 22. Example: why `dom_model.txt` and `dom_diff` are both useful
 
@@ -1599,7 +1575,7 @@ No. Renderers read stored evidence and create text projections.
 
 ### Does a termination create another DOM diff?
 
-No. Termination is reviewed without executing a browser action, so it creates no action step or diff.
+No. Termination does not execute a browser action, so it creates no action step or diff.
 
 ### Is the after snapshot captured twice?
 
@@ -1657,7 +1633,7 @@ They have separate jobs. The Python CDP client controls capture and evidence. ag
 
 ### Denominator and overlap caution
 
-Counts in a manifest refer to different things. Model turns include rejected proposals and reviews. Recorded steps are action intervals. Trajectory and WebSurfer rows exclude human intervention. DOM change counts count emitted browser-diff facts, not model turns or actions. These totals must not be compared as if they share one denominator.
+Counts in a manifest refer to different things. Model turns include locally rejected proposals. Recorded steps are action intervals. Trajectory and WebSurfer rows exclude human intervention. DOM change counts count emitted browser-diff facts, not model turns or actions. These totals must not be compared as if they share one denominator.
 
 ## Conclusion
 
