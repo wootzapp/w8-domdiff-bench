@@ -17,6 +17,10 @@ CANONICAL_SETTINGS = {
     "rubric_threshold": 0.8,
     "max_evidence_items_per_criterion": 5,
     "mm_keypoint_score_threshold": 3,
+    # MMRubricAgent's evidence-analysis gate is separate from the reported
+    # Microsoft keypoint threshold. Microsoft's screenshot runner leaves this
+    # gate disabled, so the DOM runner must do the same.
+    "min_relevance_threshold": 0,
     "majority_vote_instances": 1,
     "success_criterion": "outcome",
 }

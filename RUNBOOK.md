@@ -68,7 +68,10 @@ This validates package manifests, paired task/action/final-answer identity,
 N+1 evidence alignment, endpoint model declarations, both sidecars, the rubric
 hash/order/descriptions/maxima/denominator, and Phase A generation metrics. It
 also confirms both generated commands share the exact rubric path and
-`--redo-eval`. It performs no writes, subprocess runs, or paid calls.
+`--redo-eval`. A fail-fast parity check additionally requires identical judge
+models, rubric threshold, top-K evidence count, effective minimum relevance
+threshold (zero), majority-vote count, and success criterion. It performs no
+writes, subprocess runs, or paid calls.
 
 Only after review, add `--execute` to authorize scoring. Inputs and frozen
 controls are first copied beneath the unique result directory. Microsoft's
