@@ -1,0 +1,795 @@
+URL: https://github.com/microsoft/playwright/releases
+Title: Releases · microsoft/playwright · GitHub
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=3441 groups=122 truncated=True
+
+=== VISIBLE CONTENT ===
+Context: Release list navigation
+- v1.58.0
+Context: v1.62.0
+- v1.62.0
+- dcrousso released this 24 Jul 21:55
+- 24 Jul 21:55
+- v1.62.0
+- e3950d9
+- Verified commit signature
+- 🧱 New component testing model
+- Component testing moves to a stories and galleries model. A story wraps your component in one specific scenario — hard-coded props, mock data, providers — and a gallery page that you serve renders stories on demand. The new fixtures.mount() fixture navigates to the gallery, mounts a story by id, and returns a Locator scoped to the story's root element:
+- stories and galleries
+- story
+- gallery
+- test ( 'click should expand' , async ( { mount } ) => { const component = await mount ( 'components/Expandable/Stateful' ) ; await component . getByRole ( 'button' ) . click ( ) ; await expect ( component . getByTestId ( 'expanded' ) ) . toHaveValue ( 'true' ) ; } ) ;
+- 'click should expand'
+- const
+- await
+- 'components/Expandable/Stateful'
+- 'button'
+- click
+- getByTestId
+- 'expanded'
+- toHaveValue
+- 'true'
+- Pass a story type as a template argument to type-check its props, and use / on the returned locator to re-render or tear down within a test.
+- update(props)
+- unmount()
+- 🛑 Cancel operations with AbortSignal
+- Most operations and web-first assertions now accept a option that takes an , letting you cancel long-running actions, navigations, waits, and assertions:
+- const
+- controller
+- AbortController
+- setTimeout
+- 1000
+- await
+- 'button'
+- name
+- 'Submit'
+- click
+- getByText
+- 'Done'
+- toBeVisible
+- Providing a signal does not disable the default timeout; pass to disable it.
+- timeout: 0
+- 🖼️ WebP screenshots
+- and can now store snapshots in the WebP format — just give the snapshot a name:
+- .webp
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. Use page scroll to bring this content into view.
+Context: Please reload this page
+- Public
+- Notifications You must be signed in to change notification settings
+- Fork 6.4k
+- 6.4k
+- You must be signed in to star a repository
+- 95.3k
+- Releases: microsoft/playwright
+- Release list
+Context: v1.62.1
+- v1.62.1
+- dgozman released this 30 Jul 16:35
+- 30 Jul 16:35
+- v1.62.1
+- 26a9e47
+- Verified commit signature
+- Bug Fixes
+- #41989 [Regression]: tsconfig "extends" bare specifier isn't resolved via node_modules walk-up like tsc (fatal since 1.62)
+- #41998 [Regression]: directory-form tsconfig project references ("path": "../pkg") fail to resolve (fatal since 1.62)
+- #41985 Accessibility snapshot drops button name when text is nested inside spans with aria-hidden SVG
+- #42000 [Regression]: page.evaluate() arg of a branded primitive type (string & { brand }) no longer type-checks since 1.62
+- #42013 [BUG]Image-type actionable elements are not presented in the snapshot.
+- Assets 2
+- 2
+- 8
+- 16
+- 2
+- 25 people reacted
+Context: v1.62.0
+- // Visual comparisons store the golden snapshot as lossless WebP.
+- await
+- 'homepage.webp'
+  attachments: homepage.webp
+- // Standalone screenshots can trade quality for size with lossy WebP.
+- 50
+- and [locator.screenshot() (https://playwright.dev/docs/api/class-locator#locator-screenshot) also accept as a , where quality (the default) is lossless and lower values use lossy compression.
+- webp
+- 100
+- 🧩 Custom test filtering with Reporter.preprocess()
+- New hook runs after the configuration is resolved and before , letting a reporter mark individual tests as skipped, excluded, fixed, or failing through a object:
+- class MyReporter { async preprocess ( { config , suite , testRun } ) { for ( const test of suite . allTests ( ) ) { if ( shouldSkip ( test ) ) testRun . skip ( test ) ; } } }
+- class
+- MyReporter
+- const
+- suite
+- allTests
+- shouldSkip
+- 🔁 Isolated retries
+- New controls when failed tests are retried. The default retries as soon as a worker is free; runs all retries at the end, one by one in a single worker, to minimize interference with the rest of the suite:
+- 'immediate'
+- 'isolated'
+- // playwright.config.ts
+- export
+- default
+- defineConfig
+- retries
+- 2
+- 'isolated'
+- New APIs
+- Browser and Context
+- New option includes the context's virtual WebAuthn (passkeys) in the storage state, so they can be persisted and re-seeded into later contexts.
+- Actions
+- New option ( | ) on actions to opt out of Playwright's automatic scroll-into-view.
+- scroll
+- "auto"
+- "none"
+- Network
+- New returns resource timing information for an API response.
+- Evaluation
+- New waits until a function — called with the matching element — returns a truthy value.
+- page.evaluate() and related methods now accept functions as evaluate arguments.
+- page.addInitScript() / browserContext.addInitScript() now accept functions as init-script arguments.
+- Command line & MCP
+- Playwright now bundles the server and , runnable via and .
+- npx playwright mcp
+- npx playwright cli
+- Reporters
+- The HTML report's grouping — previously only a UI toggle — can now be enabled from the config with the new reporter option:
+- Merge files
+- // playwright.config.ts
+- export
+- default
+- defineConfig
+- mergeFiles
+- true
+- Announcements
+- ⚠️ Debian 11 is not supported anymore.
+- Browser Versions
+- Chromium 151.0.7922.34
+- Mozilla Firefox 153.0
+- WebKit 26.5
+- This version was also tested against the following stable channels:
+- Google Chrome 151
+- Microsoft Edge 151
+- Assets 2
+- 2
+- 10
+- 27
+- 7
+- 4
+- 1
+- 42 people reacted
+Context: v1.61.1
+- v1.61.1
+- dgozman released this 23 Jun 19:47
+- 23 Jun 19:47
+- v1.61.1
+- 39e3553
+- Bug Fixes
+- #41365 [Bug]: Expect.Extend matcher with same name as default matcher in same expect instance overrides default matchers implementation to custom matcher
+- #41351 [Bug]: Playwright UI mode: apiRequestContext._wrapApiCall reports unexpected number of bytes (same test passes in headed mode)
+- #41360 [Bug]: Trace viewer: message times in websockets are downscaled by 1000
+- #41311 [Bug]: [Regression]: Sync loader throws "context.conditions?.includes is not a function" on Node 22.15
+- #41371 [Regression]: Sync ESM loader (registerHooks) fails to resolve extensionless .ts subpath imports across pnpm workspace symlinks
+- Assets 2
+- 2
+- 9
+- 9 people reacted
+Context: v1.61.0
+- v1.61.0
+- dgozman released this 15 Jun 10:05
+- 15 Jun 10:05
+- v1.61.0
+- 1cc5a90
+- 🔑 WebAuthn passkeys
+- New virtual authenticator, available via , lets tests register passkeys and answer / ceremonies in the page — no real hardware key required, works in all browsers:
+- navigator.credentials.create()
+- navigator.credentials.get()
+- const context = await browser . newContext ( ) ; // Seed a passkey your backend provisioned for a test user. await context . credentials . create ( 'example.com' , { id : credentialId , userHandle , privateKey , publicKey , } ) ; await context . credentials . install ( ) ; const page = await context . newPage ( ) ; await page . goto ( 'https://example.com/login' ) ; // The page's navigator.credentials.get() is answered with the seeded passkey.
+- const
+- await
+- newContext
+- // Seed a passkey your backend provisioned for a test user.
+- create
+- 'example.com'
+- credentialId
+- install
+- newPage
+- goto
+- 'https://example.com/login'
+- // The page's navigator.credentials.get() is answered with the seeded passkey.
+- You can also let the app register a passkey once in a setup test, read it back with , and seed it into later tests — see for details.
+- 🗃️ Web Storage
+- New API, available via and , reads and writes the page's storage for the current origin:
+- await page . localStorage . setItem ( 'token' , 'abc' ) ; const token = await page . localStorage . getItem ( 'token' ) ; const items = await page . sessionStorage . items ( ) ;
+- await
+- setItem
+- 'token'
+- 'abc'
+- const
+- getItem
+- items
+- New APIs
+- Network
+- and mirror the browser-side and .
+- Browser and Screencast
+- New option in controls where artifacts such as traces and downloads are stored when attached to an existing browser.
+- artifactsDir
+- New option in controls the cursor decoration rendered for pointer actions.
+- cursor
+- The callback in now receives a of when the frame was presented by the browser.
+- timestamp
+- Test runner
+- The option now supports the same set of modes as : new , and values. See the for which runs are recorded and kept in each mode.
+- 'on-all-retries'
+- 'retain-on-first-failure'
+- 'retain-on-failure-and-retries'
+- Supported expect.soft.poll(...) .
+- expect.soft.poll(...)
+- New — a snapshot of from the runner process, handy for reading custom arguments passed after the separator.
+- process.argv
+- New mirrors the config option, so reporters can explain why a flaky run failed.
+- now lists each sub-error of an as a separate entry.
+- AggregateError
+- New command line shorthand for .
+- --grep-invert
+- 🛠️ Other improvements
+- Playwright now supports Ubuntu 26.04.
+- HAR and trace recordings now include WebSocket requests.
+- Browser Versions
+- Chromium 149.0.7827.55
+- Mozilla Firefox 151.0
+- WebKit 26.5
+- This version was also tested against the following stable channels:
+- Google Chrome 149
+- Microsoft Edge 149
+- Assets 2
+- 2
+- 27
+- 30
+- 14
+- 3
+- 52 people reacted
+Context: v1.60.0
+- v1.60.0
+- yury-s released this 11 May 19:08
+- 11 May 19:08
+- v1.60.0
+- 87bb9dd
+- 🌐 HAR recording on Tracing
+- / expose HAR recording as a first-class tracing API, with the same , and options as . The returned makes it easy to scope a recording with :
+- urlFilter
+- recordHar
+- await using
+- await using har = await context . tracing . startHar ( 'trace.har' ) ; const page = await context . newPage ( ) ; await page . goto ( 'https://playwright.dev' ) ; // HAR is finalized when `har` goes out of scope.
+- await
+- using
+- 'trace.har'
+- const
+- newPage
+- goto
+- 'https://playwright.dev'
+- // HAR is finalized when `har` goes out of scope.
+- 🪝 Drop API
+- New simulates an external drag-and-drop of files or clipboard-like data onto an element. Playwright dispatches , , and with a synthetic [DataTransfer] in the page context — works cross-browser and is great for testing upload zones:
+- dragenter
+- dragover
+- await
+- '#dropzone'
+- files
+- name
+- 'note.txt'
+  attachments: note.txt
+- mimeType
+- 'text/plain'
+- buffer
+- from
+- 'hello'
+- data
+- 'hello world'
+- 'text/uri-list'
+- 'https://example.com'
+- 🎯 Aria snapshots
+- now works on a , in addition to a — equivalent to asserting against .
+- page.locator('body')
+- New option on / appends each element's bounding box as , useful for AI consumption.
+- boxes
+- [box=x,y,width,height]
+- 🛑 test.abort()
+- New aborts the currently running test from a fixture, hook, or route handler with an optional message. Use it when you have detected an unrecoverable misuse and want to fail the test right away:
+- test ( 'does not publish to the shared page' , async ( { page } ) => { await page . route ( '**/publish' , route => { test . abort ( 'Tests must not publish to the shared page. Use the `clone` option.' ) ; return route . abort ( ) ; } ) ; // ... } ) ;
+- 'does not publish to the shared page'
+- await
+- '**/publish'
+- 'Tests must not publish to the shared page. Use the `clone` option.'
+- return
+- New APIs
+- Browser, Context and Page
+- Event — fired when a new context is created on the browser.
+- BrowserContext now mirrors lifecycle events from its pages: browserContext.on('download') , browserContext.on('frameattached') , browserContext.on('framedetached') , browserContext.on('framenavigated') , browserContext.on('pageclose') , browserContext.on('pageload') .
+- Locators and Assertions
+- New option in / / / for matching the .
+- New option in reads computed styles from or .
+- pseudo
+- ::before
+- ::after
+- New option in applies extra inline CSS to the highlight overlay, plus new to clear all highlights.
+- style
+- Network
+- webSocketRoute.protocols() returns the WebSocket subprotocols requested by the page.
+- New option in disables Playwright's default overrides on the default context (download behavior, focus emulation, media emulation), so attaching to a user's daily-driver browser doesn't disturb its state.
+- noDefaults
+- Errors and Reporting
+- New mirrors .
+- now exposes / properties ( / are deprecated).
+- column
+- lineNumber
+- columnNumber
+- New surfaces additional diagnostic context, such as the aria snapshot of the receiver at the time of an matcher failure.
+- now receives a argument with details about the worker for fixture teardown errors.
+- workerInfo
+- Test runner
+- New token in — file name without extension.
+- {testFileBaseName}
+- Test runner now errors when a config tries to override a non-option fixture, and rejects or negative values.
+- workers: 0
+- 🛠️ Other improvements
+- HTML reporter: npx playwright show-report accepts .zip files directly — no need to unzip first. Steps that contain attachments inside nested children show an indicator on the parent step. The repeatEachIndex is shown in the test header when non-zero.
+- accepts files directly — no need to unzip first.
+- npx playwright show-report
+- .zip
+- Steps that contain attachments inside nested children show an indicator on the parent step.
+- The is shown in the test header when non-zero.
+- repeatEachIndex
+- Trace Viewer adds a pretty-print toggle for JSON / form request and response bodies in the network details panel.
+- Breaking Changes ⚠️
+- Removed long-deprecated APIs: Locator.ariaRef() — use the standard locator.ariaSnapshot() pipeline. handle option on BrowserContext.exposeBinding and Page.exposeBinding . logger option on BrowserType.connect and BrowserType.connectOverCDP — use tracing instead. Context options videosPath / videoSize — use recordVideo instead.
+- — use the standard pipeline.
+- Locator.ariaRef()
+- option on and .
+- handle
+- BrowserContext.exposeBinding
+- Page.exposeBinding
+- option on and — use instead.
+- logger
+- Context options / — use instead.
+- videosPath
+- videoSize
+- Browser Versions
+- Chromium 148.0.7778.96
+- Mozilla Firefox 150.0.2
+- WebKit 26.4
+- This version was also tested against the following stable channels:
+- Google Chrome 147
+- Microsoft Edge 147
+- Assets 2
+- 2
+- 29
+- 14
+- 31
+- 57 people reacted
+Context: v1.59.1
+- v1.59.1
+- yury-s released this 01 Apr 17:55
+- 01 Apr 17:55
+- v1.59.1
+- d466ac5
+- Verified commit signature
+- Bug Fixes
+- Reverted hiding console window when spawning browser processes, which caused regressions including broken , and commands ( )
+  evidence: #39990
+- [Windows]
+- codegen
+- Assets 2
+- 2
+- 17
+- 5
+- 5
+- 24 people reacted
+Context: v1.59.0
+- v1.59.0
+- dgozman released this 01 Apr 00:27
+- 01 Apr 00:27
+- v1.59.0
+- 01b2b15
+- 🎬 Screencast New page.screencast API provides a unified interface for capturing page content with: Screencast recordings Action annotations Visual overlays Real-time frame capture Agentic video receipts Screencast recording — record video with precise start/stop control, as an alternative to the recordVideo option: await page . screencast . start ( { path : 'video.webm' } ) ; // ... perform actions ... await page . screencast . stop ( ) ; Action annotations — enable built-in visual annotations
+- 🎬 Screencast
+- New API provides a unified interface for capturing page content with:
+- Screencast recordings
+- Action annotations
+- Visual overlays
+- Real-time frame capture
+- Agentic video receipts
+- Demo
+- — record video with precise start/stop control, as an alternative to the option:
+- Screencast recording
+- await
+- 'video.webm'
+- // ... perform actions ...
+- Action annotations — enable built-in visual annotations that highlight interacted elements and display action titles during recording:
+- Action annotations
+- await
+- position
+- 'top-right'
+- accepts ( , , , , , ), (ms per annotation), and (px). Returns a disposable to stop showing actions.
+- position
+- 'top-left'
+- 'top-right'
+- 'bottom-left'
+- 'bottom'
+- 'bottom-right'
+- duration
+- fontSize
+- Action annotations can also be enabled in test fixtures via the option:
+- // playwright.config.ts
+- export
+- default
+- defineConfig
+- use
+- position
+- 'top-left'
+- 'top-right'
+- Visual overlays — add chapter titles and custom HTML overlays on top of the page for richer narration:
+- Visual overlays
+- await
+- 'Adding TODOs'
+- 'Type and press enter for each TODO'
+- duration
+- 1000
+- ' Recording '
+- Real-time frame capture — stream JPEG-encoded frames for custom processing like thumbnails, live previews, AI vision, and more:
+- Real-time frame capture
+- await page . screencast . start ( { onFrame : ( { data } ) => sendToVisionModel ( data ) , size : { width : 800 , height : 600 } , } ) ;
+- await
+- sendToVisionModel
+- data
+- size
+- width
+- 800
+- height
+- 600
+- Agentic video receipts — coding agents can produce video evidence of their work. After completing a task, an agent can record a walkthrough video with rich annotations for human review:
+- Agentic video receipts
+- await page . screencast . start ( { path : 'receipt.webm' } ) ; await page . screencast . showActions ( { position : 'top-right' } ) ; await page . screencast . showChapter ( 'Verifying checkout flow' , { description : 'Added coupon code support per ticket #1234' , } ) ; // Agent performs the verification steps... await page . locator ( '#coupon' ) . fill ( 'SAVE20' ) ; await page . locator ( '#apply-coupon' ) . click ( ) ; await expect ( page . locator ( '.discount' ) ) . toContainText ( '20%'
+- await
+- 'receipt.webm'
+- position
+- 'top-right'
+- 'Verifying checkout flow'
+- 'Added coupon code support per ticket #1234'
+- // Agent performs the verification steps...
+- '#coupon'
+- fill
+- 'SAVE20'
+- '#apply-coupon'
+- click
+- '.discount'
+- toContainText
+- '20%'
+- 'Done'
+- 'Coupon applied, discount reflected in total'
+- The resulting video serves as a receipt: chapter titles provide context, action annotations highlight each interaction, and the visual walkthrough is faster to review than text logs.
+- 🔗 Interoperability
+- New API makes a launched browser available for , , and other clients to connect to.
+- Bind a browser — start a browser and bind it so others can connect:
+- Bind a browser
+- const { endpoint } = await browser . bind ( 'my-session' , { workspaceDir : '/my/project' , } ) ;
+- const
+- await
+- 'my-session'
+- workspaceDir
+- '/my/project'
+- Connect from playwright-cli — connect to the running browser from your favorite coding agent.
+- Connect from playwright-cli
+- playwright-cli attach my-session playwright-cli -s my-session snapshot
+- Connect from @playwright/mcp — or point your MCP server to the running browser.
+- Connect from @playwright/mcp
+- @playwright/mcp --endpoint=my-session
+- Connect from a Playwright client — use API to connect to the browser. Multiple clients at a time are supported!
+- Connect from a Playwright client
+- const browser = await chromium . connect ( endpoint ) ;
+- const
+- await
+- chromium
+- endpoint
+- Pass and options to bind over WebSocket instead of a named pipe:
+- host
+- const { endpoint } = await browser . bind ( 'my-session' , { host : 'localhost' , port : 0 , } ) ; // endpoint is a ws:// URL
+- const
+- await
+- 'my-session'
+- host
+- 'localhost'
+- 0
+- // endpoint is a ws:// URL
+- Call to stop accepting new connections.
+- 📊 Observability
+- Run to open the Dashboard that lists all the bound browsers, their statuses, and allows interacting with them:
+- playwright-cli show
+- See what your agent is doing on the background browsers
+- Click into the sessions for manual interventions
+- Open DevTools to inspect pages from the background browsers.
+- 🐛 CLI debugger for agents
+- Coding agents can now run to attach and debug tests over — perfect for automatically fixing tests in agentic workflows:
+- npx playwright test --debug=cli
+- $ npx playwright test --debug=cli # ## Debugging Instructions - Run " playwright-cli attach tw-87b59e " to attach to this test $ playwright-cli attach tw-87b59e # ## Session `tw-87b59e` created, attached to `tw-87b59e`. Run commands with: playwright-cli --session=tw-87b59e # ## Paused - Navigate to " / " at output/tests/example.spec.ts:4 $ playwright-cli --session tw-87b59e step-over # ## Page - Page URL: https://playwright.dev/ - Page Title: Fast and reliable end-to-end testing for
+- # ## Debugging Instructions
+- " playwright-cli attach tw-87b59e "
+- # ## Session `tw-87b59e` created, attached to `tw-87b59e`.
+- # ## Paused
+- " toHaveTitle "
+- 📋 CLI trace analysis for agents
+- Coding agents can run to explore and understand failing or flaky tests from the command line:
+- npx playwright trace
+- $ npx playwright trace open test-results/example-has-title-chromium/trace.zip Title: example.spec.ts:3 › has title $ npx playwright trace actions --grep= " expect " # Time Action Duration ──── ───────── ─────────────────────────────────────────────────────── ──────── 9. 0:00.859 Expect " toHaveTitle " 5.1s ✗ $ npx playwright trace action 9 Expect " toHaveTitle " Error: expect(page).toHaveTitle(expected) failed Expected pattern: /Wrong Title/ Received string: " Fast and reliable end-to-end testin
+- # Time Action Duration
+- " toHaveTitle "
+- " Fast and reliable end-to-end testing for modern web apps | Playwright "
+- await using
+- Many APIs now return , enabling the syntax for automatic cleanup:
+- await using
+- await using page = await context . newPage ( ) ; { await using route = await page . route ( '**/*' , route => route . continue ( ) ) ; await using script = await page . addInitScript ( 'console.log("init script here")' ) ; await page . goto ( 'https://playwright.dev' ) ; // do something } // route and init script have been removed at this point
+- await
+- using
+- newPage
+- continue
+- 'console.log("init script here")'
+- goto
+- 'https://playwright.dev'
+- // do something
+- // route and init script have been removed at this point
+- 🔍 Snapshots and Locators
+- Method to capture the aria snapshot of the page — equivalent to .
+- page.locator('body').ariaSnapshot()
+- Options and in .
+- depth
+- Method converts a locator to follow best practices like test ids and aria roles.
+- Method enters an interactive mode where hovering over elements highlights them and shows the corresponding locator. Click an element to get its back. Use to cancel.
+- New APIs
+- page.screencast provides video recording, real-time frame streaming, and overlay management.
+- Methods and for recording and frame capture.
+- Methods and for action annotations.
+- Methods and for visual overlays.
+- Methods and for overlay visibility control.
+- Storage, Console and Errors...
+- Assets 2
+- 2
+- 43
+- 42
+- 16
+- 25
+- 2
+- 85 people reacted
+Context: v1.58.2
+- v1.58.2
+- dgozman released this 06 Feb 16:41
+- 06 Feb 16:41
+- v1.58.2
+- ce480a9
+- Highlights
+- fix(trace viewer): make paths via stdin work fix: do not force swiftshader on chromium mac
+  evidence: #39121
+  evidence: #39129
+- Browser Versions
+- Chromium 145.0.7632.6
+- Mozilla Firefox 146.0.1
+- WebKit 26.0
+- Assets 2
+- 2
+- 23
+- 23 people reacted
+Context: v1.58.1
+- v1.58.1
+- dgozman released this 30 Jan 18:23
+- 30 Jan 18:23
+- v1.58.1
+- 97bc385
+- Highlights
+- fix(msedge): fix local network permissions chore: update cft download location chore(webkit): disable frame sessions on fronzen builds
+  evidence: #39036
+  evidence: #39037
+  evidence: #38995
+- Browser Versions
+- Chromium 145.0.7632.6
+- Mozilla Firefox 146.0.1
+- WebKit 26.0
+- Assets 2
+- 2
+- 9
+- 17
+- 20 people reacted
+Context: v1.58.0
+- v1.58.0
+- Skn0tt released this 23 Jan 11:53
+- 23 Jan 11:53
+- v1.58.0
+- 961381e
+- Verified commit signature
+- 📣 Playwright CLI+SKILLs 📣
+- We are adding a new token-efficient CLI mode of operation to Playwright with the skills located at . This brings the long-awaited official SKILL-focused CLI mode to our story and makes it more coding agent-friendly.
+- It is the first snapshot with the essential command set (which is already larger than the original MCP!), but we expect it to grow rapidly. Unlike the token use, that one we expect to go down since snapshots are no longer forced into the LLM!
+- Timeline
+- If you're using , the HTML report Speedboard tab now shows the Timeline:
+- Timeline chart in the HTML report
+- UI Mode and Trace Viewer Improvements
+- New 'system' theme option follows your OS dark/light mode preference
+- Search functionality (Cmd/Ctrl+F) is now available in code editors
+- Network details panel has been reorganized for better usability
+- JSON responses are now automatically formatted for readability
+- Thanks to for contributing these improvements!
+- Miscellaneous
+- now accepts an option. When set to , it tells Playwright that it runs on the same host as the CDP server, enabling file system optimizations.
+- isLocal
+- true
+- Breaking Changes ⚠️
+- Removed and selectors. See for alternatives.
+- _react
+- _vue
+- Removed selector engine suffix. Use standard CSS selectors instead.
+- Option from has been removed. Use instead.
+- devtools
+- args: ['--auto-open-devtools-for-tabs']
+- Removed macOS 13 support for WebKit. We recommend to upgrade your macOS version, or keep using an older Playwright version.
+- Browser Versions
+- Chromium 145.0.7632.6
+- Mozilla Firefox 146.0.1
+- WebKit 26.0
+- This version was also tested against the following stable channels:
+- Google Chrome 144
+- Microsoft Edge 144
+- Assets 2
+- 2
+- 34
+- 18
+- 42 people reacted
+
+=== MEDIA / IMAGE LABELS ===
+- "tada" source=present context="v1.62.1"
+- "heart" source=present context="v1.62.1"
+- "rocket" source=present context="v1.62.0"
+- "eyes" source=present context="v1.62.0"
+
+=== USEFUL PAGE ACTIONS ===
+[7342] link "Previous"
+[7343] link "Next"
+[7631] link "v1.62.0"
+[7639] button "Compare"
+[7728] link "Tag v1.62.0"
+[7734] link "Commit e3950d9"
+[13900] button "Copy code to clipboard"
+=== SECONDARY / DEBUG ACTIONS ===
+[34] link "Skip to content" <a> role=link state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=382 bounds=(x=0 y=-491 w=1 h=1) reason=not_hit_testable
+[40] link "Homepage" <a> role=link context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=449 bounds=(x=32 y=-471 w=32 h=32) reason=not_hit_testable
+[45] button "Platform" <button> role=button context="generic: Global / generic: External link / generic: External link" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=471 bounds=(x=80 y=-475 w=97.5 h=40) reason=not_hit_testable
+[90] button "Solutions" <button> role=button context="generic: Global / generic: External link / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=636 bounds=(x=177.5 y=-475 w=103.984375 h=40) reason=not_hit_testable
+[130] button "Resources" <button> role=button context="generic: Global / generic: External link / generic: External link" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=728 bounds=(x=281.484375 y=-475 w=114.640625 h=40) reason=not_hit_testable
+[172] button "Open Source" <button> role=button context="generic: Global / generic: External link / generic: External link" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=827 bounds=(x=396.125 y=-475 w=132.921875 h=40) reason=not_hit_testable
+[199] button "Enterprise" <button> role=button context="generic: Global / generic: External link / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=895 bounds=(x=529.046875 y=-475 w=111.328125 h=40) reason=not_hit_testable
+[216] link "Pricing" <a> role=link context="generic: Global / generic: External link / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=949 bounds=(x=640.375 y=-475 w=66.59375 h=40) reason=not_hit_testable
+[218] button "Search or jump to, type / to search" <button> role=button context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=953 bounds=(x=1075.765625 y=-471 w=42 h=32) reason=not_hit_testable
+[220] link "Sign in" <a> role=link context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=965 bounds=(x=1125.765625 y=-471 w=70.28125 h=32) reason=not_hit_testable
+[6] link "Sign up" <a> role=link context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=969 bounds=(x=1204.046875 y=-471 w=74.953125 h=32) reason=not_hit_testable
+[7] button "Appearance settings" <button> role=button context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=973 bounds=(x=1287 y=-471 w=32 h=32) reason=not_hit_testable
+[226] link "microsoft" <a> role=link context="generic: Please reload this page" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1077 bounds=(x=56 y=-399 w=81.125 h=22) reason=not_hit_testable
+[229] link "playwright" <a> role=link context="generic: Please reload this page / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1086 bounds=(x=150.6875 y=-399 w=100.015625 h=22) reason=not_hit_testable
+[246] link "Code" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1158 bounds=(x=32 y=-348 w=75 h=30) reason=not_hit_testable
+[250] link "Issues 146" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1173 bounds=(x=115 y=-348 w=125.625 h=30) reason=not_hit_testable
+[255] link "Pull requests 21" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1190 bounds=(x=248.625 y=-348 w=163.28125 h=30) reason=not_hit_testable
+[260] link "Actions" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1206 bounds=(x=419.90625 y=-348 w=91.34375 h=30) reason=not_hit_testable
+[16] link "Security and quality 0" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1221 bounds=(x=519.25 y=-348 w=173.046875 h=30) reason=not_hit_testable
+[266] link "Insights" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1237 bounds=(x=700.296875 y=-348 w=93.671875 h=30) reason=not_hit_testable
+[7287] link "Releases" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: Releases and Tags" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1403 bounds=(x=118.171875 y=-285 w=92.375 h=32) reason=not_hit_testable
+[7288] link "Tags" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: Releases and Tags" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1406 bounds=(x=209.546875 y=-285 w=63.578125 h=32) reason=not_hit_testable
+[7297] text-input "Find a release" actions=click,type,focus <input> role=textbox context="generic: Please reload this page / generic: Releases and Tags / generic: Find a release" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1418 bounds=(x=1005.828125 y=-285 w=227 h=32) reason=not_hit_testable
+[7311] link "v1.62.1" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.62.1" state=offscreen hit=True viewport=False sourceOrder=1454 bounds=(x=118.171875 y=62 w=162.65625 h=33) reason=broad/noisy
+[7314] link "v1.62.0" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.62.0" state=offscreen hit=True viewport=False sourceOrder=1463 bounds=(x=118.171875 y=95 w=162.65625 h=33) reason=broad/noisy
+[7317] link "v1.61.1" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.61.1" state=offscreen hit=True viewport=False sourceOrder=1472 bounds=(x=118.171875 y=128 w=162.65625 h=33) reason=broad/noisy
+[7320] link "v1.61.0" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.61.0" state=offscreen hit=True viewport=False sourceOrder=1481 bounds=(x=118.171875 y=161 w=162.65625 h=33) reason=broad/noisy
+[7323] link "v1.60.0" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.60.0" state=offscreen hit=True viewport=False sourceOrder=1490 bounds=(x=118.171875 y=194 w=162.65625 h=33) reason=broad/noisy
+[7326] link "v1.59.1" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.59.1" state=offscreen hit=True viewport=False sourceOrder=1499 bounds=(x=118.171875 y=227 w=162.65625 h=33) reason=broad/noisy
+[7329] link "v1.59.0" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.59.0" state=offscreen hit=True viewport=False sourceOrder=1508 bounds=(x=118.171875 y=260 w=162.65625 h=33) reason=broad/noisy
+[7332] link "v1.58.2" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.58.2" state=offscreen hit=True viewport=False sourceOrder=1517 bounds=(x=118.171875 y=293 w=162.65625 h=33) reason=broad/noisy
+[7335] link "v1.58.1" <a> role=link context="generic: v1.62.1 / generic: v1.62.1 / generic: v1.58.1" state=offscreen hit=True viewport=False sourceOrder=1526 bounds=(x=118.171875 y=326 w=162.65625 h=33) reason=broad/noisy
+[7407] link "v1.62.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1729 bounds=(x=337.828125 y=-157 w=106.765625 h=36) reason=not_hit_testable
+[7409] link "Latest" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1734 bounds=(x=464.484375 y=-149 w=50.703125 h=24) reason=not_hit_testable
+[7419] button "Compare" <button> role=button context="generic: v1.62.1 / generic: Close / generic: Close" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1760 bounds=(x=1128.46875 y=-163 w=87.359375 h=28) reason=not_hit_testable
+[7508] link "Tag v1.62.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1987 bounds=(x=598.9375 y=-96 w=69.828125 h=16) reason=not_hit_testable
+[7514] link "Commit 26a9e47" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2002 bounds=(x=692.765625 y=-96 w=82.703125 h=16) reason=not_hit_testable
+[7589] button "thumbs up (8): dgozman, 11:14PM on July 29" <button> role=button context="generic: Releases and Tags / generic: v1.62.1 / generic: thumbs up (8): dgozman, 11:14PM on July 29" state=offscreen hit=True viewport=False sourceOrder=2179 bounds=(x=337.828125 y=330 w=42.6875 h=26) reason=broad/noisy
+[7593] button "hooray (16): dgozman, 11:14PM on July 29" <button> role=button context="generic: Releases and Tags / generic: v1.62.1 / generic: thumbs up (8): dgozman, 11:14PM on July 29" state=offscreen hit=True viewport=False sourceOrder=2191 bounds=(x=384.515625 y=330 w=49.359375 h=26) reason=broad/noisy
+[7597] button "heart (2): dgozman, 11:14PM on July 29" <button> role=button context="generic: Releases and Tags / generic: v1.62.1 / generic: thumbs up (8): dgozman, 11:14PM on July 29" state=offscreen hit=True viewport=False sourceOrder=2203 bounds=(x=437.875 y=330 w=42.6875 h=26) reason=broad/noisy
+[7772] scroll-region "test ( 'click should expand' , async ( { mount } ) => { const component = await mount ( 'components/Expandable/Stateful' ) ; await component . getByRole ( 'button' ) . click ( ) ; await expect ( component . getByTestId…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.0" hit=True viewport=True sourceOrder=2649 bounds=(x=337.828125 y=747.1875 w=878 h=130.515625) reason=broad/noisy
+[7833] scroll-region "const controller = new AbortController ( ) ; setTimeout ( ( ) => controller . abort ( ) , 1000 ) ; await page . getByRole ( 'button' , { name : 'Submit' } ) . click ( { signal : controller . signal } ) ; await expect (…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.0" state=not-hit-testable hit=False viewport=True sourceOrder=2807 bounds=(x=337.828125 y=1084.671875 w=878 h=130.515625) reason=broad/noisy
+[7834] scroll-region ": : :" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v1.62.0 / generic: Copy code to clipboard" state=not-hit-testable hit=False viewport=True sourceOrder=2808 bounds=(x=337.828125 y=1084.671875 w=878 h=130.515625) reason=broad/noisy
+[13907] button "Copy code to clipboard" <clipboard-copy> role=button context="generic: Releases and Tags / generic: v1.62.0 / generic: Copy code to clipboard" state=not-hit-testable hit=False viewport=True sourceOrder=2965 bounds=(x=1173.828125 y=1092.671875 w=34 h=36) reason=not_hit_testable
+[7908] scroll-region "// Visual comparisons store the golden snapshot as lossless WebP. await expect ( page ) . toHaveScreenshot ( 'homepage.webp' ) ; // Standalone screenshots can trade quality for size with lossy WebP. await page . screens…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.0" state=not-hit-testable hit=False viewport=True sourceOrder=3000 bounds=(x=337.828125 y=1398.15625 w=878 h=130.515625) reason=broad/noisy
+[7909] scroll-region ": :" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v1.62.0 / generic: Copy code to clipboard" state=not-hit-testable hit=False viewport=True sourceOrder=3001 bounds=(x=337.828125 y=1398.15625 w=878 h=130.515625) reason=broad/noisy
+[7947] scroll-region "class MyReporter { async preprocess ( { config , suite , testRun } ) { for ( const test of suite . allTests ( ) ) { if ( shouldSkip ( test ) ) testRun . skip ( test ) ; } } }" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3112 bounds=(x=337.828125 y=1735.25 w=878 h=189.625) reason=broad/noisy
+[7996] scroll-region "// playwright.config.ts export default defineConfig ( { retries : 2 , retryStrategy : 'isolated' , } ) ;" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3250 bounds=(x=337.828125 y=2091.453125 w=878 h=130.515625) reason=broad/noisy
+[7997] scroll-region ": :" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v1.62.0 / generic: Copy code to clipboard" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3251 bounds=(x=337.828125 y=2091.453125 w=878 h=130.515625) reason=broad/noisy
+[8052] scroll-region "// playwright.config.ts export default defineConfig ( { reporter : [ [ 'html' , { mergeFiles : true } ] ] , } ) ;" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.62.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3418 bounds=(x=337.828125 y=2964.109375 w=878 h=110.8125) reason=broad/noisy
+[8053] scroll-region ": :" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v1.62.0 / generic: Copy code to clipboard" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3419 bounds=(x=337.828125 y=2964.109375 w=878 h=110.8125) reason=broad/noisy
+[8123] button "thumbs up (10): dcrousso, 09:40PM on July 24" <button> role=button context="generic: Releases and Tags / generic: v1.62.0 / generic: thumbs up (10): dcrousso, 09:40PM on July 24" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3607 bounds=(x=337.828125 y=3538.296875 w=49.359375 h=26) reason=not_hit_testable
+[8127] button "hooray (27): dcrousso, 09:40PM on July 24" <button> role=button context="generic: Releases and Tags / generic: v1.62.0 / generic: thumbs up (10): dcrousso, 09:40PM on July 24" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3619 bounds=(x=391.1875 y=3538.296875 w=49.359375 h=26) reason=not_hit_testable
+[8131] button "heart (7): dcrousso, 09:40PM on July 24" <button> role=button context="generic: Releases and Tags / generic: v1.62.0 / generic: thumbs up (10): dcrousso, 09:40PM on July 24" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3631 bounds=(x=444.546875 y=3538.296875 w=42.6875 h=26) reason=not_hit_testable
+[8135] button "rocket (4): dcrousso, 09:40PM on July 24" <button> role=button context="generic: Releases and Tags / generic: v1.62.0 / generic: thumbs up (10): dcrousso, 09:40PM on July 24" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3643 bounds=(x=491.234375 y=3538.296875 w=42.6875 h=26) reason=not_hit_testable
+[8139] button "eyes (1): dcrousso, 09:40PM on July 24" <button> role=button context="generic: Releases and Tags / generic: v1.62.0 / generic: thumbs up (10): dcrousso, 09:40PM on July 24" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3655 bounds=(x=537.921875 y=3538.296875 w=42.6875 h=26) reason=not_hit_testable
+[8179] link "v1.61.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.61.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3761 bounds=(x=337.828125 y=3636.296875 w=106.765625 h=36) reason=not_hit_testable
+[8276] link "Tag v1.61.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.61.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4011 bounds=(x=576.390625 y=3697.296875 w=69.828125 h=16) reason=not_hit_testable
+[8282] link "Commit 39e3553" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.61.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4026 bounds=(x=670.21875 y=3697.296875 w=82.703125 h=16) reason=not_hit_testable
+[8334] button "heart (9): dgozman, 02:47PM on June 22" <button> role=button context="generic: Releases and Tags / generic: v1.61.1 / generic: heart (9): dgozman, 02:47PM on June 22" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4150 bounds=(x=337.828125 y=4109.296875 w=42.6875 h=26) reason=not_hit_testable
+[8362] link "v1.61.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.61.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4220 bounds=(x=337.828125 y=4207.296875 w=106.765625 h=36) reason=not_hit_testable
+[8459] link "Tag v1.61.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.61.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4470 bounds=(x=576.390625 y=4268.296875 w=69.828125 h=16) reason=not_hit_testable
+[8465] link "Commit 1cc5a90" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.61.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4485 bounds=(x=670.21875 y=4268.296875 w=82.703125 h=16) reason=not_hit_testable
+[8476] scroll-region "const context = await browser . newContext ( ) ; // Seed a passkey your backend provisioned for a test user. await context . credentials . create ( 'example.com' , { id : credentialId , userHandle , privateKey , publicK…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.61.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4516 bounds=(x=337.828125 y=4478.875 w=878 h=307.84375) reason=broad/noisy
+[8544] scroll-region "await page . localStorage . setItem ( 'token' , 'abc' ) ; const token = await page . localStorage . getItem ( 'token' ) ; const items = await page . sessionStorage . items ( ) ;" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.61.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4699 bounds=(x=337.828125 y=4992.90625 w=878 h=91.109375) reason=broad/noisy
+[8674] button "thumbs up (27): dgozman, 08:44AM on June 15" <button> role=button context="generic: Releases and Tags / generic: v1.61.0 / generic: thumbs up (27): dgozman, 08:44AM on June 15" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5050 bounds=(x=337.828125 y=6248.484375 w=49.359375 h=26) reason=not_hit_testable
+[8678] button "hooray (30): dgozman, 08:44AM on June 15" <button> role=button context="generic: Releases and Tags / generic: v1.61.0 / generic: thumbs up (27): dgozman, 08:44AM on June 15" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5062 bounds=(x=391.1875 y=6248.484375 w=49.359375 h=26) reason=not_hit_testable
+[8682] button "rocket (14): dgozman, 08:44AM on June 15" <button> role=button context="generic: Releases and Tags / generic: v1.61.0 / generic: thumbs up (27): dgozman, 08:44AM on June 15" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5074 bounds=(x=444.546875 y=6248.484375 w=49.359375 h=26) reason=not_hit_testable
+[8686] button "eyes (3): dgozman, 08:44AM on June 15" <button> role=button context="generic: Releases and Tags / generic: v1.61.0 / generic: thumbs up (27): dgozman, 08:44AM on June 15" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5086 bounds=(x=497.90625 y=6248.484375 w=42.6875 h=26) reason=not_hit_testable
+[8723] link "v1.60.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.60.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5183 bounds=(x=337.828125 y=6346.484375 w=106.765625 h=36) reason=not_hit_testable
+[8820] link "Tag v1.60.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.60.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5433 bounds=(x=559.796875 y=6407.484375 w=69.828125 h=16) reason=not_hit_testable
+[8826] link "Commit 87bb9dd" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.60.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5448 bounds=(x=653.625 y=6407.484375 w=82.703125 h=16) reason=not_hit_testable
+[8841] scroll-region "await using har = await context . tracing . startHar ( 'trace.har' ) ; const page = await context . newPage ( ) ; await page . goto ( 'https://playwright.dev' ) ; // HAR is finalized when `har` goes out of scope." actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.60.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5490 bounds=(x=337.828125 y=6594.453125 w=878 h=110.8125) reason=broad/noisy
+[8882] scroll-region "await page . locator ( '#dropzone' ) . drop ( { files : { name : 'note.txt' , mimeType : 'text/plain' , buffer : Buffer . from ( 'hello' ) } , } ) ; await page . locator ( '#dropzone' ) . drop ( { data : { 'text/plain'…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.60.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5606 bounds=(x=337.828125 y=6871.84375 w=878 h=229.03125) reason=broad/noisy
+[8883] scroll-region ": : : : : : :" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v1.60.0 / generic: Copy code to clipboard" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5607 bounds=(x=337.828125 y=6871.84375 w=878 h=229.03125) reason=broad/noisy
+[8954] scroll-region "test ( 'does not publish to the shared page' , async ( { page } ) => { await page . route ( '**/publish' , route => { test . abort ( 'Tests must not publish to the shared page. Use the `clone` option.' ) ; return route…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v1.60.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5800 bounds=(x=337.828125 y=7422.421875 w=878 h=169.921875) reason=broad/noisy
+[9136] button "thumbs up (29): yury-s, 05:00PM on May 11" <button> role=button context="generic: Releases and Tags / generic: v1.60.0 / generic: thumbs up (29): yury-s, 05:00PM on May 11" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6299 bounds=(x=337.828125 y=9279.203125 w=49.359375 h=26) reason=not_hit_testable
+[9140] button "hooray (14): yury-s, 05:00PM on May 11" <button> role=button context="generic: Releases and Tags / generic: v1.60.0 / generic: thumbs up (29): yury-s, 05:00PM on May 11" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6311 bounds=(x=391.1875 y=9279.203125 w=49.359375 h=26) reason=not_hit_testable
+[9144] button "rocket (31): yury-s, 05:00PM on May 11" <button> role=button context="generic: Releases and Tags / generic: v1.60.0 / generic: thumbs up (29): yury-s, 05:00PM on May 11" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6323 bounds=(x=444.546875 y=9279.203125 w=49.359375 h=26) reason=not_hit_testable
+[9178] link "v1.59.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.59.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6411 bounds=(x=337.828125 y=9377.203125 w=106.765625 h=36) reason=not_hit_testable
+[9275] link "Tag v1.59.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.59.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6661 bounds=(x=547.609375 y=9438.203125 w=69.828125 h=16) reason=not_hit_testable
+[9281] link "Commit d466ac5" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.59.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6676 bounds=(x=641.4375 y=9438.203125 w=82.703125 h=16) reason=not_hit_testable
+[9352] button "thumbs up (17): yury-s, 05:07PM on April 01" <button> role=button context="generic: Releases and Tags / generic: v1.59.1 / generic: thumbs up (17): yury-s, 05:07PM on April 01" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6845 bounds=(x=337.828125 y=9690.59375 w=49.359375 h=26) reason=not_hit_testable
+[9356] button "heart (5): yury-s, 05:07PM on April 01" <button> role=button context="generic: Releases and Tags / generic: v1.59.1 / generic: thumbs up (17): yury-s, 05:07PM on April 01" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6857 bounds=(x=391.1875 y=9690.59375 w=42.6875 h=26) reason=not_hit_testable
+[9360] button "eyes (5): yury-s, 05:07PM on April 01" <button> role=button context="generic: Releases and Tags / generic: v1.59.1 / generic: thumbs up (17): yury-s, 05:07PM on April 01" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6869 bounds=(x=437.875 y=9690.59375 w=42.6875 h=26) reason=not_hit_testable
+[9394] link "v1.59.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.59.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6957 bounds=(x=337.828125 y=9788.59375 w=106.765625 h=36) reason=not_hit_testable
+[9491] link "Tag v1.59.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.59.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7207 bounds=(x=577.921875 y=9849.59375 w=69.828125 h=16) reason=not_hit_testable
+[9497] link "Commit 01b2b15" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.59.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7222 bounds=(x=671.75 y=9849.59375 w=82.703125 h=16) reason=not_hit_testable
+[10035] link "Read more" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.59.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8768 bounds=(x=337.828125 y=15833.53125 w=69.265625 h=16) reason=not_hit_testable
+[10071] button "thumbs up (43): dgozman, 11:22PM on March 31" <button> role=button context="generic: Releases and Tags / generic: v1.59.0 / generic: thumbs up (43): dgozman, 11:22PM on March 31" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8851 bounds=(x=337.828125 y=15931.53125 w=49.359375 h=26) reason=not_hit_testable
+[10075] button "hooray (42): dgozman, 11:22PM on March 31" <button> role=button context="generic: Releases and Tags / generic: v1.59.0 / generic: thumbs up (43): dgozman, 11:22PM on March 31" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8863 bounds=(x=391.1875 y=15931.53125 w=49.359375 h=26) reason=not_hit_testable
+[10079] button "heart (16): dgozman, 11:22PM on March 31" <button> role=button context="generic: Releases and Tags / generic: v1.59.0 / generic: thumbs up (43): dgozman, 11:22PM on March 31" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8875 bounds=(x=444.546875 y=15931.53125 w=49.359375 h=26) reason=not_hit_testable
+[10083] button "rocket (25): dgozman, 11:22PM on March 31" <button> role=button context="generic: Releases and Tags / generic: v1.59.0 / generic: thumbs up (43): dgozman, 11:22PM on March 31" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8887 bounds=(x=497.90625 y=15931.53125 w=49.359375 h=26) reason=not_hit_testable
+[10087] button "eyes (2): dgozman, 11:22PM on March 31" <button> role=button context="generic: Releases and Tags / generic: v1.59.0 / generic: thumbs up (43): dgozman, 11:22PM on March 31" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8899 bounds=(x=551.265625 y=15931.53125 w=42.6875 h=26) reason=not_hit_testable
+[10127] link "v1.58.2" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.2" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9005 bounds=(x=337.828125 y=16029.53125 w=106.765625 h=36) reason=not_hit_testable
+[10224] link "Tag v1.58.2" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.2" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9255 bounds=(x=570.15625 y=16090.53125 w=69.828125 h=16) reason=not_hit_testable
+[10230] link "Commit ce480a9" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.2" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9270 bounds=(x=663.984375 y=16090.53125 w=82.703125 h=16) reason=not_hit_testable
+[10280] button "thumbs up (23): dgozman, 01:42PM on February 06" <button> role=button context="generic: Releases and Tags / generic: v1.58.2 / generic: thumbs up (23): dgozman, 01:42PM on February 06" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9391 bounds=(x=337.828125 y=16513.90625 w=49.359375 h=26) reason=not_hit_testable
+[10308] link "v1.58.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9461 bounds=(x=337.828125 y=16611.90625 w=106.765625 h=36) reason=not_hit_testable
+[10405] link "Tag v1.58.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9711 bounds=(x=576.390625 y=16672.90625 w=69.828125 h=16) reason=not_hit_testable
+[10411] link "Commit 97bc385" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9726 bounds=(x=670.21875 y=16672.90625 w=82.703125 h=16) reason=not_hit_testable
+[10463] button "hooray (9): dgozman, 04:36PM on January 30" <button> role=button context="generic: Releases and Tags / generic: v1.58.1 / generic: hooray (9): dgozman, 04:36PM on January 30" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9852 bounds=(x=337.828125 y=17120.28125 w=42.6875 h=26) reason=not_hit_testable
+[10467] button "rocket (17): dgozman, 04:36PM on January 30" <button> role=button context="generic: Releases and Tags / generic: v1.58.1 / generic: hooray (9): dgozman, 04:36PM on January 30" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9864 bounds=(x=384.515625 y=17120.28125 w=49.359375 h=26) reason=not_hit_testable
+[10498] link "v1.58.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9943 bounds=(x=337.828125 y=17218.28125 w=106.765625 h=36) reason=not_hit_testable
+[10595] link "Tag v1.58.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10193 bounds=(x=557.734375 y=17279.28125 w=69.828125 h=16) reason=not_hit_testable
+[10601] link "Commit 961381e" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v1.58.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10208 bounds=(x=651.5625 y=17279.28125 w=82.703125 h=16) reason=not_hit_testable
+[10711] button "hooray (34): Skn0tt, 10:37AM on January 23" <button> role=button context="generic: Releases and Tags / generic: v1.58.0 / generic: hooray (34): Skn0tt, 10:37AM on January 23" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10488 bounds=(x=337.828125 y=19095.9375 w=49.359375 h=26) reason=not_hit_testable
+[10715] button "rocket (18): Skn0tt, 10:37AM on January 23" <button> role=button context="generic: Releases and Tags / generic: v1.58.0 / generic: hooray (34): Skn0tt, 10:37AM on January 23" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10500 bounds=(x=391.1875 y=19095.9375 w=49.359375 h=26) reason=not_hit_testable
+[10738] link "Previous" <span> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10565 bounds=(x=438.78125 y=19187.9375 w=96.46875 h=32) reason=not_hit_testable
+[10739] link "1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10568 bounds=(x=539.140625 y=19187.9375 w=32 h=32) reason=not_hit_testable
+[10740] link "2" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10571 bounds=(x=575.03125 y=19187.9375 w=32 h=32) reason=not_hit_testable
+[10741] link "3" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10574 bounds=(x=610.921875 y=19187.9375 w=32 h=32) reason=not_hit_testable
+[10742] link "4" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10577 bounds=(x=646.8125 y=19187.9375 w=32 h=32) reason=not_hit_testable
+[10743] link "5" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10580 bounds=(x=682.703125 y=19187.9375 w=32 h=32) reason=not_hit_testable
+[10745] link "16" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10586 bounds=(x=758.484375 y=19187.9375 w=37.578125 h=32) reason=not_hit_testable
+[10746] link "17" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10589 bounds=(x=799.953125 y=19187.9375 w=37.578125 h=32) reason=not_hit_testable
+[10747] link "Next" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10592 bounds=(x=841.421875 y=19187.9375 w=70.796875 h=32) reason=not_hit_testable
+[1969] link "GitHub Homepage" <a> role=link context="contentinfo: GitHub Homepage" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10621 bounds=(x=251.5625 y=19283.9375 w=24 h=26) reason=not_hit_testable
+[1977] link "Terms" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10642 bounds=(x=405.125 y=19289.9375 w=32.671875 h=14) reason=not_hit_testable
+[1980] link "Privacy" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10648 bounds=(x=453.796875 y=19289.9375 w=39.34375 h=14) reason=not_hit_testable
+[1983] link "Security" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10654 bounds=(x=509.140625 y=19289.9375 w=43.359375 h=14) reason=not_hit_testable
+[1986] link "Status" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10660 bounds=(x=568.5 y=19289.9375 w=34.03125 h=14) reason=not_hit_testable
+[1989] link "Community" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10666 bounds=(x=618.53125 y=19289.9375 w=60.6875 h=14) reason=not_hit_testable
+[1992] link "Docs" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10672 bounds=(x=695.21875 y=19289.9375 w=27.34375 h=14) reason=not_hit_testable
+[1995] link "Contact" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10678 bounds=(x=738.5625 y=19289.9375 w=41.359375 h=14) reason=not_hit_testable
+[1998] button "Manage cookies" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10686 bounds=(x=795.921875 y=19287.9375 w=87.390625 h=18) reason=not_hit_testable
+[2001] button "Do not share my personal information" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=10695 bounds=(x=899.3125 y=19287.9375 w=200.109375 h=18) reason=not_hit_testable
+=== COMPLETE READ-ONLY CONTROL TEXT ===
+- test ( 'click should expand' , async ( { mount } ) => { const component = await mount ( 'components/Expandable/Stateful' ) ; await component . getByRole ( 'button' ) . click ( ) ; await expect ( component . getByTestId ( 'expanded' ) ) . toHaveValue ( 'true' ) ; } ) ;
+- const controller = new AbortController ( ) ; setTimeout ( ( ) => controller . abort ( ) , 1000 ) ; await page . getByRole ( 'button' , { name : 'Submit' } ) . click ( { signal : controller . signal } ) ; await expect ( page . getByText ( 'Done' ) ) . toBeVisible ( { signal : controller . signal } ) ;
+- // Visual comparisons store the golden snapshot as lossless WebP. await expect ( page ) . toHaveScreenshot ( 'homepage.webp' ) ; // Standalone screenshots can trade quality for size with lossy WebP. await page . screenshot ( { path : 'homepage.webp' , quality : 50 } ) ;
+- const context = await browser . newContext ( ) ; // Seed a passkey your backend provisioned for a test user. await context . credentials . create ( 'example.com' , { id : credentialId , userHandle , privateKey , publicKey , } ) ; await context . credentials . install ( ) ; const page = await context . newPage ( ) ; await page . goto ( 'https://example.com/login' ) ; // The page's navigator.credentials.get() is answered with the seeded passkey.
+- await page . locator ( '#dropzone' ) . drop ( { files : { name : 'note.txt' , mimeType : 'text/plain' , buffer : Buffer . from ( 'hello' ) } , } ) ; await page . locator ( '#dropzone' ) . drop ( { data : { 'text/plain' : 'hello world' , 'text/uri-list' : 'https://example.com' , } , } ) ;
+- test ( 'does not publish to the shared page' , async ( { page } ) => { await page . route ( '**/publish' , route => { test . abort ( 'Tests must not publish to the shared page. Use the `clone` option.' ) ; return route . abort ( ) ; } ) ; // ... } ) ;
+- await page . screencast . start ( { path : 'receipt.webm' } ) ; await page . screencast . showActions ( { position : 'top-right' } ) ; await page . screencast . showChapter ( 'Verifying checkout flow' , { description : 'Added coupon code support per ticket #1234' , } ) ; // Agent performs the verification steps... await page . locator ( '#coupon' ) . fill ( 'SAVE20' ) ; await page . locator ( '#apply-coupon' ) . click ( ) ; await expect ( page . locator ( '.discount' ) ) . toContainText ( '20%'
+- $ npx playwright test --debug=cli # ## Debugging Instructions - Run " playwright-cli attach tw-87b59e " to attach to this test $ playwright-cli attach tw-87b59e # ## Session `tw-87b59e` created, attached to `tw-87b59e`. Run commands with: playwright-cli --session=tw-87b59e # ## Paused - Navigate to " / " at output/tests/example.spec.ts:4 $ playwright-cli --session tw-87b59e step-over # ## Page - Page URL: https://playwright.dev/ - Page Title: Fast and reliable end-to-end testing for
+- $ npx playwright trace open test-results/example-has-title-chromium/trace.zip Title: example.spec.ts:3 › has title $ npx playwright trace actions --grep= " expect " # Time Action Duration ──── ───────── ─────────────────────────────────────────────────────── ──────── 9. 0:00.859 Expect " toHaveTitle " 5.1s ✗ $ npx playwright trace action 9 Expect " toHaveTitle " Error: expect(page).toHaveTitle(expected) failed Expected pattern: /Wrong Title/ Received string: " Fast and reliable end-to-end testin
+- await using page = await context . newPage ( ) ; { await using route = await page . route ( '**/*' , route => route . continue ( ) ) ; await using script = await page . addInitScript ( 'console.log("init script here")' ) ; await page . goto ( 'https://playwright.dev' ) ; // do something } // route and init script have been removed at this point

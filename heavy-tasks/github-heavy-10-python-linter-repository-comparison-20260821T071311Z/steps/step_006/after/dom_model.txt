@@ -1,0 +1,273 @@
+URL: https://github.com/pylint-dev/pylint/releases
+Title: Releases · pylint-dev/pylint · GitHub
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=2760 groups=111 truncated=False
+
+=== VISIBLE CONTENT ===
+Context: Close navigation menu
+- Navigation Menu
+Context: Global
+- Platform AI CODE CREATION GitHub Copilot Write better code with AI GitHub Copilot app Direct agents from issue to merge MCP Registry Integrate external tools DEVELOPER WORKFLOWS Actions Automate any workflow Codespaces Instant dev environments Issues Plan and track work Code Review Manage code changes Code Quality Enforce quality at merge APPLICATION SECURI…
+  actions: [20402] button "Platform"
+- Solutions BY COMPANY SIZE Enterprises Small and medium teams Startups Nonprofits BY USE CASE App Modernization DevSecOps DevOps CI/CD View all use cases BY INDUSTRY Healthcare Financial services Manufacturing Government View all industries View all solutions
+  actions: [20534] button "Solutions"
+- Resources EXPLORE BY TOPIC AI Software Development DevOps Security View all topics EXPLORE BY TYPE Customer stories Events & webinars Ebooks & reports Business insights GitHub Skills SUPPORT & SERVICES Documentation Customer support Community forum Trust center Partners View all resources
+  actions: [20607] button "Resources"
+- Open Source COMMUNITY GitHub Sponsors Fund open source developers PROGRAMS Security Lab Maintainer Community Accelerator GitHub Stars Archive Program REPOSITORIES Topics Trending Collections
+  actions: [20685] button "Open Source"
+- Enterprise ENTERPRISE SOLUTIONS Enterprise platform AI-powered developer platform AVAILABLE ADD-ONS GitHub Advanced Security Enterprise-grade security features Copilot for Business Enterprise-grade AI features Premium Support Enterprise-grade 24/7 support
+  actions: [20743] button "Enterprise"
+- Pricing
+Context: Please reload this page
+- Public
+- Sponsor Sponsor pylint-dev/pylint GitHub Sponsors Learn more about Sponsors DanielNoord DanielNoord Sponsor Pierre-Sassoulas Pierre-Sassoulas Sponsor External links tidelift.com/funding/github/ pypi/pylint Learn more about funding links in repositories . Report abuse
+  actions: [19819] button "Sponsor pylint-dev/pylint"
+- Notifications You must be signed in to change notification settings
+- Fork 1.3k
+- You must be signed in to star a repository
+  actions: [19895] link "You must be signed in to star a repository"
+Context: Repository
+- Code
+- Issues 1k
+- Pull requests 86
+- Actions
+- Projects
+- Security and quality 0
+- Insights
+Context: Please reload this page
+- Releases: pylint-dev/pylint
+- Release list
+Context: Release list navigation
+- v4.0.7
+- v4.0.6
+- v4.0.5
+- v4.0.4
+- v4.0.3
+- v4.0.2
+- v4.0.1
+- v4.0.0
+- v3.3.9
+- v3.3.8
+Context: v4.0.7
+- Pierre-Sassoulas released this 09 Aug 19:12
+- Verified commit signature
+- What's new in Pylint 4.0.7?
+- Release date: 2026-08-09
+- False Positives Fixed
+- Fix a false positive for invalid-name when a module-level variable is assigned an instance of a TypedDict subclass. Such a name is a value, not a type definition, so it is now checked against the constant or variable regex instead of class-rgx . Closes #11231
+- Other Bug Fixes
+- Fix a crash in the bad-open-mode check when the mode argument of open is the NotImplemented constant (Python >= 3.14). Closes #11099
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. Use page scroll to bring this content into view.
+Context: v4.0.7
+- Fix a crash in the not-context-manager and not-async-context-manager checks when the context manager infers to a value without a name, such as the slice returned by with slice(...) / async with slice(...) . Closes #11102
+- Fix a false positive for nested-min-max ( W3301 ) when the inner min / max call carries a keyword argument such as key= . Flattening the call dropped the keyword and changed the result, so nested calls whose inner call has keyword arguments are no longer flagged. Closes #11130
+- Fix a false suggestion from nested-min-max ( W3301 ): when rewriting a nested min / max into a splat call, arguments positioned after the splatted call were silently dropped, so the suggested code changed the result. Closes #11134
+- Fix a false positive for too-many-locals ( R0914 ): PEP 695 type parameters, i.e. the T1 and T2 in a generic def f[T1, T2] signature, were counted as local variables. They are type-system constructs, not runtime locals, and are now excluded from the local-variable count. Closes #11136
+- Fix literal-comparison ( R0123 ) emitting a corrupted suggestion for identifiers that contain is (e.g. axis is 5 was rendered ax== == 5 ). The suggestion is now rebuilt from the operands and operator. Closes #11146
+- Fix false positives in bad-string-format-type ( E1307 ) for valid % formatting: %i / %u applied to a float (both truncate like %d ) and %a applied to any non-int type ( %a is type-agnostic like %s / %r ). Closes #11147
+- Fix a false positive for :ref: useless-parent-delegation when an override changes the default value of a positional-only parameter. Closes #11148
+- Fixed a crash in comparison-with-callable when comparing a lambda assigned as a class attribute. Closes #11175
+- too-many-lines could be reported at the line of a # pylint: disable=too-many-lines pragma found in a previously linted module. Pragma positions are now reset between modules, so the message is reported at line 1 (or at the current module's own pragma) regardless of which files were linted before. Refs #11191
+- Fix a crash when a call unpacks a dictionary whose keys are not string constants, e.g. copy.copy(**{-1: 1}) . Closes #11222
+- Assets 10
+Context: v4.0.6
+- Pierre-Sassoulas released this 14 Jun 14:42
+- What's new in Pylint 4.0.6?
+- Release date: 2026-06-14
+- implicit-str-concat is no longer emitted for an implicit concatenation of a raw string with a non-raw one (e.g. r"\d" "\n" ). Such literals cannot be merged into a single string, so the concatenation is intentional rather than a forgotten comma. Closes #6663
+- Fix a false positive for invalid-name (C0103) where the default typevar-rgx rejected TypeVar names containing digits, such as Ec2T . Closes #8499
+- Fix a false positive for too-many-arguments in (non-static) methods and classmethods. Closes #8675
+- Fix a false positive for no-member when a value is inferred to several possible types and at least one of them defines a dynamic __getattr__ . Closes #9833
+- Fix a false positive for function-redefined (E0102) when reusing names that match dummy-variables-rgx (such as _ ), which is common for pytest-bdd step definitions. This restores the behavior from before pylint 4.0.0; as a consequence the false negative fixed in #9894 is reintroduced for functions whose name matches dummy-variables-rgx . Closes #10665
+- Fix undefined-variable false positive when a name used as a metaclass argument in a nested class is referenced again later in the module. Closes #10823
+- Fix a false positive for unused-variable where global variables matching dummy-variables-rgx were still reported as unused when allow-global-unused-variables was disabled. Closes #10890
+- Fix a false positive for bad-dunder-name when there is a user-defined __suppress_context__ attribute on exception subclasses. Closes #10960
+- Fix used-before-assignment false positive for names bound by from X import * in every branch of an if / elif / else chain. Refs #10980
+- Check for metaclass call signature when evaluating arguments of a class call. Closes #11032
+- Fix false positive method-hidden when cached_property is imported directly with from functools import cached_property . Refs #11037
+- Fix the suggestion of unnecessary-comprehension for a dict comprehension that iterates a dict directly, e.g. {a: b for a, b in d} . Iterating a dict yields its keys, so the suggestion is now dict(d.keys()) instead of the incorrect dict(d) , which would simply copy d . Closes #8256
+- Fix a crash in consider-using-enumerate when the for loop target is an attribute (e.g. for self.idx in range(len(x)) ) rather than a simple variable name. Closes #10099
+- Fix crash when checking attribute-defined-outside-init on classes that inherit from a base class pylint cannot fully analyze. Closes #10892
+- Fix add_message silently overwriting an explicit col_offset=0 (or any other zero-valued line / end_lineno / end_col_offset ) with the AST node's value. The internal _add_one_message helper used a falsey check ( if not col_offset: ) to detect an omitted argument, which incorrectly treated a legitimate 0 the same as None . It now uses an identity check agains…
+- Fix a crash in the name checker when a non-constant value is passed as the covariant or contravariant argument of a TypeVar . Closes #11022
+- Fix a crash in the variable checker when a name resolves to a dataclass-synthesized __init__ , which has no line number. Closes #11023
+- Fix a crash in the variables checker when NotImplemented is used as the test of an if statement, which raised a TypeError in a boolean context on Python 3.14. Closes #11025
+- Avoided a crash from the implicit booleaness checker for len() calls without arguments. Closes #11028
+- Fix a crash in the variables checker when a class declares a metaclass whose attribute-access chain does not bottom out at a name (e.g. class C(metaclass=None._) ). Originally reported as pylint-dev/astroid#3066 . Refs #11031
+- Fix a crash in the name checker when a chained assignment of a TypeAlias value has a non-name target such as a Subscript (for example a[0] = b = TypeAlias ). Closes #11056
+- Fix a crash in the deprecated checker when __import__ is called with a non-string constant argument (for example __import__(1) ). Closes #11059
+- Avoid crashing when enum member inference fails while checking enum subclasses. Closes #11069
+- Prevent a crash in unexpected-keyword-arg analysis when infer_call_result() raises InferenceError while inspecting decorator return signatures. Closes #11070
+- Fix a crash in the typecheck checker when a class uses a non-class object (for example a function) as its metaclass= argument. Closes #11071
+- Allow digits in ParamSpec and TypeVarTuple names for invalid-name check. The default paramspec-rgx and typevartuple-rgx patterns rejected names containing digits (e.g. Ec2P , S3Ts ), emitting a false invalid-name (C0103). Allow digits in the lowercase segments, consistent with the typevar and typealias patterns. Closes #11090
+- Performance Improvements
+[content hidden: 390 more reason=max_content_blocks]
+
+=== MEDIA / IMAGE LABELS ===
+- "@jacobtylerwalls" source=present context="v4.0.4"
+- "@zenlyj" source=present context="v4.0.0"
+- "tada" source=present context="v4.0.0"
+- "rocket" source=present context="v4.0.0"
+
+=== USEFUL PAGE ACTIONS ===
+[25290] text-input "Find a release" actions=click,type,focus
+[20789] button "Search or jump to, type / to search"
+[20799] link "Sign in"
+[25335] link "Previous"
+[25336] link "Next"
+[20382] link "Homepage"
+[20802] link "Sign up"
+[20853] link "pylint-dev"
+[20856] link "pylint"
+[25400] link "v4.0.7"
+[25402] link "Latest"
+[25412] button "Compare"
+[25501] link "Tag v4.0.7"
+[25507] link "Commit c6768d3"
+[other actions hidden: 3]
+=== SECONDARY / DEBUG ACTIONS ===
+[20345] link "Skip to content" <a> role=link state=not-hit-testable hit=False viewport=True sourceOrder=368 bounds=(x=0 y=0 w=1 h=1) reason=not_hit_testable
+[25706] link "v4.0.6" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.6" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2740 bounds=(x=337.828125 y=2338.765625 w=88.96875 h=36) reason=not_hit_testable
+[25714] button "Compare" <button> role=button context="generic: v4.0.6 / generic: Close / generic: Close" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2763 bounds=(x=1128.46875 y=2332.765625 w=87.359375 h=28) reason=not_hit_testable
+[25803] link "Tag v4.0.6" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.6" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2990 bounds=(x=628.5625 y=2399.765625 w=62.03125 h=16) reason=not_hit_testable
+[25809] link "Commit 8a39635" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.6" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3005 bounds=(x=714.59375 y=2399.765625 w=82.703125 h=16) reason=not_hit_testable
+[26059] link "#3443" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3676 bounds=(x=423.1875 y=5892.21875 w=44.5 h=17) reason=not_hit_testable
+[26068] button "Assets 10" <summary> role=button context="generic: v4.0.6 / generic: Please reload this page / generic: Please reload this page" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3690 bounds=(x=337.828125 y=5978.21875 w=878 h=30) reason=not_hit_testable
+[26095] button "thumbs up (1): Pierre-Sassoulas, 02:38PM on June 14" <button> role=button context="generic: Releases and Tags / generic: v4.0.6 / generic: thumbs up (1): Pierre-Sassoulas, 02:38PM on June 14" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3761 bounds=(x=337.828125 y=6024.21875 w=42.6875 h=26) reason=not_hit_testable
+[26123] link "v4.0.5" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.5" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=3831 bounds=(x=337.828125 y=6122.21875 w=88.96875 h=36) reason=not_hit_testable
+[26217] link "Pierre-Sassoulas" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.5" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4072 bounds=(x=361.71875 y=6182.921875 w=113.625 h=16) reason=not_hit_testable
+[26220] link "Tag v4.0.5" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.5" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4081 bounds=(x=630.109375 y=6183.21875 w=62.03125 h=16) reason=not_hit_testable
+[26226] link "Commit 88e1ab7" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.5" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4096 bounds=(x=716.140625 y=6183.21875 w=82.703125 h=16) reason=not_hit_testable
+[26261] link "#10743" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4180 bounds=(x=423.1875 y=6450.59375 w=53.390625 h=17) reason=not_hit_testable
+[26268] link "#10752" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4200 bounds=(x=423.1875 y=6595.375 w=53.390625 h=17) reason=not_hit_testable
+[26277] link "#10790" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4224 bounds=(x=423.1875 y=6700.15625 w=53.390625 h=17) reason=not_hit_testable
+[26283] link "#10791" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4241 bounds=(x=407.171875 y=6780.546875 w=53.390625 h=17) reason=not_hit_testable
+[26290] link "#10801" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4261 bounds=(x=423.1875 y=6923.125 w=53.390625 h=17) reason=not_hit_testable
+[26294] link "#10825" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4272 bounds=(x=423.1875 y=7003.125 w=53.390625 h=17) reason=not_hit_testable
+[26298] link "#10857" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4283 bounds=(x=423.1875 y=7083.125 w=53.390625 h=17) reason=not_hit_testable
+[26334] button "thumbs up (2): Pierre-Sassoulas, 09:02AM on February 20" <button> role=button context="generic: Releases and Tags / generic: v4.0.5 / generic: thumbs up (2): Pierre-Sassoulas, 09:02AM on February 20" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4368 bounds=(x=337.828125 y=7215.125 w=42.6875 h=26) reason=not_hit_testable
+[26362] link "v4.0.4" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.4" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4438 bounds=(x=337.828125 y=7313.125 w=88.96875 h=36) reason=not_hit_testable
+[26456] link "jacobtylerwalls" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.4" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4679 bounds=(x=361.71875 y=7373.828125 w=100.390625 h=16) reason=not_hit_testable
+[26459] link "Tag v4.0.4" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.4" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4688 bounds=(x=656.578125 y=7374.125 w=62.03125 h=16) reason=not_hit_testable
+[26465] link "Commit e16f942" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.4" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4703 bounds=(x=742.609375 y=7374.125 w=82.703125 h=16) reason=not_hit_testable
+[26478] link "#10719" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4737 bounds=(x=423.1875 y=7665.890625 w=53.390625 h=17) reason=not_hit_testable
+[26484] link "#10745" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4754 bounds=(x=423.1875 y=7746.28125 w=53.390625 h=17) reason=not_hit_testable
+[26541] link "v4.0.3" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.3" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4887 bounds=(x=337.828125 y=7954.28125 w=88.96875 h=36) reason=not_hit_testable
+[26638] link "Tag v4.0.3" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.3" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5137 bounds=(x=669.8125 y=8015.28125 w=62.03125 h=16) reason=not_hit_testable
+[26644] link "Commit 84b6552" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.3" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5152 bounds=(x=755.84375 y=8015.28125 w=82.703125 h=16) reason=not_hit_testable
+[26685] link "#10435" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5254 bounds=(x=423.1875 y=8307.4375 w=53.390625 h=17) reason=not_hit_testable
+[26691] link "#10696" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5271 bounds=(x=423.1875 y=8387.828125 w=53.390625 h=17) reason=not_hit_testable
+[26697] link "#10702" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5287 bounds=(x=423.1875 y=8492.21875 w=53.390625 h=17) reason=not_hit_testable
+[26704] link "#10711" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5306 bounds=(x=423.1875 y=8596.609375 w=52.203125 h=17) reason=not_hit_testable
+[26709] link "#10721" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5320 bounds=(x=423.1875 y=8701 w=53.390625 h=17) reason=not_hit_testable
+[26715] link "#10669" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5337 bounds=(x=423.1875 y=8843.1875 w=53.390625 h=17) reason=not_hit_testable
+[26722] link "#10707" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5356 bounds=(x=423.1875 y=8947.96875 w=53.390625 h=17) reason=not_hit_testable
+[26730] link "#10708" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5378 bounds=(x=423.1875 y=9052.75 w=53.390625 h=17) reason=not_hit_testable
+[26766] button "thumbs up (2): Pierre-Sassoulas, 02:56PM on November 13, 2025" <button> role=button context="generic: Releases and Tags / generic: v4.0.3 / generic: thumbs up (2): Pierre-Sassoulas, 02:56PM on November 13, 2025" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5463 bounds=(x=337.828125 y=9184.75 w=42.6875 h=26) reason=not_hit_testable
+[26794] link "v4.0.2" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.2" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5533 bounds=(x=337.828125 y=9282.75 w=88.96875 h=36) reason=not_hit_testable
+[26891] link "Tag v4.0.2" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.2" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5783 bounds=(x=653.453125 y=9343.75 w=62.03125 h=16) reason=not_hit_testable
+[26897] link "Commit 0eb92d2" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.2" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5798 bounds=(x=739.484375 y=9343.75 w=82.703125 h=16) reason=not_hit_testable
+[26908] link "#10652" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5826 bounds=(x=423.1875 y=9509.328125 w=53.390625 h=17) reason=not_hit_testable
+[26916] link "#10664" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5847 bounds=(x=423.1875 y=9638.109375 w=53.390625 h=17) reason=not_hit_testable
+[26922] link "#10672" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5864 bounds=(x=423.1875 y=9718.5 w=53.390625 h=17) reason=not_hit_testable
+[26958] button "thumbs up (1): jacobtylerwalls, 01:00PM on October 20, 2025" <button> role=button context="generic: Releases and Tags / generic: v4.0.2 / generic: thumbs up (1): jacobtylerwalls, 01:00PM on October 20, 2025" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5949 bounds=(x=337.828125 y=9850.5 w=42.6875 h=26) reason=not_hit_testable
+[26986] link "v4.0.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6019 bounds=(x=337.828125 y=9948.5 w=88.96875 h=36) reason=not_hit_testable
+[27083] link "Tag v4.0.1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6269 bounds=(x=666.6875 y=10009.5 w=62.03125 h=16) reason=not_hit_testable
+[27089] link "Commit 9a30350" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.1" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6284 bounds=(x=752.71875 y=10009.5 w=82.703125 h=16) reason=not_hit_testable
+[27127] link "#10019" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6377 bounds=(x=423.1875 y=10277.265625 w=53.390625 h=17) reason=not_hit_testable
+[27132] link "#10647" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6391 bounds=(x=423.1875 y=10357.65625 w=53.390625 h=17) reason=not_hit_testable
+[27140] link "#10660" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6413 bounds=(x=423.1875 y=10462.4375 w=53.390625 h=17) reason=not_hit_testable
+[27197] link "v4.0.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6546 bounds=(x=337.828125 y=10670.4375 w=88.96875 h=36) reason=not_hit_testable
+[27294] link "Tag v4.0.0" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6796 bounds=(x=666.6875 y=10731.4375 w=62.03125 h=16) reason=not_hit_testable
+[27300] link "Commit 0939ac5" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6811 bounds=(x=752.71875 y=10731.4375 w=82.703125 h=16) reason=not_hit_testable
+[27312] link "@zenlyj" <a> role=link context="generic: generic / generic: generic / generic: Pylint's inference engine ( ) is now much more precise, understanding…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6841 bounds=(x=866.109375 y=10882.828125 w=60.0625 h=17) reason=not_hit_testable
+[27314] scroll-region "class Result : errors : dict | None = None result = Result () if result . errors : result . errors [ field_key ] # inference engine understands result.errors cannot be None # pylint no longer raises unsubscriptable-obje…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6850 bounds=(x=337.828125 y=10959.828125 w=878 h=189.625) reason=broad/noisy
+[27315] scroll-region ": : () . : . [ ]" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v4.0.0 / generic: Copy code to clipboard" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6851 bounds=(x=337.828125 y=10959.828125 w=878 h=189.625) reason=broad/noisy
+[30336] button "Copy code to clipboard" <clipboard-copy> role=button context="generic: Releases and Tags / generic: v4.0.0 / generic: Copy code to clipboard" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6910 bounds=(x=1173.828125 y=10967.828125 w=34 h=36) reason=not_hit_testable
+[27337] link "astroid changelog" <a> role=link context="generic: Releases and Tags / generic: v4.0.0 / generic: The required version is now 4.0.0. See the for additional fixes, feat…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6930 bounds=(x=715.328125 y=11168.453125 w=126.3125 h=17) reason=not_hit_testable
+[27349] scroll-region "LIMIT = 500 # [invalid-name] if sometimes : LIMIT = 1 # [invalid-name]" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6964 bounds=(x=337.828125 y=11383.015625 w=878 h=91.109375) reason=broad/noisy
+[27350] scroll-region ":" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v4.0.0 / generic: Copy code to clipboard" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6965 bounds=(x=337.828125 y=11383.015625 w=878 h=91.109375) reason=broad/noisy
+[27364] scroll-region "if sometimes : LIMIT = 1 else : LIMIT = 500 # exclusive assignment: uses const regex, no warning" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7020 bounds=(x=337.828125 y=11554.125 w=878 h=110.8125) reason=broad/noisy
+[27365] scroll-region ": :" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v4.0.0 / generic: Copy code to clipboard" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7021 bounds=(x=337.828125 y=11554.125 w=878 h=110.8125) reason=broad/noisy
+[27380] scroll-region "MY_LIST = [] my_list = [] My_List = [] # [invalid-name]" actions=scroll <div> role=generic context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7078 bounds=(x=337.828125 y=11745.328125 w=878 h=91.109375) reason=broad/noisy
+[27381] scroll-region "[] [] []" actions=scroll <pre> role=generic context="generic: Releases and Tags / generic: v4.0.0 / generic: Copy code to clipboard" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7079 bounds=(x=337.828125 y=11745.328125 w=878 h=91.109375) reason=broad/noisy
+[27390] link "regexes" <a> role=link context="generic: Releases and Tags / generic: v4.0.0 / generic: Remember to adjust the and to your liking." state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7119 bounds=(x=513.03125 y=11855.4375 w=56.921875 h=17) reason=not_hit_testable
+[27391] link "allow lists" <a> role=link context="generic: Releases and Tags / generic: v4.0.0 / generic: Remember to adjust the and to your liking." state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7122 bounds=(x=605.546875 y=11855.4375 w=68.46875 h=17) reason=not_hit_testable
+[27406] link "#3585" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7160 bounds=(x=423.1875 y=12134.796875 w=44.5 h=17) reason=not_hit_testable
+[27413] link "#6052" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7179 bounds=(x=407.171875 y=12239.1875 w=44.5 h=17) reason=not_hit_testable
+[27419] link "#9255" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7196 bounds=(x=407.171875 y=12319.578125 w=44.5 h=17) reason=not_hit_testable
+[27432] link "#9689" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7231 bounds=(x=407.171875 y=12488.75 w=44.5 h=17) reason=not_hit_testable
+[27438] link "#9962" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7247 bounds=(x=407.171875 y=12593.140625 w=44.5 h=17) reason=not_hit_testable
+[27446] link "#10071" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7269 bounds=(x=407.171875 y=12697.53125 w=53.390625 h=17) reason=not_hit_testable
+[27454] link "PEP 765 - Disallow return/break/continue that exit a finally block" <a> role=link context="generic: generic / generic: generic / generic: The message-id of was changed from to . The warning is now emitted fo…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7290 bounds=(x=402.75 y=12785.921875 w=453.28125 h=17) reason=not_hit_testable
+[27456] link "#10480" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7296 bounds=(x=407.171875 y=12825.921875 w=53.390625 h=17) reason=not_hit_testable
+[27465] link "#10583" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7322 bounds=(x=407.171875 y=12930.3125 w=53.390625 h=17) reason=not_hit_testable
+[27474] link "#10637" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7346 bounds=(x=407.171875 y=13059.09375 w=53.390625 h=17) reason=not_hit_testable
+[27486] link "#8736" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7378 bounds=(x=407.171875 y=13250.453125 w=44.5 h=17) reason=not_hit_testable
+[27490] link "#9045" <a> role=link context="generic: generic / generic: generic / generic: Closes Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7389 bounds=(x=423.1875 y=13378.453125 w=44.5 h=17) reason=not_hit_testable
+[27492] link "#9267" <a> role=link context="generic: generic / generic: generic / generic: Closes Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7393 bounds=(x=423.1875 y=13402.453125 w=44.5 h=17) reason=not_hit_testable
+[27506] link "#9353" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7431 bounds=(x=423.1875 y=13611.625 w=44.5 h=17) reason=not_hit_testable
+[27511] link "#9357" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7444 bounds=(x=423.1875 y=13715.625 w=44.5 h=17) reason=not_hit_testable
+[27517] link "#9898" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7460 bounds=(x=423.1875 y=13820.015625 w=44.5 h=17) reason=not_hit_testable
+[27520] link "@Property" <a> role=link context="generic: generic / generic: generic / generic: Enhanced support for decorator in pyreverse to correctly display retu…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7468 bounds=(x=527.265625 y=13860.015625 w=81.40625 h=17) reason=not_hit_testable
+[27522] link "#10057" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7474 bounds=(x=423.1875 y=13924.015625 w=53.390625 h=17) reason=not_hit_testable
+[27527] link "#10077" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7487 bounds=(x=407.171875 y=14052.015625 w=53.390625 h=17) reason=not_hit_testable
+[27531] link "#10149" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7498 bounds=(x=423.1875 y=14132.015625 w=53.390625 h=17) reason=not_hit_testable
+[27535] link "#10236" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7509 bounds=(x=423.1875 y=14212.015625 w=53.390625 h=17) reason=not_hit_testable
+[27542] link "#10242" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7528 bounds=(x=423.1875 y=14292.40625 w=53.390625 h=17) reason=not_hit_testable
+[27546] link "#10287" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7539 bounds=(x=407.171875 y=14372.40625 w=53.390625 h=17) reason=not_hit_testable
+[27550] link "#10467" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7550 bounds=(x=407.171875 y=14452.40625 w=53.390625 h=17) reason=not_hit_testable
+[27557] link "#10541" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7570 bounds=(x=407.171875 y=14532.796875 w=53.390625 h=17) reason=not_hit_testable
+[27568] link "#7128" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7599 bounds=(x=423.1875 y=14771.765625 w=44.5 h=17) reason=not_hit_testable
+[27575] link "#10408" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7619 bounds=(x=407.171875 y=14876.546875 w=53.390625 h=17) reason=not_hit_testable
+[27599] link "#10559" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7687 bounds=(x=407.171875 y=15231.671875 w=53.390625 h=17) reason=not_hit_testable
+[27613] link "#10587" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7726 bounds=(x=407.171875 y=15429.234375 w=53.390625 h=17) reason=not_hit_testable
+[27627] link "#10621" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7764 bounds=(x=407.171875 y=15622.40625 w=53.390625 h=17) reason=not_hit_testable
+[27638] link "#10061" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7794 bounds=(x=423.1875 y=15813.765625 w=53.390625 h=17) reason=not_hit_testable
+[27644] link "#10632" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7811 bounds=(x=423.1875 y=15894.15625 w=53.390625 h=17) reason=not_hit_testable
+[27652] link "#8893" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7834 bounds=(x=407.171875 y=16060.734375 w=44.5 h=17) reason=not_hit_testable
+[27656] link "#9667" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7845 bounds=(x=407.171875 y=16140.734375 w=44.5 h=17) reason=not_hit_testable
+[27664] link "#9770" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7867 bounds=(x=423.1875 y=16245.515625 w=44.5 h=17) reason=not_hit_testable
+[27668] link "#9894" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7878 bounds=(x=423.1875 y=16325.515625 w=44.5 h=17) reason=not_hit_testable
+[27676] link "Read more" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v4.0.0" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7901 bounds=(x=337.828125 y=16469.6875 w=69.265625 h=16) reason=not_hit_testable
+[27722] button "thumbs up (1): Pierre-Sassoulas, 03:10PM on October 12, 2025" <button> role=button context="generic: Releases and Tags / generic: v4.0.0 / generic: thumbs up (1): Pierre-Sassoulas, 03:10PM on October 12, 2025" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8012 bounds=(x=337.828125 y=16682.6875 w=42.6875 h=26) reason=not_hit_testable
+[27726] button "hooray (3): Pierre-Sassoulas, 03:10PM on October 12, 2025" <button> role=button context="generic: Releases and Tags / generic: v4.0.0 / generic: thumbs up (1): Pierre-Sassoulas, 03:10PM on October 12, 2025" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8024 bounds=(x=384.515625 y=16682.6875 w=42.6875 h=26) reason=not_hit_testable
+[27730] button "rocket (8): Pierre-Sassoulas, 03:10PM on October 12, 2025" <button> role=button context="generic: Releases and Tags / generic: v4.0.0 / generic: thumbs up (1): Pierre-Sassoulas, 03:10PM on October 12, 2025" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8036 bounds=(x=431.203125 y=16682.6875 w=42.6875 h=26) reason=not_hit_testable
+[27764] link "v3.3.9" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v3.3.9" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8124 bounds=(x=337.828125 y=16780.6875 w=88.96875 h=36) reason=not_hit_testable
+[27861] link "Tag v3.3.9" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v3.3.9" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8374 bounds=(x=645.671875 y=16841.6875 w=62.03125 h=16) reason=not_hit_testable
+[27867] link "Commit 4cab7ca" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v3.3.9" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8389 bounds=(x=731.703125 y=16841.6875 w=82.703125 h=16) reason=not_hit_testable
+[27902] link "#9815" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8473 bounds=(x=423.1875 y=17109.0625 w=44.5 h=17) reason=not_hit_testable
+[27907] link "#10593" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8487 bounds=(x=423.1875 y=17189.453125 w=53.390625 h=17) reason=not_hit_testable
+[27914] link "#10508" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8507 bounds=(x=423.1875 y=17269.84375 w=53.390625 h=17) reason=not_hit_testable
+[27920] link "#10562" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8524 bounds=(x=423.1875 y=17374.234375 w=53.390625 h=17) reason=not_hit_testable
+[27930] link "#10510" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8549 bounds=(x=423.1875 y=17612.421875 w=53.390625 h=17) reason=not_hit_testable
+[27987] link "v3.3.8" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v3.3.8" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8682 bounds=(x=337.828125 y=17820.421875 w=88.96875 h=36) reason=not_hit_testable
+[28084] link "Tag v3.3.8" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v3.3.8" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8932 bounds=(x=661.25 y=17881.421875 w=62.03125 h=16) reason=not_hit_testable
+[28090] link "Commit 98942ba" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / generic: v3.3.8" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=8947 bounds=(x=747.28125 y=17881.421875 w=82.703125 h=16) reason=not_hit_testable
+[28121] link "#10482 (comment)" <a> role=link context="generic: Releases and Tags / generic: v3.3.8 / generic: This patch release includes an exceptional fix for a false negative i…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9021 bounds=(x=968.390625 y=18046.609375 w=134.296875 h=17) reason=not_hit_testable
+[28130] link "#9668" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9044 bounds=(x=423.1875 y=18213.578125 w=44.5 h=17) reason=not_hit_testable
+[28136] link "#10104" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9061 bounds=(x=407.171875 y=18317.96875 w=53.390625 h=17) reason=not_hit_testable
+[28141] link "#10426" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9075 bounds=(x=423.1875 y=18398.359375 w=53.390625 h=17) reason=not_hit_testable
+[28149] link "#10482" <a> role=link context="generic: generic / generic: generic / generic: Refs" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9098 bounds=(x=407.171875 y=18540.9375 w=53.390625 h=17) reason=not_hit_testable
+[28155] link "#10373" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9115 bounds=(x=423.1875 y=18707.125 w=53.390625 h=17) reason=not_hit_testable
+[28159] link "#10402" <a> role=link context="generic: generic / generic: generic / generic: Closes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9126 bounds=(x=423.1875 y=18787.125 w=53.390625 h=17) reason=not_hit_testable
+[28208] link "Previous" <span> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9245 bounds=(x=439.296875 y=18989.125 w=96.46875 h=32) reason=not_hit_testable
+[28209] link "1" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9248 bounds=(x=539.65625 y=18989.125 w=32 h=32) reason=not_hit_testable
+[28210] link "2" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9251 bounds=(x=575.546875 y=18989.125 w=32 h=32) reason=not_hit_testable
+[28211] link "3" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9254 bounds=(x=611.4375 y=18989.125 w=32 h=32) reason=not_hit_testable
+[28212] link "4" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9257 bounds=(x=647.328125 y=18989.125 w=32 h=32) reason=not_hit_testable
+[28213] link "5" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9260 bounds=(x=683.21875 y=18989.125 w=32 h=32) reason=not_hit_testable
+[28215] link "11" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9266 bounds=(x=759 y=18989.125 w=36.546875 h=32) reason=not_hit_testable
+[28216] link "12" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9269 bounds=(x=799.4375 y=18989.125 w=37.578125 h=32) reason=not_hit_testable
+[28217] link "Next" <a> role=link context="generic: Please reload this page / generic: Releases and Tags / navigation: Pagination" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9272 bounds=(x=840.90625 y=18989.125 w=70.796875 h=32) reason=not_hit_testable
+[22280] link "GitHub Homepage" <a> role=link context="contentinfo: GitHub Homepage" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9301 bounds=(x=251.5625 y=19085.125 w=24 h=26) reason=not_hit_testable
+[22288] link "Terms" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9322 bounds=(x=405.125 y=19091.125 w=32.671875 h=14) reason=not_hit_testable
+[22290] link "Privacy" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9328 bounds=(x=453.796875 y=19091.125 w=39.34375 h=14) reason=not_hit_testable
+[22292] link "Security" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9334 bounds=(x=509.140625 y=19091.125 w=43.359375 h=14) reason=not_hit_testable
+[22294] link "Status" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9340 bounds=(x=568.5 y=19091.125 w=34.03125 h=14) reason=not_hit_testable
+[22296] link "Community" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9346 bounds=(x=618.53125 y=19091.125 w=60.6875 h=14) reason=not_hit_testable
+[22298] link "Docs" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9352 bounds=(x=695.21875 y=19091.125 w=27.34375 h=14) reason=not_hit_testable
+[22300] link "Contact" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9358 bounds=(x=738.5625 y=19091.125 w=41.359375 h=14) reason=not_hit_testable
+[22303] button "Manage cookies" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9366 bounds=(x=795.921875 y=19089.125 w=87.390625 h=18) reason=not_hit_testable
+[22306] button "Do not share my personal information" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=9375 bounds=(x=899.3125 y=19089.125 w=200.109375 h=18) reason=not_hit_testable

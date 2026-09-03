@@ -1,0 +1,517 @@
+URL: https://github.com/lightpanda-io/browser
+Title: GitHub - lightpanda-io/browser: Lightpanda: the headless browser designed for AI and automation · GitHub
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=1887 groups=59 truncated=True
+
+=== TABLES ===
+Table 1: rows=19 columns=3
+  Name | Last commit message | Last commit date
+  .github | wip: screenshot | Aug 19, 2026
+  src | Merge pull request #3268 from lightpanda-io/mcp-http-close-after-reject | Aug 25, 2026
+  .gitignore | wip: screenshot | Aug 19, 2026
+  .plumber.yaml | ci: add plumber to watch workflow security | Jul 20, 2026
+  AGENTS.md | AGENTS.md: point agents at make download-v8 before building | Aug 18, 2026
+  CLA.md | contrib: add CLA signature process | Nov 26, 2024
+  CLAUDE.md | add AGENTS.md and CLAUDE.md | May 8, 2026
+  CONTRIBUTING.md | dev: On linux -dev_fast is on by default | Aug 14, 2026
+  Dockerfile | update v8 dep | Aug 13, 2026
+  LICENSE | add AGPL license | May 13, 2024
+  LICENSING.md | update LICENSING.md | Mar 25, 2026
+  Makefile | Makefile: fix test filtering | Aug 25, 2026
+  README.md | wip: screenshot | Aug 19, 2026
+  SECURITY.md | add SECURITY.md | Mar 30, 2026
+  build.zig | Merge pull request #3231 from lightpanda-io/screenshot | Aug 25, 2026
+  build.zig.zon | search: repin zenai to the merged commit and finish the review follow… | Aug 24, 2026
+  flake.lock | update Nix flake for Zig 0.16 | Jul 23, 2026
+  flake.nix | update Nix flake for Zig 0.16 | Jul 23, 2026
+Table 2: rows=3 columns=4
+  Metric | Lightpanda | Headless Chrome | Difference
+  Memory (peak, 100 pages) | 123MB | 2GB | ~16 less
+  Execution time (100 pages) | 5s | 46s | ~9x faster
+
+=== VISIBLE CONTENT ===
+Context: Please reload this page
+- Lightpanda Browser The headless browser built from scratch for AI agents and automation. Not a Chromium fork. Not a WebKit patch. A new browser, written in Zig. Benchmarks Requesting 933 real web pages over the network on a AWS EC2 m5.large instance. See benchmark details . Metric Lightpanda Headless Chrome Difference Memory (peak, 100 pages) 123MB 2GB ~16 less Execution time (100 pages) 5s 46s ~9x faster Quick start Install Package Managers Latest nightly from Homebrew: brew install lightpanda-
+  evidence: curl -L -o lightpanda https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-linux && \ chmod a+x ./lightpanda
+  evidence: curl -L -o lightpanda https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-macos && \ chmod a+x ./lightpanda
+  evidence: docker run -d --name lightpanda -p 127.0.0.1:9222:9222 lightpanda/browser:nightly
+  evidence: ./lightpanda serve --obey-robots --log-format pretty --log-level info --host 127.0.0.1 --port 9222
+  evidence: import puppeteer from 'puppeteer-core' ; // use browserWSEndpoint to pass the Lightpanda's CDP server address. const browser = await puppeteer . connect ( { browserWSEndpoint : "ws://127.0.0.1:9222" , } ) ; // The rest of your script remains the same. const context = await browser . createBrowserContext ( ) ; const frame = await context . newPage ( ) ; // Dump all the links from the frame. await frame . goto ( 'https://demo-browser.lightpanda.io/amiibo/' , { waitUntil : "networkidle0" } ) ; cons
+  evidence: lightpanda mcp --port 9223
+  evidence: sudo apt install xz-utils ca-certificates \ pkg-config libglib2.0-dev \ clang make curl git
+  evidence: git clone -b fork --depth=1 git@github.com:lightpanda-io/wpt.git
+Context: Logo
+- MacOS x86_64 is also available
+- For Windows + WSL2
+- For Windows + WSL2
+- Lightpanda has no native Windows binary. Install it inside WSL following the Linux steps above.
+- WSL not installed? Run from an administrator shell, restart, then open . See for details.
+- Your automation client (Puppeteer, Playwright, etc.) can run either inside WSL or on the Windows host. WSL forwards automatically.
+- localhost:9222
+- Install from Docker
+- Install from Docker
+- Lightpanda provides for both Linux amd64 and arm64 architectures. The following command fetches the Docker image and starts a new container exposing Lightpanda's CDP server on port .
+- 9222
+- docker run -d --name lightpanda -p 127.0.0.1:9222:9222 lightpanda/browser:nightly
+- Dump a URL
+- ./lightpanda fetch --obey-robots --dump html --log-format pretty --log-level info https://demo-browser.lightpanda.io/campfire-commerce/
+- You can use to convert directly into markdown, or for a text-only rendering of the page. , , and are available to adjust waiting time before dump.
+- --dump markdown
+- --dump png > page.png
+  attachments: page.png
+- --wait-until
+- --wait-ms
+- --wait-selector
+- --wait-script
+- Start a CDP server
+- ./lightpanda serve --obey-robots --log-format pretty --log-level info --host 127.0.0.1 --port 9222
+- Once the CDP server started, you can run a Puppeteer script by configuring the browserWSEndpoint .
+- browserWSEndpoint
+- Example Puppeteer script
+- import puppeteer from 'puppeteer-core' ; // use browserWSEndpoint to pass the Lightpanda's CDP server address. const browser = await puppeteer . connect ( { browserWSEndpoint : "ws://127.0.0.1:9222" , } ) ; // The rest of your script remains the same. const context = await browser . createBrowserContext ( ) ; const frame = await context . newPage ( ) ; // Dump all the links from the frame. await frame . goto ( 'https://demo-browser.lightpanda.io/amiibo/' , { waitUntil : "networkidle0" } ) ; cons
+- import
+- 'puppeteer-core'
+- // use browserWSEndpoint to pass the Lightpanda's CDP server address.
+- const
+- await
+- connect
+- browserWSEndpoint
+- "ws://127.0.0.1:9222"
+- // The rest of your script remains the same.
+- Agent mode
+- lightpanda agent lets you drive the browser with a native agent. Describe what you want in plain English or with slash commands, and it controls the browser: navigating pages, clicking through flows, filling forms, extracting structured data. Think of it as a robot you're directing to use the web, more than a chatbot you're having a conversation with.
+- lightpanda agent
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [26690] Logo.
+Context: Please reload this page
+- Public
+- Notifications You must be signed in to change notification settings
+- Fork 1.6k
+- 1.6k
+- You must be signed in to star a repository
+- 34.2k
+- 49 Branches
+- 49
+- 22 Tags
+- 22
+- Latest commit
+- Aug 25, 2026
+- History
+- 8,838 Commits
+- Folders and files
+- Repository files navigation
+Context: Logo
+- Logo
+- Lightpanda Browser
+- The headless browser built from scratch for AI agents and automation. Not a Chromium fork. Not a WebKit patch. A new browser, written in Zig.
+- The headless browser built from scratch for AI agents and automation.
+- License
+- Benchmarks
+- Requesting 933 real web pages over the network on a AWS EC2 m5.large instance. See benchmark details .
+- Quick start
+- Install
+- Package Managers
+- Package Managers
+- Latest nightly from Homebrew:
+- brew install lightpanda-io/browser/lightpanda
+- Latest nightly from Arch Linux User Repository:
+- yay -S lightpanda-nightly-bin
+- Download from the nightly builds
+- Download from the nightly builds
+- You can download the last binary from the for Linux and MacOS for both x86_64 and aarch64.
+- For Linux
+- For Linux
+- curl -L -o lightpanda https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-linux && \ chmod a+x ./lightpanda
+- curl -L -o lightpanda https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-x86_64-linux && \
+- chmod a+x ./lightpanda
+- Verify the binary before running anything:
+- ./lightpanda version
+- Linux aarch64 is also available
+- Note: The Linux release binaries are linked against glibc. On musl-based distros (Alpine, etc.) the binary fails with cannot execute: required file not found because the glibc dynamic linker is missing. Use a glibc-based base image (e.g., FROM debian:bookworm-slim or FROM ubuntu:24.04 ) or build from sources .
+- The Linux release binaries are linked against glibc. On musl-based distros (Alpine, etc.) the binary fails with because the glibc dynamic linker is missing. Use a glibc-based base image (e.g., or ) or .
+- Note:
+- cannot execute: required file not found
+- FROM debian:bookworm-slim
+- FROM ubuntu:24.04
+- For MacOS
+- For MacOS
+- curl -L -o lightpanda https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-macos && \ chmod a+x ./lightpanda
+- curl -L -o lightpanda https://github.com/lightpanda-io/browser/releases/download/nightly/lightpanda-aarch64-macos && \
+- chmod a+x ./lightpanda
+- context
+- createBrowserContext
+- frame
+- newPage
+- // Dump all the links from the frame.
+- 'https://demo-browser.lightpanda.io/amiibo/'
+- waitUntil
+- "networkidle0"
+- links
+- evaluate
+- return
+- Array
+- querySelectorAll
+- map
+- getAttribute
+- 'href'
+- console
+- disconnect
+- Because the agent runs inside the same process as the browser, every tool call is a direct operation and you retain Lightpanda's speed and memory advantage.
+- The output of an agent session is a PandaScript : vanilla JavaScript with a small set of native browser primitives built directly into Lightpanda. Run /save to export one from your current session, then replay it with lightpanda run .js . Scripts are deterministic and token-free, so you can prototype with the LLM and ship the output to production without a model at runtime.
+- /save
+- lightpanda run .js
+- It supports Anthropic, OpenAI, Gemini, Google Vertex AI, Hugging Face, and local models via Ollama. You can also run without an LLM using , which drops you into the REPL. See the for the full reference.
+- --no-llm
+- ./lightpanda agent # auto-detects API key from env ./lightpanda agent --task "top story on news.ycombinator.com?" ./lightpanda agent --no-llm # basic REPL, no LLM ./lightpanda run session.js # run a recorded script ./lightpanda agent --provider gemini --task "..." # force a specific provider VERTEX_API_KEY=... ./lightpanda agent --provider vertex # Vertex AI, express mode GOOGLE_CLOUD_PROJECT=my-proj ./lightpanda agent --provider vertex # Vertex AI, token via gcloud auth
+- ./lightpanda agent # auto-detects API key from env
+- ./lightpanda agent --task "top story on news.ycombinator.com?"
+- ./lightpanda agent --no-llm # basic REPL, no LLM
+- ./lightpanda run session.js # run a recorded script
+- ./lightpanda agent --provider gemini --task "..." # force a specific provider
+- VERTEX_API_KEY=... ./lightpanda agent --provider vertex # Vertex AI, express mode
+- GOOGLE_CLOUD_PROJECT=my-proj ./lightpanda agent --provider vertex # Vertex AI, token via gcloud auth
+- Native MCP and skill
+- The MCP server communicates via MCP JSON-RPC 2.0 over stdio.
+- Add to your MCP configuration:
+- "mcpServers"
+- "command"
+- " /path/to/lightpanda "
+- "args"
+- HTTP transport and independent sessions
+- For serving several agents from one process, start the MCP server over HTTP instead of stdio by giving it a port (add to specify the interface to listen on):
+- --host x.x.x.x
+- lightpanda mcp --port 9223
+- Clients POST JSON-RPC to . Each connection is routed to its own — its own page, cookies and memory — so agents no longer clobber each other's page:
+- http://host:9223/mcp
+- browsing session
+- A client that s without an header is assigned a fresh session; the id comes back in the response's header. Send it on subsequent requests to stay on that session ( ).
+- initialize
+- Mcp-Session-Id
+- isolation
+- Two agents that send the share one browsing context ( — e.g. a workflow where several agents work the same page).
+- same
+- Mcp-Session-Id
+- sharing
+- The , and tools manage sessions explicitly. Sending with an closes that session.
+- session_new
+- session_list
+- session_close
+- DELETE /mcp
+- Mcp-Session-Id
+- Read full documentation
+- A skill is available in lightpanda-io/agent-skill .
+- Telemetry
+- By default, Lightpanda collects and sends usage telemetry. This can be disabled by setting an environment variable . You can read Lightpanda's privacy policy at: .
+- LIGHTPANDA_DISABLE_TELEMETRY=true
+- Core dumps
+- Set (to any value) to suppress crash core dumps by zeroing the soft at startup.
+- LIGHTPANDA_DISABLE_CORE_DUMP
+- RLIMIT_CORE
+- Status
+- Lightpanda is in Beta and currently a work in progress. Stability and coverage are improving and many websites now work. You may still encounter errors or crashes. Please open an issue with specifics if so.
+- Here are the key features we have implemented:
+- CORS #2015
+  evidence: Incomplete task
+- HTTP loader ( Libcurl )
+  evidence: Completed task
+- HTML parser ( html5ever )
+  evidence: Completed task
+- DOM tree
+  evidence: Completed task
+- Javascript support ( v8 )
+  evidence: Completed task
+- DOM APIs
+  evidence: Completed task
+- Ajax XHR API Fetch API
+  evidence: Completed task
+- XHR API
+  evidence: Completed task
+- Fetch API
+  evidence: Completed task
+- DOM dump
+  evidence: Completed task
+- CDP/websockets server
+  evidence: Completed task
+- Click
+  evidence: Completed task
+- Input form
+  evidence: Completed task
+- Cookies
+  evidence: Completed task
+- Custom HTTP headers
+  evidence: Completed task
+- Proxy support
+  evidence: Completed task
+- Network interception
+  evidence: Completed task
+- Respect with option
+  evidence: Completed task
+- robots.txt
+  attachments: robots.txt
+- --obey-robots
+- NOTE: There are hundreds of Web APIs. Developing a browser (even just for headless mode) is a huge task. Coverage will increase over time.
+- Build from sources
+- Prerequisites
+- Lightpanda is written with . You have to install it with the right version in order to build the project.
+- 0.15.2
+- Lightpanda also depends on , and .
+- To be able to build the v8 engine, you have to install some libs:
+- For Debian/Ubuntu based Linux :
+- Debian/Ubuntu based Linux
+- sudo apt install xz-utils ca-certificates \ pkg-config libglib2.0-dev \ clang make curl git
+- You also need to install Rust .
+- For systems with , you can use the devShell:
+- nix develop
+- For , you need cmake and .
+- brew install cmake
+- Build and run
+- You can build the entire browser with or for debug env.
+- make build
+- make build-dev
+- But you can directly use the zig command: zig build run .
+- zig build run
+- Embed v8 snapshot
+- Lighpanda uses v8 snapshot. By default, it is created on startup but you can embed it by using the following commands:
+- Generate the snapshot.
+- zig build snapshot_creator -- src/snapshot.bin
+- Build using the snapshot binary.
+- zig build -Dsnapshot_path=../../snapshot.bin
+- See for more details.
+- Test
+- Unit Tests
+- You can test Lightpanda by running make test .
+- make test
+- make make F= TEST_FILTER= make TEST_VERBOSE=true make TEST_FAIL_FIRST=true make METRICS=true make
+- # Run all tests
+- # Filter by substring
+- " WebApi: #selector_all "
+- # Filter main + subtest (separator: #)
+- # Capture allocation/duration metrics as JSON
+- End to end tests
+- To run end to end tests, you need to clone the into dir.
+- You have to install the demo's node requirements
+- You also need to install > v1.24.
+- make end2end
+- Web Platform Tests
+- Lightpanda is tested against the standardized Web Platform Tests .
+- We use including a custom . Results are daily.
+- For reference, you can easily execute a WPT test case with your browser via wpt.live .
+- Configure WPT HTTP server
+- To run the test, you must clone the repository, configure the custom hosts and generate the file.
+- MANIFEST.json
+- Clone the repository with the branch.
+- git clone -b fork --depth=1 git@github.com:lightpanda-io/wpt.git
+- Enter into the dir.
+- Install custom domains in your /etc/hosts
+- /etc/hosts
+- ./wpt make-hosts-file | sudo tee -a /etc/hosts
+- Generate MANIFEST.json
+- MANIFEST.json
+- ./wpt manifest
+- Use the for details.
+- Run WPT test suite
+- An external runner is provided by repository, located into dir. You need to clone the project first.
+- wptrunner/
+- First start the WPT's HTTP server from your clone dir.
+- ./wpt serve
+- Run a Lightpanda browser
+- zig build run -- --insecure-disable-tls-host-verification
+- Then you can start the wptrunner from the demo's clone dir:
+- cd wptrunner && go run .
+- Or one specific test:
+- cd wptrunner && go run . Node-childNodes.html
+- command accepts and options modifying output. Also define the concurrency limit.
+- wptrunner
+- --summary
+- --json
+- --concurrency
+- Running the whole test suite will take a long time. In this case, it's useful to build in mode to make tests faster.
+- releaseFast
+- zig build -Doptimize=ReleaseFast run
+- Contributing
+- See for guidelines. You must sign our during the pull request process.
+- Discord
+- Why Lightpanda?
+- Javascript execution is mandatory for the modern web
+- Simple HTTP requests used to be enough for web automation. That's no longer the case. Javascript now drives most of the web:
+- Ajax, Single Page Apps, infinite loading, instant search
+- JS frameworks: React, Vue, Angular, and others
+- Chrome is not the right tool
+- Running a full desktop browser on a server works, but it does not scale well. Chrome at hundreds or thousands of instances is expensive:
+- Heavy on RAM and CPU
+- Hard to package, deploy, and maintain at scale
+- Many features are not necessary in headless made
+- Lightpanda is built for performance
+- Supporting Javascript with real performance meant building from scratch rather than forking Chromium:
+- Not based on Chromium, Blink, or WebKit
+- Written in Zig, a low-level language with explicit memory control
+- No graphical rendering engine
+Context: Please reload this page
+- About
+- Lightpanda: the headless browser designed for AI and automation
+- Topics
+- Topics
+- Resources
+- AGPL-3.0 license
+- Contributing
+- Security policy
+- Stars
+- 34.2k stars
+- 34.2k
+- Watchers
+- Watchers
+- 88 watching
+- 88
+- Forks
+- 1.6k
+- Releases 20 ( 20 )
+- ( 20 )
+- Jul 16, 2024
+- + 19 releases
+- Contributors 66 ( 66 )
+- ( 66 )
+- @karlseguin
+- @krichprollsch
+- @arrufat
+- @nikneym
+- @francisbouvier
+- @mookums
+- @sjorsdonkers
+- @navidemad
+- @claude
+- @mrdimidium
+- @egrs
+- @mvanhorn
+- @rohitsux
+- @staylor
+- + 52 contributors
+- Languages
+- Zig 78.4 %
+- 78.4 %
+- HTML 20 %
+- 20 %
+- Rust 1.1 %
+- 1.1 %
+- JavaScript 0.4 %
+- 0.4 %
+- Makefile 0.1 %
+- 0.1 %
+- Dockerfile 0 %
+- 0 %
+
+=== SECONDARY / DEBUG ACTIONS ===
+[25488] link "Skip to content" <a> role=link state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=383 bounds=(x=0 y=-1481 w=1 h=1) reason=not_hit_testable
+[25525] link "Homepage" <a> role=link context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=450 bounds=(x=32 y=-1461 w=32 h=32) reason=not_hit_testable
+[25545] button "Platform" <button> role=button context="generic: Global / generic: External link / generic: External link" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=472 bounds=(x=80 y=-1465 w=97.5 h=40) reason=not_hit_testable
+[25677] button "Solutions" <button> role=button context="generic: Global / generic: External link / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=637 bounds=(x=177.5 y=-1465 w=103.984375 h=40) reason=not_hit_testable
+[25750] button "Resources" <button> role=button context="generic: Global / generic: External link / generic: External link" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=729 bounds=(x=281.484375 y=-1465 w=114.640625 h=40) reason=not_hit_testable
+[25829] button "Open Source" <button> role=button context="generic: Global / generic: External link / generic: External link" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=828 bounds=(x=396.125 y=-1465 w=132.921875 h=40) reason=not_hit_testable
+[25887] button "Enterprise" <button> role=button context="generic: Global / generic: External link / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=900 bounds=(x=529.046875 y=-1465 w=111.328125 h=40) reason=not_hit_testable
+[25930] link "Pricing" <a> role=link context="generic: Global / generic: External link / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=954 bounds=(x=640.375 y=-1465 w=66.59375 h=40) reason=not_hit_testable
+[25933] button "Search or jump to, type / to search" <button> role=button context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=958 bounds=(x=1075.765625 y=-1461 w=42 h=32) reason=not_hit_testable
+[25943] link "Sign in" <a> role=link context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=970 bounds=(x=1125.765625 y=-1461 w=70.28125 h=32) reason=not_hit_testable
+[25946] link "Sign up" <a> role=link context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=974 bounds=(x=1204.046875 y=-1461 w=74.953125 h=32) reason=not_hit_testable
+[25949] button "Appearance settings" <button> role=button context="generic: Close navigation menu / banner: Close navigation menu" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=978 bounds=(x=1287 y=-1461 w=32 h=32) reason=not_hit_testable
+[25997] link "lightpanda-io" <a> role=link context="generic: Please reload this page" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1082 bounds=(x=56 y=-1389 w=114.53125 h=22) reason=not_hit_testable
+[26000] link "browser" <a> role=link context="generic: Please reload this page / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1091 bounds=(x=184.09375 y=-1389 w=77.8125 h=22) reason=not_hit_testable
+[26027] link "Code" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1163 bounds=(x=32 y=-1338 w=75 h=30) reason=not_hit_testable
+[26033] link "Issues 76" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1178 bounds=(x=115 y=-1338 w=118.953125 h=30) reason=not_hit_testable
+[26040] link "Pull requests 23" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1195 bounds=(x=241.953125 y=-1338 w=163.28125 h=30) reason=not_hit_testable
+[26046] link "Actions" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1211 bounds=(x=413.234375 y=-1338 w=91.34375 h=30) reason=not_hit_testable
+[26052] link "Security and quality 5" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1226 bounds=(x=512.578125 y=-1338 w=201.734375 h=30) reason=not_hit_testable
+[26058] link "Insights" <a> role=link context="generic: Repository / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1242 bounds=(x=722.3125 y=-1338 w=93.671875 h=30) reason=not_hit_testable
+[26129] clickable "main 49 Branches 22 Tags Go to file Code Open more actions menu Latest commit krichprollsch Merge pull request #3268 from lightpanda-io/mcp-http-close-after-reject Open commit details pending Aug 25, 2026 a01e148 · Aug…" <div> role=generic context="generic: Please reload this page / generic: main branch / generic: main branch" state=not-hit-testable hit=False viewport=True sourceOrder=1418 bounds=(x=0 y=-1299 w=1351 h=9936.703125) reason=not_hit_testable
+[26143] button "main branch" <button> role=button context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1434 bounds=(x=67.5 y=-1275 w=104.359375 h=32) reason=not_hit_testable
+[26157] link "49 Branches" <a> role=link context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1449 bounds=(x=179.859375 y=-1275 w=112.625 h=32) reason=not_hit_testable
+[26163] link "22 Tags" <a> role=link context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1460 bounds=(x=292.484375 y=-1275 w=83.046875 h=32) reason=not_hit_testable
+[25249] text-input "Go to file" actions=click,type,focus,select <input> role=combobox context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1487 bounds=(x=658.03125 y=-1274 w=181 h=30) reason=not_hit_testable
+[27924] link "krichprollsch" <a> role=link context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1520 bounds=(x=80.5 y=-1210.5 w=22.328125 h=21) reason=not_hit_testable
+[27928] link "Merge pull request" <a> role=link context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1528 bounds=(x=198.75 y=-1208.5 w=115.953125 h=16) reason=not_hit_testable
+[27929] link "#3268" <a> role=link context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1531 bounds=(x=318.59375 y=-1208.5 w=38.9375 h=16) reason=not_hit_testable
+[27930] link "from lightpanda-io/mcp-http-close-after-reject" <a> role=link context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1534 bounds=(x=361.421875 y=-1208.5 w=279.34375 h=16) reason=not_hit_testable
+[27937] button "Open commit details" <button> role=button context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1536 bounds=(x=619.015625 y=-1214 w=28 h=28) reason=not_hit_testable
+[27939] button "pending" <button> role=button context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1541 bounds=(x=655.015625 y=-1214 w=28 h=28) reason=not_hit_testable
+[27945] link "a01e148" <a> role=link context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1552 bounds=(x=699.015625 y=-1209 w=46.71875 h=18) reason=not_hit_testable
+[26217] link "8,838 Commits" <a> role=link context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1560 bounds=(x=839.796875 y=-1214 w=118.703125 h=28) reason=not_hit_testable
+[26263] link ".github" <a> role=link context="generic: .github, (Directory) / generic: .github, (Directory) / generic: .github, (Directory)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1619 bounds=(x=110.5 y=-1161.5 w=42.046875 h=16) reason=not_hit_testable
+[27949] link "wip: screenshot" <a> role=link context="generic: .github, (Directory) / generic: .github, (Directory) / generic: wip: screenshot" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1624 bounds=(x=445.296875 y=-1161.5 w=97.28125 h=16) reason=not_hit_testable
+[26285] link "src" <a> role=link context="generic: .github, (Directory) / generic: src, (Directory) / generic: src, (Directory)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1647 bounds=(x=110.5 y=-1120.5 w=18.671875 h=16) reason=not_hit_testable
+[26307] link ".gitignore" <a> role=link context="generic: .github, (Directory) / generic: .gitignore, (File) / generic: .gitignore, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1681 bounds=(x=110.5 y=-1079.5 w=57.59375 h=16) reason=not_hit_testable
+[26328] link ".plumber.yaml" <a> role=link context="generic: .github, (Directory) / generic: .plumber.yaml, (File) / generic: .plumber.yaml, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1709 bounds=(x=110.5 y=-1038.5 w=87.15625 h=16) reason=not_hit_testable
+[27957] link "ci: add plumber to watch workflow security" <a> role=link context="generic: .github, (Directory) / generic: .plumber.yaml, (File) / generic: ci: add plumber to watch workflow security" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1714 bounds=(x=445.296875 y=-1038.5 w=262.21875 h=16) reason=not_hit_testable
+[26350] link "AGENTS.md" <a> role=link context="generic: .github, (Directory) / generic: AGENTS.md, (File) / generic: AGENTS.md, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1737 bounds=(x=110.5 y=-997.5 w=80.90625 h=16) reason=not_hit_testable
+[27959] link "AGENTS.md: point agents at make download-v8 before building" <a> role=link context="generic: .github, (Directory) / generic: AGENTS.md, (File) / generic: AGENTS.md: point agents at make download-v8 before building" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1742 bounds=(x=445.296875 y=-997.5 w=397.671875 h=16) reason=not_hit_testable
+[26372] link "CLA.md" <a> role=link context="generic: .github, (Directory) / generic: CLA.md, (File) / generic: CLA.md, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1765 bounds=(x=110.5 y=-956.5 w=50.578125 h=16) reason=not_hit_testable
+[27961] link "contrib: add CLA signature process" <a> role=link context="generic: .github, (Directory) / generic: CLA.md, (File) / generic: contrib: add CLA signature process" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1770 bounds=(x=445.296875 y=-956.5 w=217.90625 h=16) reason=not_hit_testable
+[26394] link "CLAUDE.md" <a> role=link context="generic: .github, (Directory) / generic: CLAUDE.md, (File) / generic: CLAUDE.md, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1793 bounds=(x=110.5 y=-915.5 w=80.140625 h=16) reason=not_hit_testable
+[27963] link "add AGENTS.md and CLAUDE.md" <a> role=link context="generic: .github, (Directory) / generic: CLAUDE.md, (File) / generic: add AGENTS.md and CLAUDE.md" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1798 bounds=(x=445.296875 y=-915.5 w=218.65625 h=16) reason=not_hit_testable
+[26416] link "CONTRIBUTING.md" <a> role=link context="generic: .github, (Directory) / generic: CONTRIBUTING.md, (File) / generic: CONTRIBUTING.md, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1821 bounds=(x=110.5 y=-874.5 w=129.890625 h=16) reason=not_hit_testable
+[27965] link "dev: On linux -dev_fast is on by default" <a> role=link context="generic: .github, (Directory) / generic: CONTRIBUTING.md, (File) / generic: dev: On linux -dev_fast is on by default" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1826 bounds=(x=445.296875 y=-874.5 w=241.25 h=16) reason=not_hit_testable
+[26438] link "Dockerfile" <a> role=link context="generic: .github, (Directory) / generic: Dockerfile, (File) / generic: Dockerfile, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1849 bounds=(x=110.5 y=-833.5 w=62.25 h=16) reason=not_hit_testable
+[27967] link "update v8 dep" <a> role=link context="generic: .github, (Directory) / generic: Dockerfile, (File) / generic: update v8 dep" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1854 bounds=(x=445.296875 y=-833.5 w=88.75 h=16) reason=not_hit_testable
+[26460] link "LICENSE" <a> role=link context="generic: .github, (Directory) / generic: LICENSE, (File) / generic: LICENSE, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1877 bounds=(x=110.5 y=-792.5 w=59.921875 h=16) reason=not_hit_testable
+[27969] link "add AGPL license" <a> role=link context="generic: .github, (Directory) / generic: LICENSE, (File) / generic: add AGPL license" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1882 bounds=(x=445.296875 y=-792.5 w=110.78125 h=16) reason=not_hit_testable
+[26482] link "LICENSING.md" <a> role=link context="generic: .github, (Directory) / generic: LICENSING.md, (File) / generic: LICENSING.md, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1905 bounds=(x=110.5 y=-751.5 w=98.8125 h=16) reason=not_hit_testable
+[27971] link "update LICENSING.md" <a> role=link context="generic: .github, (Directory) / generic: LICENSING.md, (File) / generic: update LICENSING.md" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1910 bounds=(x=445.296875 y=-751.5 w=145.515625 h=16) reason=not_hit_testable
+[26503] link "Makefile" <a> role=link context="generic: .github, (Directory) / generic: Makefile, (File) / generic: Makefile, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1933 bounds=(x=110.5 y=-710.5 w=52.140625 h=16) reason=not_hit_testable
+[27973] link "Makefile: fix test filtering" <a> role=link context="generic: .github, (Directory) / generic: Makefile, (File) / generic: Makefile: fix test filtering" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1938 bounds=(x=445.296875 y=-710.5 w=149.390625 h=16) reason=not_hit_testable
+[26525] link "README.md" <a> role=link context="generic: .github, (Directory) / generic: README.md, (File) / generic: README.md, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1961 bounds=(x=110.5 y=-669.5 w=83.234375 h=16) reason=not_hit_testable
+[26547] link "SECURITY.md" <a> role=link context="generic: .github, (Directory) / generic: SECURITY.md, (File) / generic: SECURITY.md, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1989 bounds=(x=110.5 y=-628.5 w=92.328125 h=16) reason=not_hit_testable
+[27977] link "add SECURITY.md" <a> role=link context="generic: .github, (Directory) / generic: SECURITY.md, (File) / generic: add SECURITY.md" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1994 bounds=(x=445.296875 y=-628.5 w=119.578125 h=16) reason=not_hit_testable
+[26569] link "build.zig" <a> role=link context="generic: .github, (Directory) / generic: build.zig, (File) / generic: build.zig, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2017 bounds=(x=110.5 y=-587.5 w=51.375 h=16) reason=not_hit_testable
+[27980] link "#3231" <a> role=link context="generic: .github, (Directory) / generic: build.zig, (File) / generic: Merge pull request #3231 from lightpanda-io/screenshot" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2025 bounds=(x=565.140625 y=-587.5 w=38.9375 h=16) reason=not_hit_testable
+[27981] link "from lightpanda-io/screenshot" <a> role=link context="generic: .github, (Directory) / generic: build.zig, (File) / generic: Merge pull request #3231 from lightpanda-io/screenshot" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2028 bounds=(x=607.96875 y=-587.5 w=184.4375 h=16) reason=not_hit_testable
+[26591] link "build.zig.zon" <a> role=link context="generic: .github, (Directory) / generic: build.zig.zon, (File) / generic: build.zig.zon, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2051 bounds=(x=110.5 y=-546.5 w=77.828125 h=16) reason=not_hit_testable
+[27983] link "search: repin zenai to the merged commit and finish the review follow…" <a> role=link context="generic: .github, (Directory) / generic: build.zig.zon, (File) / generic: search: repin zenai to the merged commit and finish the review fo…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2056 bounds=(x=445.296875 y=-546.5 w=442.765625 h=16) reason=not_hit_testable
+[26613] link "flake.lock" <a> role=link context="generic: .github, (Directory) / generic: flake.lock, (File) / generic: flake.lock, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2079 bounds=(x=110.5 y=-505.5 w=58.359375 h=16) reason=not_hit_testable
+[27985] link "update Nix flake for Zig 0.16" <a> role=link context="generic: .github, (Directory) / generic: flake.lock, (File) / generic: update Nix flake for Zig 0.16" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2084 bounds=(x=445.296875 y=-505.5 w=175.109375 h=16) reason=not_hit_testable
+[26635] link "flake.nix" <a> role=link context="generic: .github, (Directory) / generic: flake.nix, (File) / generic: flake.nix, (File)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2107 bounds=(x=110.5 y=-464.5 w=51.359375 h=16) reason=not_hit_testable
+[26653] link "README" <a> role=link context="generic: Repository files / list: list / generic: generic" state=offscreen hit=True viewport=False sourceOrder=2132 bounds=(x=76.5 y=8 w=100.671875 h=32) reason=broad/noisy
+[26659] link "Contributing" <a> role=link context="generic: Repository files / list: list / generic: generic" state=offscreen hit=True viewport=False sourceOrder=2139 bounds=(x=185.171875 y=8 w=123.984375 h=32) reason=broad/noisy
+[26665] link "AGPL-3.0 license" <a> role=link context="generic: Repository files / list: list / generic: generic" state=offscreen hit=True viewport=False sourceOrder=2146 bounds=(x=317.15625 y=8 w=154.390625 h=32) reason=broad/noisy
+[26671] link "Security" <a> role=link context="generic: Repository files / list: list / generic: generic" state=offscreen hit=True viewport=False sourceOrder=2153 bounds=(x=479.546875 y=8 w=95.25 h=32) reason=broad/noisy
+[26687] button "Outline" <button> role=button context="generic: Please reload this page / generic: main branch / generic: main branch" state=offscreen hit=True viewport=False sourceOrder=2172 bounds=(x=928.5 y=7.5 w=34 h=32) reason=broad/noisy
+[26690] scroll-region "Lightpanda Browser The headless browser built from scratch for AI agents and automation. Not a Chromium fork. Not a WebKit patch. A new browser, written in Zig. Benchmarks Requesting 933 real web pages over the network…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: main branch / generic: main branch" state=not-hit-testable hit=False viewport=True sourceOrder=2175 bounds=(x=68.5 y=-370 w=902 h=8926.703125) reason=broad/noisy
+[27541] scroll-region "About Lightpanda: the headless browser designed for AI and automation lightpanda.io Topics browser browser-automation cdp headless lightpanda playwright puppeteer zig Resources Readme AGPL-3.0 license Contributing Contr…" actions=scroll <div> role=generic context="generic: Please reload this page / generic: main branch / generic: main branch" state=not-hit-testable hit=False viewport=True sourceOrder=4072 bounds=(x=987.5 y=-1299 w=320 h=9888.703125) reason=broad/noisy
+[27556] link "browser-automation" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4093 bounds=(x=1086.1875 y=-1146 w=141.34375 h=25.5) reason=not_hit_testable
+[27557] link "cdp" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4095 bounds=(x=1229.53125 y=-1146 w=47.34375 h=25.5) reason=not_hit_testable
+[27558] link "headless" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4097 bounds=(x=1011.5 y=-1112.5 w=77.375 h=25.5) reason=not_hit_testable
+[27559] link "lightpanda" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4099 bounds=(x=1090.875 y=-1112.5 w=86.671875 h=25.5) reason=not_hit_testable
+[25241] link "playwright" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4101 bounds=(x=1179.546875 y=-1112.5 w=86.015625 h=25.5) reason=not_hit_testable
+[27560] link "puppeteer" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4103 bounds=(x=1011.5 y=-1079 w=84.015625 h=25.5) reason=not_hit_testable
+[27561] link "zig" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4105 bounds=(x=1097.515625 y=-1079 w=42.671875 h=25.5) reason=not_hit_testable
+[27565] link "Readme" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4111 bounds=(x=1011.5 y=-1043.5 w=76.921875 h=16) reason=not_hit_testable
+[27570] link "AGPL-3.0 license" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4117 bounds=(x=1011.5 y=-1014.5 w=132.953125 h=16) reason=not_hit_testable
+[27577] link "Contributing" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4126 bounds=(x=1011.5 y=-985.5 w=99.5 h=16) reason=not_hit_testable
+[27584] link "Security policy" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4135 bounds=(x=1011.5 y=-956.5 w=114.265625 h=16) reason=not_hit_testable
+[27589] link "Activity" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4141 bounds=(x=1011.5 y=-927.5 w=68.34375 h=16) reason=not_hit_testable
+[27594] link "Custom properties" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4147 bounds=(x=1011.5 y=-898.5 w=138.390625 h=16) reason=not_hit_testable
+[27615] link "1.6k forks" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4176 bounds=(x=1011.5 y=-811.5 w=85.484375 h=16) reason=not_hit_testable
+[27622] link "Report repository" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4185 bounds=(x=1011.5 y=-782.5 w=107.390625 h=16) reason=not_hit_testable
+[28187] link "nightly Latest Jul 16, 2024" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4200 bounds=(x=1011.5 y=-694.5 w=272 h=39) reason=not_hit_testable
+[28185] link "+ 19 releases" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4213 bounds=(x=1011.5 y=-639.5 w=72.390625 h=14) reason=not_hit_testable
+[28237] link "+ 52 contributors" <a> role=link context="generic: main branch / generic: main branch / generic: @karlseguin" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4272 bounds=(x=1011.5 y=-425.5 w=89.71875 h=14) reason=not_hit_testable
+[27653] link "GitHub Homepage" <a> role=link context="contentinfo: GitHub Homepage" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4362 bounds=(x=251.5625 y=8685.703125 w=24 h=26) reason=not_hit_testable
+[27661] link "Terms" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4383 bounds=(x=405.125 y=8691.703125 w=32.671875 h=14) reason=not_hit_testable
+[27663] link "Privacy" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4389 bounds=(x=453.796875 y=8691.703125 w=39.34375 h=14) reason=not_hit_testable
+[27665] link "Security" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4395 bounds=(x=509.140625 y=8691.703125 w=43.359375 h=14) reason=not_hit_testable
+[27667] link "Status" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4401 bounds=(x=568.5 y=8691.703125 w=34.03125 h=14) reason=not_hit_testable
+[27669] link "Community" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4407 bounds=(x=618.53125 y=8691.703125 w=60.6875 h=14) reason=not_hit_testable
+[27671] link "Docs" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4413 bounds=(x=695.21875 y=8691.703125 w=27.34375 h=14) reason=not_hit_testable
+[27673] link "Contact" <a> role=link context="generic: Footer / generic: Footer navigation / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4419 bounds=(x=738.5625 y=8691.703125 w=41.359375 h=14) reason=not_hit_testable
+[27676] button "Manage cookies" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4427 bounds=(x=795.921875 y=8689.703125 w=87.390625 h=18) reason=not_hit_testable
+[27679] button "Do not share my personal information" <button> role=button context="generic: Footer navigation / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4436 bounds=(x=899.3125 y=8689.703125 w=200.109375 h=18) reason=not_hit_testable
+=== COMPLETE READ-ONLY CONTROL TEXT ===
+- main 49 Branches 22 Tags Go to file Code Open more actions menu Latest commit krichprollsch Merge pull request #3268 from lightpanda-io/mcp-http-close-after-reject Open commit details pending Aug 25, 2026 a01e148 · Aug 25, 2026 History 8,838 Commits Open commit details 8,838 Commits Folders and files Name Name Last commit message Last commit date .github .github wip: screenshot Aug 19, 2026 src src Merge pull request #3268 from lightpanda-io/mcp-http-close-after-reject Aug 25, 2026 .gitignore
+- Lightpanda Browser The headless browser built from scratch for AI agents and automation. Not a Chromium fork. Not a WebKit patch. A new browser, written in Zig. Benchmarks Requesting 933 real web pages over the network on a AWS EC2 m5.large instance. See benchmark details . Metric Lightpanda Headless Chrome Difference Memory (peak, 100 pages) 123MB 2GB ~16 less Execution time (100 pages) 5s 46s ~9x faster Quick start Install Package Managers Latest nightly from Homebrew: brew install lightpanda-
+- import puppeteer from 'puppeteer-core' ; // use browserWSEndpoint to pass the Lightpanda's CDP server address. const browser = await puppeteer . connect ( { browserWSEndpoint : "ws://127.0.0.1:9222" , } ) ; // The rest of your script remains the same. const context = await browser . createBrowserContext ( ) ; const frame = await context . newPage ( ) ; // Dump all the links from the frame. await frame . goto ( 'https://demo-browser.lightpanda.io/amiibo/' , { waitUntil : "networkidle0" } ) ; cons
+- ./lightpanda agent # auto-detects API key from env ./lightpanda agent --task "top story on news.ycombinator.com?" ./lightpanda agent --no-llm # basic REPL, no LLM ./lightpanda run session.js # run a recorded script ./lightpanda agent --provider gemini --task "..." # force a specific provider VERTEX_API_KEY=... ./lightpanda agent --provider vertex # Vertex AI, express mode GOOGLE_CLOUD_PROJECT=my-proj ./lightpanda agent --provider vertex # Vertex AI, token via gcloud auth
+- make test # Run all tests make test F= " server " # Filter by substring TEST_FILTER= " WebApi: #selector_all " make test # Filter main + subtest (separator: #) TEST_VERBOSE=true make test TEST_FAIL_FIRST=true make test METRICS=true make test # Capture allocation/duration metrics as JSON
+- About Lightpanda: the headless browser designed for AI and automation lightpanda.io Topics browser browser-automation cdp headless lightpanda playwright puppeteer zig Resources Readme AGPL-3.0 license Contributing Contributing Security policy Security policy Activity Custom properties Stars 34.2k stars Watchers 88 watching Forks 1.6k forks Report repository Releases 20 ( 20 ) nightly Latest Jul 16, 2024 + 19 releases Contributors 66 ( 66 ) + 52 contributors Languages Zig 78.4 % HTML 20 % Rust
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[26690] Logo — 902x8926
+[27541] @karlseguin — 320x9888
+[26899] Copy code to clipboard — 838x524
+[26900] Logo content — 782x524

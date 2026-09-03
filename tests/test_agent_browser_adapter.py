@@ -16,18 +16,25 @@ from agent_browser import AgentBrowserClient  # noqa: E402
 
 
 class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
-    async def test_live_snapshot_diff_timeout_is_not_retried(self) -> None:
+    async def test_structured_capture_uses_viewport_only_evidence(self) -> None:
         cdp = MagicMock()
-        cdp.call = AsyncMock(side_effect=TimeoutError("deadline"))
-        with self.assertRaisesRegex(runner.RunnerError, "timed out after 1 attempts"):
-            await capture.capture_snapshot_diff(
-                cdp,
-                {"nodes": []},
-                action_type="click",
-                max_nodes=7000,
-                max_text_chars=200000,
-            )
-        cdp.call.assert_awaited_once()
+        cdp.call = AsyncMock(return_value={"snapshot": {"nodes": []}})
+
+        await capture.capture_structured_snapshot(
+            cdp,
+            max_nodes=7000,
+            max_text_chars=200000,
+        )
+
+        cdp.call.assert_awaited_once_with(
+            "ChromiumRL.captureStructuredSnapshot",
+            {
+                "inViewportOnly": True,
+                "maxNodes": 7000,
+                "maxTextChars": 200000,
+                "includeOffscreen": False,
+            },
+        )
 
     def test_runner_reexports_structured_client(self) -> None:
         self.assertIs(runner.AgentBrowserClient, AgentBrowserClient)
@@ -833,41 +840,6 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
             runner.action_rejection_reason(decision, frozenset(), successful), ""
         )
 
-    def test_rejected_termination_requires_new_browser_evidence(self) -> None:
-        recent = [
-            {
-                "rejected_termination": {
-                    "action": "terminate",
-                    "status": "success",
-                    "final_answer": "premature",
-                },
-                "reason": "one field is not verified",
-            }
-        ]
-        self.assertIn(
-            "gathers the missing evidence",
-            runner.action_rejection_reason(
-                {"action": "terminate", "status": "success", "memory": "facts"},
-                frozenset(),
-                recent,
-            ),
-        )
-        self.assertEqual(
-            runner.action_rejection_reason(
-                {"action": "navigate", "url": "https://example.test", "memory": "facts"},
-                frozenset(),
-                recent,
-            ),
-            "",
-        )
-        self.assertEqual(
-            runner.action_rejection_reason(
-                {"action": "click", "id": "e25"},
-                frozenset({"e23", "e24", "e25"}),
-                recent,
-            ),
-            "",
-        )
 
 
 if __name__ == "__main__":

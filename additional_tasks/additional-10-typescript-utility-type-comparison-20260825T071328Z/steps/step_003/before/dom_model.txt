@@ -1,0 +1,453 @@
+URL: https://www.typescriptlang.org/docs/handbook/utility-types.html#picktype-keys
+Title: TypeScript: Documentation - Utility Types
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=3268 groups=179 truncated=True
+
+=== VISIBLE CONTENT ===
+Context: Toggle sidebar navigation
+- TypeScript provides several utility types to facilitate common type transformations. These utilities are available globally. Awaited Released: 4.5 This type is meant to model operations like await in async functions, or the .then() method on Promise s - specifically, the way that they recursively unwrap Promise s. Example ts type A = Awaited >; type A = string type B = Awaited >>; type B = number type C = Awaited < boolean | Promise < n
+Context: awaitedtype permalink
+- ts type T0 = NonNullable ; type T0 = string | number type T1 = NonNullable ; type T1 = string[] Try
+- type T0 = string | number
+- T1
+- undefined
+- type T1 = string[]
+- parameterstype permalink Parameters
+- Released: 3.1
+- Released: 3.1
+- Constructs a tuple type from the types used in the parameters of a function type Type .
+- For overloaded functions, this will be the parameters of the signature; see .
+- last
+- ts declare function f1 ( arg : { a : number ; b : string }): void ; type T0 = Parameters string >; type T0 = [] type T1 = Parameters void >; type T1 = [s: string] type T2 = Parameters ( arg : T ) => T >; type T2 = [arg: unknown] type T3 = Parameters ; type T3 = [arg: { a: number; b: string; }] type T4 = Parameters ; type T4 = unknown[] type T5 = Parameters ; type T5 = never type T6 = Parameters ; Type 'string' does not sati
+- declare
+- f1
+- arg
+- void
+- T0
+- type T0 = []
+- T1
+- void
+- type T1 = [s: string]
+- T2
+- arg
+- type T2 = [arg: unknown]
+- T3
+- typeof
+- f1
+- type T3 = [arg: { a: number; b: string; }]
+- T4
+- any
+- type T4 = unknown[]
+- T5
+- never
+- type T5 = never
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [2440] awaitedtype permalink content.
+- We use optional cookies to improve your experience on our websites, such as through social media connections, and to display personalized advertising based on your online activity. If you reject optional cookies, only cookies necessary to provide you the services will be used. You may change your selection by clicking “Manage Cookies” at the bottom of the page. Privacy Statement Third-Party Cookies
+Context: Toggle sidebar navigation
+- Utility Types
+Context: awaitedtype permalink
+- TypeScript provides several utility types to facilitate common type transformations. These utilities are available globally.
+- awaitedtype permalink Awaited
+- Released: 4.5
+- Released: 4.5
+- This type is meant to model operations like in functions, or the method on s - specifically, the way that they recursively unwrap s.
+- async
+- .then()
+- Promise
+- Example
+- ts type A = Awaited >; type A = string type B = Awaited >>; type B = number type C = Awaited >; type C = number | boolean Try
+- Promise
+- Promise
+- Promise
+- Promise
+- partialtype permalink Partial
+- Released: 2.1
+- Released: 2.1
+- Constructs a type with all properties of set to optional. This utility will return a type that represents all subsets of a given type.
+- ts interface Todo { title : string ; description : string ; } function updateTodo ( todo : Todo , fieldsToUpdate : Partial ) { return { ... todo , ... fieldsToUpdate }; } const todo1 = { title : "organize desk" , description : "clear clutter" , }; const todo2 = updateTodo ( todo1 , { description : "throw out trash" , }); Try
+- updateTodo
+- fieldsToUpdate
+- fieldsToUpdate
+- todo1
+- "organize desk"
+- "clear clutter"
+- todo2
+- updateTodo
+- todo1
+- "throw out trash"
+- requiredtype permalink Required
+- Released: 2.8
+- Released: 2.8
+- Constructs a type consisting of all properties of set to required. The opposite of .
+- ts interface Props { a ?: number ; b ?: string ; } const obj : Props = { a : 5 }; const obj2 : Required = { a : 5 }; Property 'b' is missing in type '{ a: number; }' but required in type 'Required '. 2741 Property 'b' is missing in type '{ a: number; }' but required in type 'Required '. Try
+- Props
+- Props
+- 5
+- obj2
+- Props
+- 5
+- Property 'b' is missing in type '{ a: number; }' but required in type 'Required '.
+- Property 'b' is missing in type '{ a: number; }' but required in type 'Required '.
+- readonlytype permalink Readonly
+- Released: 2.1
+- Constructs a type with all properties of set to , meaning the properties of the constructed type cannot be reassigned.
+- ts interface Todo { title : string ; } const todo : Readonly = { title : "Delete inactive users" , }; todo . title = "Hello" ; Cannot assign to 'title' because it is a read-only property. 2540 Cannot assign to 'title' because it is a read-only property. Try
+- "Delete inactive users"
+- "Hello"
+- Cannot assign to 'title' because it is a read-only property.
+- Cannot assign to 'title' because it is a read-only property.
+- This utility is useful for representing assignment expressions that will fail at runtime (i.e. when attempting to reassign properties of a frozen object ).
+- objectfreeze permalink Object.freeze
+- ts function freeze ( obj : Type ): Readonly ;
+- recordkeys type permalink Record
+- Released: 2.1
+- Constructs an object type whose property keys are and whose property values are . This utility can be used to map the properties of a type to another type.
+- ts type CatName = "miffy" | "boris" | "mordred" ; interface CatInfo { age : number ; breed : string ; } const cats : Record = { miffy : { age : 10 , breed : "Persian" }, boris : { age : 5 , breed : "Maine Coon" }, mordred : { age : 16 , breed : "British Shorthair" }, }; cats . boris ; const cats: Record Try
+- CatName
+- "miffy"
+- "boris"
+- "mordred"
+- CatInfo
+- breed
+- cats
+- CatName
+- CatInfo
+- miffy
+- 10
+- breed
+- "Persian"
+- boris
+- 5
+- breed
+- "Maine Coon"
+- mordred
+- 16
+- breed
+- "British Shorthair"
+- cats
+- boris
+- const cats: Record
+- picktype keys permalink Pick
+- Released: 2.1
+- Constructs a type by picking the set of properties (string literal or union of string literals) from .
+- ts interface Todo { title : string ; description : string ; completed : boolean ; } type TodoPreview = Pick ; const todo : TodoPreview = { title : "Clean room" , completed : false , }; todo ; const todo: TodoPreview Try
+- omittype keys permalink Omit
+- Released: 3.5
+- Released: 3.5
+- Constructs a type by picking all properties from and then removing (string literal or union of string literals). The opposite of .
+- ts interface Todo { title : string ; description : string ; completed : boolean ; createdAt : number ; } type TodoPreview = Omit ; const todo : TodoPreview = { title : "Clean room" , completed : false , createdAt : 1615544252770 , }; todo ; const todo: TodoPreview type TodoInfo = Omit ; const todoInfo : TodoInfo = { title : "Pick up kids" , description : "Kindergarten closes at 5pm" , }; todoInfo ; const todoInfo: TodoInfo T
+- createdAt
+- createdAt
+- 1615544252770
+- TodoInfo
+- "createdAt"
+- todoInfo
+- TodoInfo
+- "Pick up kids"
+- "Kindergarten closes at 5pm"
+- todoInfo
+- const todoInfo: TodoInfo
+- excludeuniontype excludedmembers permalink Exclude
+- Released: 2.8
+- Constructs a type by excluding from all union members that are assignable to .
+- ts type T0 = Exclude ; type T0 = "b" | "c" type T1 = Exclude ; type T1 = "c" type T2 = Exclude void ), Function >; type T2 = string | number type Shape = | { kind : "circle" ; radius : number } | { kind : "square" ; x : number } | { kind : "triangle" ; x : number ; y : number }; type T3 = Exclude type T3 = { kind: "square"; x: number; } | { kind: "triangle"; x: number; y: number;
+- T0
+- type T0 = "b" | "c"
+- T1
+- type T1 = "c"
+- T2
+- void
+- type T2 = string | number
+- Shape
+- kind
+- "circle"
+- radius
+- kind
+- "square"
+- kind
+- "triangle"
+- T3
+- Shape
+- kind
+- "circle"
+- type T3 = { kind: "square"; x: number; } | { kind: "triangle"; x: number; y: number; }
+- extracttype union permalink Extract
+- Released: 2.8
+- Constructs a type by extracting from all union members that are assignable to .
+- ts type T0 = Extract ; type T0 = "a" type T1 = Extract void ), Function >; type T1 = () => void type Shape = | { kind : "circle" ; radius : number } | { kind : "square" ; x : number } | { kind : "triangle" ; x : number ; y : number }; type T2 = Extract type T2 = { kind: "circle"; radius: number; } Try
+- T0
+- type T0 = "a"
+- T1
+- void
+- type T1 = () => void
+- Shape
+- kind
+- "circle"
+- radius
+- kind
+- "square"
+- kind
+- "triangle"
+- T2
+- Shape
+- kind
+- "circle"
+- type T2 = { kind: "circle"; radius: number; }
+- nonnullabletype permalink NonNullable
+- Released: 2.8
+- Constructs a type by excluding and from .
+- undefined
+- T0
+- undefined
+- T6
+- Type 'string' does not satisfy the constraint '(...args: any) => any'.
+- Type 'string' does not satisfy the constraint '(...args: any) => any'.
+- type T6 = never
+- T7
+- Type 'Function' does not satisfy the constraint '(...args: any) => any'. Type 'Function' provides no match for the signature '(...args: any): any'.
+- Type 'Function' does not satisfy the constraint '(...args: any) => any'. Type 'Function' provides no match for the signature '(...args: any): any'.
+- type T7 = never
+- constructorparameterstype permalink ConstructorParameters
+- Released: 3.1
+- Constructs a tuple or array type from the types of a constructor function type. It produces a tuple type with all the parameter types (or the type if is not a function).
+- never
+- ts type T0 = ConstructorParameters ; type T0 = [message?: string] type T1 = ConstructorParameters ; type T1 = string[] type T2 = ConstructorParameters ; type T2 = [pattern: string | RegExp, flags?: string] class C { constructor ( a : number , b : string ) {} } type T3 = ConstructorParameters ; type T3 = [a: number, b: string] type T4 = ConstructorParameters ; type T4 = unknown[] type T5 = ConstructorParameters <
+- T0
+- ErrorConstructor
+- type T0 = [message?: string]
+- T1
+- FunctionConstructor
+- type T1 = string[]
+- T2
+- RegExpConstructor
+- type T2 = [pattern: string | RegExp, flags?: string]
+- T3
+- typeof
+- type T3 = [a: number, b: string]
+- T4
+- any
+- type T4 = unknown[]
+- T5
+- Type 'Function' does not satisfy the constraint 'abstract new (...args: any) => any'. Type 'Function' provides no match for the signature 'new (...args: any): any'.
+- Type 'Function' does not satisfy the constraint 'abstract new (...args: any) => any'. Type 'Function' provides no match for the signature 'new (...args: any): any'.
+- type T5 = never
+- returntypetype permalink ReturnType
+- Released: 2.8
+- Constructs a type consisting of the return type of function Type .
+- For overloaded functions, this will be the return type of the signature; see .
+- last
+- ts declare function f1 (): { a : number ; b : string }; type T0 = ReturnType string >; type T0 = string type T1 = ReturnType void >; type T1 = void type T2 = ReturnType () => T >; type T2 = unknown type T3 = ReturnType () => T >; type T3 = number[] type T4 = ReturnType ; type T4 = { a: number; b: string; } type T5 = ReturnType ; type T5 = any type T6 = ReturnType ; type T6 = never type T7 = Return
+- declare
+- f1
+- T0
+- type T0 = string
+- T1
+- void
+- type T1 = void
+- T2
+- type T2 = unknown
+- T3
+- extends
+- type T3 = number[]
+- T4
+- typeof
+- f1
+- type T4 = { a: number; b: string; }
+- T5
+- any
+- type T5 = any
+- T6
+- never
+- type T6 = never
+- T7
+- Type 'string' does not satisfy the constraint '(...args: any) => any'.
+- Type 'string' does not satisfy the constraint '(...args: any) => any'.
+- type T7 = any
+- T8
+- Type 'Function' does not satisfy the constraint '(...args: any) => any'. Type 'Function' provides no match for the signature '(...args: any): any'.
+- Type 'Function' does not satisfy the constraint '(...args: any) => any'. Type 'Function' provides no match for the signature '(...args: any): any'.
+- type T8 = any
+- instancetypetype permalink InstanceType
+- Released: 2.8
+- Constructs a type consisting of the instance type of a constructor function in Type .
+- ts class C { x = 0 ; y = 0 ; } type T0 = InstanceType ; type T0 = C type T1 = InstanceType ; type T1 = any type T2 = InstanceType ; type T2 = never type T3 = InstanceType ; Type 'string' does not satisfy the constraint 'abstract new (...args: any) => any'. 2344 Type 'string' does not satisfy the constraint 'abstract new (...args: any) => any'. type T3 = any type T4 = InstanceType ; Type 'Function' does not satisfy the constraint 'abstract new (
+- 0
+- 0
+- T0
+- typeof
+- type T0 = C
+- T1
+- any
+- type T1 = any
+- T2
+- never
+- type T2 = never
+- T3
+- Type 'string' does not satisfy the constraint 'abstract new (...args: any) => any'.
+- Type 'string' does not satisfy the constraint 'abstract new (...args: any) => any'.
+- type T3 = any
+- T4
+- Type 'Function' does not satisfy the constraint 'abstract new (...args: any) => any'. Type 'Function' provides no match for the signature 'new (...args: any): any'.
+- Type 'Function' does not satisfy the constraint 'abstract new (...args: any) => any'. Type 'Function' provides no match for the signature 'new (...args: any): any'.
+- type T4 = any
+- noinfertype permalink NoInfer
+- Released: 5.4
+- Released: 5.4
+- Blocks inferences to the contained type. Other than blocking inferences, is identical to .
+- ts function createStreetLight ( colors : C [], defaultColor ?: NoInfer , ) { // ... } createStreetLight ([ "red" , "yellow" , "green" ], "red" ); // OK createStreetLight ([ "red" , "yellow" , "green" ], "blue" ); // Error
+- extends
+- thisparametertypetype permalink ThisParameterType
+- Released: 3.3
+- Released: 3.3
+- Extracts the type of the parameter for a function type, or if the function type has no parameter.
+- ts function toHex ( this : Number ) { return this . toString ( 16 ); } function numberToString ( n : ThisParameterType ) { return toHex . apply ( n ); } Try
+- 16
+- typeof
+- omitthisparametertype permalink OmitThisParameter
+- Released: 3.3
+- Removes the this parameter from Type . If Type has no explicitly declared this parameter, the result is simply Type . Otherwise, a new function type with no this parameter is created from Type . Generics are erased and only the last overload signature is propagated into the new function type.
+- ts function toHex ( this : Number ) { return this . toString ( 16 ); } const fiveToHex : OmitThisParameter = toHex . bind ( 5 ); console . log ( fiveToHex ()); Try
+- 16
+- typeof
+- 5
+- thistypetype permalink ThisType
+- Released: 2.3
+- Released: 2.3
+- This utility does not return a transformed type. Instead, it serves as a marker for a contextual type. Note that the flag must be enabled to use this utility.
+- ts type ObjectDescriptor = { data ?: D ; methods ?: M & ThisType ; // Type of 'this' in methods is D & M }; function makeObject ( desc : ObjectDescriptor ): D & M { let data : object = desc . data || {}; let methods : object = desc . methods || {}; return { ... data , ... methods } as D & M ; } let obj = makeObject ({ data : { x : 0 , y : 0 }, methods : { moveBy ( dx : number , dy : number ) { this . x += dx ; // Strongly typed this this . y += dy ; // St
+- ObjectDescriptor
+- data
+- methods
+- // Type of 'this' in methods is D & M
+- makeObject
+- ObjectDescriptor
+- data
+- data
+- methods
+- methods
+- data
+- methods
+- makeObject
+- data
+- 0
+- methods
+- moveBy
+- dx
+- dx
+- // Strongly typed this
+- // Strongly typed this
+- 10
+- 20
+- moveBy
+- 5
+- In the example above, the methods object in the argument to makeObject has a contextual type that includes ThisType and therefore the type of this in methods within the methods object is { x: number, y: number } & { moveBy(dx: number, dy: number): void } . Notice how the type of the methods property simultaneously is an inference target and a source for the this type in methods.
+- methods
+- makeObject
+- { x: number, y: number } & { moveBy(dx: number, dy: number): void }
+- The marker interface is simply an empty interface declared in . Beyond being recognized in the contextual type of an object literal, the interface acts like any empty interface.
+- lib.d.ts
+- Intrinsic String Manipulation Types
+- uppercasestringtype permalink Uppercase
+- lowercasestringtype permalink Lowercase
+- capitalizestringtype permalink Capitalize
+- uncapitalizestringtype permalink Uncapitalize
+- To help with string manipulation around template string literals, TypeScript includes a set of types which can be used in string manipulation within the type system. You can find those in the documentation.
+Context: Toggle sidebar navigation
+- The TypeScript docs are an open source project. Help us improve these pages by sending a Pull Request ❤
+- Contributors to this page: C OT B JB HX 34 +
+- JB
+- HX
+- 34 +
+- This page loaded in 0.532 seconds.
+- Navigated to Utility Types
+
+=== MEDIA / IMAGE LABELS ===
+- "Microsoft Logo" context="Microsoft Logo"
+
+=== SECONDARY / DEBUG ACTIONS ===
+[541] clickable "We use optional cookies to improve your experience on our websites, such as through social media connections, and to display personalized advertising based on your online activity. If you reject optional cookies, only c…" <div> role=generic state=not-hit-testable hit=False viewport=True sourceOrder=59 bounds=(x=0 y=-3259 w=1351 h=14171.359375) reason=not_hit_testable
+[6056] button "Accept" <button> role=button context="alert: alert" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=77 bounds=(x=813.453125 y=-3237 w=150 h=36) reason=not_hit_testable
+[6057] button "Reject" <button> role=button context="alert: alert" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=79 bounds=(x=971.453125 y=-3237 w=150 h=36) reason=not_hit_testable
+[6058] button "Manage cookies" <button> role=button context="alert: alert" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=81 bounds=(x=1129.453125 y=-3237 w=150 h=36) reason=not_hit_testable
+[903] link "Skip to main content" <a> role=link context="generic: TypeScript Home Page" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=84 bounds=(x=0 y=-3179 w=1 h=1) reason=not_hit_testable
+[6411] link "TypeScript Home Page" <a> role=link context="generic: TypeScript Home Page" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=88 bounds=(x=0 y=-3179 w=200 h=48) reason=not_hit_testable
+[6412] link "Download" <a> role=link context="generic: top menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=96 bounds=(x=200 y=-3179 w=90.015625 h=48.765625) reason=not_hit_testable
+[6413] link "Docs" <a> role=link context="generic: top menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=99 bounds=(x=290.015625 y=-3179 w=51.453125 h=48.765625) reason=not_hit_testable
+[6414] link "Handbook" <a> role=link context="generic: top menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=103 bounds=(x=341.46875 y=-3179 w=92.25 h=48.765625) reason=not_hit_testable
+[6415] link "Community" <a> role=link context="generic: top menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=106 bounds=(x=433.71875 y=-3179 w=100.609375 h=48.765625) reason=not_hit_testable
+[6416] link "Playground" <a> role=link context="generic: top menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=109 bounds=(x=534.328125 y=-3179 w=99.1875 h=48.765625) reason=not_hit_testable
+[6417] link "Tools" <a> role=link context="generic: top menu / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=112 bounds=(x=633.515625 y=-3179 w=53.46875 h=48.765625) reason=not_hit_testable
+[893] search-input "Search the TypeScript site" actions=click,type,focus,select <input> role=combobox context="generic: TypeScript Home Page / search: Search the TypeScript site" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=125 bounds=(x=1201 y=-3179 w=150 h=48) reason=not_hit_testable
+[1274] scroll-region "Get Started TS for the New Programmer TypeScript for JS Programmers TS for Java/C# Programmers TS for Functional Programmers TypeScript Tooling in 5 minutes Handbook The TypeScript Handbook The Basics Everyday Types Nar…" actions=scroll <ul> role=generic context="main: Toggle sidebar navigation / generic: Toggle sidebar navigation / generic: sidebar" state=offscreen hit=True viewport=False sourceOrder=151 bounds=(x=0 y=0 w=256 h=803) reason=broad/noisy
+[6081] button "Get Started" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=153 bounds=(x=0 y=0 w=241 h=40) reason=broad/noisy
+[6130] button "Handbook" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=178 bounds=(x=0 y=41 w=241 h=40) reason=broad/noisy
+[6168] button "Reference" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=246 bounds=(x=0 y=82 w=241 h=40) reason=broad/noisy
+[6138] link "Utility Types" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=256 bounds=(x=8 y=122 w=241 h=38.390625) reason=broad/noisy
+[6139] link "Cheat Sheets" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=259 bounds=(x=0 y=163 w=249 h=38.390625) reason=broad/noisy
+[6140] link "Decorators" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=262 bounds=(x=0 y=204 w=249 h=38.390625) reason=broad/noisy
+[6141] link "Declaration Merging" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=265 bounds=(x=0 y=245 w=249 h=38.390625) reason=broad/noisy
+[6142] link "Enums" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=268 bounds=(x=0 y=286 w=249 h=38.390625) reason=broad/noisy
+[6143] link "Iterators and Generators" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=271 bounds=(x=0 y=327 w=249 h=38.390625) reason=broad/noisy
+[6144] link "JSX" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=274 bounds=(x=0 y=368 w=249 h=38.390625) reason=broad/noisy
+[6145] link "Mixins" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=277 bounds=(x=0 y=409 w=249 h=38.390625) reason=broad/noisy
+[6146] link "Namespaces" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=280 bounds=(x=0 y=450 w=249 h=38.390625) reason=broad/noisy
+[6147] link "Namespaces and Modules" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=283 bounds=(x=0 y=491 w=249 h=38.390625) reason=broad/noisy
+[6148] link "Symbols" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=286 bounds=(x=0 y=532 w=249 h=38.390625) reason=broad/noisy
+[6149] link "Triple-Slash Directives" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=289 bounds=(x=0 y=573 w=249 h=38.390625) reason=broad/noisy
+[6150] link "Type Compatibility" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=292 bounds=(x=0 y=614 w=249 h=38.390625) reason=broad/noisy
+[6151] link "Type Inference" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=295 bounds=(x=0 y=655 w=249 h=38.390625) reason=broad/noisy
+[6152] link "Variable Declaration" <a> role=link context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=298 bounds=(x=0 y=696 w=249 h=38.390625) reason=broad/noisy
+[6204] button "Modules Reference" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=301 bounds=(x=0 y=738 w=241 h=40) reason=broad/noisy
+[6222] button "Tutorials" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen hit=True viewport=False sourceOrder=346 bounds=(x=0 y=779 w=241 h=40) reason=broad/noisy
+[6326] button "What's New" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=371 bounds=(x=0 y=820 w=241 h=40) reason=not_hit_testable
+[6369] button "Declaration Files" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=525 bounds=(x=0 y=861 w=241 h=40) reason=not_hit_testable
+[6385] button "JavaScript" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=584 bounds=(x=0 y=902 w=241 h=40) reason=not_hit_testable
+[6409] button "Project Configuration" <button> role=button context="generic: sidebar / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=606 bounds=(x=0 y=943 w=241 h=40) reason=not_hit_testable
+[3761] select "System Always Light Always Dark" actions=click,select <select> role=combobox context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4957 bounds=(x=496.4375 y=10327.859375 w=97 h=19) reason=not_hit_testable
+[3791] select "Cascadia Cascadia (ligatures) Consolas Dank Mono Fira Code JetBrains Mono OpenDyslexic SF Mono Source Code Pro" actions=click,select <select> role=combobox context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4969 bounds=(x=704.03125 y=10327.859375 w=141 h=19) reason=not_hit_testable
+[6427] link "Everyday Types" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4993 bounds=(x=155.5 y=10434.859375 w=111.0625 h=21) reason=not_hit_testable
+[6428] link "Creating Types from Types" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=4998 bounds=(x=363.5 y=10434.859375 w=192.109375 h=21) reason=not_hit_testable
+[6429] link "More on Functions" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5003 bounds=(x=571.5 y=10434.859375 w=136.296875 h=21) reason=not_hit_testable
+[6430] link "More on Objects" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5008 bounds=(x=779.5 y=10434.859375 w=120.9375 h=21) reason=not_hit_testable
+[6431] link "Narrowing" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5013 bounds=(x=987.5 y=10434.859375 w=77.140625 h=21) reason=not_hit_testable
+[6432] link "Variable Declarations" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5018 bounds=(x=155.5 y=10532.03125 w=152.671875 h=21) reason=not_hit_testable
+[6433] link "TypeScript in 5 minutes" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5023 bounds=(x=363.5 y=10532.03125 w=169.75 h=21) reason=not_hit_testable
+[6434] link "TSConfig Options" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5028 bounds=(x=571.5 y=10532.03125 w=127.59375 h=21) reason=not_hit_testable
+[6435] link "Classes" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5033 bounds=(x=779.5 y=10532.03125 w=51.671875 h=21) reason=not_hit_testable
+[3844] link "Microsoft Logo" <a> role=link context="contentinfo: Microsoft Logo / generic: Microsoft Logo / generic: Microsoft Logo" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5045 bounds=(x=155.5 y=10762.984375 w=92 h=21) reason=not_hit_testable
+[3839] link "Privacy" <a> role=link context="generic: Microsoft Logo / generic: Microsoft Logo / generic: © 2012- 2026 Microsoft" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5052 bounds=(x=155.5 y=10823.765625 w=49.046875 h=21) reason=not_hit_testable
+[3840] link "Terms of Use" <a> role=link context="generic: Microsoft Logo / generic: Microsoft Logo / generic: © 2012- 2026 Microsoft" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5054 bounds=(x=204.546875 y=10823.765625 w=90.21875 h=21) reason=not_hit_testable
+[6436] link "Get Started" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5061 bounds=(x=395.5 y=10707.609375 w=82.4375 h=21) reason=not_hit_testable
+[6440] link "TSConfig Ref" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5073 bounds=(x=395.5 y=10777.984375 w=93.65625 h=21) reason=not_hit_testable
+[6441] link "Code Samples" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5076 bounds=(x=595.5 y=10777.984375 w=102.484375 h=21) reason=not_hit_testable
+[6442] link "Why TypeScript" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5079 bounds=(x=395.5 y=10813.171875 w=113.34375 h=21) reason=not_hit_testable
+[6443] link "Design" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5082 bounds=(x=595.5 y=10813.171875 w=50.03125 h=21) reason=not_hit_testable
+[3864] link "Get Help" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5089 bounds=(x=795.5 y=10707.609375 w=63.921875 h=21) reason=not_hit_testable
+[3865] link "Blog" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5092 bounds=(x=995.5 y=10707.609375 w=33.046875 h=21) reason=not_hit_testable
+[3869] link "GitHub Repo" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5095 bounds=(x=795.5 y=10742.796875 w=93.5 h=21) reason=not_hit_testable
+[3873] link "Community Chat" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5101 bounds=(x=995.5 y=10742.796875 w=122.390625 h=21) reason=not_hit_testable
+[3877] link "@TypeScript" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5107 bounds=(x=795.5 y=10777.984375 w=91.328125 h=21) reason=not_hit_testable
+[3881] link "Mastodon" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5113 bounds=(x=995.5 y=10777.984375 w=73.8125 h=21) reason=not_hit_testable
+[3885] link "Stack Overflow" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5119 bounds=(x=795.5 y=10813.171875 w=108.90625 h=21) reason=not_hit_testable
+[3889] link "Web Repo" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5125 bounds=(x=995.5 y=10813.171875 w=74.828125 h=21) reason=not_hit_testable
+=== COMPLETE READ-ONLY CONTROL TEXT ===
+- We use optional cookies to improve your experience on our websites, such as through social media connections, and to display personalized advertising based on your online activity. If you reject optional cookies, only cookies necessary to provide you the services will be used. You may change your selection by clicking “Manage Cookies” at the bottom of the page. Privacy Statement Third-Party Cookies Accept Reject Manage cookies Skip to main content TypeScript Download Docs Handbook Community Play
+- Get Started TS for the New Programmer TypeScript for JS Programmers TS for Java/C# Programmers TS for Functional Programmers TypeScript Tooling in 5 minutes Handbook The TypeScript Handbook The Basics Everyday Types Narrowing More on Functions Object Types Type Manipulation Creating Types from Types Generics Keyof Type Operator Typeof Type Operator Indexed Access Types Conditional Types Mapped Types Template Literal Types Classes Modules Reference Utility Types Cheat Sheets Decorators Declaratio
+- interface Todo { title : string ; description : string ; } function updateTodo ( todo : Todo , fieldsToUpdate : Partial ) { return { ... todo , ... fieldsToUpdate }; } const todo1 = { title : "organize desk" , description : "clear clutter" , }; const todo2 = updateTodo ( todo1 , { description : "throw out trash" , }); Try
+- interface Props { a ?: number ; b ?: string ; } const obj : Props = { a : 5 }; const obj2 : Required = { a : 5 }; Property 'b' is missing in type '{ a: number; }' but required in type 'Required '. 2741 Property 'b' is missing in type '{ a: number; }' but required in type 'Required '. Try
+- interface Todo { title : string ; } const todo : Readonly = { title : "Delete inactive users" , }; todo . title = "Hello" ; Cannot assign to 'title' because it is a read-only property. 2540 Cannot assign to 'title' because it is a read-only property. Try
+- type CatName = "miffy" | "boris" | "mordred" ; interface CatInfo { age : number ; breed : string ; } const cats : Record = { miffy : { age : 10 , breed : "Persian" }, boris : { age : 5 , breed : "Maine Coon" }, mordred : { age : 16 , breed : "British Shorthair" }, }; cats . boris ; const cats: Record Try
+- interface Todo { title : string ; description : string ; completed : boolean ; createdAt : number ; } type TodoPreview = Omit ; const todo : TodoPreview = { title : "Clean room" , completed : false , createdAt : 1615544252770 , }; todo ; const todo: TodoPreview type TodoInfo = Omit ; const todoInfo : TodoInfo = { title : "Pick up kids" , description : "Kindergarten closes at 5pm" , }; todoInfo ; const todoInfo: TodoInfo Try
+- type T0 = Exclude ; type T0 = "b" | "c" type T1 = Exclude ; type T1 = "c" type T2 = Exclude void ), Function >; type T2 = string | number type Shape = | { kind : "circle" ; radius : number } | { kind : "square" ; x : number } | { kind : "triangle" ; x : number ; y : number }; type T3 = Exclude type T3 = { kind: "square"; x: number; } | { kind: "triangle"; x: number; y: number; }
+- type T0 = Extract ; type T0 = "a" type T1 = Extract void ), Function >; type T1 = () => void type Shape = | { kind : "circle" ; radius : number } | { kind : "square" ; x : number } | { kind : "triangle" ; x : number ; y : number }; type T2 = Extract type T2 = { kind: "circle"; radius: number; } Try
+- declare function f1 ( arg : { a : number ; b : string }): void ; type T0 = Parameters string >; type T0 = [] type T1 = Parameters void >; type T1 = [s: string] type T2 = Parameters ( arg : T ) => T >; type T2 = [arg: unknown] type T3 = Parameters ; type T3 = [arg: { a: number; b: string; }] type T4 = Parameters ; type T4 = unknown[] type T5 = Parameters ; type T5 = never type T6 = Parameters ; Type 'string' does not satisfy
+- type T0 = ConstructorParameters ; type T0 = [message?: string] type T1 = ConstructorParameters ; type T1 = string[] type T2 = ConstructorParameters ; type T2 = [pattern: string | RegExp, flags?: string] class C { constructor ( a : number , b : string ) {} } type T3 = ConstructorParameters ; type T3 = [a: number, b: string] type T4 = ConstructorParameters ; type T4 = unknown[] type T5 = ConstructorParameters < Fu
+- declare function f1 (): { a : number ; b : string }; type T0 = ReturnType string >; type T0 = string type T1 = ReturnType void >; type T1 = void type T2 = ReturnType () => T >; type T2 = unknown type T3 = ReturnType () => T >; type T3 = number[] type T4 = ReturnType ; type T4 = { a: number; b: string; } type T5 = ReturnType ; type T5 = any type T6 = ReturnType ; type T6 = never type T7 = ReturnTyp
+- class C { x = 0 ; y = 0 ; } type T0 = InstanceType ; type T0 = C type T1 = InstanceType ; type T1 = any type T2 = InstanceType ; type T2 = never type T3 = InstanceType ; Type 'string' does not satisfy the constraint 'abstract new (...args: any) => any'. 2344 Type 'string' does not satisfy the constraint 'abstract new (...args: any) => any'. type T3 = any type T4 = InstanceType ; Type 'Function' does not satisfy the constraint 'abstract new (...
+- type ObjectDescriptor = { data ?: D ; methods ?: M & ThisType ; // Type of 'this' in methods is D & M }; function makeObject ( desc : ObjectDescriptor ): D & M { let data : object = desc . data || {}; let methods : object = desc . methods || {}; return { ... data , ... methods } as D & M ; } let obj = makeObject ({ data : { x : 0 , y : 0 }, methods : { moveBy ( dx : number , dy : number ) { this . x += dx ; // Strongly typed this this . y += dy ; // Stron
+- Awaited Partial Required Readonly Record Pick Omit Exclude Extract NonNullable Parameters ConstructorParameters ReturnType InstanceType NoInfer ThisParameterType OmitThisParameter ThisType Intrinsic String Manipulation Types Uppercase Lowercase Capitalize Uncapitalize
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[2440] awaitedtype permalink content — 714x860

@@ -23,7 +23,7 @@ the recordings auditable.
 ## Standalone use
 
 The Python package is self-contained and imports only the standard library. It
-does not import `runner.py`, `capture.py`, `artifacts.py`, or any other recorder
+does not import `runner.py`, `capture.py`, `recorder_support.py`, or any other recorder
 module. To use it independently, a consumer needs:
 
 - the npm `agent-browser` package installed at the pinned version;

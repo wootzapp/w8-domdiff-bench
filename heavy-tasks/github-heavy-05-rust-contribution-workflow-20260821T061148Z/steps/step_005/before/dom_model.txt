@@ -1,0 +1,212 @@
+URL: https://rustc-dev-guide.rust-lang.org/
+Title: Getting Started - Rust Compiler Development Guide
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=821 groups=13 truncated=True
+
+=== VISIBLE CONTENT ===
+Context: Table of contents
+- Getting Started Asking Questions Experts Etiquette What should I work on? Easy or mentored issues Recurring work Clippy issues Diagnostic issues Picking up abandoned pull requests Writing tests Contributing to std (standard library) Contributing code to other Rust projects Other ways to contribute Cloning and Building Contributor Procedures Other Resources
+- About this guide
+- Building and debugging rustc
+- 1. How to build and run the compiler ❱ 1.1. Quickstart 1.2. Prerequisites 1.3. Suggested workflows 1.4. Distribution artifacts 1.5. Building documentation 1.6. Rustdoc overview 1.7. Adding a new target 1.8. Optimized build
+- 2. Testing the compiler ❱ 2.1. Running tests ❱ 2.1.1. Testing with Docker 2.1.2. Testing with CI 2.2. Adding new tests 2.3. Best practices 2.4. Compiletest ❱ 2.4.1. UI tests 2.4.2. Test directives 2.4.3. Minicore 2.5. Ecosystem testing ❱ 2.5.1. Crater 2.5.2. Fuchsia 2.5.3. Rust for Linux 2.6. Codegen backend testing ❱ 2.6.1. Cranelift codegen backend (stub)…
+- 3. Debugging the compiler ❱ 3.1. Using the tracing/logging instrumentation
+- 4. Profiling the compiler ❱ 4.1. with the linux perf tool 4.2. with Windows Performance Analyzer 4.3. with the Rust benchmark suite
+- 5. crates.io dependencies
+- Contributing to Rust
+- 6. Contribution procedures
+- 7. About the compiler team
+- 8. Using Git
+- Rust Compiler Development Guide
+- Getting Started
+- Thank you for your interest in contributing to Rust! There are many ways to contribute, and we appreciate all of them.
+- If this is your first time contributing, the chapter can give you a good example of how a typical contribution would go.
+- This documentation is intended to be comprehensive; it is meant to be a quick guide for the most useful things. For more information, see .
+- Asking Questions
+- If you have questions, please make a post on the or . See the and on the official website for more resources.
+- As a reminder, all contributors are expected to follow our Code of Conduct .
+- The compiler team (or ) usually hangs out in Zulip in ; questions about how the compiler works can go in .
+- A lot of people report feeling that they are “wasting expert’s time”, but nobody on feels this way. Contributors are important to us.
+- Also, if you feel comfortable, prefer public topics, as this means others can see the questions and answers, and perhaps even integrate them back into this guide :)
+- Tip : If you’re not a native English speaker and feel unsure about writing, try using a translator to help. But avoid using LLM tools that generate long, complex words. In daily teamwork, simple and clear words are best for easy understanding. Even small typos or grammar mistakes can make you seem more human, and people connect better with humans.
+- Tip
+- simple and clear words
+- See also our LLM policy .
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [1677] Table of contents.
+- Experts
+- Not all t-compiler members are experts on all parts of rustc ; it’s a pretty large project. To find out who could have some expertise on different parts of the compiler, consult triagebot assign groups . The sections that start with [assign* in triagebot.toml file. But also, feel free to ask questions even if you can’t figure out who to ping.
+- triagebot.toml
+- Another way to find experts for a given part of the compiler is to see who has made recent commits. For example, to find people who have recently worked on name resolution since the 1.68.2 release, you could run git shortlog -n 1.68.2.. compiler/rustc_resolve/ . Ignore any commits starting with “Rollup merge” or commits by @bors (see CI contribution procedu…
+- git shortlog -n 1.68.2.. compiler/rustc_resolve/
+- @bors
+- Etiquette
+- We do ask that you be mindful to include as much useful information as you can in your question, but we recognize this can be hard if you are unfamiliar with contributing to Rust.
+- Just pinging someone without providing any context can be a bit annoying and just create noise, so we ask that you be mindful of the fact that the folks get a lot of pings in a day.
+- What should I work on?
+- The Rust project is quite large and it can be difficult to know which parts of the project need help, or are a good starting place for beginners. Here are some suggested starting places.
+- Easy or mentored issues
+- If you’re looking for somewhere to start, check out the following . See the for an explanation of these labels. You can also try filtering the search to areas you’re interested in. For example:
+- repo:rust-lang/rust-clippy will only show clippy issues
+- label:T-compiler will only show issues related to the compiler
+- label:A-diagnostics will only show diagnostic issues
+- Not all important or beginner work has issue labels. See below for how to find work that isn’t labelled.
+- Recurring work
+- Some work is too large to be done by a single person. In this case, it’s common to have “Tracking issues” to co-ordinate the work between contributors. Here are some example tracking issues where it’s easy to pick up work without a large time commitment:
+- Add recurring work items here.
+- If you find more recurring work, please feel free to add it here!
+- Clippy issues
+- The project has spent a long time making its contribution process as friendly to newcomers as possible. Consider working on it first to get familiar with the process and the compiler internals.
+- See for instructions on getting started.
+- Diagnostic issues
+- Many diagnostic issues are self-contained and don’t need detailed background knowledge of the compiler. You can see a list of diagnostic issues here .
+- Picking up abandoned pull requests
+- Sometimes, contributors send a pull request, but later find out that they don’t have enough time to work on it, or they simply are not interested in it anymore. Such PRs are often eventually closed and they receive the S-inactive label. You could try to examine some of these PRs and pick up the work. You can find the list of such PRs here .
+- S-inactive
+- If the PR has been implemented in some other way in the meantime, the S-inactive label should be removed from it. If not, and it seems that there is still interest in the change, you can try to rebase the pull request on top of the latest main branch and send a new pull request, continuing the work on the feature.
+- main
+- Writing tests
+- Issues that have been resolved but do not have a regression test are marked with the E-needs-test label. Writing unit tests is a low-risk, lower-priority task that offers new contributors a great opportunity to familiarize themselves with the testing infrastructure and contribution workflow. You can see a list of needs test issues here .
+- E-needs-test
+- Contributing to std (standard library)
+- See std-dev-guide .
+- Contributing code to other Rust projects
+- There are a bunch of other projects that you can contribute to outside of the repo, including , , , and many others.
+- These repos might have their own contributing guidelines and procedures. Many of them are owned by working groups. For more info, see the documentation in those repos’ READMEs.
+- Other ways to contribute
+- There are a bunch of other ways you can contribute, especially if you don’t feel comfortable jumping straight into the large codebase.
+- The following tasks are doable without much background knowledge but are incredibly helpful:
+- Writing documentation : if you are feeling a bit more intrepid, you could try to read a part of the code and write doc comments for it. This will help you to learn some part of the compiler while also producing a useful artifact!
+- Triaging issues : categorizing, replicating, and minimizing issues is very helpful to the Rust maintainers.
+- Working areas : there are a bunch of working areas on a wide variety of rust-related things.
+- Answer questions on , or on .
+- Participate in the RFC process .
+- Find a , build it, and publish it to . Easier said than done, but very, very valuable!
+- Cloning and Building
+- See “How to build and run the compiler” .
+- Contributor Procedures
+- This section has moved to the chapter.
+- Other Resources
+
+=== USEFUL PAGE ACTIONS ===
+[1779] button "Toggle Searchbar"
+[1762] button "Change theme"
+[1785] link "Print this book"
+[1789] link "Git repository"
+[1793] link "Suggest an edit"
+=== SECONDARY / DEBUG ACTIONS ===
+[1697] scroll-region "Getting Started Asking Questions Experts Etiquette What should I work on? Easy or mentored issues Recurring work Clippy issues Diagnostic issues Picking up abandoned pull requests Writing tests Contributing to std (stan…" actions=scroll <mdbook-sidebar-scrollbox> role=generic context="generic: Table of contents" hit=True viewport=True sourceOrder=124 bounds=(x=0 y=0 w=300 h=813) reason=broad/noisy
+[208] link "9. Mastering @rustbot" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=496 bounds=(x=10 y=918.671875 w=145.171875 h=21) reason=not_hit_testable
+[212] link "10. Running LLMs" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=502 bounds=(x=10 y=948.0625 w=115.359375 h=21) reason=not_hit_testable
+[214] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=506 bounds=(x=246.59375 y=948.0625 w=28.40625 h=21) reason=not_hit_testable
+[227] link "11. Walkthrough: a typical contribution" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=524 bounds=(x=10 y=977.453125 w=252.96875 h=21) reason=not_hit_testable
+[231] link "12. Implementing new language features" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=530 bounds=(x=10 y=1006.84375 w=265 h=42) reason=not_hit_testable
+[235] link "13. Stability guarantees" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=536 bounds=(x=10 y=1057.234375 w=152.34375 h=21) reason=not_hit_testable
+[239] link "14. Stability attributes" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=542 bounds=(x=10 y=1086.625 w=142.453125 h=21) reason=not_hit_testable
+[243] link "15. Stabilizing language features" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=548 bounds=(x=10 y=1116.015625 w=210.53125 h=21) reason=not_hit_testable
+[245] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=552 bounds=(x=246.59375 y=1116.015625 w=28.40625 h=21) reason=not_hit_testable
+[254] link "16. Feature Gates" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=564 bounds=(x=10 y=1145.40625 w=114.6875 h=21) reason=not_hit_testable
+[258] link "17. Coding conventions" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=570 bounds=(x=10 y=1174.796875 w=152.328125 h=21) reason=not_hit_testable
+[262] link "18. Procedures for breaking changes" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=576 bounds=(x=10 y=1204.1875 w=238.921875 h=21) reason=not_hit_testable
+[266] link "19. Using external repositories" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=582 bounds=(x=10 y=1233.578125 w=199.203125 h=21) reason=not_hit_testable
+[270] link "20. Fuzzing" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=588 bounds=(x=10 y=1262.96875 w=72.34375 h=21) reason=not_hit_testable
+[274] link "21. Notification groups" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=594 bounds=(x=10 y=1292.359375 w=148.71875 h=21) reason=not_hit_testable
+[276] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=598 bounds=(x=246.59375 y=1292.359375 w=28.40625 h=21) reason=not_hit_testable
+[325] link "22. Licenses" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=670 bounds=(x=10 y=1321.75 w=78.765625 h=21) reason=not_hit_testable
+[329] link "23. Editions" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=676 bounds=(x=10 y=1351.140625 w=75.75 h=21) reason=not_hit_testable
+[335] link "24. Prologue" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=685 bounds=(x=10 y=1419.71875 w=82.34375 h=21) reason=not_hit_testable
+[339] link "25. What Bootstrapping does" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=691 bounds=(x=10 y=1449.109375 w=189.765625 h=21) reason=not_hit_testable
+[343] link "26. How Bootstrap does it" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=697 bounds=(x=10 y=1478.5 w=168.890625 h=21) reason=not_hit_testable
+[347] link "27. Writing tools in Bootstrap" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=703 bounds=(x=10 y=1507.890625 w=190.34375 h=21) reason=not_hit_testable
+[351] link "28. Debugging bootstrap" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=709 bounds=(x=10 y=1537.28125 w=161.78125 h=21) reason=not_hit_testable
+[355] link "29. cfg(bootstrap) in dependencies" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=715 bounds=(x=10 y=1566.671875 w=225.765625 h=21) reason=not_hit_testable
+[361] link "30. Prologue" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=724 bounds=(x=10 y=1635.25 w=82.34375 h=21) reason=not_hit_testable
+[365] link "31. Overview of the compiler" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=730 bounds=(x=10 y=1664.640625 w=187.28125 h=21) reason=not_hit_testable
+[369] link "32. The compiler source code" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=736 bounds=(x=10 y=1694.03125 w=191.625 h=21) reason=not_hit_testable
+[373] link "33. Queries: demand-driven compilation" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=742 bounds=(x=10 y=1723.421875 w=236.59375 h=42) reason=not_hit_testable
+[375] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=746 bounds=(x=246.59375 y=1723.421875 w=28.40625 h=42) reason=not_hit_testable
+[400] link "34. Memory management in rustc" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=782 bounds=(x=10 y=1773.8125 w=221.125 h=21) reason=not_hit_testable
+[404] link "35. Serialization in rustc" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=788 bounds=(x=10 y=1803.203125 w=155.15625 h=21) reason=not_hit_testable
+[408] link "36. Parallel compilation" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=794 bounds=(x=10 y=1832.59375 w=152.578125 h=21) reason=not_hit_testable
+[412] link "37. Rustdoc internals" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=800 bounds=(x=10 y=1861.984375 w=137.078125 h=21) reason=not_hit_testable
+[414] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=804 bounds=(x=246.59375 y=1861.984375 w=28.40625 h=21) reason=not_hit_testable
+[435] link "38. GPU offload internals" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=834 bounds=(x=10 y=1891.375 w=163.28125 h=21) reason=not_hit_testable
+[437] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=838 bounds=(x=246.59375 y=1891.375 w=28.40625 h=21) reason=not_hit_testable
+[454] link "39. Autodiff internals" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=862 bounds=(x=10 y=1920.765625 w=136.96875 h=21) reason=not_hit_testable
+[456] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=866 bounds=(x=246.59375 y=1920.765625 w=28.40625 h=21) reason=not_hit_testable
+[479] link "40. Prologue" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=899 bounds=(x=10 y=1989.34375 w=82.34375 h=21) reason=not_hit_testable
+[483] link "41. Syntax and the AST" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=905 bounds=(x=10 y=2018.734375 w=148.5625 h=21) reason=not_hit_testable
+[485] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=909 bounds=(x=246.59375 y=2018.734375 w=28.40625 h=21) reason=not_hit_testable
+[526] link "42. The HIR (High-level IR)" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=969 bounds=(x=10 y=2048.125 w=166.90625 h=21) reason=not_hit_testable
+[528] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=973 bounds=(x=246.59375 y=2048.125 w=28.40625 h=21) reason=not_hit_testable
+[545] link "43. Ambig/Unambig Types and Consts" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=997 bounds=(x=10 y=2077.515625 w=247.78125 h=21) reason=not_hit_testable
+[549] link "44. The THIR (Typed High-level IR)" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1003 bounds=(x=10 y=2106.90625 w=218.09375 h=21) reason=not_hit_testable
+[553] link "45. The MIR (Mid-level IR)" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1009 bounds=(x=10 y=2136.296875 w=163.84375 h=21) reason=not_hit_testable
+[555] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1013 bounds=(x=246.59375 y=2136.296875 w=28.40625 h=21) reason=not_hit_testable
+[572] link "46. Inline assembly" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1037 bounds=(x=10 y=2165.6875 w=124.484375 h=21) reason=not_hit_testable
+[578] link "47. Command-line arguments" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1046 bounds=(x=10 y=2234.265625 w=194.4375 h=21) reason=not_hit_testable
+[582] link "48. rustc_driver and rustc_interface" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1052 bounds=(x=10 y=2263.65625 w=229.71875 h=21) reason=not_hit_testable
+[584] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1056 bounds=(x=246.59375 y=2263.65625 w=28.40625 h=21) reason=not_hit_testable
+[601] link "49. Errors and lints" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1080 bounds=(x=10 y=2293.046875 w=123.21875 h=21) reason=not_hit_testable
+[603] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1084 bounds=(x=246.59375 y=2293.046875 w=28.40625 h=21) reason=not_hit_testable
+[634] link "50. Prologue" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1129 bounds=(x=10 y=2361.625 w=82.34375 h=21) reason=not_hit_testable
+[638] link "51. Generic parameter definitions" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1135 bounds=(x=10 y=2391.015625 w=219.640625 h=21) reason=not_hit_testable
+[640] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1139 bounds=(x=246.59375 y=2391.015625 w=28.40625 h=21) reason=not_hit_testable
+[649] link "52. Binders and Higher ranked regions" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1151 bounds=(x=10 y=2420.40625 w=236.59375 h=42) reason=not_hit_testable
+[651] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1155 bounds=(x=246.59375 y=2420.40625 w=28.40625 h=42) reason=not_hit_testable
+[660] link "53. Early vs Late bound parameters" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1167 bounds=(x=10 y=2470.796875 w=230.328125 h=21) reason=not_hit_testable
+[664] link "54. The ty module: representing types" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1173 bounds=(x=10 y=2500.1875 w=236.59375 h=42) reason=not_hit_testable
+[666] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1177 bounds=(x=246.59375 y=2500.1875 w=28.40625 h=42) reason=not_hit_testable
+[679] link "55. TypeFolder and TypeFoldable" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1195 bounds=(x=10 y=2550.578125 w=215.265625 h=21) reason=not_hit_testable
+[683] link "56. Aliases and normalization" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1201 bounds=(x=10 y=2579.96875 w=191.328125 h=21) reason=not_hit_testable
+[687] link "57. Typing/Param envs" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1207 bounds=(x=10 y=2609.359375 w=148.46875 h=21) reason=not_hit_testable
+[691] link "58. Type inference" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1213 bounds=(x=10 y=2638.75 w=119.90625 h=21) reason=not_hit_testable
+[695] link "59. Trait solving" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1219 bounds=(x=10 y=2668.140625 w=102.484375 h=21) reason=not_hit_testable
+[697] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1223 bounds=(x=246.59375 y=2668.140625 w=28.40625 h=21) reason=not_hit_testable
+[796] link "60. Well-formedness" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1369 bounds=(x=10 y=2697.53125 w=134.203125 h=21) reason=not_hit_testable
+[800] link "61. Variance" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1375 bounds=(x=10 y=2726.921875 w=79.90625 h=21) reason=not_hit_testable
+[804] link "62. Coherence checking" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1381 bounds=(x=10 y=2756.3125 w=154.609375 h=21) reason=not_hit_testable
+[808] link "63. HIR Type checking" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1387 bounds=(x=10 y=2785.703125 w=141.953125 h=21) reason=not_hit_testable
+[810] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1391 bounds=(x=246.59375 y=2785.703125 w=28.40625 h=21) reason=not_hit_testable
+[823] link "64. Const generics" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1409 bounds=(x=10 y=2815.09375 w=119.34375 h=21) reason=not_hit_testable
+[827] link "65. Opaque types" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1415 bounds=(x=10 y=2844.484375 w=114.671875 h=21) reason=not_hit_testable
+[829] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1419 bounds=(x=246.59375 y=2844.484375 w=28.40625 h=21) reason=not_hit_testable
+[846] link "66. Const traits and const condition checking" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1443 bounds=(x=10 y=2873.875 w=265 h=42) reason=not_hit_testable
+[850] link "67. Pattern and exhaustiveness checking" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1449 bounds=(x=10 y=2924.265625 w=264.6875 h=21) reason=not_hit_testable
+[854] link "68. Unsafety checking" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1455 bounds=(x=10 y=2953.65625 w=142.046875 h=21) reason=not_hit_testable
+[858] link "69. MIR dataflow" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1461 bounds=(x=10 y=2983.046875 w=109.1875 h=21) reason=not_hit_testable
+[862] link "70. Drop elaboration" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1467 bounds=(x=10 y=3012.4375 w=135.46875 h=21) reason=not_hit_testable
+[866] link "71. The borrow checker" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1473 bounds=(x=10 y=3041.828125 w=153.59375 h=21) reason=not_hit_testable
+[868] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1477 bounds=(x=246.59375 y=3041.828125 w=28.40625 h=21) reason=not_hit_testable
+[931] link "72. Closure capture inference" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1569 bounds=(x=10 y=3071.21875 w=192.125 h=21) reason=not_hit_testable
+[935] link "73. Async closures/\"coroutine-closures\"" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1575 bounds=(x=10 y=3100.609375 w=257.171875 h=21) reason=not_hit_testable
+[941] link "74. Prologue" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1584 bounds=(x=10 y=3169.1875 w=82.34375 h=21) reason=not_hit_testable
+[945] link "75. MIR optimizations" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1590 bounds=(x=10 y=3198.578125 w=141.09375 h=21) reason=not_hit_testable
+[949] link "76. Debugging MIR" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1596 bounds=(x=10 y=3227.96875 w=122.84375 h=21) reason=not_hit_testable
+[953] link "77. Constant evaluation" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1602 bounds=(x=10 y=3257.359375 w=154.1875 h=21) reason=not_hit_testable
+[955] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1606 bounds=(x=246.59375 y=3257.359375 w=28.40625 h=21) reason=not_hit_testable
+[964] link "78. Monomorphization" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1618 bounds=(x=10 y=3286.75 w=149.546875 h=21) reason=not_hit_testable
+[968] link "79. Lowering MIR" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1624 bounds=(x=10 y=3316.140625 w=112.453125 h=21) reason=not_hit_testable
+[972] link "80. Code generation" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1630 bounds=(x=10 y=3345.53125 w=131.984375 h=21) reason=not_hit_testable
+[974] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1634 bounds=(x=246.59375 y=3345.53125 w=28.40625 h=21) reason=not_hit_testable
+[995] link "81. Debug info" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1664 bounds=(x=10 y=3374.921875 w=95.5 h=21) reason=not_hit_testable
+[997] link "❱" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1668 bounds=(x=246.59375 y=3374.921875 w=28.40625 h=21) reason=not_hit_testable
+[1052] link "82. Libraries and metadata" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1748 bounds=(x=10 y=3404.3125 w=175.234375 h=21) reason=not_hit_testable
+[1056] link "83. Profile-guided optimization" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1754 bounds=(x=10 y=3433.703125 w=200.8125 h=21) reason=not_hit_testable
+[1060] link "84. LLVM source-based code coverage" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1760 bounds=(x=10 y=3463.09375 w=248.5625 h=21) reason=not_hit_testable
+[1064] link "85. Sanitizers support" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1766 bounds=(x=10 y=3492.484375 w=141.6875 h=21) reason=not_hit_testable
+[1070] link "Appendix A: Background topics" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1774 bounds=(x=10 y=3533.265625 w=202.765625 h=21) reason=not_hit_testable
+[1073] link "Appendix B: Glossary" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1778 bounds=(x=10 y=3562.65625 w=138.09375 h=21) reason=not_hit_testable
+[1076] link "Appendix C: Code Index" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1782 bounds=(x=10 y=3592.046875 w=155.375 h=21) reason=not_hit_testable
+[1079] link "Appendix D: Compiler Lecture Series" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1786 bounds=(x=10 y=3621.4375 w=238.171875 h=21) reason=not_hit_testable
+[1082] link "Appendix E: Bibliography" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1790 bounds=(x=10 y=3650.828125 w=162.84375 h=21) reason=not_hit_testable
+[1085] link "Appendix Z: HumorRust" <a> role=link context="generic: generic / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1794 bounds=(x=10 y=3680.21875 w=155.90625 h=21) reason=not_hit_testable
+[1812] scroll-region "Getting Started Thank you for your interest in contributing to Rust! There are many ways to contribute, and we appreciate all of them. If this is your first time contributing, the walkthrough chapter can give you a good…" actions=scroll <div> role=generic state=not-hit-testable hit=False viewport=True sourceOrder=1931 bounds=(x=323 y=51 w=1013 h=4140.75) reason=broad/noisy
+[1938] link "“About this guide”" <a> role=link context="generic: Page navigation / generic: generic / generic: This section has moved to the chapter." state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2298 bounds=(x=680.65625 y=4013.546875 w=133.140625 h=22) reason=not_hit_testable
+[1940] link "Next chapter" <a> role=link context="generic: Page navigation / generic: Page navigation" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2307 bounds=(x=1241 y=4086.75 w=90 h=55) reason=not_hit_testable
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[1677] Table of contents — 1351x4241
+[1812] Page navigation — 1013x4140
+[1697] Table of contents content — 300x813

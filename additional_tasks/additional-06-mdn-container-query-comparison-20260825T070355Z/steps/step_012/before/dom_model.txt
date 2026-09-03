@@ -1,0 +1,237 @@
+URL: https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/container-type
+Title: container-type CSS property - CSS | MDN
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=1703 groups=30 truncated=True
+
+=== TABLES ===
+Table 1: rows=5 columns=2
+  Initial value | normal
+  Applies to | all elements
+  Inherited | no
+  Computed value | as specified
+  Animation type | a
+Table 2: rows=3 columns=1
+  Specification
+  CSS Conditional Rules Module Level 5 # container-type
+  CSS Anchor Positioning Module Level 2 # container-type-anchored
+
+=== VISIBLE CONTENT ===
+Context: Toggle navigation
+- Web
+- CSS
+- Reference
+- Properties
+- container-type
+- container-type CSS property
+- Baseline Check Baseline Widely available * Chrome check Edge check Firefox check Safari check
+- Widely available
+- The property specifies the type of container context used in a container query.
+- In this article
+- Syntax
+- Formal definition
+- Formal syntax
+- Description
+- Examples
+- Specifications
+- Browser compatibility
+- See also
+Context: Syntax
+- Syntax
+Context: Experimental
+- Properties -moz-* -moz-float-edge -moz-force-broken-image-icon -moz-orient -moz-user-focus -moz-user-input -webkit-* -webkit-border-before -webkit-box-reflect -webkit-mask-box-image -webkit-mask-composite -webkit-mask-position-x -webkit-mask-position-y -webkit-mask-repeat-x -webkit-mask-repeat-y -webkit-tap-highlight-color -webkit-text-fill-color -webkit-text-security -webkit-text-stroke -webkit-text-stroke-color -webkit-text-stroke-width -webkit-touch-callout Custom properties (--*): CSS variab
+- caret-* caret-animation caret-color caret-shape
+- caret-*
+- Experimental
+- clear
+- clip-path
+- clip-rule
+- Deprecated
+- color-* color-interpolation color-interpolation-filters color-scheme
+- color-*
+- color
+- column-* column-count column-fill column-gap column-height column-rule column-rule-break column-rule-color column-rule-style column-rule-visibility-items column-rule-width column-span column-width column-wrap
+- column-*
+- columns
+- contain-* contain-intrinsic-block-size contain-intrinsic-height contain-intrinsic-inline-size contain-intrinsic-size contain-intrinsic-width
+- contain-*
+- contain
+- container-name
+- container-type
+- container
+- content-visibility
+- content
+- corner-* corner-block-end-shape corner-block-start-shape corner-bottom-left-shape corner-bottom-right-shape corner-bottom-shape corner-end-end-shape corner-end-start-shape corner-inline-end-shape corner-inline-start-shape corner-left-shape corner-right-shape corner-shape corner-start-end-shape corner-start-start-shape corner-top-left-shape corner-top-right-shape corner-top-shape
+- corner-*
+- counter-* counter-increment counter-reset counter-set
+- counter-*
+- cursor
+- cx
+- cy
+- d
+- direction
+- display
+- dominant-baseline
+- dynamic-range-limit
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [50912] page content.
+- Skip to main content
+- Skip to search
+Context: Values
+- Values
+- This property is specified as one or two keyword values from the following list. In the two-value case, one must be and the other must be or :
+- anchored
+- Establishes a query container for anchored container queries on the container. In this case, the size of the element is not computed in isolation; no containment is applied.
+- Establishes a query container for anchored container queries on the container. In this case, the size of the element is not computed in isolation; no is applied.
+- inline-size
+- Establishes a query container for dimensional queries on the inline axis of the container. Applies style and inline-size containment to the element. The inline size of the element can be computed in isolation , ignoring the child elements (see Using CSS containment ).
+- Establishes a query container for dimensional queries on the of the container. Applies and containment to the element. The inline size of the element can be , ignoring the child elements (see ).
+- normal
+- Default value. The element is not a query container for any container size, scroll-state, or anchored queries, but can be used as a query container for container style queries and name-only container queries .
+- Default value. The element is not a query container for any container size, scroll-state, or anchored queries, but can be used as a query container for and .
+- scroll-state
+- Establishes a query container for scroll-state queries on the container. In this case, the size of the element is not computed in isolation; no containment is applied.
+- Establishes a query container for scroll-state queries on the container. In this case, the size of the element is not computed in isolation; no containment is applied.
+- size
+- Establishes a query container for container size queries in both the inline and block dimensions. Applies style and size containment to the element. Size containment is applied to the element in both the inline and block directions. The size of the element can be computed in isolation, ignoring the child elements.
+- Establishes a query container for container size queries in both the inline and block dimensions. Applies style and size containment to the element. Size containment is applied to the element in both the inline and block directions. The size of the element can be computed in isolation, ignoring the child elements.
+Context: Formal definition
+- Formal definition
+Context: Formal syntax
+- Formal syntax
+- container-type = normal | [ [ size | inline-size ] || scroll-state ]
+- This syntax reflects the latest standard as per . Not all browsers may have implemented every part. See for support information.
+  evidence: CSS Conditional Rules Module Level 5 (external)
+Context: Description
+- Description
+- Container queries allow you to selectively apply styles inside a container based on conditional queries performed on the container. The @container at-rule is used to specify the tests performed on a container, and the rules that will apply to the container's contents if the query returns true .
+- true
+- Certain types of container query can only be performed on elements with specific property values set, which establish specific container contexts on those containers:
+- Size : Enable selectively applying CSS rules to a container's children based on a general size or inline size condition such as a maximum or minimum dimension, aspect ratio, or orientation.
+- Scroll-state : Enable selectively applying CSS rules to a container's children based on a scroll-state condition such as whether the container is a scroll container that is partially scrolled or whether the container is a snap target that is going to be snapped to its scroll snap container.
+- : Enable selectively applying CSS rules to a container's children based on whether the container is and has a applied to it.
+- If a is not set on a container, the element is not a query container for container size, scroll-state, or anchored queries, but can still be used as a query container for and .
+Context: Container size queries
+- Container size queries
+- Container size queries allow you to selectively apply CSS rules to a container's descendants based on a size condition such as a maximum or minimum dimension, aspect ratio, or orientation.
+- Size containers additionally have size containment applied to them — this turns off the ability of an element to get size information from its contents, which is important for container queries to avoid infinite loops. If this were not the case, a CSS rule inside a container query could change the content size, which in turn could make the query evaluate to false and change the parent element's size, which in turn could change the content size and flip the query back to true, and so on. This seq
+- The container size has to be set by context, such as block-level elements that stretch to the full width of their parent, or explicitly defined. If a contextual or explicit size is not available, elements with size containment will collapse.
+- Note: Size containers' descendants can be sized using container query length units .
+- Note:
+Context: Container scroll-state queries
+- Container scroll-state queries
+- Container scroll-state queries allow you to selectively apply CSS rules to a container's children based on a scroll-state condition such as:
+- Whether the container's contents are partially scrolled.
+- Whether the container is a snap target that is going to be snapped to a scroll snap container.
+- Whether the container is positioned via and stuck to a boundary of a .
+- In the first case, the queried container is the scroll container itself. In the other two cases the queried container is an element that is affected by the scroll position of an ancestor scroll container.
+Context: Anchored container queries
+- Anchored container queries
+- allow you to selectively apply CSS rules to the descendants of an anchor-positioned container when it has a position-try fallback active on it, as specified via the property.
+- For example, you might have an anchor-positioned tooltip element that is positioned above its anchor by default via a position-area value of top , but has a position-try-fallbacks value of flip-block specified. This will cause the tooltip to flip in the block direction to the bottom of its anchor when it starts to overflow the top of the viewport. If we set container-type: anchored on it, we can detect when the position-try fallback is applied via a @container at-rule and apply CSS as a result.
+- flip-block
+Context: Examples
+- Examples
+Context: Establishing inline size containment
+- Establishing inline size containment
+- Given the following HTML example which is a card component with an image, a title, and some text:
+- To create an inline size container context, add the property to an element with a value of :
+- Writing a container query via the at-rule will apply styles to the elements of the container when it is wider than :
+- 400px
+Context: Specifications
+- Specifications
+Context: Browser compatibility
+- Browser compatibility
+Context: See also
+- See also
+- CSS container queries
+- Using container size and style queries
+- Using container scroll-state queries
+- Using anchored container queries
+- @container at-rule
+- CSS shorthand property
+- CSS property
+- CSS property
+Context: Help improve MDN
+- Help improve MDN
+- This page was last modified on by .
+- Aug 24, 2026
+
+=== USEFUL PAGE ACTIONS ===
+[50446] link "MDN"
+[50468] button "HTML"
+[50513] button "CSS"
+[50564] button "JavaScript JS"
+[50604] button "Web APIs"
+[50647] button "All"
+[50690] button "Learn"
+[50733] button "Tools"
+[50761] button "About"
+[50777] link "Blog"
+=== SECONDARY / DEBUG ACTIONS ===
+[50799] scroll-region "Web CSS Reference Properties container-type" actions=scroll <ol> role=generic context="generic: Toggle navigation" hit=True viewport=True sourceOrder=907 bounds=(x=16 y=159 w=446.078125 h=28) reason=broad/noisy
+[50912] scroll-region "In this article Syntax Formal definition Formal syntax Description Examples Specifications Browser compatibility See also" actions=scroll <aside> role=generic state=not-hit-testable hit=False viewport=True sourceOrder=1051 bounds=(x=1091.5 y=189 w=259.5 h=715) reason=broad/noisy
+[50989] scroll-region "Initial value normal Applies to all elements Inherited no Computed value as specified Animation type a color" actions=scroll <figure> role=generic context="generic: Formal definition" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1243 bounds=(x=291.5 y=1851.5 w=768 h=227) reason=broad/noisy
+[50994] link "Initial value" <a> role=link context="generic: generic / generic: generic / generic: Initial value" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1248 bounds=(x=303.5 y=1865 w=90.84375 h=20) reason=not_hit_testable
+[51002] link "Inherited" <a> role=link context="generic: generic / generic: generic / generic: Inherited" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1260 bounds=(x=303.5 y=1955.5 w=71.453125 h=20) reason=not_hit_testable
+[51006] link "Computed value" <a> role=link context="generic: generic / generic: generic / generic: Computed value" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1266 bounds=(x=303.5 y=2000.5 w=126.34375 h=20) reason=not_hit_testable
+[51010] link "Animation type" <a> role=link context="generic: generic / generic: generic / generic: Animation type" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1272 bounds=(x=303.5 y=2045.5 w=116.703125 h=20) reason=not_hit_testable
+[51012] link "color" <a> role=link context="generic: generic / generic: generic / generic: a color" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1276 bounds=(x=752.6875 y=2045.5 w=38.09375 h=20) reason=not_hit_testable
+[51144] link "CSS Conditional Rules Module Level 5 # container-type" <a> role=link context="generic: generic / generic: generic / generic: CSS Conditional Rules Module Level 5 # container-type (external)" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1596 bounds=(x=304.5 y=6387 w=286.765625 h=48) reason=not_hit_testable
+[51147] link "CSS Anchor Positioning Module Level 2 # container-type-anchored" <a> role=link context="generic: generic / generic: generic / generic: CSS Anchor Positioning Module Level 2 # container-type-anchored (exte…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1606 bounds=(x=304.5 y=6460 w=297.15625 h=48) reason=not_hit_testable
+[51224] link "Learn how to contribute" <a> role=link context="generic: Help improve MDN" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1718 bounds=(x=308.5 y=7785.1875 w=178.671875 h=20) reason=not_hit_testable
+[51229] link "View this page on GitHub" <a> role=link context="generic: Help improve MDN" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1732 bounds=(x=308.5 y=7873.1875 w=207.734375 h=20) reason=not_hit_testable
+[51230] link "Report a problem with this content" <a> role=link context="generic: Help improve MDN" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1735 bounds=(x=534.015625 y=7873.1875 w=275.84375 h=20) reason=not_hit_testable
+[50359] scroll-region "CSS Guides Modules Anchor positioning Animations Backgrounds and borders Basic user interface Borders and box decorations Box alignment Box model Box sizing Cascading and inheritance Color adjustment Colors Compositing…" actions=scroll <aside> role=generic hit=True viewport=True sourceOrder=1743 bounds=(x=0 y=189 w=259.5 h=715) reason=broad/noisy
+[51250] link "CSS" <a> role=link context="generic: Experimental / generic: Experimental / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1755 bounds=(x=16 y=-3600.40625 w=32.546875 h=32) reason=not_hit_testable
+[51252] link "Guides" <a> role=link context="generic: Experimental / generic: Experimental / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=1758 bounds=(x=16 y=-3552.40625 w=53.859375 h=32) reason=not_hit_testable
+[52063] link "How to" <a> role=link context="generic: Experimental / generic: Experimental / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2644 bounds=(x=16 y=-1672.40625 w=53.8125 h=32) reason=not_hit_testable
+[50033] link "Layout cookbook" <a> role=link context="generic: generic / generic: generic / generic: Layout cookbook" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2649 bounds=(x=32 y=-1632.40625 w=128.96875 h=32) reason=not_hit_testable
+[52107] link "Border-image generator" <a> role=link context="generic: Experimental / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2697 bounds=(x=40 y=-1544.40625 w=180.125 h=32) reason=not_hit_testable
+[52109] link "Border-radius generator" <a> role=link context="generic: Experimental / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2700 bounds=(x=40 y=-1504.40625 w=180.5625 h=32) reason=not_hit_testable
+[52111] link "Box-shadow generator" <a> role=link context="generic: Experimental / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2703 bounds=(x=40 y=-1464.40625 w=171.03125 h=32) reason=not_hit_testable
+[52113] link "Color format converter" <a> role=link context="generic: Experimental / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2706 bounds=(x=40 y=-1424.40625 w=170.59375 h=32) reason=not_hit_testable
+[52115] link "Color mixer" <a> role=link context="generic: Experimental / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2709 bounds=(x=40 y=-1384.40625 w=86.390625 h=32) reason=not_hit_testable
+[52117] link "Shape generator" <a> role=link context="generic: Experimental / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2712 bounds=(x=40 y=-1344.40625 w=124.78125 h=32) reason=not_hit_testable
+[52119] link "Reference" <a> role=link context="generic: Experimental / generic: Experimental / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=2715 bounds=(x=16 y=-1296.40625 w=78.53125 h=32) reason=not_hit_testable
+[50036] link "Selectors" <a> role=link context="generic: generic / generic: generic / generic: Selectors" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5393 bounds=(x=32 y=6039.59375 w=70.703125 h=32) reason=not_hit_testable
+[50037] link "Combinators" <a> role=link context="generic: Experimental / generic: Experimental / generic: Combinators" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5426 bounds=(x=32 y=6079.59375 w=95.765625 h=32) reason=not_hit_testable
+[50038] link "Pseudo-classes" <a> role=link context="generic: Deprecated / generic: Deprecated / generic: Pseudo-classes" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5448 bounds=(x=32 y=6119.59375 w=120.25 h=32) reason=not_hit_testable
+[50039] link "Pseudo-elements" <a> role=link context="generic: Non-standard / generic: Non-standard / generic: Pseudo-elements" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=5886 bounds=(x=32 y=6159.59375 w=132.234375 h=32) reason=not_hit_testable
+[50040] link "At-rules" <a> role=link context="generic: Experimental / generic: Experimental / generic: At-rules" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6161 bounds=(x=32 y=6199.59375 w=59.84375 h=32) reason=not_hit_testable
+[50048] link "Values" <a> role=link context="generic: generic / generic: generic / generic: Values" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6597 bounds=(x=32 y=6239.59375 w=50.359375 h=32) reason=not_hit_testable
+[50049] link "Types" <a> role=link context="generic: Experimental / generic: Experimental / generic: Types" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6643 bounds=(x=32 y=6279.59375 w=45.390625 h=32) reason=not_hit_testable
+[50050] link "Functions" <a> role=link context="generic: Deprecated / generic: Deprecated / generic: Functions" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=6908 bounds=(x=32 y=6319.59375 w=72.90625 h=32) reason=not_hit_testable
+[55968] link "MDN logo" <a> role=link context="generic: MDN logo" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7380 bounds=(x=16 y=8117.1875 w=83 h=24) reason=not_hit_testable
+[55975] link "MDN on GitHub" <a> role=link context="generic: MDN logo / generic: MDN on GitHub / generic: MDN on GitHub" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7396 bounds=(x=16 y=8276.1875 w=24 h=24) reason=not_hit_testable
+[50358] link "MDN on Bluesky" <a> role=link context="generic: MDN logo / generic: MDN on GitHub / generic: MDN on Bluesky" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7401 bounds=(x=52 y=8276.1875 w=24 h=24) reason=not_hit_testable
+[55978] link "MDN on X" <a> role=link context="generic: MDN logo / generic: MDN on GitHub / generic: MDN on X" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7406 bounds=(x=88 y=8276.1875 w=24 h=24) reason=not_hit_testable
+[55980] link "MDN on Mastodon" <a> role=link context="generic: MDN logo / generic: MDN on GitHub / generic: MDN on Mastodon" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7411 bounds=(x=124 y=8276.1875 w=24 h=24) reason=not_hit_testable
+[55982] link "MDN blog RSS feed" <a> role=link context="generic: MDN logo / generic: MDN on GitHub / generic: MDN blog RSS feed" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7416 bounds=(x=160 y=8276.1875 w=24 h=24) reason=not_hit_testable
+[55988] link "About" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7431 bounds=(x=540.390625 y=8161.1875 w=44.78125 h=20) reason=not_hit_testable
+[55990] link "Blog" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7437 bounds=(x=540.390625 y=8197.1875 w=33.78125 h=20) reason=not_hit_testable
+[55992] link "Mozilla careers" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7443 bounds=(x=540.390625 y=8233.1875 w=132.71875 h=20) reason=not_hit_testable
+[55994] link "Advertise with us" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7449 bounds=(x=540.390625 y=8269.1875 w=129.375 h=20) reason=not_hit_testable
+[55996] link "MDN Plus" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7455 bounds=(x=540.390625 y=8305.1875 w=74.53125 h=20) reason=not_hit_testable
+[55998] link "Product help" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7461 bounds=(x=540.390625 y=8341.1875 w=113.796875 h=20) reason=not_hit_testable
+[56004] link "MDN Community" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7479 bounds=(x=810.59375 y=8161.1875 w=128.40625 h=20) reason=not_hit_testable
+[56006] link "Community resources" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7485 bounds=(x=810.59375 y=8197.1875 w=165.03125 h=20) reason=not_hit_testable
+[56008] link "Writing guidelines" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7491 bounds=(x=810.59375 y=8233.1875 w=134.640625 h=20) reason=not_hit_testable
+[56010] link "MDN Discord" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7497 bounds=(x=810.59375 y=8269.1875 w=117.890625 h=20) reason=not_hit_testable
+[56018] link "Web technologies" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7521 bounds=(x=1080.796875 y=8161.1875 w=134.640625 h=20) reason=not_hit_testable
+[56020] link "Learn web development" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7527 bounds=(x=1080.796875 y=8197.1875 w=180.921875 h=20) reason=not_hit_testable
+[56024] link "Tutorials" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7539 bounds=(x=1080.796875 y=8269.1875 w=64.453125 h=20) reason=not_hit_testable
+[56026] link "Glossary" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7545 bounds=(x=1080.796875 y=8305.1875 w=66.203125 h=20) reason=not_hit_testable
+[56028] link "Hacks blog" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7551 bounds=(x=1080.796875 y=8341.1875 w=102.34375 h=20) reason=not_hit_testable
+[56030] link "Mozilla logo" <a> role=link context="generic: MDN logo" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7561 bounds=(x=16 y=8412.1875 w=128 h=30) reason=not_hit_testable
+[56036] link "Website Privacy Notice" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7573 bounds=(x=168 y=8418.1875 w=191.40625 h=20) reason=not_hit_testable
+[56038] link "Telemetry Settings" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7579 bounds=(x=375.40625 y=8418.1875 w=158.53125 h=20) reason=not_hit_testable
+[56040] link "Legal" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7585 bounds=(x=549.9375 y=8418.1875 w=59.203125 h=20) reason=not_hit_testable
+[56042] link "Community Participation Guidelines" <a> role=link context="generic: MDN logo / generic: generic / generic: generic" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7591 bounds=(x=625.140625 y=8418.1875 w=285.921875 h=20) reason=not_hit_testable
+[56044] link "a Creative Commons license" <a> role=link context="generic: MDN logo / generic: Portions of this content are ©1998–2026 by individual mozilla.org con…" state=offscreen,not-hit-testable hit=False viewport=False sourceOrder=7598 bounds=(x=793.953125 y=8462.1875 w=214.453125 h=20) reason=not_hit_testable
+=== COMPLETE READ-ONLY CONTROL TEXT ===
+- CSS Guides Modules Anchor positioning Animations Backgrounds and borders Basic user interface Borders and box decorations Box alignment Box model Box sizing Cascading and inheritance Color adjustment Colors Compositing and blending Conditional rules Containment Counter styles CSSOM view Custom functions and mixins Custom highlight API Custom properties for cascading variables Display Easing functions Environment variables Filter effects Flexible box layout Font loading Fonts Fragmentation Gaps G
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[50912] page content — 259x715
+[50359] Experimental — 259x715

@@ -1,0 +1,194 @@
+URL: https://app.slack.com/client/T064SFP56MC/C08DJTEFUSX
+Title: feedback-and-ideas (Channel) - Daytona Community - Slack
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=840 groups=21 truncated=False
+
+=== VISIBLE CONTENT ===
+Context: Channels and direct messages
+- . Ramyashree
+Context: Primary view actions
+- 2,458
+Context: Channel feedback-and-ideas
+- Canvas
+- Monday, August 10th
+- Gautam Talks 4:51 PM
+  text: Not a feature request, but hopefully useful. I spent a few weeks benchmarking Firecracker guest images and published the harnesses: github.com/GautamTalksDev/mayfly-guest Main finding: most published kernel-stripping advice for Firecracker is stale. Turning ACPI off costs 278ms rather than saving time, because modern Firecracker passes device info through ACPI tables and MPTable booting is now deprecated. Disabling PCI breaks root disk discovery entirely, since CONFIG_PCI
+  evidence: Aug 10th at 4:51:36 PM
+  evidence: 1 reaction, react with white check mark emoji
+- Not a feature request, but hopefully useful. I spent a few weeks benchmarking Firecracker guest images and published the harnesses: github.com/GautamTalksDev/mayfly-guest Main finding: most published kernel-stripping advice for Firecracker is stale. Turning ACPI off costs 278ms rather than saving time, because modern Firecracker passes device info through ACPI tables and MPTable booting is now deprecated. Disabling PCI breaks root disk discovery entirely, since CONFIG_PCI is required for guest A
+Context: Reactions
+- 1
+Context: Channel feedback-and-ideas
+- Thursday, August 20th
+- Daytona: Spot GPU sandboxes are now live for everyone! Run GPU workloads on preemptible capacity at a fraction of on-demand pricing: • No quotas: spot GPUs don't count against your GPU quota. Available capacity is the only limit. . • Deeply discounted: significantly cheaper than on-demand GPUs, see the pricing page: [ https://www.daytona.io/pricing (link)] . • All GPU types: H100, H200, RTX Pro 6000, RTX 4090, RTX 5090, with ordered fallback between types. . Getting started: choose a GPU, set resources, and use any Docker image: sandbox = daytona.create( CreateSandboxFromImageParams( image="nvidia/cuda:12.4.1-base-ubuntu22.04", auto_delete_interval=0, spot=True, resources=Resources(gpu=1, gpu_type=GpuType.H100), ) ) Heads up: spot sandboxes are preemptible. They can be reclaimed at any time when on-demand capacity is needed, so design workloads to tolerate interruption. Preempted sandboxes get a spotEvictedAt timestamp and stay retrievable for 24 hours. Try it: [ https://app.daytona.io/ (link)] Docs: [ https://www.daytona.io/docs/sandboxes#spot-gpu-sandboxes (link)] Questions? Drop them here or at [ support@daytona.io (link)] saluting face emoji. 8:38 AM. 4 links.
+  evidence: Aug 20th at 8:38:49 AM
+- 8:38 AM
+- Spot GPU sandboxes are now live for everyone! Run GPU workloads on preemptible capacity at a fraction of on-demand pricing:
+- Spot GPU sandboxes are now live for everyone!
+- No quotas: spot GPUs don't count against your GPU quota. Available capacity is the only limit.
+- Deeply discounted: significantly cheaper than on-demand GPUs, see the pricing page: https://www.daytona.io/pricing
+- All GPU types: H100, H200, RTX Pro 6000, RTX 4090, RTX 5090, with ordered fallback between types.
+- Getting started: choose a GPU, set resources, and use any Docker image:
+- sandbox = daytona.create( CreateSandboxFromImageParams( image="nvidia/cuda:12.4.1-base-ubuntu22.04", auto_delete_interval=0, spot=True, resources=Resources(gpu=1, gpu_type=GpuType.H100), ) )
+- Heads up: spot sandboxes are preemptible. They can be reclaimed at any time when on-demand capacity is needed, so design workloads to tolerate interruption. Preempted sandboxes get a spotEvictedAt timestamp and stay retrievable for 24 hours. Try it: https://app.daytona.io/ Docs: https://www.daytona.io/docs/sandboxes#spot-gpu-sandboxes Questions? Drop them here or at support@daytona.io
+Context: Thread in feedback-and-ideas (channel, 7 replies)
+- Michael Xu Jul 6th at 2:46 PM
+  text: hey everyone - feature request (or a conversation if this is already supported) - ive been trialing daytona, and it's been great so far and has everything we need.. with the exception of a few things. is there any way to introspect or inject at the network for a sandbox? we are using daytona to host customer apps - but because these apps are most likely vibe coded, having some controls outside of the sandbox (don't allow network egress except for these URLs), or
+  evidence: Jul 6th at 2:46:57 PM. Open in channel
+  evidence: 1 reaction, react with eyes emoji
+  evidence: 1 reaction, react with white check mark emoji
+- Jul 6th at 2:46 PM
+- hey everyone - feature request (or a conversation if this is already supported) - ive been trialing daytona, and it's been great so far and has everything we need.. with the exception of a few things.
+- is there any way to introspect or inject at the network for a sandbox? we are using daytona to host customer apps - but because these apps are most likely vibe coded, having some controls outside of the sandbox (don't allow network egress except for these URLs), or the ability to inject authorization headers, outside the sandbox, is very important.
+- is there a way to have a fixed egress IP? we connect to customer resources and having a static IP would be really nice so I dont have to workaround this.
+Context: Reactions
+- 1
+Context: Thread in feedback-and-ideas (channel, 7 replies)
+- 7 replies
+- Dalin Stone Jul 6th at 3:07 PM
+  text: @Michael Su Yep we have this
+  evidence: Jul 6th at 3:07:14 PM. Open in channel
+- Jul 6th at 3:07 PM
+- 3:07 daytona.io/docs/en/secrets No we do not have this yet, but there is a workaround using tailscale
+  evidence: Jul 6th at 3:07:37 PM. Open in channel
+- 3:07
+- daytona.io/docs/en/secrets
+- No we do not have this yet, but there is a workaround using tailscale
+- 3:07 How we support static egress IPs: The recommended approach is to use a VPN connection with Tailscale and route your sandbox traffic through an exit node you control with a known static IP. From your firewall's perspective, all sandbox traffic will originate from that single IP — giving you full control over what to allowlist. This works out of the box in Daytona since Tailscale falls back to TCP when UDP isn't available. Full guide here: daytona.io/docs/en/vpn-connections#…
+  evidence: Jul 6th at 3:07:50 PM. Open in channel
+- 3:07
+- How we support static egress IPs: The recommended approach is to use a VPN connection with Tailscale and route your sandbox traffic through an exit node you control with a known static IP. From your firewall's perspective, all sandbox traffic will originate from that single IP — giving you full control over what to allowlist. This works out of the box in Daytona since Tailscale falls back to TCP when UDP isn't available. Full guide here: daytona.io/docs/en/vpn-connections#…
+- Search for: has:link, 1 of 2 suggestions
+Context: Search
+- has: link
+- [1818] Show results for: has: link Enter
+- [1819] Search for: has:link in:#feedback-and-ideas, in channel
+- Select
+=== ADDITIONAL CAPTURED CONTENT ===
+Not currently clickable. To interact with these rows, scroll [206] Channel feedback-and-ideas content.
+Context: Channel feedback-and-ideas
+- 4:51 PM
+Context: Thread in feedback-and-ideas (channel, 7 replies)
+- Michael Xu Jul 7th at 7:51 PM
+  text: oh ok this is great. i had missed the name of the feature secrets because i assumed it was just mounting secrets to the sandbox in the volume. awesome!
+  evidence: Jul 7th at 7:51:42 PM. Open in channel
+- Jul 7th at 7:51 PM
+- oh ok this is great. i had missed the name of the feature because i assumed it was just mounting secrets to the sandbox in the volume. awesome!
+- Dalin Stone Jul 7th at 7:52 PM
+  text: Sounds good
+  evidence: Jul 7th at 7:52:18 PM. Open in channel
+- Jul 7th at 7:52 PM
+- Michael Xu Jul 17th at 4:15 PM
+  text: another question - has anyone tried whether its possible to inject credentials via this feature to git or claude ? just want to double check and make sure itll work once i get to setting it up
+  evidence: Jul 17th at 4:15:27 PM. Open in channel
+- Jul 17th at 4:15 PM
+- another question - has anyone tried whether its possible to inject credentials via this feature to or ? just want to double check and make sure itll work once i get to setting it up
+- Dalin Stone Jul 17th at 4:16 PM
+  text: This works for anything, yep
+  evidence: Jul 17th at 4:16:03 PM. Open in channel
+- Jul 17th at 4:16 PM
+- Reply… Also send to feedback-and-ideas
+  evidence: Reply to thread in feedback-and-ideas
+
+=== USEFUL PAGE ACTIONS ===
+[1747] text-input "has: link" actions=click,select,type,focus,scroll
+[1726] select "Show results for: has: link Enter Show results in this channel for: has: link" actions=select,scroll
+[1734] button "Show filters"
+[1736] button "Close"
+[other actions hidden: 2]
+=== READ-ONLY CONTROL EVIDENCE ===
+- Clear
+- Give feedback
+=== SECONDARY / DEBUG ACTIONS ===
+[509] button "Back in history" <button> role=button context="toolbar: History Navigation" state=not-hit-testable hit=False viewport=True sourceOrder=54 bounds=(x=281.1875 y=7 w=26 h=26) reason=not_hit_testable
+[510] button "Forward in history" <button> role=button context="toolbar: History Navigation" state=not-hit-testable hit=False viewport=True sourceOrder=58 bounds=(x=313.1875 y=7 w=26 h=26) reason=not_hit_testable
+[511] button "Show history" <button> role=button context="toolbar: History Navigation" state=not-hit-testable hit=False viewport=True sourceOrder=63 bounds=(x=345.1875 y=7 w=26 h=26) reason=not_hit_testable
+[30] button "Search: has:link" <button> role=button context="toolbar: History Navigation" state=not-hit-testable hit=False viewport=True sourceOrder=70 bounds=(x=380.078125 y=6 w=605.28125 h=28) reason=not_hit_testable
+[514] button "Clear search" <button> role=button context="toolbar: History Navigation" state=not-hit-testable hit=False viewport=True sourceOrder=77 bounds=(x=959.359375 y=7 w=26 h=26) reason=not_hit_testable
+[516] button "Chat with Slackbot AI" <button> role=button context="toolbar: History Navigation" state=not-hit-testable hit=False viewport=True sourceOrder=89 bounds=(x=993.359375 y=6 w=28 h=28) reason=not_hit_testable
+[517] button "Help" <button> role=button context="toolbar: History Navigation" state=not-hit-testable hit=False viewport=True sourceOrder=96 bounds=(x=1332 y=7 w=26 h=26) reason=not_hit_testable
+[519] button "Switch workspaces… (Daytona Community)" <button> role=button context="tabpanel: Daytona Community" state=not-hit-testable hit=False viewport=True sourceOrder=134 bounds=(x=17 y=48 w=36 h=36) reason=not_hit_testable
+[48] button "Home 1" <button> role=tab context="tabpanel: Daytona Community / tablist: Daytona Community" state=not-hit-testable hit=False viewport=True sourceOrder=143 bounds=(x=9 y=101 w=52 h=68) reason=not_hit_testable
+[52] button "DMs 2" <button> role=tab context="tabpanel: Daytona Community / tablist: Daytona Community" state=not-hit-testable hit=False viewport=True sourceOrder=156 bounds=(x=9 y=169 w=52 h=68) reason=not_hit_testable
+[55] button "Activity 3" <button> role=tab context="tabpanel: Daytona Community / tablist: Daytona Community" state=not-hit-testable hit=False viewport=True sourceOrder=168 bounds=(x=9 y=237 w=52 h=68) reason=not_hit_testable
+[58] button "Files 4" <button> role=tab context="tabpanel: Daytona Community / tablist: Daytona Community" state=not-hit-testable hit=False viewport=True sourceOrder=182 bounds=(x=9 y=305 w=52 h=68) reason=not_hit_testable
+[61] button "Agents & tools 5" <button> role=tab context="tabpanel: Daytona Community / tablist: Daytona Community" state=not-hit-testable hit=False viewport=True sourceOrder=194 bounds=(x=9 y=373 w=52 h=80) reason=not_hit_testable
+[73] button "Daytona Community Actions" <button> role=button context="tabpanel: Home / group: Home / toolbar: Actions" state=not-hit-testable hit=False viewport=True sourceOrder=222 bounds=(x=78 y=48.5 w=205.828125 h=32) reason=not_hit_testable
+[534] button "Manage my sidebar" <button> role=button context="tabpanel: Home / group: Home / toolbar: Actions" state=not-hit-testable hit=False viewport=True sourceOrder=231 bounds=(x=296 y=46.5 w=36 h=36) reason=not_hit_testable
+[535] button "New message" <button> role=button context="tabpanel: Home / group: Home / toolbar: Actions" state=not-hit-testable hit=False viewport=True sourceOrder=237 bounds=(x=336 y=46.5 w=36 h=36) reason=not_hit_testable
+[12] search-input "Channel or user name" actions=click,type,focus <input> role=searchbox context="tabpanel: Daytona Community / tabpanel: Home / group: Home" state=not-hit-testable hit=False viewport=True sourceOrder=246 bounds=(x=99 y=95 w=250.4375 h=16) reason=not_hit_testable
+[85] scroll-region "Get started Threads Huddles Directories Starred Drag and drop important stuff here Drag and drop important stuff here Channels Press Shift Ctrl L to find or create a channel daytona-support feedback-and-ideas general in…" actions=scroll <div> role=none context="tabpanel: Daytona Community / tabpanel: Home / group: Home" state=not-hit-testable hit=False viewport=True sourceOrder=262 bounds=(x=70 y=121 w=360 h=688) reason=broad/noisy
+[88] clickable "Get started" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=265 bounds=(x=70 y=127 w=310 h=28) reason=not_hit_testable
+[91] clickable "Threads" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=275 bounds=(x=70 y=155 w=310 h=28) reason=not_hit_testable
+[93] clickable "Huddles" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=282 bounds=(x=70 y=183 w=310 h=28) reason=not_hit_testable
+[97] clickable "Directories" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=289 bounds=(x=70 y=211 w=310 h=28) reason=not_hit_testable
+[545] clickable <div> role=generic context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=297 bounds=(x=70 y=239 w=310 h=24) reason=not_hit_testable
+[100] clickable "Starred Drag and drop important stuff here" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=299 bounds=(x=70 y=263 w=310 h=28) reason=not_hit_testable
+[106] clickable "Drag and drop important stuff here" <div> role=none context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=325 bounds=(x=70 y=291 w=310 h=44) reason=not_hit_testable
+[109] clickable "Channels Press Shift Ctrl L to find or create a channel" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=333 bounds=(x=70 y=345 w=310 h=28) reason=not_hit_testable
+[115] clickable "daytona-support" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=368 bounds=(x=70 y=373 w=310 h=28) reason=not_hit_testable
+[118] clickable "feedback-and-ideas" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=379 bounds=(x=70 y=401 w=310 h=28) reason=not_hit_testable
+[121] clickable "general" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=390 bounds=(x=70 y=429 w=310 h=28) reason=not_hit_testable
+[124] clickable "intro" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=401 bounds=(x=70 y=457 w=310 h=28) reason=not_hit_testable
+[127] clickable "Direct messages Press Ctrl Shift 2 to find or create a direct message. Press delete to remove a direct message from the sidebar" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=412 bounds=(x=70 y=495 w=310 h=28) reason=not_hit_testable
+[133] clickable "Away, notifications snoozed" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=447 bounds=(x=70 y=523 w=310 h=28) reason=not_hit_testable
+[139] clickable "Agents & apps Press delete to remove messages from an app from the sidebar" <div> role=treeitem context="group: Home / none: Channels and direct messages / tree: Channels and direct messages" state=not-hit-testable hit=False viewport=True sourceOrder=468 bounds=(x=70 y=561 w=310 h=28) reason=not_hit_testable
+[572] text-input "Sidebar width" actions=click,type,focus <input> role=slider context="tabpanel: Daytona Community / tabpanel: Home" state=not-hit-testable hit=False viewport=True sourceOrder=503 bounds=(x=69 y=39 w=1 h=1) reason=not_hit_testable
+[573] button "Star channel" <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / toolbar: Primary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=511 bounds=(x=398 y=51 w=28 h=28) reason=not_hit_testable
+[150] button "Channel details for #feedback-and-ideas" <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / toolbar: Primary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=516 bounds=(x=430 y=50.5 w=187.890625 h=28) reason=not_hit_testable
+[153] button "View all 2,458 members. Includes Gautam Talks, Lukas Seufert, and Michael Xu." <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / toolbar: Primary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=528 bounds=(x=680.796875 y=50.5 w=106.203125 h=28) reason=not_hit_testable
+[578] button "Start huddle in feedback-and-ideas" <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / toolbar: Primary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=553 bounds=(x=796 y=51.5 w=36 h=26) reason=not_hit_testable
+[579] button "More Huddles options" <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / toolbar: Primary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=558 bounds=(x=833 y=51.5 w=20 h=26) reason=not_hit_testable
+[580] button "Edit notifications" <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / toolbar: Primary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=571 bounds=(x=862 y=50.5 w=28 h=28) reason=not_hit_testable
+[581] button "Search in channel" <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / toolbar: Primary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=577 bounds=(x=898 y=50.5 w=28 h=28) reason=not_hit_testable
+[582] button "More channel actions" <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / toolbar: Primary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=581 bounds=(x=934 y=50.5 w=28 h=28) reason=not_hit_testable
+[163] button "Messages" <button> role=tab context="tabpanel: Home / group: Channel feedback-and-ideas / tablist: #feedback-and-ideas views" state=not-hit-testable hit=False viewport=True sourceOrder=591 bounds=(x=396 y=89 w=92.453125 h=38) reason=not_hit_testable
+[169] button "Files & links" <button> role=tab context="tabpanel: Home / group: Channel feedback-and-ideas / tablist: #feedback-and-ideas views" state=not-hit-testable hit=False viewport=True sourceOrder=604 bounds=(x=492.453125 y=89 w=104.796875 h=38) reason=not_hit_testable
+[176] button "Bookmarks" <button> role=tab context="tabpanel: Home / group: Channel feedback-and-ideas / tablist: #feedback-and-ideas views" state=not-hit-testable hit=False viewport=True sourceOrder=618 bounds=(x=601.25 y=89 w=101.359375 h=38) reason=not_hit_testable
+[183] button "Untitled" <button> role=tab context="tabpanel: Home / group: Channel feedback-and-ideas / tablist: #feedback-and-ideas views" state=not-hit-testable hit=False viewport=True sourceOrder=632 bounds=(x=706.609375 y=89 w=87.4375 h=38) reason=not_hit_testable
+[591] button "Add and Edit Channel Tabs" <button> role=button context="tabpanel: Home / group: Channel feedback-and-ideas / tablist: #feedback-and-ideas views" state=not-hit-testable hit=False viewport=True sourceOrder=654 bounds=(x=798.046875 y=89 w=32 h=38) reason=not_hit_testable
+[206] scroll-region "Loading history… Monday, August 10th Gautam Talks 4:51 PM Not a feature request, but hopefully useful. I spent a few weeks benchmarking Firecracker guest images and published the harnesses: github.com/GautamTalksDev/may…" actions=scroll <div> role=none context="tabpanel: Daytona Community / tabpanel: Home / group: Channel feedback-and-ideas" state=not-hit-testable hit=False viewport=True sourceOrder=679 bounds=(x=380 y=119 w=644 h=556) reason=broad/noisy
+[624] clickable <div> role=listitem context="tabpanel: Home / group: Channel feedback-and-ideas / none: Jump to date" state=not-hit-testable hit=False viewport=True sourceOrder=757 bounds=(x=380 y=-41 w=594 h=40) reason=not_hit_testable
+[678] clickable <div> role=listitem context="tabpanel: Home / group: Channel feedback-and-ideas / none: Jump to date" state=not-hit-testable hit=False viewport=True sourceOrder=861 bounds=(x=380 y=651 w=594 h=24) reason=not_hit_testable
+[681] button "Bold" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=879 bounds=(x=407 y=674 w=28 h=28) reason=not_hit_testable
+[682] button "Italic" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=883 bounds=(x=439 y=674 w=28 h=28) reason=not_hit_testable
+[683] button "Underline" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=887 bounds=(x=471 y=674 w=28 h=28) reason=not_hit_testable
+[684] button "Strikethrough" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=891 bounds=(x=503 y=674 w=28 h=28) reason=not_hit_testable
+[685] button "Link" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=896 bounds=(x=544 y=674 w=28 h=28) reason=not_hit_testable
+[686] button "Ordered list" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=900 bounds=(x=576 y=674 w=28 h=28) reason=not_hit_testable
+[687] button "Bulleted list" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=904 bounds=(x=608 y=674 w=28 h=28) reason=not_hit_testable
+[688] button "Blockquote" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=909 bounds=(x=649 y=674 w=28 h=28) reason=not_hit_testable
+[689] button "Code" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=913 bounds=(x=681 y=674 w=28 h=28) reason=not_hit_testable
+[690] button "Code block" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Formatting" state=not-hit-testable hit=False viewport=True sourceOrder=917 bounds=(x=713 y=674 w=28 h=28) reason=not_hit_testable
+[11] text-input "Message to feedback-and-ideas" actions=click,type,focus,scroll <div> role=textbox context="tabpanel: Home / group: Channel feedback-and-ideas / group: composer" state=not-hit-testable hit=False viewport=True sourceOrder=923 bounds=(x=401 y=706 w=552 h=38) reason=not_hit_testable
+[694] button "Attach" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Composer actions" state=not-hit-testable hit=False viewport=True sourceOrder=938 bounds=(x=409 y=750 w=28 h=28) reason=not_hit_testable
+[695] button "Show formatting" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Composer actions" state=not-hit-testable hit=False viewport=True sourceOrder=946 bounds=(x=441 y=750 w=28 h=28) reason=not_hit_testable
+[696] button "Emoji" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Composer actions" state=not-hit-testable hit=False viewport=True sourceOrder=950 bounds=(x=473 y=750 w=28 h=28) reason=not_hit_testable
+[697] button "Mention someone" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Composer actions" state=not-hit-testable hit=False viewport=True sourceOrder=959 bounds=(x=505 y=750 w=28 h=28) reason=not_hit_testable
+[698] button "More options" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Composer actions" state=not-hit-testable hit=False viewport=True sourceOrder=964 bounds=(x=537 y=750 w=28 h=28) reason=not_hit_testable
+[699] button "Send now" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Composer actions" state=not-hit-testable hit=False viewport=True sourceOrder=970 bounds=(x=887 y=750 w=32 h=28) reason=not_hit_testable
+[700] button "Schedule for later" <button> role=button context="group: Channel feedback-and-ideas / group: composer / toolbar: Composer actions" state=not-hit-testable hit=False viewport=True sourceOrder=974 bounds=(x=919 y=750 w=28 h=28) reason=not_hit_testable
+[308] button "Shift + Return to add a new line" <button> role=button context="tabpanel: Daytona Community / tabpanel: Home / group: Channel feedback-and-ideas" state=not-hit-testable hit=False viewport=True sourceOrder=984 bounds=(x=800.34375 y=789 w=145.65625 h=16) reason=not_hit_testable
+[310] clickable "Thread Michael Xu Jul 6th at 2:46 PM hey everyone - feature request (or a conversation if this is already supported) - ive been trialing daytona, and it's been great so far and has everything we need.. with the exceptio…" <div> role=dialog context="tabpanel: Daytona Community / tabpanel: Home" state=not-hit-testable hit=False viewport=True sourceOrder=993 bounds=(x=974 y=40 w=388 h=769) reason=not_hit_testable
+[708] button "Close" <button> role=button context="tabpanel: Home / dialog: Thread in channel feedback-and-ideas / toolbar: Secondary view actions" state=not-hit-testable hit=False viewport=True sourceOrder=1006 bounds=(x=1322 y=50.5 w=28 h=28) reason=not_hit_testable
+[323] scroll-region "Michael Xu Jul 6th at 2:46 PM hey everyone - feature request (or a conversation if this is already supported) - ive been trialing daytona, and it's been great so far and has everything we need.. with the exception of a…" actions=scroll <div> role=none context="tabpanel: Daytona Community / tabpanel: Home / dialog: Thread in channel feedback-and-ideas" state=not-hit-testable hit=False viewport=True sourceOrder=1019 bounds=(x=974 y=89 w=438 h=720) reason=broad/noisy
+[815] text-input "Secondary panel width" actions=click,type,focus <input> role=slider context="tabpanel: Daytona Community / tabpanel: Home" state=not-hit-testable hit=False viewport=True sourceOrder=1438 bounds=(x=69 y=39 w=1 h=1) reason=not_hit_testable
+[816] button "Create new" <button> role=button context="tabpanel: Daytona Community / toolbar: Control strip" state=not-hit-testable hit=False viewport=True sourceOrder=1443 bounds=(x=17 y=649 w=36 h=36) reason=not_hit_testable
+[817] button "Turn on focus mode" <button> role=button context="tabpanel: Daytona Community / toolbar: Control strip" state=not-hit-testable hit=False viewport=True sourceOrder=1453 bounds=(x=17 y=701 w=36 h=36) reason=not_hit_testable
+[503] button "User: Aayush Raj" <button> role=button context="tabpanel: Daytona Community / toolbar: Control strip" state=not-hit-testable hit=False viewport=True sourceOrder=1464 bounds=(x=17 y=753 w=36 h=36) reason=not_hit_testable
+[1745] clickable "has: link Search across people, channels, files, workflows, and more Clear Show results for: has: link Enter Show results in this channel for: has: link Select Give feedback" <div> role=dialog hit=True viewport=True sourceOrder=1544 bounds=(x=362.5 y=4 w=640 h=194) reason=broad/noisy
+=== COMPLETE READ-ONLY CONTROL TEXT ===
+- Get started Threads Huddles Directories Starred Drag and drop important stuff here Drag and drop important stuff here Channels Press Shift Ctrl L to find or create a channel daytona-support feedback-and-ideas general intro Direct messages Press Ctrl Shift 2 to find or create a direct message. Press delete to remove a direct message from the sidebar . Ramyashree Agents & apps Press delete to remove messages from an app from the sidebar
+- Loading history… Monday, August 10th Gautam Talks 4:51 PM Not a feature request, but hopefully useful. I spent a few weeks benchmarking Firecracker guest images and published the harnesses: github.com/GautamTalksDev/mayfly-guest Main finding: most published kernel-stripping advice for Firecracker is stale. Turning ACPI off costs 278ms rather than saving time, because modern Firecracker passes device info through ACPI tables and MPTable booting is now deprecated. Disabling PCI breaks root disk
+- Gautam Talks 4:51 PM Not a feature request, but hopefully useful. I spent a few weeks benchmarking Firecracker guest images and published the harnesses: github.com/GautamTalksDev/mayfly-guest Main finding: most published kernel-stripping advice for Firecracker is stale. Turning ACPI off costs 278ms rather than saving time, because modern Firecracker passes device info through ACPI tables and MPTable booting is now deprecated. Disabling PCI breaks root disk discovery entirely, since CONFIG_PCI
+- Daytona: Spot GPU sandboxes are now live for everyone! Run GPU workloads on preemptible capacity at a fraction of on-demand pricing: • No quotas: spot GPUs don't count against your GPU quota. Available capacity is the only limit. . • Deeply discounted: significantly cheaper than on-demand GPUs, see the pricing page: [ https://www.daytona.io/pricing (link)] . • All GPU types: H100, H200, RTX Pro 6000, RTX 4090, RTX 5090, with ordered fallback between types. . Getting started: choose a GPU, set resources, and use any Docker image: sandbox = daytona.create( CreateSandboxFromImageParams( image="nvidia/cuda:12.4.1-base-ubuntu22.04", auto_delete_interval=0, spot=True, resources=Resources(gpu=1, gpu_type=GpuType.H100), ) ) Heads up: spot sandboxes are preemptible. They can be reclaimed at any time when on-demand capacity is needed, so design workloads to tolerate interruption. Preempted sandboxes get a spotEvictedAt timestamp and stay retrievable for 24 hours. Try it: [ https://app.daytona.io/ (link)] Docs: [ https://www.daytona.io/docs/sandboxes#spot-gpu-sandboxes (link)] Questions? Drop them here or at [ support@daytona.io (link)] saluting face emoji. 8:38 AM. 4 links.
+- Thread Michael Xu Jul 6th at 2:46 PM hey everyone - feature request (or a conversation if this is already supported) - ive been trialing daytona, and it's been great so far and has everything we need.. with the exception of a few things. is there any way to introspect or inject at the network for a sandbox? we are using daytona to host customer apps - but because these apps are most likely vibe coded, having some controls outside of the sandbox (don't allow network egress except for these URL
+- Michael Xu Jul 6th at 2:46 PM hey everyone - feature request (or a conversation if this is already supported) - ive been trialing daytona, and it's been great so far and has everything we need.. with the exception of a few things. is there any way to introspect or inject at the network for a sandbox? we are using daytona to host customer apps - but because these apps are most likely vibe coded, having some controls outside of the sandbox (don't allow network egress except for these URLs), or
+- 3:07 How we support static egress IPs: The recommended approach is to use a VPN connection with Tailscale and route your sandbox traffic through an exit node you control with a known static IP. From your firewall's perspective, all sandbox traffic will originate from that single IP — giving you full control over what to allowlist. This works out of the box in Daytona since Tailscale falls back to TCP when UDP isn't available. Full guide here: daytona.io/docs/en/vpn-connections#…
+- Michael Xu Jul 17th at 4:15 PM another question - has anyone tried whether its possible to inject credentials via this feature to git or claude ? just want to double check and make sure itll work once i get to setting it up
+
+=== SCROLLABLE REGIONS ===
+Use: scroll("down", 1600, element_id=<id>) or scroll("up", 1600, element_id=<id>).
+[206] Channel feedback-and-ideas content — 644x556
+[323] Thread in feedback-and-ideas (channel, 7 replies) — 438x720
+[85] Channels and direct messages — 360x688
