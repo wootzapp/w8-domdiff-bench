@@ -1,0 +1,3186 @@
+{
+  "task_id": "viewport-modern-18-google-flights-nonstop-fare-comparison-20260829T083137Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.85,
+  "rubric_total_max_points": 20.0,
+  "rubric_total_earned_points": 17.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: (1) Prices shown in euros rather than INR is not an issue; Google Flights can display different currencies. (2) The three lowest visible options being the same airline (IndiGo) is acceptable because the task says “three lowest visible options,” and ties can lead to same-airline comparisons.\n\nCritical issues: The task asks to compare round-trip options by “departure time” (for a round trip, a reasonable interpretation is outbound and return timing). The agent only provided outbound departure/arrival times and explicitly noted that Google Flights “only showing the outbound leg details” in that view. Because return-leg departure times are not provided, the comparison is missing a key schedule component for a true round-trip evaluation.\n\nOutcome assessment: Screenshot evidence (latest states 13–14) supports that the agent did run the correct Google Flights search (DEL→BLR round trip, Sep 15–18 2026, economy, 1 passenger) and applied the nonstop filter (Stops chip shows Nonstop selected). The three lowest visible nonstop results are indeed €154 round trip, IndiGo, with the three different outbound departure times (3:00 AM, 8:45 PM, 10:00 PM), all 2h55m, and the agent’s reported fares/times/duration align with what’s visible. The recommendation (8:45 PM option as best balance) is reasonable given identical prices/durations and the other two being an extreme early departure or post-midnight arrival.\n\nHowever, because the user asked for a round trip and explicitly wanted schedule comparison, not having any return-leg timing (and therefore basing “best balance of price and schedule” only on outbound) is a meaningful omission. The agent did acknowledge the limitation, but it still means the user does not receive the full comparison they requested for a round-trip itinerary. So this is more than a nitpick: it reduces task completion from the user’s perspective.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Run a specific Google Flights search (DEL↔BLR, Sep 15–18 2026, 1 adult, economy), apply the nonstop filter, then compare the three lowest visible nonstop options by key fields (airline, times, duration, round-trip fare) and recommend the best price/schedule tradeoff—without booking. A reasonable user is not flexible on route/dates/nonstop requirement or making up fares/times; they are flexible on currency display and minor wording/formatting."
+  },
+  "preflight": {
+    "task_id": "viewport-modern-18-google-flights-nonstop-fare-comparison-20260829T083137Z",
+    "actions": 13,
+    "dom_model_states": 14,
+    "initial_state": 0,
+    "final_state": 13,
+    "alignment": {
+      "task_id": "viewport-modern-18-google-flights-nonstop-fare-comparison-20260829T083137Z",
+      "action_count": 13,
+      "state_count": 14,
+      "initial_state": 0,
+      "final_state": 13,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e79",
+            "target": {
+              "ref": "e79",
+              "role": "combobox",
+              "name": "Where from? "
+            },
+            "thoughts": "Start by setting the origin city, so I’ll open the ‘Where from?’ combobox to enter New Delhi."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights"
+        },
+        {
+          "ordinal": 2,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e1",
+            "target": {
+              "ref": "e1",
+              "role": "combobox",
+              "name": "Where from? "
+            },
+            "text": "New Delhi",
+            "thoughts": "The origin field is active; I should type the departure city New Delhi to start defining the route."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e6",
+            "target": {
+              "ref": "e6",
+              "role": "option",
+              "name": "Indira Gandhi International Airport (DEL)"
+            },
+            "thoughts": "Select the specific Indira Gandhi International Airport (DEL) option as the origin before setting destination, dates, and filters."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e79",
+            "target": {
+              "ref": "e79",
+              "role": "combobox",
+              "name": "Where to? "
+            },
+            "thoughts": "Destination combobox is empty; click it to start setting Bengaluru as the destination for the required DEL–BLR trip."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "ordinal": 5,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e1",
+            "target": {
+              "ref": "e1",
+              "role": "combobox",
+              "name": "Where to? "
+            },
+            "text": "Bengaluru",
+            "thoughts": "Destination combobox is focused and expanded; I should type 'Bengaluru' into it to set the destination city before choosing dates and filters."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "ordinal": 6,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e6",
+            "target": {
+              "ref": "e6",
+              "role": "option",
+              "name": "Kempegowda International Airport Bengaluru (BLR)"
+            },
+            "thoughts": "Select Kempegowda International Airport Bengaluru (BLR) as the specific destination before setting dates and filters."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "ordinal": 7,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e79",
+            "target": {
+              "ref": "e79",
+              "role": "textbox",
+              "name": "Departure"
+            },
+            "thoughts": "Next I need to set the specific departure date, so I’ll open the Departure date picker textbox."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "ordinal": 8,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e24",
+            "target": {
+              "ref": "e24",
+              "role": "gridcell",
+              "name": "Tuesday, September 15, 2026 , 154 euros, Cheapest price"
+            },
+            "thoughts": "Select September 15, 2026 as the departure date from the calendar grid before setting the return date."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "ordinal": 9,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e10",
+            "target": {
+              "ref": "e10",
+              "role": "gridcell",
+              "name": "Friday, September 18, 2026 , 154 euros, Cheapest price"
+            },
+            "thoughts": "Set the return date to Friday, September 18, 2026 to complete the Sep 15–18 date range before running the search."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "ordinal": 10,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e2",
+            "target": {
+              "ref": "e2",
+              "role": "button",
+              "name": "Done. Search for round trip flights, departing on September 15, 2026 and returning on September 18, 2026"
+            },
+            "thoughts": "Dates are correctly set; now I need to run the search by clicking the Done/Search button in the date dialog to load flight results."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights?tfs=CBwQARoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "ordinal": 11,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e32",
+            "target": {
+              "ref": "e32",
+              "role": "button",
+              "name": "Search"
+            },
+            "thoughts": "Search to load the actual flight results so I can then apply the nonstop filter and compare the lowest options."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ"
+        },
+        {
+          "ordinal": 12,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e56",
+            "target": {
+              "ref": "e56",
+              "role": "button",
+              "name": "Stops, Not selected"
+            },
+            "thoughts": "Open the Stops filter so I can apply the nonstop-only constraint before comparing the lowest three options."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ"
+        },
+        {
+          "ordinal": 13,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e146",
+            "target": {
+              "ref": "e146",
+              "role": "radio",
+              "name": "Nonstop only"
+            },
+            "thoughts": "Need to apply the nonstop filter by selecting the 'Nonstop only' radio button within the Stops dialog."
+          },
+          "observed_after_url": "https://www.google.com/travel/flights/search?tfs=CBwQAhogEgoyMDI2LTA5LTE1KABqBwgBEgNERUxyBwgBEgNCTFIaIBIKMjAyNi0wOS0xOCgAagcIARIDQkxScgcIARIDREVMQAFIAXABggELCP___________wGYAQE&tfu=EgYIABAAGAA"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "d7071e2e7d7495e6cbadc073e3b0d4ccc17c0d63c44cd8b5add937d0f63eab40",
+          "after_sha256": "c16904458d661aedf97bab782f03bf9d18a42a499f3876c9c02053246307b9ae",
+          "before_url": "https://www.google.com/travel/flights",
+          "after_url": "https://www.google.com/travel/flights"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "c16904458d661aedf97bab782f03bf9d18a42a499f3876c9c02053246307b9ae",
+          "after_sha256": "c8b7605df7a8886680293ddc24e906d80dd42b290b3b8f4c8dc860368677d457",
+          "before_url": "https://www.google.com/travel/flights",
+          "after_url": "https://www.google.com/travel/flights"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "c8b7605df7a8886680293ddc24e906d80dd42b290b3b8f4c8dc860368677d457",
+          "after_sha256": "d6b3378d260da584ae37649a1545ebb3a68ea5ed35b4eafe86d5584620484e6a",
+          "before_url": "https://www.google.com/travel/flights",
+          "after_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "d6b3378d260da584ae37649a1545ebb3a68ea5ed35b4eafe86d5584620484e6a",
+          "after_sha256": "4c8f9ff00b13f4c7cf6170d4cadc26b9d308ebb844c80897f717a2dca687ddf3",
+          "before_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+          "after_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "4c8f9ff00b13f4c7cf6170d4cadc26b9d308ebb844c80897f717a2dca687ddf3",
+          "after_sha256": "6db89f6cfa23f6bb6d0cbff51cac4191e887cf93c5b39d1f6f1e65fa908b6a0b",
+          "before_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+          "after_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "6db89f6cfa23f6bb6d0cbff51cac4191e887cf93c5b39d1f6f1e65fa908b6a0b",
+          "after_sha256": "b66885f316535b9a081f4a085ad4d154807b45f2cdb862bb39149fce840aaa6a",
+          "before_url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+          "after_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "from_state": 6,
+          "action_ordinal": 7,
+          "to_state": 7,
+          "before_sha256": "b66885f316535b9a081f4a085ad4d154807b45f2cdb862bb39149fce840aaa6a",
+          "after_sha256": "fabbab11456968ef459c410356fbb6920d42ec81316dc3d8073bb542a2f6b23c",
+          "before_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+          "after_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "from_state": 7,
+          "action_ordinal": 8,
+          "to_state": 8,
+          "before_sha256": "fabbab11456968ef459c410356fbb6920d42ec81316dc3d8073bb542a2f6b23c",
+          "after_sha256": "02f754db41bbde53ec02e518ed7237286f42a8eb36f511d097e47dec024f7170",
+          "before_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+          "after_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "from_state": 8,
+          "action_ordinal": 9,
+          "to_state": 9,
+          "before_sha256": "02f754db41bbde53ec02e518ed7237286f42a8eb36f511d097e47dec024f7170",
+          "after_sha256": "a1bf086508a93f55f5cd5b6888eb027050f2bb2aa5604a097fcac8b2250d4d9c",
+          "before_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+          "after_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "from_state": 9,
+          "action_ordinal": 10,
+          "to_state": 10,
+          "before_sha256": "a1bf086508a93f55f5cd5b6888eb027050f2bb2aa5604a097fcac8b2250d4d9c",
+          "after_sha256": "afedf9737c7fd268124793ec74de9ca024a07ec0a6f0113aedbf7c5c8810c7d6",
+          "before_url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+          "after_url": "https://www.google.com/travel/flights?tfs=CBwQARoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw"
+        },
+        {
+          "from_state": 10,
+          "action_ordinal": 11,
+          "to_state": 11,
+          "before_sha256": "afedf9737c7fd268124793ec74de9ca024a07ec0a6f0113aedbf7c5c8810c7d6",
+          "after_sha256": "ab65325808920d071b8da88223460464f8c27f4dffc8261d32a882871ac11a86",
+          "before_url": "https://www.google.com/travel/flights?tfs=CBwQARoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+          "after_url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ"
+        },
+        {
+          "from_state": 11,
+          "action_ordinal": 12,
+          "to_state": 12,
+          "before_sha256": "ab65325808920d071b8da88223460464f8c27f4dffc8261d32a882871ac11a86",
+          "after_sha256": "ea956243a1bc00abd890734cae480049b65c5fd0ac13eaab58ff4390902f0327",
+          "before_url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ",
+          "after_url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ"
+        },
+        {
+          "from_state": 12,
+          "action_ordinal": 13,
+          "to_state": 13,
+          "before_sha256": "ea956243a1bc00abd890734cae480049b65c5fd0ac13eaab58ff4390902f0327",
+          "after_sha256": "fbc31fb22ec537769bad9d7d3e2e63bacb230d4b6b74e72543c7c1c533cdd0c6",
+          "before_url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ",
+          "after_url": "https://www.google.com/travel/flights/search?tfs=CBwQAhogEgoyMDI2LTA5LTE1KABqBwgBEgNERUxyBwgBEgNCTFIaIBIKMjAyNi0wOS0xOCgAagcIARIDQkxScgcIARIDREVMQAFIAXABggELCP___________wGYAQE&tfu=EgYIABAAGAA"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e79' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e1' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e6' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e79' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e1' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e6' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e79' is not exposed by dom_model6",
+          "action_ordinal": 7,
+          "state_index": 6
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e24' is not exposed by dom_model7",
+          "action_ordinal": 8,
+          "state_index": 7
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e10' is not exposed by dom_model8",
+          "action_ordinal": 9,
+          "state_index": 8
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e2' is not exposed by dom_model9",
+          "action_ordinal": 10,
+          "state_index": 9
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e32' is not exposed by dom_model10",
+          "action_ordinal": 11,
+          "state_index": 10
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e56' is not exposed by dom_model11",
+          "action_ordinal": 12,
+          "state_index": 11
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e146' is not exposed by dom_model12",
+          "action_ordinal": 13,
+          "state_index": 12
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "9fd0ab24b20e4163c3995125d78e1d071b39b449459e1429a07477fc4287c820",
+    "criterion_order": [
+      "Use Google Flights to run the specified search (route, dates, passengers, cabin) or clearly report access issues",
+      "Apply the nonstop filter (direct flights only) or clearly report inability to do so",
+      "Identify and compare the lowest-priced visible nonstop options (up to three) given available results",
+      "Report required details for each compared option (airline, departure time, duration, round-trip fare) or clearly note missing fields",
+      "Recommend the best balance of price and schedule (no booking)"
+    ],
+    "maximum_points": [
+      4.0,
+      3.0,
+      4.0,
+      6.0,
+      3.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/benchmarks-2/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "1a4f36c61f55262fe52b55ad236c7d23001f8c8985680363fe7460b9e7773247"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/frozen_rubric.json",
+  "rubric_sha256": "9fd0ab24b20e4163c3995125d78e1d071b39b449459e1429a07477fc4287c820",
+  "criterion_denominator": 20,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 196643,
+      "completion_tokens": 11244,
+      "reasoning_tokens": 0,
+      "total_tokens": 207887
+    },
+    "action_judge": {
+      "prompt_tokens": 22167,
+      "completion_tokens": 3295,
+      "reasoning_tokens": 2048,
+      "total_tokens": 25462
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 27,
+      "api_attempts": 27,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 14,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 6,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 3,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 3,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 5
+      },
+      "screenshot_6": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 6
+      },
+      "screenshot_7": {
+        "0": 5,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 7
+      },
+      "screenshot_8": {
+        "0": 7,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 8
+      },
+      "screenshot_9": {
+        "0": 8,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 9
+      },
+      "screenshot_10": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 10
+      },
+      "screenshot_11": {
+        "0": 8,
+        "1": 3,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "screenshot_idx": 11
+      },
+      "screenshot_12": {
+        "0": 10,
+        "1": 6,
+        "2": 9,
+        "3": 6,
+        "4": 0,
+        "screenshot_idx": 12
+      },
+      "screenshot_13": {
+        "0": 10,
+        "1": 10,
+        "2": 7,
+        "3": 6,
+        "4": 3,
+        "screenshot_idx": 13
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        13,
+        12,
+        11,
+        9,
+        8
+      ],
+      "1": [
+        13,
+        12,
+        11,
+        0,
+        10
+      ],
+      "2": [
+        12,
+        13,
+        11,
+        10,
+        9
+      ],
+      "3": [
+        13,
+        12,
+        11,
+        10,
+        9
+      ],
+      "4": [
+        13,
+        12,
+        11,
+        10,
+        9
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13. URL: https://www.google.com/travel/flights/search?tfs=CBwQAhogEgoyMDI2LTA5LTE1KABqBwgBEgNERUxyBwgBEgNCTFIaIBIKMjAyNi0wOS0xOCgAagcIARIDQkxScgcIARIDREVMQAFIAXABggELCP___________wGYAQE&tfu=EgYIABAAGAA . Read-only controls: \"Change ticket type. Round trip\"; \"Change seating class. Economy\"; \"1 passenger\". Inputs: [7249] \"Where from? New Delhi DEL\" and [7327] \"Where to? Bengaluru BLR\". Tracked prices text: \"Track prices from New Delhi to Bengaluru departing 2026-09-15 and returning 2026-09-18\" and \"Sep 15 – 18\".",
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows Google Flights search results for a round trip from New Delhi (DEL) to Bengaluru (BLR), 1 passenger, Economy, with departure 2026-09-15 and return 2026-09-18. This matches the task parameters.",
+          "discrepancies": "None in the DOM for route/dates/pax/cabin. (Currency shown is euros; not a task mismatch.)",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 12; URL shows query params with dates: https://www.google.com/travel/flights/search?tfs=...EgoyMDI2LTA5LTE1...EgoyMDI2LTA5LTE4...; Controls: text-input \"Where from? New Delhi DEL\" [7249], text-input \"Where to? Bengaluru BLR\" [7327], select \"Change ticket type. Round trip\" [6970], select \"Change seating class. Economy\" [7184], button \"1 passenger, change number of passengers.\" [7029].",
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows Google Flights results for a round trip search New Delhi (DEL) → Bengaluru (BLR) with the encoded dates 2026-09-15 (depart) and 2026-09-18 (return) in the URL. The UI controls confirm \"Round trip\" ticket type [6970], \"Economy\" cabin [7184], and the route fields populated with \"Where from? New Delhi DEL\" [7249] and \"Where to? Bengaluru BLR\" [7327]. Passenger control shows \"1 passenger\" [7029], consistent with one adult.",
+          "discrepancies": "None for route/dates/passengers/cabin. (The task asks for \"one adult\" specifically; the DOM shows \"1 passenger\" but does not explicitly spell out \"adult\" in the visible control label in this snapshot.)",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 12,
+          "dom_model_state_idx": 12
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 11 shows URL https://www.google.com/travel/flights/search?tfs=... with Title “New Delhi to Bengaluru | Google Flights”. The query fields show [7249] “Where from? New Delhi DEL”, [7327] “Where to? Bengaluru BLR”, ticket type [6970] “Round trip”, passengers [7029] “1 passenger…”, cabin [7184] “Change seating class. Economy”, and date inputs [7408] “Departure” and [7434] “Return” (though the actual date values are not visible in this DOM snapshot).",
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM confirms the agent is on Google Flights search results for a DEL (New Delhi) → BLR (Bengaluru) round trip for 1 passenger in Economy (DOM 11: [7249], [7327], [6970], [7029], [7184]; URL contains 2026-09-15 and 2026-09-18). However, the DOM snapshot does not explicitly display the selected departure/return dates in the visible date textboxes, and it also shows “Loading results”, so the results themselves aren’t evidenced as loaded in this state.",
+          "discrepancies": "- Dates Sept 15–18, 2026 are implied by the URL parameters but not explicitly shown as filled values in the visible ‘Departure’/‘Return’ textboxes in DOM 11.\n- DOM 11 indicates “Loading results”, so it’s not proven that actual flight options were available/visible at that moment.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 11,
+          "dom_model_state_idx": 11
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 9 shows Google Flights page with origin and destination fields populated: text-input \"Where from? New Delhi DEL\" and text-input \"Where to? Bengaluru BLR\". The date picker dialog is open and explicitly marks \"Tuesday, September 15, 2026, departure date.\" and \"Friday, September 18, 2026, return date.\" The passenger count shows \"1 passenger\" and the class control indicates \"Change seating class. Economy\". URL includes routing parameters: https://www.google.com/travel/flights?tfs=...REVM...QkxS...",
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence supports that the agent set the correct route (New Delhi/DEL to Bengaluru/BLR), trip type (Round trip is visible as \"Change ticket type. Round trip\"), dates (Sep 15 departure and Sep 18 return are explicitly labeled in the calendar), passenger count (\"1 passenger\"), and economy cabin (\"Change seating class. Economy\"). However, this specific DOM snapshot (state 9) is still on the main Flights page with the date-picker dialog open (Title: \"Find Cheap Flights Worldwide & Book Your Ticket - Google Flights\"), not the results list on /flights/search. Therefore, the DOM provided does not prove that the search results page successfully loaded with these parameters, even though the action history indicates it later navigated to /travel/flights/search and clicked Search.",
+          "discrepancies": "DOM evidence provided is for state 9 (date picker stage) and does not include the /flights/search results DOM confirming results were actually returned for Sep 15–18, 2026. Thus, completion of the search (results retrieval) is not fully evidenced in the provided DOM-model state.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 9,
+          "dom_model_state_idx": 9
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 8 shows Google Flights UI with origin/destination and key trip parameters visible. Evidence includes text-input \"Where from? New Delhi DEL\" and text-input \"Where to? Bengaluru BLR\" in USEFUL PAGE ACTIONS. It also shows ticket type as Round trip via select controls: \"Change ticket type. Round trip\" and \"Select your ticket type. Round trip\". Passenger count is shown as \"1 passenger\" in VISIBLE CONTENT. The departure date selection is evidenced by the calendar cell text: \"Tuesday, September 15, 2026, departure date. , 154 euros, Cheapest price\". Seating class is evidenced by the control \"Change seating class. Economy\".",
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that the agent used Google Flights and set key parameters consistent with the task: origin \"New Delhi DEL\" and destination \"Bengaluru BLR\" (USEFUL PAGE ACTIONS: text-inputs), ticket type \"Round trip\" (select controls), passenger count \"1 passenger\" (VISIBLE CONTENT), and economy cabin via \"Change seating class. Economy\" (USEFUL PAGE ACTIONS). It also supports selection of the departure date \"Tuesday, September 15, 2026\" (READ-ONLY CONTROL EVIDENCE).\nHowever, this DOM snapshot does not explicitly confirm the return date is set to September 18, 2026 in the itinerary fields (it appears as a calendar option, but not as a selected/filled return value), nor does it show the results page URL (/search) with loaded itineraries. Therefore the full specified search (including confirmed return date and completed search results) cannot be fully verified from the provided DOM evidence alone.",
+          "discrepancies": "Return date (Sept 18, 2026) is not explicitly shown as selected/filled in the Return field in DOM_MODEL_STATE_INDEX: 8; only appears as an available calendar date. Also, the snapshot URL is not the /search results page and does not show flight result listings, so completion of the search cannot be proven from this evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 8,
+          "dom_model_state_idx": 8
+        }
+      ],
+      "1": [
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13. Read-only control evidence shows: \"Nonstop, Stops, Selected\". Visible dialog content for Stops includes the option \"Nonstop only\" (along with \"Any number of stops\", \"1 stop or fewer\", \"2 stops or fewer\"). Visible results lines each include the label \"Nonstop\" (e.g., \"... IndiGo ... Nonstop ... €154 round trip\"; similarly Akasa Air and Air India entries also show \"Nonstop\").",
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nNonstop filtering is evidenced as selected (\"Nonstop, Stops, Selected\"), and the visible flight options are explicitly labeled \"Nonstop\".",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 12; A Stops dialog is open with options listed: \"Any number of stops\", \"Nonstop only\", \"1 stop or fewer\", \"2 stops or fewer\" under \"Stops\". Visible flight cards include the label \"Nonstop\" (e.g., \"...IndiGo... Nonstop ... €154 round trip\", and similar for Akasa Air/Air India).",
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM confirms the agent opened the Stops filter (a \"Stops\" dialog is visible with an option named \"Nonstop only\"). However, in this single captured state, there is no explicit DOM indicator that \"Nonstop only\" is selected/active (e.g., checked state). Still, the visible compared results are explicitly labeled \"Nonstop\" on each flight card, so the compared set itself is verifiably nonstop even if filter activation is not fully proven from the snapshot.",
+          "discrepancies": "Selection state for the \"Nonstop only\" radio is not shown as selected in the DOM evidence; thus nonstop *filtering* cannot be fully verified, only that the flights used for comparison are labeled nonstop.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_idx": 12,
+          "dom_model_state_idx": 12
+        }
+      ],
+      "2": [
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13. Under \"Other departing flights\" three options at the lowest visible fare are shown: \n1) \"From 154 euros round trip total. Nonstop flight with IndiGo...\" with \"€154 round trip\" and departure \"3:00 AM\".\n2) Another \"From 154 euros round trip total. Nonstop flight with IndiGo...\" with \"€154 round trip\" and departure \"8:45 PM\".\n3) Another \"From 154 euros round trip total. Nonstop flight with IndiGo...\" with \"€154 round trip\" and departure \"10:00 PM\".\nAlso visible are higher-priced options: \"€159\" (IndiGo), \"€160\" (Akasa Air), \"€161\" (Air India).",
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe three lowest visible nonstop options are the three €154 round-trip entries (all IndiGo) shown in the DOM; other visible options are higher (€159/€160/€161). The agent’s selection of the three €154 options aligns with the lowest visible fares (ties acceptable).",
+          "discrepancies": "The task requested comparing the three lowest visible options; however, if interpreted as “by airline” meaning distinct airlines, the DOM shows three different airlines at €159–€161 (IndiGo/Akasa/Air India) but those are not among the lowest fares. The agent compared the three lowest fares (all IndiGo), which satisfies the “lowest visible options” requirement but not “distinct airlines” if that was intended.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 12; Under \"Other departing flights\" there are three flights at the lowest visible price: \"€154 round trip\" for IndiGo at 3:00 AM–5:55 AM, 8:45 PM–11:40 PM, and 10:00 PM–12:55 AM +1, all labeled \"Nonstop\". Also visible but higher-priced options: IndiGo €159, Akasa Air €160, Air India €161.",
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe three lowest-priced visible nonstop options in the DOM are the tied fares at \"€154 round trip\" (IndiGo) with departure times 3:00 AM, 8:45 PM, and 10:00 PM (all labeled \"Nonstop\"). Other visible nonstop options are higher priced (€159/€160/€161), confirming these three are the lowest visible in this state.",
+          "discrepancies": "The task asks to \"compare the three lowest visible options by airline\"; here, all three lowest visible are the same airline (IndiGo). That is not a selection error, but it limits cross-airline comparison among the bottom three because no other airline appears at the same lowest price in the visible list.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 12,
+          "dom_model_state_idx": 12
+        }
+      ],
+      "3": [
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13. For each €154 option, the DOM provides airline, departure time, duration, and round-trip fare:\n- Option A: \"3:00 AM ... IndiGo 2 hr 55 min ... €154 round trip\".\n- Option B: \"8:45 PM ... IndiGo 2 hr 55 min ... €154 round trip\".\n- Option C: \"10:00 PM ... IndiGo 2 hr 55 min ... €154 round trip\".\nDOM also shows arrivals (5:55 AM / 11:40 PM / 12:55 AM +1), but no return-leg departure times/durations are visible in this state.",
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nFor each of the three compared options, the DOM supports airline (IndiGo), outbound departure time (3:00 AM / 8:45 PM / 10:00 PM), duration (2 hr 55 min), and round-trip fare (€154). However, the task rubric asks for departure time(s) outbound and return (or clearly specified). The agent did not provide any return-leg times/durations and claimed Google Flights “only showing the outbound leg details,” which is consistent with the DOM snapshot (return details not visible).",
+          "discrepancies": "Missing return-leg departure times/durations in the agent’s comparison (not visible in DOM). The agent also added some narrative schedule notes; those are opinions rather than DOM facts.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 12; Each of the three €154 options shows airline \"IndiGo\", departure/arrival times and duration: (1) \"3:00 AM ... – 5:55 AM ... IndiGo 2 hr 55 min ... Nonstop ... €154 round trip\"; (2) \"8:45 PM ... – 11:40 PM ... IndiGo 2 hr 55 min ... Nonstop ... €154 round trip\"; (3) \"10:00 PM ... – 12:55 AM + 1 ... IndiGo 2 hr 55 min ... Nonstop ... €154 round trip\". Return-leg times/details are not visible in this snapshot beyond \"round trip\" price.",
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nFor each of the three compared options, the DOM supports: airline (IndiGo), outbound departure time (3:00 AM / 8:45 PM / 10:00 PM), outbound duration (2 hr 55 min), and round-trip total fare (€154 round trip). However, the rubric requires departure time(s) for outbound and return (or clearly specify missing). The DOM snapshot does not display return flight times or return duration details for these options, so those cannot be verified from the page content shown.",
+          "discrepancies": "Agent output implies round-trip comparison but only provides outbound timing details; return-leg departure/arrival times are not present in the DOM evidence and should have been explicitly marked as not visible/unavailable.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 12,
+          "dom_model_state_idx": 12
+        }
+      ],
+      "4": [
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13. The three €154 options differ mainly by departure time (3:00 AM vs 8:45 PM vs 10:00 PM) while sharing airline (IndiGo), duration (2 hr 55 min), and fare (€154). The 10:00 PM option shows arrival \"12:55 AM + 1\" indicating next-day arrival.",
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nGiven identical fares (€154) and durations (2 hr 55 min) for the three lowest visible nonstop options, recommending the 8:45 PM departure as the best balance of price and schedule (avoids 3:00 AM departure and avoids after-midnight arrival of the 10:00 PM option) is consistent with the DOM evidence. No booking/checkout actions are evidenced in the provided history or final state.",
+          "discrepancies": "The recommendation is based only on outbound schedule because return-leg schedule isn’t visible; the agent did not explicitly caveat that the recommendation cannot account for return timing beyond that note.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 12; Among the three lowest priced (€154) options, departure times differ: 3:00 AM, 8:45 PM, 10:00 PM (arrival 12:55 AM +1 for the 10:00 PM option). All have the same duration (2 hr 55 min) and same fare (€154 round trip), all nonstop.",
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nGiven identical price (€154 round trip) and duration (2 hr 55 min) across the three lowest options, choosing based on schedule convenience is justified from the DOM. The 8:45 PM → 11:40 PM option avoids the extreme early 3:00 AM departure and avoids the after-midnight arrival (12:55 AM +1) of the 10:00 PM option, making it a reasonable \"best balance\" recommendation without booking.",
+          "discrepancies": "The recommendation is based only on outbound schedule because return schedule details are not visible in the DOM; the agent should ideally caveat that return timing wasn’t compared if not shown.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 12,
+          "dom_model_state_idx": 12
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 11 contains no flight result cards or prices; it shows “Loading results” and only filter chips like “Stops, Not selected” plus other filters. There is no DOM evidence of selecting “Nonstop only” (that interaction would be after opening Stops and choosing the radio, but State 13 DOM is not provided).",
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe predicted comparison and recommendation cite three lowest visible nonstop options (all €154, with specific departure times and durations). In DOM 11, no flight options, fares, airlines, durations, or times are present—only the search header and filters, with “Loading results”. Therefore, the claimed comparison and the “best balance” recommendation are not supported by (and conflict with) the available DOM evidence for this task step; the necessary underlying observations of three lowest visible nonstop options are missing.",
+          "discrepancies": "- No DOM evidence of any visible flight options/prices (airline, departure time, duration, fare), yet the agent reports three specific options and €154 pricing.\n- Nonstop filter application (“Nonstop only”) is not evidenced in the provided DOM state (only “Stops, Not selected” is shown in DOM 11).",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 11,
+          "dom_model_state_idx": 11
+        },
+        {
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 9 contains no flight-result entries (airline names, departure times, durations, fares for specific itineraries) and no filters like \"Stops\" or \"Nonstop only\". Visible content primarily shows date-picker grid and generic marketing sections (e.g., \"Find cheap flights from Germany to anywhere\").",
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent’s predicted output claims three lowest visible nonstop round-trip options (all \"IndiGo – €154\", with specific departure/arrival times and durations) and that the nonstop filter was applied. The provided DOM state contains no evidence of any flight options, airline names, times, durations, or a nonstop filter selection. Therefore, the comparison and recommendation in the predicted output are not supported by the DOM-model state and conflict with the available evidence (i.e., the necessary results information is absent here).",
+          "discrepancies": "Predicted output lists specific flight options (IndiGo flights, times like 3:00 AM, 8:45 PM, durations 2 hr 55 min) and asserts nonstop filtering and round-trip fares (€154) as visible results. The DOM state provided does not show any of these results or the nonstop filter UI; only the calendar shows a \"154 euros\" annotation on Sep 18 in the date picker, which is not proof of any particular itinerary fare.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 9,
+          "dom_model_state_idx": 9
+        },
+        {
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 10 (URL https://www.google.com/travel/flights?tfs=...) shows only the Google Flights home/explore content and the search form fields (e.g., text-inputs \"Where from? New Delhi DEL\" [9], \"Where to? Bengaluru BLR\" [11], and button \"Search\" [108]). The visible content lists example deals (e.g., \"Find flights from Frankfurt am Main (FRA) to New York (JFK) from €428...\") and does not show any DEL↔BLR flight results, nonstop filter state, or the three lowest options with airline/times/durations/fares.",
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nCriterion 4 requires a reasoned recommendation of the best balance of price and schedule based on compared nonstop options, grounded in the observed results. However, DOM_MODEL_STATE_INDEX: 10 contains no evidence of (a) flight result listings for New Delhi (DEL) → Bengaluru (BLR) on Sep 15–18, 2026, (b) a \"Stops\" filter UI or \"Nonstop only\" being applied, or (c) any visible options with airline names, departure times, durations, or round-trip fares for this itinerary. Instead, the page shows generic explore deals such as \"Find flights from Frankfurt am Main (FRA) to New York (JFK) from €428\" and similar entries, which conflicts with the agent’s reported three cheapest nonstop IndiGo options at “€154” and specific departure/arrival times. Therefore, the DOM state contradicts the factual basis needed for the recommendation and comparison.",
+          "discrepancies": "Agent output claims three lowest visible nonstop options are all IndiGo at €154 with specific departure/arrival times and 2 hr 55 min durations, but DOM_MODEL_STATE_INDEX: 10 shows no such DEL–BLR results, no IndiGo listings, no €154 fare for DEL–BLR, and no nonstop filter/results section at all—only generic explore-deals (e.g., FRA→JFK from €428). Also, the DOM at index 10 lacks any \"Stops\" button or \"Nonstop only\" control evidence, so applying the nonstop filter is not supported by this snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 10,
+          "dom_model_state_idx": 10
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "Screenshots show the Google Flights search form and later the results context for DEL→BLR with Round trip, Economy, and 1 passenger. The date picker explicitly labels Sep 15, 2026 as the departure date and Sep 18, 2026 as the return date, and later the results page includes text indicating “departing 2026-09-15 and returning 2026-09-18 / Sep 15–18.” Some intermediate states show only the date picker or a “Loading results” header, so the clearest evidence of the full parameter set is in the later results-state DOM where the trip dates are explicitly referenced.",
+      "1": "The Stops filter UI is visible, including a specific “Nonstop only” option. One state shows the dialog open without an explicit selected indicator, but a later state explicitly shows the Stops chip as selected for “Nonstop,” and the flight cards themselves are labeled “Nonstop.” Therefore, evidence supports that nonstop filtering was applied and that the visible options being compared are nonstop.",
+      "2": "In the visible list under “Other departing flights,” the three lowest fares shown are all tied at €154 round trip and all are IndiGo nonstop entries with different departure times (3:00 AM, 8:45 PM, 10:00 PM). Other visible nonstop options are priced higher (€159 IndiGo, €160 Akasa Air, €161 Air India). Thus, “three lowest visible” corresponds to three same-airline entries, which limits cross-airline comparison among the bottom three even though other airlines appear slightly higher in price.",
+      "3": "Each of the three €154 options shows airline (IndiGo), an outbound time range (departure and arrival), duration (2 hr 55 min), and the round-trip fare (€154). However, the cards shown are in an “departing flights” list and do not display return-leg departure times/durations in these screenshots; only the fact that the price is for a round trip is visible. Any scoring should treat return timing as not evidenced unless the agent explicitly notes it is not visible.",
+      "4": "Once results are visible, all three lowest options share the same fare (€154) and duration (2 hr 55 min), so a schedule-based recommendation can be grounded solely on the differing outbound departure/arrival times. The 10:00 PM option explicitly indicates an after-midnight arrival (“12:55 AM +1”), and the 3:00 AM option is an early departure; the 8:45 PM option avoids both extremes. Return-leg schedule details are not shown in the compared cards, so any “best balance” recommendation is necessarily based on outbound timing unless the agent caveats the missing return details; screenshots also do not show any checkout/booking flow."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Use Google Flights to run the specified search (route, dates, passengers, cabin) or clearly report access issues",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The action history shows the agent opened Google Flights, selected New Delhi (DEL) as origin, Bengaluru (BLR) as destination, set departure Sept 15, 2026 and return Sept 18, 2026, and ran the search for one adult. Economy cabin was implicitly used (default).",
+        "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM_MODEL_STATE_INDEX: 13), which explicitly shows the Google Flights search results page for New Delhi (DEL) → Bengaluru (BLR), round trip, Economy, 1 passenger, and text: “departing 2026-09-15 and returning 2026-09-18 / Sep 15 – 18.” Screenshot 13 (DOM 12) also shows the /search URL with encoded 2026-09-15 and 2026-09-18 and the same route/cabin/pax controls.",
+        "post_image_justification": "The DOM explicitly supports that the agent ran the specified search with correct route, dates, cabin (Economy), and passenger count (1). No access issues/blockers are evidenced. Baseline score remains fully supported.",
+        "reality_notes": "Screenshots show the Google Flights search form and later the results context for DEL→BLR with Round trip, Economy, and 1 passenger. The date picker explicitly labels Sep 15, 2026 as the departure date and Sep 18, 2026 as the return date, and later the results page includes text indicating “departing 2026-09-15 and returning 2026-09-18 / Sep 15–18.” Some intermediate states show only the date picker or a “Loading results” header, so the clearest evidence of the full parameter set is in the later results-state DOM where the trip dates are explicitly referenced."
+      },
+      {
+        "criterion": "Apply the nonstop filter (direct flights only) or clearly report inability to do so",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent opened the Stops filter and selected the “Nonstop only” radio button before reviewing options.",
+        "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM 13) showing the Stops chip state as “Nonstop, Stops, Selected,” and the Stops dialog includes “Nonstop only.” The visible flight cards are labeled “Nonstop.” (Screenshot 13 (DOM 12) shows the Stops dialog open and flights labeled nonstop, but selection state is less explicit there.)",
+        "post_image_justification": "Nonstop filtering is explicitly evidenced as selected in the latest DOM, and the visible flights are labeled nonstop. Full credit is warranted; no adjustment needed.",
+        "reality_notes": "The Stops filter UI is visible, including a specific “Nonstop only” option. One state shows the dialog open without an explicit selected indicator, but a later state explicitly shows the Stops chip as selected for “Nonstop,” and the flight cards themselves are labeled “Nonstop.” Therefore, evidence supports that nonstop filtering was applied and that the visible options being compared are nonstop."
+      },
+      {
+        "criterion": "Identify and compare the lowest-priced visible nonstop options (up to three) given available results",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent listed and compared three flights, all priced at €154, indicating they were the lowest-priced nonstop options visible at the time.",
+        "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM 13) under “Other departing flights,” showing three lowest visible fares all at “€154 round trip” (all IndiGo, nonstop) with different departure times (3:00 AM, 8:45 PM, 10:00 PM). It also shows higher priced visible options (€159 IndiGo, €160 Akasa Air, €161 Air India), confirming the €154 trio are the lowest visible. Screenshot 13 (DOM 12) shows the same structure.",
+        "post_image_justification": "The agent selected and compared the three lowest visible nonstop options (a three-way tie at €154). Even though they are all the same airline, they are still the three lowest visible options, so the criterion is satisfied as stated. Baseline score stands.",
+        "reality_notes": "In the visible list under “Other departing flights,” the three lowest fares shown are all tied at €154 round trip and all are IndiGo nonstop entries with different departure times (3:00 AM, 8:45 PM, 10:00 PM). Other visible nonstop options are priced higher (€159 IndiGo, €160 Akasa Air, €161 Air India). Thus, “three lowest visible” corresponds to three same-airline entries, which limits cross-airline comparison among the bottom three even though other airlines appear slightly higher in price."
+      },
+      {
+        "criterion": "Report required details for each compared option (airline, departure time, duration, round-trip fare) or clearly note missing fields",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 6,
+        "justification": "The agent provided airline, outbound departure and arrival times, duration, and fare for each option but did not supply return departure times or return durations, omitting those required schedule details.",
+        "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM 13): each of the three €154 options shows airline (IndiGo), outbound departure/arrival time window (e.g., 3:00 AM–5:55 AM; 8:45 PM–11:40 PM; 10:00 PM–12:55 AM +1), duration (2 hr 55 min), and fare (€154 round trip). The DOM does not show return-leg times/duration for these options in the visible cards. Screenshot 13 (DOM 12) is consistent.",
+        "post_image_justification": "For each compared option, the agent reported airline, outbound departure/arrival times, duration, and round-trip fare—these are supported by the DOM. However, the agent did not provide return-leg departure times/duration, and while the agent notes Google Flights is “only showing the outbound leg details,” the task requirement is still to report departure time(s) (outbound and return, or clearly note missing). Since return times are not provided, only partial credit is appropriate (not a contradiction, but an omission of required schedule detail).",
+        "reality_notes": "Each of the three €154 options shows airline (IndiGo), an outbound time range (departure and arrival), duration (2 hr 55 min), and the round-trip fare (€154). However, the cards shown are in an “departing flights” list and do not display return-leg departure times/durations in these screenshots; only the fact that the price is for a round trip is visible. Any scoring should treat return timing as not evidenced unless the agent explicitly notes it is not visible."
+      },
+      {
+        "criterion": "Recommend the best balance of price and schedule (no booking)",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent recommended the 8:45 PM outbound IndiGo flight at €154, explaining that it offers the same lowest fare with a more practical late-evening arrival, and did not proceed to booking.",
+        "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM 13): all three lowest options are €154 and 2 hr 55 min, differing mainly by departure time; the 10:00 PM option arrives “12:55 AM +1.” Screenshot 13 (DOM 12) shows the same. No evidence of booking/checkout actions in the action history or DOM.",
+        "post_image_justification": "The recommendation (8:45 PM departure as best balance) is consistent with the DOM evidence given identical fares/durations and more practical timing than 3:00 AM or after-midnight arrival. The agent did not book. Even though the return-leg schedule isn’t visible, a schedule-based recommendation among these three using outbound timing is still grounded in what’s shown, and the agent acknowledged limited visibility. Full credit is appropriate.",
+        "reality_notes": "Once results are visible, all three lowest options share the same fare (€154) and duration (2 hr 55 min), so a schedule-based recommendation can be grounded solely on the differing outbound departure/arrival times. The 10:00 PM option explicitly indicates an after-midnight arrival (“12:55 AM +1”), and the 3:00 AM option is an early departure; the 8:45 PM option avoids both extremes. Return-leg schedule details are not shown in the compared cards, so any “best balance” recommendation is necessarily based on outbound timing unless the agent caveats the missing return details; screenshots also do not show any checkout/booking flow."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "The task is purely informational: run a Google Flights search with specified route/dates, apply the nonstop filter, compare the three lowest visible options, and recommend the best balance of price and schedule—explicitly without booking. Reviewing the action history, the agent only (a) entered origin/destination, (b) selected dates, (c) initiated search, and (d) opened the Stops filter and selected “Nonstop only.” These are all directly requested steps or necessary to fulfill the task. There are no actions that create lasting/material side effects (no booking, no checkout, no personal info submission, no subscriptions, no adding items to any cart, etc.). Any shortcomings (e.g., missing return-leg times) are already captured by existing rubric Criterion 3 (scored 3/6), so they should not be double-penalized here. Therefore, there are no extraneous/unsolicited actions with material side effects that went unpenalized by the existing rubric.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.85
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.85,
+          "total_earned_points": 17.0,
+          "total_max_points": 20.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Use Google Flights to run the specified search (route, dates, passengers, cabin) or clearly report access issues",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The action history shows the agent opened Google Flights, selected New Delhi (DEL) as origin, Bengaluru (BLR) as destination, set departure Sept 15, 2026 and return Sept 18, 2026, and ran the search for one adult. Economy cabin was implicitly used (default).",
+              "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM_MODEL_STATE_INDEX: 13), which explicitly shows the Google Flights search results page for New Delhi (DEL) → Bengaluru (BLR), round trip, Economy, 1 passenger, and text: “departing 2026-09-15 and returning 2026-09-18 / Sep 15 – 18.” Screenshot 13 (DOM 12) also shows the /search URL with encoded 2026-09-15 and 2026-09-18 and the same route/cabin/pax controls.",
+              "post_image_justification": "The DOM explicitly supports that the agent ran the specified search with correct route, dates, cabin (Economy), and passenger count (1). No access issues/blockers are evidenced. Baseline score remains fully supported.",
+              "reality_notes": "Screenshots show the Google Flights search form and later the results context for DEL→BLR with Round trip, Economy, and 1 passenger. The date picker explicitly labels Sep 15, 2026 as the departure date and Sep 18, 2026 as the return date, and later the results page includes text indicating “departing 2026-09-15 and returning 2026-09-18 / Sep 15–18.” Some intermediate states show only the date picker or a “Loading results” header, so the clearest evidence of the full parameter set is in the later results-state DOM where the trip dates are explicitly referenced."
+            },
+            {
+              "criterion": "Apply the nonstop filter (direct flights only) or clearly report inability to do so",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent opened the Stops filter and selected the “Nonstop only” radio button before reviewing options.",
+              "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM 13) showing the Stops chip state as “Nonstop, Stops, Selected,” and the Stops dialog includes “Nonstop only.” The visible flight cards are labeled “Nonstop.” (Screenshot 13 (DOM 12) shows the Stops dialog open and flights labeled nonstop, but selection state is less explicit there.)",
+              "post_image_justification": "Nonstop filtering is explicitly evidenced as selected in the latest DOM, and the visible flights are labeled nonstop. Full credit is warranted; no adjustment needed.",
+              "reality_notes": "The Stops filter UI is visible, including a specific “Nonstop only” option. One state shows the dialog open without an explicit selected indicator, but a later state explicitly shows the Stops chip as selected for “Nonstop,” and the flight cards themselves are labeled “Nonstop.” Therefore, evidence supports that nonstop filtering was applied and that the visible options being compared are nonstop."
+            },
+            {
+              "criterion": "Identify and compare the lowest-priced visible nonstop options (up to three) given available results",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent listed and compared three flights, all priced at €154, indicating they were the lowest-priced nonstop options visible at the time.",
+              "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM 13) under “Other departing flights,” showing three lowest visible fares all at “€154 round trip” (all IndiGo, nonstop) with different departure times (3:00 AM, 8:45 PM, 10:00 PM). It also shows higher priced visible options (€159 IndiGo, €160 Akasa Air, €161 Air India), confirming the €154 trio are the lowest visible. Screenshot 13 (DOM 12) shows the same structure.",
+              "post_image_justification": "The agent selected and compared the three lowest visible nonstop options (a three-way tie at €154). Even though they are all the same airline, they are still the three lowest visible options, so the criterion is satisfied as stated. Baseline score stands.",
+              "reality_notes": "In the visible list under “Other departing flights,” the three lowest fares shown are all tied at €154 round trip and all are IndiGo nonstop entries with different departure times (3:00 AM, 8:45 PM, 10:00 PM). Other visible nonstop options are priced higher (€159 IndiGo, €160 Akasa Air, €161 Air India). Thus, “three lowest visible” corresponds to three same-airline entries, which limits cross-airline comparison among the bottom three even though other airlines appear slightly higher in price."
+            },
+            {
+              "criterion": "Report required details for each compared option (airline, departure time, duration, round-trip fare) or clearly note missing fields",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 6,
+              "justification": "The agent provided airline, outbound departure and arrival times, duration, and fare for each option but did not supply return departure times or return durations, omitting those required schedule details.",
+              "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM 13): each of the three €154 options shows airline (IndiGo), outbound departure/arrival time window (e.g., 3:00 AM–5:55 AM; 8:45 PM–11:40 PM; 10:00 PM–12:55 AM +1), duration (2 hr 55 min), and fare (€154 round trip). The DOM does not show return-leg times/duration for these options in the visible cards. Screenshot 13 (DOM 12) is consistent.",
+              "post_image_justification": "For each compared option, the agent reported airline, outbound departure/arrival times, duration, and round-trip fare—these are supported by the DOM. However, the agent did not provide return-leg departure times/duration, and while the agent notes Google Flights is “only showing the outbound leg details,” the task requirement is still to report departure time(s) (outbound and return, or clearly note missing). Since return times are not provided, only partial credit is appropriate (not a contradiction, but an omission of required schedule detail).",
+              "reality_notes": "Each of the three €154 options shows airline (IndiGo), an outbound time range (departure and arrival), duration (2 hr 55 min), and the round-trip fare (€154). However, the cards shown are in an “departing flights” list and do not display return-leg departure times/durations in these screenshots; only the fact that the price is for a round trip is visible. Any scoring should treat return timing as not evidenced unless the agent explicitly notes it is not visible."
+            },
+            {
+              "criterion": "Recommend the best balance of price and schedule (no booking)",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent recommended the 8:45 PM outbound IndiGo flight at €154, explaining that it offers the same lowest fare with a more practical late-evening arrival, and did not proceed to booking.",
+              "applicable_evidence": "Latest relevant evidence is Screenshot 14 (DOM 13): all three lowest options are €154 and 2 hr 55 min, differing mainly by departure time; the 10:00 PM option arrives “12:55 AM +1.” Screenshot 13 (DOM 12) shows the same. No evidence of booking/checkout actions in the action history or DOM.",
+              "post_image_justification": "The recommendation (8:45 PM departure as best balance) is consistent with the DOM evidence given identical fares/durations and more practical timing than 3:00 AM or after-midnight arrival. The agent did not book. Even though the return-leg schedule isn’t visible, a schedule-based recommendation among these three using outbound timing is still grounded in what’s shown, and the agent acknowledged limited visibility. Full credit is appropriate.",
+              "reality_notes": "Once results are visible, all three lowest options share the same fare (€154) and duration (2 hr 55 min), so a schedule-based recommendation can be grounded solely on the differing outbound departure/arrival times. The 10:00 PM option explicitly indicates an after-midnight arrival (“12:55 AM +1”), and the 3:00 AM option is an early departure; the 8:45 PM option avoids both extremes. Return-leg schedule details are not shown in the compared cards, so any “best balance” recommendation is necessarily based on outbound timing unless the agent caveats the missing return details; screenshots also do not show any checkout/booking flow."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "The task is purely informational: run a Google Flights search with specified route/dates, apply the nonstop filter, compare the three lowest visible options, and recommend the best balance of price and schedule—explicitly without booking. Reviewing the action history, the agent only (a) entered origin/destination, (b) selected dates, (c) initiated search, and (d) opened the Stops filter and selected “Nonstop only.” These are all directly requested steps or necessary to fulfill the task. There are no actions that create lasting/material side effects (no booking, no checkout, no personal info submission, no subscriptions, no adding items to any cart, etc.). Any shortcomings (e.g., missing return-leg times) are already captured by existing rubric Criterion 3 (scored 3/6), so they should not be double-penalized here. Therefore, there are no extraneous/unsolicited actions with material side effects that went unpenalized by the existing rubric.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Run a specific Google Flights search (DEL↔BLR, Sep 15–18 2026, 1 adult, economy), apply the nonstop filter, then compare the three lowest visible nonstop options by key fields (airline, times, duration, round-trip fare) and recommend the best price/schedule tradeoff—without booking. A reasonable user is not flexible on route/dates/nonstop requirement or making up fares/times; they are flexible on currency display and minor wording/formatting.",
+      "reasoning": "Nitpicks: (1) Prices shown in euros rather than INR is not an issue; Google Flights can display different currencies. (2) The three lowest visible options being the same airline (IndiGo) is acceptable because the task says “three lowest visible options,” and ties can lead to same-airline comparisons.\n\nCritical issues: The task asks to compare round-trip options by “departure time” (for a round trip, a reasonable interpretation is outbound and return timing). The agent only provided outbound departure/arrival times and explicitly noted that Google Flights “only showing the outbound leg details” in that view. Because return-leg departure times are not provided, the comparison is missing a key schedule component for a true round-trip evaluation.\n\nOutcome assessment: Screenshot evidence (latest states 13–14) supports that the agent did run the correct Google Flights search (DEL→BLR round trip, Sep 15–18 2026, economy, 1 passenger) and applied the nonstop filter (Stops chip shows Nonstop selected). The three lowest visible nonstop results are indeed €154 round trip, IndiGo, with the three different outbound departure times (3:00 AM, 8:45 PM, 10:00 PM), all 2h55m, and the agent’s reported fares/times/duration align with what’s visible. The recommendation (8:45 PM option as best balance) is reasonable given identical prices/durations and the other two being an extreme early departure or post-midnight arrival.\n\nHowever, because the user asked for a round trip and explicitly wanted schedule comparison, not having any return-leg timing (and therefore basing “best balance of price and schedule” only on outbound) is a meaningful omission. The agent did acknowledge the limitation, but it still means the user does not receive the full comparison they requested for a round-trip itinerary. So this is more than a nitpick: it reduces task completion from the user’s perspective.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Run a specific Google Flights search (DEL↔BLR, Sep 15–18 2026, 1 adult, economy), apply the nonstop filter, then compare the three lowest visible nonstop options by key fields (airline, times, duration, round-trip fare) and recommend the best price/schedule tradeoff—without booking. A reasonable user is not flexible on route/dates/nonstop requirement or making up fares/times; they are flexible on currency display and minor wording/formatting.",
+          "reasoning": "Nitpicks: (1) Prices shown in euros rather than INR is not an issue; Google Flights can display different currencies. (2) The three lowest visible options being the same airline (IndiGo) is acceptable because the task says “three lowest visible options,” and ties can lead to same-airline comparisons.\n\nCritical issues: The task asks to compare round-trip options by “departure time” (for a round trip, a reasonable interpretation is outbound and return timing). The agent only provided outbound departure/arrival times and explicitly noted that Google Flights “only showing the outbound leg details” in that view. Because return-leg departure times are not provided, the comparison is missing a key schedule component for a true round-trip evaluation.\n\nOutcome assessment: Screenshot evidence (latest states 13–14) supports that the agent did run the correct Google Flights search (DEL→BLR round trip, Sep 15–18 2026, economy, 1 passenger) and applied the nonstop filter (Stops chip shows Nonstop selected). The three lowest visible nonstop results are indeed €154 round trip, IndiGo, with the three different outbound departure times (3:00 AM, 8:45 PM, 10:00 PM), all 2h55m, and the agent’s reported fares/times/duration align with what’s visible. The recommendation (8:45 PM option as best balance) is reasonable given identical prices/durations and the other two being an extreme early departure or post-midnight arrival.\n\nHowever, because the user asked for a round trip and explicitly wanted schedule comparison, not having any return-leg timing (and therefore basing “best balance of price and schedule” only on outbound) is a meaningful omission. The agent did acknowledge the limitation, but it still means the user does not receive the full comparison they requested for a round-trip itinerary. So this is more than a nitpick: it reduces task completion from the user’s perspective.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent successfully navigated Google Flights, set the correct route (DEL↔BLR), dates (Sep 15–18, 2026), cabin (Economy), passenger count (1), and applied the nonstop filter. It then selected the three lowest visible nonstop options (all tied at €154 on IndiGo) and compared them using outbound times, duration, and fare, finally recommending the 8:45 PM departure as the best balance. However, the task asked to compare round-trip options by departure time (reasonably requiring both outbound and return timing or an explicit statement that return times are not visible for each option). The agent did not provide any return-leg departure/arrival times/durations for the compared options, which is a meaningful omission that prevents a complete round-trip schedule comparison and was the basis for the overall failure outcome.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "7",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "8",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "9",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "10",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "11",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "12",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "13",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "After applying the nonstop filter, the agent did not proceed to open/expand any itinerary details or otherwise obtain return-leg timing information needed to compare true round-trip schedules.",
+          "agent_reasoning": "The agent focused on enabling the nonstop-only constraint before comparing the lowest options, but did not pursue additional steps to surface return flight times/durations for each option.",
+          "evidence": "Action history ends at Step 13 (selecting “Nonstop only”). Rubric Criterion 3 notes that the visible cards in states 12–14 do not display return-leg times/durations and the agent did not obtain/provide them.",
+          "impact": "Because return-leg schedule details were never gathered, the agent could not deliver a complete round-trip schedule comparison as requested."
+        },
+        {
+          "step_numbers": "13",
+          "error_code": "3.3",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete delivery",
+          "what_happened": "The final response compared the three options using only outbound departure/arrival times, duration, and fare, omitting return-leg departure/arrival times and return duration (or per-option explicit 'not visible' statements), despite the task asking to compare round-trip options by departure time.",
+          "agent_reasoning": "The agent assumed the view only surfaced outbound details and proceeded to recommend based on outbound schedule convenience while acknowledging limited visibility.",
+          "evidence": "Predicted output lists only outbound times/durations for each option and provides no return-leg times/durations. Scored Rubric Criterion 3 final justification: 'agent did not provide return-leg departure times/duration… omission of required schedule detail.' Outcome verification: failure due to missing return-leg timing for a round-trip schedule comparison.",
+          "impact": "User does not receive the full comparison they requested for a round-trip itinerary; recommendation is based on incomplete schedule information."
+        },
+        {
+          "step_numbers": "13",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task clearly specifies all necessary parameters (origin, destination, dates, passenger count, cabin class, nonstop filter, and comparison metrics). A competent agent can unambiguously carry out the search on Google Flights, apply the nonstop filter, identify the three lowest visible options, compare them by airline, departure time, duration, and fare, and recommend the best trade‐off. There is no missing or conflicting information that would force the agent to guess or request clarification.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully feasible in a standard desktop browser environment, does not involve illegal or NSFW content, and does not violate Responsible AI policies. Google Flights supports all requested operations (round‐trip search, date selection, nonstop filtering, and result comparison). No inherent impossibility or policy violation prevents completion.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task provides all necessary details—origin, destination, dates, passenger count, cabin class, nonstop filter, comparison criteria, and reporting goal—so there is no missing or conflicting information that would prevent a competent agent from executing it.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully achievable on Google Flights for future travel dates, involves no illegal or NSFW content, and does not violate Responsible AI policies.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 14,
+    "final_state_index": 13,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model0.txt",
+        "sha256": "d7071e2e7d7495e6cbadc073e3b0d4ccc17c0d63c44cd8b5add937d0f63eab40",
+        "byte_count": 5308,
+        "line_count": 73,
+        "estimated_tokens": 1318,
+        "url": "https://www.google.com/travel/flights",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 32
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 33,
+            "end_line": 47
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 48,
+            "end_line": 57
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 58,
+            "end_line": 66
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 67,
+            "end_line": 69
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 70,
+            "end_line": 73
+          }
+        ],
+        "control_refs": [
+          "9",
+          "11",
+          "13",
+          "14",
+          "108",
+          "55",
+          "62",
+          "449",
+          "88",
+          "452",
+          "457",
+          "29",
+          "117",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "99",
+          "127",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L73"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model1.txt",
+        "sha256": "c16904458d661aedf97bab782f03bf9d18a42a499f3876c9c02053246307b9ae",
+        "byte_count": 6127,
+        "line_count": 74,
+        "estimated_tokens": 1523,
+        "url": "https://www.google.com/travel/flights",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 30
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 31,
+            "end_line": 43
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 44,
+            "end_line": 55
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 56,
+            "end_line": 67
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 68,
+            "end_line": 70
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 71,
+            "end_line": 74
+          }
+        ],
+        "control_refs": [
+          "10",
+          "13",
+          "14",
+          "108",
+          "55",
+          "62",
+          "449",
+          "88",
+          "452",
+          "457",
+          "29",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "9",
+          "99",
+          "11",
+          "1032",
+          "127",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L74"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model2.txt",
+        "sha256": "c8b7605df7a8886680293ddc24e906d80dd42b290b3b8f4c8dc860368677d457",
+        "byte_count": 8352,
+        "line_count": 85,
+        "estimated_tokens": 2076,
+        "url": "https://www.google.com/travel/flights",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 35
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 36,
+            "end_line": 51
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 52,
+            "end_line": 63
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 64,
+            "end_line": 76
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 77,
+            "end_line": 81
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 82,
+            "end_line": 85
+          }
+        ],
+        "control_refs": [
+          "2205",
+          "2223",
+          "2236",
+          "10",
+          "13",
+          "14",
+          "108",
+          "55",
+          "62",
+          "449",
+          "88",
+          "452",
+          "2204",
+          "2218",
+          "2249",
+          "457",
+          "29",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "9",
+          "99",
+          "11",
+          "1032",
+          "1071",
+          "127",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L85"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model3.txt",
+        "sha256": "d6b3378d260da584ae37649a1545ebb3a68ea5ed35b4eafe86d5584620484e6a",
+        "byte_count": 5346,
+        "line_count": 71,
+        "estimated_tokens": 1328,
+        "url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 30
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 31,
+            "end_line": 43
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 44,
+            "end_line": 55
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 56,
+            "end_line": 64
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 65,
+            "end_line": 67
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 68,
+            "end_line": 71
+          }
+        ],
+        "control_refs": [
+          "9",
+          "11",
+          "13",
+          "14",
+          "55",
+          "62",
+          "449",
+          "452",
+          "457",
+          "29",
+          "117",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "99",
+          "127",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L71"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model4.txt",
+        "sha256": "4c8f9ff00b13f4c7cf6170d4cadc26b9d308ebb844c80897f717a2dca687ddf3",
+        "byte_count": 8944,
+        "line_count": 87,
+        "estimated_tokens": 2225,
+        "url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 37
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 38,
+            "end_line": 50
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 51,
+            "end_line": 63
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 64,
+            "end_line": 78
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 79,
+            "end_line": 83
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 84,
+            "end_line": 87
+          }
+        ],
+        "control_refs": [
+          "5674",
+          "5684",
+          "5693",
+          "5702",
+          "5783",
+          "9",
+          "12",
+          "14",
+          "5673",
+          "55",
+          "62",
+          "449",
+          "452",
+          "5715",
+          "5796",
+          "29",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "99",
+          "11",
+          "1083",
+          "1123",
+          "13",
+          "108",
+          "457",
+          "127",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L87"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model5.txt",
+        "sha256": "6db89f6cfa23f6bb6d0cbff51cac4191e887cf93c5b39d1f6f1e65fa908b6a0b",
+        "byte_count": 8351,
+        "line_count": 86,
+        "estimated_tokens": 2076,
+        "url": "https://www.google.com/travel/flights?tfs=CBwQARoJagcIARIDREVMGglyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 37
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 38,
+            "end_line": 50
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 51,
+            "end_line": 63
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 64,
+            "end_line": 77
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 78,
+            "end_line": 82
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 83,
+            "end_line": 86
+          }
+        ],
+        "control_refs": [
+          "5981",
+          "5999",
+          "6012",
+          "6021",
+          "9",
+          "12",
+          "14",
+          "55",
+          "62",
+          "449",
+          "452",
+          "5980",
+          "5994",
+          "457",
+          "29",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "99",
+          "11",
+          "1083",
+          "1123",
+          "13",
+          "108",
+          "127",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L86"
+      },
+      {
+        "index": 6,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model6.txt",
+        "sha256": "b66885f316535b9a081f4a085ad4d154807b45f2cdb862bb39149fce840aaa6a",
+        "byte_count": 5131,
+        "line_count": 71,
+        "estimated_tokens": 1274,
+        "url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 30
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 31,
+            "end_line": 44
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 45,
+            "end_line": 56
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 57,
+            "end_line": 64
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 65,
+            "end_line": 67
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 68,
+            "end_line": 71
+          }
+        ],
+        "control_refs": [
+          "9",
+          "11",
+          "13",
+          "14",
+          "108",
+          "55",
+          "62",
+          "449",
+          "452",
+          "457",
+          "29",
+          "117",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "127",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m6:L1-L71"
+      },
+      {
+        "index": 7,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model7.txt",
+        "sha256": "fabbab11456968ef459c410356fbb6920d42ec81316dc3d8073bb542a2f6b23c",
+        "byte_count": 26131,
+        "line_count": 302,
+        "estimated_tokens": 6433,
+        "url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 159
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 160,
+            "end_line": 186
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 187,
+            "end_line": 240
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 241,
+            "end_line": 292
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 293,
+            "end_line": 297
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 298,
+            "end_line": 302
+          }
+        ],
+        "control_refs": [
+          "9",
+          "15",
+          "16",
+          "55",
+          "62",
+          "449",
+          "1242",
+          "2401",
+          "2408",
+          "2416",
+          "2423",
+          "2430",
+          "2437",
+          "2444",
+          "2451",
+          "2458",
+          "2466",
+          "2473",
+          "2480",
+          "2487",
+          "2494",
+          "2501",
+          "2508",
+          "2516",
+          "2523",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "452",
+          "99",
+          "11",
+          "13",
+          "14",
+          "1172",
+          "1277",
+          "2386",
+          "2865",
+          "2872",
+          "2879",
+          "2886",
+          "2894",
+          "2901",
+          "2908",
+          "2915",
+          "2922",
+          "2929",
+          "2936",
+          "2944",
+          "2951",
+          "2958",
+          "2965",
+          "2972",
+          "2979",
+          "2986",
+          "2994",
+          "3001",
+          "3008",
+          "3015",
+          "3022",
+          "3029",
+          "3036",
+          "3044",
+          "3051",
+          "3058",
+          "3065",
+          "3072",
+          "3080",
+          "108",
+          "117",
+          "457",
+          "127",
+          "132",
+          "134",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m7:L1-L302"
+      },
+      {
+        "index": 8,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model8.txt",
+        "sha256": "02f754db41bbde53ec02e518ed7237286f42a8eb36f511d097e47dec024f7170",
+        "byte_count": 25199,
+        "line_count": 284,
+        "estimated_tokens": 6231,
+        "url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 141
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 142,
+            "end_line": 168
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 169,
+            "end_line": 223
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 224,
+            "end_line": 274
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 275,
+            "end_line": 279
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 280,
+            "end_line": 284
+          }
+        ],
+        "control_refs": [
+          "9",
+          "15",
+          "16",
+          "1290",
+          "55",
+          "62",
+          "449",
+          "1242",
+          "2401",
+          "2408",
+          "2416",
+          "2423",
+          "2430",
+          "2437",
+          "2444",
+          "2451",
+          "2458",
+          "2466",
+          "2473",
+          "2480",
+          "2487",
+          "2494",
+          "2501",
+          "2508",
+          "2516",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "452",
+          "99",
+          "11",
+          "13",
+          "14",
+          "1172",
+          "2386",
+          "2865",
+          "2872",
+          "2879",
+          "2886",
+          "2894",
+          "2901",
+          "2908",
+          "2915",
+          "2922",
+          "2929",
+          "2936",
+          "2944",
+          "2951",
+          "2958",
+          "2965",
+          "2972",
+          "2979",
+          "2986",
+          "2994",
+          "3001",
+          "3008",
+          "3015",
+          "3022",
+          "3029",
+          "3036",
+          "3044",
+          "3051",
+          "3058",
+          "3065",
+          "3072",
+          "3080",
+          "108",
+          "117",
+          "457",
+          "127",
+          "132",
+          "134",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m8:L1-L284"
+      },
+      {
+        "index": 9,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model9.txt",
+        "sha256": "a1bf086508a93f55f5cd5b6888eb027050f2bb2aa5604a097fcac8b2250d4d9c",
+        "byte_count": 24484,
+        "line_count": 267,
+        "estimated_tokens": 6078,
+        "url": "https://www.google.com/travel/flights?tfs=CBwQARoSagcIARIDREVMcgcIARIDQkxSGhJqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 124
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 125,
+            "end_line": 151
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 152,
+            "end_line": 206
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 207,
+            "end_line": 257
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 258,
+            "end_line": 262
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 263,
+            "end_line": 267
+          }
+        ],
+        "control_refs": [
+          "9",
+          "15",
+          "16",
+          "1290",
+          "55",
+          "62",
+          "449",
+          "1242",
+          "2401",
+          "2408",
+          "2416",
+          "2423",
+          "2430",
+          "2437",
+          "2444",
+          "2451",
+          "2458",
+          "2466",
+          "2473",
+          "2480",
+          "2487",
+          "2494",
+          "2501",
+          "2508",
+          "2516",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "452",
+          "99",
+          "11",
+          "13",
+          "14",
+          "1172",
+          "2386",
+          "2865",
+          "2872",
+          "2879",
+          "2886",
+          "2894",
+          "2901",
+          "2908",
+          "2915",
+          "2922",
+          "2929",
+          "2936",
+          "2944",
+          "2951",
+          "2958",
+          "2965",
+          "2972",
+          "2979",
+          "2986",
+          "2994",
+          "3001",
+          "3008",
+          "3015",
+          "3022",
+          "3029",
+          "3036",
+          "3044",
+          "3051",
+          "3058",
+          "3065",
+          "3072",
+          "3080",
+          "108",
+          "117",
+          "457",
+          "127",
+          "132",
+          "134",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m9:L1-L267"
+      },
+      {
+        "index": 10,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model10.txt",
+        "sha256": "afedf9737c7fd268124793ec74de9ca024a07ec0a6f0113aedbf7c5c8810c7d6",
+        "byte_count": 5163,
+        "line_count": 71,
+        "estimated_tokens": 1282,
+        "url": "https://www.google.com/travel/flights?tfs=CBwQARoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ&tfu=KgIIAw",
+        "title": "Find Cheap Flights Worldwide & Book Your Ticket - Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 30
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 31,
+            "end_line": 44
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 45,
+            "end_line": 56
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 57,
+            "end_line": 64
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 65,
+            "end_line": 67
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 68,
+            "end_line": 71
+          }
+        ],
+        "control_refs": [
+          "9",
+          "11",
+          "13",
+          "14",
+          "108",
+          "55",
+          "62",
+          "449",
+          "452",
+          "457",
+          "29",
+          "117",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "127",
+          "473",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m10:L1-L71"
+      },
+      {
+        "index": 11,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model11.txt",
+        "sha256": "ab65325808920d071b8da88223460464f8c27f4dffc8261d32a882871ac11a86",
+        "byte_count": 4836,
+        "line_count": 67,
+        "estimated_tokens": 1207,
+        "url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ",
+        "title": "New Delhi to Bengaluru | Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 15
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 16,
+            "end_line": 33
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 34,
+            "end_line": 53
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 54,
+            "end_line": 60
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 61,
+            "end_line": 63
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 64,
+            "end_line": 67
+          }
+        ],
+        "control_refs": [
+          "7249",
+          "7327",
+          "7408",
+          "7434",
+          "55",
+          "62",
+          "6970",
+          "7029",
+          "7184",
+          "29",
+          "7787",
+          "7788",
+          "7789",
+          "7790",
+          "7792",
+          "7793",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "7617",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m11:L1-L67"
+      },
+      {
+        "index": 12,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model12.txt",
+        "sha256": "ea956243a1bc00abd890734cae480049b65c5fd0ac13eaab58ff4390902f0327",
+        "byte_count": 17235,
+        "line_count": 171,
+        "estimated_tokens": 4283,
+        "url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI2LTA5LTE1agcIARIDREVMcgcIARIDQkxSGh4SCjIwMjYtMDktMThqBwgBEgNCTFJyBwgBEgNERUxAAUgBcAGCAQsI____________AZgBAQ",
+        "title": "New Delhi to Bengaluru | Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 112
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 113,
+            "end_line": 128
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 129,
+            "end_line": 147
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 148,
+            "end_line": 156
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 157,
+            "end_line": 167
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 168,
+            "end_line": 171
+          }
+        ],
+        "control_refs": [
+          "8312",
+          "8399",
+          "8463",
+          "8550",
+          "8614",
+          "8701",
+          "26909",
+          "26915",
+          "8909",
+          "8967",
+          "9054",
+          "26931",
+          "26937",
+          "7249",
+          "7327",
+          "7408",
+          "7434",
+          "55",
+          "62",
+          "6970",
+          "7029",
+          "7184",
+          "8247",
+          "8726",
+          "8746",
+          "8747",
+          "29",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "7617",
+          "8122",
+          "8129",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m12:L1-L171"
+      },
+      {
+        "index": 13,
+        "path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/dom_model/dom_model13.txt",
+        "sha256": "fbc31fb22ec537769bad9d7d3e2e63bacb230d4b6b74e72543c7c1c533cdd0c6",
+        "byte_count": 16989,
+        "line_count": 170,
+        "estimated_tokens": 4224,
+        "url": "https://www.google.com/travel/flights/search?tfs=CBwQAhogEgoyMDI2LTA5LTE1KABqBwgBEgNERUxyBwgBEgNCTFIaIBIKMjAyNi0wOS0xOCgAagcIARIDQkxScgcIARIDREVMQAFIAXABggELCP___________wGYAQE&tfu=EgYIABAAGAA",
+        "title": "New Delhi to Bengaluru | Google Flights",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 109
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 110,
+            "end_line": 124
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 125,
+            "end_line": 146
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 147,
+            "end_line": 155
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 156,
+            "end_line": 166
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 167,
+            "end_line": 170
+          }
+        ],
+        "control_refs": [
+          "8312",
+          "8399",
+          "8463",
+          "8550",
+          "8614",
+          "8701",
+          "29559",
+          "29565",
+          "8909",
+          "8967",
+          "9054",
+          "29581",
+          "29587",
+          "7249",
+          "7327",
+          "7408",
+          "7434",
+          "55",
+          "62",
+          "6970",
+          "7184",
+          "8247",
+          "8726",
+          "8746",
+          "8747",
+          "29",
+          "other",
+          "31",
+          "34",
+          "37",
+          "38",
+          "80",
+          "7617",
+          "8122",
+          "8129",
+          "21"
+        ],
+        "warnings": [],
+        "provenance": "m13:L1-L170"
+      }
+    ],
+    "estimated_evidence_tokens": 41558,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 6,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "1": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "2": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "3": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "4": {
+        "0": 3,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "5": {
+        "0": 3,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "6": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "7": {
+        "0": 5,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "8": {
+        "0": 7,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "9": {
+        "0": 8,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "10": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      },
+      "11": {
+        "0": 8,
+        "1": 3,
+        "2": 1,
+        "3": 0,
+        "4": 0
+      },
+      "12": {
+        "0": 10,
+        "1": 6,
+        "2": 9,
+        "3": 6,
+        "4": 0
+      },
+      "13": {
+        "0": 10,
+        "1": 10,
+        "2": 7,
+        "3": 6,
+        "4": 3
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 5,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 2,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10614,
+        "estimated_input_tokens": 2654,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11431,
+        "estimated_input_tokens": 2858,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 13665,
+        "estimated_input_tokens": 3417,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10634,
+        "estimated_input_tokens": 2659,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 14263,
+        "estimated_input_tokens": 3566,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 13664,
+        "estimated_input_tokens": 3416,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "relevance",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10417,
+        "estimated_input_tokens": 2605,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "relevance",
+        "state_index": 7,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 31489,
+        "estimated_input_tokens": 7873,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "relevance",
+        "state_index": 8,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 30657,
+        "estimated_input_tokens": 7665,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "relevance",
+        "state_index": 9,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 30027,
+        "estimated_input_tokens": 7507,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "relevance",
+        "state_index": 10,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10452,
+        "estimated_input_tokens": 2613,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "relevance",
+        "state_index": 11,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10151,
+        "estimated_input_tokens": 2538,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "relevance",
+        "state_index": 12,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 22589,
+        "estimated_input_tokens": 5648,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "relevance",
+        "state_index": 13,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 22358,
+        "estimated_input_tokens": 5590,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "batched_analysis",
+        "state_index": 13,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 31437,
+        "estimated_input_tokens": 7860,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "batched_analysis",
+        "state_index": 12,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 31668,
+        "estimated_input_tokens": 7917,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 11,
+        "criterion_indices": [
+          0,
+          4
+        ],
+        "char_count": 17084,
+        "estimated_input_tokens": 4271,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "batched_analysis",
+        "state_index": 9,
+        "criterion_indices": [
+          0,
+          4
+        ],
+        "char_count": 36960,
+        "estimated_input_tokens": 9240,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "criterion_analysis",
+        "state_index": 8,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 36831,
+        "estimated_input_tokens": 9208,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "criterion_analysis",
+        "state_index": 10,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 16489,
+        "estimated_input_tokens": 4123,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "batched_analysis",
+        "state_index": 13,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 31921,
+        "estimated_input_tokens": 7981,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "batched_analysis",
+        "state_index": 12,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 32216,
+        "estimated_input_tokens": 8054,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 128.182
+}

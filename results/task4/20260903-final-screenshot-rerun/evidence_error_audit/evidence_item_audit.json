@@ -1,0 +1,273 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "viewport-modern-4-nasa-mission-lookup-20260829T074852Z",
+  "run_id": "20260903-final-screenshot-rerun",
+  "rubric_sha256": "0f9dc5356a1403cc2467a32f218430edb430748c64ba1e9f1948b7a8ea05a6a8",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use NASA’s website as the source of truth (no sign-in/registration)",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 3.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C0-E1",
+          "evidence_requirement": "NASA-controlled pages are used without sign-in or registration",
+          "expected_value": "NASA.gov Artemis pages; unauthenticated browsing",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "Artemis II",
+                "locator": "NASA-branded final mission page with no authentication UI"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 1 and Screenshot 2 both show nasa.gov pages with NASA branding (NASA logo and standard nav). Neither screenshot shows any sign-in/login wall or registration/updates prompt being used. Action history URLs are on nasa.gov (Artemis overview and Artemis II mission page). Latest is Screenshot 2 (Artemis II page), also with no sign-in/registration.",
+            "review_note": "Official NASA source and unauthenticated browsing were correctly recovered."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model2.txt",
+                "line_range": "m2:L1-L2",
+                "quoted_text": "https://www.nasa.gov/mission/artemis-ii/"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot/DOM state index 2 (LATEST) shows the agent on https://www.nasa.gov/mission/artemis-ii/ (NASA-controlled domain) with mission content visible. No sign-in, registration, or update-registration flow/modal is shown in this DOM snapshot. Earlier states (0,1) also remain on nasa.gov, but state 2 is the strongest/most direct evidence for sourcing mission facts from NASA without authentication.",
+            "review_note": "Official NASA source and unauthenticated browsing were correctly recovered."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Identify the next planned Artemis mission and report required mission details",
+      "max_points": 13,
+      "screenshot_final_points": 4.0,
+      "dom_model_final_points": 10.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C1-E1",
+          "evidence_requirement": "Mission name shown on the mission page",
+          "expected_value": "Artemis II",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "Artemis II",
+                "locator": "large mission heading"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) shows the Artemis II mission page with: mission name 'Artemis II', mission type 'Crewed Lunar Flyby', and descriptive text about being the first crewed Artemis flight. It also shows 'LAUNCHED — April 1, 2026' and 'SPLASHDOWN — April 10, 2026' plus 'OCCURRED 5 MONTHS AGO', indicating Artemis II is presented as already completed, not upcoming/planned. Screenshot 1 is only the Artemis program page and does not show 'next planned mission' details.",
+            "review_note": "The corrected screenshot pipeline passed the final state and the verifier recovered the heading."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model2.txt",
+                "line_range": "m2:L27-L29",
+                "quoted_text": "Artemis II"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot/DOM state index 2 (LATEST) explicitly shows: mission name 'Artemis II'; 'Mission Type' = 'Crewed Lunar Flyby'; 'LaunchED' = 'April 1, 2026' (year 2026 visible); and description text: 'The first crewed Artemis flight marks a key step toward long‑term return to the Moon and future missions to Mars.' Screenshot/DOM state index 1 shows Artemis mission navigation (Artemis I/II/III/IV) but does not label which is 'next planned.' No screenshot explicitly states Artemis II is the 'next planned Artemis mission.'",
+            "review_note": "The mission heading was recovered."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        },
+        {
+          "evidence_id": "C1-E2",
+          "evidence_requirement": "Mission status needed to determine whether Artemis II is upcoming",
+          "expected_value": "Occurred 5 months ago",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "OCCURRED 5 MONTHS AGO",
+                "locator": "status line below the Artemis II heading"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) shows the Artemis II mission page with: mission name 'Artemis II', mission type 'Crewed Lunar Flyby', and descriptive text about being the first crewed Artemis flight. It also shows 'LAUNCHED — April 1, 2026' and 'SPLASHDOWN — April 10, 2026' plus 'OCCURRED 5 MONTHS AGO', indicating Artemis II is presented as already completed, not upcoming/planned. Screenshot 1 is only the Artemis program page and does not show 'next planned mission' details.",
+            "review_note": "The screenshot verifier explicitly used the completed-status contradiction and reduced the score."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model2.txt",
+                "line_range": "m2:L27-L29",
+                "quoted_text": "Occurred 5 months ago"
+              }
+            ],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Screenshot/DOM state index 2 (LATEST) explicitly shows: mission name 'Artemis II'; 'Mission Type' = 'Crewed Lunar Flyby'; 'LaunchED' = 'April 1, 2026' (year 2026 visible); and description text: 'The first crewed Artemis flight marks a key step toward long‑term return to the Moon and future missions to Mars.' Screenshot/DOM state index 1 shows Artemis mission navigation (Artemis I/II/III/IV) but does not label which is 'next planned.' No screenshot explicitly states Artemis II is the 'next planned Artemis mission.'",
+            "review_note": "The DOM source contains the status, but the evidence analysis and rescoring summary omitted it and the outcome stage incorrectly described Artemis II as a future planned mission."
+          },
+          "classification": "DOM_MISSED_SCREENSHOT_CAUGHT",
+          "advantage": "SCREENSHOT"
+        },
+        {
+          "evidence_id": "C1-E3",
+          "evidence_requirement": "NASA-stated Artemis II launch date/year",
+          "expected_value": "Launched April 1, 2026",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "LAUNCHED April 1, 2026",
+                "locator": "mission metadata block"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) shows the Artemis II mission page with: mission name 'Artemis II', mission type 'Crewed Lunar Flyby', and descriptive text about being the first crewed Artemis flight. It also shows 'LAUNCHED — April 1, 2026' and 'SPLASHDOWN — April 10, 2026' plus 'OCCURRED 5 MONTHS AGO', indicating Artemis II is presented as already completed, not upcoming/planned. Screenshot 1 is only the Artemis program page and does not show 'next planned mission' details.",
+            "review_note": "The exact date and its past-tense label were recovered."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model2.txt",
+                "line_range": "m2:L34-L35",
+                "quoted_text": "April 1, 2026"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot/DOM state index 2 (LATEST) explicitly shows: mission name 'Artemis II'; 'Mission Type' = 'Crewed Lunar Flyby'; 'LaunchED' = 'April 1, 2026' (year 2026 visible); and description text: 'The first crewed Artemis flight marks a key step toward long‑term return to the Moon and future missions to Mars.' Screenshot/DOM state index 1 shows Artemis mission navigation (Artemis I/II/III/IV) but does not label which is 'next planned.' No screenshot explicitly states Artemis II is the 'next planned Artemis mission.'",
+            "review_note": "The exact date was recovered."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        },
+        {
+          "evidence_id": "C1-E4",
+          "evidence_requirement": "Mission destination/type",
+          "expected_value": "Crewed Lunar Flyby",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "MISSION TYPE Crewed Lunar Flyby",
+                "locator": "mission metadata block"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) shows the Artemis II mission page with: mission name 'Artemis II', mission type 'Crewed Lunar Flyby', and descriptive text about being the first crewed Artemis flight. It also shows 'LAUNCHED — April 1, 2026' and 'SPLASHDOWN — April 10, 2026' plus 'OCCURRED 5 MONTHS AGO', indicating Artemis II is presented as already completed, not upcoming/planned. Screenshot 1 is only the Artemis program page and does not show 'next planned mission' details.",
+            "review_note": "The mission type was recovered."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model2.txt",
+                "line_range": "m2:L30-L31",
+                "quoted_text": "Crewed Lunar Flyby"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot/DOM state index 2 (LATEST) explicitly shows: mission name 'Artemis II'; 'Mission Type' = 'Crewed Lunar Flyby'; 'LaunchED' = 'April 1, 2026' (year 2026 visible); and description text: 'The first crewed Artemis flight marks a key step toward long‑term return to the Moon and future missions to Mars.' Screenshot/DOM state index 1 shows Artemis mission navigation (Artemis I/II/III/IV) but does not label which is 'next planned.' No screenshot explicitly states Artemis II is the 'next planned Artemis mission.'",
+            "review_note": "The mission type was recovered."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        },
+        {
+          "evidence_id": "C1-E5",
+          "evidence_requirement": "NASA-stated primary mission objective",
+          "expected_value": "First crewed Artemis flight; step toward long-term Moon return and future Mars missions",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "The first crewed Artemis flight marks a key step toward long-term return to the Moon and future missions to Mars.",
+                "locator": "mission summary below the status"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) shows the Artemis II mission page with: mission name 'Artemis II', mission type 'Crewed Lunar Flyby', and descriptive text about being the first crewed Artemis flight. It also shows 'LAUNCHED — April 1, 2026' and 'SPLASHDOWN — April 10, 2026' plus 'OCCURRED 5 MONTHS AGO', indicating Artemis II is presented as already completed, not upcoming/planned. Screenshot 1 is only the Artemis program page and does not show 'next planned mission' details.",
+            "review_note": "The objective was recovered."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model2.txt",
+                "line_range": "m2:L27-L29",
+                "quoted_text": "The first crewed Artemis flight marks a key step toward long‑term return to the Moon and future missions to Mars."
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot/DOM state index 2 (LATEST) explicitly shows: mission name 'Artemis II'; 'Mission Type' = 'Crewed Lunar Flyby'; 'LaunchED' = 'April 1, 2026' (year 2026 visible); and description text: 'The first crewed Artemis flight marks a key step toward long‑term return to the Moon and future missions to Mars.' Screenshot/DOM state index 1 shows Artemis mission navigation (Artemis I/II/III/IV) but does not label which is 'next planned.' No screenshot explicitly states Artemis II is the 'next planned Artemis mission.'",
+            "review_note": "The objective was recovered."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Stop after recording the required mission details",
+      "max_points": 2,
+      "screenshot_final_points": 2.0,
+      "dom_model_final_points": 2.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C2-E1",
+          "evidence_requirement": "Trajectory stops after reaching the mission-detail page and answering",
+          "expected_value": "No browsing actions after the Artemis II final state",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "Artemis II",
+                "locator": "final ordered screenshot is the mission-detail page"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Action history shows navigation from the Artemis overview page to the Artemis II mission page and no further actions recorded. Screenshot 2 is the last state shown and contains the mission facts area the agent used to report details. There is no evidence of additional browsing beyond what’s shown.",
+            "review_note": "The final screenshot and action history support stopping."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model2.txt",
+                "line_range": "m2:L1-L2",
+                "quoted_text": "https://www.nasa.gov/mission/artemis-ii/"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Action history ends after reaching State 2. Screenshot/DOM state index 2 (LATEST) shows the Artemis II mission page as the final state with no further navigation evidenced.",
+            "review_note": "The final DOM state and action history support stopping."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    }
+  ]
+}

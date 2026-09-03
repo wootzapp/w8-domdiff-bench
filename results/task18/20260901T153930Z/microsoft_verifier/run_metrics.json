@@ -1,0 +1,111 @@
+{
+  "task_id": "viewport-modern-18-google-flights-nonstop-fare-comparison-20260829T083137Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/benchmarks-2/data/data-new-screenshot/task18",
+  "frozen_rubric_path": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "9fd0ab24b20e4163c3995125d78e1d071b39b449459e1429a07477fc4287c820",
+  "phase_a_generation_metrics": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 13,
+    "screenshots": 14
+  },
+  "result": {
+    "process_score": 0.35,
+    "total_earned_points": 7.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 123.85
+  },
+  "criteria": [
+    {
+      "criterion": "Use Google Flights to run the specified search (route, dates, passengers, cabin) or clearly report access issues",
+      "action_only_points": 4.0,
+      "final_points": 3.0,
+      "max_points": 4.0,
+      "final_justification": "The agent clearly navigated to Google Flights and reached the results page for DEL→BLR with Sep 15–18 shown, 1 adult, economy. However, the screenshots never display the year (2026), so the exact year cannot be verified from visual evidence. Still, the task intent (run the specified search) is substantially met; this is a minor verification gap rather than a wrong-parameter failure.",
+      "penalty": false
+    },
+    {
+      "criterion": "Apply the nonstop filter (direct flights only) or clearly report inability to do so",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "final_justification": "Visual evidence indicates the nonstop-only filter was not enabled in the final state. Although some itineraries shown are labeled 'Nonstop', that is not the same as applying the nonstop filter. This is a controllable failure to meet a hard constraint.",
+      "penalty": false
+    },
+    {
+      "criterion": "Identify and compare the lowest-priced visible nonstop options (up to three) given available results",
+      "action_only_points": 0.0,
+      "final_points": 1.0,
+      "max_points": 4.0,
+      "final_justification": "The agent’s output claims the three lowest visible options were all €154 (and all IndiGo), which is not supported by the screenshot: only one €154 option is visible, while other visible options are €159/€160/€161. Since the nonstop filter also wasn’t applied, the comparison target set is further compromised. Minimal credit for at least referencing a €154 nonstop option that does appear, but the “three lowest visible” identification is largely incorrect.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report required details for each compared option (airline, departure time, duration, round-trip fare) or clearly note missing fields",
+      "action_only_points": 0.0,
+      "final_points": 2.0,
+      "max_points": 6.0,
+      "final_justification": "The agent output provides airline/departure/duration/fare for three options, but two of the three (8:45 PM and 10:00 PM departures at €154) are not evidenced in the screenshot, and the output doesn’t clearly acknowledge that return-leg times aren’t visible. However, one itinerary’s details (IndiGo 3:00 AM–5:55 AM, 2h55, €154) are supported. Award partial credit for correctly reporting at least one supported set of fields, but penalize heavily for the other two unsupported/fabricated options.",
+      "penalty": false
+    },
+    {
+      "criterion": "Recommend the best balance of price and schedule (no booking)",
+      "action_only_points": 0.0,
+      "final_points": 1.0,
+      "max_points": 3.0,
+      "final_justification": "The agent does comply with 'without booking' (no evidence of checkout). But the recommendation is based on an itinerary not supported by visible evidence and on an unapplied nonstop filter. Since the recommendation is not grounded in the shown options, only minimal credit for attempting to weigh schedule vs price in narrative form.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 24,
+    "o4-mini": 3,
+    "total": 27,
+    "api_attempts": 27,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 121894,
+      "completion_tokens": 8554,
+      "reasoning_tokens": 0,
+      "total_tokens": 130448
+    },
+    "o4-mini": {
+      "prompt_tokens": 20913,
+      "completion_tokens": 2694,
+      "reasoning_tokens": 1408,
+      "total_tokens": 23607
+    },
+    "combined": {
+      "prompt_tokens": 142807,
+      "completion_tokens": 11248,
+      "reasoning_tokens": 1408,
+      "total_tokens": 154055
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/benchmarks-2/results/task18/20260901T153930Z/microsoft_verifier/run.log"
+}

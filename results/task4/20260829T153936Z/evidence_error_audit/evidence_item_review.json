@@ -1,0 +1,180 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "viewport-modern-4-nasa-mission-lookup-20260829T074852Z",
+  "run_id": "20260829T153936Z",
+  "rubric_sha256": "0f9dc5356a1403cc2467a32f218430edb430748c64ba1e9f1948b7a8ea05a6a8",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use NASA’s website as the source of truth (no sign-in/registration)",
+      "description": "Rely on information from NASA-controlled pages (nasa.gov or official NASA subdomains) to determine the next planned Artemis mission and its details. Full credit if the agent uses NASA pages and does not sign in/register. Full credit also if the agent attempts to use NASA.gov but access is blocked/down (e.g., CAPTCHA, outage) and the agent clearly reports the limitation. Partial credit if the agent references non-NASA sources only as secondary context while still treating NASA as authoritative.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 1 shows a nasa.gov page (NASA logo/nav visible) and no sign-in/registration prompts. Screenshot 2 (latest) also shows a nasa.gov Artemis page with NASA branding and no sign-in/registration prompts.",
+        "verifier_justification": "The evidence confirms the agent was on NASA’s official website and did not sign in or register. No blocker requiring login is shown. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a NASA.gov page with the NASA “meatball” logo at the top center and the site navigation including “News & Events”, “Multimedia”, and “NASA+ LIVE”. A mission navigation bar shows “Artemis”, “Artemis I”, “Artemis II”, “Artemis III”, and “Artemis IV”. There is no sign-in prompt, no registration form, and no request to subscribe visible in the captured view.",
+            "criterion_analysis": "This screenshot supports that the browsing is occurring on NASA’s official website (NASA branding and navigation are visible) and there is no evidence of sign-in/registration being required in this view. However, the screenshot alone does not show the specific mission-detail source used for the reported launch year/destination/objective—only that the agent is on NASA’s Artemis section.",
+            "discrepancies": "The agent’s predicted output references specific Artemis II details (e.g., a 2026 launch date), but this screenshot does not display any Artemis II mission detail text or dates—only the Artemis landing page header and navigation.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a NASA.gov page with the NASA “meatball” logo at the top center and a header nav including “News & Events,” “Multimedia,” and “NASA+ LIVE.” The page headline reads “Countdown to Launch” and the body text mentions “The Nancy Grace Roman Space Telescope…” with a red button labeled “Live Mission Coverage.” No login/sign-in prompts or registration forms are visible.",
+            "criterion_analysis": "The screenshot confirms the agent is on NASA’s official website (nasa.gov) and there is no visible sign-in or registration requirement in this view. However, the visible content is about the Nancy Grace Roman Space Telescope, not Artemis; so while the ‘NASA as source of truth/no sign-in’ constraint appears satisfied in this screenshot, it does not visually evidence the agent using NASA Artemis pages specifically.",
+            "discrepancies": "Action history/predicted output refer to Artemis pages (e.g., Artemis II), but the screenshot shows a Roman Space Telescope “Countdown to Launch” page, not an Artemis mission page. The screenshot does not show any Artemis-related details being sourced here.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 3 (LATEST) analysis shows DOM_MODEL_STATE_INDEX 2 at https://www.nasa.gov/mission/artemis-ii/ (NASA.gov) with mission content and no sign-in/registration prompts visible. Screenshot 2 analysis shows https://www.nasa.gov/humans-in-space/artemis/ (NASA.gov). Action history also stays within nasa.gov.",
+        "verifier_justification": "Evidence supports that the agent used NASA.gov pages as the source of truth and did not sign in or register. No blockers or off-site sources are indicated.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows URL `https://www.nasa.gov/mission/artemis-ii/` (NASA-controlled domain) and Title `Artemis II: NASA’s First Crewed Lunar Flyby in 50 Years - NASA`. Action history also shows navigation within `nasa.gov` (State 1 `https://www.nasa.gov/humans-in-space/artemis/` -> State 2 `https://www.nasa.gov/mission/artemis-ii/`). No DOM text indicates any sign-in/registration prompts.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll observed browsing is on NASA.gov pages (States 1 and 2 on `nasa.gov`). The final DOM (State 2) contains no visible sign-in or registration flow elements; it only shows site navigation and mission content, satisfying the constraint to use NASA’s website as source of truth without signing in/registering.",
+            "discrepancies": "None observed in the provided DOM/state/action history regarding source-of-truth or sign-in/registration constraints.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL https://www.nasa.gov/humans-in-space/artemis/ (a NASA.gov page). Navigation includes Artemis mission links (Artemis I/II/III/IV). No sign-in, registration, or update-subscription prompts are evidenced in the visible DOM snippet.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence confirms the agent is using a NASA.gov page as the source context (https://www.nasa.gov/humans-in-space/artemis/). However, the key factual claims in the agent’s predicted output (e.g., Artemis II launch year, destination, objective) are not shown in the provided DOM evidence, and the DOM for State 2 (https://www.nasa.gov/mission/artemis-ii/) is not included. Also, while there is no evidence of sign-in/registration, the absence of such elements in this single snapshot cannot conclusively prove they were never encountered elsewhere.",
+            "discrepancies": "The action history indicates State 2 is https://www.nasa.gov/mission/artemis-ii/, but no DOM evidence for that page is provided, so the agent’s reliance on NASA pages for the specific mission details cannot be verified from the DOM excerpt.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the agent is on NASA’s official site: URL `https://www.nasa.gov/` with Title `NASA`. Visible primary navigation and NASA-branded content are present, indicating the browsing context is nasa.gov (NASA-controlled).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence confirms use of NASA’s website as the source context: DOM_MODEL_STATE_INDEX 0 explicitly lists URL `https://www.nasa.gov/` and Title `NASA`. However, the action history indicates navigation to `https://www.nasa.gov/humans-in-space/artemis/` and then `https://www.nasa.gov/mission/artemis-ii/`, but DOM snapshots for those pages are not provided here. Therefore, while NASA.gov usage is supported for the starting state, the DOM evidence provided does not fully substantiate that the mission details (launch year/destination/objective) were obtained from NASA pages, nor does it explicitly show absence of sign-in/registration prompts on the later pages.",
+            "discrepancies": "Only DOM_MODEL_STATE_INDEX 0 (NASA homepage) is available. No DOM snapshot is provided for the Artemis or Artemis II pages where the agent claims to have read the next planned mission details (e.g., planned launch year). Thus the run’s evidence is insufficient to fully verify that those specific facts came from NASA pages, even though the navigation targets are nasa.gov URLs.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Identify the next planned Artemis mission and report required mission details",
+      "description": "Correctly determine which Artemis mission is the next planned/upcoming one according to NASA’s website and report: (1) mission name, (2) planned launch year (or NASA-stated target/window with the year), (3) destination, and (4) primary objective as NASA describes it. Full credit if all four fields are correctly captured from NASA pages. If NASA presents ambiguous/updated information across pages (e.g., differing target dates), full credit if the agent notes the discrepancy and reports the most recently published/most clearly designated 'next' mission details. Partial credit if the agent identifies the correct next mission but one or more fields are missing/overly vague. No credit if the mission selected is clearly not the next planned one per NASA.",
+      "max_points": 13,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 5.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows only the Artemis program landing header and nav links to Artemis I–IV; it does not display Artemis II’s planned launch year, destination, or primary objective. Screenshot 1 is unrelated (Roman Space Telescope) and contains no Artemis mission details. Action history indicates navigation to the Artemis II mission page, but screenshots do not corroborate any of the specific details claimed in the final answer (e.g., ‘LaunchED April 1, 2026’).",
+        "verifier_justification": "While it’s plausible Artemis II is the next planned mission, the provided launch year/destination/objective in the agent’s output are not supported by the screenshot evidence, and the launch-year claim appears potentially inaccurate per the rubric’s reality notes. Given the lack of visual corroboration and likely incorrect year, award only limited partial credit for identifying the likely next mission and attempting the required fields, but not for accurate extraction.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Visible text includes the large page title “Artemis” and the paragraph: “Under Artemis, NASA will send astronauts on increasingly difficult missions to explore more of the Moon for scientific discovery, economic benefits, and to build on our foundation for the first crewed missions to Mars.” The top navigation shows links for “Artemis I”, “Artemis II”, “Artemis III”, and “Artemis IV”, but no mission card or section showing the next planned mission, no launch year, no destination, and no primary objective for a specific mission are visible in this screenshot.",
+            "criterion_analysis": "The screenshot does not provide the required four fields (mission name, planned launch year, destination, primary objective) for the next planned Artemis mission. It only shows general Artemis program text and navigation. Therefore, the agent’s predicted output (specific to Artemis II with a 2026 launch year and lunar flyby objective) cannot be verified from the visible pixels in this screenshot.",
+            "discrepancies": "Predicted output claims: “Artemis II… Planned launch year… 2026… Destination: Crewed lunar flyby…” None of those specific details (2026, lunar flyby, Artemis II objective text) appear anywhere in the screenshot; only the general Artemis program description and mission nav links are visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Visible text is about the “Nancy Grace Roman Space Telescope” and a “Countdown to Launch.” No mention of “Artemis,” no mission name like “Artemis II,” no planned launch year for an Artemis mission, no destination, and no Artemis primary objective text are visible anywhere in the screenshot.",
+            "criterion_analysis": "The screenshot provides no visual support for identifying the next planned Artemis mission or extracting its launch year, destination, or primary objective. Therefore, based on this screenshot alone, the agent’s predicted output about “Artemis II,” a “2026” launch year, “crewed lunar flyby,” and stated objective cannot be verified against what is shown on-screen.",
+            "discrepancies": "The agent’s predicted output asserts Artemis II details (mission name, 2026 launch year, lunar flyby destination, objective). None of these appear in the screenshot, which is focused on the Roman Space Telescope. No Artemis II page content (e.g., a launch date like “April 1, 2026,” or objective wording) is visible to corroborate the claims.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          2,
+          0
+        ],
+        "final_points": 8.0,
+        "verifier_evidence": "Screenshot 3 (LATEST) analysis (Artemis II page) supports: mission name Artemis II; destination/mission type 'Crewed Lunar Flyby'; objective text 'The first crewed Artemis flight marks a key step toward long-term return to the Moon and future missions to Mars.'; launch date section shows 'LaunchED April 1, 2026'. Same DOM also shows status 'Occurred 5 months ago,' which conflicts with calling it the next planned/upcoming mission. Screenshot 2 (Artemis hub) does not explicitly label any mission as 'next planned.'",
+        "verifier_justification": "The agent correctly extracted (and reported) mission name, destination, launch year (2026), and primary objective from the Artemis II NASA page. However, the task asks for the 'next planned Artemis mission.' The Artemis II page simultaneously indicates the mission 'Occurred 5 months ago,' creating an unresolved contradiction with 'next planned.' The agent did not verify which Artemis mission is actually next planned/upcoming on NASA.gov (e.g., by checking Artemis III/IV pages or another NASA page that explicitly states the next planned mission). This is a substantive identification/interpretation issue, so deduct while still giving credit for accurately reporting the fields shown on the page they used.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 (Artemis II page) includes: mission name context `Artemis II`; status line `Occurred 5 months ago`; objective text `The first crewed Artemis flight marks a key step toward long‑term return to the Moon and future missions to Mars.`; mission type `Crewed Lunar Flyby`; launch date section `LaunchED` -> `April 1, 2026`.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM fully supports the mission name (Artemis II), the planned launch year (LaunchED April 1, 2026 => 2026), and the destination/type (Mission Type: Crewed Lunar Flyby, i.e., lunar flyby). It also supports a primary-objective statement as written on the page (`The first crewed Artemis flight marks a key step toward long‑term return to the Moon and future missions to Mars.`). However, the rubric requires identifying the “next planned/upcoming” Artemis mission; the same DOM also states `Occurred 5 months ago`, which conflicts with “next planned” as phrased. The agent did not reconcile this (e.g., by checking Artemis III/IV pages to confirm the next upcoming mission per NASA).",
+            "discrepancies": "Conflict between the task requirement (“next planned/upcoming mission”) and DOM text on the Artemis II page stating `Occurred 5 months ago`. The agent’s output treats Artemis II as upcoming without addressing this contradiction or verifying which mission is next planned according to NASA.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (https://www.nasa.gov/humans-in-space/artemis/) shows the Artemis hub navigation items including “Artemis I”, “Artemis II”, “Artemis III”, and “Artemis IV”, and general program text: “Under Artemis, NASA will send astronauts on increasingly difficult missions…” plus a paragraph about an uncrewed test flight completed in Nov. 2022. No explicit ‘next planned mission’, launch year, destination, or primary objective for Artemis II is present in the shown DOM.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM does not contain the necessary information to verify the agent’s selected “next planned Artemis mission” or any of the required fields (mission name, planned launch year, destination, primary objective) as stated in the predicted output. While the Artemis hub page lists mission links including “Artemis II,” the DOM excerpt does not explicitly label it as the next planned mission, nor does it provide the claimed launch year “2026,” the destination “crewed lunar flyby,” or the primary objective text. Because the DOM for State 2 (Artemis II mission page) is not provided, the mission details cannot be validated against NASA’s website from the available evidence.",
+            "discrepancies": "Agent predicted output includes specific details (e.g., “LaunchED April 1, 2026”, destination, and objective wording) that are not evidenced in DOM_MODEL_STATE_INDEX: 1, and the relevant State 2 DOM is missing, preventing verification.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Stop after recording the required mission details",
+      "description": "Stop promptly after obtaining and reporting the mission name, planned launch year, destination, and primary objective. Full credit if the agent stops once the required information is recorded, allowing minimal additional navigation only to resolve ambiguity or confirm a conflicting detail on NASA.gov. Partial credit if the agent continues browsing beyond what is reasonably needed but still provides the correct required details.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "No screenshot shows the agent actually viewing the Artemis II mission details and then stopping; Screenshot 2 (latest) is still on the Artemis landing page header with navigation options, which suggests the required details were not visibly captured. However, the action history indicates the agent navigated to the Artemis II page and the agent produced a final answer without further recorded actions.",
+        "verifier_justification": "There’s no visual proof of unnecessary continued browsing beyond what’s needed; the agent output ends after reporting the required fields. Despite weak evidence that the fields were correctly obtained, this criterion measures stopping behavior, and the available record does not show extra navigation after the purported extraction. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the Artemis landing page with navigation options to other missions (Artemis I–IV) and a scroll bar indicating the page can be scrolled further. There is no visible indication in the screenshot that the agent has already recorded and stopped after collecting mission details; it’s simply a view of the Artemis page header section.",
+            "criterion_analysis": "From this screenshot alone, there is no evidence the agent stopped immediately after capturing the required details; the page view does not show the details being collected nor a stopping point. As such, the stopping condition cannot be confirmed or evaluated as satisfied based on the screenshot.",
+            "discrepancies": "The agent’s predicted output suggests the task is complete with recorded details, but the screenshot shows only the general Artemis page and not the mission-specific detail capture that would justify stopping.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a NASA page section with a large hero banner and the “Live Mission Coverage” button, plus lower navigation items like “MISSION PODCAST,” “MISSION UPDATES,” and “MISSION SCIENCE.” There is no visible indication of having already recorded Artemis mission details or of stopping after doing so.",
+            "criterion_analysis": "This screenshot does not show whether the agent stopped promptly after collecting the required Artemis details; it only shows a Roman Space Telescope promo page. There is no on-screen evidence of the task being completed or of additional unnecessary browsing, so the stopping condition cannot be confirmed from this image.",
+            "discrepancies": "The predicted output implies the agent found and recorded Artemis II details and stopped. The screenshot instead shows a non-Artemis NASA page, which does not visually align with having just finished extracting Artemis mission information.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "No direct screenshot evidence about post-answer browsing/stopping. Action history ends at State 2 (Artemis II page) with no further actions recorded.",
+        "verifier_justification": "Given the recorded action history shows no additional navigation beyond the Artemis II page, keep full credit for stopping behavior. Although there was an unresolved ambiguity about 'next planned,' the criterion is specifically about stopping after recording details, and the agent did stop once it recorded/report the four fields.",
+        "evidence_analyses": []
+      },
+      "evidence_items": []
+    }
+  ]
+}

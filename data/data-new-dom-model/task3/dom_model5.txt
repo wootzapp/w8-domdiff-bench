@@ -1,0 +1,32 @@
+URL: https://playwright.dev/docs/evaluating#evaluation-argument
+Title: Evaluating JavaScript | Playwright
+Use only ids from this observation. Scroll with scroll("down", 1600, element_id=<id>).
+Snapshot: returnedNodes=256 groups=18 truncated=False
+
+=== VISIBLE CONTENT ===
+Context: Docs sidebar
+- Migration
+- Integrations
+- Supported languages
+Context: Breadcrumbs
+- Guides Evaluating JavaScript On this page Evaluating JavaScript Introduction ​ Playwright scripts run in your Playwright environment. Your page scripts run in the browser page environment. Those environments don't intersect, they are running in different virtual machines in different processes and even potentially on different computers. The page.evaluate() API can run a JavaScript function in the context of the web page and bring results back to the Playwright environment. Browser globals like
+- Sometimes it is convenient to evaluate something in the page before it starts loading. For example, you might want to setup some mocks or test data.
+- In this case, use or . In the example below, we will replace with a constant value.
+- First, create a file that contains the mock.
+- // preload.js Math . random = ( ) => 42 ;
+- 42
+- Next, add init script to the page.
+- import { test , expect } from '@playwright/test' ; import path from 'path' ; test . beforeEach ( async ( { page } ) => { // Add script for every test in the beforeEach hook. // Make sure to correctly resolve the script path. await page . addInitScript ( { path : path . resolve ( __dirname , '../mocks/preload.js' ) } ) ; } ) ;
+- // Add script for every test in the beforeEach hook.
+- // Make sure to correctly resolve the script path.
+- Alternatively, you can pass a function instead of creating a preload script file. This is more convenient for short or one-off scripts. You can also pass an argument this way.
+- import { test , expect } from '@playwright/test' ; // Add script for every test in the beforeEach hook. test . beforeEach ( async ( { page } ) => { const value = 42 ; await page . addInitScript ( value => { Math . random = ( ) => value ; } , value ) ; } ) ;
+- // Add script for every test in the beforeEach hook.
+- 42
+
+=== SECONDARY / DEBUG ACTIONS ===
+[3595] link "Previous « Downloads" <a> role=link context="generic: Breadcrumbs / generic: Docs pages" state=not-hit-testable hit=False viewport=True sourceOrder=2863 bounds=(x=316 y=2195.375 w=370.125 h=75.5) reason=not_hit_testable
+[3596] link "Next Events »" <a> role=link context="generic: Breadcrumbs / generic: Docs pages" state=not-hit-testable hit=False viewport=True sourceOrder=2868 bounds=(x=702.125 y=2195.375 w=370.125 h=75.5) reason=not_hit_testable
+=== COMPLETE READ-ONLY CONTROL TEXT ===
+- import { test , expect } from '@playwright/test' ; import path from 'path' ; test . beforeEach ( async ( { page } ) => { // Add script for every test in the beforeEach hook. // Make sure to correctly resolve the script path. await page . addInitScript ( { path : path . resolve ( __dirname , '../mocks/preload.js' ) } ) ; } ) ;
+- import { test , expect } from '@playwright/test' ; // Add script for every test in the beforeEach hook. test . beforeEach ( async ( { page } ) => { const value = 42 ; await page . addInitScript ( value => { Math . random = ( ) => value ; } , value ) ; } ) ;

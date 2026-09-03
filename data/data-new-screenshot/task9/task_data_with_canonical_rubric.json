@@ -1,0 +1,40 @@
+[
+  {
+    "task_id": "viewport-modern-9-github-issue-search-20260829T075254Z",
+    "confirmed_task": "In huggingface/transformers, filter issues to open issues labeled bug that were created during the last 30 days. Report the total matching issue count and the three newest issue titles with their issue numbers.\n\nStopping condition: Stop after the exact search filters, count, and three newest issue records have been verified.\n\nConstraints:\n- Do not sign in.\n- Do not comment, label, close, or create issues.\n- Use the current date shown by the browser for the 30-day window.",
+    "website": "https://github.com/huggingface/transformers/issues",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Apply exact GitHub issue search filters (repo, open, label:bug, created last 30 days)",
+          "description": "Agent navigates to the huggingface/transformers GitHub issues list (or equivalent GitHub search scoped to the repo) and applies filters matching the task intent exactly: state=open, label=bug, and created within the last 30 days using the current date visible in the browsing context to compute the start date (e.g., created:>=YYYY-MM-DD). Full credit if the query/filters are clearly correct OR if GitHub blocks access (captcha/rate limit/login wall/error) after a reasonable attempt and the agent reports the blockage and what it attempted. Partial credit if filters are mostly correct but one element is off (e.g., uses updated instead of created, or an imprecise date range) while still clearly working in the correct repo/issues area. No credit if the wrong repo, wrong label, or non-open items are used when correct filtering was feasible.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report total matching issue count",
+          "description": "Agent reports the total number of issues matching the verified filters as shown by GitHub for that result set. Full credit if the count matches the filtered results, OR if the filtered results show zero issues and the agent reports 0, OR if GitHub prevents viewing the count despite a correct attempt (and the agent clearly states the count could not be verified due to access/UI limitations). Partial credit if a count is provided but is ambiguous/inconsistent with the final verified filters. No credit if the count is missing when it was visible/obtainable or clearly taken from a different query.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Provide the three newest matching issues (title + issue number)",
+          "description": "From the filtered set, agent identifies the three newest issues by creation time (e.g., by sorting by newest/created) and reports each issue’s title and issue number. Full credit if the three are correct and newest when at least three results exist; if fewer than three results exist, full credit for reporting all available (including none) and stating that fewer than three matched; if GitHub access/UI prevents verifying the newest issues despite a correct attempt, full credit for clearly stating it could not be verified. Partial credit if only 1–2 of the newest issues are correct or minor transcription errors occur. No credit if issues are not from the filtered set when verification was feasible.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Respect constraints and stopping condition",
+          "description": "Agent does not sign in and does not perform any modifying actions (no commenting, labeling, closing, or creating issues). Agent stops after the search filters, count, and up-to-three newest issue records have been verified or after it becomes clear verification is blocked by external factors (e.g., GitHub errors/captcha/rate limit). Full credit if all constraints are respected; partial credit if minor extra navigation occurs after verification without violating constraints. No credit if the agent signs in or performs any disallowed modifying action.",
+          "max_points": 1,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]
