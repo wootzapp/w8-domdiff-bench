@@ -1,0 +1,110 @@
+flowchart TD
+    %% Workspace and experiment-evolution overview
+    subgraph WS["Workspace: /data/isha/msexecute"]
+        HIST["ms-paper-execution<br/>34 GB historical worktree<br/>official baseline + early variants + raw outputs"]
+        DIFF["benchmarks<br/>standalone screenshot vs refined DOM-diff"]
+        FULL["benchmarks-2<br/>screenshot vs full DOM-model"]
+        COMP["benchmarks-token-reduction<br/>screenshot vs compressed DOM-model"]
+        CUR["evidence-error-experiment<br/>current comparison + atomic audit"]
+        TASKS["browser-agent-tasks-hf-update<br/>60 future task definitions"]
+    end
+
+    HIST -->|"extracted standalone implementation"| DIFF
+    DIFF -->|"replace diffs with complete states"| FULL
+    FULL -->|"criterion-aware compression"| COMP
+    FULL -->|"copy results + add audit/corrections"| CUR
+    TASKS -.->|"future trajectory recording"| CAPTURE
+
+    subgraph EVOL["Historical evidence approaches"]
+        MSBASE["Microsoft screenshots<br/>canonical operational baseline"]
+        STAGE["Stagehand / ARIA / page state<br/>cheaper on Qatar; policy mismatch"]
+        RAW["Raw DOM-diff<br/>large and retrieval-sensitive"]
+        S3["Compact DOM summary S0-S3<br/>some 48-56% wins; inconsistent"]
+        GREP["Raw grep/read tools<br/>126-148% token inflation"]
+        MODEL["Complete DOM-model states<br/>broad coverage; +25.43% in old 20-task report"]
+        ZIP["Compressed DOM-model<br/>3 pilots; 30-40% target missed"]
+        AUD["Atomic evidence audit<br/>manual source truth + verifier detection"]
+    end
+
+    MSBASE --> STAGE --> RAW --> S3 --> GREP --> MODEL --> ZIP
+    MODEL --> AUD
+
+    subgraph PREP["Trajectory and frozen controls"]
+        CAPTURE["Record one logical task<br/>task + N actions + final answer"]
+        SHOTS["Screenshot source<br/>screenshot0..N<br/>initial + after each action"]
+        DOMS["DOM source<br/>dom_model0..N<br/>initial + after each action"]
+        PA0["Phase A offline preflight<br/>paired IDs/actions/answers/states"]
+        RUB["One canonical frozen rubric<br/>ordered criteria + denominator + SHA-256"]
+        GEN["Separate rubric-generation receipt<br/>calls and tokens excluded from scoring"]
+    end
+
+    CAPTURE --> SHOTS
+    CAPTURE --> DOMS
+    SHOTS --> PA0
+    DOMS --> PA0
+    PA0 -->|"authorized generate or validated import"| RUB
+    PA0 --> GEN
+
+    subgraph PB["Phase B control plane"]
+        DRY["Dry preflight by default<br/>no writes, clients, subprocesses, or paid calls"]
+        VALID["Validate package manifests<br/>N+1 alignment<br/>rubric sidecars/hash<br/>models and command parity"]
+        AUTH{"--execute explicitly authorized?"}
+        COPY["Create unique run directory<br/>copy isolated inputs and frozen controls"]
+        MAP["Screenshot-only isolated mapping<br/>answer references screenshot1..N<br/>final state included"]
+    end
+
+    RUB --> DRY
+    GEN --> DRY
+    SHOTS --> DRY
+    DOMS --> DRY
+    DRY --> VALID --> AUTH
+    AUTH -->|"No"| RECEIPT["Print preflight receipt and stop"]
+    AUTH -->|"Yes"| COPY --> MAP
+
+    subgraph ARMS["Isolated verifier subprocesses"]
+        MSRUN["Microsoft package only<br/>N post-action screenshots"]
+        DOMRUN["DOM package only<br/>N+1 complete DOM states"]
+        A0["o4-mini action-only rubric scoring"]
+        REL["gpt-5.2 relevance<br/>every state x criterion"]
+        TOP["Group and select top 5<br/>minimum relevance = 0"]
+        ANALYZE["Grounded evidence analysis<br/>structured status + source citation"]
+        COND["Conditional disambiguation<br/>and rubric reality check"]
+        RESCORE["Evidence-aware rescoring<br/>plus side-effect penalty"]
+        OUTCOME["Independent outcome judgment"]
+        FAIL["First failure + action-schema diagnosis"]
+        VALIDITY["Trajectory-informed and task-only validity"]
+        RAWRESULT["Raw result.json<br/>intermediate steps + calls + tokens<br/>DOM also writes evidence_audit.json"]
+    end
+
+    MAP --> MSRUN
+    MAP --> DOMRUN
+    MSRUN --> A0
+    DOMRUN --> A0
+    A0 --> REL --> TOP --> ANALYZE --> COND --> RESCORE --> OUTCOME --> FAIL --> VALIDITY --> RAWRESULT
+
+    subgraph REPORT["Normalization, comparison, and audit"]
+        NORM["Normalize each arm<br/>scores + criteria + attempts + retries + provider tokens"]
+        CMP["comparison.json + comparison.md<br/>completed run_manifest.json"]
+        EXTRACT["Extract source inventory<br/>selection + analysis + scoring"]
+        HUMAN["Human atomic-item review<br/>screenshot locator or DOM line citation<br/>verbatim verifier excerpt"]
+        FINAL["Validate and classify<br/>catch/recovery metrics<br/>missing source excluded"]
+    end
+
+    RAWRESULT --> NORM --> CMP --> EXTRACT --> HUMAN --> FINAL
+
+    FIX["Sept. 3 correction<br/>old NASA audit: screenshot 2/7, DOM 7/7<br/>corrected: screenshot 7/7, DOM 6/7"]
+    MAP --> FIX
+    FIX --> HUMAN
+
+    RISK["Current boundary<br/>baseline agreement is not objective accuracy<br/>rerun current code + human adjudication required"]
+    FINAL --> RISK
+
+    classDef current fill:#d9f2e6,stroke:#287a4b,stroke-width:2px;
+    classDef warning fill:#fff2cc,stroke:#a67c00,stroke-width:2px;
+    classDef fail fill:#f8d7da,stroke:#9b2c2c,stroke-width:2px;
+    classDef control fill:#dbeafe,stroke:#285ea8,stroke-width:2px;
+
+    class CUR,AUD,FINAL current;
+    class DRY,VALID,RUB,GEN,MAP control;
+    class STAGE,RAW,S3,MODEL,FIX,RISK warning;
+    class GREP,ZIP fail;
