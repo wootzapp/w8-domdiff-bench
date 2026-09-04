@@ -80,6 +80,14 @@ def _normalize_screenshots(candidate_path: Path, sorted_screenshots: list) -> li
     return normalized
 
 
+def normalize_all_screenshot_evidence(candidate: Trajectory) -> list[str]:
+    """Return every declared screenshot in chronological, canonical order."""
+    sorted_screenshots = sorted(
+        candidate.answer.screenshots, key=_screenshot_sort_key
+    )
+    return _normalize_screenshots(candidate.path, sorted_screenshots)
+
+
 def create_datapoint(task_data: Dict[str, Any], candidate: Trajectory) -> DataPoint:
     """Convert *task_data* + *candidate* Trajectory into a :class:`DataPoint`.
 
@@ -93,10 +101,11 @@ def create_datapoint(task_data: Dict[str, Any], candidate: Trajectory) -> DataPo
     """
     action_events = [evt for evt in candidate.events if evt.get("action")]
 
-    sorted_screenshots = sorted(
-        candidate.answer.screenshots, key=_screenshot_sort_key
-    )[: len(action_events)]
-    normalized_screenshots = _normalize_screenshots(candidate.path, sorted_screenshots)
+    all_screenshot_evidence = normalize_all_screenshot_evidence(candidate)
+    if len(all_screenshot_evidence) != len(action_events) + 1:
+        raise ValueError("Expected exactly N+1 screenshot states for N actions")
+    # Step summaries retain one post-action state per real action.
+    normalized_screenshots = all_screenshot_evidence[1:]
 
     # precomputed rubric (optional) — may live on task_data or on disk next
     # to the trajectory.

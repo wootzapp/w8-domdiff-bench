@@ -31,8 +31,13 @@ def _validate_metrics(run: dict[str, Any]) -> list[str]:
     if int(usage.get("total_tokens", 0)) != int(usage.get("prompt_tokens", 0)) + int(usage.get("completion_tokens", 0)):
         errors.append(f"{mode} token accounting is inconsistent")
     denominator = float((run.get("result") or {}).get("total_max_points", 0))
-    if denominator != sum(float(item.get("max_points", 0)) for item in run.get("criteria", [])):
-        errors.append(f"{mode} denominator differs from criterion maxima")
+    effective_maximum = sum(
+        float(item.get("max_points", 0))
+        for item in run.get("criteria", [])
+        if item.get("is_applicable", True)
+    )
+    if denominator != effective_maximum:
+        errors.append(f"{mode} denominator differs from applicable criterion maxima")
     return errors
 
 

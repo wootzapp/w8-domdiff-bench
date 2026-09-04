@@ -18,6 +18,21 @@ def test_grouping_is_inherited_and_prefers_later_state_on_tie():
     assert grouped == {0: [1, 0]}
 
 
+
+def test_loader_includes_all_n_plus_one_states(pair_factory):
+    pair = pair_factory()
+    agent = object.__new__(DomModelRubricAgent)
+    agent.config = type("Config", (), {"dom_model_state_char_budget": 350000})()
+
+    states = agent._load_screenshots(str(pair["dom"]), actions_list=[{}])
+
+    assert [state.index for state in states] == [0, 1]
+    assert [state.path.name for state in states] == ["dom_model0.txt", "dom_model1.txt"]
+    assert agent.evidence_audit["state_selection_policy"] == "all_states_0_through_n"
+    assert agent.evidence_audit["source_complete_state_count"] == 2
+    assert agent.evidence_audit["complete_state_count"] == 2
+    assert agent.evidence_audit["excluded_source_states"] == []
+
 def test_filtering_is_inherited_unchanged():
     assert "_filter_irrelevant_screenshots" not in DomModelRubricAgent.__dict__
 

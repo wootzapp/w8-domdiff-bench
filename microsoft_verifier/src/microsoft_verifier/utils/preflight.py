@@ -25,14 +25,27 @@ def preflight_screenshot_task(task_dir: str | Path) -> dict[str, int]:
     if not actions:
         raise ValueError("Screenshot trajectory contains no actions")
     screenshots = sorted(
-        path for path in root.iterdir() if path.is_file() and _SCREENSHOT_RE.match(path.name)
+        (
+            path
+            for path in root.iterdir()
+            if path.is_file() and _SCREENSHOT_RE.match(path.name)
+        ),
+        key=lambda path: int(_SCREENSHOT_RE.match(path.name).group(1)),
     )
-    if len(screenshots) not in {actions, actions + 1}:
+    if len(screenshots) != actions + 1:
         raise ValueError(
-            f"Expected N or intentional N+1 screenshots for {actions} actions; "
+            f"Expected exactly N+1 screenshots for {actions} actions; "
             f"found {len(screenshots)}"
         )
     answers = list(root.glob("*_answer.json"))
     if len(answers) != 1:
         raise ValueError(f"Expected exactly one *_answer.json, found {len(answers)}")
+    answer = json.loads(answers[0].read_text(encoding="utf-8"))
+    declared = answer.get("screenshots") if isinstance(answer, dict) else None
+    expected_names = [path.name for path in screenshots]
+    if declared != expected_names:
+        raise ValueError(
+            "Final answer must declare all N+1 screenshots in chronological order; "
+            f"expected {expected_names}, found {declared}"
+        )
     return {"actions": actions, "screenshots": len(screenshots)}

@@ -1,0 +1,615 @@
+{
+  "task_id": "browser_task_034-dependency-inspection-20260902T193655Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data/data-new-dom-model/task30",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task30/20260903-task30-post-action-1/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "295ffe6649d7b6bfbcba3f0b1a4768f274bf8bfc6959a7f790557aeba6a6a1d3",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task30/20260903-task30-post-action-1/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_034-dependency-inspection-20260902T193655Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_034-dependency-inspection-20260902T193655Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e59",
+            "target": {
+              "ref": "e59",
+              "role": "link",
+              "name": "Dependencies"
+            },
+            "thoughts": "Open the Dependencies tab to view the runtime dependencies list for the latest Rails version."
+          },
+          "observed_after_url": "https://rubygems.org/gems/rails/versions/8.1.3.1/dependencies"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "b30bf1f6135ecd2a82b50fa66fbef4cb3a90567b9b22ebbd07d9d8adc0fc14ac",
+          "after_sha256": "432bc70c8ab80661cc3352bbad694a9ef9e2c3a49a28787ad3c066f188b912fd",
+          "before_url": "https://rubygems.org/gems/rails",
+          "after_url": "https://rubygems.org/gems/rails/versions/8.1.3.1/dependencies"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e59' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "295ffe6649d7b6bfbcba3f0b1a4768f274bf8bfc6959a7f790557aeba6a6a1d3",
+    "criterion_order": [
+      "Access RubyGems Rails gem page without signing in/downloading",
+      "Record latest displayed Rails version metadata",
+      "Record runtime dependency #1 in displayed order (name + requirement)",
+      "Record runtime dependency #2 in displayed order (name + requirement)",
+      "Record runtime dependency #3 in displayed order (name + requirement)",
+      "Record runtime dependency #4 in displayed order (name + requirement)",
+      "Record runtime dependency #5 in displayed order (name + requirement)",
+      "Stop after recording requested metadata and first five runtime dependencies"
+    ],
+    "maximum_points": [
+      3.0,
+      5.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task30/20260903-task30-post-action-1/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "8b5bd4abe43ff5f8953caabc8a9c4f78088f8704ecf9b3223d7c84416f47a0d5"
+    }
+  },
+  "result": {
+    "process_score": 0.8,
+    "total_earned_points": 16.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": true,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 141.812
+  },
+  "criteria": [
+    {
+      "criterion": "Access RubyGems Rails gem page without signing in/downloading",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Meets the criterion: the agent accessed the RubyGems Rails page (dependencies view) without signing in and without downloading/installing. No adjustment needed.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record latest displayed Rails version metadata",
+      "action_only_points": 5.0,
+      "final_points": 2.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Only version and release date are DOM-supported. The agent’s claims for required Ruby version (>= 3.2.0) and license (MIT) are not confirmed by the provided DOM evidence and thus are unproven per the rules. Award partial credit for the 2/4 metadata items that are supported.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record runtime dependency #1 in displayed order (name + requirement)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Matches the agent output exactly (dependency name, requirement, and position). Keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record runtime dependency #2 in displayed order (name + requirement)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Matches the agent output exactly (dependency name, requirement, and order). Keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record runtime dependency #3 in displayed order (name + requirement)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Matches the agent output exactly (dependency name, requirement, and order). Keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record runtime dependency #4 in displayed order (name + requirement)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Matches the agent output exactly (dependency name, requirement, and order). Keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record runtime dependency #5 in displayed order (name + requirement)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Matches the agent output exactly (dependency name, requirement, and order). Keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Stop after recording requested metadata and first five runtime dependencies",
+      "action_only_points": 2.0,
+      "final_points": 1.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did stop after listing exactly five runtime dependencies (no extra dependencies), which satisfies the stopping aspect. However, since two required metadata items (Ruby requirement, license) are not DOM-supported, the criterion is only partially satisfied as written (stop after recording requested metadata + five deps).",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 19,
+    "o4-mini": 3,
+    "total": 22,
+    "api_attempts": 22,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 96976,
+      "completion_tokens": 11583,
+      "reasoning_tokens": 0,
+      "total_tokens": 108559
+    },
+    "o4-mini": {
+      "prompt_tokens": 17359,
+      "completion_tokens": 3322,
+      "reasoning_tokens": 1728,
+      "total_tokens": 20681
+    },
+    "combined": {
+      "prompt_tokens": 114335,
+      "completion_tokens": 14905,
+      "reasoning_tokens": 1728,
+      "total_tokens": 129240
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 1,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task30/20260903-task30-post-action-1/_inputs/dom_model/dom_model1.txt",
+        "sha256": "432bc70c8ab80661cc3352bbad694a9ef9e2c3a49a28787ad3c066f188b912fd",
+        "byte_count": 4670,
+        "line_count": 87,
+        "estimated_tokens": 1166,
+        "url": "https://rubygems.org/gems/rails/versions/8.1.3.1/dependencies",
+        "title": "rails | RubyGems.org | your community gem host",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 21
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 22,
+            "end_line": 41
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 42,
+            "end_line": 56
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 57,
+            "end_line": 71
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 72,
+            "end_line": 81
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 82,
+            "end_line": 84
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 85,
+            "end_line": 87
+          }
+        ],
+        "control_refs": [
+          "896",
+          "1067",
+          "1006",
+          "1068",
+          "1196",
+          "1203",
+          "1210",
+          "1217",
+          "1224",
+          "1231",
+          "1238",
+          "1245",
+          "1252",
+          "other",
+          "1104",
+          "1171",
+          "1187",
+          "1259",
+          "1266",
+          "1273",
+          "1397",
+          "1398",
+          "1399"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L87"
+      }
+    ],
+    "estimated_evidence_tokens": 1166,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "post_action_only",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [
+      {
+        "state_index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task30/20260903-task30-post-action-1/_inputs/dom_model/dom_model0.txt",
+        "reason": "initial_state_excluded_for_microsoft_action_alignment"
+      }
+    ],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "1": {
+        "0": 9,
+        "1": 4,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 10,
+        "7": 8
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 1,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "6": [
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "7": [
+        {
+          "state_index": 1,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 5,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 11261,
+        "estimated_input_tokens": 2816,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 13323,
+        "estimated_input_tokens": 3331,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 13634,
+        "estimated_input_tokens": 3409,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 13971,
+        "estimated_input_tokens": 3493,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 14303,
+        "estimated_input_tokens": 3576,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 14463,
+        "estimated_input_tokens": 3616,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9176,
+        "estimated_input_tokens": 2294,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 9299,
+        "estimated_input_tokens": 2325,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 9156,
+        "estimated_input_tokens": 2289,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 9075,
+        "estimated_input_tokens": 2269,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 9075,
+        "estimated_input_tokens": 2269,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 9075,
+        "estimated_input_tokens": 2269,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          6
+        ],
+        "char_count": 9075,
+        "estimated_input_tokens": 2269,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          7
+        ],
+        "char_count": 9179,
+        "estimated_input_tokens": 2295,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/task30/20260903-task30-post-action-1/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/task30/20260903-task30-post-action-1/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/task30/20260903-task30-post-action-1/dom_model/run.log"
+}

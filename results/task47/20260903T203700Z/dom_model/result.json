@@ -1,0 +1,952 @@
+{
+  "task_id": "browser_task_058-food-product-nutrition-lookup-20260902T210656Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.775,
+  "rubric_total_max_points": 20.0,
+  "rubric_total_earned_points": 15.5,
+  "rubric_is_success": false,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: Minor formatting/label choices (bullet structure, quoting) and including a short explanatory note are not materially harmful.\n\nCritical issues: The agent did not provide the \"complete displayed English ingredients text,\" which is an explicit required deliverable and part of the stopping condition (\"Stop after ... every requested ... ingredients field have been recorded\"). The agent instead stated it could not see the ingredients sentence in the available DOM after a scroll. The DOM evidence provided (states 0 and 1) indeed does not show any Ingredients text, but there is also no confirmed environment blocker (CAPTCHA/login wall/site error) preventing further exploration; this looks like an incomplete capture rather than an unavoidable limitation. Additionally, the agent's claim that the page shows an Ingredients section heading (e.g., \"9 ingredients\") is not supported by the provided DOM snapshots, so that part is at least unsupported.\n\nWhat was completed correctly: DOM evidence supports that the agent opened the exact barcode record (URL and on-page barcode 3017620422003) and accurately reported product name (Nutella), displayed Nutri-Score (\"Nutri-Score E Lower nutritional quality\"), NOVA wording (\"Ultra-processed foods\") with marker count (\"2 ultra-processing markers\"), and per-100-g nutrition values (Energy \"2252 kJ (539 kcal)\" and Sugars \"56.3 g\").\n\nOverall outcome: Because a key explicitly requested field (the complete English ingredients text) is missing, the agent did not satisfy the task as an average user intended. The user asked for a full set of transcribed fields from that record; receiving everything except the ingredients text is not sufficient for success under the stated stopping condition.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Open the exact Open Food Facts product page for barcode 3017620422003 and accurately transcribe specific on-page fields: product name, barcode, displayed Nutri-Score, NOVA processing wording + marker count, energy per 100 g (with the exact units/formatting shown), sugars per 100 g, and the complete displayed English ingredients text. A reasonable user would be flexible on minor formatting/quoting style, but not on missing any of the requested fields—especially the complete English ingredients text—or substituting a different barcode/product variant."
+  },
+  "preflight": {
+    "task_id": "browser_task_058-food-product-nutrition-lookup-20260902T210656Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_058-food-product-nutrition-lookup-20260902T210656Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Scroll further to reveal the full English ingredients text under the Ingredients section, which is not yet visible in the DOM snapshot."
+          },
+          "observed_after_url": "https://world.openfoodfacts.org/product/3017620422003/nutella"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "2a0c99ea200051057851f211d3fede06252ef02b1aa6a0f36cd630b98cf8620b",
+          "after_sha256": "7a817025a1f924c4216175337010ea52455a45ac39a881176a4fe6d8de5974aa",
+          "before_url": "https://world.openfoodfacts.org/product/3017620422003/nutella",
+          "after_url": "https://world.openfoodfacts.org/product/3017620422003/nutella"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "a9be21fbee7bbd2dedcc5211f2687044f63f04852414e09586ecefb36303a3cd",
+    "criterion_order": [
+      "Open the exact Open Food Facts product record for barcode 3017620422003",
+      "Report product name and barcode",
+      "Report displayed Nutri-Score",
+      "Report NOVA card processing classification and marker count (visible wording)",
+      "Report energy per 100 g with displayed units",
+      "Report sugars per 100 g exactly",
+      "Report complete displayed English ingredients text",
+      "Respect constraints and stopping condition"
+    ],
+    "maximum_points": [
+      3.0,
+      2.0,
+      2.0,
+      3.0,
+      3.0,
+      2.0,
+      4.0,
+      1.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task47/20260903T203700Z/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "f640a8bf4c481964c819baeeda35db004fc627a859c2e724c5e766fc7f9bb9cc"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task47/20260903T203700Z/_inputs/frozen_rubric.json",
+  "rubric_sha256": "a9be21fbee7bbd2dedcc5211f2687044f63f04852414e09586ecefb36303a3cd",
+  "criterion_denominator": 20,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 68274,
+      "completion_tokens": 7553,
+      "reasoning_tokens": 0,
+      "total_tokens": 75827
+    },
+    "action_judge": {
+      "prompt_tokens": 16026,
+      "completion_tokens": 4113,
+      "reasoning_tokens": 2432,
+      "total_tokens": 20139
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 14,
+      "api_attempts": 14,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 2,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 8,
+        "1": 10,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 2,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 10,
+        "1": 4,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 0,
+        "7": 6,
+        "screenshot_idx": 1
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        1,
+        0
+      ],
+      "1": [
+        0,
+        1
+      ],
+      "2": [
+        1,
+        0
+      ],
+      "3": [
+        1,
+        0
+      ],
+      "4": [
+        1,
+        0
+      ],
+      "5": [
+        1,
+        0
+      ],
+      "6": [
+        1,
+        0
+      ],
+      "7": [
+        1,
+        0
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the product page URL path \"/product/3017620422003/\", which is the exact requested barcode record, and the page title indicates it is the Nutella product page.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL: https://world.openfoodfacts.org/product/3017620422003/nutella and Title: Nutella.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snapshot explicitly indicates the browser is on the Open Food Facts product page whose path contains `/product/3017620422003/`, and the on-page barcode field also displays `3017620422003`, supporting that the exact requested record was opened.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL `https://world.openfoodfacts.org/product/3017620422003/nutella` and page title `Nutella`. In visible content, the product section shows `Barcode: (EAN / EAN-13)` followed by `3017620422003`.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBoth the product name (`Nutella`) and the barcode (`3017620422003`) are explicitly present in the DOM snapshot.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content includes product name heading `Nutella`. It also shows `Barcode: (EAN / EAN-13)` and the value `3017620422003`.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Nutri-Score is shown in the DOM as \"Nutri-Score E Lower nutritional quality\" (letter grade E with the associated label).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes: \"Nutri-Score E Lower nutritional quality\" (also repeated in the Health section as \"Nutri-Score E\" and \"Nutri-Score E Lower nutritional quality\").",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe NOVA card wording and marker count are directly visible: processing classification \"Ultra-processed foods\" and marker count \"2 ultra-processing markers\".",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes the NOVA line: \"Ultra-processed foods 2 ultra-processing markers\" with evidence note: \"NOVA group icon Ultra-processed foods 2 ultra-processing markers\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nEnergy per 100 g is explicitly provided in the per-100-g column as \"2252 kJ (539 kcal)\".",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 TABLES Table 1 row \"Energy\" under column \"As sold for 100 g / 100 ml\" shows: \"2252 kJ (539 kcal)\". The Nutrition facts block also repeats: \"Energy 2252 kJ (539 kcal)\" in the per-100-g context.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nSugars per 100 g is explicitly shown as \"56.3 g\" in the per-100-g nutrition facts context.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 Nutrition facts text includes: \"Sugars 56.3 g\" within the \"As sold for 100 g / 100 ml\" context (also shown in the longer nutrition facts line: \"Sugars 56.3 g 26.809 g (+110%)\").",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "6": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot does not contain the English ingredients text (or an Ingredients section) for this product state, so the complete displayed English ingredients string cannot be verified or transcribed from the provided DOM evidence.",
+          "discrepancies": "The agent’s predicted output states the full English ingredient sentence is not rendered in the current visible DOM; this matches the lack of ingredients text in the DOM snapshot, but the rubric item requires the complete displayed English ingredients text, which is not present in evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible content includes extensive Health/Nutrition and Nutrition facts content, but there is no Ingredients section text and no English ingredients string displayed anywhere in the snapshot.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence provided does not contain the ingredients section or any English ingredients string. Therefore it cannot support verifying whether English ingredients are displayed, nor what the complete displayed English ingredients text is.",
+          "discrepancies": "The agent answer states the full English ingredient sentence is not rendered in the current visible DOM; this matches the provided DOM snapshot (no ingredients text shown), but the snapshot is insufficient to conclude unavailability site-wide—only that it is not present in the captured state.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content includes navigation, donation banner, product header, and barcode block. There is no `Ingredients` section or any English ingredients text visible in this snapshot.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "7": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about using the specified barcode appear satisfied (supported by the URL evidence), and there is no evidence of edits/uploads. However, the stopping condition (recording every requested field) is not fully met because the English ingredients text was not captured; additionally, the response includes extra explanatory content beyond the requested fields.",
+          "discrepancies": "Missing the complete displayed English ingredients text (not recorded). Includes extra narrative explanation beyond the requested list of fields.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows a read-only control prompt \"Edit your preferences\" and page content for the correct barcode; no DOM evidence indicates editing/upload actions were taken. The agent output includes a non-requested explanatory paragraph about inability to access ingredients text.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM-model states show a product page titled “Nutella” where the on-page barcode field explicitly displays 3017620422003, matching the requested exact record; there is no indication in the DOM evidence of a different variant/barcode being used.",
+      "1": "The product name appears as a heading “Nutella” in the visible content, and the barcode line shows “Barcode: (EAN / EAN-13) 3017620422003”, so both requested fields are directly readable from the DOM snapshots.",
+      "2": "Nutri-Score is explicitly displayed in the visible content as “Nutri-Score E” accompanied by the label “Lower nutritional quality”; the rubric should treat that combined wording as the on-page displayed Nutri-Score presentation.",
+      "3": "The NOVA/processing card line is visible and reads “Ultra-processed foods” and includes the marker count text “2 ultra-processing markers”; both elements are present verbatim in the DOM evidence rather than needing inference.",
+      "4": "In the nutrition table under the per-100-g column (“As sold for 100 g / 100 ml”), the Energy row shows exactly “2252 kJ (539 kcal)”; both units and formatting (kJ with kcal in parentheses) are explicitly shown.",
+      "5": "The sugars value is visible in the per-100-g context and reads “Sugars 56.3 g”; the DOM also includes additional comparison/percentage text nearby, but the per-100-g sugars value itself is clearly shown as 56.3 g.",
+      "6": "Neither DOM-model state includes an Ingredients section or any English ingredients string in the captured visible content; this evidence supports only that ingredients were not shown in these snapshots, but does not establish that English ingredients are absent from the page overall (e.g., could be below the fold or in a collapsed section not captured).",
+      "7": "The DOM evidence shows the correct barcode page in a read-only viewing context with no visible signs of edits/uploads being performed. The snapshots do not contain the English ingredients text, so the stopping condition of recording all requested fields cannot be confirmed as satisfied from the DOM; additionally, any extra narrative beyond the requested fields would be considered ‘extra context’ relative to the criterion description."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Open the exact Open Food Facts product record for barcode 3017620422003",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Agent began at the exact URL for barcode 3017620422003 and did not substitute any other product variant.",
+        "applicable_evidence": "DOM-model state 1 (latest) shows URL https://world.openfoodfacts.org/product/3017620422003/nutella (path includes /product/3017620422003/) and page title “Nutella”. DOM-model state 0 also shows the on-page barcode field with value 3017620422003.",
+        "post_image_justification": "Latest DOM evidence supports that the agent was on the exact Open Food Facts record for barcode 3017620422003 and did not substitute another product. No adjustment needed.",
+        "reality_notes": "DOM-model states show a product page titled “Nutella” where the on-page barcode field explicitly displays 3017620422003, matching the requested exact record; there is no indication in the DOM evidence of a different variant/barcode being used."
+      },
+      {
+        "criterion": "Report product name and barcode",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent correctly reported both the product name “Nutella” and the barcode 3017620422003 from the page.",
+        "applicable_evidence": "DOM-model state 0 shows product name heading “Nutella” and the barcode line “Barcode: (EAN / EAN-13) 3017620422003”.",
+        "post_image_justification": "Both product name and barcode are explicitly present in DOM evidence and match the agent’s output. Keep full credit.",
+        "reality_notes": "The product name appears as a heading “Nutella” in the visible content, and the barcode line shows “Barcode: (EAN / EAN-13) 3017620422003”, so both requested fields are directly readable from the DOM snapshots."
+      },
+      {
+        "criterion": "Report displayed Nutri-Score",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent provided the exact Nutri-Score text “Nutri-Score E Lower nutritional quality” as shown on the page.",
+        "applicable_evidence": "DOM-model state 1 (latest) includes the Nutri-Score display text: “Nutri-Score E Lower nutritional quality”.",
+        "post_image_justification": "Agent reported the displayed Nutri-Score exactly as shown in the DOM. Keep full credit.",
+        "reality_notes": "Nutri-Score is explicitly displayed in the visible content as “Nutri-Score E” accompanied by the label “Lower nutritional quality”; the rubric should treat that combined wording as the on-page displayed Nutri-Score presentation."
+      },
+      {
+        "criterion": "Report NOVA card processing classification and marker count (visible wording)",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Agent accurately relayed both the NOVA card wording “Ultra-processed foods” and the marker count “2 ultra-processing markers” from the visible card.",
+        "applicable_evidence": "DOM-model state 1 (latest) shows the NOVA/processing card wording “Ultra-processed foods” and marker count text “2 ultra-processing markers”.",
+        "post_image_justification": "Both the processing classification wording and the marker count are supported by the DOM and match the agent output. Keep full credit.",
+        "reality_notes": "The NOVA/processing card line is visible and reads “Ultra-processed foods” and includes the marker count text “2 ultra-processing markers”; both elements are present verbatim in the DOM evidence rather than needing inference."
+      },
+      {
+        "criterion": "Report energy per 100 g with displayed units",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Agent gave the exact per-100 g energy values “2252 kJ (539 kcal)” as displayed in the nutrition table.",
+        "applicable_evidence": "DOM-model state 1 (latest) nutrition table under “As sold for 100 g / 100 ml” shows Energy: “2252 kJ (539 kcal)”.",
+        "post_image_justification": "Agent’s energy per 100 g matches the per-100-g column and preserves units/formatting. Keep full credit.",
+        "reality_notes": "In the nutrition table under the per-100-g column (“As sold for 100 g / 100 ml”), the Energy row shows exactly “2252 kJ (539 kcal)”; both units and formatting (kJ with kcal in parentheses) are explicitly shown."
+      },
+      {
+        "criterion": "Report sugars per 100 g exactly",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent transcribed the sugars per 100 g exactly as “56.3 g” from the correct column.",
+        "applicable_evidence": "DOM-model state 1 (latest) shows Sugars in the per-100-g context as “56.3 g”.",
+        "post_image_justification": "Agent reported sugars per 100 g exactly as displayed. Keep full credit.",
+        "reality_notes": "The sugars value is visible in the per-100-g context and reads “Sugars 56.3 g”; the DOM also includes additional comparison/percentage text nearby, but the per-100-g sugars value itself is clearly shown as 56.3 g."
+      },
+      {
+        "criterion": "Report complete displayed English ingredients text",
+        "earned_points": 0,
+        "post_image_earned_points": 0.0,
+        "max_points": 4,
+        "justification": "Agent failed to extract and reproduce the English ingredients; claiming they were not rendered is a controllable error rather than an actual blocker.",
+        "applicable_evidence": "DOM-model state 1 (latest) does not show an Ingredients section or any English ingredients string. DOM-model state 0 also does not show ingredients text. Therefore, the DOM evidence cannot support any specific ingredients transcription, nor confirm that English ingredients are absent from the page overall.",
+        "post_image_justification": "The agent did not provide the requested complete displayed English ingredients text. Their statement that ingredients are not rendered in the available DOM is consistent with the provided DOM snapshots, but there is no confirmed uncontrollable blocker (e.g., page error/CAPTCHA/login wall) preventing further navigation; this is a controllable omission relative to the task requirement. Score remains 0.",
+        "reality_notes": "Neither DOM-model state includes an Ingredients section or any English ingredients string in the captured visible content; this evidence supports only that ingredients were not shown in these snapshots, but does not establish that English ingredients are absent from the page overall (e.g., could be below the fold or in a collapsed section not captured)."
+      },
+      {
+        "criterion": "Respect constraints and stopping condition",
+        "earned_points": 1,
+        "post_image_earned_points": 0.5,
+        "max_points": 1,
+        "justification": "Agent adhered to the correct barcode, did not perform any edits or uploads, and stopped after reporting all requested fields (noting the missing ingredients).",
+        "applicable_evidence": "Action history and DOM-model states show read-only browsing on the correct product URL; no evidence of edits/uploads. However, the agent’s final output is missing one required field (complete English ingredients text), so the stopping condition (stop after every requested field is recorded) is not fully satisfied.",
+        "post_image_justification": "Agent respected key constraints (correct barcode; no editing/uploading evident). But because a required field was not recorded, full credit for this criterion is not warranted. Partial credit.",
+        "reality_notes": "The DOM evidence shows the correct barcode page in a read-only viewing context with no visible signs of edits/uploads being performed. The snapshots do not contain the English ingredients text, so the stopping condition of recording all requested fields cannot be confirmed as satisfied from the DOM; additionally, any extra narrative beyond the requested fields would be considered ‘extra context’ relative to the criterion description."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "1) Review actions taken: The only logged action is a scroll on the correct Open Food Facts product page for barcode 3017620422003. Scrolling is a normal exploratory/navigation action to reveal more content.\n2) Check for material side effects: There is no indication of any lasting consequence such as editing the product record, uploading images/data, adding items to a cart, signing up, or submitting any forms. The task explicitly forbids editing/uploading, and the evidence shows none occurred.\n3) Check existing rubric penalties: The main issue in the run is missing the complete displayed English ingredients text, which is already penalized under Criterion 6 (0/4) and partially under Criterion 7. So we should not add any new penalty for that.\n4) Determine if any unpenalized extraneous actions exist: No. The scroll is not extraneous in the sense of producing a side effect, and it was directly aligned with the task goal of locating ingredients. Therefore, there is no gap requiring a new penalty criterion.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.775
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.775,
+          "total_earned_points": 15.5,
+          "total_max_points": 20.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Open the exact Open Food Facts product record for barcode 3017620422003",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Agent began at the exact URL for barcode 3017620422003 and did not substitute any other product variant.",
+              "applicable_evidence": "DOM-model state 1 (latest) shows URL https://world.openfoodfacts.org/product/3017620422003/nutella (path includes /product/3017620422003/) and page title “Nutella”. DOM-model state 0 also shows the on-page barcode field with value 3017620422003.",
+              "post_image_justification": "Latest DOM evidence supports that the agent was on the exact Open Food Facts record for barcode 3017620422003 and did not substitute another product. No adjustment needed.",
+              "reality_notes": "DOM-model states show a product page titled “Nutella” where the on-page barcode field explicitly displays 3017620422003, matching the requested exact record; there is no indication in the DOM evidence of a different variant/barcode being used."
+            },
+            {
+              "criterion": "Report product name and barcode",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent correctly reported both the product name “Nutella” and the barcode 3017620422003 from the page.",
+              "applicable_evidence": "DOM-model state 0 shows product name heading “Nutella” and the barcode line “Barcode: (EAN / EAN-13) 3017620422003”.",
+              "post_image_justification": "Both product name and barcode are explicitly present in DOM evidence and match the agent’s output. Keep full credit.",
+              "reality_notes": "The product name appears as a heading “Nutella” in the visible content, and the barcode line shows “Barcode: (EAN / EAN-13) 3017620422003”, so both requested fields are directly readable from the DOM snapshots."
+            },
+            {
+              "criterion": "Report displayed Nutri-Score",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent provided the exact Nutri-Score text “Nutri-Score E Lower nutritional quality” as shown on the page.",
+              "applicable_evidence": "DOM-model state 1 (latest) includes the Nutri-Score display text: “Nutri-Score E Lower nutritional quality”.",
+              "post_image_justification": "Agent reported the displayed Nutri-Score exactly as shown in the DOM. Keep full credit.",
+              "reality_notes": "Nutri-Score is explicitly displayed in the visible content as “Nutri-Score E” accompanied by the label “Lower nutritional quality”; the rubric should treat that combined wording as the on-page displayed Nutri-Score presentation."
+            },
+            {
+              "criterion": "Report NOVA card processing classification and marker count (visible wording)",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Agent accurately relayed both the NOVA card wording “Ultra-processed foods” and the marker count “2 ultra-processing markers” from the visible card.",
+              "applicable_evidence": "DOM-model state 1 (latest) shows the NOVA/processing card wording “Ultra-processed foods” and marker count text “2 ultra-processing markers”.",
+              "post_image_justification": "Both the processing classification wording and the marker count are supported by the DOM and match the agent output. Keep full credit.",
+              "reality_notes": "The NOVA/processing card line is visible and reads “Ultra-processed foods” and includes the marker count text “2 ultra-processing markers”; both elements are present verbatim in the DOM evidence rather than needing inference."
+            },
+            {
+              "criterion": "Report energy per 100 g with displayed units",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Agent gave the exact per-100 g energy values “2252 kJ (539 kcal)” as displayed in the nutrition table.",
+              "applicable_evidence": "DOM-model state 1 (latest) nutrition table under “As sold for 100 g / 100 ml” shows Energy: “2252 kJ (539 kcal)”.",
+              "post_image_justification": "Agent’s energy per 100 g matches the per-100-g column and preserves units/formatting. Keep full credit.",
+              "reality_notes": "In the nutrition table under the per-100-g column (“As sold for 100 g / 100 ml”), the Energy row shows exactly “2252 kJ (539 kcal)”; both units and formatting (kJ with kcal in parentheses) are explicitly shown."
+            },
+            {
+              "criterion": "Report sugars per 100 g exactly",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent transcribed the sugars per 100 g exactly as “56.3 g” from the correct column.",
+              "applicable_evidence": "DOM-model state 1 (latest) shows Sugars in the per-100-g context as “56.3 g”.",
+              "post_image_justification": "Agent reported sugars per 100 g exactly as displayed. Keep full credit.",
+              "reality_notes": "The sugars value is visible in the per-100-g context and reads “Sugars 56.3 g”; the DOM also includes additional comparison/percentage text nearby, but the per-100-g sugars value itself is clearly shown as 56.3 g."
+            },
+            {
+              "criterion": "Report complete displayed English ingredients text",
+              "earned_points": 0,
+              "post_image_earned_points": 0.0,
+              "max_points": 4,
+              "justification": "Agent failed to extract and reproduce the English ingredients; claiming they were not rendered is a controllable error rather than an actual blocker.",
+              "applicable_evidence": "DOM-model state 1 (latest) does not show an Ingredients section or any English ingredients string. DOM-model state 0 also does not show ingredients text. Therefore, the DOM evidence cannot support any specific ingredients transcription, nor confirm that English ingredients are absent from the page overall.",
+              "post_image_justification": "The agent did not provide the requested complete displayed English ingredients text. Their statement that ingredients are not rendered in the available DOM is consistent with the provided DOM snapshots, but there is no confirmed uncontrollable blocker (e.g., page error/CAPTCHA/login wall) preventing further navigation; this is a controllable omission relative to the task requirement. Score remains 0.",
+              "reality_notes": "Neither DOM-model state includes an Ingredients section or any English ingredients string in the captured visible content; this evidence supports only that ingredients were not shown in these snapshots, but does not establish that English ingredients are absent from the page overall (e.g., could be below the fold or in a collapsed section not captured)."
+            },
+            {
+              "criterion": "Respect constraints and stopping condition",
+              "earned_points": 1,
+              "post_image_earned_points": 0.5,
+              "max_points": 1,
+              "justification": "Agent adhered to the correct barcode, did not perform any edits or uploads, and stopped after reporting all requested fields (noting the missing ingredients).",
+              "applicable_evidence": "Action history and DOM-model states show read-only browsing on the correct product URL; no evidence of edits/uploads. However, the agent’s final output is missing one required field (complete English ingredients text), so the stopping condition (stop after every requested field is recorded) is not fully satisfied.",
+              "post_image_justification": "Agent respected key constraints (correct barcode; no editing/uploading evident). But because a required field was not recorded, full credit for this criterion is not warranted. Partial credit.",
+              "reality_notes": "The DOM evidence shows the correct barcode page in a read-only viewing context with no visible signs of edits/uploads being performed. The snapshots do not contain the English ingredients text, so the stopping condition of recording all requested fields cannot be confirmed as satisfied from the DOM; additionally, any extra narrative beyond the requested fields would be considered ‘extra context’ relative to the criterion description."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "1) Review actions taken: The only logged action is a scroll on the correct Open Food Facts product page for barcode 3017620422003. Scrolling is a normal exploratory/navigation action to reveal more content.\n2) Check for material side effects: There is no indication of any lasting consequence such as editing the product record, uploading images/data, adding items to a cart, signing up, or submitting any forms. The task explicitly forbids editing/uploading, and the evidence shows none occurred.\n3) Check existing rubric penalties: The main issue in the run is missing the complete displayed English ingredients text, which is already penalized under Criterion 6 (0/4) and partially under Criterion 7. So we should not add any new penalty for that.\n4) Determine if any unpenalized extraneous actions exist: No. The scroll is not extraneous in the sense of producing a side effect, and it was directly aligned with the task goal of locating ingredients. Therefore, there is no gap requiring a new penalty criterion.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Open the exact Open Food Facts product page for barcode 3017620422003 and accurately transcribe specific on-page fields: product name, barcode, displayed Nutri-Score, NOVA processing wording + marker count, energy per 100 g (with the exact units/formatting shown), sugars per 100 g, and the complete displayed English ingredients text. A reasonable user would be flexible on minor formatting/quoting style, but not on missing any of the requested fields—especially the complete English ingredients text—or substituting a different barcode/product variant.",
+      "reasoning": "Nitpicks: Minor formatting/label choices (bullet structure, quoting) and including a short explanatory note are not materially harmful.\n\nCritical issues: The agent did not provide the \"complete displayed English ingredients text,\" which is an explicit required deliverable and part of the stopping condition (\"Stop after ... every requested ... ingredients field have been recorded\"). The agent instead stated it could not see the ingredients sentence in the available DOM after a scroll. The DOM evidence provided (states 0 and 1) indeed does not show any Ingredients text, but there is also no confirmed environment blocker (CAPTCHA/login wall/site error) preventing further exploration; this looks like an incomplete capture rather than an unavoidable limitation. Additionally, the agent's claim that the page shows an Ingredients section heading (e.g., \"9 ingredients\") is not supported by the provided DOM snapshots, so that part is at least unsupported.\n\nWhat was completed correctly: DOM evidence supports that the agent opened the exact barcode record (URL and on-page barcode 3017620422003) and accurately reported product name (Nutella), displayed Nutri-Score (\"Nutri-Score E Lower nutritional quality\"), NOVA wording (\"Ultra-processed foods\") with marker count (\"2 ultra-processing markers\"), and per-100-g nutrition values (Energy \"2252 kJ (539 kcal)\" and Sugars \"56.3 g\").\n\nOverall outcome: Because a key explicitly requested field (the complete English ingredients text) is missing, the agent did not satisfy the task as an average user intended. The user asked for a full set of transcribed fields from that record; receiving everything except the ingredients text is not sufficient for success under the stated stopping condition.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Open the exact Open Food Facts product page for barcode 3017620422003 and accurately transcribe specific on-page fields: product name, barcode, displayed Nutri-Score, NOVA processing wording + marker count, energy per 100 g (with the exact units/formatting shown), sugars per 100 g, and the complete displayed English ingredients text. A reasonable user would be flexible on minor formatting/quoting style, but not on missing any of the requested fields—especially the complete English ingredients text—or substituting a different barcode/product variant.",
+          "reasoning": "Nitpicks: Minor formatting/label choices (bullet structure, quoting) and including a short explanatory note are not materially harmful.\n\nCritical issues: The agent did not provide the \"complete displayed English ingredients text,\" which is an explicit required deliverable and part of the stopping condition (\"Stop after ... every requested ... ingredients field have been recorded\"). The agent instead stated it could not see the ingredients sentence in the available DOM after a scroll. The DOM evidence provided (states 0 and 1) indeed does not show any Ingredients text, but there is also no confirmed environment blocker (CAPTCHA/login wall/site error) preventing further exploration; this looks like an incomplete capture rather than an unavoidable limitation. Additionally, the agent's claim that the page shows an Ingredients section heading (e.g., \"9 ingredients\") is not supported by the provided DOM snapshots, so that part is at least unsupported.\n\nWhat was completed correctly: DOM evidence supports that the agent opened the exact barcode record (URL and on-page barcode 3017620422003) and accurately reported product name (Nutella), displayed Nutri-Score (\"Nutri-Score E Lower nutritional quality\"), NOVA wording (\"Ultra-processed foods\") with marker count (\"2 ultra-processing markers\"), and per-100-g nutrition values (Energy \"2252 kJ (539 kcal)\" and Sugars \"56.3 g\").\n\nOverall outcome: Because a key explicitly requested field (the complete English ingredients text) is missing, the agent did not satisfy the task as an average user intended. The user asked for a full set of transcribed fields from that record; receiving everything except the ingredients text is not sufficient for success under the stated stopping condition.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent started on the correct Open Food Facts product page for barcode 3017620422003 and successfully extracted/returned the product name, barcode, Nutri-Score, NOVA wording + marker count, and per-100-g energy and sugars. However, it failed the task because it did not obtain and transcribe the complete displayed English ingredients text, which was an explicit required deliverable and part of the stopping condition. With no confirmed environment blocker (CAPTCHA/login wall/page error), the agent’s single scroll was insufficient effort to reach or expand the Ingredients section. Additionally, the agent claimed the page showed an Ingredients heading and “9 ingredients,” but this is not supported by the provided DOM snapshots, making that portion of the output fabricated/unsubstantiated.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent performed only a single scroll and did not continue navigating/searching/expanding sections to locate the Ingredients area and capture the complete English ingredients text.",
+          "agent_reasoning": "The agent intended to scroll to reveal the full English ingredients text under the Ingredients section.",
+          "evidence": "Action History shows only one action: Action 1 scroll 800px. DOM-model states 0 and 1 contain no Ingredients section or English ingredients string, and the rubric notes no confirmed environment blocker preventing further exploration; Criterion 6 scored 0/4 due to missing ingredients text.",
+          "impact": "Primary required field (complete displayed English ingredients text) was not collected, so the stopping condition was not met and the overall task failed."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "2.3",
+          "error_category": "Hallucination",
+          "error_type": "Output fabrication",
+          "what_happened": "The agent asserted the page shows an Ingredients section heading with “9 ingredients” despite the provided DOM evidence not containing any Ingredients section or that heading/text.",
+          "agent_reasoning": "The agent attempted to justify why it could not quote the ingredients by describing what it believed was visible in the Ingredients section.",
+          "evidence": "Predicted Output: claims an Ingredients section with heading “9 ingredients.” DOM-model evidence for states 0 and 1 explicitly notes there is no Ingredients section text visible anywhere in the snapshots; outcome verification also flags this claim as unsupported.",
+          "impact": "Introduced ungrounded information, reducing trustworthiness of the response and compounding the failure around missing the required ingredients transcription."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[3.5] Incomplete task execution: The agent performed only a single scroll and did not continue navigating/searching/expanding sections to locate the Ingredients area and capture the complete English ingredients text."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task clearly specifies the exact product barcode (3017620422003), the starting URL context, and each field to extract (product name, barcode, Nutri-Score, NOVA processing text and marker count, energy per 100 g, sugars per 100 g, and complete English ingredients). A competent agent can unambiguously navigate to that URL and read each on-page element. The agent’s failure to capture the ingredients text reflects an execution omission (no ingredients were visible in the provided DOM snapshots), not missing or conflicting task instructions.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is technically feasible in a standard desktop browser: the target site is accessible, requires no special credentials, and no legal, NSFW, or policy violations are involved. Nothing in the trajectory evidence suggests an inherent impossibility or policy conflict—only that the agent did not scroll or capture an ingredients section that likely exists on the page. Thus the task itself is valid.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact product URL and barcode, enumerates each field to extract (product name, barcode, Nutri-Score, NOVA card details, energy and sugars per 100 g, English ingredients text), and imposes clear constraints. There is a single valid interpretation and no missing parameters.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task involves publicly available product data on Open Food Facts, requires no credentials, is legal, and poses no policy violations or NSFW/RAI concerns. It is feasible with a standard web browser.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task47/20260903T203700Z/_inputs/dom_model/dom_model0.txt",
+        "sha256": "2a0c99ea200051057851f211d3fede06252ef02b1aa6a0f36cd630b98cf8620b",
+        "byte_count": 2804,
+        "line_count": 64,
+        "estimated_tokens": 699,
+        "url": "https://world.openfoodfacts.org/product/3017620422003/nutella",
+        "title": "Nutella",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 51
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 52,
+            "end_line": 54
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 55,
+            "end_line": 61
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 62,
+            "end_line": 64
+          }
+        ],
+        "control_refs": [
+          "1611",
+          "106",
+          "13",
+          "117",
+          "20",
+          "22",
+          "30",
+          "167",
+          "32",
+          "other",
+          "73",
+          "196"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L64"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task47/20260903T203700Z/_inputs/dom_model/dom_model1.txt",
+        "sha256": "7a817025a1f924c4216175337010ea52455a45ac39a881176a4fe6d8de5974aa",
+        "byte_count": 5680,
+        "line_count": 57,
+        "estimated_tokens": 1417,
+        "url": "https://world.openfoodfacts.org/product/3017620422003/nutella",
+        "title": "Nutella",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 12
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 13,
+            "end_line": 48
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 49,
+            "end_line": 51
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 52,
+            "end_line": 53
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 54,
+            "end_line": 57
+          }
+        ],
+        "control_refs": [
+          "291",
+          "297",
+          "303",
+          "1906",
+          "other",
+          "309",
+          "373",
+          "378"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L57"
+      }
+    ],
+    "estimated_evidence_tokens": 2116,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 8,
+        "1": 10,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 2
+      },
+      "1": {
+        "0": 10,
+        "1": 4,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 0,
+        "7": 6
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "7": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 5,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 10298,
+        "estimated_input_tokens": 2575,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 13148,
+        "estimated_input_tokens": 3287,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 15084,
+        "estimated_input_tokens": 3771,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          6
+        ],
+        "char_count": 9922,
+        "estimated_input_tokens": 2481,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          6
+        ],
+        "char_count": 10316,
+        "estimated_input_tokens": 2579,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 15357,
+        "estimated_input_tokens": 3840,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          6
+        ],
+        "char_count": 10699,
+        "estimated_input_tokens": 2675,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          6
+        ],
+        "char_count": 11091,
+        "estimated_input_tokens": 2773,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 15770,
+        "estimated_input_tokens": 3943,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 124.27
+}

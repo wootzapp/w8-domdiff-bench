@@ -41,9 +41,18 @@ class DomModelRubricAgent(MMRubricAgent):
 
     def _load_screenshots(self, screenshots_dir: str, actions_list: list) -> list[DomModelState]:
         action_count = len(actions_list)
-        states = load_dom_model_states(screenshots_dir, action_count=action_count)
+        all_states = load_dom_model_states(screenshots_dir, action_count=action_count)
+        states = all_states
+        if len(states) != action_count + 1:
+            raise ValueError(
+                "DOM evidence must contain exactly N+1 states for N actions"
+            )
         self._dom_action_count = action_count
+        self._dom_states_by_index = {state.index: state for state in states}
         self.evidence_audit = base_audit(states)
+        self.evidence_audit["state_selection_policy"] = "all_states_0_through_n"
+        self.evidence_audit["source_complete_state_count"] = len(all_states)
+        self.evidence_audit["excluded_source_states"] = []
         budget = int(getattr(self.config, "dom_model_state_char_budget", 350000))
         packed = [pack_state(state, action_count=action_count, max_chars=budget) for state in states]
         self._dom_rendered_states = {
@@ -202,7 +211,12 @@ class DomModelRubricAgent(MMRubricAgent):
     def _record_selection(
         self, grouped: dict[int, list[int]], relevance_scores: dict[int, dict] | None = None
     ) -> None:
-        state_count = int(self.evidence_audit.get("complete_state_count", 0))
+        audited_states = self.evidence_audit.get("states")
+        state_indices = (
+            [state["index"] for state in audited_states]
+            if audited_states is not None
+            else sorted((relevance_scores or {}).keys())
+        )
         selection: dict[str, Any] = {}
         for criterion_idx, selected in grouped.items():
             selected_set = set(selected)
@@ -219,7 +233,7 @@ class DomModelRubricAgent(MMRubricAgent):
                     "selected": state_idx in selected_set,
                     "omission_reason": None if state_idx in selected_set else "outside_top_k_or_filtered",
                 }
-                for state_idx in range(state_count)
+                for state_idx in state_indices
             ]
         self.evidence_audit["selection"] = selection
 
@@ -265,7 +279,7 @@ class DomModelRubricAgent(MMRubricAgent):
             criterion_info=self._criterion_info(criterion_idx, criterion),
             conditional_check=conditional_check,
             conditional_output=conditional_output,
-            state=states[state_idx],
+            state=self._dom_states_by_index[state_idx],
             action_count=getattr(self, "_dom_action_count", len(states) - 1),
             rendered_state=self._dom_rendered_states[state_idx],
         )
@@ -417,7 +431,7 @@ class DomModelRubricAgent(MMRubricAgent):
                 action_history=action_history,
                 predicted_output=predicted_output,
                 criteria_info=criteria_info,
-                state=screenshots[state_idx],
+                state=self._dom_states_by_index[state_idx],
                 action_count=getattr(self, "_dom_action_count", len(screenshots) - 1),
                 rendered_state=self._dom_rendered_states[state_idx],
             )

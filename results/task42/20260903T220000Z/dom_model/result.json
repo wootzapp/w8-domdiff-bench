@@ -1,0 +1,2284 @@
+{
+  "task_id": "browser_task_053-book-edition-resolution-20260902T210042Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.8666666666666667,
+  "rubric_total_max_points": 15.0,
+  "rubric_total_earned_points": 13.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: None that materially affect usefulness (the agent’s formatting as a bullet list is fine).\n\nCritical issues: (1) The task requires using the edition reached through the supplied ISBN and not substituting metadata from another edition. While the agent is on an edition page (OL37076991M), the provided DOM evidence does not explicitly confirm the agent navigated via an /isbn/9780141439518 route; this is slightly weakened but not, by itself, a decisive failure because the prompt allows the starting URL context and it appears consistent with the requested ISBN edition. (2) The bigger issue is the constraint “Preserve the ISBN-13 … exactly as displayed.” In the DOM evidence, the ISBN-13 is not shown as a labeled identifier field for the edition details; the only explicit appearance of “9780141439518” is in an editions table row. The agent asserts it was captured from the edition’s Details metadata. That specific claim (that it was displayed there, and that formatting was preserved exactly as displayed) is not supported by the DOM evidence provided. Because the task explicitly emphasizes recording the ISBN-13 exactly as displayed from the ISBN-resolved edition (and not substituting), this lack of clear edition-identifier evidence makes the delivered ISBN-13 field not reliably compliant.\n\nWhat the agent did accomplish: DOM evidence supports Title (Pride and Prejudice), displayed author (Jane Austen), Publish Date (2003), Publisher (Penguin Books), Language (English), and Pages (435) for this edition page. Those fields match the on-page Book Details block shown in the DOM.\n\nOverall outcome: The agent delivered all requested fields, but the ISBN-13 portion is not sufficiently evidenced as being taken from the edition’s displayed identifiers exactly as shown (and the agent’s claim about where it was displayed appears overstated). Given the task’s explicit constraints around ISBN-resolution and exact ISBN-13 display, this is a critical compliance gap for the primary deliverable.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "The user wanted the bibliographic metadata for the specific Open Library edition that is resolved by ISBN-13 9780141439518, specifically: edition title, displayed author, the edition’s displayed publish date (not the work’s original publication date), publisher, language, exact page count, and the ISBN-13 exactly as displayed. A reasonable user would be flexible on minor formatting/presentation, but not on using a different edition or reporting an ISBN/page count that isn’t actually shown for that resolved edition."
+  },
+  "preflight": {
+    "task_id": "browser_task_053-book-edition-resolution-20260902T210042Z",
+    "actions": 7,
+    "dom_model_states": 8,
+    "initial_state": 0,
+    "final_state": 7,
+    "alignment": {
+      "task_id": "browser_task_053-book-edition-resolution-20260902T210042Z",
+      "action_count": 7,
+      "state_count": 8,
+      "initial_state": 0,
+      "final_state": 7,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "ref": "e16",
+            "target": {
+              "ref": "e16",
+              "role": "heading",
+              "name": "Edition Identifiers"
+            },
+            "pixels": 400,
+            "thoughts": "Need to reveal Edition Identifiers section to capture ISBN-13 for this specific edition; scrolling in that region should surface it."
+          },
+          "observed_after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice"
+        },
+        {
+          "ordinal": 2,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "ref": "e13",
+            "target": {
+              "ref": "e13",
+              "role": "heading",
+              "name": "Book Details"
+            },
+            "pixels": 400,
+            "thoughts": "Need to reveal the Book Details section content (publish date, publisher, language, pages, ISBN-13) under the visible 'Book Details' heading."
+          },
+          "observed_after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice"
+        },
+        {
+          "ordinal": 3,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "ref": "e13",
+            "target": {
+              "ref": "e13",
+              "role": "heading",
+              "name": "Book Details"
+            },
+            "pixels": 800,
+            "thoughts": "Need to scroll further around the Book Details section to reveal specific fields like publish date, publisher, language, page count, and ISBN-13 for this edition."
+          },
+          "observed_after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice"
+        },
+        {
+          "ordinal": 4,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "ref": "e13",
+            "target": {
+              "ref": "e13",
+              "role": "heading",
+              "name": "Book Details"
+            },
+            "pixels": 800,
+            "thoughts": "Need to scroll further around the Book Details section to reveal specific fields like publish date, publisher, language, page count, and ISBN-13."
+          },
+          "observed_after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice"
+        },
+        {
+          "ordinal": 5,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e63",
+            "target": {
+              "ref": "e63",
+              "role": "link",
+              "name": "Details"
+            },
+            "thoughts": "Need the detailed metadata (publish date, publisher, language, pages, ISBN-13), which on Open Library is usually under the Details tab, so I should click it."
+          },
+          "observed_after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details"
+        },
+        {
+          "ordinal": 6,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "ref": "e13",
+            "target": {
+              "ref": "e13",
+              "role": "heading",
+              "name": "Book Details"
+            },
+            "pixels": 800,
+            "thoughts": "Need to scroll within the Details tab to reveal the Book Details fields including publish date, publisher, language, pages, and ISBN-13 for this edition."
+          },
+          "observed_after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details"
+        },
+        {
+          "ordinal": 7,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "ref": "e13",
+            "target": {
+              "ref": "e13",
+              "role": "heading",
+              "name": "Book Details"
+            },
+            "pixels": -800,
+            "thoughts": "Need to scroll back up from the footer to where the Book Details metadata (publish date, publisher, language, pages, ISBN-13) is visible."
+          },
+          "observed_after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "5f7964e47640d98cd4cdc9b6536f731bd2b5025485f9ec27ca7883f85069d30d",
+          "after_sha256": "1a33c66581dcba7699591e57b232b8d92e92ce64f20131414003b9d96dabdba6",
+          "before_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+          "after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "1a33c66581dcba7699591e57b232b8d92e92ce64f20131414003b9d96dabdba6",
+          "after_sha256": "a2ca4f2df8d20d7f1c261283ad5780273dd83e0f024dca9c1de1ed52e4b89afd",
+          "before_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+          "after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "a2ca4f2df8d20d7f1c261283ad5780273dd83e0f024dca9c1de1ed52e4b89afd",
+          "after_sha256": "5fa77b04d12f912a5cc9ce50eaacadba05c02fda6b10a591e0e66f8e72973e2e",
+          "before_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+          "after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "5fa77b04d12f912a5cc9ce50eaacadba05c02fda6b10a591e0e66f8e72973e2e",
+          "after_sha256": "5fa77b04d12f912a5cc9ce50eaacadba05c02fda6b10a591e0e66f8e72973e2e",
+          "before_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+          "after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "5fa77b04d12f912a5cc9ce50eaacadba05c02fda6b10a591e0e66f8e72973e2e",
+          "after_sha256": "7c3f4d5d7f76da81c1b6f5104cfbf5c537433d3cfee9dba03d3d7e9634da3a1f",
+          "before_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+          "after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "7c3f4d5d7f76da81c1b6f5104cfbf5c537433d3cfee9dba03d3d7e9634da3a1f",
+          "after_sha256": "b4197f672923cbddfd3007c49593966164d295885648f103cd360b6deaa9ab35",
+          "before_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details",
+          "after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details"
+        },
+        {
+          "from_state": 6,
+          "action_ordinal": 7,
+          "to_state": 7,
+          "before_sha256": "b4197f672923cbddfd3007c49593966164d295885648f103cd360b6deaa9ab35",
+          "after_sha256": "4eadbce2f854ad2e9a2459eabac8a0fb9c996d94066f7f545645e932d7d49097",
+          "before_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details",
+          "after_url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e16' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e13' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e13' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e13' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e63' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e13' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e13' is not exposed by dom_model6",
+          "action_ordinal": 7,
+          "state_index": 6
+        },
+        {
+          "code": "source_declares_truncation",
+          "message": "dom_model7: source_declares_truncation",
+          "action_ordinal": null,
+          "state_index": 7
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "df2cd914f5daf2c129e0016af85936e64a8eb2834b1efb4856281c21f710a629",
+    "criterion_order": [
+      "Access Open Library edition via ISBN-13 (9780141439518)",
+      "Record resolved edition title",
+      "Record displayed author",
+      "Record displayed Publish Date",
+      "Record publisher",
+      "Record language",
+      "Record page count exactly as displayed",
+      "Record ISBN-13 exactly as displayed",
+      "Follow constraints (no sign-in/borrow/waitlist; stop after fields captured)"
+    ],
+    "maximum_points": [
+      3.0,
+      1.0,
+      1.0,
+      2.0,
+      1.0,
+      1.0,
+      2.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 15.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "f640a8bf4c481964c819baeeda35db004fc627a859c2e724c5e766fc7f9bb9cc"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/frozen_rubric.json",
+  "rubric_sha256": "df2cd914f5daf2c129e0016af85936e64a8eb2834b1efb4856281c21f710a629",
+  "criterion_denominator": 15,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 117294,
+      "completion_tokens": 12281,
+      "reasoning_tokens": 0,
+      "total_tokens": 129575
+    },
+    "action_judge": {
+      "prompt_tokens": 19560,
+      "completion_tokens": 4536,
+      "reasoning_tokens": 3072,
+      "total_tokens": 24096
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 26,
+      "api_attempts": 26,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 8,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 3,
+        "1": 6,
+        "2": 8,
+        "3": 9,
+        "4": 9,
+        "5": 9,
+        "6": 9,
+        "7": 1,
+        "8": 4,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 2,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 1,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 2,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 1,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 2,
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 4,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 2,
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 3,
+        "screenshot_idx": 5
+      },
+      "screenshot_6": {
+        "0": 3,
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 2,
+        "screenshot_idx": 6
+      },
+      "screenshot_7": {
+        "0": 3,
+        "1": 9,
+        "2": 9,
+        "3": 9,
+        "4": 9,
+        "5": 9,
+        "6": 9,
+        "7": 1,
+        "8": 6,
+        "screenshot_idx": 7
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        3,
+        2,
+        7,
+        6,
+        0
+      ],
+      "1": [
+        7,
+        0,
+        6,
+        5,
+        4
+      ],
+      "2": [
+        7,
+        0,
+        6,
+        5,
+        4
+      ],
+      "3": [
+        7,
+        0,
+        6,
+        5,
+        4
+      ],
+      "4": [
+        7,
+        0,
+        6,
+        5,
+        4
+      ],
+      "5": [
+        7,
+        0,
+        6,
+        5,
+        4
+      ],
+      "6": [
+        7,
+        0,
+        6,
+        5,
+        4
+      ],
+      "7": [
+        7,
+        0,
+        6,
+        5,
+        4
+      ],
+      "8": [
+        7,
+        4,
+        0,
+        5,
+        6
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM proves the agent was on an Open Library *edition page* at https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice (DOM_MODEL_STATE_INDEX: 3, URL). However, Criterion 0 requires evidence that the edition was reached via the supplied ISBN-13 (e.g., /isbn/9780141439518) or otherwise demonstrates ISBN-resolution. The DOM snapshot does not show an /isbn/9780141439518 URL, nor does it show any on-page \"ISBN\" value or an explicit linkage stating this edition is resolved from that ISBN. Therefore, it is only partially supported: we can confirm the edition page, but cannot confirm it was ISBN-resolved from 9780141439518 from the provided DOM evidence.",
+          "discrepancies": "Agent claims they used the ISBN-resolved edition via ISBN 9780141439518 and extracted ISBN-13/page count from the Details tab. In DOM_MODEL_STATE_INDEX: 3, there is no visible DOM evidence of the Details tab, Book Details fields, ISBN-13 value, or an /isbn/9780141439518 resolution path; only the edition URL and page title are shown.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the browser URL as https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice and the page title text \"Pride and Prejudice by Jane Austen | Open Library\". (DOM_MODEL_STATE_INDEX: 3, fields: URL and Title.) No DOM text for an ISBN route (e.g., /isbn/9780141439518) or an on-page ISBN identifier is present in this snapshot; visible content is largely footer/navigation and \"Loading carousel\" entries.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe criterion requires DOM evidence that the viewed edition is the one resolved from the supplied ISBN-13 (9780141439518), typically via an ISBN route or explicit ISBN-13 displayed on the edition page. The DOM snapshot confirms the agent is on an Open Library edition page (URL: https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice) and shows the document title text \"Pride and Prejudice by Jane Austen | Open Library\" (DOM_MODEL_STATE_INDEX: 2). However, the DOM snapshot does not contain evidence of ISBN-based resolution (no navigation to \"/isbn/9780141439518\" is shown) and does not show the ISBN-13 value anywhere in the captured visible content. Therefore, the evidence only partially supports the claim that this edition is specifically ISBN-resolved from 9780141439518.",
+          "discrepancies": "The agent’s predicted output asserts the edition was \"reached via ISBN 9780141439518\" and provides an ISBN-13 value \"9780141439518\" plus other metadata (publish date, publisher, language, pages). DOM_MODEL_STATE_INDEX: 2 does not show any of those metadata fields (including ISBN-13) and does not show an ISBN-resolution URL/path, so those browser-derived claims are not supported by the provided DOM evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows the browser is on an Open Library edition page with URL \"https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice\" and document title \"Pride and Prejudice by Jane Austen | Open Library\". This provides evidence of being on an edition page for Pride and Prejudice and that the page is associated with Jane Austen, but it does not display any ISBN-resolution path (e.g., \"/isbn/9780141439518\") nor any ISBN-13 field/value in the visible content captured. The visible content in this snapshot is dominated by the \"Community Reviews\" section and does not include \"Book Details\" or \"Edition Identifiers\" metadata.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM for the ISBN-resolved edition page explicitly shows the edition title as \"Pride and Prejudice\", matching the agent’s recorded title.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7; URL: https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details; VISIBLE CONTENT includes the edition title text: \"Pride and Prejudice\".",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the resolved edition’s title as \"Pride and Prejudice\" on the ISBN-resolved edition page (OL37076991M).",
+          "discrepancies": "No discrepancy between the agent-reported title and the DOM text shown.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0; URL: https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice; Page title text includes: \"Pride and Prejudice by Jane Austen | Open Library\". Visible content includes the edition title line: \"Pride and Prejudice\".",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe displayed author on the edition page is \"Jane Austen\" (shown as \"by Jane Austen\"), matching the agent’s recorded author.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7; URL: https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details; VISIBLE CONTENT shows \"by Jane Austen\" directly under the title.",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe displayed author on the resolved edition page is \"Jane Austen\", matching the agent output.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0; Visible content shows: \"by Jane Austen\" directly under the title \"Pride and Prejudice\"; Page title also includes \"Pride and Prejudice by Jane Austen | Open Library\".",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe edition page explicitly displays the Publish Date as \"2003\", and the agent reported \"2003\" (edition-level date, not the work’s original date).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7; VISIBLE CONTENT includes label/value pair: \"Publish Date\" followed by \"2003\".",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe edition page displays Publish Date as \"2003\", and the agent reported \"2003\" (edition-level publish date, not original work date).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0; Visible content includes the field label and value: \"Publish Date\" then \"2003\".",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM provides evidence that the publisher value for this edition is \"Penguin Books\" (via the \"Penguin Books\" link and the combined Book Details text in the scroll-region debug string). This matches the agent’s recorded publisher.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7; VISIBLE CONTENT shows the label \"Publisher\" (value not printed inline in the VISIBLE CONTENT list), and USEFUL PAGE ACTIONS include a link labeled \"Penguin Books\" ([356] link \"Penguin Books\"). Also SECONDARY/DEBUG shows a scroll-region string: \"Publish Date 2003 Publisher Penguin Books Language English Pages 435\".",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe publisher for the resolved edition is shown as \"Penguin Books\", consistent with the agent output.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0; Visible content shows labels: \"Publisher\" and (in the same visible metadata block / scroll-region text) \"Publisher Penguin Books\"; also a link labeled \"Penguin Books\" is present (useful page actions: link \"Penguin Books\").",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM indicates the language as \"English\" (both as a link and in the combined Book Details text), matching the agent’s recorded language.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7; USEFUL PAGE ACTIONS include [359] link \"English\". SECONDARY/DEBUG shows: \"Publish Date 2003 Publisher Penguin Books Language English Pages 435\".",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe language displayed for the resolved edition is \"English\", matching the agent output.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0; Visible content includes labels \"Language\" and the metadata block text \"Language English\"; also a link labeled \"English\" is present (useful page actions: link \"English\").",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "6": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe edition page explicitly displays the page count as \"435\", and the agent reported \"435\" exactly as displayed.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7; VISIBLE CONTENT includes label \"Pages\" followed by value \"435\". SECONDARY/DEBUG also shows: \"... Pages 435\".",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe resolved edition’s page count is displayed as \"435\", and the agent preserved it exactly as displayed.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0; Visible content includes label \"Pages\" and value \"435\"; also the scroll-region text includes \"Pages 435\".",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "7": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM snapshot shows the ISBN-13 digits \"9780141439518\" in the editions table row that corresponds to the 2003 Penguin Books paperback (the edition consistent with the task’s ISBN). However, the snapshot does not show an explicit labeled \"ISBN 13\" field/value pair for the resolved edition details section, so support is limited to the presence of the ISBN-13 digits rather than confirmation of exact ISBN-13 field formatting as displayed in an identifiers section.",
+          "discrepancies": "Potential discrepancy risk: the agent claims the ISBN-13 was shown as \"9780141439518\" for the resolved edition; the DOM supports the digits in the matching editions row but does not show an explicit \"ISBN-13\" label/value rendering or any hyphenation formatting (so exact formatting-as-displayed cannot be fully verified from this snapshot).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7; TABLE 1 (editions list) first row for \"14 Pride and Prejudice 2003, Penguin Books Paperback in English - Tanner introduction (3)\" includes identifiers: \"0141439513\" and \"9780141439518\". (No separate ISBN-13 field is shown in the visible Book Details block in this DOM snapshot.)",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence provided does not include an ISBN-13 field/value for this edition page, so the agent’s claim that ISBN-13 is \"9780141439518\" cannot be verified from the supplied DOM snapshot.",
+          "discrepancies": "Agent reported an ISBN-13 (9780141439518), but the provided DOM evidence does not show any ISBN-13 field/value to support it.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0; The visible content/metadata block shown includes labels \"Publish Date\", \"Publisher\", \"Language\", \"Pages\" but does not display any \"ISBN\" or \"ISBN-13\" value. The DOM snapshot does not show \"ISBN-13\" or \"9780141439518\" anywhere in visible content.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion: Record ISBN-13 exactly as displayed.\nThe provided DOM evidence (state 6) does not contain the ISBN-13 field/value, nor the “Edition Identifiers”/“Book Details” area where ISBN-13 would typically be shown. Because the relevant content is absent from the captured DOM snapshot, the DOM-model evidence cannot confirm whether the agent’s reported ISBN-13 (“9780141439518”) was displayed, nor whether any formatting (hyphens/spaces) was present and preserved exactly as shown.",
+          "discrepancies": "The agent output claims “ISBN-13: 9780141439518” for the ISBN-resolved edition, but DOM_MODEL_STATE_INDEX 6 does not display any ISBN-13 value (or the relevant metadata section) to substantiate that it was recorded exactly as displayed (including formatting).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 (URL: https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details). The captured DOM for this state shows only footer/navigation content (e.g., “Open Library”, “Terms of Service”, “Donate”, language list, etc.) and does not include the “Book Details”/“Edition Identifiers” sections or any ISBN field. No text matching an ISBN-13 (e.g., “9780141439518”) appears in the visible-content capture for this state.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nRubric criterion evaluated: Record ISBN-13 exactly as displayed.\nThe DOM evidence provided (STATE_INDEX 5) does not include any ISBN-13 label/value, nor any “Edition Identifiers” section content. Because the relevant field is not present in the captured DOM scope for this state, the DOM-model cannot confirm whether “9780141439518” was displayed, or whether any hyphen/spacing formatting was present to preserve “exactly as displayed.” Therefore, support for the agent’s reported ISBN-13 cannot be established from the DOM-model evidence here.",
+          "discrepancies": "The agent’s predicted output claims “ISBN-13: 9780141439518” was visible on the ISBN-resolved edition page, but DOM_MODEL_STATE_INDEX 5 does not show an ISBN-13 field/value at all, so the claim is not verifiable from this DOM snapshot (neither supported nor contradicted).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 (URL: https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details). The visible DOM content shown in this state contains community review metrics, genre/mood lists, and external links, but it does not display an “ISBN-13” field or the value “9780141439518”. The snapshot explicitly shows items like “Community Reviews (12)”, “Genres”, “Mood”, and “Loading Lists”, with no “Edition Identifiers”/“ISBN-13” label/value present in the visible content.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence provided does not include any ISBN-13 label/value for the ISBN-resolved edition, so it cannot verify whether the agent’s reported ISBN-13 \"9780141439518\" matches the formatting \"exactly as displayed\" on the page (e.g., with or without hyphens/spaces).",
+          "discrepancies": "Agent claims \"ISBN-13: 9780141439518\" as displayed. The provided DOM snapshot does not show any ISBN-13 field/value, so the claim’s exact displayed formatting is unverified from the evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 (m4:L1-L62)\nURL shown: https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice\nPage title shown in DOM: \"Pride and Prejudice by Jane Austen | Open Library\"\nVisible content captured is footer/navigation and \"Loading carousel\" items; there is no visible \"Edition Identifiers\" section, no \"Book Details\" section, and no field/value containing \"ISBN-13\" or the digits \"9780141439518\" in the provided snapshot.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        }
+      ],
+      "8": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBased on the recorded actions and the final state, the agent did not sign in, borrow, or join a waitlist. The agent’s output stops after reporting the requested fields.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7; No DOM evidence of sign-in flows or borrow/waitlist actions. VISIBLE CONTENT includes \"Only a preview is available.\" and shopping links (e.g., \"Buy this book\"). Action history shows only scrolling and clicking \"Details\" tab (Action 5), no \"Borrow\"/\"Join waitlist\"/sign-in actions.",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBased on the action history and available DOM context, the agent did not sign in, borrow, or join a waitlist, and it stopped after reporting the requested fields.",
+          "discrepancies": "No constraint-violating actions are evidenced. Minor extra scrolling occurred but does not violate constraints.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0; Top navigation shows \"Log In\" and \"Sign Up\" (no evidence they were used). Action history shows only scrolling and clicking the \"Details\" link; no actions to sign in/borrow/join waitlist are recorded. The agent output stops after listing the requested fields.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nFrom the recorded actions and the provided DOM snapshot, there is no evidence the agent signed in, borrowed, or joined a waitlist. However, the DOM snapshot also does not show the requested metadata fields being captured, so we cannot verify from DOM evidence alone that the agent stopped only after all requested fields were recorded from the ISBN-resolved edition.",
+          "discrepancies": "The agent’s narrative output asserts all required fields were obtained, but the provided DOM evidence does not contain those fields, so compliance with the \"stop after fields captured\" portion is not fully verifiable from the DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 (m4:L1-L62)\nURL: https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice\nNo DOM evidence of sign-in prompts being used, borrowing actions, or waitlist/join interactions in the provided snapshot.\nAction history shows only scroll actions and one click on a \"Details\" link (Action 5), with no sign-in/borrow/waitlist actions recorded.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM evidence shows an Open Library edition page for Pride and Prejudice with an edition key (OL37076991M), but the captured snapshots do not show an ISBN-based navigation path (e.g., an /isbn/… route) or an on-page ISBN value within the visible metadata section. The page being an edition page is clear; the fact that it was specifically resolved from the supplied ISBN is not explicitly evidenced in the captured DOM.",
+      "1": "The edition title is explicitly visible on the page as “Pride and Prejudice” (shown in the main header area and again on the details-view snapshot). This is a direct on-page label, not inferred.",
+      "2": "The author is explicitly displayed as “by Jane Austen” directly under the title in the visible header area on the edition page.",
+      "3": "The page’s details metadata block explicitly shows “Publish Date 2003.” This is an edition-level displayed field in the captured DOM, distinct from any original publication date discussion.",
+      "4": "Publisher appears as “Penguin Books” in the page’s metadata area (visible in state 0) and is also evidenced by a “Penguin Books” link and a combined details string in the later details snapshot. The value is present on-page, not inferred.",
+      "5": "Language is shown on-page as “English,” including an “English” link and inclusion in the combined details string (Publish Date/Publisher/Language/Pages).",
+      "6": "Page count is explicitly displayed as “Pages 435” in the metadata block. The number “435” is visible and should be treated as the exact displayed page count.",
+      "7": "The captured DOM does not show a labeled “ISBN-13” field/value pair in the edition’s main details block. The only visible occurrence of the ISBN-13 digits “9780141439518” appears inside an editions table row that also lists “0141439513” and corresponds to the 2003 Penguin Books paperback entry; there is no visible hyphenated/space formatting to preserve, and it is not shown as an explicit ISBN-13 label/value for the resolved edition in these snapshots.",
+      "8": "No DOM evidence shows any sign-in flow being used or any borrow/join-waitlist action taken; navigation elements like “Log In”/“Sign Up” are present but not engaged in the action history. The trajectory includes scrolling and clicking a “Details” tab; the output ends after listing fields, though whether all fields were captured from a labeled identifiers section is not fully supported for ISBN-13 specifically."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Access Open Library edition via ISBN-13 (9780141439518)",
+        "earned_points": 3,
+        "post_image_earned_points": 2.0,
+        "max_points": 3,
+        "justification": "Agent began on the edition page OL37076991M, which corresponds to ISBN 9780141439518 (per the task context) and proceeded without issue, implicitly using the ISBN-resolved edition. No sign of wrong edition selection.",
+        "applicable_evidence": "DOM-model states 2 and 3 (latest among these is state 3) confirm the browser is on the Open Library edition URL https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice, but do not show an /isbn/9780141439518 route or an explicit on-page statement that this edition was reached via the supplied ISBN. State 7 shows ISBN digits in an editions table row, but still does not evidence ISBN-route resolution.",
+        "post_image_justification": "The task requires using the edition resolved from the supplied ISBN. The action history starts directly on the OL37076991M edition page (allowed by task context), but DOM evidence does not explicitly confirm it was reached via the ISBN route. Since the starting URL is explicitly allowed as task context and corresponds to the ISBN in the prompt context, keep substantial credit, but reduce from full because explicit ISBN-resolution is not demonstrated in DOM.",
+        "reality_notes": "DOM evidence shows an Open Library edition page for Pride and Prejudice with an edition key (OL37076991M), but the captured snapshots do not show an ISBN-based navigation path (e.g., an /isbn/… route) or an on-page ISBN value within the visible metadata section. The page being an edition page is clear; the fact that it was specifically resolved from the supplied ISBN is not explicitly evidenced in the captured DOM."
+      },
+      {
+        "criterion": "Record resolved edition title",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "Output exactly matches the displayed edition title “Pride and Prejudice.”",
+        "applicable_evidence": "DOM-model state 7 (latest) and also state 0 show the edition title text “Pride and Prejudice” on the edition page.",
+        "post_image_justification": "Agent’s reported title matches the title displayed in the DOM for the edition page.",
+        "reality_notes": "The edition title is explicitly visible on the page as “Pride and Prejudice” (shown in the main header area and again on the details-view snapshot). This is a direct on-page label, not inferred."
+      },
+      {
+        "criterion": "Record displayed author",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "Agent correctly transcribed the displayed author “Jane Austen.”",
+        "applicable_evidence": "DOM-model state 7 (latest) and state 0 show “by Jane Austen” under the title.",
+        "post_image_justification": "Agent’s reported author matches the displayed author in the DOM.",
+        "reality_notes": "The author is explicitly displayed as “by Jane Austen” directly under the title in the visible header area on the edition page."
+      },
+      {
+        "criterion": "Record displayed Publish Date",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent captured the displayed publication date “2003” exactly as shown on the edition’s details.",
+        "applicable_evidence": "DOM-model state 7 (latest) and state 0 show the field “Publish Date” with value “2003”.",
+        "post_image_justification": "Agent reported the edition’s displayed Publish Date exactly as shown.",
+        "reality_notes": "The page’s details metadata block explicitly shows “Publish Date 2003.” This is an edition-level displayed field in the captured DOM, distinct from any original publication date discussion."
+      },
+      {
+        "criterion": "Record publisher",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "Publisher “Penguin Books” matches the exact text shown for this edition.",
+        "applicable_evidence": "DOM-model state 7 (latest) includes a “Penguin Books” publisher link and debug text string including “Publisher Penguin Books”; state 0 also shows publisher as “Penguin Books”.",
+        "post_image_justification": "Agent’s publisher matches what is displayed for this edition in the DOM.",
+        "reality_notes": "Publisher appears as “Penguin Books” in the page’s metadata area (visible in state 0) and is also evidenced by a “Penguin Books” link and a combined details string in the later details snapshot. The value is present on-page, not inferred."
+      },
+      {
+        "criterion": "Record language",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "Agent correctly recorded the language as displayed: “English.”",
+        "applicable_evidence": "DOM-model state 7 (latest) shows language via an “English” link and debug string “Language English”; state 0 also shows language as English.",
+        "post_image_justification": "Agent’s language value matches the displayed language in the DOM.",
+        "reality_notes": "Language is shown on-page as “English,” including an “English” link and inclusion in the combined details string (Publish Date/Publisher/Language/Pages)."
+      },
+      {
+        "criterion": "Record page count exactly as displayed",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent preserved the page count exactly as shown (“435”).",
+        "applicable_evidence": "DOM-model state 7 (latest) shows “Pages 435” (also in debug string); state 0 also shows pages 435.",
+        "post_image_justification": "Agent preserved the page count exactly as displayed (“435”).",
+        "reality_notes": "Page count is explicitly displayed as “Pages 435” in the metadata block. The number “435” is visible and should be treated as the exact displayed page count."
+      },
+      {
+        "criterion": "Record ISBN-13 exactly as displayed",
+        "earned_points": 2,
+        "post_image_earned_points": 1.0,
+        "max_points": 2,
+        "justification": "Agent recorded the ISBN-13 exactly as displayed: “9780141439518.”",
+        "applicable_evidence": "DOM-model state 7 (latest) shows the digits “9780141439518” in the editions table row corresponding to the 2003 Penguin Books paperback entry. Other states (0,4,5,6) do not show an ISBN-13 field/value in the captured Book Details/Identifiers areas.",
+        "post_image_justification": "The DOM does show the ISBN-13 digits, but not as a clearly labeled ISBN-13 field for the resolved edition nor with any hyphenation/spacing formatting to ‘preserve exactly as displayed’ beyond the bare digits in the table. Award partial credit because the digits match and are displayed somewhere on-page, but the evidence is weaker than a direct ISBN-13 field in the edition identifiers section.",
+        "reality_notes": "The captured DOM does not show a labeled “ISBN-13” field/value pair in the edition’s main details block. The only visible occurrence of the ISBN-13 digits “9780141439518” appears inside an editions table row that also lists “0141439513” and corresponds to the 2003 Penguin Books paperback entry; there is no visible hyphenated/space formatting to preserve, and it is not shown as an explicit ISBN-13 label/value for the resolved edition in these snapshots."
+      },
+      {
+        "criterion": "Follow constraints (no sign-in/borrow/waitlist; stop after fields captured)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent navigated only to the Details tab, did not sign in/borrow/waitlist, and stopped after recording all requested fields.",
+        "applicable_evidence": "Across action history and DOM-model states (latest state 7), there is no evidence of signing in, borrowing, or joining a waitlist; navigation shows only scrolling and clicking the “Details” tab.",
+        "post_image_justification": "Constraints were respected (no sign-in/borrow/waitlist actions). The agent also stopped after reporting the requested fields in its output.",
+        "reality_notes": "No DOM evidence shows any sign-in flow being used or any borrow/join-waitlist action taken; navigation elements like “Log In”/“Sign Up” are present but not engaged in the action history. The trajectory includes scrolling and clicking a “Details” tab; the output ends after listing fields, though whether all fields were captured from a labeled identifiers section is not fully supported for ISBN-13 specifically."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "I can’t provide step-by-step chain-of-thought. Summary: The agent’s actions were limited to scrolling within the Open Library edition page and clicking the “Details” tab to reveal metadata. These are directly relevant to the task (extracting publish date, publisher, language, pages, ISBN-13) and produced no lasting/material side effects (no cart additions, no transactions, no enrollment, no sign-in, no borrow/waitlist). The only issue noted in the rubric summary was weaker evidence for ISBN-13 formatting/display (already partially penalized under Criterion 7 and Criterion 0), but that is not an extraneous action with material consequences. Therefore there are no unpenalized, unsolicited side-effect actions that warrant a new penalty criterion.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.8666666666666667
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.8666666666666667,
+          "total_earned_points": 13.0,
+          "total_max_points": 15.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Access Open Library edition via ISBN-13 (9780141439518)",
+              "earned_points": 3,
+              "post_image_earned_points": 2.0,
+              "max_points": 3,
+              "justification": "Agent began on the edition page OL37076991M, which corresponds to ISBN 9780141439518 (per the task context) and proceeded without issue, implicitly using the ISBN-resolved edition. No sign of wrong edition selection.",
+              "applicable_evidence": "DOM-model states 2 and 3 (latest among these is state 3) confirm the browser is on the Open Library edition URL https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice, but do not show an /isbn/9780141439518 route or an explicit on-page statement that this edition was reached via the supplied ISBN. State 7 shows ISBN digits in an editions table row, but still does not evidence ISBN-route resolution.",
+              "post_image_justification": "The task requires using the edition resolved from the supplied ISBN. The action history starts directly on the OL37076991M edition page (allowed by task context), but DOM evidence does not explicitly confirm it was reached via the ISBN route. Since the starting URL is explicitly allowed as task context and corresponds to the ISBN in the prompt context, keep substantial credit, but reduce from full because explicit ISBN-resolution is not demonstrated in DOM.",
+              "reality_notes": "DOM evidence shows an Open Library edition page for Pride and Prejudice with an edition key (OL37076991M), but the captured snapshots do not show an ISBN-based navigation path (e.g., an /isbn/… route) or an on-page ISBN value within the visible metadata section. The page being an edition page is clear; the fact that it was specifically resolved from the supplied ISBN is not explicitly evidenced in the captured DOM."
+            },
+            {
+              "criterion": "Record resolved edition title",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "Output exactly matches the displayed edition title “Pride and Prejudice.”",
+              "applicable_evidence": "DOM-model state 7 (latest) and also state 0 show the edition title text “Pride and Prejudice” on the edition page.",
+              "post_image_justification": "Agent’s reported title matches the title displayed in the DOM for the edition page.",
+              "reality_notes": "The edition title is explicitly visible on the page as “Pride and Prejudice” (shown in the main header area and again on the details-view snapshot). This is a direct on-page label, not inferred."
+            },
+            {
+              "criterion": "Record displayed author",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "Agent correctly transcribed the displayed author “Jane Austen.”",
+              "applicable_evidence": "DOM-model state 7 (latest) and state 0 show “by Jane Austen” under the title.",
+              "post_image_justification": "Agent’s reported author matches the displayed author in the DOM.",
+              "reality_notes": "The author is explicitly displayed as “by Jane Austen” directly under the title in the visible header area on the edition page."
+            },
+            {
+              "criterion": "Record displayed Publish Date",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent captured the displayed publication date “2003” exactly as shown on the edition’s details.",
+              "applicable_evidence": "DOM-model state 7 (latest) and state 0 show the field “Publish Date” with value “2003”.",
+              "post_image_justification": "Agent reported the edition’s displayed Publish Date exactly as shown.",
+              "reality_notes": "The page’s details metadata block explicitly shows “Publish Date 2003.” This is an edition-level displayed field in the captured DOM, distinct from any original publication date discussion."
+            },
+            {
+              "criterion": "Record publisher",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "Publisher “Penguin Books” matches the exact text shown for this edition.",
+              "applicable_evidence": "DOM-model state 7 (latest) includes a “Penguin Books” publisher link and debug text string including “Publisher Penguin Books”; state 0 also shows publisher as “Penguin Books”.",
+              "post_image_justification": "Agent’s publisher matches what is displayed for this edition in the DOM.",
+              "reality_notes": "Publisher appears as “Penguin Books” in the page’s metadata area (visible in state 0) and is also evidenced by a “Penguin Books” link and a combined details string in the later details snapshot. The value is present on-page, not inferred."
+            },
+            {
+              "criterion": "Record language",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "Agent correctly recorded the language as displayed: “English.”",
+              "applicable_evidence": "DOM-model state 7 (latest) shows language via an “English” link and debug string “Language English”; state 0 also shows language as English.",
+              "post_image_justification": "Agent’s language value matches the displayed language in the DOM.",
+              "reality_notes": "Language is shown on-page as “English,” including an “English” link and inclusion in the combined details string (Publish Date/Publisher/Language/Pages)."
+            },
+            {
+              "criterion": "Record page count exactly as displayed",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent preserved the page count exactly as shown (“435”).",
+              "applicable_evidence": "DOM-model state 7 (latest) shows “Pages 435” (also in debug string); state 0 also shows pages 435.",
+              "post_image_justification": "Agent preserved the page count exactly as displayed (“435”).",
+              "reality_notes": "Page count is explicitly displayed as “Pages 435” in the metadata block. The number “435” is visible and should be treated as the exact displayed page count."
+            },
+            {
+              "criterion": "Record ISBN-13 exactly as displayed",
+              "earned_points": 2,
+              "post_image_earned_points": 1.0,
+              "max_points": 2,
+              "justification": "Agent recorded the ISBN-13 exactly as displayed: “9780141439518.”",
+              "applicable_evidence": "DOM-model state 7 (latest) shows the digits “9780141439518” in the editions table row corresponding to the 2003 Penguin Books paperback entry. Other states (0,4,5,6) do not show an ISBN-13 field/value in the captured Book Details/Identifiers areas.",
+              "post_image_justification": "The DOM does show the ISBN-13 digits, but not as a clearly labeled ISBN-13 field for the resolved edition nor with any hyphenation/spacing formatting to ‘preserve exactly as displayed’ beyond the bare digits in the table. Award partial credit because the digits match and are displayed somewhere on-page, but the evidence is weaker than a direct ISBN-13 field in the edition identifiers section.",
+              "reality_notes": "The captured DOM does not show a labeled “ISBN-13” field/value pair in the edition’s main details block. The only visible occurrence of the ISBN-13 digits “9780141439518” appears inside an editions table row that also lists “0141439513” and corresponds to the 2003 Penguin Books paperback entry; there is no visible hyphenated/space formatting to preserve, and it is not shown as an explicit ISBN-13 label/value for the resolved edition in these snapshots."
+            },
+            {
+              "criterion": "Follow constraints (no sign-in/borrow/waitlist; stop after fields captured)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent navigated only to the Details tab, did not sign in/borrow/waitlist, and stopped after recording all requested fields.",
+              "applicable_evidence": "Across action history and DOM-model states (latest state 7), there is no evidence of signing in, borrowing, or joining a waitlist; navigation shows only scrolling and clicking the “Details” tab.",
+              "post_image_justification": "Constraints were respected (no sign-in/borrow/waitlist actions). The agent also stopped after reporting the requested fields in its output.",
+              "reality_notes": "No DOM evidence shows any sign-in flow being used or any borrow/join-waitlist action taken; navigation elements like “Log In”/“Sign Up” are present but not engaged in the action history. The trajectory includes scrolling and clicking a “Details” tab; the output ends after listing fields, though whether all fields were captured from a labeled identifiers section is not fully supported for ISBN-13 specifically."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "I can’t provide step-by-step chain-of-thought. Summary: The agent’s actions were limited to scrolling within the Open Library edition page and clicking the “Details” tab to reveal metadata. These are directly relevant to the task (extracting publish date, publisher, language, pages, ISBN-13) and produced no lasting/material side effects (no cart additions, no transactions, no enrollment, no sign-in, no borrow/waitlist). The only issue noted in the rubric summary was weaker evidence for ISBN-13 formatting/display (already partially penalized under Criterion 7 and Criterion 0), but that is not an extraneous action with material consequences. Therefore there are no unpenalized, unsolicited side-effect actions that warrant a new penalty criterion.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "The user wanted the bibliographic metadata for the specific Open Library edition that is resolved by ISBN-13 9780141439518, specifically: edition title, displayed author, the edition’s displayed publish date (not the work’s original publication date), publisher, language, exact page count, and the ISBN-13 exactly as displayed. A reasonable user would be flexible on minor formatting/presentation, but not on using a different edition or reporting an ISBN/page count that isn’t actually shown for that resolved edition.",
+      "reasoning": "Nitpicks: None that materially affect usefulness (the agent’s formatting as a bullet list is fine).\n\nCritical issues: (1) The task requires using the edition reached through the supplied ISBN and not substituting metadata from another edition. While the agent is on an edition page (OL37076991M), the provided DOM evidence does not explicitly confirm the agent navigated via an /isbn/9780141439518 route; this is slightly weakened but not, by itself, a decisive failure because the prompt allows the starting URL context and it appears consistent with the requested ISBN edition. (2) The bigger issue is the constraint “Preserve the ISBN-13 … exactly as displayed.” In the DOM evidence, the ISBN-13 is not shown as a labeled identifier field for the edition details; the only explicit appearance of “9780141439518” is in an editions table row. The agent asserts it was captured from the edition’s Details metadata. That specific claim (that it was displayed there, and that formatting was preserved exactly as displayed) is not supported by the DOM evidence provided. Because the task explicitly emphasizes recording the ISBN-13 exactly as displayed from the ISBN-resolved edition (and not substituting), this lack of clear edition-identifier evidence makes the delivered ISBN-13 field not reliably compliant.\n\nWhat the agent did accomplish: DOM evidence supports Title (Pride and Prejudice), displayed author (Jane Austen), Publish Date (2003), Publisher (Penguin Books), Language (English), and Pages (435) for this edition page. Those fields match the on-page Book Details block shown in the DOM.\n\nOverall outcome: The agent delivered all requested fields, but the ISBN-13 portion is not sufficiently evidenced as being taken from the edition’s displayed identifiers exactly as shown (and the agent’s claim about where it was displayed appears overstated). Given the task’s explicit constraints around ISBN-resolution and exact ISBN-13 display, this is a critical compliance gap for the primary deliverable.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "The user wanted the bibliographic metadata for the specific Open Library edition that is resolved by ISBN-13 9780141439518, specifically: edition title, displayed author, the edition’s displayed publish date (not the work’s original publication date), publisher, language, exact page count, and the ISBN-13 exactly as displayed. A reasonable user would be flexible on minor formatting/presentation, but not on using a different edition or reporting an ISBN/page count that isn’t actually shown for that resolved edition.",
+          "reasoning": "Nitpicks: None that materially affect usefulness (the agent’s formatting as a bullet list is fine).\n\nCritical issues: (1) The task requires using the edition reached through the supplied ISBN and not substituting metadata from another edition. While the agent is on an edition page (OL37076991M), the provided DOM evidence does not explicitly confirm the agent navigated via an /isbn/9780141439518 route; this is slightly weakened but not, by itself, a decisive failure because the prompt allows the starting URL context and it appears consistent with the requested ISBN edition. (2) The bigger issue is the constraint “Preserve the ISBN-13 … exactly as displayed.” In the DOM evidence, the ISBN-13 is not shown as a labeled identifier field for the edition details; the only explicit appearance of “9780141439518” is in an editions table row. The agent asserts it was captured from the edition’s Details metadata. That specific claim (that it was displayed there, and that formatting was preserved exactly as displayed) is not supported by the DOM evidence provided. Because the task explicitly emphasizes recording the ISBN-13 exactly as displayed from the ISBN-resolved edition (and not substituting), this lack of clear edition-identifier evidence makes the delivered ISBN-13 field not reliably compliant.\n\nWhat the agent did accomplish: DOM evidence supports Title (Pride and Prejudice), displayed author (Jane Austen), Publish Date (2003), Publisher (Penguin Books), Language (English), and Pages (435) for this edition page. Those fields match the on-page Book Details block shown in the DOM.\n\nOverall outcome: The agent delivered all requested fields, but the ISBN-13 portion is not sufficiently evidenced as being taken from the edition’s displayed identifiers exactly as shown (and the agent’s claim about where it was displayed appears overstated). Given the task’s explicit constraints around ISBN-resolution and exact ISBN-13 display, this is a critical compliance gap for the primary deliverable.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent stayed on a plausible Open Library edition page (OL37076991M) and attempted to scroll to and use the Details view to extract bibliographic metadata. Most requested fields (title, author, publish date, publisher, language, pages) are supported by DOM evidence for that edition page. However, the task had strict constraints: (a) use the edition resolved via the provided ISBN and (b) preserve the ISBN-13 exactly as displayed from that ISBN-resolved edition (not from some other listing). The trajectory never demonstrates an ISBN-based navigation path (/isbn/9780141439518) and, more critically, the DOM evidence does not show an ISBN-13 displayed as a labeled identifier field for the edition details. The only visible occurrence of 9780141439518 in the provided evidence is inside an editions table row, not in an edition identifiers/details field. Despite this, the agent’s final output asserts the ISBN-13 was captured from the Details tab and implies it was displayed there in an exact format, which is not supported by the DOM snapshots. This breaks the “exactly as displayed”/no-substitution constraint and is the primary reason the task was deemed a failure.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1-7",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent never actually verified the ISBN-13 in a dedicated, labeled identifiers area for the resolved edition (or otherwise ensured it was taken from the edition’s displayed identifiers), despite the task’s explicit requirement to preserve ISBN-13 exactly as displayed.",
+          "agent_reasoning": "The agent repeatedly tried to scroll to reveal “Edition Identifiers”/“Book Details” and then clicked “Details” expecting the ISBN-13 to be visible there for transcription.",
+          "evidence": "Action history shows only scrolling (Actions 1-4,6,7) and a click on “Details” (Action 5). DOM evidence for Criterion 7 indicates no visible labeled “ISBN-13” field in the Book Details/Identifiers area in the captured states; the ISBN-13 digits appear only in an editions table row in state 7, not as an identifier field/value pair for the resolved edition. The agent did not perform any step that demonstrates locating and reading a labeled ISBN-13 display for the edition.",
+          "impact": "Without confirming the ISBN-13 as displayed for the edition identifiers, the agent could not satisfy the strict ISBN-13 ‘exactly as displayed’ constraint, causing overall task failure."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "7",
+          "error_code": "2.1",
+          "error_category": "Hallucination",
+          "error_type": "Output contradiction",
+          "what_happened": "The agent’s final output claims the ISBN-13 was taken from the edition’s Details tab and recorded ‘exactly as displayed’, but the provided DOM evidence does not show an ISBN-13 field/value displayed in the Details metadata; only the digits appear in an editions table row.",
+          "agent_reasoning": "The agent believed the Details tab would present the detailed metadata, including ISBN-13, and concluded it had captured the ISBN-13 from that section for the specific edition.",
+          "evidence": "Outcome verification + Criterion 7 DOM notes: states 0/4/5/6 show no ISBN-13 field/value; state 7 shows 9780141439518 only in an editions table row. This contradicts the agent’s assertion that the ISBN-13 was ‘visible metadata’ from the Details tab/edition identifiers with exact displayed formatting preserved.",
+          "impact": "This undermines trust in the reported ISBN-13 and violates the task’s key constraint about using the ISBN-13 exactly as displayed for the ISBN-resolved edition, contributing directly to the failure."
+        },
+        {
+          "step_numbers": "7",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[3.5] Incomplete task execution: The agent never actually verified the ISBN-13 in a dedicated, labeled identifiers area for the resolved edition (or otherwise ensured it was taken from the edition’s displayed identifiers), despite the task’s explicit requirement to preserve ISBN-13 exactly as displayed."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task provides a specific ISBN (9780141439518), a clear target site (Open Library), and an explicit list of metadata fields with precise constraints (use the edition reached via that ISBN, preserve displayed values, no sign-in/borrow actions). The starting URL context resolves to the correct edition, and there is a single unambiguous interpretation of what to extract. No essential information is missing and no multiple interpretations exist.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully achievable through standard desktop browser interactions, involves no illegal or NSFW content, requires no unauthorized access or credentials, and does not violate any Responsible AI principles. There are no inherent environment constraints or contradictions that render it impossible.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact ISBN and provides a direct URL to the Open Library edition. It clearly lists all required metadata fields and constraints (use the supplied ISBN edition, use displayed dates, do not substitute another edition). There is no missing information or multiple interpretations.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "Retrieving metadata from a public Open Library page is feasible, legal, and does not violate any policies. The task does not require credentials, is not illegal or NSFW, and does not conflict with Responsible AI principles.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 8,
+    "final_state_index": 7,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/dom_model/dom_model0.txt",
+        "sha256": "5f7964e47640d98cd4cdc9b6536f731bd2b5025485f9ec27ca7883f85069d30d",
+        "byte_count": 5355,
+        "line_count": 205,
+        "estimated_tokens": 1321,
+        "url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+        "title": "Pride and Prejudice by Jane Austen | Open Library",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 182
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 183,
+            "end_line": 186
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 187,
+            "end_line": 201
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 202,
+            "end_line": 205
+          }
+        ],
+        "control_refs": [
+          "165",
+          "300",
+          "303",
+          "331",
+          "168",
+          "170",
+          "156",
+          "255",
+          "95",
+          "97",
+          "242",
+          "253",
+          "267",
+          "270",
+          "273",
+          "53",
+          "356",
+          "359",
+          "292",
+          "295",
+          "352"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L205"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/dom_model/dom_model1.txt",
+        "sha256": "1a33c66581dcba7699591e57b232b8d92e92ce64f20131414003b9d96dabdba6",
+        "byte_count": 2186,
+        "line_count": 55,
+        "estimated_tokens": 544,
+        "url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+        "title": "Pride and Prejudice by Jane Austen | Open Library",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 46
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 47,
+            "end_line": 49
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 50,
+            "end_line": 55
+          }
+        ],
+        "control_refs": [
+          "951",
+          "957",
+          "1058",
+          "1060",
+          "1062"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L55"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/dom_model/dom_model2.txt",
+        "sha256": "a2ca4f2df8d20d7f1c261283ad5780273dd83e0f024dca9c1de1ed52e4b89afd",
+        "byte_count": 2188,
+        "line_count": 141,
+        "estimated_tokens": 547,
+        "url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+        "title": "Pride and Prejudice by Jane Austen | Open Library",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 134
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 135,
+            "end_line": 137
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 138,
+            "end_line": 141
+          }
+        ],
+        "control_refs": [
+          "949",
+          "951",
+          "957"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L141"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/dom_model/dom_model3.txt",
+        "sha256": "5fa77b04d12f912a5cc9ce50eaacadba05c02fda6b10a591e0e66f8e72973e2e",
+        "byte_count": 2100,
+        "line_count": 62,
+        "estimated_tokens": 515,
+        "url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+        "title": "Pride and Prejudice by Jane Austen | Open Library",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 54
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 55,
+            "end_line": 57
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 58,
+            "end_line": 62
+          }
+        ],
+        "control_refs": [
+          "957",
+          "1058",
+          "1060",
+          "1062"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L62"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/dom_model/dom_model4.txt",
+        "sha256": "5fa77b04d12f912a5cc9ce50eaacadba05c02fda6b10a591e0e66f8e72973e2e",
+        "byte_count": 2100,
+        "line_count": 62,
+        "estimated_tokens": 515,
+        "url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice",
+        "title": "Pride and Prejudice by Jane Austen | Open Library",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 54
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 55,
+            "end_line": 57
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 58,
+            "end_line": 62
+          }
+        ],
+        "control_refs": [
+          "957",
+          "1058",
+          "1060",
+          "1062"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L62"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/dom_model/dom_model5.txt",
+        "sha256": "7c3f4d5d7f76da81c1b6f5104cfbf5c537433d3cfee9dba03d3d7e9634da3a1f",
+        "byte_count": 2658,
+        "line_count": 149,
+        "estimated_tokens": 665,
+        "url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details",
+        "title": "Pride and Prejudice by Jane Austen | Open Library",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 141
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 142,
+            "end_line": 144
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 145,
+            "end_line": 149
+          }
+        ],
+        "control_refs": [
+          "824",
+          "949",
+          "951",
+          "957"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L149"
+      },
+      {
+        "index": 6,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/dom_model/dom_model6.txt",
+        "sha256": "b4197f672923cbddfd3007c49593966164d295885648f103cd360b6deaa9ab35",
+        "byte_count": 2036,
+        "line_count": 61,
+        "estimated_tokens": 495,
+        "url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details",
+        "title": "Pride and Prejudice by Jane Austen | Open Library",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 57
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 58,
+            "end_line": 61
+          }
+        ],
+        "control_refs": [
+          "1058",
+          "1060",
+          "1062"
+        ],
+        "warnings": [],
+        "provenance": "m6:L1-L61"
+      },
+      {
+        "index": 7,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task42/20260903T220000Z/_inputs/dom_model/dom_model7.txt",
+        "sha256": "4eadbce2f854ad2e9a2459eabac8a0fb9c996d94066f7f545645e932d7d49097",
+        "byte_count": 8856,
+        "line_count": 231,
+        "estimated_tokens": 2181,
+        "url": "https://openlibrary.org/books/OL37076991M/Pride_and_Prejudice#details",
+        "title": "Pride and Prejudice by Jane Austen | Open Library",
+        "source_truncated": true,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 12
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 13,
+            "end_line": 208
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 209,
+            "end_line": 219
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 220,
+            "end_line": 231
+          }
+        ],
+        "control_refs": [
+          "331",
+          "93",
+          "255",
+          "242",
+          "253",
+          "267",
+          "270",
+          "273",
+          "356",
+          "359",
+          "628",
+          "352",
+          "640",
+          "641",
+          "644",
+          "645",
+          "650",
+          "652",
+          "659",
+          "663",
+          "665",
+          "672"
+        ],
+        "warnings": [
+          "source_declares_truncation"
+        ],
+        "provenance": "m7:L1-L231"
+      }
+    ],
+    "estimated_evidence_tokens": 6783,
+    "context_omissions": [],
+    "coverage_limited": true,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 8,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [
+      {
+        "state_index": 7,
+        "warning": "source_declares_truncation"
+      }
+    ],
+    "relevance": {
+      "0": {
+        "0": 3,
+        "1": 6,
+        "2": 8,
+        "3": 9,
+        "4": 9,
+        "5": 9,
+        "6": 9,
+        "7": 1,
+        "8": 4
+      },
+      "1": {
+        "0": 2,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 1
+      },
+      "2": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 2
+      },
+      "3": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 1
+      },
+      "4": {
+        "0": 2,
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 4
+      },
+      "5": {
+        "0": 2,
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 3
+      },
+      "6": {
+        "0": 3,
+        "1": 1,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 2
+      },
+      "7": {
+        "0": 3,
+        "1": 9,
+        "2": 9,
+        "3": 9,
+        "4": 9,
+        "5": 9,
+        "6": 9,
+        "7": 1,
+        "8": 6
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "7": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "8": [
+        {
+          "state_index": 0,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 6,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 12010,
+        "estimated_input_tokens": 3003,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 8706,
+        "estimated_input_tokens": 2177,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 8798,
+        "estimated_input_tokens": 2200,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 8594,
+        "estimated_input_tokens": 2149,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 8594,
+        "estimated_input_tokens": 2149,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 9280,
+        "estimated_input_tokens": 2320,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "relevance",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 8509,
+        "estimated_input_tokens": 2128,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "relevance",
+        "state_index": 7,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 15483,
+        "estimated_input_tokens": 3871,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9171,
+        "estimated_input_tokens": 2293,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9375,
+        "estimated_input_tokens": 2344,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 7,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 19242,
+        "estimated_input_tokens": 4811,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 15769,
+        "estimated_input_tokens": 3943,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 6,
+        "criterion_indices": [
+          7
+        ],
+        "char_count": 8845,
+        "estimated_input_tokens": 2212,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          7
+        ],
+        "char_count": 9616,
+        "estimated_input_tokens": 2404,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          7,
+          8
+        ],
+        "char_count": 9599,
+        "estimated_input_tokens": 2400,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 10067,
+        "estimated_input_tokens": 2517,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          7,
+          8
+        ],
+        "char_count": 9999,
+        "estimated_input_tokens": 2500,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 16048,
+        "estimated_input_tokens": 4012,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          7,
+          8
+        ],
+        "char_count": 10415,
+        "estimated_input_tokens": 2604,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "batched_analysis",
+        "state_index": 7,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 19515,
+        "estimated_input_tokens": 4879,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "char_count": 16376,
+        "estimated_input_tokens": 4094,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 134.495
+}

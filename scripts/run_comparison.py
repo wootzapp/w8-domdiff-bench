@@ -154,14 +154,13 @@ def prepare_isolated_inputs(
     shutil.copytree(screenshot_task, screenshot_copy)
     shutil.copytree(dom_task, dom_copy)
 
-    # Microsoft's verifier consumes one screenshot per action. Paired datasets
-    # contain N+1 browser states: the initial state plus one post-action state
-    # for each of N actions. Point the isolated answer at screenshot1..N so the
-    # final browser state is included without changing verifier or source data.
+    # Keep every browser state available to the evidence selector. The real
+    # action history remains N actions; this staged answer only controls which
+    # screenshot files the verifier may inspect as evidence.
     screenshot_states = ordered_screenshots(screenshot_copy)
     if len(screenshot_states) != action_count + 1:
         raise ValueError(
-            "Isolated screenshot task must contain N+1 states before post-action staging"
+            "Isolated screenshot task must contain exactly N+1 browser states"
         )
     answer_files = list(screenshot_copy.glob("*_answer.json"))
     if len(answer_files) != 1:
@@ -169,7 +168,7 @@ def prepare_isolated_inputs(
             f"Expected exactly one isolated *_answer.json, found {len(answer_files)}"
         )
     answer = load_json(answer_files[0])
-    answer["screenshots"] = [path.name for path in screenshot_states[1:]]
+    answer["screenshots"] = [path.name for path in screenshot_states]
     write_json(answer_files[0], answer)
 
     rubric_copy = input_root / "frozen_rubric.json"
