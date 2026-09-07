@@ -12,11 +12,12 @@ sys.path.insert(0, str(ROOT))
 
 import capture  # noqa: E402
 import runner  # noqa: E402
+from recorder_support import RunnerError  # noqa: E402
 from agent_browser import AgentBrowserClient  # noqa: E402
 
 
 class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
-    async def test_structured_capture_uses_viewport_only_evidence(self) -> None:
+    async def test_structured_capture_uses_viewport_scoped_evidence(self) -> None:
         cdp = MagicMock()
         cdp.call = AsyncMock(return_value={"snapshot": {"nodes": []}})
 
@@ -35,6 +36,41 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
                 "includeOffscreen": False,
             },
         )
+
+    async def test_nonempty_zero_node_capture_is_retried_before_use(self) -> None:
+        cdp = MagicMock()
+        cdp.call = AsyncMock(
+            side_effect=[
+                {"snapshot": {"stats": {"rawNodes": 12, "returnedNodes": 0}}},
+                {"snapshot": {"stats": {"rawNodes": 12, "returnedNodes": 4}}},
+            ]
+        )
+        with patch.object(capture.asyncio, "sleep", AsyncMock()) as sleep:
+            snapshot = await capture.capture_structured_snapshot(
+                cdp,
+                max_nodes=7000,
+                max_text_chars=200000,
+            )
+
+        self.assertEqual(snapshot["stats"]["returnedNodes"], 4)
+        self.assertEqual(cdp.call.await_count, 2)
+        sleep.assert_awaited_once_with(0.25)
+
+    async def test_persistently_empty_nonempty_capture_fails(self) -> None:
+        cdp = MagicMock()
+        cdp.call = AsyncMock(
+            return_value={"snapshot": {"stats": {"rawNodes": 12, "returnedNodes": 0}}}
+        )
+        with (
+            patch.object(capture.asyncio, "sleep", AsyncMock()),
+            self.assertRaisesRegex(RunnerError, "returned zero nodes"),
+        ):
+            await capture.capture_structured_snapshot(
+                cdp,
+                max_nodes=7000,
+                max_text_chars=200000,
+            )
+        self.assertEqual(cdp.call.await_count, 3)
 
     def test_runner_reexports_structured_client(self) -> None:
         self.assertIs(runner.AgentBrowserClient, AgentBrowserClient)

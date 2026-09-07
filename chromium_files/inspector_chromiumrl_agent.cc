@@ -2605,9 +2605,12 @@ bool InspectorChromiumRLAgent::IsElementInViewport(const gfx::RectF& box,
   if (box.width() <= 0 || box.height() <= 0)
     return false;
 
+  // AbsoluteBoundingBoxRectF is expressed in the viewport coordinate space.
+  // scroll_top belongs to the document coordinate space, so mixing it into
+  // this comparison classifies every bottom-of-page node as offscreen.
+  (void)scroll_top;
   return box.right() >= -100 && box.x() <= viewport_width + 100 &&
-         box.bottom() >= scroll_top - 100 &&
-         box.y() <= scroll_top + viewport_height + 100;
+         box.bottom() >= -100 && box.y() <= viewport_height + 100;
 }
 
 bool InspectorChromiumRLAgent::IsElementHitTestable(Element* element,
@@ -3353,6 +3356,22 @@ InspectorChromiumRLAgent::CollectNodeStates(Element* element) {
   if (!selected.IsNull())
     add_state("selected", selected == "true" ? "true" : "false");
 
+  // Native controls and custom ARIA controls expose their active state through
+  // different standard attributes. Preserve both rather than inferring state
+  // from a label, count, or the action that preceded this snapshot.
+  const AtomicString& aria_checked =
+      element->FastGetAttribute(html_names::kAriaCheckedAttr);
+  if (!aria_checked.IsNull() && !aria_checked.empty())
+    add_state("checked", aria_checked);
+  const AtomicString& aria_pressed =
+      element->FastGetAttribute(html_names::kAriaPressedAttr);
+  if (!aria_pressed.IsNull() && !aria_pressed.empty())
+    add_state("pressed", aria_pressed);
+  const AtomicString& aria_current =
+      element->FastGetAttribute(html_names::kAriaCurrentAttr);
+  if (!aria_current.IsNull() && !aria_current.empty())
+    add_state("current", aria_current);
+
   if (element->FastHasAttribute(html_names::kDisabledAttr))
     add_state("disabled", "true");
   if (element->FastHasAttribute(html_names::kRequiredAttr))
@@ -3370,8 +3389,15 @@ InspectorChromiumRLAgent::CollectNodeStates(Element* element) {
   if (auto* input = DynamicTo<HTMLInputElement>(element)) {
     const AtomicString& input_type =
         input->FastGetAttribute(html_names::kTypeAttr);
-    if (input_type == "checkbox" || input_type == "radio")
+    if ((input_type == "checkbox" || input_type == "radio") &&
+        aria_checked.IsNull()) {
       add_state("checked", input->Checked() ? "true" : "false");
+    }
+  }
+  if (auto* select = DynamicTo<HTMLSelectElement>(element)) {
+    String value = select->Value();
+    if (!value.empty())
+      add_state("value", value);
   }
 
   return states;
@@ -6685,6 +6711,14 @@ class StructuredModelDOMRenderer {
     return found;
   }
 
+  bool HasLabeledMetadata(const String& value) const {
+    for (wtf_size_t index = 0; index + 1 < value.length(); ++index) {
+      if (value[index] == ':' && IsPythonWhitespace(value[index + 1]))
+        return true;
+    }
+    return false;
+  }
+
   String ComputeText(Node* node) const {
     String direct = node->hasDirectText()
                         ? Clean(node->getDirectText(String()))
@@ -6700,6 +6734,10 @@ class StructuredModelDOMRenderer {
       String direct_key = NormKey(direct);
       if (node->getTruncated() ||
           (!direct_key.empty() && NormKey(subtree).contains(direct_key)))
+        return subtree;
+      // Inline links and spans can leave directText as an incomplete
+      // fragment while subtreeText retains the label/value relationship.
+      if (HasLabeledMetadata(subtree) && !HasLabeledMetadata(direct))
         return subtree;
     }
     if (!direct.empty())
@@ -7129,6 +7167,17 @@ class StructuredModelDOMRenderer {
     }
   }
 
+  String ControlStateText(Node* node) const {
+    Vector<String> values;
+    for (const auto& state : *node->getStates()) {
+      String name = Clean(state->getName(), false);
+      String value = Clean(state->getValue());
+      if (!name.empty() && !value.empty())
+        values.push_back(name + "=" + value);
+    }
+    return Join(values, ",");
+  }
+
   String VisibilityNotes(Node* node) const {
     Vector<String> notes;
     if (!node->getVisible()) notes.push_back("hidden");
@@ -7156,6 +7205,8 @@ class StructuredModelDOMRenderer {
       bits.push_back("actions=" + Join(actions, ","));
     HashMap<String, String> attrs = AttrMap(node);
     if (HasNonEmptyAttribute(attrs, "src") && label.empty()) bits.push_back("src=(image)");
+    String control_state = ControlStateText(node);
+    if (!control_state.empty()) bits.push_back("control_state=" + control_state);
     if (debug) {
       bits.push_back("<" + (node->getTag().empty() ? String("?") : node->getTag()) + ">");
       String role = node->hasRole() ? Clean(node->getRole(String()), false) : String();
@@ -7352,6 +7403,62 @@ class StructuredModelDOMRenderer {
     return false;
   }
 
+  String MetadataAnchor(const String& text) const {
+    wtf_size_t colon = text.rfind(':');
+    if (colon == kNotFound)
+      return NormKey(text);
+    wtf_size_t start = colon;
+    while (start > 0 && !IsPythonWhitespace(text[start - 1]))
+      --start;
+    return NormKey(text.substr(start));
+  }
+
+  bool HasMoreSpecificMetadataDescendant(Node* node,
+                                         const String& text) const {
+    String anchor = MetadataAnchor(text);
+    String text_key = NormKey(text);
+    if (anchor.empty() || text_key.empty())
+      return false;
+    for (const String& ref : Descendants(node->getRef())) {
+      Node* descendant = FindNode(ref);
+      if (!descendant || descendant == node)
+        continue;
+      String descendant_text = Text(descendant);
+      String descendant_key = NormKey(descendant_text);
+      // A generic wrapper and a leaf child often carry the identical
+      // label/value string. The child is the more specific representation in
+      // both that case and the longer-descendant case, so render only it.
+      if (descendant_key == text_key || descendant_key.contains(anchor))
+        return true;
+      String descendant_direct = descendant->hasDirectText()
+                                     ? Clean(descendant->getDirectText(String()))
+                                     : String();
+      if (descendant_direct.empty() && descendant_text.find(':') != kNotFound &&
+          CodePointLength(descendant_text) >= 24 &&
+          CodePointLength(descendant_text) <= 160) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool IsGenericMetadataNode(Node* node, const String& text) const {
+    String direct = node->hasDirectText()
+                        ? Clean(node->getDirectText(String()))
+                        : String();
+    if (!direct.empty())
+      return false;
+    auto children_it = children_.find(node->getRef());
+    bool leaf = children_it == children_.end() || children_it->value.empty();
+    if (!leaf && text.find(':') == kNotFound)
+      return false;
+    if (leaf && CodePointLength(text) < 24)
+      return false;
+    if (MatchesActionLabel(text) && !ContainsPythonDigit(text))
+      return false;
+    return !HasMoreSpecificMetadataDescendant(node, text);
+  }
+
   bool IsContentNode(Node* node, const HashSet<String>& covered) const {
     String ref = node->getRef();
     if (covered.Contains(ref) || suppressed_refs_.Contains(ref)) return false;
@@ -7374,7 +7481,8 @@ class StructuredModelDOMRenderer {
     if (IsOneOf(tag, {"article", "blockquote", "caption", "dd", "dt", "figcaption", "h1", "h2", "h3", "h4", "h5", "h6", "li", "p", "pre", "summary"}) ||
         IsOneOf(role, {"heading", "paragraph", "listitem", "alertdialog", "dialog"}) || semantic == "listitem") return true;
     String direct = node->hasDirectText() ? Clean(node->getDirectText(String())) : String();
-    if (direct.empty()) return false;
+    if (direct.empty())
+      return IsGenericMetadataNode(node, text);
     return !(CodePointLength(direct) <= kChromeLabelMaxChars &&
              MatchesActionLabel(direct) && !ContainsPythonDigit(text));
   }

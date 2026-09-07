@@ -591,22 +591,46 @@ async def capture_structured_snapshot(
     max_nodes: int,
     max_text_chars: int,
 ) -> dict[str, Any]:
-    """Capture one structured snapshot through ChromiumRL."""
+    """Capture one viewport-scoped structured snapshot through ChromiumRL.
+
+    A task record proves what was visible in that state, so do not expose
+    offscreen page content to the model or verifier. A non-empty document with
+    zero returned nodes is not a usable capture; retry the read-only capture
+    before allowing the caller to materialize a state directory.
+    """
     params: dict[str, Any] = {
         "inViewportOnly": True,
         "maxNodes": max_nodes,
         "maxTextChars": max_text_chars,
         "includeOffscreen": False,
     }
-    result = await capture_call(
-        cdp,
-        "ChromiumRL.captureStructuredSnapshot",
-        params,
+    for capture_attempt in range(1, 4):
+        result = await capture_call(
+            cdp,
+            "ChromiumRL.captureStructuredSnapshot",
+            params,
+        )
+        snapshot = result.get("snapshot")
+        if not isinstance(snapshot, dict):
+            raise RunnerError(f"unexpected ChromiumRL snapshot response: {result}")
+
+        stats = snapshot.get("stats")
+        raw_nodes = stats.get("rawNodes") if isinstance(stats, dict) else None
+        returned_nodes = stats.get("returnedNodes") if isinstance(stats, dict) else None
+        if not (
+            isinstance(raw_nodes, int)
+            and raw_nodes > 0
+            and isinstance(returned_nodes, int)
+            and returned_nodes == 0
+        ):
+            return snapshot
+        if capture_attempt < 3:
+            await asyncio.sleep(0.25 * capture_attempt)
+
+    raise RunnerError(
+        "ChromiumRL.captureStructuredSnapshot returned zero nodes for a "
+        "non-empty document after 3 attempts"
     )
-    snapshot = result.get("snapshot")
-    if not isinstance(snapshot, dict):
-        raise RunnerError(f"unexpected ChromiumRL snapshot response: {result}")
-    return snapshot
 
 
 
