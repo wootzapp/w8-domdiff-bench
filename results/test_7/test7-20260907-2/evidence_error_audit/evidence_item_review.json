@@ -1,0 +1,515 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_054-ebook-format-inspection-20260905T114228Z",
+  "run_id": "test7-20260907-2",
+  "rubric_sha256": "2dc6ea5c8c32703420ff5fe1ffccd592adb9904baa38622c211b44d89722b928",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access Project Gutenberg eBook 1342 page (Pride and Prejudice)",
+      "description": "Navigate to the Project Gutenberg page for eBook #1342 (URL may be https://www.gutenberg.org/ebooks/1342) and use that page as the source. Full credit if the agent clearly relies on the eBook 1342 page metadata. Also award full credit if the agent makes a reasonable attempt to access the page but cannot due to external issues (site down, CAPTCHA, network/region blocking, rendering failure) and explicitly reports the blocker. Partial credit if the agent uses another Gutenberg mirror/page but clearly indicates it is for eBook 1342. No credit if metadata is taken from a different book/page or is unsupported/hallucinated.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Action History shows State 1 URL: https://www.gutenberg.org/ebooks/1342 and a scroll action on that page. Screenshots show a Project Gutenberg book page for “Pride and Prejudice by Jane Austen,” consistent with the target page though the ebook number is not visible in the captured regions.",
+        "verifier_justification": "Because the action history explicitly records navigation to /ebooks/1342, this criterion is satisfied regardless of whether the ebook number is visible in the screenshots.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The page header shows the Project Gutenberg logo and breadcrumb text: \"Project Gutenberg  >  79,328 free eBooks  >  36 by Jane Austen\". The main title reads \"Pride and Prejudice by Jane Austen\". No eBook number \"1342\" is visible in this screenshot, and no URL bar is shown.",
+            "criterion_analysis": "The screenshot clearly shows a Project Gutenberg book page for \"Pride and Prejudice by Jane Austen,\" which is consistent with eBook 1342, but the screenshot itself does not explicitly confirm the eBook number 1342. So the evidence supports being on the correct title page, but not conclusively that it is eBook 1342 specifically.",
+            "discrepancies": "Agent context claims eBook 1342; screenshot does not display \"1342\" anywhere (and no URL is visible), so the specific eBook number is unsupported by this screenshot alone.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a Project Gutenberg page with the “About this eBook” section and a metadata table. In the table, the Title row reads “Pride and Prejudice,” and the Author row shows “Austen, Jane, 1775-1817” (as a link). The screenshot does not visibly show the eBook number “1342” or the URL.",
+            "criterion_analysis": "Partial support. The page content clearly corresponds to Project Gutenberg’s “About this eBook” for “Pride and Prejudice,” but the screenshot does not explicitly display that it is eBook #1342. So it cannot fully confirm that the agent used the eBook 1342 page specifically, though it is consistent with it.",
+            "discrepancies": "Agent output and task refer to eBook 1342, but the screenshot does not show the eBook number or URL to verify it is #1342 (it only shows the title/author and notes).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM state 0 and DOM state 1 both show URL https://www.gutenberg.org/ebooks/1342 and page title 'Pride and Prejudice by Jane Austen | Project Gutenberg' (latest: state 1).",
+        "verifier_justification": "Supported by DOM that the agent was on the correct Project Gutenberg eBook 1342 page; baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL: https://www.gutenberg.org/ebooks/1342 and Title: \"Pride and Prejudice by Jane Austen | Project Gutenberg\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence directly shows the agent is on the Project Gutenberg eBook 1342 page for Pride and Prejudice (matching URL and title).",
+            "discrepancies": "No discrepancy observed between the required target page (eBook #1342) and the recorded URL/title in DOM state 1.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://www.gutenberg.org/ebooks/1342\" and Title \"Pride and Prejudice by Jane Austen | Project Gutenberg\" plus visible heading text \"Pride and Prejudice by Jane Austen\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM places the browser on the Project Gutenberg eBook 1342 page and shows the correct work title context, satisfying the access/source requirement.",
+            "discrepancies": "No discrepancy observed for page access/source: the URL and title match eBook 1342 on gutenberg.org.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Record author",
+      "description": "Report the author as shown on the Project Gutenberg eBook 1342 page. Full credit for exact author name as displayed. If the page cannot be accessed due to external issues, full credit if the agent clearly states it cannot verify the author because the page is inaccessible (and does not guess). Partial credit for minor formatting differences that do not change identity if clearly the same author. No credit for wrong author or for substituting non-page info when the page is accessible.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 2 (latest for the metadata table) shows the Author row as “Austen, Jane, 1775-1817.” Screenshot 1 shows header text “Pride and Prejudice by Jane Austen.”",
+        "verifier_justification": "The agent’s reported author “Austen, Jane, 1775-1817” matches the exact string shown in the Author row of the About table (Screenshot 2). Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The title line says \"Pride and Prejudice by Jane Austen\". No detailed author line such as \"Austen, Jane, 1775-1817\" is visible in the screenshot.",
+            "criterion_analysis": "The screenshot supports that the author is Jane Austen, but it does not support the more specific formatted author string \"Austen, Jane, 1775-1817\" that the agent reported. Thus only partial support for the agent’s author field is visible.",
+            "discrepancies": "Predicted output: \"Author: Austen, Jane, 1775-1817\". Screenshot shows only \"Jane Austen\" (no birth/death years, no surname-first formatting).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the “About this eBook” table, the Author row shows the linked text: “Austen, Jane, 1775-1817”.",
+            "criterion_analysis": "Supported. The agent’s predicted output “Austen, Jane, 1775-1817” matches exactly what is visible in the screenshot.",
+            "discrepancies": "None for the author field; it matches the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM state 1 (latest) metadata table row shows 'Author | Austen, Jane, 1775-1817'.",
+        "verifier_justification": "Agent output matches the author exactly as displayed in the DOM state 1 table, so upgrade to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1, Table 1 row \"Author | Austen, Jane, 1775-1817\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe author is explicitly listed on the page as \"Austen, Jane, 1775-1817\".",
+            "discrepancies": "No discrepancy; author string matches the page table entry exactly.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible text includes \"Pride and Prejudice by Jane Austen\" and also \"36 by Jane Austen\".",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the author as \"Jane Austen\" (as displayed on the page). However, the agent predicted output reports \"Austen, Jane, 1775-1817\", which is not shown in the provided DOM snippet; thus exact author-as-displayed cannot be fully verified from this DOM evidence.",
+            "discrepancies": "Agent output includes a fuller authority-form string (\"Austen, Jane, 1775-1817\") that is not evidenced in the provided DOM, which only shows \"Jane Austen\".",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record Release Date (using Gutenberg label)",
+      "description": "Report the 'Release Date' exactly as labeled/displayed on the Project Gutenberg page (do not substitute original publication date). Full credit if the Release Date value is captured exactly (including month/day/year formatting and any bracketed text if present). If the page cannot be accessed due to external issues, full credit if the agent clearly states it cannot verify the Release Date due to inaccessibility (and does not guess). Partial credit if correct date but not exact displayed formatting. No credit if the agent uses the novel's publication date or an incorrect/unsupported date when the page is accessible.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.5,
+        "verifier_evidence": "Neither Screenshot 1 nor Screenshot 2 shows the “Release Date” label/row; the visible portion of the About table does not include it.",
+        "verifier_justification": "The agent provided a specific Release Date with no supporting visual evidence. Since the page appears accessible (no blocker shown) and the required label/value is not evidenced, this is an unsupported claim rather than a verified extraction. Minimal partial credit at most.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No metadata block containing the label \"Release Date\" is visible anywhere in the screenshot. The visible content includes the description paragraph and the \"Download for free\" section (EPUB3 row).",
+            "criterion_analysis": "The agent’s predicted Release Date (\"Jun 1, 1998\") is not verifiable from the screenshot because the \"Release Date\" label/value is not shown. The screenshot provides no evidence that the agent used the Gutenberg-labeled Release Date.",
+            "discrepancies": "Predicted output includes a specific Release Date, but the screenshot does not show any \"Release Date\" field to support it.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The visible portion of the “About this eBook” table includes Author, Title, Notes, Credits, Reading Level, Language, LoC Class, and Subject rows. There is no “Release Date” label or value visible anywhere in the screenshot.",
+            "criterion_analysis": "Not supported by this screenshot. The agent’s predicted output includes “Release Date: Jun 1, 1998,” but the screenshot provides no Release Date field to verify that value or its exact formatting.",
+            "discrepancies": "Agent provided a specific Release Date, but the screenshot does not show any Release Date label/value, so this appears unsupported by the provided visual evidence.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM state 0 and DOM state 1 do not show any 'Release Date' label/value in the captured content (latest: state 1 still lacks it).",
+        "verifier_justification": "The agent reported a specific Release Date ('Jun 1, 1998') but there is no DOM support for any Release Date field/value in the provided evidence; per rules, this is unproven rather than supported. Score should be reduced accordingly.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 Table 1 lists rows for Author/Title/Note/Credits/Reading Level/Language/etc., but no row or visible label for \"Release Date\" is present in the provided DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nRelease Date cannot be verified from the provided DOM evidence because the \"Release Date\" label/value is not included in DOM state 1.",
+            "discrepancies": "Agent predicted output includes \"Release Date: Jun 1, 1998\" but the DOM snapshot provided does not show any Release Date field to support it.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content does not show any label/value for \"Release Date\". No metadata block with \"Release Date\" appears in the snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM snapshot does not include the \"Release Date\" label/value, so the agent’s reported \"Release Date: Jun 1, 1998\" cannot be verified against the required Gutenberg label from this evidence.",
+            "discrepancies": "Agent output provides a Release Date value, but the DOM evidence shown does not contain the \"Release Date\" field to support it.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record Last Update (using Gutenberg label)",
+      "description": "Report the 'Last Update' exactly as labeled/displayed on the Project Gutenberg page. Full credit if the Last Update value is captured exactly as displayed. If the page cannot be accessed due to external issues, full credit if the agent clearly states it cannot verify Last Update due to inaccessibility (and does not guess). Partial credit if the correct date but formatting differs. No credit if omitted, incorrect, or fabricated when the page is accessible.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither screenshot shows a “Last Update” label/row anywhere.",
+        "verifier_justification": "The agent provided a specific Last Update date that is not supported by any visible evidence and is not shown as extracted from the Gutenberg-labeled field. With no blocker evidenced, this should be scored as unsupported/fabricated for this rubric. No credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No metadata block containing the label \"Last Update\" is visible in the screenshot.",
+            "criterion_analysis": "The agent’s predicted Last Update (\"Sep 1, 2026\") is not supported by the screenshot because no \"Last Update\" label/value appears.",
+            "discrepancies": "Predicted output lists a specific \"Last Update\" date, but the screenshot provides no visible evidence of any Last Update field.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot does not show any “Last Update” label or date in the visible metadata table section.",
+            "criterion_analysis": "Not supported by this screenshot. The agent’s predicted output includes “Last Update: Sep 1, 2026,” but there is no Last Update field visible to confirm it.",
+            "discrepancies": "Agent provided a specific Last Update date, but the screenshot has no “Last Update” label/value visible; thus it is unsupported by the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM state 0 and DOM state 1 do not show any 'Last Update' label/value in the captured content (latest: state 1 still lacks it).",
+        "verifier_justification": "Agent reported a specific 'Last Update: Sep 1, 2026' with no DOM support in the evidence provided. Since the value cannot be verified and appears fabricated relative to available evidence, award no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 does not contain any \"Last Update\" label/value in Table 1 or Visible Content.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nLast Update cannot be verified from the provided DOM evidence because the \"Last Update\" label/value is not present in DOM state 1.",
+            "discrepancies": "Agent predicted output includes \"Last Update: Sep 1, 2026\" but the DOM snapshot provided does not show any Last Update field to support it.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content does not show any label/value for \"Last Update\". No \"Last Update\" text appears in the snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM snapshot lacks the \"Last Update\" label/value, so the agent’s reported \"Last Update: Sep 1, 2026\" is not verifiable from this evidence.",
+            "discrepancies": "Agent output provides a Last Update value, but the DOM evidence shown does not contain the \"Last Update\" field to support it.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Record language",
+      "description": "Report the language field as shown on the Project Gutenberg page. Full credit for exact language value. If the page cannot be accessed due to external issues, full credit if the agent clearly states it cannot verify language due to inaccessibility (and does not guess). Partial credit if meaning is correct but wording differs when the page clearly shows the language. No credit if wrong or missing when the page is accessible.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 2 shows the Language row in the About table as “English.”",
+        "verifier_justification": "Matches the page exactly. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the “About this eBook” table, the Language row clearly reads “English”.",
+            "criterion_analysis": "Supported. The agent’s predicted output “Language: English” matches the visible Language field exactly.",
+            "discrepancies": "None for language; it matches the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM state 1 (latest) metadata table row shows 'Language | English'.",
+        "verifier_justification": "Agent output 'English' matches the DOM exactly; full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1, Table 1 row \"Language | English\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe language is explicitly shown as \"English\".",
+            "discrepancies": "No discrepancy; language matches the page table entry exactly.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Check availability of format: EPUB3",
+      "description": "Verify and report whether the format label 'EPUB3' is available on the Project Gutenberg page. Full credit if the agent explicitly records availability (available/not available) based only on the 'EPUB3' label and does not download files. If the page/format list cannot be accessed or rendered due to external issues, full credit if the agent states it cannot verify EPUB3 availability (and does not guess). Partial credit if the agent checks EPUB but not specifically EPUB3 when the page is accessible. No credit if the agent checks other formats instead or guesses despite accessible evidence.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows the download section with the format label “EPUB3” visible.",
+        "verifier_justification": "The page visibly offers “EPUB3,” and the agent reported it as available. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the \"Download for free\" section, a green-highlighted row shows the format label \"EPUB3\" followed by text \"Recommended for most devices\".",
+            "criterion_analysis": "This screenshot directly confirms that the EPUB3 format option is available on the page. The agent’s statement that EPUB3 is available is supported.",
+            "discrepancies": "None for EPUB3 availability; the screenshot shows the \"EPUB3\" option.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM state 1 (latest) shows a download link labeled 'EPUB3 ★ Recommended for most devices !'.",
+        "verifier_justification": "Presence of the EPUB3-labeled link confirms availability; no download was performed. Minor punctuation mismatch in agent wording does not affect availability verification; keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows a link labeled \"EPUB3 ★ Recommended for most devices !\" (element [80]).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nPresence of the \"EPUB3\" labeled link indicates the EPUB3 format is available on the page (no download performed/required to verify presence).",
+            "discrepancies": "Minor label mismatch vs agent output: DOM label includes an exclamation mark \"!\" (\"EPUB3 ★ Recommended for most devices !\"), while the agent output omits it (\"EPUB3 ★ Recommended for most devices\"). Availability claim is still supported by the link presence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible download section shows format label \"EPUB3\" and there is also an actionable link labeled \"EPUB3 ★ Recommended for most devices !\" (action [80]).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the EPUB3 format label/link on the eBook 1342 page, supporting that EPUB3 is available without needing to download anything.",
+            "discrepancies": "Minor label punctuation difference: the agent wrote \"EPUB3 ★ Recommended for most devices\" while the DOM action label shows \"EPUB3 ★ Recommended for most devices !\" (includes an exclamation mark). Availability itself is supported.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Check availability of format: Plain Text (accessible)",
+      "description": "Verify and report whether the format label 'Plain Text (accessible)' is available on the Project Gutenberg page. Full credit if the agent explicitly records availability based only on that exact label and does not download files. If the page/format list cannot be accessed or rendered due to external issues, full credit if the agent states it cannot verify this format’s availability (and does not guess). Partial credit if the agent reports plain text availability but misses the '(accessible)' distinction when the page is accessible. No credit for checking other text formats or guessing despite accessible evidence.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither screenshot shows the format label “Plain Text (accessible)” in the visible download list or elsewhere.",
+        "verifier_justification": "The agent’s claim that “Plain Text (accessible)” is available is not supported by the provided visual evidence. With no platform blocker shown, this cannot be credited as verified. No credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The visible download list shows \"EPUB3\" and then lines beginning \"Kindle → Use Send-to-Kindle\" and \"Kobo, Nook etc. → Transfer via USB\" and \"Phone, tablet or computer → Open in a reading app\". The specific label \"Plain Text (accessible)\" is not visible in the screenshot.",
+            "criterion_analysis": "The agent’s claim that \"Plain Text (accessible)\" is available cannot be verified from this screenshot because that format label is not shown in the visible portion of the page.",
+            "discrepancies": "Predicted output says \"Plain Text (accessible) — Available,\" but the screenshot does not display that label anywhere.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot is focused on the “About this eBook” metadata table and does not show any download/format section or any format labels such as “Plain Text (accessible)”.",
+            "criterion_analysis": "Not verifiable from this screenshot. The agent claims “Plain Text (accessible) — Available,” but no format list is visible to confirm availability or the exact label.",
+            "discrepancies": "Agent reports availability of “Plain Text (accessible),” but the screenshot contains no download formats section to support that claim.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM state 1 (latest) shows a download link labeled exactly 'Plain Text (accessible)'.",
+        "verifier_justification": "Exact label is present as a link, confirming availability; full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows a link labeled exactly \"Plain Text (accessible)\" (element [99]).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nPresence of the \"Plain Text (accessible)\" labeled link indicates this format is available on the page.",
+            "discrepancies": "No discrepancy; the format label matches exactly and availability is supported by the link presence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 lists a link \"Plain Text (accessible)\" (debug action [99]).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly includes the exact format label \"Plain Text (accessible)\" as a link, supporting that this format is available.",
+            "discrepancies": "No discrepancy observed for presence/availability of the exact label \"Plain Text (accessible)\".",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Check availability of format: Download HTML (zip)",
+      "description": "Verify and report whether the format label 'Download HTML (zip)' is available on the Project Gutenberg page. Full credit if the agent explicitly records availability based only on that exact label and does not download files. If the page/format list cannot be accessed or rendered due to external issues, full credit if the agent states it cannot verify this format’s availability (and does not guess). Partial credit if the agent reports HTML availability but not the '(zip)' variant when the page is accessible. No credit if the agent checks other HTML links or guesses despite accessible evidence.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither screenshot shows the format label “Download HTML (zip)” in the visible download list or elsewhere.",
+        "verifier_justification": "The agent’s claim that “Download HTML (zip)” is available is not supported by the provided visual evidence. With no blocker shown, this cannot be credited as verified. No credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible download area, the specific format label \"Download HTML (zip)\" is not shown.",
+            "criterion_analysis": "The agent’s claim that \"Download HTML (zip)\" is available is not supported by the screenshot because the label is not visible.",
+            "discrepancies": "Predicted output says \"Download HTML (zip) — Available,\" but the screenshot provides no evidence of that option.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No download links or formats are visible in the screenshot; specifically, there is no visible label “Download HTML (zip)”.",
+            "criterion_analysis": "Not verifiable from this screenshot. The agent claims “Download HTML (zip) — Available,” but the screenshot provides no evidence of the formats list.",
+            "discrepancies": "Agent reports availability of “Download HTML (zip),” but the screenshot does not show it.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM state 1 (latest) shows a download link labeled exactly 'Download HTML (zip)'.",
+        "verifier_justification": "Exact label is present as a link, confirming availability; full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows a link labeled exactly \"Download HTML (zip)\" (element [126]).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nPresence of the \"Download HTML (zip)\" labeled link indicates this format is available on the page.",
+            "discrepancies": "No discrepancy; the format label matches exactly and availability is supported by the link presence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 8,
+      "criterion": "Respect stopping condition and constraints (no downloads; only named formats; stop after recording)",
+      "description": "Full credit if the agent (a) does not download any ebook file, (b) uses the 'Release Date' and 'Last Update' labels on the Gutenberg page when accessible, (c) checks/reports only the three specified format labels (EPUB3, Plain Text (accessible), Download HTML (zip)), and (d) stops after recording the four metadata fields and availability statuses (or after clearly stating it cannot verify due to external access blockers). Partial credit if the agent includes minor extra navigation or minor extra commentary but still complies with no-download and uses correct labeled dates when accessible. No credit if the agent downloads a file, substitutes the novel’s publication date for Release Date/Last Update when the page is accessible, or reports other formats as part of the required output instead of the named ones.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Action history shows only a scroll; screenshots show viewing the Gutenberg page with no sign of any file download. Agent output reports only the four metadata fields and the three specified formats, and does not mention other formats.",
+        "verifier_justification": "Constraints largely respected (no downloads; only the three named format labels were discussed; stopping condition met). Although some reported fields/formats are not evidenced, that is handled in their own criteria rather than here. Full credit for constraint adherence/stop condition.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the Project Gutenberg page with a visible \"Download for free\" section and the \"EPUB3\" option; no file download action is shown. The screenshot does not show \"Release Date\" or \"Last Update\" labels, and it does not show the format labels \"Plain Text (accessible)\" or \"Download HTML (zip)\".",
+            "criterion_analysis": "From the screenshot alone, there is no evidence of downloading any file (good for the no-download constraint). However, the agent’s predicted output includes Release Date/Last Update values and two format availability claims not supported by the visible page area, so compliance with the constraint \"Use the Release Date and Last Update labels\" cannot be verified, and the checks for the two named formats cannot be confirmed from what’s visible.",
+            "discrepancies": "Agent output includes Release Date and Last Update values and asserts availability of \"Plain Text (accessible)\" and \"Download HTML (zip)\"; none of these are visible in the screenshot. EPUB3 is visible and supported.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the “About this eBook” table only, with no visible download actions occurring and no visible formats list. There is also no evidence on-screen of any file being downloaded.",
+            "criterion_analysis": "Partially assessable. From the screenshot alone, there’s no sign of downloading (which is good), but the screenshot cannot confirm that the agent checked only the three named format labels or used the “Release Date” and “Last Update” labels, since those fields and the formats section are not shown. The agent’s predicted output includes only the requested fields and the three named formats, which aligns with the constraint, but the dates/formats cannot be verified from the screenshot.",
+            "discrepancies": "Agent output includes Release Date/Last Update and three format availabilities, but the screenshot does not show those page sections/labels; thus compliance with the ‘use labels’ and ‘check named formats’ constraints cannot be confirmed from the image.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Action history shows only a scroll action (no clicks/downloads). DOM state 1 (latest) shows only the three named format labels as links. However, neither DOM state shows Release Date/Last Update labels/values.",
+        "verifier_justification": "Agent complied with no-download behavior and reported only the three specified formats, and stopped after listing required items. While the dates themselves are unsupported elsewhere, this criterion primarily checks constraint adherence (no downloads; only named formats; stopping). Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the three named format labels as links: \"EPUB3 ★ Recommended for most devices !\" ([80]), \"Plain Text (accessible)\" ([99]), and \"Download HTML (zip)\" ([126]). No DOM evidence shows any file download being initiated; the only recorded action is scroll({\"pixels\":800}).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nNo-download behavior is consistent with the action history (only scrolling) and DOM shows the named format labels. However, the agent also reported Release Date and Last Update values that are not present in the provided DOM evidence, so compliance with the requirement to use the page’s labeled dates cannot be verified from this DOM snapshot.",
+            "discrepancies": "(1) Release Date and Last Update were asserted in the agent output without DOM support in state 1. (2) Otherwise, only the three named formats were checked/reported and no download is evidenced.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows a link for \"Plain Text (accessible)\" and shows \"EPUB3\". It does not show a visible \"Download HTML (zip)\" label in the provided snapshot. Action history only shows a scroll action (no download action recorded).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nNo-download behavior is supported by the action history (only scrolling). The agent also restricts reported formats to the named ones. However, the DOM evidence provided does not show the \"Release Date\" and \"Last Update\" labels/values, and does not show the \"Download HTML (zip)\" label; therefore full compliance with the requirement to record labeled dates and verify all three named formats is only partially evidenced from this DOM snapshot.",
+            "discrepancies": "From the provided DOM evidence, \"Release Date\", \"Last Update\", and \"Download HTML (zip)\" are not visible/confirmed, yet the agent output asserts specific dates and that \"Download HTML (zip)\" is available.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

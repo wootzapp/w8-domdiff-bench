@@ -1,917 +1,1080 @@
-## Task 26
-
-Completed using all N+1 states: 2 screenshots and 2 DOM-model states.
-
-```text
- Metric                 Screenshot        DOM model
-━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
- Process score        15/15 (100%)    14/15 (93.3%)
-───────────────────  ──────────────  ───────────────
- Outcome                      Pass             Fail
-───────────────────  ──────────────  ───────────────
- LLM calls                      12               19
-───────────────────  ──────────────  ───────────────
- Evaluation tokens          81,212          100,608
-```
-
-### Evidence audit
-
-```text
- Criterion          Screenshot          DOM present/           Score    Classification
-                    present/caught      caught                SS/DOM
-━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━
- Course page        Yes / Yes           Yes / Yes                3/3    BOTH_CAUGHT
- accessed
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Instructor         Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- IBM partner        Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Five modules       Yes / Yes           Yes / Yes                3/2    BOTH_CAUGHT
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Audit              Yes / Yes           Yes / Yes                3/3    BOTH_CAUGHT
- availability
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Constraints        Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
- respected
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Unavailability     Page clearly        Page clearly             N/A    BOTH_CAUGHT
-                    available /         available /
-                    caught              caught
-```
-
-There was no evidence missed by either verifier.
-
-The one-point difference came from judgment, not missing DOM evidence. Both modalities
-showed “5 modules,” but neither showed the five specific module titles claimed in the
-final answer:
-
-- Screenshot verifier noticed the unsupported titles but still gave 3/3 because the
-  criterion only required the module count.
-
-- DOM verifier noticed the same issue and deducted one point.
-- The DOM outcome judge considered those unsupported titles serious enough to fail the
-  overall outcome; the screenshot judge treated them as a minor issue.
-
-So screenshot exceeded DOM by one point, but not because screenshot contained more
-evidence.
-
-## Task 29
-
-Completed using all N+1 states: 4 screenshots and 4 DOM-model states.
-
-```text
- Metric                Screenshot       DOM model
-━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━━
- Process score        16/20 (80%)    20/20 (100%)
-───────────────────  ─────────────  ──────────────
- Outcome                     Fail            Pass
-───────────────────  ─────────────  ──────────────
- LLM calls                     16              25
-───────────────────  ─────────────  ──────────────
- Evaluation tokens        115,086         148,894
-```
-
-### Evidence audit
-
-```text
- Criterion           Screenshot          DOM present/       Score    Classification
-                     present/caught      caught            SS/DOM
-━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━  ━━━━━━━━  ━━━━━━━━━━━━━━━━━━━
- Correct Requests    Yes / Yes           Yes / Yes            4/4    BOTH_CAUGHT
- release
-──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
- Version 2.34.2      Yes / Yes           Yes / Yes            2/2    BOTH_CAUGHT
-──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
- Upload date         Yes / Yes           Yes / Yes            2/2    BOTH_CAUGHT
-──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
- Requires Python     Not displayed /     Not                  2/2    BOTH_CAUGHT
- unavailable         correctly caught    displayed /
-                                         correctly
-                                         caught
-──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
- License             Not displayed /     Not                  2/2    BOTH_CAUGHT
- unavailable         correctly caught    displayed /
-                                         correctly
-                                         caught
-──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
- Two download        Exact count not     Yes / Yes            1/3    SCREENSHOT_EVIDEN
- files               visible / not                                   CE_MISSING
-                     proven
-──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
- Constraints/        Yes / Yes           Yes / Yes            3/5    BOTH_CAUGHT
- stopping
-```
-
-The DOM contained the explicit text “Showing 1 of 1 file” for the built distribution,
-plus one source distribution, proving two total files. The screenshots showed one
-source file and a separate wheel-detail page, but did not visibly prove that only one
-wheel was listed.
-
-Therefore:
-
-- Screenshot missed-available-evidence error rate: 0%
-- DOM missed-available-evidence error rate: 0%
-- One criterion had stronger source coverage in DOM.
-- This was missing screenshot evidence, not the screenshot verifier overlooking clearly
-  visible evidence.
-
-## Task 30
-
-Completed using all N+1 states: 2 screenshots and 2 DOM-model states.
-
-```text
- Metric                Screenshot      DOM model
-━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━
- Process score        18/20 (90%)    19/20 (95%)
-───────────────────  ─────────────  ─────────────
- Outcome                     Fail           Fail
-───────────────────  ─────────────  ─────────────
- LLM calls                     12             25
-───────────────────  ─────────────  ─────────────
- Evaluation tokens         81,524        138,767
-```
-
-### Evidence audit
-
-```text
- Criterion          Screenshot          DOM present/           Score    Classification
-                    present/caught      caught                SS/DOM
-━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━
- Access Rails       Yes / Yes           Yes / Yes                3/3    BOTH_CAUGHT
- page
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Latest-version     3 fields            3 fields                 3/4    BOTH_CAUGHT
- metadata           present; license    present; license
-                    absent / caught     absent / caught
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Dependency #1      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Dependency #2      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Dependency #3      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Dependency #4      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Dependency #5      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
-─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
- Stopping           Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
- condition
-```
-
-Both sources proved version 8.1.3.1, release date July 29, 2026, Ruby requirement >=
-3.2.0, and the first five dependencies. Neither source displayed the license, while the
-agent claimed MIT; both verifiers correctly caught that unsupported claim and failed
-the outcome.
-
-Therefore:
-
-- Screenshot missed-available-evidence error rate: 0%
-- DOM missed-available-evidence error rate: 0%
-- DOM’s extra point came from more generous partial-credit allocation—not additional
-  evidence or a screenshot miss.
-
-- DOM used 57,243 more tokens (+70.22%) and had six response-validation retries with
-  one fallback.
-
-In short: both verifiers understood the evidence correctly and rejected the unsupported
-license; only their partial-credit judgment differed.
-
-## Task 31
-
-Completed using all 3 screenshots and 3 DOM-model states.
-
-```text
- Metric                                       Screenshot         DOM model
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━
- Score                                     11/18 (61.1%)    8.5/18 (47.2%)
-────────────────────────────────────────  ───────────────  ────────────────
- Outcome                                            Fail              Fail
-────────────────────────────────────────  ───────────────  ────────────────
- LLM calls                                            13                18
-────────────────────────────────────────  ───────────────  ────────────────
- Total tokens                                     88,862           116,464
-────────────────────────────────────────  ───────────────  ────────────────
- Rubric-generation calls during scoring                0                 0
-```
-
-Rubric generation was separate: 2 calls, 13,467 tokens.
-
-### Evidence audit
-
-```text
- Criterion        Screenshot           DOM present/            Score    Classification
-                  present/caught       caught               SS / DOM
-━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━
- Official page    Yes / Yes            Yes / Yes               3 / 3    BOTH_CAUGHT
- and filter
-───────────────  ───────────────────  ───────────────────  ──────────  ────────────────
- Identify         Partial: slim,       Partial: trixie /       2 / 1    BOTH_CAUGHT
- newest tags      bookworm / Yes       Yes
-───────────────  ───────────────────  ───────────────────  ──────────  ────────────────
- Update times     Two visible / Yes    One explicit /          0.5 /    BOTH_CAUGHT
-                                       Yes                       1.5
-───────────────  ───────────────────  ───────────────────  ──────────  ────────────────
- Linux/amd64      Two visible / Yes    One tag-linked /        2.5 /    BOTH_CAUGHT
- sizes                                 Yes                       1.5
-───────────────  ───────────────────  ───────────────────  ──────────  ────────────────
- Constraints      Yes / Yes            Yes / Yes             3 / 1.5    BOTH_CAUGHT
-```
-
-The screenshot verifier exceeded DOM by 2.5 points. This was not caused by either
-verifier missing available evidence. The representations exposed different tag records,
-and criterion 5 also received different scoring interpretations despite both verifiers
-recognizing the relevant evidence.
-
-## Task 32
-
-Completed using all 2 screenshots and 2 DOM-model states.
-
-```text
- Metric                 Screenshot        DOM model
-━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
- Score               16/18 (88.9%)    16/18 (88.9%)
-──────────────────  ───────────────  ───────────────
- Rubric threshold             Pass             Pass
-──────────────────  ───────────────  ───────────────
- Outcome                      Fail             Fail
-──────────────────  ───────────────  ───────────────
- LLM calls                      12               26
-──────────────────  ───────────────  ───────────────
- Total tokens               74,211          121,092
-```
-
-Rubric generation was separate: 2 calls and 11,970 tokens.
-
-### Evidence audit
-
-```text
- Criterion            Screenshot         DOM present/          Score    Classification
-                      present/caught     caught                 SS /
-                                                                 DOM
-━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━━━━━━━━━━
- Correct Debian       Yes / Yes          Yes / Yes             2 / 2    BOTH_CAUGHT
- page
-───────────────────  ─────────────────  ──────────────────  ─────────  ────────────────
- Package version      Yes / Yes          Yes / Yes             3 / 3    BOTH_CAUGHT
-───────────────────  ─────────────────  ──────────────────  ─────────  ────────────────
- Complete             No / correctly     Partial: only         1 / 1    BOTH_CAUGHT
- architecture list    rejected           amd64 /
-                                         correctly
-                                         rejected extras
-───────────────────  ─────────────────  ──────────────────  ─────────  ────────────────
- Required             Yes / Yes          Yes / Yes             7 / 7    BOTH_CAUGHT
- dependencies
-───────────────────  ─────────────────  ──────────────────  ─────────  ────────────────
- No download/         Yes / Yes          Yes / Yes             3 / 3    BOTH_CAUGHT
- install
-```
-
-Both verifiers correctly identified that the claimed nine-architecture list was
-unsupported. The screenshots did not show the “Download curl” table, while the DOM
-contained only one explicit row: amd64. Neither verifier missed available evidence.
-
-## Task 33
-
-Completed using all 5 screenshots and 5 DOM-model states.
-
-```text
- Metric                   Screenshot        DOM model
-━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
- Score                 10/18 (55.6%)    10/18 (55.6%)
-────────────────────  ───────────────  ───────────────
- Outcome                        Fail             Fail
-────────────────────  ───────────────  ───────────────
- LLM calls                        18               26
-────────────────────  ───────────────  ───────────────
- Total tokens                112,647          138,127
-────────────────────  ───────────────  ───────────────
- Validation retries                —                8
-────────────────────  ───────────────  ───────────────
- Fallbacks                         —                0
-```
-
-Rubric generation was separate: 2 calls and 13,479 tokens.
-
-### Evidence audit
-
-```text
- Criterion             Screenshot          DOM present/caught        Score    Classification
-                       present/caught                             SS / DOM
-━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━
- Correct Homebrew      Yes / Yes           Yes / Yes                 2 / 2    BOTH_CAUGHT
- source
-────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
- Stable version        9.0.1 visible /     Missing /                 0 / 0    DOM_EVIDENCE_MISSING
-                       Yes                 correctly
-                                           unsupported
-────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
- License               GPL-3.0-or-         Same / Yes                0 / 0    BOTH_CAUGHT
-                       later / Yes
-────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
- Regular               All 11 / Yes        All 11 / Yes              6 / 6    BOTH_CAUGHT
- dependencies
-────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
- Apple Silicon         Rows visible,       Explicit                  0 / 1    SCREENSHOT_EVIDENCE_M
- bottles               status glyph        checkmarks / Yes                   ISSING
-                       unclear / Yes
-────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
- Linux bottles         Rows visible,       Missing /                 0 / 0    BOTH_CAUGHT
-                       exact status        correctly
-                       unclear / Yes       unsupported
-────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
- Scope/stopping        Yes / Yes           Yes / Yes                 2 / 1    BOTH_CAUGHT
-```
-
-Neither verifier demonstrably missed evidence available in its representation:
-
-- Screenshot evidence-miss rate: 0/7 = 0%
-- DOM evidence-miss rate: 0/7 = 0%
-- Recovery metric: not applicable
-
-The equal totals hide different attribution: DOM gained one point for explicit Apple Silicon
-checkmarks but lost one point on stopping/scope.
-
-## Task 35
-
-Completed with a fresh, task-aligned frozen rubric.
-
-```text
- Metric                      Screenshot      DOM model
-━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━
- Score                      17/20 (85%)    15/20 (75%)
-─────────────────────────  ─────────────  ─────────────
- Outcome                         Failed         Failed
-─────────────────────────  ─────────────  ─────────────
- Evaluation calls                    12             18
-─────────────────────────  ─────────────  ─────────────
- Evaluation tokens               77,688         98,918
-─────────────────────────  ─────────────  ─────────────
- Rubric-generation calls              0              0
-```
-
-Rubric generation was separate: 2 calls and 13,253 tokens.
-
-```text
- Criterion              SS present /        DOM present /        SS / DOM    Audit
-                        caught              caught
-━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━
- C0 Open object         Yes / Yes           Yes / Yes               3 / 3    BOTH_CAUGHT
-─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
- C1 Correct museum      Yes / Yes           Yes / Yes               4 / 4    BOTH_CAUGHT
-─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
- C2 Relation ID/type    Yes / Yes           Yes / Yes               3 / 3    BOTH_CAUGHT
-─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
- C3 Address tags        Yes / Yes           Yes / Yes               4 / 4    BOTH_CAUGHT
-─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
- C4 Museum tags         Partially / Yes     Partially / Yes         1 / 0    Required tourism,
-                                                                             museum, and website
-                                                                             rows were missing from
-                                                                             both sources
-─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
- C5 Constraints/stop    Yes / Yes           Yes / Yes               2 / 1    Both caught; scoring
-                                                                             interpretation
-                                                                             differed
-```
-
-The screenshot visibly showed building=museum, but not the requested tourism, museum, or website
-tags. The DOM state contained the same limited tag table. Therefore, neither verifier missed
-available evidence.
-
-## Task 37
-
-Completed.
-
-```text
- Metric                Screenshot     DOM model
-━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━
- Score                12/16 (75%)    8/16 (50%)
-───────────────────  ─────────────  ────────────
- Outcome                   Failed        Failed
-───────────────────  ─────────────  ────────────
- Evaluation calls              45            61
-───────────────────  ─────────────  ────────────
- Evaluation tokens        232,672       243,687
-```
-
-DOM used 11,015 more tokens (+4.73%). Rubric generation was separate: 2 calls and 13,119 tokens.
-
-```text
- Criterion            Screenshot present/    DOM present/caught    SS / DOM    Audit
-                      caught
-━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━
- C0 IANA page         Yes / Yes              Yes / Yes                2 / 2    BOTH_CAUGHT
-───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
- C1 TLD type          Yes / Yes              Yes / Yes                1.5 /    BOTH_CAUGHT
-                                                                        1.5
-───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
- C2 Sponsor           Yes / Yes              Yes / Yes                3 / 3    BOTH_CAUGHT
-───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
- C3 Registration      Yes / Yes              No / N/A                 0 / 0    DOM_EVIDENCE_MISSING
- date
-───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
- C4 WHOIS server      Yes / Yes              No / N/A                 2 / 0    DOM_EVIDENCE_MISSING
-───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
- C5 Registration      Yes / Yes              No / N/A                 2 / 0    DOM_EVIDENCE_MISSING
- website
-───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
- C6 Constraints       Actions / Yes          Actions / Yes            1.5 /    BOTH_CAUGHT
-                                                                        1.5
-```
-
-The screenshots clearly showed:
-
-- Registration date: 2001-10-20
-- WHOIS server: whois.nic.museum
-- Registration-services URL: https://about.museum
-
-The DOM-model states did not contain these three fields. Many corresponding DOM states had
-returnedNodes=0, even though the screenshots visibly contained the page’s lower section.
-
-The agent incorrectly reported the registration date as 2001-10-08, so both verifiers correctly gave
-C3 zero. For C4 and C5, the screenshot verifier could validate the correct values, while the DOM
-verifier correctly treated them as unsupported.
-
-## Task 38
-
-Completed.
-
-```text
- Metric                  Screenshot      DOM model
-━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━
- Score                22.5/25 (90%)    23/25 (92%)
-───────────────────  ───────────────  ─────────────
- Rubric pass                    Yes            Yes
-───────────────────  ───────────────  ─────────────
- Outcome                     Failed         Passed
-───────────────────  ───────────────  ─────────────
- Evaluation calls                21             43
-───────────────────  ───────────────  ─────────────
- Evaluation tokens          141,830        244,050
-```
-
-DOM used 102,220 more tokens (+72.07%). Rubric generation was separate: 2 calls and 14,086 tokens.
-
-```text
- Criterion               Screenshot present/caught    DOM present/caught     SS / DOM    Audit
-━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━
- C0 CVE.org source       Yes / Yes                    Yes / Yes                 3 / 3    BOTH_CAUGHT
-──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
- C1 Status               Yes / Yes                    Yes / Yes                 2 / 2    BOTH_CAUGHT
-──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
- C2 Publication date     Yes / Yes                    Yes / Yes                 2 / 2    BOTH_CAUGHT
-──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
- C3 CNA name             Yes / Yes                    Yes / Yes                 2 / 2    BOTH_CAUGHT
-──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
- C4 Vendor               Yes / Yes                    No / N/A                0 / 0.5    DOM_EVIDENCE_MISSING
-──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
- C5 Product              Yes / Yes                    Narrative / Yes       1.5 / 1.5    BOTH_CAUGHT
-──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
- C6 Version statement    Yes / Yes                    Yes / Yes                 5 / 5    BOTH_CAUGHT
-──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
- C7 First reference      Yes / Yes                    Yes / Yes                 3 / 3    BOTH_CAUGHT
-──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
- C8 Constraints          Actions / Yes                Actions / Yes             4 / 4    BOTH_CAUGHT
-```
-
-The screenshot explicitly showed:
-
-- Vendor: Apache Software Foundation
-- Product: Apache Log4j2
-
-The agent answered Vendor: Apache, which is incorrect. The screenshot verifier caught this and correctly failed
-the outcome.
-
-The DOM states omitted the structured Vendor/Product table. Because the DOM only contained narrative text such as
-“Apache Log4j2,” the DOM verifier inferred that Apache was plausible, awarded minimal vendor credit, and
-incorrectly passed the overall outcome.
-
-So this is not a case where the DOM verifier missed evidence available in DOM. It is a DOM source-evidence
-omission that caused a false-positive/overcredit. All seven DOM files were passed to the verifier with no context
-truncation or excluded states.
-
-## Task 39
-
-Completed with identical results.
-
-```text
- Metric                 Screenshot       DOM model
-━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━
- Score                14/14 (100%)    14/14 (100%)
-───────────────────  ──────────────  ──────────────
- Rubric pass                   Yes             Yes
-───────────────────  ──────────────  ──────────────
- Outcome                    Passed          Passed
-───────────────────  ──────────────  ──────────────
- Evaluation calls               19              36
-───────────────────  ──────────────  ──────────────
- Evaluation tokens         109,614         171,521
-```
-
-DOM used 61,907 more tokens (+56.48%). Rubric generation was separate: 2 calls and 12,898 tokens.
-
-```text
- Criterion                  Screenshot present/caught    DOM present/caught    SS / DOM    Audit
-━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━
- C0 NWS Seattle page        Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
-─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
- C1 First daytime period    Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
-─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
- C2 Following nighttime     Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
-─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
- C3 Daytime fields          Yes / Yes                    Yes / Yes                3 / 3    BOTH_CAUGHT
-─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
- C4 Nighttime fields        Yes / Yes                    Yes / Yes                3 / 3    BOTH_CAUGHT
-─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
- C5 Constraints/stop        Actions / Yes                Actions / Yes            2 / 2    BOTH_CAUGHT
-```
-
-Both sources clearly contained the same forecast:
-
-- This Afternoon: showers, high 68°F, 90%, SSE wind around 11 mph with gusts to 21 mph
-- Tonight: rain mainly after 3am, low 54°F, 50%, south wind 6–10 mph with gusts to 20 mph
-
-## Task 40
-
-Completed successfully.
-
-```text
- Metric                                      Screenshot        DOM-model
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
- Score                                     15/15 (100%)    14/15 (93.3%)
-────────────────────────────────────────  ──────────────  ───────────────
- Outcome success                                    Yes               No
-────────────────────────────────────────  ──────────────  ───────────────
- LLM calls                                           14               22
-────────────────────────────────────────  ──────────────  ───────────────
- Total tokens                                    78,530          108,179
-────────────────────────────────────────  ──────────────  ───────────────
- Rubric-generation calls during scoring               0                0
-```
-
-DOM used 29,649 more tokens (+37.75%). The separate frozen-rubric generation used 12,413 tokens.
-
-```text
- Criterion                Screenshot present/        DOM present/caught    Score SS / DOM    Classification
-                          caught
-━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━
- Correct UNRATE page      Yes / Yes                  Yes / Yes                      3 / 3    BOTH_CAUGHT
-───────────────────────  ─────────────────────────  ────────────────────  ────────────────  ──────────────────────
- Metadata                 Yes / Yes                  Partial / Yes                  4 / 3    DOM_EVIDENCE_MISSING
-───────────────────────  ─────────────────────────  ────────────────────  ────────────────  ──────────────────────
- Latest 3 observations    Yes / Yes                  Yes / Yes                      6 / 6    BOTH_CAUGHT
-───────────────────────  ─────────────────────────  ────────────────────  ────────────────  ──────────────────────
- Stop after requested     Yes / Yes                  Yes / Yes                      2 / 2    BOTH_CAUGHT
- work
-```
-
-The DOM representation contained Frequency: Monthly and Seasonally Adjusted, but did not preserve a reliable
-relationship between the Units: label and Percent. Percent appeared only in chart-axis text. Therefore, the DOM
-verifier correctly withheld one point—it did not miss available evidence; the DOM source lacked the necessary
-metadata association.
-
-## Task 41
-
-Completed.
-
-```text
- Metric             Screenshot         DOM-model
-━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━
- Score              8/16 (50%)    13/16 (81.25%)
-─────────────────  ────────────  ────────────────
- Rubric pass                No               Yes
-─────────────────  ────────────  ────────────────
- Outcome success            No                No
-─────────────────  ────────────  ────────────────
- LLM calls                  12                22
-─────────────────  ────────────  ────────────────
- Total tokens           78,674            98,127
-```
-
-DOM used 19,453 more tokens (+24.73%). Rubric generation used another 13,147 tokens separately.
-
-```text
- Criterion        Screenshot present/caught    DOM present/caught    SS / DOM    Audit
-━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- Exact record     Yes / Yes                    Yes / Yes                3 / 3    BOTH_CAUGHT
-───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
- Title            Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
-───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
- Creation date    No                           Yes / Yes                0 / 2    SCREENSHOT_EVIDENCE_MISSING
-───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
- Institution      Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
-───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
- Type of item     Yes / Yes                    No                       1 / 0    DOM_EVIDENCE_MISSING
-───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
- Rights           No/obscured                  Yes / Yes                0 / 2    SCREENSHOT_EVIDENCE_MISSING
-───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
- Identifier       No                           Yes / Yes                0 / 2    SCREENSHOT_EVIDENCE_MISSING
-```
-
-There were no clear verifier evidence misses. The five-point DOM advantage came from evidence availability: the
-DOM explicitly contained the creation date, rights, and identifiers that were not visible in the screenshots.
-Conversely, the screenshot showed the full type value, while the DOM omitted it.
-
-## Task 42
-
-Completed after correcting both task42 dataset URLs to the resolved edition. No verifier code was changed.
-
-```text
- Metric               Screenshot        DOM-model
-━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
- Score              15/15 (100%)    13/15 (86.7%)
-─────────────────  ──────────────  ───────────────
- Rubric pass                 Yes              Yes
-─────────────────  ──────────────  ───────────────
- Outcome success             Yes               No
-─────────────────  ──────────────  ───────────────
- LLM calls                    22               29
-─────────────────  ──────────────  ───────────────
- Total tokens            132,961          153,671
-```
-
-DOM used 20,710 more tokens (+15.58%). Rubric generation used 13,679 tokens separately.
-
-```text
- Criterion                Screenshot present/        DOM present/caught    SS / DOM    Audit
-                          caught
-━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- ISBN-resolved edition    Yes / Yes                  Yes / Yes                3 / 2    BOTH_CAUGHT; scoring
-                                                                                       disagreement
-───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
- Title                    Yes / Yes                  Yes / Yes                1 / 1    BOTH_CAUGHT
-───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
- Author                   Yes / Yes                  Yes / Yes                1 / 1    BOTH_CAUGHT
-───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
- Publish Date             Yes / Yes                  Yes / Yes                2 / 2    BOTH_CAUGHT
-───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
- Publisher                Yes / Yes                  Yes / Yes                1 / 1    BOTH_CAUGHT
-───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
- Language                 Yes / Yes                  Yes / Yes                1 / 1    BOTH_CAUGHT
-───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
- Page count               Yes / Yes                  Yes / Yes                2 / 2    BOTH_CAUGHT
-───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
- ISBN-13                  Yes / Yes                  Partial / Yes            2 / 1    DOM_EVIDENCE_MISSING
-───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
- Constraints/stopping     Yes / Yes                  Yes / Yes                2 / 2    BOTH_CAUGHT
-```
-
-Why DOM lost two points:
-
-- It found the correct edition and ISBN but deducted one point because the original ISBN redirect was not
-  demonstrated. The screenshot verifier accepted the starting context plus displayed ISBN. This is a scoring-
-  judgment difference, not missed evidence.
-
-- The DOM contained 9780141439518 inside an editions-table row, but lost the explicit ISBN 13 → value field
-  relationship that was clearly visible in screenshots. The DOM verifier caught the digits but awarded partial
-  credit. This is a DOM representation limitation, not a verifier miss.
-
-## Task 43
-
-Completed.
-
-```text
- Metric              Screenshot      DOM-model
-━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━
- Score              13/20 (65%)    12/20 (60%)
-─────────────────  ─────────────  ─────────────
- Rubric pass                 No             No
-─────────────────  ─────────────  ─────────────
- Outcome success             No             No
-─────────────────  ─────────────  ─────────────
- LLM calls                   12             28
-─────────────────  ─────────────  ─────────────
- Total tokens            94,179        137,496
-```
-
-DOM used 43,317 more tokens (+45.99%). Rubric generation used 14,294 tokens separately.
-
-```text
+Task26 completed using all N+1 states: 2 screenshots and 2 DOM-model states.
+
+   Metric                 Screenshot        DOM model
+  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
+   Process score        15/15 (100%)    14/15 (93.3%)
+  ───────────────────  ──────────────  ───────────────
+   Outcome                      Pass             Fail
+  ───────────────────  ──────────────  ───────────────
+   LLM calls                      12               19
+  ───────────────────  ──────────────  ───────────────
+   Evaluation tokens          81,212          100,608
+
+  ### Evidence audit
+
+   Criterion          Screenshot          DOM present/           Score    Classification
+                      present/caught      caught                SS/DOM
+  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━
+   Course page        Yes / Yes           Yes / Yes                3/3    BOTH_CAUGHT
+   accessed
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Instructor         Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   IBM partner        Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Five modules       Yes / Yes           Yes / Yes                3/2    BOTH_CAUGHT
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Audit              Yes / Yes           Yes / Yes                3/3    BOTH_CAUGHT
+   availability
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Constraints        Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+   respected
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Unavailability     Page clearly        Page clearly             N/A    BOTH_CAUGHT
+                      available /         available /
+                      caught              caught
+
+  There was no evidence missed by either verifier.
+
+  The one-point difference came from judgment, not missing DOM evidence. Both modalities
+  showed “5 modules,” but neither showed the five specific module titles claimed in the
+  final answer:
+
+  - Screenshot verifier noticed the unsupported titles but still gave 3/3 because the
+    criterion only required the module count.
+
+  - DOM verifier noticed the same issue and deducted one point.
+  - The DOM outcome judge considered those unsupported titles serious enough to fail the
+    overall outcome; the screenshot judge treated them as a minor issue.
+
+  So screenshot exceeded DOM by one point, but not because screenshot contained more
+  evidence.
+
+• Task29 completed using all N+1 states: 4 screenshots and 4 DOM-model states.
+
+   Metric                Screenshot       DOM model
+  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━━
+   Process score        16/20 (80%)    20/20 (100%)
+  ───────────────────  ─────────────  ──────────────
+   Outcome                     Fail            Pass
+  ───────────────────  ─────────────  ──────────────
+   LLM calls                     16              25
+  ───────────────────  ─────────────  ──────────────
+   Evaluation tokens        115,086         148,894
+
+  ### Evidence audit
+
+   Criterion           Screenshot          DOM present/       Score    Classification
+                       present/caught      caught            SS/DOM
+  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━  ━━━━━━━━  ━━━━━━━━━━━━━━━━━━━
+   Correct Requests    Yes / Yes           Yes / Yes            4/4    BOTH_CAUGHT
+   release
+  ──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
+   Version 2.34.2      Yes / Yes           Yes / Yes            2/2    BOTH_CAUGHT
+  ──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
+   Upload date         Yes / Yes           Yes / Yes            2/2    BOTH_CAUGHT
+  ──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
+   Requires Python     Not displayed /     Not                  2/2    BOTH_CAUGHT
+   unavailable         correctly caught    displayed /
+                                           correctly
+                                           caught
+  ──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
+   License             Not displayed /     Not                  2/2    BOTH_CAUGHT
+   unavailable         correctly caught    displayed /
+                                           correctly
+                                           caught
+  ──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
+   Two download        Exact count not     Yes / Yes            1/3    SCREENSHOT_EVIDEN
+   files               visible / not                                   CE_MISSING
+                       proven
+  ──────────────────  ──────────────────  ────────────────  ────────  ───────────────────
+   Constraints/        Yes / Yes           Yes / Yes            3/5    BOTH_CAUGHT
+   stopping
+
+  The DOM contained the explicit text “Showing 1 of 1 file” for the built distribution,
+  plus one source distribution, proving two total files. The screenshots showed one
+  source file and a separate wheel-detail page, but did not visibly prove that only one
+  wheel was listed.
+
+  Therefore:
+
+  - Screenshot missed-available-evidence error rate: 0%
+  - DOM missed-available-evidence error rate: 0%
+  - One criterion had stronger source coverage in DOM.
+  - This was missing screenshot evidence, not the screenshot verifier overlooking clearly
+    visible evidence.
+
+• Task30 completed using all N+1 states: 2 screenshots and 2 DOM-model states.
+
+   Metric                Screenshot      DOM model
+  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━
+   Process score        18/20 (90%)    19/20 (95%)
+  ───────────────────  ─────────────  ─────────────
+   Outcome                     Fail           Fail
+  ───────────────────  ─────────────  ─────────────
+   LLM calls                     12             25
+  ───────────────────  ─────────────  ─────────────
+   Evaluation tokens         81,524        138,767
+
+  ### Evidence audit
+
+   Criterion          Screenshot          DOM present/           Score    Classification
+                      present/caught      caught                SS/DOM
+  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━
+   Access Rails       Yes / Yes           Yes / Yes                3/3    BOTH_CAUGHT
+   page
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Latest-version     3 fields            3 fields                 3/4    BOTH_CAUGHT
+   metadata           present; license    present; license
+                      absent / caught     absent / caught
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Dependency #1      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Dependency #2      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Dependency #3      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Dependency #4      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Dependency #5      Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+  ─────────────────  ──────────────────  ──────────────────  ──────────  ────────────────
+   Stopping           Yes / Yes           Yes / Yes                2/2    BOTH_CAUGHT
+   condition
+
+  Both sources proved version 8.1.3.1, release date July 29, 2026, Ruby requirement >=
+  3.2.0, and the first five dependencies. Neither source displayed the license, while the
+  agent claimed MIT; both verifiers correctly caught that unsupported claim and failed
+  the outcome.
+
+  Therefore:
+
+  - Screenshot missed-available-evidence error rate: 0%
+  - DOM missed-available-evidence error rate: 0%
+  - DOM’s extra point came from more generous partial-credit allocation—not additional
+    evidence or a screenshot miss.
+
+  - DOM used 57,243 more tokens (+70.22%) and had six response-validation retries with
+    one fallback.
+
+  In short: both verifiers understood the evidence correctly and rejected the unsupported
+  license; only their partial-credit judgment differed.
+
+• Task31 completed using all 3 screenshots and 3 DOM-model states.
+
+   Metric                                       Screenshot         DOM model
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━
+   Score                                     11/18 (61.1%)    8.5/18 (47.2%)
+  ────────────────────────────────────────  ───────────────  ────────────────
+   Outcome                                            Fail              Fail
+  ────────────────────────────────────────  ───────────────  ────────────────
+   LLM calls                                            13                18
+  ────────────────────────────────────────  ───────────────  ────────────────
+   Total tokens                                     88,862           116,464
+  ────────────────────────────────────────  ───────────────  ────────────────
+   Rubric-generation calls during scoring                0                 0
+
+  Rubric generation was separate: 2 calls, 13,467 tokens.
+
+  ### Evidence audit
+
+   Criterion        Screenshot           DOM present/            Score    Classification
+                    present/caught       caught               SS / DOM
+  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━
+   Official page    Yes / Yes            Yes / Yes               3 / 3    BOTH_CAUGHT
+   and filter
+  ───────────────  ───────────────────  ───────────────────  ──────────  ────────────────
+   Identify         Partial: slim,       Partial: trixie /       2 / 1    BOTH_CAUGHT
+   newest tags      bookworm / Yes       Yes
+  ───────────────  ───────────────────  ───────────────────  ──────────  ────────────────
+   Update times     Two visible / Yes    One explicit /          0.5 /    BOTH_CAUGHT
+                                         Yes                       1.5
+  ───────────────  ───────────────────  ───────────────────  ──────────  ────────────────
+   Linux/amd64      Two visible / Yes    One tag-linked /        2.5 /    BOTH_CAUGHT
+   sizes                                 Yes                       1.5
+  ───────────────  ───────────────────  ───────────────────  ──────────  ────────────────
+   Constraints      Yes / Yes            Yes / Yes             3 / 1.5    BOTH_CAUGHT
+
+  The screenshot verifier exceeded DOM by 2.5 points. This was not caused by either
+  verifier missing available evidence. The representations exposed different tag records,
+  and criterion 5 also received different scoring interpretations despite both verifiers
+  recognizing the relevant evidence.
+
+Task32 completed using all 2 screenshots and 2 DOM-model states.
+
+   Metric                 Screenshot        DOM model
+  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
+   Score               16/18 (88.9%)    16/18 (88.9%)
+  ──────────────────  ───────────────  ───────────────
+   Rubric threshold             Pass             Pass
+  ──────────────────  ───────────────  ───────────────
+   Outcome                      Fail             Fail
+  ──────────────────  ───────────────  ───────────────
+   LLM calls                      12               26
+  ──────────────────  ───────────────  ───────────────
+   Total tokens               74,211          121,092
+
+  Rubric generation was separate: 2 calls and 11,970 tokens.
+
+  ### Evidence audit
+
+   Criterion            Screenshot         DOM present/          Score    Classification
+                        present/caught     caught                 SS /
+                                                                   DOM
+  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━━━━━━━━━━
+   Correct Debian       Yes / Yes          Yes / Yes             2 / 2    BOTH_CAUGHT
+   page
+  ───────────────────  ─────────────────  ──────────────────  ─────────  ────────────────
+   Package version      Yes / Yes          Yes / Yes             3 / 3    BOTH_CAUGHT
+  ───────────────────  ─────────────────  ──────────────────  ─────────  ────────────────
+   Complete             No / correctly     Partial: only         1 / 1    BOTH_CAUGHT
+   architecture list    rejected           amd64 /
+                                           correctly
+                                           rejected extras
+  ───────────────────  ─────────────────  ──────────────────  ─────────  ────────────────
+   Required             Yes / Yes          Yes / Yes             7 / 7    BOTH_CAUGHT
+   dependencies
+  ───────────────────  ─────────────────  ──────────────────  ─────────  ────────────────
+   No download/         Yes / Yes          Yes / Yes             3 / 3    BOTH_CAUGHT
+   install
+
+  Both verifiers correctly identified that the claimed nine-architecture list was
+  unsupported. The screenshots did not show the “Download curl” table, while the DOM
+  contained only one explicit row: amd64. Neither verifier missed available evidence.
+
+• Task33 completed using all 5 screenshots and 5 DOM-model states.
+
+   Metric                   Screenshot        DOM model
+  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
+   Score                 10/18 (55.6%)    10/18 (55.6%)
+  ────────────────────  ───────────────  ───────────────
+   Outcome                        Fail             Fail
+  ────────────────────  ───────────────  ───────────────
+   LLM calls                        18               26
+  ────────────────────  ───────────────  ───────────────
+   Total tokens                112,647          138,127
+  ────────────────────  ───────────────  ───────────────
+   Validation retries                —                8
+  ────────────────────  ───────────────  ───────────────
+   Fallbacks                         —                0
+
+  Rubric generation was separate: 2 calls and 13,479 tokens.
+
+  ### Evidence audit
+
+   Criterion             Screenshot          DOM present/caught        Score    Classification
+                         present/caught                             SS / DOM
+  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━
+   Correct Homebrew      Yes / Yes           Yes / Yes                 2 / 2    BOTH_CAUGHT
+   source
+  ────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
+   Stable version        9.0.1 visible /     Missing /                 0 / 0    DOM_EVIDENCE_MISSING
+                         Yes                 correctly
+                                             unsupported
+  ────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
+   License               GPL-3.0-or-         Same / Yes                0 / 0    BOTH_CAUGHT
+                         later / Yes
+  ────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
+   Regular               All 11 / Yes        All 11 / Yes              6 / 6    BOTH_CAUGHT
+   dependencies
+  ────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
+   Apple Silicon         Rows visible,       Explicit                  0 / 1    SCREENSHOT_EVIDENCE_M
+   bottles               status glyph        checkmarks / Yes                   ISSING
+                         unclear / Yes
+  ────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
+   Linux bottles         Rows visible,       Missing /                 0 / 0    BOTH_CAUGHT
+                         exact status        correctly
+                         unclear / Yes       unsupported
+  ────────────────────  ──────────────────  ────────────────────  ───────────  ───────────────────────
+   Scope/stopping        Yes / Yes           Yes / Yes                 2 / 1    BOTH_CAUGHT
+
+  Neither verifier demonstrably missed evidence available in its representation:
+
+  - Screenshot evidence-miss rate: 0/7 = 0%
+  - DOM evidence-miss rate: 0/7 = 0%
+  - Recovery metric: not applicable
+
+  The equal totals hide different attribution: DOM gained one point for explicit Apple Silicon
+  checkmarks but lost one point on stopping/scope.
+
+Task35 completed with a fresh, task-aligned frozen rubric.
+
+   Metric                      Screenshot      DOM model
+  ━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━
+   Score                      17/20 (85%)    15/20 (75%)
+  ─────────────────────────  ─────────────  ─────────────
+   Outcome                         Failed         Failed
+  ─────────────────────────  ─────────────  ─────────────
+   Evaluation calls                    12             18
+  ─────────────────────────  ─────────────  ─────────────
+   Evaluation tokens               77,688         98,918
+  ─────────────────────────  ─────────────  ─────────────
+   Rubric-generation calls              0              0
+
+  Rubric generation was separate: 2 calls and 13,253 tokens.
+
+   Criterion              SS present /        DOM present /        SS / DOM    Audit
+                          caught              caught
+  ━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━
+   C0 Open object         Yes / Yes           Yes / Yes               3 / 3    BOTH_CAUGHT
+  ─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
+   C1 Correct museum      Yes / Yes           Yes / Yes               4 / 4    BOTH_CAUGHT
+  ─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
+   C2 Relation ID/type    Yes / Yes           Yes / Yes               3 / 3    BOTH_CAUGHT
+  ─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
+   C3 Address tags        Yes / Yes           Yes / Yes               4 / 4    BOTH_CAUGHT
+  ─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
+   C4 Museum tags         Partially / Yes     Partially / Yes         1 / 0    Required tourism,
+                                                                               museum, and website
+                                                                               rows were missing from
+                                                                               both sources
+  ─────────────────────  ──────────────────  ───────────────────  ──────────  ────────────────────────
+   C5 Constraints/stop    Yes / Yes           Yes / Yes               2 / 1    Both caught; scoring
+                                                                               interpretation
+                                                                               differed
+
+  The screenshot visibly showed building=museum, but not the requested tourism, museum, or website
+  tags. The DOM state contained the same limited tag table. Therefore, neither verifier missed
+  available evidence.
+
+• Task37 completed.
+
+   Metric                Screenshot     DOM model
+  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━
+   Score                12/16 (75%)    8/16 (50%)
+  ───────────────────  ─────────────  ────────────
+   Outcome                   Failed        Failed
+  ───────────────────  ─────────────  ────────────
+   Evaluation calls              45            61
+  ───────────────────  ─────────────  ────────────
+   Evaluation tokens        232,672       243,687
+
+  DOM used 11,015 more tokens (+4.73%). Rubric generation was separate: 2 calls and 13,119 tokens.
+
+   Criterion            Screenshot present/    DOM present/caught    SS / DOM    Audit
+                        caught
+  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━
+   C0 IANA page         Yes / Yes              Yes / Yes                2 / 2    BOTH_CAUGHT
+  ───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
+   C1 TLD type          Yes / Yes              Yes / Yes                1.5 /    BOTH_CAUGHT
+                                                                          1.5
+  ───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
+   C2 Sponsor           Yes / Yes              Yes / Yes                3 / 3    BOTH_CAUGHT
+  ───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
+   C3 Registration      Yes / Yes              No / N/A                 0 / 0    DOM_EVIDENCE_MISSING
+   date
+  ───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
+   C4 WHOIS server      Yes / Yes              No / N/A                 2 / 0    DOM_EVIDENCE_MISSING
+  ───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
+   C5 Registration      Yes / Yes              No / N/A                 2 / 0    DOM_EVIDENCE_MISSING
+   website
+  ───────────────────  ─────────────────────  ────────────────────  ──────────  ──────────────────────
+   C6 Constraints       Actions / Yes          Actions / Yes            1.5 /    BOTH_CAUGHT
+                                                                          1.5
+
+  The screenshots clearly showed:
+
+  - Registration date: 2001-10-20
+  - WHOIS server: whois.nic.museum
+  - Registration-services URL: https://about.museum
+
+  The DOM-model states did not contain these three fields. Many corresponding DOM states had
+  returnedNodes=0, even though the screenshots visibly contained the page’s lower section.
+
+  The agent incorrectly reported the registration date as 2001-10-08, so both verifiers correctly gave
+  C3 zero. For C4 and C5, the screenshot verifier could validate the correct values, while the DOM
+  verifier correctly treated them as unsupported.
+
+• Task38 completed.
+
+   Metric                  Screenshot      DOM model
+  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━
+   Score                22.5/25 (90%)    23/25 (92%)
+  ───────────────────  ───────────────  ─────────────
+   Rubric pass                    Yes            Yes
+  ───────────────────  ───────────────  ─────────────
+   Outcome                     Failed         Passed
+  ───────────────────  ───────────────  ─────────────
+   Evaluation calls                21             43
+  ───────────────────  ───────────────  ─────────────
+   Evaluation tokens          141,830        244,050
+
+  DOM used 102,220 more tokens (+72.07%). Rubric generation was separate: 2 calls and 14,086 tokens.
+
+   Criterion               Screenshot present/caught    DOM present/caught     SS / DOM    Audit
+  ━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━
+   C0 CVE.org source       Yes / Yes                    Yes / Yes                 3 / 3    BOTH_CAUGHT
+  ──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
+   C1 Status               Yes / Yes                    Yes / Yes                 2 / 2    BOTH_CAUGHT
+  ──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
+   C2 Publication date     Yes / Yes                    Yes / Yes                 2 / 2    BOTH_CAUGHT
+  ──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
+   C3 CNA name             Yes / Yes                    Yes / Yes                 2 / 2    BOTH_CAUGHT
+  ──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
+   C4 Vendor               Yes / Yes                    No / N/A                0 / 0.5    DOM_EVIDENCE_MISSING
+  ──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
+   C5 Product              Yes / Yes                    Narrative / Yes       1.5 / 1.5    BOTH_CAUGHT
+  ──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
+   C6 Version statement    Yes / Yes                    Yes / Yes                 5 / 5    BOTH_CAUGHT
+  ──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
+   C7 First reference      Yes / Yes                    Yes / Yes                 3 / 3    BOTH_CAUGHT
+  ──────────────────────  ───────────────────────────  ────────────────────  ───────────  ──────────────────────
+   C8 Constraints          Actions / Yes                Actions / Yes             4 / 4    BOTH_CAUGHT
+
+  The screenshot explicitly showed:
+
+  - Vendor: Apache Software Foundation
+  - Product: Apache Log4j2
+
+  The agent answered Vendor: Apache, which is incorrect. The screenshot verifier caught this and correctly failed
+  the outcome.
+
+  The DOM states omitted the structured Vendor/Product table. Because the DOM only contained narrative text such as
+  “Apache Log4j2,” the DOM verifier inferred that Apache was plausible, awarded minimal vendor credit, and
+  incorrectly passed the overall outcome.
+
+  So this is not a case where the DOM verifier missed evidence available in DOM. It is a DOM source-evidence
+  omission that caused a false-positive/overcredit. All seven DOM files were passed to the verifier with no context
+  truncation or excluded states.
+
+• Task39 completed with identical results.
+
+   Metric                 Screenshot       DOM model
+  ━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━
+   Score                14/14 (100%)    14/14 (100%)
+  ───────────────────  ──────────────  ──────────────
+   Rubric pass                   Yes             Yes
+  ───────────────────  ──────────────  ──────────────
+   Outcome                    Passed          Passed
+  ───────────────────  ──────────────  ──────────────
+   Evaluation calls               19              36
+  ───────────────────  ──────────────  ──────────────
+   Evaluation tokens         109,614         171,521
+
+  DOM used 61,907 more tokens (+56.48%). Rubric generation was separate: 2 calls and 12,898 tokens.
+
+   Criterion                  Screenshot present/caught    DOM present/caught    SS / DOM    Audit
+  ━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━
+   C0 NWS Seattle page        Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
+  ─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
+   C1 First daytime period    Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
+  ─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
+   C2 Following nighttime     Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
+  ─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
+   C3 Daytime fields          Yes / Yes                    Yes / Yes                3 / 3    BOTH_CAUGHT
+  ─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
+   C4 Nighttime fields        Yes / Yes                    Yes / Yes                3 / 3    BOTH_CAUGHT
+  ─────────────────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────
+   C5 Constraints/stop        Actions / Yes                Actions / Yes            2 / 2    BOTH_CAUGHT
+
+  Both sources clearly contained the same forecast:
+
+  - This Afternoon: showers, high 68°F, 90%, SSE wind around 11 mph with gusts to 21 mph
+  - Tonight: rain mainly after 3am, low 54°F, 50%, south wind 6–10 mph with gusts to 20 mph
+
+• Task40 completed successfully.
+
+   Metric                                      Screenshot        DOM-model
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
+   Score                                     15/15 (100%)    14/15 (93.3%)
+  ────────────────────────────────────────  ──────────────  ───────────────
+   Outcome success                                    Yes               No
+  ────────────────────────────────────────  ──────────────  ───────────────
+   LLM calls                                           14               22
+  ────────────────────────────────────────  ──────────────  ───────────────
+   Total tokens                                    78,530          108,179
+  ────────────────────────────────────────  ──────────────  ───────────────
+   Rubric-generation calls during scoring               0                0
+
+  DOM used 29,649 more tokens (+37.75%). The separate frozen-rubric generation used 12,413 tokens.
+
+   Criterion                Screenshot present/        DOM present/caught    Score SS / DOM    Classification
+                            caught
+  ━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━
+   Correct UNRATE page      Yes / Yes                  Yes / Yes                      3 / 3    BOTH_CAUGHT
+  ───────────────────────  ─────────────────────────  ────────────────────  ────────────────  ──────────────────────
+   Metadata                 Yes / Yes                  Partial / Yes                  4 / 3    DOM_EVIDENCE_MISSING
+  ───────────────────────  ─────────────────────────  ────────────────────  ────────────────  ──────────────────────
+   Latest 3 observations    Yes / Yes                  Yes / Yes                      6 / 6    BOTH_CAUGHT
+  ───────────────────────  ─────────────────────────  ────────────────────  ────────────────  ──────────────────────
+   Stop after requested     Yes / Yes                  Yes / Yes                      2 / 2    BOTH_CAUGHT
+   work
+
+  The DOM representation contained Frequency: Monthly and Seasonally Adjusted, but did not preserve a reliable
+  relationship between the Units: label and Percent. Percent appeared only in chart-axis text. Therefore, the DOM
+  verifier correctly withheld one point—it did not miss available evidence; the DOM source lacked the necessary
+  metadata association.
+
+• Task41 completed.
+
+   Metric             Screenshot         DOM-model
+  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━
+   Score              8/16 (50%)    13/16 (81.25%)
+  ─────────────────  ────────────  ────────────────
+   Rubric pass                No               Yes
+  ─────────────────  ────────────  ────────────────
+   Outcome success            No                No
+  ─────────────────  ────────────  ────────────────
+   LLM calls                  12                22
+  ─────────────────  ────────────  ────────────────
+   Total tokens           78,674            98,127
+
+  DOM used 19,453 more tokens (+24.73%). Rubric generation used another 13,147 tokens separately.
+
+   Criterion        Screenshot present/caught    DOM present/caught    SS / DOM    Audit
+  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Exact record     Yes / Yes                    Yes / Yes                3 / 3    BOTH_CAUGHT
+  ───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
+   Title            Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
+  ───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
+   Creation date    No                           Yes / Yes                0 / 2    SCREENSHOT_EVIDENCE_MISSING
+  ───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
+   Institution      Yes / Yes                    Yes / Yes                2 / 2    BOTH_CAUGHT
+  ───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
+   Type of item     Yes / Yes                    No                       1 / 0    DOM_EVIDENCE_MISSING
+  ───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
+   Rights           No/obscured                  Yes / Yes                0 / 2    SCREENSHOT_EVIDENCE_MISSING
+  ───────────────  ───────────────────────────  ────────────────────  ──────────  ─────────────────────────────
+   Identifier       No                           Yes / Yes                0 / 2    SCREENSHOT_EVIDENCE_MISSING
+
+  There were no clear verifier evidence misses. The five-point DOM advantage came from evidence availability: the
+  DOM explicitly contained the creation date, rights, and identifiers that were not visible in the screenshots.
+  Conversely, the screenshot showed the full type value, while the DOM omitted it.
+
+• Task42 completed after correcting both task42 dataset URLs to the resolved edition. No verifier code was changed.
+
+   Metric               Screenshot        DOM-model
+  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━
+   Score              15/15 (100%)    13/15 (86.7%)
+  ─────────────────  ──────────────  ───────────────
+   Rubric pass                 Yes              Yes
+  ─────────────────  ──────────────  ───────────────
+   Outcome success             Yes               No
+  ─────────────────  ──────────────  ───────────────
+   LLM calls                    22               29
+  ─────────────────  ──────────────  ───────────────
+   Total tokens            132,961          153,671
+
+  DOM used 20,710 more tokens (+15.58%). Rubric generation used 13,679 tokens separately.
+
+   Criterion                Screenshot present/        DOM present/caught    SS / DOM    Audit
+                            caught
+  ━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ISBN-resolved edition    Yes / Yes                  Yes / Yes                3 / 2    BOTH_CAUGHT; scoring
+                                                                                         disagreement
+  ───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
+   Title                    Yes / Yes                  Yes / Yes                1 / 1    BOTH_CAUGHT
+  ───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
+   Author                   Yes / Yes                  Yes / Yes                1 / 1    BOTH_CAUGHT
+  ───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
+   Publish Date             Yes / Yes                  Yes / Yes                2 / 2    BOTH_CAUGHT
+  ───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
+   Publisher                Yes / Yes                  Yes / Yes                1 / 1    BOTH_CAUGHT
+  ───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
+   Language                 Yes / Yes                  Yes / Yes                1 / 1    BOTH_CAUGHT
+  ───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
+   Page count               Yes / Yes                  Yes / Yes                2 / 2    BOTH_CAUGHT
+  ───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
+   ISBN-13                  Yes / Yes                  Partial / Yes            2 / 1    DOM_EVIDENCE_MISSING
+  ───────────────────────  ─────────────────────────  ────────────────────  ──────────  ────────────────────────────
+   Constraints/stopping     Yes / Yes                  Yes / Yes                2 / 2    BOTH_CAUGHT
+
+  Why DOM lost two points:
+
+  - It found the correct edition and ISBN but deducted one point because the original ISBN redirect was not
+    demonstrated. The screenshot verifier accepted the starting context plus displayed ISBN. This is a scoring-
+    judgment difference, not missed evidence.
+
+  - The DOM contained 9780141439518 inside an editions-table row, but lost the explicit ISBN 13 → value field
+    relationship that was clearly visible in screenshots. The DOM verifier caught the digits but awarded partial
+    credit. This is a DOM representation limitation, not a verifier miss.
+
+• Task43 completed.
+
+   Metric              Screenshot      DOM-model
+  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━
+   Score              13/20 (65%)    12/20 (60%)
+  ─────────────────  ─────────────  ─────────────
+   Rubric pass                 No             No
+  ─────────────────  ─────────────  ─────────────
+   Outcome success             No             No
+  ─────────────────  ─────────────  ─────────────
+   LLM calls                   12             28
+  ─────────────────  ─────────────  ─────────────
+   Total tokens            94,179        137,496
+
+  DOM used 43,317 more tokens (+45.99%). Rubric generation used 14,294 tokens separately.
+
+
 •  Criterion       Screenshot          DOM                    SS / DOM    Audit
-━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- Correct page    Caught              Caught                    2 / 2    BOTH_CAUGHT
-──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
- Author          Caught              Evidence incomplete       2 / 0    DOM_EVIDENCE_MISSING
-──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
- Release Date    Evidence missing    Caught                    0 / 3    SCREENSHOT_EVIDENCE_MISSING
-──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
- Last Update     Evidence missing    Caught                    0 / 3    SCREENSHOT_EVIDENCE_MISSING
-──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
- Language        Caught              Evidence missing          2 / 0    DOM_EVIDENCE_MISSING
-──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
- EPUB3           Caught              Caught                    2 / 2    BOTH_CAUGHT
-──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
- Plain Text      Evidence missing    Caught                    2 / 0    SCREENSHOT_EVIDENCE_MISSING
-──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
- HTML ZIP        Evidence missing    Evidence missing          2 / 0    BOTH SOURCES MISSING
-──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
- Constraints     Caught              Caught                    1 / 2    Scoring disagreement
-```
+  ━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Correct page    Caught              Caught                    2 / 2    BOTH_CAUGHT
+  ──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
+   Author          Caught              Evidence incomplete       2 / 0    DOM_EVIDENCE_MISSING
+  ──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
+   Release Date    Evidence missing    Caught                    0 / 3    SCREENSHOT_EVIDENCE_MISSING
+  ──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
+   Last Update     Evidence missing    Caught                    0 / 3    SCREENSHOT_EVIDENCE_MISSING
+  ──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
+   Language        Caught              Evidence missing          2 / 0    DOM_EVIDENCE_MISSING
+  ──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
+   EPUB3           Caught              Caught                    2 / 2    BOTH_CAUGHT
+  ──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
+   Plain Text      Evidence missing    Caught                    2 / 0    SCREENSHOT_EVIDENCE_MISSING
+  ──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
+   HTML ZIP        Evidence missing    Evidence missing          2 / 0    BOTH SOURCES MISSING
+  ──────────────  ──────────────────  ─────────────────────  ──────────  ─────────────────────────────
+   Constraints     Caught              Caught                    1 / 2    Scoring disagreement
 
-Key finding: the screenshot verifier scored slightly higher mainly because it was more lenient when evidence was
-missing. It awarded full credit for “Plain Text (accessible)” and “Download HTML (zip)” even though the requested
-availability was not established visually.
+  Key finding: the screenshot verifier scored slightly higher mainly because it was more lenient when evidence was
+  missing. It awarded full credit for “Plain Text (accessible)” and “Download HTML (zip)” even though the requested
+  availability was not established visually.
 
-The DOM explicitly contained the offscreen Plain Text (accessible) link, so it correctly identified the agent’s
-“not visible/not listed” claim as wrong. It also recovered both exact dates absent from the screenshots.
-Conversely, the DOM omitted the formal author value and dedicated Language field that were visible in screenshot
-1.
+  The DOM explicitly contained the offscreen Plain Text (accessible) link, so it correctly identified the agent’s
+  “not visible/not listed” claim as wrong. It also recovered both exact dates absent from the screenshots.
+  Conversely, the DOM omitted the formal author value and dedicated Language field that were visible in screenshot
+  1.
 
-## Task 45
+• Task45 completed.
 
-Completed.
+   Verifier                       Score    Outcome    Calls     Tokens
+  ━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━━
+   Microsoft screenshot    18/18 (100%)     False        14     91,213
+  ──────────────────────  ──────────────  ─────────  ───────  ─────────
+   DOM-model               18/18 (100%)     False        21    108,842
 
-```text
- Verifier                       Score    Outcome    Calls     Tokens
-━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━━
- Microsoft screenshot    18/18 (100%)     False        14     91,213
-──────────────────────  ──────────────  ─────────  ───────  ─────────
- DOM-model               18/18 (100%)     False        21    108,842
-```
+  DOM used 17,629 more tokens (+19.33%).
 
-DOM used 17,629 more tokens (+19.33%).
+   Criterion              Screenshot evidence/caught    DOM evidence/caught      Audit
+  ━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━
+   Title-field search     403 visible / Yes             Title: 403 / Yes         BOTH_CAUGHT
+  ─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
+   Filters and sorting    403 blocker / Yes             403 blocker / Yes        BOTH_CAUGHT
+  ─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
+   Result #1              Blocked / Yes                 Blocked / Yes            BOTH_CAUGHT
+  ─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
+   Result #2              Blocked / Yes                 Blocked / Yes            BOTH_CAUGHT
+  ─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
+   Result #3              Blocked / Yes                 Blocked / Yes            BOTH_CAUGHT
+  ─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
+   Stopping condition     Reasonable stop / Yes         Reasonable stop / Yes    BOTH_CAUGHT
 
-```text
- Criterion              Screenshot evidence/caught    DOM evidence/caught      Audit
-━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━
- Title-field search     403 visible / Yes             Title: 403 / Yes         BOTH_CAUGHT
-─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
- Filters and sorting    403 blocker / Yes             403 blocker / Yes        BOTH_CAUGHT
-─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
- Result #1              Blocked / Yes                 Blocked / Yes            BOTH_CAUGHT
-─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
- Result #2              Blocked / Yes                 Blocked / Yes            BOTH_CAUGHT
-─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
- Result #3              Blocked / Yes                 Blocked / Yes            BOTH_CAUGHT
-─────────────────────  ────────────────────────────  ───────────────────────  ─────────────
- Stopping condition     Reasonable stop / Yes         Reasonable stop / Yes    BOTH_CAUGHT
-```
+  All three screenshots were identical and visibly showed “403 Forbidden.” All three DOM states also explicitly
+  recorded Title: 403. Therefore:
 
-All three screenshots were identical and visibly showed “403 Forbidden.” All three DOM states also explicitly
-recorded Title: 403. Therefore:
+• Task46 completed.
 
-## Task 46
+   Verifier                       Score    Outcome    Calls     Tokens
+  ━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━━
+   Microsoft screenshot    5/22 (22.7%)     False        44    269,979
+  ──────────────────────  ──────────────  ─────────  ───────  ─────────
+   DOM-model               5.5/22 (25%)     False        53    399,226
 
-Completed.
+  DOM used 129,247 more tokens (+47.87%).
 
-```text
- Verifier                       Score    Outcome    Calls     Tokens
-━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━━
- Microsoft screenshot    5/22 (22.7%)     False        44    269,979
-──────────────────────  ──────────────  ─────────  ───────  ─────────
- DOM-model               5.5/22 (25%)     False        53    399,226
-```
+   Criterion               Screenshot                        DOM model                         Audit
+  ━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━
+   Search term             Present and caught: 2/2           Present and caught: 2/2           BOTH_CAUGHT
+  ──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
+   Required filters        Phase 3 visibly unchecked;        Checkbox state not preserved;     DOM_EVIDENCE_MISSING
+                           caught: 2/4                       inferred unconfirmed: 2/4
+  ──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
+   Newest-first sort       Screenshot10 shows Relevance      Dropdown state missing;           DOM_EVIDENCE_MISSING
+                           selected; caught: 0/2             attempt received 0.5/2
+  ──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
+   Result #1               Partial card visible, but not     Partial card data present, but    BOTH_CAUGHT
+                           reported: 0/4                     not reported: 0/4
+  ──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
+   Result #2               Not reported: 0/4                 Not reported: 0/4                 BOTH_CAUGHT
+  ──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
+   Result #3               Not reported: 0/4                 Not reported: 0/4                 BOTH_CAUGHT
+  ──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
+   Constraints/stopping    Incomplete stop: 1/2              Incomplete stop: 1/2              BOTH_CAUGHT
 
-DOM used 129,247 more tokens (+47.87%).
+  The DOM verifier’s extra 0.5 point was not recovered evidence. It gave minimal partial credit for attempting to
+  select “Newest First,” while the screenshot verifier gave zero because the screenshot explicitly showed that
+  Relevance remained selected.
 
-```text
- Criterion               Screenshot                        DOM model                         Audit
-━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━
- Search term             Present and caught: 2/2           Present and caught: 2/2           BOTH_CAUGHT
-──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
- Required filters        Phase 3 visibly unchecked;        Checkbox state not preserved;     DOM_EVIDENCE_MISSING
-                         caught: 2/4                       inferred unconfirmed: 2/4
-──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
- Newest-first sort       Screenshot10 shows Relevance      Dropdown state missing;           DOM_EVIDENCE_MISSING
-                         selected; caught: 0/2             attempt received 0.5/2
-──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
- Result #1               Partial card visible, but not     Partial card data present, but    BOTH_CAUGHT
-                         reported: 0/4                     not reported: 0/4
-──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
- Result #2               Not reported: 0/4                 Not reported: 0/4                 BOTH_CAUGHT
-──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
- Result #3               Not reported: 0/4                 Not reported: 0/4                 BOTH_CAUGHT
-──────────────────────  ────────────────────────────────  ────────────────────────────────  ──────────────────────
- Constraints/stopping    Incomplete stop: 1/2              Incomplete stop: 1/2              BOTH_CAUGHT
-```
+  Confirmed verifier misses:
 
-The DOM verifier’s extra 0.5 point was not recovered evidence. It gave minimal partial credit for attempting to
-select “Newest First,” while the screenshot verifier gave zero because the screenshot explicitly showed that
-Relevance remained selected.
+  - Screenshot verifier misses: 0
+  - DOM verifier misses: 0
+  - DOM source omissions: 2—the explicit Phase 3 checkbox state and sort-menu selection.
+  - Recovery rates: N/A, because neither verifier missed evidence that was available in its own representation.
 
-Confirmed verifier misses:
+• Task47 completed.
 
-- Screenshot verifier misses: 0
-- DOM verifier misses: 0
-- DOM source omissions: 2—the explicit Phase 3 checkbox state and sort-menu selection.
-- Recovery rates: N/A, because neither verifier missed evidence that was available in its own representation.
+   Verifier                          Score    Outcome    Calls    Tokens
+  ━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━
+   Microsoft screenshot        15/20 (75%)     False        12    86,889
+  ──────────────────────  ─────────────────  ─────────  ───────  ────────
+   DOM-model               15.5/20 (77.5%)     False        17    95,966
 
-## Task 47
+  DOM used 9,077 more tokens (+10.45%).
 
-Completed.
+   Criterion        Screenshot                        DOM model                         Audit
+  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Exact product    Page visible; barcode from        Explicit name/barcode: 3/3        BOTH_CAUGHT
+                    shared URL: 3/3
+  ───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
+   Name/barcode     Name visible; barcode not         Both explicit: 2/2                SCREENSHOT_EVIDENCE_MISSING
+                    visually shown: 2/2
+  ───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
+   Nutri-Score      Visible and caught: 2/2           Present and caught: 2/2           BOTH_CAUGHT
+  ───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
+   NOVA/markers     Visible and caught: 3/3           Present and caught: 3/3           BOTH_CAUGHT
+  ───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
+   Energy           Not visible: 0/3                  Explicit table value caught:      SCREENSHOT_EVIDENCE_MISSING
+                                                      3/3
+  ───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
+   Sugars           Not visible: 0/2                  Explicit table value caught:      SCREENSHOT_EVIDENCE_MISSING
+                                                      2/2
+  ───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
+   Ingredients      Absent; unavailable claim         Absent, but stopping early        Reasoning disagreement
+                    credited: 4/4                     penalized: 0/4
+  ───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
+   Constraints      Full credit: 1/1                  Incomplete ingredients caused     Reasoning disagreement
+                                                      deduction: 0.5/1
 
-```text
- Verifier                          Score    Outcome    Calls    Tokens
-━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━
- Microsoft screenshot        15/20 (75%)     False        12    86,889
-──────────────────────  ─────────────────  ─────────  ───────  ────────
- DOM-model               15.5/20 (77.5%)     False        17    95,966
-```
+  Key finding: DOM contained the energy and sugar values even though neither screenshot displayed them. Therefore,
+  the screenshot verifier did not miss visible evidence—the screenshot representation lacked that evidence.
 
-DOM used 9,077 more tokens (+10.45%).
+  Conversely, Microsoft overcredited the missing ingredients by treating “not currently displayed” as “unavailable,”
+  while the DOM verifier correctly recognized that the agent could have continued navigating.
 
-```text
- Criterion        Screenshot                        DOM model                         Audit
-━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- Exact product    Page visible; barcode from        Explicit name/barcode: 3/3        BOTH_CAUGHT
-                  shared URL: 3/3
-───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
- Name/barcode     Name visible; barcode not         Both explicit: 2/2                SCREENSHOT_EVIDENCE_MISSING
-                  visually shown: 2/2
-───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
- Nutri-Score      Visible and caught: 2/2           Present and caught: 2/2           BOTH_CAUGHT
-───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
- NOVA/markers     Visible and caught: 3/3           Present and caught: 3/3           BOTH_CAUGHT
-───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
- Energy           Not visible: 0/3                  Explicit table value caught:      SCREENSHOT_EVIDENCE_MISSING
-                                                    3/3
-───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
- Sugars           Not visible: 0/2                  Explicit table value caught:      SCREENSHOT_EVIDENCE_MISSING
-                                                    2/2
-───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
- Ingredients      Absent; unavailable claim         Absent, but stopping early        Reasoning disagreement
-                  credited: 4/4                     penalized: 0/4
-───────────────  ────────────────────────────────  ────────────────────────────────  ─────────────────────────────
- Constraints      Full credit: 1/1                  Incomplete ingredients caused     Reasoning disagreement
-                                                    deduction: 0.5/1
-```
+• Task48 completed.
 
-Key finding: DOM contained the energy and sugar values even though neither screenshot displayed them. Therefore,
-the screenshot verifier did not miss visible evidence—the screenshot representation lacked that evidence.
+   Verifier                        Score    Outcome    Calls     Tokens
+  ━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━━
+   Microsoft screenshot    13/22 (59.1%)     False        24    157,620
+  ──────────────────────  ───────────────  ─────────  ───────  ─────────
+   DOM-model               16/22 (72.7%)     False        37    243,674
 
-Conversely, Microsoft overcredited the missing ingredients by treating “not currently displayed” as “unavailable,”
-while the DOM verifier correctly recognized that the agent could have continued navigating.
+  DOM used 86,054 more tokens (+54.60%).
 
-## Task 48
+   Criterion                      Screenshot                   DOM model                     Audit
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━
+   Correct Portal 2 page          Present/caught: 3/3          Present/caught: 3/3           BOTH_CAUGHT
+  ─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
+   Release/developer/publisher    Present/caught: 4/4          Present/caught: 4/4           BOTH_CAUGHT
+  ─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
+   All Reviews                    Absent; correctly            Absent, but incorrectly       Reasoning disagreement
+                                  penalized: 0/4               credited: 4/4
+  ─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
+   OS headings                    Both headings visible/       Headings absent from DOM:     DOM_EVIDENCE_MISSING
+                                  caught: 3/3                  1/3
+  ─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
+   Storage                        Windows 8 GB visible;        Storage absent from DOM:      DOM_EVIDENCE_MISSING
+                                  omission caught: 1/5         1/5
+  ─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
+   Constraints/stopping           Incomplete response: 2/3     Full credit despite           Reasoning disagreement
+                                                               omissions: 3/3
 
-Completed.
+  The DOM verifier scored higher mainly because it overcredited the missing All Reviews summary by four points, not
+  because DOM recovered evidence missed by screenshots. It also gave one extra constraint point. Conversely, DOM
+  lost two points because its source omitted the OS headings that screenshot3 clearly displayed.
 
-```text
- Verifier                        Score    Outcome    Calls     Tokens
-━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━━
- Microsoft screenshot    13/22 (59.1%)     False        24    157,620
-──────────────────────  ───────────────  ─────────  ───────  ─────────
- DOM-model               16/22 (72.7%)     False        37    243,674
-```
+• Task49 completed.
 
-DOM used 86,054 more tokens (+54.60%).
+   Verifier                     Score    Outcome    Calls     Tokens
+  ━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━━
+   Microsoft screenshot    3/12 (25%)     False        16     99,226
+  ──────────────────────  ────────────  ─────────  ───────  ─────────
+   DOM-model               3/12 (25%)     False        16    111,927
 
-```text
- Criterion                      Screenshot                   DOM model                     Audit
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━
- Correct Portal 2 page          Present/caught: 3/3          Present/caught: 3/3           BOTH_CAUGHT
-─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
- Release/developer/publisher    Present/caught: 4/4          Present/caught: 4/4           BOTH_CAUGHT
-─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
- All Reviews                    Absent; correctly            Absent, but incorrectly       Reasoning disagreement
-                                penalized: 0/4               credited: 4/4
-─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
- OS headings                    Both headings visible/       Headings absent from DOM:     DOM_EVIDENCE_MISSING
-                                caught: 3/3                  1/3
-─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
- Storage                        Windows 8 GB visible;        Storage absent from DOM:      DOM_EVIDENCE_MISSING
-                                omission caught: 1/5         1/5
-─────────────────────────────  ───────────────────────────  ────────────────────────────  ────────────────────────
- Constraints/stopping           Incomplete response: 2/3     Full credit despite           Reasoning disagreement
-                                                             omissions: 3/3
-```
+  DOM used 12,701 more tokens (+12.80%).
 
-The DOM verifier scored higher mainly because it overcredited the missing All Reviews summary by four points, not
-because DOM recovered evidence missed by screenshots. It also gave one extra constraint point. Conversely, DOM
-lost two points because its source omitted the OS headings that screenshot3 clearly displayed.
+   Criterion                     Screenshot                                DOM model                    Audit
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━
+   Correct artist/Album scope    Present and caught: 2/3                   Present and caught: 2/3      BOTH_CAUGHT
+  ────────────────────────────  ────────────────────────────────────────  ───────────────────────────  ─────────────
+   Homework                      Title/page present, full release date     Same evidence/result: 1/3    BOTH_CAUGHT
+                                 missing: 1/3
+  ────────────────────────────  ────────────────────────────────────────  ───────────────────────────  ─────────────
+   Discovery                     Listed initially, but never opened/       Same omission caught: 0/3    BOTH_CAUGHT
+                                 reported: 0/3
+  ────────────────────────────  ────────────────────────────────────────  ───────────────────────────  ─────────────
+   Human After All               Listed initially, but never opened/       Same omission caught: 0/3    BOTH_CAUGHT
+                                 reported: 0/3
 
-## Task 49
+  Both sources clearly showed the correct standalone Album chronology: Homework, Discovery, and Human After All.
+  However, the agent opened only Homework and never obtained its required complete “First release date.” It did not
+  process entries two or three.
 
-Completed.
+### Test 1 rerun — Homebrew ffmpeg
 
-```text
- Verifier                     Score    Outcome    Calls     Tokens
-━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━  ━━━━━━━━━  ━━━━━━━  ━━━━━━━━━
- Microsoft screenshot    3/12 (25%)     False        16     99,226
-──────────────────────  ────────────  ─────────  ───────  ─────────
- DOM-model               3/12 (25%)     False        16    111,927
-```
+`test_1` is a fresh rerun of the same logical task family as Task 33 (`browser_task_037-package-platform-availability`), with a new capture timestamp. It replaces Task 33 in the rerun-selected aggregate.
 
-DOM used 12,701 more tokens (+12.80%).
+| Verifier | Score | Outcome | Calls | Tokens |
+|---|---:|:---:|---:|---:|
+| Microsoft screenshot | 12/20 (60%) | False | 12 | 79,359 |
+| DOM-model | 20/20 (100%) | True | 18 | 87,778 |
 
-```text
- Criterion                     Screenshot                                DOM model                    Audit
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━
- Correct artist/Album scope    Present and caught: 2/3                   Present and caught: 2/3      BOTH_CAUGHT
-────────────────────────────  ────────────────────────────────────────  ───────────────────────────  ─────────────
- Homework                      Title/page present, full release date     Same evidence/result: 1/3    BOTH_CAUGHT
-                               missing: 1/3
-────────────────────────────  ────────────────────────────────────────  ───────────────────────────  ─────────────
- Discovery                     Listed initially, but never opened/       Same omission caught: 0/3    BOTH_CAUGHT
-                               reported: 0/3
-────────────────────────────  ────────────────────────────────────────  ───────────────────────────  ─────────────
- Human After All               Listed initially, but never opened/       Same omission caught: 0/3    BOTH_CAUGHT
-                               reported: 0/3
-```
+DOM used 8,419 more evaluation tokens (+10.61%). Frozen-rubric generation was separate: 2 calls and 13,062 tokens. Both scoring runs reported zero rubric-generation calls, zero API retries, and the same six-criterion, 20-point rubric hash.
 
-Both sources clearly showed the correct standalone Album chronology: Homework, Discovery, and Human After All.
-However, the agent opened only Homework and never obtained its required complete “First release date.” It did not
-process entries two or three.
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| Correct ffmpeg page | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Stable version | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| License | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Regular dependencies | No / N/A | Yes / Yes | 0 / 6 | SCREENSHOT_EVIDENCE_MISSING |
+| Bottle availability | Yes / Yes | Yes / Yes | 4 / 4 | BOTH_CAUGHT |
+| Constraints/stopping | Partial / Yes | Yes / Yes | 2 / 4 | Source-coverage difference |
+
+The score difference came from evidence availability, not a confirmed verifier miss. Neither screenshot displayed the regular `Depends on` section, and the screenshot verifier explicitly treated the reported dependency list as unsupported. `dom_model1.txt` contained all 11 regular dependencies and kept them separate from the build-only and `Uses from macOS` sections, so the DOM verifier credited them.
+
+Manual review found no criterion where either verifier overlooked evidence clearly available in its own input. The screenshot source lacked sufficient evidence for 1/6 criteria (16.7%); the DOM source lacked sufficient evidence for 0/6. This is a representation-coverage difference, not a screenshot perception-error recovery case. Because the DOM state contained the dependency table below the area shown in the aligned screenshot, capture/viewport alignment should be checked before using this rerun as evidence of a fair viewport-only CUA advantage.
+
+### Test 2 rerun — IANA .museum registry lookup
+
+`test_2` is a fresh rerun of Task 37 (`browser_task_042-domain-registry-lookup`) and uses the same frozen rubric content. The rubric hash, seven-criterion order, and 16-point denominator are unchanged; only the outer task identifier was adapted to the new capture timestamp. No rubric-generation model calls or tokens were used for this rerun.
+
+| Verifier | Score | Outcome | Calls | Tokens |
+|---|---:|:---:|---:|---:|
+| Microsoft screenshot | 16/16 (100%) | True | 12 | 73,612 |
+| DOM-model | 16/16 (100%) | True | 28 | 119,898 |
+
+DOM used 46,286 more evaluation tokens (+62.88%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| Correct IANA page | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| TLD type | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Sponsor | Yes / Yes | Yes / Yes | 3 / 3 | BOTH_CAUGHT |
+| Registration date | Yes / Yes | Yes / Yes | 3 / 3 | BOTH_CAUGHT |
+| WHOIS server | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Registration URL | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Task constraints | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+
+Both representations contained all required evidence, and both verifiers recovered it correctly. There was no evidence loss or confirmed verifier miss in this rerun; performance was identical, while DOM used substantially more calls and tokens.
+
+### Test 3 rerun — CVE-2021-44228 CNA record
+
+`test_3` is a fresh rerun of Task 38 (`browser_task_043-vulnerability-record-inspection`) using the exact same frozen rubric content, hash, nine-criterion order, and 25-point denominator. Only the outer task identifier reflects the new capture timestamp. No rubric-generation model calls or tokens were used for this rerun.
+
+| Verifier | Score | Outcome | Calls | Tokens |
+|---|---:|:---:|---:|---:|
+| Microsoft screenshot | 17.5/25 (70%) | False | 12 | 90,827 |
+| DOM-model | 17/25 (68%) | False | 27 | 162,545 |
+
+DOM used 71,718 more evaluation tokens (+78.96%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| CVE.org CNA source | Yes / Yes | Yes / Yes | 3 / 3 | BOTH_CAUGHT |
+| Status | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Publication date | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| CNA name | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Vendor field | No / N/A | No / N/A | 0 / 0 | Missing in both; not a verifier miss |
+| Product | Narrative / Yes | Narrative / Yes | 1.5 / 1 | Scoring disagreement |
+| Exact version statement | Yes / Yes | Yes / Yes | 5 / 5 | BOTH_CAUGHT |
+| First reference URL | No / N/A | No / N/A | 0 / 0 | Missing in both; not a verifier miss |
+| Constraints/stopping | Actions / Yes | Actions / Yes | 2 / 2 | BOTH_CAUGHT |
+
+Neither representation contained the structured Vendor field or the CNA References section, and both verifiers correctly treated the agent's claimed vendor and first reference URL as unsupported. The 0.5-point difference came only from scoring interpretation of the product name “Apache Log4j2,” which appeared in narrative Title/Description text in both representations; it was not an evidence-recovery difference.
+
+Unlike the earlier Task 38 capture, which exposed the vendor and first reference evidence, this rerun contains only two states and does not expose either field in screenshots or DOM. Therefore the lower rerun scores reflect reduced source coverage, not a verifier miss and not a DOM-versus-screenshot evidence-loss asymmetry. Screenshot-only evidence loss was 0/9 criteria, and DOM-only evidence loss was 0/9 criteria.
+
+### Test 4 rerun — FRED UNRATE observations
+
+`test_4` is a fresh rerun of Task 40 (`browser_task_049-economic-time-series-extraction`) using the exact same frozen rubric content, hash, four-criterion order, and 15-point denominator. Only the outer task identifier reflects the new capture timestamp. No rubric-generation model calls or tokens were used for this rerun.
+
+| Verifier | Score | Outcome | Calls | Tokens |
+|---|---:|:---:|---:|---:|
+| Microsoft screenshot | 15/15 (100%) | True | 12 | 70,575 |
+| DOM-model | 15/15 (100%) | True | 22 | 102,206 |
+
+DOM used 31,631 more evaluation tokens (+44.82%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| Correct UNRATE page | Yes / Yes | Yes / Yes | 3 / 3 | BOTH_CAUGHT |
+| Series metadata | Yes / Yes | Yes / Yes | 4 / 4 | BOTH_CAUGHT |
+| Latest three observations | Yes / Yes | Yes / Yes | 6 / 6 | BOTH_CAUGHT |
+| Stop after requested work | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+
+Both representations contained all required evidence, and both verifiers recovered it correctly. There was no screenshot-only or DOM-only evidence loss and no confirmed verifier miss in this rerun; performance was identical, while DOM used more calls and tokens.
+
+Unlike the earlier Task 40 capture, this rerun's DOM explicitly preserves `Units: Percent, Seasonally Adjusted` together with `Frequency: Monthly`. The earlier one-point DOM deduction caused by a weak Units-to-Percent relationship therefore does not recur.
+
+### Test 5 rerun — Europeana The Milkmaid metadata
+
+`test_5` is a fresh rerun of Task 41 (`browser_task_051-cultural-object-metadata`) using the exact same frozen rubric content, hash, seven-criterion order, and 16-point denominator. Only the outer task identifier reflects the new capture timestamp. No rubric-generation model calls or tokens were used for this rerun.
+
+| Verifier | Score | Outcome | Calls | Tokens |
+|---|---:|:---:|---:|---:|
+| Microsoft screenshot | 10/16 (62.5%) | False | 16 | 108,674 |
+| DOM-model | 12/16 (75%) | False | 43 | 169,147 |
+
+DOM used 60,473 more evaluation tokens (+55.65%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| Exact Europeana record | Actions / Yes | URL / Yes | 3 / 3 | BOTH_CAUGHT |
+| Title | No / N/A | Yes / Yes | 0 / 2 | SCREENSHOT_EVIDENCE_MISSING |
+| Creation date | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Providing institution | No / N/A | No / N/A | 0 / 0 | Missing in both; not a verifier miss |
+| Item type | No / N/A | No / N/A | 0 / 0 | Missing in both; not a verifier miss |
+| Rights statement | Yes / Yes | Yes / Yes | 3 / 3 | BOTH_CAUGHT |
+| Identifier | Actions / Yes | URL / Yes | 2 / 2 | BOTH_CAUGHT |
+
+The two-point DOM advantage came entirely from source coverage: every DOM state explicitly contained the title “The Milkmaid,” while none of the four screenshots displayed the title as text. The screenshot verifier therefore did not overlook visible evidence; the screenshot representation lacked it. Both representations lacked the providing-institution and item-type fields, and both verifiers correctly rejected those unsupported agent claims.
+
+No verifier perception miss was confirmed. Screenshot-only asymmetric evidence loss was 1/7 criteria (14.3%), while DOM-only asymmetric evidence loss was 0/7. This rerun still used more DOM calls and tokens despite its title-coverage advantage.
+
+### Test 6 rerun — Open Library ISBN-resolved edition
+
+`test_6` is a fresh rerun of Task 42 (`browser_task_053-book-edition-resolution`) using the exact same frozen rubric content, hash, nine-criterion order, and 15-point denominator. The paired task metadata was corrected from the pre-redirect ISBN URL to the resolved edition URL so it matched `dom_model0`; no verifier code or evidence file was changed. No rubric-generation model calls or tokens were used for this rerun.
+
+| Verifier | Rubric score | Rubric pass | Outcome | Calls | Tokens |
+|---|---:|:---:|:---:|---:|---:|
+| Microsoft screenshot | 12/15 (80%) | True | False | 12 | 80,445 |
+| DOM-model | 15/15 (100%) | True | False | 13 | 87,844 |
+
+DOM used 7,399 more evaluation tokens (+9.20%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| ISBN-resolved edition proof | No / N/A | Yes / Yes | 2 / 3 | SCREENSHOT_EVIDENCE_MISSING |
+| Title | Yes / Yes | Yes / Yes | 1 / 1 | BOTH_CAUGHT |
+| Author | Yes / Yes | Yes / Yes | 1 / 1 | BOTH_CAUGHT |
+| Publish Date | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Publisher | Yes / Yes | Yes / Yes | 1 / 1 | BOTH_CAUGHT |
+| Language | Yes / Yes | Yes / Yes | 1 / 1 | BOTH_CAUGHT |
+| Page count | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| ISBN-13 | No / N/A | Yes / Yes | 0 / 2 | SCREENSHOT_EVIDENCE_MISSING |
+| Constraints/stopping | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+
+The three-point DOM rubric advantage came from genuine source coverage. Neither screenshot displayed ISBN-13 or otherwise visibly tied edition `OL37076991M` to the supplied ISBN, while `dom_model1.txt` explicitly displayed `ISBN 13 9780141439518` on that edition page. The screenshot verifier therefore did not miss visible evidence; the screenshot representation lacked it.
+
+The `dom_model1.txt` capture declared truncation, but manual inspection confirmed that every required rubric field survived. Criterion-level screenshot-only asymmetric evidence loss was 2/9 (22.2%), DOM-only asymmetric evidence loss was 0/9, and neither criterion scorer missed evidence available in its own representation.
+
+There was, however, a separate outcome-level DOM verifier error. The DOM outcome judge marked the task failed because it said the agent's extra statement “Published in London” was unsupported. That statement is explicitly present in `dom_model1.txt` under `Book Details → Edition Notes` as `Published in` / `London`. The screenshot also visibly shows the same field. Therefore this particular DOM outcome rationale is factually wrong: it is a confirmed evidence-grounding miss by the DOM outcome judge, not DOM capture loss. The screenshot outcome remained false for a different, evidence-consistent reason: the submitted screenshots did not show ISBN-13 or prove the ISBN-to-edition linkage.
+
+### Test 7 rerun — Project Gutenberg format inspection
+
+`test_7` is a fresh rerun of Task 43 (`browser_task_054-ebook-format-inspection`) using the exact same frozen rubric content, hash, nine-criterion order, and 20-point denominator. Only the outer task identifier reflects the new capture timestamp. No rubric-generation model calls or tokens were used for this rerun.
+
+| Verifier | Score | Outcome | Calls | Tokens |
+|---|---:|:---:|---:|---:|
+| Microsoft screenshot | 9/20 (45%) | False | 12 | 89,855 |
+| DOM-model | 14/20 (70%) | False | 28 | 141,586 |
+
+DOM used 51,731 more evaluation tokens (+57.57%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| Correct Gutenberg page | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Author | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Release Date | No / N/A | No / N/A | 0 / 0 | Missing in both; not a verifier miss |
+| Last Update | No / N/A | No / N/A | 0 / 0 | Missing in both; not a verifier miss |
+| Language | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| EPUB3 | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Plain Text (accessible) | No / N/A | Yes / Yes | 0 / 2 | SCREENSHOT_EVIDENCE_MISSING |
+| Download HTML (zip) | No / N/A | Yes / Yes | 0 / 2 | SCREENSHOT_EVIDENCE_MISSING |
+| Constraints/stopping | Partial / Yes | Yes / Yes | 1 / 2 | Source-coverage consequence |
+
+The DOM rubric advantage came from genuine source coverage. `dom_model1.txt` explicitly contained `Plain Text (accessible)` and `Download HTML (zip)`, while neither label appeared in either screenshot. The additional constraints point reflects that DOM could verify all three claimed formats while screenshots could verify only EPUB3.
+
+Both representations omitted the Gutenberg `Release Date` and `Last Update` fields, and both verifiers correctly rejected the agent's specific date claims as unsupported. No criterion-level or outcome-level verifier grounding miss was confirmed. Screenshot-only asymmetric evidence loss was 2/9 criteria (22.2%), DOM-only asymmetric evidence loss was 0/9, and two criteria were missing from both modalities and therefore do not count as asymmetric evidence error.
+
+### Test 7 second scoring rerun — same frozen rubric and evidence
+
+This is a second independent scoring run for `test_7`. It reused the exact frozen rubric (SHA-256 `2dc6ea5c8c32703420ff5fe1ffccd592adb9904baa38622c211b44d89722b928`), the same two screenshots, the same two DOM states, the same action history, and the same final answer. Rubric generation remained at zero calls and zero tokens.
+
+| Verifier | Score | Outcome | Calls | Tokens |
+|---|---:|:---:|---:|---:|
+| Microsoft screenshot | 10.5/20 (52.5%) | False | 12 | 90,582 |
+| DOM-model | 14/20 (70%) | False | 20 | 124,272 |
+
+DOM used 33,690 more evaluation tokens (+37.19%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| Correct Gutenberg page | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Author | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Release Date | No / N/A | No / N/A | 0.5 / 0 | Missing in both; screenshot scoring overcredit |
+| Last Update | No / N/A | No / N/A | 0 / 0 | Missing in both; not a verifier miss |
+| Language | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| EPUB3 | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Plain Text (accessible) | No / N/A | Yes / Yes | 0 / 2 | SCREENSHOT_EVIDENCE_MISSING |
+| Download HTML (zip) | No / N/A | Yes / Yes | 0 / 2 | SCREENSHOT_EVIDENCE_MISSING |
+| Constraints/stopping | Partial / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT for observable constraints |
+
+The evidence audit is unchanged from the first run. The DOM advantage still comes from the exact `Plain Text (accessible)` and `Download HTML (zip)` labels being present only in the DOM evidence. The screenshot score increased by 1.5 points because of judge variance, not newly available evidence: the screenshot scorer awarded 0.5 points for the unsupported Release Date and raised constraints/stopping from 1 to 2. DOM remained at 14/20. No case was found where a verifier failed to identify clearly available criterion evidence in its own modality.
+
+### Test 8 rerun — Europeana The Milkmaid metadata
+
+`test_8` is a fresh rerun of `test_5` (`browser_task_051-cultural-object-metadata`) using the exact same frozen rubric content, SHA-256, seven-criterion order, and 16-point denominator. No rubric-generation model calls or tokens were used.
+
+| Verifier | Score | Rubric pass | Outcome | Calls | Tokens |
+|---|---:|:---:|:---:|---:|---:|
+| Microsoft screenshot | 13/16 (81.25%) | True | False | 18 | 113,555 |
+| DOM-model | 13/16 (81.25%) | True | False | 49 | 204,908 |
+
+DOM used 91,353 more evaluation tokens (+80.45%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| Exact Europeana record | Actions / Yes | URL / Yes | 3 / 3 | BOTH_CAUGHT |
+| Title | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Creation date | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Providing institution | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Type of item | Yes / Yes | Yes / No, incomplete exact-value check | 1 / 2 | DOM_MISSED_SCREENSHOT_CAUGHT |
+| Rights statement | Yes / Yes | Yes / Yes | 3 / 2 | BOTH_CAUGHT; scoring interpretation differs |
+| Identifier | No / N/A | No / N/A | 0 / 0 | Missing in both; correctly rejected |
+
+The equal totals hide different attribution. Screenshot 5 visibly shows `Type of item: painting ; Art of painting`; `dom_model4.txt` also contains `Type of item`, `painting`, and `Art of painting`. The screenshot verifier correctly treated the agent's shorter `painting` answer as incomplete, while the DOM verifier cited only `painting` and awarded full credit. This is a DOM evidence-analysis/scoring miss, not DOM capture loss. Conversely, the DOM judge awarded 2/3 for rights because it considered the separately displayed public-domain URL, while the screenshot judge accepted the visible `Public Domain` wording for full credit.
+
+Both verifiers correctly rejected the fabricated `Identifier: Canvas`: neither the screenshots nor DOM states contain an Identifier field or Canvas value. No asymmetric screenshot-versus-DOM capture loss was confirmed for the requested fields in this rerun. Both outcomes remained false because the identifier was a required core deliverable.
+
+### Test 9 rerun — ClinicalTrials.gov filtering
+
+`test_9` is a fresh rerun of Task 46 (`browser_task_057-clinical-trial-filtering`) using the exact same frozen rubric content, SHA-256 `479289d7d032e7abdc8d46509686bb8e09396b60bef1f2e8ea52f54458cf7265`, seven-criterion order, and 22-point denominator. No rubric-generation model calls or tokens were used.
+
+| Verifier | Score | Rubric pass | Outcome | Calls | Tokens |
+|---|---:|:---:|:---:|---:|---:|
+| Microsoft screenshot | 8/22 (36.4%) | False | False | 41 | 265,454 |
+| DOM-model | 12/22 (54.5%) | False | False | 51 | 371,551 |
+
+DOM used 106,097 more evaluation tokens (+39.97%). Both scoring runs reported zero rubric-generation calls and zero API retries.
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Audit |
+|---|---|---|---:|---|
+| Search term/results | Yes / Yes | Yes / Yes | 2 / 2 | BOTH_CAUGHT |
+| Recruiting + Phase 3 + US filters | Partial UI / Yes | URL all three; UI partial / Yes | 2 / 3 | Evidence-strength/scoring difference |
+| Newest-first sort | No visible UI / N/A | URL parameter / Yes | 0 / 1 | SCREENSHOT_EVIDENCE_MISSING |
+| Result #1 | NCT/title/status / Yes | NCT/title/status / Yes | 2 / 2 | BOTH_CAUGHT; dates missing both |
+| Result #2 | NCT/title/status/order / Partially | NCT/status/order / Yes | 1 / 1.5 | Screenshot sequence miss; DOM title missing |
+| Result #3 | NCT/title/status/order / No | NCT/status/order / Yes | 0 / 1.5 | SCREENSHOT_MISSED_DOM_CAUGHT for order; DOM title missing |
+| Constraints/stopping | Partial / Yes | Partial / Yes | 1 / 1 | BOTH_CAUGHT |
+
+The task genuinely remains incomplete in both modalities because none of the three required `Last Update Posted` dates appears in the captured evidence or final answer, and the sort is not visibly confirmed by an on-page control. The DOM can only partially support sorting through `sort=updated,desc` in its explicit URL.
+
+A manual frame-sequence check also found a screenshot-verifier grounding error. `screenshot19.png` shows result #1 (`NCT07662213`), while `screenshot20.png` is the scrolled continuation showing result #2 (`NCT07664553`) followed by result #3 (`NCT06739122`). The screenshot verifier treated screenshot20 as if it began a fresh list, described the third study as the second visible card, and rejected the reported ordering. Thus the order evidence was available across consecutive screenshots but was not reconstructed correctly. DOM state 20 kept all three NCT IDs in one ordered text state and recovered that ordering, although it omitted the full titles for results #2 and #3.
+
+The four-point DOM advantage therefore combines stronger explicit URL/order evidence with screenshot sequence-grounding loss; it is not four points of complete DOM evidence recovery. Both outcome failures are still valid because the Last Update Posted dates—the task's core required fields—were never captured or reported.
+
+### Rerun-selected evidence-loss aggregate
+
+The aggregate now keeps one selected run per logical task. It replaces Task 33, 37, 38, 40, 41, 42, 43, and 46 with their reruns. Task 41 uses `test_8`; `test_5` is excluded. Task 43 uses the latest `test_7` scoring rerun. Scores themselves are not used to label capture loss; the human-audited source evidence is used.
+
+| Original task | Selected rerun | Criteria | Screenshot-only loss | DOM-only loss |
+|---|---|---:|---:|---:|
+| Task 33 | `test_1` | 6 | 1 | 0 |
+| Task 37 | `test_2` | 7 | 0 | 0 |
+| Task 38 | `test_3` | 9 | 0 | 0 |
+| Task 40 | `test_4` | 4 | 0 | 0 |
+| Task 41 | `test_8` | 7 | 0 | 0 |
+| Task 42 | `test_6` | 9 | 2 | 0 |
+| Task 43 | `test_7` latest | 9 | 2 | 0 |
+| Task 46 | `test_9` | 7 | 0 | 2 |
+| Replaced-task subtotal | — | 58 | 5 | 2 |
+| Unchanged selected tasks | — | 68 | 4 | 2 |
+| **Updated aggregate** | — | **126** | **9 (7.1%)** | **4 (3.2%)** |
+
+The denominator falls from 127 to 126 because the original Task 33 rubric had seven criteria, while the selected `test_1` rubric has six. For `test_9`, the sort criterion is not counted as screenshot loss because the DOM had only an indirect URL parameter rather than the visibly applied UI required by the rubric, and the same URL was available in shared action history. DOM-only loss counts the full titles for results #2 and #3, which are visible in `screenshot20.png` but absent from `dom_model20.txt`. Evidence missing from both representations—such as all three Last Update Posted dates—is excluded.
+
+The confirmed `test_8` DOM exact-value analysis miss and `test_9` screenshot scroll-sequence miss are verifier errors, not capture loss, so neither is added to these evidence-loss numerators.
 
 ## Cross-task conclusion and next steps
 
@@ -921,10 +1084,10 @@ The current results do not establish that DOM is more reliable overall. They sho
 
 | Component or category | Role or failure pattern | Evidence or current status | How to verify | Files, controls, or next action |
 |---|---|---|---|---|
-| Evaluated sample | Current comparison denominator | 19 reported tasks and 127 rubric criteria | Count the task sections and frozen-rubric criteria used in the selected runs | Keep one selected run per task and do not mix superseded reruns |
-| Screenshot-only evidence loss | Evidence absent from screenshots but present in DOM | 11/127 criteria (8.7%) | Inspect every supplied screenshot and corresponding DOM state | Human-label each source as present, absent, or unclear before reading verifier scores |
-| DOM-only evidence loss | Evidence absent from DOM but present in screenshots | 14/127 criteria (11.0%) | Inspect every supplied DOM state and corresponding screenshot | Audit zero-node states, truncation, labels, values, tables, and selected/checked state |
-| Confirmed perception misses | Evidence available in a modality but not recovered by its verifier | No confirmed examples in the manually inspected disagreements so far | Compare the source with the saved criterion-level analysis and citation | Complete this check for all 127 criteria before claiming a recovery-rate advantage |
+| Evaluated sample | Current comparison denominator | 19 selected logical tasks and 126 rubric criteria | Count the task sections and frozen-rubric criteria used in the selected runs | Keep one selected run per task and do not mix superseded reruns |
+| Screenshot-only evidence loss | Evidence absent from screenshots but present in DOM | 9/126 criteria (7.1%) | Inspect every supplied screenshot and corresponding DOM state | Human-label each source as present, absent, or unclear before reading verifier scores |
+| DOM-only evidence loss | Evidence absent from DOM but present in screenshots | 4/126 criteria (3.2%) | Inspect every supplied DOM state and corresponding screenshot | Audit zero-node states, truncation, labels, values, tables, and selected/checked state |
+| Confirmed perception misses | Evidence available in a modality but not recovered by its verifier | Two confirmed examples: test_8 DOM item-type exactness and test_9 screenshot result-order continuity | Compare the source with the saved criterion-level analysis and citation | Keep verifier misses separate from capture-loss counts across all 126 criteria before claiming a recovery-rate advantage |
 | Scoring/reasoning errors | Evidence was interpreted or scored incorrectly rather than missed | Confirmed overcredit examples include task38 DOM Vendor, task43 screenshot formats, task47 screenshot ingredients, and task48 DOM All Reviews | Compare the analysis, cited evidence, rubric requirement, and awarded points | Report false support separately from capture loss and perception misses |
 | Exact-text advantage | DOM exposes precise strings directly | Strong examples include task41 dates/rights/identifier, task43 dates and format text, and task47 barcode/energy/sugars | Verify exact values in dom_modelN.txt and their absence from submitted screenshots | Report this as a text-grounding advantage, not proof of overall superiority |
 | Visual/state advantage | Screenshots preserve layout or visible UI state that DOM can omit | Examples include task46 filter/sort state and task48 OS headings/storage | Inspect the pixel frame and DOM semantics at the same state index | Improve capture of checked, selected, expanded, table, and label–value relationships |
@@ -996,12 +1159,12 @@ Report both criterion-level and task-level percentages because criteria within a
 
 ### Evidence status and limitations
 
-**Directly verified:** the selected-run scores and token totals recorded above; the 11 screenshot-side and 14 DOM-side asymmetric source omissions; the inspected exact-text and UI-state examples; and the listed scoring-overcredit cases.
+**Directly verified:** the selected-run scores and token totals recorded above; the 9 screenshot-side and 4 DOM-side asymmetric source omissions in the rerun-selected aggregate; the inspected exact-text and UI-state examples; and the listed scoring-overcredit cases.
 
 **Inference:** single-record exact-value tasks may be better candidates for compact DOM evidence, but their current runs do not show savings. This remains a hypothesis rather than a result.
 
-**Unverified:** conditional recovery and false-support percentages across all 127 criteria, statistical confidence on the 19-task sample, and whether capture fixes would reduce DOM’s 11.0% asymmetric omission rate without increasing token cost.
+**Unverified:** conditional recovery and false-support percentages across all 126 criteria, statistical confidence on the 19-task sample, and whether capture fixes would reduce DOM’s 3.2% asymmetric omission rate without increasing token cost.
 
-**Denominator caveat:** 11/127 and 14/127 measure asymmetric evidence availability, not verifier error rates. Evidence absent from both modalities is excluded from those counts, and overlapping task-level categories must not be added as if they were exclusive.
+**Denominator caveat:** 9/126 and 4/126 measure asymmetric evidence availability, not verifier error rates. Evidence absent from both modalities is excluded from those counts, and overlapping task-level categories must not be added as if they were exclusive.
 
 The dominant finding is that DOM provides stronger grounding for some exact textual facts, while the current screenshot and DOM pipelines each omit different kinds of evidence and DOM usually costs more tokens. The next concrete check is a complete human-labelled criterion audit, followed by repeated paired runs on a predeclared exact-value subset; only then can the experiment support a reliable percentage claim for recovery or token savings.

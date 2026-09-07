@@ -1,0 +1,222 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_049-economic-time-series-extraction-20260905T114108Z",
+  "run_id": "test4-20260907-1",
+  "rubric_sha256": "de70c8663174c3bcec6737c1b7aeb1697301e430b254f08e61293b8d505e4e64",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use the correct FRED series page (UNRATE) and avoid sign-in/subscription actions",
+      "description": "Navigate to the FRED 'Unemployment Rate' series page for UNRATE (not a different unemployment series) and use the information shown there. Full credit if the agent clearly uses/targets the UNRATE series page and does not sign in, create an account, or subscribe to notifications. If FRED is inaccessible (e.g., site down, captcha, blocked) but the agent clearly indicates the attempt and the blocking issue, award full credit for this criterion. Partial credit if the agent likely used FRED but does not clearly indicate UNRATE specifically. No credit if the agent uses a different series (even if related) or violates constraints by signing in/subscribing.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Action History shows the agent was on https://fred.stlouisfed.org/series/UNRATE. Screenshots (latest is Screenshot 2) clearly show the page title “Unemployment Rate (UNRATE)” on FRED. No evidence of sign-in, account creation, or subscription/notification interactions in either screenshot.",
+        "verifier_justification": "The agent used the correct UNRATE series page and did not perform any prohibited sign-in/subscription actions. Baseline score remains appropriate.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The page header shows the FRED site (\"FEDERAL RESERVE BANK OF ST. LOUIS\" and the FRED logo). The series title line reads \"Unemployment Rate (UNRATE)\". No sign-in, account creation, or subscription/notification prompts are visible; the top right shows standard icons (search, grid/menu, user icon) but no login wall. Breadcrumb shows navigation ending with \"Unemployment Rate\".",
+            "criterion_analysis": "The screenshot clearly shows the correct UNRATE series page (title includes \"UNRATE\"). There is no evidence of the agent signing in or subscribing. This satisfies the requirement to use the correct series page and avoid restricted actions.",
+            "discrepancies": "No discrepancy: the agent’s predicted output references \"Unemployment Rate (UNRATE)\" and the screenshot confirms this exact series page.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The page header shows FRED (Federal Reserve Bank of St. Louis). The main title reads “Unemployment Rate (UNRATE)”. The breadcrumb includes “Current Population Survey (Household Survey) > Unemployment Rate”. No modal or prompt to sign in/subscribe is visible; only standard navigation icons (search, grid/apps, user icon) are present.",
+            "criterion_analysis": "The screenshot clearly shows the correct UNRATE series page (“Unemployment Rate (UNRATE)”). There is no visible sign-in, account creation, or subscription/notification action occurring in the screenshot, so the constraint appears satisfied.",
+            "discrepancies": "No discrepancy with using the UNRATE page; it is explicitly visible. The screenshot does not show any sign-in/subscription steps, consistent with the constraint.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 1 (latest) shows URL https://fred.stlouisfed.org/series/UNRATE with page title/header “Unemployment Rate (UNRATE)” and the series id “(UNRATE)”. It also shows “Open Login Modal; User Is Not Signed In,” and Action History shows only a click on the “Observations” button—no sign-in/subscription actions.",
+        "verifier_justification": "The latest DOM explicitly confirms the correct UNRATE series page was used and there is no evidence of prohibited sign-in/account/subscription behavior. Baseline score remains correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browser at URL \"https://fred.stlouisfed.org/series/UNRATE\" with title \"Unemployment Rate (UNRATE) | FRED | St. Louis Fed\" and visible page text \"Unemployment Rate (UNRATE)\" / \"(UNRATE)\", indicating the correct UNRATE series page is open. The same DOM snapshot includes \"Open Login Modal; User Is Not Signed In\" (a login button) but there is no DOM evidence of any sign-in flow or subscription/notification interaction being performed. Action history shows only a click on the \"Observations\" button (\"left_click\" on role=button name=\"Observations\").",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly confirms the agent is on the correct FRED series page for UNRATE (URL and title match UNRATE; visible header shows \"Unemployment Rate (UNRATE)\"). There is no evidence in the DOM state or action history of signing in, creating an account, or subscribing to notifications; the only recorded interaction is clicking \"Observations\". Thus the criterion (use UNRATE page; avoid sign-in/subscription actions) is fully supported by DOM evidence.",
+            "discrepancies": "None for this criterion. The DOM verifies the UNRATE page and does not show any sign-in/subscription actions taken.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://fred.stlouisfed.org/series/UNRATE\" and page Title \"Unemployment Rate (UNRATE) | FRED | St. Louis Fed\" with visible header text \"Unemployment Rate (UNRATE)\" and \"(UNRATE)\". The page also includes \"Open Login Modal; User Is Not Signed In\" (button), indicating the user is not signed in. No DOM evidence shows any subscription/notification/signup flow being opened or completed.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly confirms the agent is on the correct FRED series page for UNRATE and indicates the user is not signed in. There is no evidence in the provided DOM state of violating constraints (sign-in, account creation, or subscribing to notifications).",
+            "discrepancies": "None relative to Criterion 0. The only recorded action is a click on \"Observations\"; no sign-in/subscription actions are shown.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Record series metadata exactly as displayed",
+      "description": "Report the series metadata fields as displayed on the UNRATE page: Units, Frequency, and Seasonal Adjustment (wording must match exactly). Full credit if all three are present and the wording is preserved exactly as shown. If the agent cannot view these fields due to page load/rendering/access issues after attempting to use the UNRATE page, award partial credit if the agent clearly reports the limitation encountered (do not require guessing). Partial credit if one field is missing or wording is paraphrased. No credit if metadata is from another source/series or is clearly incorrect/fabricated.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshots (latest is Screenshot 2) show metadata: “Units: Percent” with “Seasonally Adjusted” displayed directly beneath, and “Frequency: Monthly.”",
+        "verifier_justification": "The agent reported the exact displayed wording for units (“Percent”), frequency (“Monthly”), and seasonal-adjustment status (“Seasonally Adjusted”). Although the agent combined units and seasonal adjustment into one bullet and added a comma, the required wording is preserved exactly as displayed. Award full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the metadata area above the chart, the screenshot shows: \"Units: Percent\" with \"Seasonally Adjusted\" directly below it. It also shows \"Frequency: Monthly\".",
+            "criterion_analysis": "All required metadata fields are visible and match the agent’s predicted output wording/casing: Units is \"Percent\", seasonal-adjustment status is \"Seasonally Adjusted\", and frequency is \"Monthly\". The agent combined Units and seasonal adjustment into one bullet but preserved the exact phrases as displayed.",
+            "discrepancies": "Minor formatting difference only: the agent wrote \"Units: Percent , Seasonally Adjusted\" with an extra space before the comma; the screenshot displays them as separate lines (\"Units: Percent\" and \"Seasonally Adjusted\"). The core wording matches exactly.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Metadata fields visible on the series page include: “Units: Percent” with “Seasonally Adjusted” shown directly beneath it, and “Frequency: Monthly”.",
+            "criterion_analysis": "All required metadata elements (Units, Frequency, Seasonal Adjustment status) are visible and match what the agent reported. The agent’s formatting combines Units and Seasonal Adjustment as “Percent , Seasonally Adjusted”; the screenshot shows them as two lines (“Units: Percent” and “Seasonally Adjusted”), but the exact wording of each label/value (“Percent”, “Seasonally Adjusted”, “Monthly”) is correct.",
+            "discrepancies": "Minor formatting discrepancy: the agent output includes an extra space before the comma in “Percent , Seasonally Adjusted” and presents Seasonal Adjustment as appended to Units, whereas the page displays “Seasonally Adjusted” as its own line under Units. The underlying wording matches the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "DOM-model state 1 (latest) metadata area explicitly displays “Units: Percent , Seasonally Adjusted” and “Frequency: Monthly”. The seasonal-adjustment wording appears embedded in the Units line (as shown), not necessarily as a separate labeled field.",
+        "verifier_justification": "The agent output reproduces the on-page strings for Units (including the seasonal-adjustment wording exactly as displayed in the Units line) and Frequency. Since the page displays seasonal adjustment as part of the Units line, the agent has captured the seasonal-adjustment status wording as displayed. Upgrade to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the UNRATE series page at URL https://fred.stlouisfed.org/series/UNRATE (Title: \"Unemployment Rate (UNRATE) | FRED | St. Louis Fed\"). In VISIBLE CONTENT, the metadata is explicitly listed as:\n- \"Units: Percent , Seasonally Adjusted\"\n- \"Frequency: Monthly\"\nAdditionally, the page confirms the user is not signed in (\"Open Login Modal; User Is Not Signed In\").",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 1 requires reporting Units, Frequency, and Seasonal Adjustment wording exactly as displayed on the UNRATE page. The DOM explicitly contains the exact combined units/seasonal-adjustment string \"Units: Percent , Seasonally Adjusted\" and the frequency string \"Frequency: Monthly\" (DOM_MODEL_STATE_INDEX: 1, VISIBLE CONTENT). This directly supports the agent’s reported metadata fields without needing inference.",
+            "discrepancies": "No discrepancies for the metadata: the agent’s \"Units: Percent , Seasonally Adjusted\" and \"Frequency: Monthly\" match the exact strings present in DOM_MODEL_STATE_INDEX: 1. (Seasonal adjustment is included verbatim within the Units line as displayed.)",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content includes:\n- \"Units: Percent , Seasonally Adjusted\"\n- \"Frequency: Monthly\"\nNo separate field labeled \"Seasonal Adjustment:\" is shown; instead, the seasonal-adjustment wording appears as part of the Units line exactly as \"Percent , Seasonally Adjusted\".",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nUnits and Frequency are explicitly present in the DOM and can be recorded exactly as displayed (\"Units: Percent , Seasonally Adjusted\"; \"Frequency: Monthly\"). However, the rubric requires a Seasonal Adjustment field/wording to be reported exactly as displayed; in this DOM snapshot there is no distinct \"Seasonal Adjustment:\" metadata label visible, only the phrase \"Seasonally Adjusted\" embedded in the Units line. Therefore, the DOM supports the wording \"Seasonally Adjusted\" but does not support the existence of a separate seasonal-adjustment metadata field as a labeled item.",
+            "discrepancies": "Agent-reported metadata in the predicted output collapses units and seasonal adjustment into one bullet (\"Units: Percent , Seasonally Adjusted\"), which matches the DOM text, but it does not separately report a \"Seasonal Adjustment\" field as required by the criterion. Also, the predicted output did not preserve the exact spacing/punctuation as shown (DOM shows \"Percent , Seasonally Adjusted\" with a space before the comma).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record the three latest displayed observation months and values exactly as displayed",
+      "description": "Report the three latest observations shown on the UNRATE series page, preserving the month, year, and decimal values exactly as displayed. Full credit if exactly three latest displayed months and their values are correct and match the page display at the time of access. If the observations table/chart cannot be accessed or does not render due to external issues (site down, blocking, dynamic content not loading), award partial credit if the agent clearly reports the issue and what portion (if any) was visible; do not require guessing. Partial credit if fewer than three are provided, if observations are not the latest displayed, or if there are minor transcription errors. No credit if values/months are not from the UNRATE page or are fabricated.",
+      "max_points": 6,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 6.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows the Observations list with the most recent three entries: “Aug 2026: 4.1”, “Jul 2026: 4.1”, and “Jun 2026: 4.2.”",
+        "verifier_justification": "The agent’s three latest displayed observation months and values match the UNRATE page’s displayed observations exactly (month/year and one-decimal values). The baseline score of 0 was incorrect; this should be full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "An \"Observations\" dropdown panel is open on the left. The visible latest entries listed are: \"Aug 2026: 4.1\", \"Jul 2026: 4.1\", \"Jun 2026: 4.2\" (followed by \"May 2026: 4.3\" and \"Apr 2026: 4.3\").",
+            "criterion_analysis": "The agent’s three latest displayed observations exactly match what is visible in the open Observations list (months/years and one-decimal values). This meets the requirement to use the displayed observations from the UNRATE page.",
+            "discrepancies": "None—agent’s listed three observations (Aug 2026 4.1; Jul 2026 4.1; Jun 2026 4.2) match the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 6.0,
+        "verifier_evidence": "DOM-model state 1 (latest) Table 1 top rows list the latest displayed observations as “Aug 2026:” = “4.1”, “Jul 2026:” = “4.1”, and “Jun 2026:” = “4.2”. These also appear in visible content lines.",
+        "verifier_justification": "The agent’s three reported latest observations (Aug 2026: 4.1; Jul 2026: 4.1; Jun 2026: 4.2) match the latest DOM evidence exactly, including month/year and one-decimal values. Baseline 0/6 was incorrect; award full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL: https://fred.stlouisfed.org/series/UNRATE)\nEvidence in TABLES -> Table 1 (rows=6, columns=3) explicitly lists the latest displayed observations:\n- \"Aug 2026:\" | \"4.1\"\n- \"Jul 2026:\" | \"4.1\"\n- \"Jun 2026:\" | \"4.2\"\n(Additional rows shown: May 2026 4.3; Apr 2026 4.3; and \"View All\").\nAlso repeated in VISIBLE CONTENT as separate lines: \"Aug 2026: 4.1\" (and metadata lines like \"Units: Percent , Seasonally Adjusted\" and \"Frequency: Monthly\").",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the three latest displayed observation months and values on the UNRATE series page. In DOM_MODEL_STATE_INDEX: 1, TABLES -> Table 1 shows the first three rows as \"Aug 2026: 4.1\", \"Jul 2026: 4.1\", and \"Jun 2026: 4.2\", which are the latest displayed observations and match the agent’s reported three latest observations.",
+            "discrepancies": "No discrepancies for this rubric criterion: the agent’s three latest observation months and values (Aug 2026 4.1; Jul 2026 4.1; Jun 2026 4.2) match TABLES -> Table 1 in DOM_MODEL_STATE_INDEX: 1 exactly.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Stop after recording metadata and three latest observations",
+      "description": "Adhere to the stopping condition by ending the work once the series metadata and three latest displayed observations have been recorded (or once it is clearly established they cannot be retrieved due to access/rendering issues). Full credit if no additional unnecessary steps/data beyond what was asked are included. Partial credit if minor extra, non-conflicting information is added. No credit if the agent continues significantly beyond scope (e.g., reporting long histories, additional series, or other analyses) instead of stopping.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Agent’s predicted output contains only the requested metadata plus three latest observations and then ends. Screenshots show no additional extracted data beyond these elements.",
+        "verifier_justification": "The agent stopped after recording the requested metadata and the three latest displayed observations, with no significant extra information. Baseline score remains correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot only shows the UNRATE page with metadata and the Observations dropdown; there is no evidence of additional data extraction beyond metadata and recent observations. The agent’s predicted output contains only metadata and three observations.",
+            "criterion_analysis": "The agent’s predicted output stops after providing the requested metadata and three latest observations, without adding unrelated analysis or extra history. This aligns with the stopping condition.",
+            "discrepancies": "No discrepancy: neither the screenshot nor the predicted output suggests the agent went beyond the required scope.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the series title, metadata area, and a chart. It also shows an “Observations” section header area with a visible latest line: “Aug 2026: 4.1” and “Updated: Sep 4, 2026 8:27 AM CDT” plus “Next Release Date: Oct 2, 2026”. The screenshot does not display a table/list showing the next two latest observations (e.g., Jul 2026, Jun 2026) anywhere in view.",
+            "criterion_analysis": "The agent’s predicted output stops after metadata and three observations (no extra content), which aligns with the stopping condition. However, the screenshot only directly supports one observation (“Aug 2026: 4.1”); it does not show the other two observations the agent listed. Still, for this criterion (stopping after recording), the agent output is within scope and does not continue beyond the requested data.",
+            "discrepancies": "The agent lists three latest observations (Aug 2026, Jul 2026, Jun 2026), but only “Aug 2026: 4.1” is visible in the screenshot. The screenshot provides no visible evidence for “Jul 2026: 4.1” or “Jun 2026: 4.2”.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Agent output contains only the requested metadata and exactly three latest observations; DOM-model state 1 shows additional rows exist but are not required. No further actions beyond opening Observations are shown.",
+        "verifier_justification": "The agent stopped after providing series metadata and three latest displayed observations, with no significant extra scope. Baseline score remains correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the UNRATE series page with the required metadata and a table of recent observations. Evidence for stopping after recording exactly the requested items:\n- URL confirms correct series page: \"https://fred.stlouisfed.org/series/UNRATE\".\n- Series metadata present in visible content:\n  - \"Units: Percent , Seasonally Adjusted\"\n  - \"Frequency: Monthly\"\n- Latest observations shown in Table 1 (top rows):\n  - \"Aug 2026: | 4.1 |\"\n  - \"Jul 2026: | 4.1 |\"\n  - \"Jun 2026: | 4.2 |\"\n(Additional rows exist—\"May 2026\", \"Apr 2026\"—but the first three rows provide the three latest displayed observations.)",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM state contains all required series metadata (units, frequency, seasonal-adjustment wording) and clearly lists the three latest displayed observation months and values at the top of Table 1 (Aug 2026 4.1; Jul 2026 4.1; Jun 2026 4.2). The agent’s predicted output includes exactly those metadata fields and exactly three observations, matching the DOM text, and does not add extra observations beyond the requested three—consistent with the stopping condition.",
+            "discrepancies": "No discrepancies between the DOM evidence and the agent’s recorded metadata/three latest observations. The DOM explicitly shows \"Units: Percent , Seasonally Adjusted\" and \"Frequency: Monthly\" and the top three observation rows (Aug 2026 4.1; Jul 2026 4.1; Jun 2026 4.2), matching the agent output exactly.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}
