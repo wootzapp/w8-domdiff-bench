@@ -11,7 +11,7 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any
 
-from .adapter import create_datapoint
+from .adapter import create_datapoint, normalize_all_screenshot_evidence
 from .clients.graceful_client import GracefulRetryClient
 from .rubric_agent import (
     MMRubricAgent,
@@ -107,6 +107,23 @@ def _jsonable(value: Any) -> Any:
     return value
 
 
+def _bind_all_screenshot_evidence(
+    agent_input: dict[str, Any], screenshots: list[str], action_count: int
+) -> dict[str, Any]:
+    """Bind all N+1 states to the unchanged screenshot evidence loader."""
+    expected = action_count + 1
+    if len(screenshots) != expected:
+        raise ValueError(
+            f"Expected {expected} screenshot evidence states, found {len(screenshots)}"
+        )
+    bound = dict(agent_input)
+    bound["actions_list"] = [
+        {"id": index, "screenshot": screenshot}
+        for index, screenshot in enumerate(screenshots, start=1)
+    ]
+    return bound
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     started = time.time()
     task_dir = Path(args.input).resolve(strict=True)
@@ -142,6 +159,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     datapoint = create_datapoint(task_data, trajectory)
     agent_input = MMRubricAgent._extract_input_from_datapoint(
         datapoint, screenshots_dir=str(task_dir), redo_eval=args.redo_eval
+    )
+    # Evidence selection receives every 0..N browser state. Action history and
+    # step metadata above still contain only the N actions actually performed.
+    agent_input = _bind_all_screenshot_evidence(
+        agent_input, normalize_all_screenshot_evidence(trajectory), preflight["actions"]
     )
     raw = asyncio.run(agent._generate_reply(agent_input))
     if not isinstance(raw, dict) or raw.get("error"):

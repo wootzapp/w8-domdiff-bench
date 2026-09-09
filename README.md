@@ -79,6 +79,8 @@ data/data-new-dom-model/taskN/
 
 For `N` actions, the validator requires `N+1` contiguous states in each modality. State 0 is initial, state `i` is after action `i`, and the last state is final. The paired task ID, action history, final answer, rubric, criterion order, denominator, and maximum points must match.
 
+During Phase B scoring, both verifiers receive every chronologically ordered browser state: `screenshot0..N` and `dom_model0..N`. The real trajectory remains N actions; only the evidence candidates are N+1 states. Each unchanged verifier still applies its configured relevance ranking and top-K limit (default 5) per criterion, so N+1 does not change the scoring design or make top-K equal to the number of states.
+
 ## Phase A: create one frozen rubric
 
 Start with the offline preflight:

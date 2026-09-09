@@ -31,6 +31,9 @@ def _criteria(items: list[dict[str, Any]], frozen_items: list[dict[str, Any]]) -
                 "action_only_points": float(item.get("earned_points", 0) or 0),
                 "final_points": float(item.get("post_image_earned_points", item.get("earned_points", 0)) or 0),
                 "max_points": float(item["max_points"]),
+                "condition": item.get("condition"),
+                "is_condition_met": item.get("is_condition_met"),
+                "is_applicable": item.get("is_condition_met") is not False,
                 "final_justification": item.get("post_image_justification", item.get("justification", "")),
                 "penalty": bool(item.get("penalty", False)),
             }
@@ -61,9 +64,19 @@ def _normalize(
     intermediate = raw.get("intermediate_mm_rubric_steps") or {}
     criterion_rows = intermediate.get("step6_rescoring_summary") or []
     criteria = _criteria(criterion_rows, frozen.rubric["items"])
-    denominator = sum(item["max_points"] for item in criteria)
+    frozen_denominator = sum(item["max_points"] for item in criteria)
+    effective_denominator = sum(
+        item["max_points"] for item in criteria if item["is_applicable"]
+    )
     result_denominator = float(raw.get("rubric_total_max_points", 0))
-    if denominator != frozen.denominator or result_denominator != frozen.denominator:
+    declared_frozen_denominator = float(
+        raw.get("criterion_denominator", frozen.denominator)
+    )
+    if (
+        frozen_denominator != frozen.denominator
+        or declared_frozen_denominator != frozen.denominator
+        or result_denominator != effective_denominator
+    ):
         raise ValueError(f"{mode} criterion denominator drift")
     usage_judge = raw.get("token_usage", {}).get("judge", {})
     usage_action = raw.get("token_usage", {}).get("action_judge", {})

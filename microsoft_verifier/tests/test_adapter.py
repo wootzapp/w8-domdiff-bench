@@ -37,7 +37,7 @@ def _make_trajectory_dir(root: Path, n_actions: int = 2) -> Path:
 
     # Fake screenshots on disk — content not validated by the adapter.
     screenshots = []
-    for i in range(n_actions):
+    for i in range(n_actions + 1):
         p = d / f"screenshot_{i}.png"
         p.write_bytes(b"\x89PNG\r\n\x1a\n")  # PNG signature, harmless for tests
         screenshots.append(p.name)
@@ -57,7 +57,10 @@ def _make_trajectory_dir(root: Path, n_actions: int = 2) -> Path:
 
 
 def test_create_datapoint_normalizes_screenshots_and_actions(tmp_path):
-    from microsoft_verifier.adapter import create_datapoint
+    from microsoft_verifier.adapter import (
+        create_datapoint,
+        normalize_all_screenshot_evidence,
+    )
     from microsoft_verifier.trajectory import Trajectory
 
     traj_dir = _make_trajectory_dir(tmp_path, n_actions=3)
@@ -78,10 +81,33 @@ def test_create_datapoint_normalizes_screenshots_and_actions(tmp_path):
     assert len(summaries) == 3
     # Last action must have been normalized stop_execution → terminate.
     assert summaries[-1].action_name == "terminate"
-    # Screenshot indices must be 1-based and match action index.
+    # Action summaries keep post-action states while all evidence states remain
+    # available separately to the evidence loader.
     for i, s in enumerate(summaries, start=1):
         assert s.index == i
-        assert s.screenshot_path.endswith(f"screenshot_{i}.png")
+        assert s.screenshot_path.endswith(f"screenshot_{i + 1}.png")
+    assert normalize_all_screenshot_evidence(traj) == [
+        f"screenshot_{i}.png" for i in range(1, 5)
+    ]
+
+
+def test_runner_binds_all_states_without_changing_action_history():
+    from microsoft_verifier.runner import _bind_all_screenshot_evidence
+
+    original = {
+        "action_history": "State 1: example\\nAction 1: click({})",
+        "actions_list": [{"id": 1, "screenshot": "screenshot_2.png"}],
+    }
+    bound = _bind_all_screenshot_evidence(
+        original, ["screenshot_1.png", "screenshot_2.png"], action_count=1
+    )
+
+    assert bound["action_history"] == original["action_history"]
+    assert bound["actions_list"] == [
+        {"id": 1, "screenshot": "screenshot_1.png"},
+        {"id": 2, "screenshot": "screenshot_2.png"},
+    ]
+    assert original["actions_list"] == [{"id": 1, "screenshot": "screenshot_2.png"}]
 
 
 def test_create_datapoint_handles_missing_init_url(tmp_path):

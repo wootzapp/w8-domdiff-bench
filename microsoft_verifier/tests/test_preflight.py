@@ -11,7 +11,14 @@ def _task(tmp_path, screenshots=2):
     (root / "web_surfer.log").write_text(
         json.dumps({"action": "left_click", "arguments": {"coordinate": [1, 2]}}) + "\n"
     )
-    (root / "final_answer.json").write_text(json.dumps({"final_answer": "done"}))
+    (root / "final_answer.json").write_text(
+        json.dumps(
+            {
+                "final_answer": "done",
+                "screenshots": [f"screenshot{index}.png" for index in range(screenshots)],
+            }
+        )
+    )
     for index in range(screenshots):
         (root / f"screenshot{index}.png").write_bytes(b"png")
     return root
@@ -25,5 +32,5 @@ def test_accepts_intentional_n_plus_one_screenshots(tmp_path):
 
 
 def test_rejects_misaligned_screenshot_count(tmp_path):
-    with pytest.raises(ValueError, match="N or intentional N\\+1"):
+    with pytest.raises(ValueError, match="exactly N\\+1"):
         preflight_screenshot_task(_task(tmp_path, screenshots=3))
