@@ -34,7 +34,7 @@ RUNNER = ROOT / "runner.py"
 # the JSONL catalog and may be replaced through TASK_CATALOG_URL without changing
 # the command interface or recorder behavior.
 DEFAULT_TASK_CATALOG_URL = (
-    "https://huggingface.co/datasets/ishagarg1103/browser-agent-tasks/"
+    "https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/"
     "resolve/main/tasks.jsonl"
 )
 RUNTIME_ROOT = ROOT / ".runtime"

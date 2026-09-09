@@ -48,6 +48,7 @@
 #include "third_party/blink/renderer/core/dom/document.h"
 #include "third_party/blink/renderer/core/paint/timing/paint_timing.h"
 #include "third_party/blink/renderer/core/html/forms/html_input_element.h"
+#include "third_party/blink/renderer/core/html/forms/html_label_element.h"
 #include "third_party/blink/renderer/core/html/forms/html_select_element.h"
 #include "third_party/blink/renderer/core/html/forms/html_text_area_element.h"
 #include "third_party/blink/renderer/core/html/forms/html_option_element.h"
@@ -3398,6 +3399,28 @@ InspectorChromiumRLAgent::CollectNodeStates(Element* element) {
     String value = select->Value();
     if (!value.empty())
       add_state("value", value);
+  }
+
+  // A visible <label> is the user-facing representation of its associated
+  // native control. Preserve a positive checkbox or radio state on that
+  // already selected label instead of inferring it from text or an action.
+  // This reads the DOM relationship directly and never adds offscreen nodes.
+  if (auto* label = DynamicTo<HTMLLabelElement>(element)) {
+    if (HTMLElement* control = label->Control()) {
+      if (auto* input = DynamicTo<HTMLInputElement>(control)) {
+        const AtomicString& input_type =
+            input->FastGetAttribute(html_names::kTypeAttr);
+        if ((input_type == "checkbox" || input_type == "radio") &&
+            input->Checked()) {
+          add_state("checked", "true");
+        }
+      }
+      if (auto* select = DynamicTo<HTMLSelectElement>(control)) {
+        String value = select->Value();
+        if (!value.empty())
+          add_state("value", value);
+      }
+    }
   }
 
   return states;
@@ -7178,6 +7201,18 @@ class StructuredModelDOMRenderer {
     return Join(values, ",");
   }
 
+  String ActiveControlStateText(Node* node) const {
+    Vector<String> values;
+    for (const auto& state : *node->getStates()) {
+      String name = Clean(state->getName(), false);
+      String value = Clean(state->getValue());
+      if (name.empty() || value.empty() || PythonLower(value) == "false")
+        continue;
+      values.push_back(name + "=" + value);
+    }
+    return Join(values, ",");
+  }
+
   String VisibilityNotes(Node* node) const {
     Vector<String> notes;
     if (!node->getVisible()) notes.push_back("hidden");
@@ -7796,6 +7831,9 @@ class StructuredModelDOMRenderer {
       Vector<String> content_lines = FormatContent(full, prefix, controls);
       for (const String& line : content_lines)
         target.push_back(line);
+      String active_control_state = ActiveControlStateText(node);
+      if (!active_control_state.empty())
+        target.push_back("  control_state=" + active_control_state);
       for (const String& evidence :
            AdditionalContentEvidence(node, content_lines)) {
         target.push_back("  evidence: " + evidence);
