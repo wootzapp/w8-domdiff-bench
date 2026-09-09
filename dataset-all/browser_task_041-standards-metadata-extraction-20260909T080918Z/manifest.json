@@ -1,0 +1,390 @@
+{
+  "task_id": "browser_task_041-standards-metadata-extraction-20260909T080918Z",
+  "source_task_id": "browser_task_041",
+  "source_catalog": "https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/resolve/main/tasks.jsonl",
+  "task_name": "standards metadata extraction",
+  "task": "Open RFC 9110 and report its title, publication month and year, status, authors, and every RFC it obsoletes. Preserve whether each referenced RFC is fully or only partially obsoleted.\n\nStopping condition: Stop after the complete RFC metadata and all full or partial obsolescence relationships have been recorded.\n\nConstraints:\n- Do not submit errata or feedback.\n- Distinguish a fully obsoleted RFC from one for which only portions are obsoleted.\n- Use the RFC Editor record rather than inferring relationships from another source.",
+  "created_at": "2026-09-09T08:09:19.193Z",
+  "browser_image": "wootz-runtime:snapshot-diff",
+  "browser_profile_provenance": {
+    "container_id": "6b388e5b86e00f44d7d91c6ed0e6b1548f87c30791a290dd80b8c2a41694b99c",
+    "container_created_at": "2026-09-07T07:10:25.040651606Z",
+    "profile_fresh_at_run_start": false,
+    "tasks_previously_run_in_container": 52
+  },
+  "dom_capture_parameters": {
+    "max_nodes": 7000,
+    "max_text_chars": 200000,
+    "in_viewport_only": true,
+    "include_offscreen": false
+  },
+  "dom_capture_source": "ChromiumRL.captureStructuredSnapshot",
+  "action_coordinate_capture": {
+    "source": "ChromiumRL.getAgentObservation",
+    "fallback_source": "existing ChromiumRL.captureStructuredSnapshot bounds",
+    "purpose": "pre-action coordinates only",
+    "stored_as_dom_evidence": false,
+    "takes_additional_structured_snapshot": false,
+    "fallback_requires": "one visible hit-testable semantic match",
+    "in_viewport_only": false,
+    "include_content": false,
+    "include_diff": false,
+    "update_baseline": false,
+    "max_elements": 10000,
+    "max_interactive_elements": 10000
+  },
+  "renderer_files": [
+    "render_chromiumrl_snapshot_full.py",
+    "render_chromiumrl_model_dom.py"
+  ],
+  "model_renderer_command": "ChromiumRL.getModelDOM",
+  "renderer_versions": {
+    "full": {
+      "file": "render_chromiumrl_snapshot_full.py",
+      "sha256": "12afbc9aa3fa651b1116850fc49402ab65a8ff4fcfe5fefd980167b068156c72"
+    },
+    "model": {
+      "command": "ChromiumRL.getModelDOM",
+      "renderer_name": "chromiumrl-model-dom",
+      "text_renderer": {
+        "file": "render_chromiumrl_model_dom.py",
+        "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+      }
+    }
+  },
+  "model_input_renderer": {
+    "command": "ChromiumRL.getModelDOM",
+    "renderer_name": "chromiumrl-model-dom",
+    "text_renderer": {
+      "file": "render_chromiumrl_model_dom.py",
+      "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+    }
+  },
+  "model_input_policy": "dom_only",
+  "model_context": {
+    "full_agent_browser_evidence": "stored unchanged in agent_browser.txt",
+    "action_namespace": "official agent-browser snapshot --interactive",
+    "chromiumrl_action_ids_executable": false,
+    "observation_truncation": false,
+    "conversation_history_reused": false,
+    "task_memory_max_chars": 8000,
+    "action_thought_max_chars": 1200,
+    "decision_log": "decisions.jsonl",
+    "executed_trajectory": "trajectory.jsonl",
+    "web_surfer_log": "web_surfer.log",
+    "ref_target_identity": "exact agent-browser ref plus role/name from the same pre-action interactive snapshot"
+  },
+  "step_numbering": {
+    "step_directories": "contiguous captured browser states",
+    "action_file": "action.json is stored in the state from which it executes",
+    "model_turn_field": "model_turn",
+    "decision_log_step": "model turn"
+  },
+  "action_driver": {
+    "name": "agent-browser",
+    "implementation": "official vercel-labs/agent-browser",
+    "command": [
+      "npx",
+      "--yes",
+      "agent-browser@0.27.3"
+    ],
+    "session": "rec-466de902fed0fcda-620545",
+    "cdp_target": "49337",
+    "version": "agent-browser 0.27.3",
+    "connection": {
+      "success": true,
+      "data": {
+        "launched": true
+      },
+      "error": null
+    },
+    "reconnect_count": 0
+  },
+  "states": [
+    {
+      "state": 1,
+      "directory": "steps/step_001",
+      "snapshot": "steps/step_001/dom.json",
+      "dom_full": "steps/step_001/dom_full.txt",
+      "model_dom": "steps/step_001/dom_model.json",
+      "model_text": "steps/step_001/dom_model.txt",
+      "screenshot": "steps/step_001/screenshot.png",
+      "agent_browser_snapshot": "steps/step_001/agent_browser.txt",
+      "agent_browser_action_snapshot": "steps/step_001/agent_browser_actions.txt",
+      "document_url": "https://www.rfc-editor.org/info/rfc9110/",
+      "document_language": "en"
+    },
+    {
+      "state": 2,
+      "directory": "steps/step_002",
+      "snapshot": "steps/step_002/dom.json",
+      "dom_full": "steps/step_002/dom_full.txt",
+      "model_dom": "steps/step_002/dom_model.json",
+      "model_text": "steps/step_002/dom_model.txt",
+      "screenshot": "steps/step_002/screenshot.png",
+      "agent_browser_snapshot": "steps/step_002/agent_browser.txt",
+      "agent_browser_action_snapshot": "steps/step_002/agent_browser_actions.txt",
+      "document_url": "https://www.rfc-editor.org/info/rfc9110/",
+      "document_language": "en"
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "model_turn": 1,
+      "started_at": "2026-09-09T08:09:45.810Z",
+      "completed_at": "2026-09-09T08:09:58.511Z",
+      "duration_seconds": 12.701,
+      "action": {
+        "action": "click",
+        "url": null,
+        "id": "e55",
+        "text": null,
+        "key": null,
+        "pixels": null,
+        "seconds": null,
+        "status": null,
+        "final_answer": null
+      },
+      "thought": "Need RFC Editor metadata: title, date, status, authors, obsoleted RFCs; that’s typically under the 'About this RFC' tab, so switch to it.",
+      "target": {
+        "ref": "e55",
+        "role": "tab",
+        "name": "About this RFC"
+      },
+      "coordinate_capture": {
+        "status": "resolved",
+        "source": "ChromiumRL.getAgentObservation",
+        "match_method": "exact_role_name_hit_testable",
+        "candidate_count": 1,
+        "coordinate": [
+          1001,
+          142
+        ],
+        "coordinate_source": "get_agent_observation",
+        "phase": "pre_action"
+      },
+      "action_context": {
+        "document_url": "https://www.rfc-editor.org/info/rfc9110/",
+        "control_signature": "tab \"about this rfc\"",
+        "ref": "e55",
+        "role": "tab",
+        "name": "About this RFC"
+      },
+      "action_driver": "agent-browser",
+      "action_result": {
+        "success": true,
+        "data": {
+          "clicked": "@e55"
+        },
+        "error": null
+      },
+      "action_error": null,
+      "action_succeeded": true,
+      "recoverable_action_error": false,
+      "agent_browser_snapshot_error": null,
+      "agent_browser_reconnect_count": 0,
+      "target_sync": {
+        "agent_browser_tab_id": "t1",
+        "agent_browser_url": "https://www.rfc-editor.org/info/rfc9110/",
+        "agent_browser_title": "RFC 9110: HTTP Semantics | RFC Editor",
+        "previous_target_id": "CD087B4C5870D9244E19D830924D18C4",
+        "previous_target_url": "https://www.rfc-editor.org/info/rfc9110/",
+        "selected_target_id": "CD087B4C5870D9244E19D830924D18C4",
+        "selected_target_url": "https://www.rfc-editor.org/info/rfc9110/",
+        "switched": false
+      },
+      "action_verification": {
+        "applicable": false,
+        "status": "not_applicable"
+      },
+      "progress": {
+        "url_changed": false,
+        "agent_browser_observation_changed": true,
+        "screenshot_changed": true,
+        "made_progress": true
+      },
+      "language_guard_error": null,
+      "automatic_language_redirects": [],
+      "model": {
+        "name": "gpt-5.1",
+        "response_id": "resp_0d92bfb5dd489414006aa11442b0e487d2b841b3a7a0a0804b",
+        "output_text": "{\"action\":\"click\",\"url\":null,\"id\":\"e55\",\"text\":null,\"key\":null,\"pixels\":null,\"seconds\":null,\"status\":null,\"final_answer\":null,\"thought\":\"Need RFC Editor metadata: title, date, status, authors, obsoleted RFCs; that’s typically under the 'About this RFC' tab, so switch to it.\",\"memory\":\"Need from RFC 9110 (RFC Editor record): title, publication month/year, status, authors, and list of obsoleted RFCs, marking which are fully vs partially obsoleted.\"}",
+        "usage": {
+          "input_tokens": 88365,
+          "input_tokens_details": {
+            "cache_write_tokens": 0,
+            "cached_tokens": 0
+          },
+          "output_tokens": 134,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 88499
+        }
+      },
+      "task_memory": "Need from RFC 9110 (RFC Editor record): title, publication month/year, status, authors, and list of obsoleted RFCs, marking which are fully vs partially obsoleted.",
+      "model_input": {
+        "full_agent_browser_chars": 1039433,
+        "action_agent_browser_chars": 206822,
+        "chromiumrl_chars": 7063,
+        "chromiumrl_prompt_chars": 7013,
+        "task_memory_chars": 0,
+        "recent_actions_chars": 2,
+        "observation_truncated": false,
+        "conversation_history_reused": false
+      },
+      "model_input_renderer": {
+        "command": "ChromiumRL.getModelDOM",
+        "renderer_name": "chromiumrl-model-dom",
+        "text_renderer": {
+          "file": "render_chromiumrl_model_dom.py",
+          "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+        }
+      },
+      "model_input_agent_browser": {
+        "version": "agent-browser 0.27.3",
+        "snapshot_command": [
+          "snapshot",
+          "-i"
+        ],
+        "snapshot": "steps/step_001/agent_browser_actions.txt",
+        "full_evidence_snapshot_command": [
+          "snapshot",
+          "-c"
+        ],
+        "full_evidence_snapshot": "steps/step_001/agent_browser.txt"
+      },
+      "state": 1,
+      "next_state": 2,
+      "state_snapshot": "steps/step_001/dom.json",
+      "next_state_snapshot": "steps/step_002/dom.json",
+      "state_model_dom": "steps/step_001/dom_model.json",
+      "next_state_model_dom": "steps/step_002/dom_model.json",
+      "state_screenshot": "steps/step_001/screenshot.png",
+      "next_state_screenshot": "steps/step_002/screenshot.png",
+      "next_state_agent_browser_snapshot": "steps/step_002/agent_browser.txt",
+      "next_state_agent_browser_snapshot_command": [
+        "snapshot",
+        "-c"
+      ],
+      "next_state_agent_browser_action_snapshot": "steps/step_002/agent_browser_actions.txt",
+      "next_state_agent_browser_action_snapshot_command": [
+        "snapshot",
+        "-i"
+      ],
+      "document_language": "en",
+      "next_document_language": "en",
+      "document_language_error": null,
+      "next_document_language_error": null
+    }
+  ],
+  "human_intervention": {
+    "enabled": false,
+    "novnc_url": null,
+    "count": 0
+  },
+  "post_action_language_redirect": false,
+  "status": "success",
+  "browser_session": {
+    "browser_version": "Chrome/152.0.7948.0",
+    "tab_cleanup": {
+      "page_targets_found": 1,
+      "page_target_urls": [
+        "https://www.openstreetmap.org/relation/177044"
+      ],
+      "keep_existing_tabs": false,
+      "fresh_target_created": true,
+      "closed_count": 1,
+      "closed_targets": [
+        {
+          "target_id": "0D5B8F1E857A5B4D8AACE395DD0AC5CF",
+          "url": "https://www.openstreetmap.org/relation/177044"
+        }
+      ],
+      "close_errors": [],
+      "warnings": [],
+      "fresh_target_id": "CD087B4C5870D9244E19D830924D18C4",
+      "cleanup_passes": 1,
+      "cleanup_timeout_seconds": 5.0,
+      "remaining_page_targets": [],
+      "selected_target_id": "CD087B4C5870D9244E19D830924D18C4",
+      "selected_target_url": "about:blank"
+    },
+    "locale_setup": {
+      "network_enable": {
+        "status": "ok",
+        "value": null
+      },
+      "accept_language_header": {
+        "status": "ok",
+        "value": {
+          "Accept-Language": "en-US,en;q=0.9"
+        }
+      },
+      "locale_override": {
+        "status": "ok",
+        "value": "en-US"
+      }
+    },
+    "target_switches": []
+  },
+  "initial_target_sync": {
+    "agent_browser_tab_id": "t1",
+    "agent_browser_url": "https://www.rfc-editor.org/info/rfc9110/",
+    "agent_browser_title": "RFC 9110: HTTP Semantics | RFC Editor",
+    "previous_target_id": "CD087B4C5870D9244E19D830924D18C4",
+    "previous_target_url": "about:blank",
+    "selected_target_id": "CD087B4C5870D9244E19D830924D18C4",
+    "selected_target_url": "https://www.rfc-editor.org/info/rfc9110/",
+    "switched": false
+  },
+  "initial_page_language": {
+    "url": "https://www.rfc-editor.org/info/rfc9110/",
+    "language": "en",
+    "error": null,
+    "automatic_redirects": []
+  },
+  "completed_at": "2026-09-09T08:10:21.245Z",
+  "final": {
+    "status": "success",
+    "final_answer": "Here is the requested metadata for RFC 9110, taken from its RFC Editor record page (https://www.rfc-editor.org/info/rfc9110/):\n\n- **Title:** HTTP Semantics\n- **Publication date:** June 2022\n- **Status:** Internet Standard (also designated **STD 97**)\n- **Authors:**\n  - R. Fielding, Ed.\n  - M. Nottingham, Ed.\n  - J. Reschke, Ed.\n\nFrom the “About this RFC” → “Details” section of the RFC 9110 info page (the RFC Editor record):\n\n- **Updates:** RFC 3864 (Registration Procedures for Message Header Fields)\n- **Obsoletes (9):**\n  1. **RFC 2818 – HTTP Over TLS**  \n     - Relationship: **fully obsoleted** by RFC 9110  \n     - Evidence: Listed under “Obsoletes (9)” with no qualification; the abstract also says “obsoletes RFCs 2818, 7231, 7232, 7233, 7235, 7538, 7615, 7694, and portions of 7230,” which distinguishes the “portions of 7230” case from the others.\n\n  2. **RFC 7230 – Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing**  \n     - Relationship: **partially obsoleted** by RFC 9110  \n     - Evidence: The RFC9110 abstract explicitly states this document “obsoletes RFCs 2818, 7231, 7232, 7233, 7235, 7538, 7615, 7694, and portions of 7230” (emphasis on “portions of 7230”), so only parts of RFC 7230 are obsoleted.\n\n  3. **RFC 7231 – Hypertext Transfer Protocol (HTTP/1.1): Semantics and Content**  \n     - Relationship: **fully obsoleted** by RFC 9110  \n     - Evidence: In the abstract and in the “Obsoletes (9)” list, RFC 7231 is listed without any “portions of” qualifier.\n\n  4. **RFC 7232 – Hypertext Transfer Protocol (HTTP/1.1): Conditional Requests**  \n     - Relationship: **fully obsoleted** by RFC 9110  \n     - Evidence: Listed in the “Obsoletes (9)” block, and the abstract says “obsoletes RFCs 2818, 7231, 7232, 7233, 7235, 7538, 7615, 7694, and portions of 7230,” so 7232 is wholly in the obsoleted set.\n\n  5. **RFC 7233 – Hypertext Transfer Protocol (HTTP/1.1): Range Requests**  \n     - Relationship: **fully obsoleted** by RFC 9110  \n     - Evidence: Same as above: explicitly in the “Obsoletes (9)” list and in the abstract without limitation.\n\n  6. **RFC 7235 – Hypertext Transfer Protocol (HTTP/1.1): Authentication**  \n     - Relationship: **fully obsoleted** by RFC 9110  \n     - Evidence: Included in the “Obsoletes (9)” list and in the abstract’s “obsoletes RFCs … 7235 …” clause without any partial qualifier.\n\n  7. **RFC 7538 – The Hypertext Transfer Protocol Status Code 308 (Permanent Redirect)**  \n     - Relationship: **fully obsoleted** by RFC 9110  \n     - Evidence: Appears in the “Obsoletes (9)” section for RFC 9110; the abstract names it among the RFCs that are obsoleted, with no restriction.\n\n  8. **RFC 7615 – HTTP Authentication-Info and Proxy-Authentication-Info Response Header Fields**  \n     - Relationship: **fully obsoleted** by RFC 9110  \n     - Evidence: Listed under “Obsoletes (9)” and explicitly in the abstract’s list of completely obsoleted RFCs.\n\n  9. **RFC 7694 – Hypertext Transfer Protocol (HTTP) Client-Initiated Content-Encoding**  \n     - Relationship: **fully obsoleted** by RFC 9110  \n     - Evidence: Also in the “Obsoletes (9)” group and named in the abstract’s “obsoletes RFCs … 7694 …” enumeration, again with no partial qualifier.\n\n**Summary of full vs partial obsolescence (from the RFC Editor record and abstract):**\n- Fully obsoleted by RFC 9110: RFC 2818, RFC 7231, RFC 7232, RFC 7233, RFC 7235, RFC 7538, RFC 7615, RFC 7694.\n- Partially obsoleted by RFC 9110: RFC 7230 (only portions are obsoleted).\n\nNo errata were submitted or feedback provided in this process, and all relationships above come from the RFC 9110 RFC Editor record itself, including its abstract and “About this RFC → Details” metadata.",
+    "step": 1,
+    "model": "gpt-5.1",
+    "model_response_id": "resp_01915ffb103f1db7006aa11456af3087d28ebef9d9e0eb850a",
+    "model_usage": {
+      "input_tokens": 83562,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 1024
+      },
+      "output_tokens": 1401,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 84963
+    },
+    "task_memory": "From RFC 9110 (RFC Editor record): Title: HTTP Semantics; Date published: June 2022; Status: Internet Standard (STD 97); Authors: R. Fielding (Ed.), M. Nottingham (Ed.), J. Reschke (Ed.). Obsoletes: RFC 2818, 7231, 7232, 7233, 7235, 7538, 7615, 7694 (fully), and portions of RFC 7230 (partial).",
+    "thought": "All required metadata (title, date, status, authors) and the complete list of obsoleted RFCs, with the one partial vs the eight full obsolescences, are visible in the RFC 9110 info page and its abstract; I can now summarize and distinguish full vs partial obsolescence and stop per the task’s stopping condition.",
+    "model_turn": 2,
+    "recorded_steps": 1
+  },
+  "trajectory_export": {
+    "schema_version": "1.0",
+    "status": "complete",
+    "captured_states": 2,
+    "exported_actions": 1,
+    "errors": [],
+    "skipped": [],
+    "trajectory": "trajectory.jsonl",
+    "web_surfer_log": "web_surfer.log",
+    "self_contained_action_targets": true,
+    "requires_action_json_after_export": false
+  },
+  "artifact_alignment": {
+    "committed_steps": 1,
+    "trajectory_actions": 1,
+    "web_surfer_actions": 1,
+    "human_intervention_steps_skipped": 0
+  }
+}
