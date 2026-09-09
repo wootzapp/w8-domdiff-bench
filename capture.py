@@ -1030,6 +1030,7 @@ class CDPClient:
         self.session_id = ""
         self.target: dict[str, Any] = {}
         self.connection_report: dict[str, Any] = {}
+        self._failure_target_cleanup_attempted = False
 
     async def _enable_attached_target(self) -> dict[str, Any]:
         """Enable required domains and best-effort English locale overrides."""
@@ -1078,8 +1079,47 @@ class CDPClient:
         return self
 
     async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> None:
-        """Always release websocket and HTTP resources on context exit."""
+        """Release resources, closing this run's page only after an exception."""
+        if exc_type is not None:
+            await self.close_owned_target_on_failure()
         await self.close()
+
+    async def close_owned_target_on_failure(self) -> None:
+        """Best-effort close of the page owned by an unsuccessful run."""
+        if self._failure_target_cleanup_attempted:
+            return
+        self._failure_target_cleanup_attempted = True
+        target_id = str(self.target.get("targetId", ""))
+        report: dict[str, Any] = {"target_id": target_id, "status": "skipped"}
+        self.connection_report["failure_target_cleanup"] = report
+        if not target_id:
+            return
+        try:
+            if self.session_id:
+                await self.call(
+                    "Target.detachFromTarget",
+                    {"sessionId": self.session_id},
+                    attached=False,
+                )
+                self.session_id = ""
+            result = await self.call(
+                "Target.closeTarget", {"targetId": target_id}, attached=False
+            )
+            if result.get("success") is False:
+                raise RunnerError("Target.closeTarget returned success=false")
+            for _ in range(8):
+                targets = (await self.call("Target.getTargets", attached=False)).get(
+                    "targetInfos", []
+                )
+                if not any(
+                    str(item.get("targetId", "")) == target_id for item in targets
+                ):
+                    report["status"] = "closed"
+                    return
+                await asyncio.sleep(0.1)
+            raise RunnerError("Target.closeTarget did not remove the owned target")
+        except Exception as error:
+            report.update(status="error", error=f"{type(error).__name__}: {error}")
 
     async def _open_browser_transport(self) -> None:
         """Open the browser-level CDP websocket used to enumerate/attach targets."""

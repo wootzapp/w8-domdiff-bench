@@ -1404,6 +1404,8 @@ async def run(args: argparse.Namespace) -> int:
 
             if final is None:
                 final = {"status": "failure", "final_answer": "maximum step count reached", "step": args.max_steps}
+            if final["status"] != "success":
+                await cdp.close_owned_target_on_failure()
             final, _trajectory_export = finalize_recording_artifacts(
                 run_dir,
                 manifest,
