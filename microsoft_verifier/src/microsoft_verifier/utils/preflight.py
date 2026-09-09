@@ -22,8 +22,6 @@ def preflight_screenshot_task(task_dir: str | Path) -> dict[str, int]:
         event = json.loads(line)
         if isinstance(event, dict) and event.get("action") is not None:
             actions += 1
-    if not actions:
-        raise ValueError("Screenshot trajectory contains no actions")
     screenshots = sorted(
         (
             path

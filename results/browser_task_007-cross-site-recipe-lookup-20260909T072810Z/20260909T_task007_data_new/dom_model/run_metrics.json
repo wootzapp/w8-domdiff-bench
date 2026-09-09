@@ -1,0 +1,619 @@
+{
+  "task_id": "browser_task_007-cross-site-recipe-lookup-20260909T072810Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_007-cross-site-recipe-lookup-20260909T072810Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "92aa9a35c900cfea9df77683c49e2d406af0a68c5cafd9169458a5c81323c15b",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_007-cross-site-recipe-lookup-20260909T072810Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_007-cross-site-recipe-lookup-20260909T072810Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "visit_url",
+          "arguments": {
+            "action": "visit_url",
+            "url": "https://www.allrecipes.com/search?q=Tata%20Salt",
+            "thoughts": "The #2 Grocery & Gourmet Foods bestseller is clearly labeled as Tata Salt 1 Kg; next I need to go to AllRecipes and search for a recipe that uses salt, so I’ll navigate directly to an AllRecipes search for this ingredient."
+          },
+          "observed_after_url": "https://www.allrecipes.com/search?q=Tata%20Salt"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "886a3cc58a5937896ee645d59bfef2ba36900461121baeae18f355ad063927e7",
+          "after_sha256": "62673a6097d4ea6ce05ad368cd3efafff379b711984c251497d0ce9f5d6f7b1d",
+          "before_url": "https://www.amazon.in/gp/bestsellers/grocery/",
+          "after_url": "https://www.allrecipes.com/search?q=Tata%20Salt"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "92aa9a35c900cfea9df77683c49e2d406af0a68c5cafd9169458a5c81323c15b",
+    "criterion_order": [
+      "Access Amazon India Grocery & Gourmet Foods bestsellers list (or report block)",
+      "Verify and record the item ranked #2 in Amazon India Grocery & Gourmet Foods bestsellers",
+      "Access AllRecipes and locate a recipe that uses the identified ingredient (or report access/search failure)",
+      "Report the AllRecipes recipe title",
+      "Report the full ingredient list from the AllRecipes recipe",
+      "Comply with constraints (no sign-in, no cart, no purchase; stop on bot check)"
+    ],
+    "maximum_points": [
+      2.0,
+      2.0,
+      3.0,
+      1.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 12.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "result": {
+    "process_score": 1.0,
+    "total_earned_points": 12.0,
+    "total_max_points": 12.0,
+    "rubric_is_success": true,
+    "outcome_success": true,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 148.904
+  },
+  "criteria": [
+    {
+      "criterion": "Access Amazon India Grocery & Gourmet Foods bestsellers list (or report block)",
+      "action_only_points": 0.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Baseline was 0 because the action history didn’t show Amazon navigation, but DOM_MODEL_STATE_INDEX: 0 explicitly confirms the bestsellers list page is successfully accessed. Award full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Verify and record the item ranked #2 in Amazon India Grocery & Gourmet Foods bestsellers",
+      "action_only_points": 0.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Despite the action history not showing the Amazon step, the DOM directly verifies the #2 ranked product and its name. The agent’s reported #2 item matches this. Award full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Access AllRecipes and locate a recipe that uses the identified ingredient (or report access/search failure)",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "This is an uncontrollable access blocker to AllRecipes content (interstitial/gate), and the agent attempted to access AllRecipes via the search URL. Full credit for attempting and being blocked.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report the AllRecipes recipe title",
+      "action_only_points": 1.0,
+      "final_points": 1.0,
+      "max_points": 1.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Because AllRecipes recipe content is not accessible in the DOM evidence, the agent cannot provide a recipe title; the agent explicitly reports inability due to the bot-check/interstitial. Per blocker rule, full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report the full ingredient list from the AllRecipes recipe",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The ingredient list cannot be retrieved from AllRecipes due to the verified interstitial blocker. The agent clearly stated it could not retrieve the ingredient list. Full credit under uncontrollable blocker.",
+      "penalty": false
+    },
+    {
+      "criterion": "Comply with constraints (no sign-in, no cart, no purchase; stop on bot check)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "No evidence of sign-in, cart addition, or purchase attempts; Amazon cart remains at 0. A blocker on AllRecipes is confirmed; although the agent described a checkbox not shown in DOM, it did stop and report being blocked rather than proceeding past it. Overall compliant with constraints; award full credit.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 22,
+    "o4-mini": 3,
+    "total": 25,
+    "api_attempts": 25,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 91030,
+      "completion_tokens": 11458,
+      "reasoning_tokens": 0,
+      "total_tokens": 102488
+    },
+    "o4-mini": {
+      "prompt_tokens": 15924,
+      "completion_tokens": 3829,
+      "reasoning_tokens": 2496,
+      "total_tokens": 19753
+    },
+    "combined": {
+      "prompt_tokens": 106954,
+      "completion_tokens": 15287,
+      "reasoning_tokens": 2496,
+      "total_tokens": 122241
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "886a3cc58a5937896ee645d59bfef2ba36900461121baeae18f355ad063927e7",
+        "byte_count": 5990,
+        "line_count": 117,
+        "estimated_tokens": 1489,
+        "url": "https://www.amazon.in/gp/bestsellers/grocery/",
+        "title": "Amazon.in Bestsellers: The most popular items in Grocery & Gourmet Foods",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 111
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 112,
+            "end_line": 114
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 115,
+            "end_line": 117
+          }
+        ],
+        "control_refs": [
+          "weight",
+          "140",
+          "11",
+          "315",
+          "346",
+          "17",
+          "335",
+          "369",
+          "26",
+          "355",
+          "306"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L117"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "62673a6097d4ea6ce05ad368cd3efafff379b711984c251497d0ce9f5d6f7b1d",
+        "byte_count": 351,
+        "line_count": 7,
+        "estimated_tokens": 88,
+        "url": "https://www.allrecipes.com/search?q=Tata%20Salt",
+        "title": "Just a moment...",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 7
+          }
+        ],
+        "control_refs": [],
+        "warnings": [],
+        "provenance": "m1:L1-L7"
+      }
+    ],
+    "estimated_evidence_tokens": 1577,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 9
+      },
+      "1": {
+        "0": 0,
+        "1": 0,
+        "2": 9,
+        "3": 1,
+        "4": 1,
+        "5": 7
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 9,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 11442,
+        "estimated_input_tokens": 2861,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 5702,
+        "estimated_input_tokens": 1426,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13326,
+        "estimated_input_tokens": 3332,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 7013,
+        "estimated_input_tokens": 1754,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 7489,
+        "estimated_input_tokens": 1873,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13622,
+        "estimated_input_tokens": 3406,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 7868,
+        "estimated_input_tokens": 1967,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13972,
+        "estimated_input_tokens": 3493,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8338,
+        "estimated_input_tokens": 2085,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4,
+          5
+        ],
+        "char_count": 14328,
+        "estimated_input_tokens": 3582,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4,
+          5
+        ],
+        "char_count": 14658,
+        "estimated_input_tokens": 3665,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 10909,
+        "estimated_input_tokens": 2728,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 11093,
+        "estimated_input_tokens": 2774,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 10845,
+        "estimated_input_tokens": 2712,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 11000,
+        "estimated_input_tokens": 2750,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 10841,
+        "estimated_input_tokens": 2711,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 11496,
+        "estimated_input_tokens": 2874,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/dom_model/run.log"
+}

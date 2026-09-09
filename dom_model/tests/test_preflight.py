@@ -24,6 +24,16 @@ def test_accepts_intentional_n_plus_one_screenshots(tmp_path):
     }
 
 
+def test_accepts_zero_actions_with_one_initial_screenshot(tmp_path):
+    root = _task(tmp_path, screenshots=1)
+    (root / "web_surfer.log").write_text("")
+
+    assert preflight_screenshot_task(root) == {
+        "actions": 0,
+        "screenshots": 1,
+    }
+
+
 def test_rejects_misaligned_screenshot_count(tmp_path):
     with pytest.raises(ValueError, match="N or intentional N\\+1"):
         preflight_screenshot_task(_task(tmp_path, screenshots=3))

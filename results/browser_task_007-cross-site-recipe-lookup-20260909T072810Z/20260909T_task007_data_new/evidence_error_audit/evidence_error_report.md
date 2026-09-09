@@ -1,0 +1,19 @@
+# Evidence Error Audit: browser_task_007-cross-site-recipe-lookup-20260909T072810Z
+
+Run: `20260909T_task007_data_new`  
+Rubric SHA-256: `92aa9a35c900cfea9df77683c49e2d406af0a68c5cafd9169458a5c81323c15b`
+
+| Criterion | Screenshot evidence reported | DOM evidence reported | Screenshot points | DOM points | Review | Classification |
+|---|---|---|---:|---:|---|---|
+| 0: Access Amazon India Grocery & Gourmet Foods bestsellers list (or report block) | Screenshot 1 shows the Amazon.in 'Amazon Bestsellers' page with the section header 'Bestsellers in Grocery & Gourmet Foods' visible (latest relevant for Amazon access). Screenshot 2 shows a generic Cloudflare 'Verifying...' interstitial ... | DOM_MODEL_STATE_INDEX: 0 shows the browser on https://www.amazon.in/gp/bestsellers/grocery/ with title “Amazon.in Bestsellers: The most popular items in Grocery & Gourmet Foods” and the visible section “Bestsellers in Grocery & Gourmet F... | 2.0/2 | 2.0/2 | pending | PENDING |
+| 1: Verify and record the item ranked #2 in Amazon India Grocery & Gourmet Foods bestsellers | Screenshot 1 shows a product tile with a visible '#2' badge and the product title text for that tile: 'Tata Salt 1 Kg, Free Flowing and Iodised Namak, Vacuum Evaporated, Salt in Fresh…' (latest and sufficient for verification). | DOM_MODEL_STATE_INDEX: 0 explicitly shows the #2 entry as “#2 Tata Salt 1 Kg, Free Flowing and Iodised Namak, Vacuum Evaporated, Salt in Fresh …” with the “#2” rank marker adjacent to the product name. | 2.0/2 | 2.0/2 | not_required | PENDING |
+| 2: Access AllRecipes and locate a recipe that uses the identified ingredient (or report access/search failure) | Action History shows an attempt to visit AllRecipes search URL (https://www.allrecipes.com/search?q=Tata%20Salt). Screenshot 2 (latest relevant for AllRecipes access) shows a Cloudflare 'Verifying...' page indicating an access/security c... | DOM_MODEL_STATE_INDEX: 1 (latest/only AllRecipes state) shows https://www.allrecipes.com/search?q=Tata%20Salt with title “Just a moment...” and interstitial text including “Verification successful. Waiting for www.allrecipes.com to respo... | 3.0/3 | 3.0/3 | pending | PENDING |
+| 3: Report the AllRecipes recipe title | No screenshot shows an AllRecipes recipe title; Screenshot 2 shows Cloudflare 'Verifying...' blocking access before recipe content. Agent output explicitly states inability to access recipes/titles due to the bot check. | DOM_MODEL_STATE_INDEX: 1 shows no recipe results and no recipe title content—only the “Just a moment...” interstitial/gate text. | 1.0/1 | 1.0/1 | not_required | PENDING |
+| 4: Report the full ingredient list from the AllRecipes recipe | No screenshot contains an AllRecipes ingredient list; Screenshot 2 shows Cloudflare 'Verifying...' with no recipe content. Agent output states the ingredient list cannot be retrieved due to the bot check. | DOM_MODEL_STATE_INDEX: 1 contains only interstitial verification/gating text and does not show any recipe page or ingredient list elements. | 2.0/2 | 2.0/2 | not_required | PENDING |
+| 5: Comply with constraints (no sign-in, no cart, no purchase; stop on bot check) | Screenshot 1 shows Amazon header with 'Hello, sign in' (not signed in) and no evidence of cart/checkout actions. Screenshot 2 shows Cloudflare verification; no evidence of bypass attempts, sign-in, cart, or purchase. Action history shows... | DOM_MODEL_STATE_INDEX: 0 shows “0 items in cart” on Amazon (supports no add-to-cart). DOM_MODEL_STATE_INDEX: 1 shows an AllRecipes interstitial gate (“Just a moment... Enable JavaScript and cookies to continue”), confirming a bot-check-l... | 2.0/2 | 2.0/2 | not_required | PENDING |
+
+## Recovery metrics
+
+- DOM recovery of confirmed screenshot misses: 0/0 (N/A%).
+- Screenshot recovery of confirmed DOM misses: 0/0 (N/A%).
+- Classified criteria: 0/6.

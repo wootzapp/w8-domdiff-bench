@@ -1,0 +1,744 @@
+{
+  "phase": "A",
+  "origin": "microsoft_generate_rubric",
+  "task_id": "browser_task_011-arxiv-literature-search-20260909T073439Z",
+  "frozen_rubric_sha256": "8154a1385faa60d8797d38cd3790be785d2a99dc77c1de0f22ef29f1e639920b",
+  "criterion_count": 6,
+  "criterion_denominator": 20.0,
+  "criteria": [
+    "Use arXiv Advanced Search with required filters (cs.LG, last 30 days, exact-title phrase, newest first)",
+    "Report the most recent matching paper (Paper #1) with required metadata",
+    "Report the 2nd most recent matching paper (Paper #2) with required metadata",
+    "Report the 3rd most recent matching paper (Paper #3) with required metadata",
+    "Verification checks recorded for each reported paper (category, date window, exact title phrase)",
+    "Stopping condition and constraints compliance (stop after 3; no login; no submissions/modifications)"
+  ],
+  "maximum_points": [
+    4.0,
+    3.0,
+    3.0,
+    3.0,
+    5.0,
+    2.0
+  ],
+  "rubric_generation_calls": 2,
+  "api_attempts": 2,
+  "retries": 0,
+  "call_metrics": {
+    "gpt-5.2": {
+      "logical_calls": 2,
+      "api_attempts": 2,
+      "retries": 0
+    },
+    "o4-mini": {
+      "logical_calls": 0,
+      "api_attempts": 0,
+      "retries": 0
+    }
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 11412,
+      "completion_tokens": 2126,
+      "reasoning_tokens": 0,
+      "total_tokens": 13538
+    },
+    "o4-mini": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    },
+    "combined": {
+      "prompt_tokens": 11412,
+      "completion_tokens": 2126,
+      "reasoning_tokens": 0,
+      "total_tokens": 13538
+    }
+  },
+  "preflight": {
+    "status": "ready",
+    "phase": "A",
+    "paid_calls_authorized": true,
+    "writes_authorized": true,
+    "dataset": {
+      "task_id": "browser_task_011-arxiv-literature-search-20260909T073439Z",
+      "task_alias": "browser_task_011-arxiv-literature-search-20260909T073439Z",
+      "actions": 9,
+      "screenshots": 10,
+      "dom_model_states": 10,
+      "alignment": {
+        "task_id": "browser_task_011-arxiv-literature-search-20260909T073439Z",
+        "action_count": 9,
+        "state_count": 10,
+        "initial_state": 0,
+        "final_state": 9,
+        "actions": [
+          {
+            "ordinal": 1,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e35",
+              "target": {
+                "ref": "e35",
+                "role": "textbox",
+                "name": "Search term"
+              },
+              "text": "\"mixture of experts\"",
+              "thoughts": "Enter the exact title phrase \"mixture of experts\" into the Search term textbox while the field selector is already set to Title."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced"
+          },
+          {
+            "ordinal": 2,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e38",
+              "target": {
+                "ref": "e38",
+                "role": "generic",
+                "name": "Computer Science (cs)"
+              },
+              "thoughts": "Need to restrict subject to Computer Science and then later set subcategory to cs.LG before searching."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced"
+          },
+          {
+            "ordinal": 3,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e52",
+              "target": {
+                "ref": "e52",
+                "role": "generic",
+                "name": "Date range"
+              },
+              "thoughts": "Set the date filter to a specific range so we can later input the last-30-days window based on the browser’s current date before running the search."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced"
+          },
+          {
+            "ordinal": 4,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e16",
+              "target": {
+                "ref": "e16",
+                "role": "button",
+                "name": "Search"
+              },
+              "thoughts": "Run the advanced search with the configured title phrase, cs subject, date range mode, and sorting to get result list for inspection."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "ordinal": 5,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e76",
+              "target": {
+                "ref": "e76",
+                "role": "textbox",
+                "name": "to"
+              },
+              "text": "",
+              "thoughts": "Need to set a 30-day date range; first clear the empty 'to' box so I can type the current date from the page next step."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "ordinal": 6,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e76",
+              "target": {
+                "ref": "e76",
+                "role": "textbox",
+                "name": "to"
+              },
+              "thoughts": "To set the 30-day window I first need focus in the 'to' date box so I can overwrite it with today’s date as shown by the browser."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "ordinal": 7,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e76",
+              "target": {
+                "ref": "e76",
+                "role": "textbox",
+                "name": "to"
+              },
+              "text": "2026-09-09",
+              "thoughts": "I need to set the ‘to’ date to today’s browser date (2026-09-09) as the upper bound of the 30-day window before later computing and filling the ‘from’ date."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "ordinal": 8,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e75",
+              "target": {
+                "ref": "e75",
+                "role": "textbox",
+                "name": "From"
+              },
+              "text": "2026-08-10",
+              "thoughts": "Set the start of the 30-day submission date range (From) to 30 days before the browser’s current date 2026-09-09, i.e., 2026-08-10, before running the search."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "ordinal": 9,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e16",
+              "target": {
+                "ref": "e16",
+                "role": "button",
+                "name": "Search"
+              },
+              "thoughts": "Date range, field, and subject filters are now set; I should run the advanced search to get the result list to inspect for cs.LG mixture-of-experts papers."
+            },
+            "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=2026-08-10&date-to_date=2026-09-09&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          }
+        ],
+        "transitions": [
+          {
+            "from_state": 0,
+            "action_ordinal": 1,
+            "to_state": 1,
+            "before_sha256": "ff80eea73f53de370f6a4a218d509f013c6eb4edc219d56d0ac8585ed4fb922d",
+            "after_sha256": "a93bf7c3da6e5b7f736d4d6c3762a68e1f90ccc35019da9d24e618afe4f203a3",
+            "before_url": "https://arxiv.org/search/advanced",
+            "after_url": "https://arxiv.org/search/advanced"
+          },
+          {
+            "from_state": 1,
+            "action_ordinal": 2,
+            "to_state": 2,
+            "before_sha256": "a93bf7c3da6e5b7f736d4d6c3762a68e1f90ccc35019da9d24e618afe4f203a3",
+            "after_sha256": "2dcf0803cf0d561718fc3bb55e9266ee396a9255852efe286020ac2fa480c59c",
+            "before_url": "https://arxiv.org/search/advanced",
+            "after_url": "https://arxiv.org/search/advanced"
+          },
+          {
+            "from_state": 2,
+            "action_ordinal": 3,
+            "to_state": 3,
+            "before_sha256": "2dcf0803cf0d561718fc3bb55e9266ee396a9255852efe286020ac2fa480c59c",
+            "after_sha256": "cdb15a04d7db46d67795b5c05fd779a1f8dda9c08426c94865d76087c2db206a",
+            "before_url": "https://arxiv.org/search/advanced",
+            "after_url": "https://arxiv.org/search/advanced"
+          },
+          {
+            "from_state": 3,
+            "action_ordinal": 4,
+            "to_state": 4,
+            "before_sha256": "cdb15a04d7db46d67795b5c05fd779a1f8dda9c08426c94865d76087c2db206a",
+            "after_sha256": "2423e71a65674d1548053d1acbb6c31fa18e11bbc6a8de78936ba509f11480fe",
+            "before_url": "https://arxiv.org/search/advanced",
+            "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "from_state": 4,
+            "action_ordinal": 5,
+            "to_state": 5,
+            "before_sha256": "2423e71a65674d1548053d1acbb6c31fa18e11bbc6a8de78936ba509f11480fe",
+            "after_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+            "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+            "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "from_state": 5,
+            "action_ordinal": 6,
+            "to_state": 6,
+            "before_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+            "after_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+            "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+            "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "from_state": 6,
+            "action_ordinal": 7,
+            "to_state": 7,
+            "before_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+            "after_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+            "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+            "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "from_state": 7,
+            "action_ordinal": 8,
+            "to_state": 8,
+            "before_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+            "after_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+            "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+            "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          },
+          {
+            "from_state": 8,
+            "action_ordinal": 9,
+            "to_state": 9,
+            "before_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+            "after_sha256": "ce1ccb0d7efc3e8a22422fea4e74dee3590ac90ecf009a5833b9ca9c6da2a378",
+            "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+            "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=2026-08-10&date-to_date=2026-09-09&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+          }
+        ],
+        "warnings": [
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e35' is not exposed by dom_model0",
+            "action_ordinal": 1,
+            "state_index": 0
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e38' is not exposed by dom_model1",
+            "action_ordinal": 2,
+            "state_index": 1
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e52' is not exposed by dom_model2",
+            "action_ordinal": 3,
+            "state_index": 2
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e16' is not exposed by dom_model3",
+            "action_ordinal": 4,
+            "state_index": 3
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e76' is not exposed by dom_model4",
+            "action_ordinal": 5,
+            "state_index": 4
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e76' is not exposed by dom_model5",
+            "action_ordinal": 6,
+            "state_index": 5
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e76' is not exposed by dom_model6",
+            "action_ordinal": 7,
+            "state_index": 6
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e75' is not exposed by dom_model7",
+            "action_ordinal": 8,
+            "state_index": 7
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e16' is not exposed by dom_model8",
+            "action_ordinal": 9,
+            "state_index": 8
+          }
+        ]
+      }
+    },
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    },
+    "rubric_output": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_011-arxiv-literature-search-20260909T073439Z.json",
+    "metrics_output": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_011-arxiv-literature-search-20260909T073439Z_generation_metrics.json",
+    "sidecar_outputs": [
+      "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_011-arxiv-literature-search-20260909T073439Z/task_data_with_canonical_rubric.json",
+      "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_011-arxiv-literature-search-20260909T073439Z/task_data_with_canonical_rubric.json"
+    ],
+    "models": [
+      "gpt-5.2",
+      "o4-mini"
+    ],
+    "verifier_packages": {
+      "microsoft_verifier": {
+        "package": "microsoft_verifier",
+        "root": "/data/isha/msexecute/evidence-error-experiment/microsoft_verifier",
+        "file_count": 33,
+        "tree_sha256": "90af71daf5ecc0770643ce9bc8552eaefa792fef198682dc10c36e288e9c5802",
+        "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/microsoft_verifier.json"
+      },
+      "dom_model": {
+        "package": "dom_model",
+        "root": "/data/isha/msexecute/evidence-error-experiment/dom_model",
+        "file_count": 52,
+        "tree_sha256": "66f01ab44f5e28fa377aff439b786a3ca995db77c6fd1057a2143216ad4d886b",
+        "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/dom_model.json"
+      }
+    },
+    "import_source": null
+  },
+  "note": "Phase A usage is separate; reasoning tokens are a subset of completion tokens.",
+  "final_preflight": {
+    "task_id": "browser_task_011-arxiv-literature-search-20260909T073439Z",
+    "task_alias": "browser_task_011-arxiv-literature-search-20260909T073439Z",
+    "actions": 9,
+    "screenshots": 10,
+    "dom_model_states": 10,
+    "alignment": {
+      "task_id": "browser_task_011-arxiv-literature-search-20260909T073439Z",
+      "action_count": 9,
+      "state_count": 10,
+      "initial_state": 0,
+      "final_state": 9,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e35",
+            "target": {
+              "ref": "e35",
+              "role": "textbox",
+              "name": "Search term"
+            },
+            "text": "\"mixture of experts\"",
+            "thoughts": "Enter the exact title phrase \"mixture of experts\" into the Search term textbox while the field selector is already set to Title."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e38",
+            "target": {
+              "ref": "e38",
+              "role": "generic",
+              "name": "Computer Science (cs)"
+            },
+            "thoughts": "Need to restrict subject to Computer Science and then later set subcategory to cs.LG before searching."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e52",
+            "target": {
+              "ref": "e52",
+              "role": "generic",
+              "name": "Date range"
+            },
+            "thoughts": "Set the date filter to a specific range so we can later input the last-30-days window based on the browser’s current date before running the search."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e16",
+            "target": {
+              "ref": "e16",
+              "role": "button",
+              "name": "Search"
+            },
+            "thoughts": "Run the advanced search with the configured title phrase, cs subject, date range mode, and sorting to get result list for inspection."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "ordinal": 5,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e76",
+            "target": {
+              "ref": "e76",
+              "role": "textbox",
+              "name": "to"
+            },
+            "text": "",
+            "thoughts": "Need to set a 30-day date range; first clear the empty 'to' box so I can type the current date from the page next step."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "ordinal": 6,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e76",
+            "target": {
+              "ref": "e76",
+              "role": "textbox",
+              "name": "to"
+            },
+            "thoughts": "To set the 30-day window I first need focus in the 'to' date box so I can overwrite it with today’s date as shown by the browser."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "ordinal": 7,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e76",
+            "target": {
+              "ref": "e76",
+              "role": "textbox",
+              "name": "to"
+            },
+            "text": "2026-09-09",
+            "thoughts": "I need to set the ‘to’ date to today’s browser date (2026-09-09) as the upper bound of the 30-day window before later computing and filling the ‘from’ date."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "ordinal": 8,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e75",
+            "target": {
+              "ref": "e75",
+              "role": "textbox",
+              "name": "From"
+            },
+            "text": "2026-08-10",
+            "thoughts": "Set the start of the 30-day submission date range (From) to 30 days before the browser’s current date 2026-09-09, i.e., 2026-08-10, before running the search."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "ordinal": 9,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e16",
+            "target": {
+              "ref": "e16",
+              "role": "button",
+              "name": "Search"
+            },
+            "thoughts": "Date range, field, and subject filters are now set; I should run the advanced search to get the result list to inspect for cs.LG mixture-of-experts papers."
+          },
+          "observed_after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=2026-08-10&date-to_date=2026-09-09&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "ff80eea73f53de370f6a4a218d509f013c6eb4edc219d56d0ac8585ed4fb922d",
+          "after_sha256": "a93bf7c3da6e5b7f736d4d6c3762a68e1f90ccc35019da9d24e618afe4f203a3",
+          "before_url": "https://arxiv.org/search/advanced",
+          "after_url": "https://arxiv.org/search/advanced"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "a93bf7c3da6e5b7f736d4d6c3762a68e1f90ccc35019da9d24e618afe4f203a3",
+          "after_sha256": "2dcf0803cf0d561718fc3bb55e9266ee396a9255852efe286020ac2fa480c59c",
+          "before_url": "https://arxiv.org/search/advanced",
+          "after_url": "https://arxiv.org/search/advanced"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "2dcf0803cf0d561718fc3bb55e9266ee396a9255852efe286020ac2fa480c59c",
+          "after_sha256": "cdb15a04d7db46d67795b5c05fd779a1f8dda9c08426c94865d76087c2db206a",
+          "before_url": "https://arxiv.org/search/advanced",
+          "after_url": "https://arxiv.org/search/advanced"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "cdb15a04d7db46d67795b5c05fd779a1f8dda9c08426c94865d76087c2db206a",
+          "after_sha256": "2423e71a65674d1548053d1acbb6c31fa18e11bbc6a8de78936ba509f11480fe",
+          "before_url": "https://arxiv.org/search/advanced",
+          "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "2423e71a65674d1548053d1acbb6c31fa18e11bbc6a8de78936ba509f11480fe",
+          "after_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+          "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+          "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+          "after_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+          "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+          "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "from_state": 6,
+          "action_ordinal": 7,
+          "to_state": 7,
+          "before_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+          "after_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+          "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+          "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "from_state": 7,
+          "action_ordinal": 8,
+          "to_state": 8,
+          "before_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+          "after_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+          "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+          "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        },
+        {
+          "from_state": 8,
+          "action_ordinal": 9,
+          "to_state": 9,
+          "before_sha256": "0399001b1bb500073b26e949ffb5d43b10ced4dac11c7d8991a5b122bfa41c81",
+          "after_sha256": "ce1ccb0d7efc3e8a22422fea4e74dee3590ac90ecf009a5833b9ca9c6da2a378",
+          "before_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=&date-to_date=&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first",
+          "after_url": "https://arxiv.org/search/advanced?advanced=1&terms-0-operator=AND&terms-0-term=%22mixture+of+experts%22&terms-0-field=title&classification-computer_science=y&classification-physics_archives=all&classification-include_cross_list=include&date-year=&date-filter_by=date_range&date-from_date=2026-08-10&date-to_date=2026-09-09&date-date_type=submitted_date&abstracts=show&size=50&order=-announced_date_first"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e35' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e38' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e52' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e16' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e76' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e76' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e76' is not exposed by dom_model6",
+          "action_ordinal": 7,
+          "state_index": 6
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e75' is not exposed by dom_model7",
+          "action_ordinal": 8,
+          "state_index": 7
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e16' is not exposed by dom_model8",
+          "action_ordinal": 9,
+          "state_index": 8
+        }
+      ]
+    },
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_011-arxiv-literature-search-20260909T073439Z.json",
+    "frozen_rubric_sha256": "8154a1385faa60d8797d38cd3790be785d2a99dc77c1de0f22ef29f1e639920b",
+    "criterion_order": [
+      "Use arXiv Advanced Search with required filters (cs.LG, last 30 days, exact-title phrase, newest first)",
+      "Report the most recent matching paper (Paper #1) with required metadata",
+      "Report the 2nd most recent matching paper (Paper #2) with required metadata",
+      "Report the 3rd most recent matching paper (Paper #3) with required metadata",
+      "Verification checks recorded for each reported paper (category, date window, exact title phrase)",
+      "Stopping condition and constraints compliance (stop after 3; no login; no submissions/modifications)"
+    ],
+    "criterion_descriptions": [
+      "Attempt to use arXiv Advanced Search (no login) and apply the requested constraints as closely as arXiv supports: category cs.LG, submission date within the last 30 days using the browser’s current date as reference (or the closest available equivalent), title contains the exact phrase “mixture of experts” (title-only / exact-phrase where supported), and sorting set to newest first. Full credit if all filters/sort are correctly applied OR if arXiv is inaccessible/blocked and the agent clearly documents the blocker and which filters could not be verified. Partial credit if the agent uses arXiv search but one filter/sort is misapplied while the correct capability is available.",
+      "From the filtered, newest-first results, report the most recent matching paper’s arXiv ID, full title, and first author. Full credit if the paper is truly the most recent match and metadata is correct. If zero matches exist under the required filters, full credit for explicitly stating that no results match (with evidence from the results page). Partial credit for minor metadata errors or if a slightly broader query is used due to platform limitations but the agent clearly explains the deviation.",
+      "Report the second most recent matching paper’s arXiv ID, full title, and first author, based on the same filtered newest-first results. Full credit if correct. If fewer than two matches exist, full credit for explicitly stating that only one (or zero) match exists and stopping appropriately. Partial credit for minor metadata errors or ordering mistakes when the correct ordering is available.",
+      "Report the third most recent matching paper’s arXiv ID, full title, and first author, based on the same filtered newest-first results. Full credit if correct. If fewer than three matches exist, full credit for explicitly stating that fewer than three matches exist (two/one/zero) and not fabricating additional papers. Partial credit for minor metadata errors or ordering mistakes when the correct ordering is available.",
+      "For each reported paper (up to three, depending on availability), explicitly record checks that: (1) primary category is cs.LG, (2) submission date falls within the last 30 days based on the browser’s current date (or the closest verifiable equivalent shown by arXiv), and (3) the title contains the exact phrase “mixture of experts.” Full credit if checks are documented for every paper that is reported. If fewer than three papers exist, full credit if the agent documents that fact and provides verification for all papers that do exist. If arXiv does not display enough information to verify one of the checks, full credit if the agent states what could not be verified and why.",
+      "Comply with constraints: do not log in; do not submit/modify papers; stop after three matching papers are found and checked OR stop earlier if fewer than three matches exist while clearly stating this. Full credit if compliant. Partial credit if extra non-required results are listed but the three (or all available) required matches are still clearly identified and verified. No credit if constraints are violated (login/submission/modification) or if the agent fabricates results."
+    ],
+    "maximum_points": [
+      4.0,
+      3.0,
+      3.0,
+      3.0,
+      5.0,
+      2.0
+    ],
+    "criterion_denominator": 20.0,
+    "screenshot_sidecar_validated": true,
+    "dom_model_sidecar_validated": true,
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_011-arxiv-literature-search-20260909T073439Z_generation_metrics.json",
+    "rubric_generation_calls_during_scoring": 0,
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    }
+  }
+}

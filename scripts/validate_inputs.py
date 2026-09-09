@@ -93,8 +93,6 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
         if arguments.get("ref") is not None:
             signature["ref"] = arguments["ref"]
         actions.append(signature)
-    if not actions:
-        raise ValueError(f"No actions found in {path}")
     return actions
 
 
