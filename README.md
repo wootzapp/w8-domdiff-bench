@@ -1,12 +1,63 @@
-# Evidence Error Experiment
+## **DOM-Based vs. Screenshot-Based Evidence for Verifying Agent Trajectories**
 
-This standalone experiment tests whether ordered DOM-model states preserve browser-agent trajectory evidence more reliably than screenshots. It uses Microsoft's [Universal Verifier](https://www.microsoft.com/en-us/research/articles/the-art-of-building-verifiers-for-computer-use-agents/) as the screenshot baseline and compares it with a matching DOM-model verifier whose intentional difference is the evidence representation it reads.
+**Claim**
 
-For a fair comparison, each logical task gets one canonical frozen rubric. The exact same rubric, criterion order, denominator, maximum points, task inputs, actions, and final answer are then used for both scoring runs. The verifier design remains aligned across relevance selection, evidence analysis, criterion and process scoring, outcome scoring, failure classification, validity checks, retries, and reporting.
+Our claim is that DOM-based evidence is better than screenshot-based evidence for verifying an agent's browser trajectory, especially for tasks that depend on text, URLs, form values, controls, and browser state. We are testing whether the DOM preserves more of the information required by the verifier and therefore reduces evidence loss.
 
-The paired task data comes from the [WootzappLab/browser-agent-tasks](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) dataset and from experiment-owned task copies under `data/` and `data-new/`. The full 44-task comparison, which produced **6.2% screenshot evidence loss** versus **2.6% DOM-model evidence loss**, is in [`results.md`](results.md).
+For this experiment, we took Microsoft's \[[Universal Verifier](https://www.microsoft.com/en-us/research/articles/the-art-of-building-verifiers-for-computer-use-agents/)\] as the baseline. Microsoft's verifier uses screenshots to audit browser-agent trajectories. Its LLM-as-a-verifier design first creates a task-specific rubric, checks which screenshots are relevant to each criterion, analyzes the selected evidence, and then produces criterion-level, process, and outcome scores.
 
-The audit reads completed verifier outputs and source evidence only. It does not change verifier prompts, model calls, relevance, top-K selection, scoring, retries, validity, evidence handling, or reporting, and audit decisions are never passed back into either verifier. Evidence loss is counted only when criterion-relevant evidence is unavailable in one representation but available in the other; ordinary scoring disagreements are kept separate.
+We already had Microsoft's screenshot verifier implementation. We then built a DOM-based verifier with the same overall design and scoring behavior. The main difference is the evidence passed to it: **Microsoft's verifier receives screenshots, while our verifier receives ordered DOM files from the same browser trajectory.** 
+
+**Setup of the experiment**
+
+For the experiment, we used our own custom browser and ran the agent's tasks inside it. Each task execution produced the same trajectory in two evidence formats:  
+\- a sequence of screenshots showing the browser viewport.  
+\- a sequence of DOM files describing the browser state as text.
+
+These are not two different agent attempts. Both evidence formats come from the same task execution and are paired with the same actions and final answer.
+
+We created our own paired dataset for this experiment: [WootzappLab/browser-agent-tasks](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks)
+
+**Harness of the agent**
+
+The agent performs a task inside our custom Wootz browser, coordinated by a Python harness that manages actions and records the run. At each step, the browser captures the page and converts its structured content into a readable file, `dom_model.txt`. (This same file is used for agent trajectory in DOM based Verifier). The model receives this text, references to interactive elements, and context from previous steps to decide what to do next. The harness checks the proposed action, `agent-browser` executes it, and the cycle repeats until the task ends.
+
+**Verifier pipeline**
+
+To make the comparison fair, we first generate **one frozen rubric** for each task. That exact same rubric \- with the same criteria, criterion order, maximum points, denominator, and hash is then passed to both verifiers. This ensures that the screenshot and DOM verifiers are being asked the same questions and scored against the same definition of success.
+
+We then verified each recorded trajectory using both approaches: the Microsoft screenshot based verifier and our DOM based verifier.  
+In both cases, the verifier evaluates the available browser states against the same frozen rubric. It identifies the states relevant to each criterion, analyzes the selected evidence, and then applies the same scoring, outcome, validity, retry, failure-classification, and reporting pipeline.
+
+**Metric: Evidence loss**
+
+The main metric we used to compare the two approaches is evidence loss: how often the evidence required for a rubric criterion is missing from one representation but available in the other.
+
+\- **Screenshot evidence loss** means that the required evidence was not sufficiently captured in the screenshots but was present in the DOM.  
+\- **DOM evidence loss** means that the required evidence was not sufficiently preserved in the DOM to verify the agent's trajectory.
+
+We manually audited the missing evidence. This allowed us to separate a capture problem from a verifier reasoning problem. If evidence was present but the verifier interpreted it incorrectly, that was treated as a scoring or reasoning error, not evidence loss.
+
+**Results**
+
+Across 44 audited tasks containing 227 rubric criteria, the result was:
+
+| Evidence Format | Evidence Loss |
+| :---- | :---- |
+| Screenshots | 6.2% (14/227 criteria) |
+| DOM model | 2.6% (6/227criteria) |
+
+The DOM therefore showed **3.6 % less evidence loss** than screenshots.  
+Task based results are stored in:  
+[https://github.com/wootzapp/wootzapp\_web\_browser-/blob/evidence-error-2/results.md](https://github.com/wootzapp/wootzapp_web_browser-/blob/evidence-error-2/results.md)
+
+**What we observed**
+
+The screenshot sequence did not always preserve the complete state of the agent's trajectory. An agent could correctly find information on a page, but that information might be outside the captured viewport, cut off, too difficult to read, or no longer visible in the next screenshot. The screenshot verifier could then penalize the trajectory because the evidence supplied to it did not prove what the agent had actually found.
+
+This was particularly noticeable for **URL navigation**. The DOM records the URL explicitly, while a screenshot may shorten it, hide part of it, or make it difficult for the verifier to read.
+
+The advantage of the DOM is that information such as text, labels, field values, buttons, selected controls, dialogs, errors, and final UI state can be stated explicitly. A screenshot may visually contain some of this information, but it can be difficult to read, clipped, hidden outside the viewport, or shown only in a shortened or relative form.
 
 ## Repository structure
 
@@ -25,196 +76,3 @@ evidence-error-experiment/
 ├── manifests/                   # expected verifier-package hashes
 └── results/                     # isolated run inputs, outputs, and audits
 ```
-
-The package-level READMEs are retained because they document the two independent packages. Both `resources/error_taxonomy_analysis.md` files are required runtime resources loaded by verifier code. Markdown files under `results/` are generated experiment reports and should also be retained.
-
-Neither verifier imports runtime code from `benchmarks-2/`, `benchmarks/`, `ms-paper-execution/`, or the other verifier package.
-
-## Build the local environment
-
-Requirements:
-
-- Python 3.10 or newer
-- Network access and an OpenAI API key only for an explicitly authorized paid run
-- Enough storage for screenshots, DOM states, and isolated result copies
-
-From the experiment root:
-
-```bash
-cd /path/to/evidence-error-experiment
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -r requirements.txt
-cp .env.example .env
-```
-
-Add `OPENAI_API_KEY` to `.env`. Do not commit `.env`. Offline tests and preflights do not require the key.
-
-Set the local import paths in every new shell:
-
-```bash
-export PYTHONDONTWRITEBYTECODE=1
-export PYTHONPATH="$PWD/microsoft_verifier/src:$PWD/dom_model/src:$PWD"
-```
-
-Keep the `PYTHONPATH` assignment on one line.
-
-## Task-data format
-
-Each task needs matching folders:
-
-```text
-data/data-new-screenshot/taskN/
-├── task_data.json
-├── web_surfer.log
-├── final_answer.json
-├── screenshot0.png
-├── screenshot1.png
-└── ...
-
-data/data-new-dom-model/taskN/
-├── task_data.json
-├── web_surfer.log
-├── final_answer.json
-├── dom_model0.txt
-├── dom_model1.txt
-└── ...
-```
-
-For `N` actions, the validator requires `N+1` contiguous states in each modality. State 0 is initial, state `i` is after action `i`, and the last state is final. The paired task ID, action history, final answer, rubric, criterion order, denominator, and maximum points must match.
-
-During Phase B scoring, both verifiers receive every chronologically ordered browser state: `screenshot0..N` and `dom_model0..N`. The real trajectory remains N actions; only the evidence candidates are N+1 states. Each unchanged verifier still applies its configured relevance ranking and top-K limit (default 5) per criterion, so N+1 does not change the scoring design or make top-K equal to the number of states.
-
-## Phase A: create one frozen rubric
-
-Start with the offline preflight:
-
-```bash
-.venv/bin/python -m scripts.generate_frozen_rubric \
-  --screenshot-task data/data-new-screenshot/taskN \
-  --dom-task data/data-new-dom-model/taskN
-```
-
-After explicitly approving paid rubric-generation calls, repeat with `--execute`. To freeze an existing rubric without a model call, use `--import-rubric /path/to/rubric.json --execute`. Use `--overwrite` only when intentionally replacing existing Phase A artifacts.
-
-Phase A writes:
-
-- `rubrics/taskN.json`
-- `rubrics/taskN_generation_metrics.json`
-- `task_data_with_canonical_rubric.json` in both experiment-owned task folders
-
-Rubric-generation calls and tokens remain separate from evaluation usage.
-
-## Phase B: run a comparison
-
-Always run the offline preflight first:
-
-```bash
-.venv/bin/python -m scripts.run_comparison --task taskN
-```
-
-It validates package manifests, paired inputs, `N+1` alignment, endpoint declarations, rubric sidecars and hashes, scoring-control parity, and use of the exact same frozen rubric. It performs no writes or model calls.
-
-After explicitly approving paid calls and external submission, run:
-
-```bash
-.venv/bin/python -m scripts.run_comparison \
-  --task taskN \
-  --run-id manual-taskN-$(date -u +%Y%m%dT%H%M%SZ) \
-  --execute
-```
-
-Each run ID must be unique. Results are stored in `results/taskN/<run-id>/`:
-
-```text
-├── _inputs/                         # isolated task and rubric copies
-├── microsoft_verifier/
-│   ├── result.json                  # raw screenshot-verifier output
-│   ├── run_metrics.json             # normalized scores, calls, and tokens
-│   └── run.log
-├── dom_model/
-│   ├── result.json                  # raw DOM-verifier output
-│   ├── run_metrics.json             # normalized scores, calls, and tokens
-│   ├── evidence_audit.json          # DOM evidence trace, when emitted
-│   └── run.log
-├── comparison.json                  # machine-readable comparison
-├── comparison.md                    # readable score/token comparison
-└── run_manifest.json                # inputs, controls, hashes, commands
-```
-
-Phase B scoring records zero rubric-generation calls; Phase A usage stays in the rubric-generation metrics file.
-
-## Audit evidence misses
-
-The audit uses existing outputs only and makes no model calls. Create the review workspace:
-
-```bash
-.venv/bin/python -m scripts.audit_evidence_items \
-  --run-dir results/taskN/<run-id>
-```
-
-This creates `evidence_error_audit/criterion_audit.json` and `evidence_item_review.json`. For each concrete criterion value or state, review and record:
-
-- whether the evidence is actually present in the screenshot source;
-- whether the screenshot verifier caught and used it correctly;
-- whether it is actually present in the DOM-model source;
-- whether the DOM verifier caught and used it correctly;
-- the screenshot filename and visual locator, or DOM filename and line range;
-- a verbatim excerpt from the corresponding verifier output.
-
-A score difference alone does not prove a miss. “Missed” means evidence was available in that representation but its verifier failed to identify or use it correctly. Absent source evidence is a capture/representation limitation, not a verifier miss. Disagreements require manual source inspection.
-
-Finalize the completed review:
-
-```bash
-.venv/bin/python -m scripts.finalize_evidence_items \
-  --audit results/taskN/<run-id>/evidence_error_audit/criterion_audit.json \
-  --review results/taskN/<run-id>/evidence_error_audit/evidence_item_review.json \
-  --output-dir results/taskN/<run-id>/evidence_error_audit
-```
-
-This validates citations and verifier excerpts, then writes `evidence_item_audit.json`, `evidence_error_metrics.json`, and `evidence_error_report.md`.
-
-| Classification | Meaning |
-|---|---|
-| `BOTH_CAUGHT` | Evidence was present in both and both verifiers caught it. |
-| `SCREENSHOT_MISSED_DOM_CAUGHT` | Both contained it; screenshot missed it and DOM caught it. |
-| `DOM_MISSED_SCREENSHOT_CAUGHT` | Both contained it; DOM missed it and screenshot caught it. |
-| `BOTH_MISSED` | Both contained it and both verifiers missed it. |
-| `SCREENSHOT_EVIDENCE_MISSING` | The screenshot source did not contain it. |
-| `DOM_EVIDENCE_MISSING` | The DOM source did not contain it. |
-
-The primary metrics are DOM recovery of confirmed screenshot misses and screenshot recovery of confirmed DOM misses. Only human-confirmed, evidence-available items enter those denominators; a zero denominator is reported as `N/A`.
-
-## Existing result fields extracted
-
-The audit preserves existing text from:
-
-- `intermediate_mm_rubric_steps.step2_relevance_scores`
-- `intermediate_mm_rubric_steps.step3_grouped_screenshots`
-- `intermediate_mm_rubric_steps.step4_evidence_by_criterion[*]`
-- `intermediate_mm_rubric_steps.step6_rescoring_summary[*]`
-- task/rubric identity, source filenames, file sizes, and SHA-256 hashes
-
-These contain source indices, evidence text, criterion analysis, discrepancies, environment issues, condition verification, points, justifications, applicable evidence, reality notes, and penalties where emitted.
-
-Some inherited schema fields contain the word `screenshot`. In a DOM result these are legacy field names, not evidence that screenshots were passed to the DOM verifier. The external audit layer labels each modality correctly.
-
-## Offline tests
-
-Run the suites separately because the two packages contain duplicate test-module names:
-
-```bash
-cd microsoft_verifier
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../.venv/bin/python -m pytest -p no:cacheprovider -q
-
-cd ../dom_model
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src ../.venv/bin/python -m pytest -p no:cacheprovider -q
-
-cd ..
-PYTHONDONTWRITEBYTECODE=1 \
-PYTHONPATH="microsoft_verifier/src:dom_model/src:." \
-.venv/bin/python -m pytest -p no:cacheprovider -q scripts/tests
-```
-
-The suites cover verifier behavior, DOM alignment, frozen-rubric parity, package boundaries, normalization, audit classifications, citation validation, and offline preflight behavior.
