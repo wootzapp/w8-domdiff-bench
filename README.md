@@ -218,9 +218,3 @@ PYTHONPATH="microsoft_verifier/src:dom_model/src:." \
 ```
 
 The suites cover verifier behavior, DOM alignment, frozen-rubric parity, package boundaries, normalization, audit classifications, citation validation, and offline preflight behavior.
-
-## Interpretation limits
-
-DOM text cannot prove pixel-only properties such as color, typography, spacing, geometry, overlap, clipping, z-order, responsive layout, or visual emphasis. It cannot prove image, canvas, video, shadow-DOM, cross-origin, or server-side state unless captured explicitly. Missing or truncated content is unproven, not false.
-
-Agreement between verifiers is not automatically human-verified correctness. Evidence-error rates should only use completed manual source checks with explicit citations.
