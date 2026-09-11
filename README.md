@@ -18,8 +18,6 @@ We then moved the selection and grouping logic into the browser itself. Our cust
 
 During a task, the harness supplies the model with DOMDiff, references to interactive controls, and context from previous actions. The model selects an action, the harness validates it, and `agent-browser` executes it in the Wootz browser. The resulting page becomes the next recorded state. Screenshots are saved alongside DOM evidence for later evaluation; the agent makes its decisions using text observations.
 
-The current DOM capture is configured around the viewport, so scrolling remains part of gathering evidence. Each state is recorded live, and missing observations are not reconstructed after the run.
-
 For verification, the recorded attempt passes through the screenshot baseline and our DOM-based verifier. Each identifies the states relevant to the shared rubric, analyzes the selected evidence, and scores the trajectory. Because both evaluate the same attempt, differences can be investigated against a common action history and final answer.
 
 Our initial audit measures **evidence loss**: whether the recording preserves the information needed to judge a task criterion.
