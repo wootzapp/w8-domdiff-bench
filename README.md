@@ -31,6 +31,6 @@ We manually audit missing evidence separately from verifier reasoning errors. Th
 Task based results are stored in:  
 [https://github.com/wootzapp/wootzapp\_web\_browser-/blob/evidence-error-2/results.md](https://github.com/wootzapp/wootzapp_web_browser-/blob/evidence-error-2/results.md)
 
-The suite gives researchers a shared record for running browser tasks, inspecting agent behavior, and comparing verification methods. Developers can follow a score back to the recorded page state and investigate whether a failure came from the agent, the captured evidence, or the verifier.
+The suite gives researchers a shared record for running browser tasks, inspecting agent behavior through DOMDiff based verifier. 
 
 Explore the [task dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks), [and recording harness](https://github.com/wootzapp/wootzapp_web_browser-/tree/model-task-recorder). 
