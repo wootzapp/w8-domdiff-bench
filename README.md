@@ -1,78 +1,36 @@
-## **DOM-Based vs. Screenshot-Based Evidence for Verifying Agent Trajectories**
+# **Introducing w8-domdiff-bench**
 
-## Claim
+We’re introducing a suite for recording and verifying browser-agent tasks, built on our custom Chromium browser. It brings together browser-native DOM capture, an agent execution harness, a paired trajectory dataset, and a DOM-based verifier. Together, these components make an agent’s actions and the evidence behind its answers available for inspection and evaluation.
 
-Our claim is that DOM-based evidence is better than screenshot-based evidence for verifying an agent's browser trajectory, especially for tasks that depend on text, URLs, form values, controls, and browser state. We are testing whether the DOM preserves more of the information required by the verifier and therefore reduces evidence loss.
+We use [**Microsoft’s Universal Verifier**](https://www.microsoft.com/en-us/research/articles/the-art-of-building-verifiers-for-computer-use-agents/) **as the baseline** for our benchmark. It evaluates browser-agent trajectories from screenshots by generating a task-specific rubric, selecting relevant evidence, and assigning scores for each criterion, the process, and the outcome. We built our DOM-based verifier around the same evaluation design, replacing screenshot evidence with ordered Model DOM files from the same browser execution.
 
-For this experiment, we took Microsoft's \[[Universal Verifier](https://www.microsoft.com/en-us/research/articles/the-art-of-building-verifiers-for-computer-use-agents/)\] as the baseline. Microsoft's verifier uses screenshots to audit browser-agent trajectories. Its LLM-as-a-verifier design first creates a task-specific rubric, checks which screenshots are relevant to each criterion, analyzes the selected evidence, and then produces criterion-level, process, and outcome scores.
+Both verifiers receive the exact same frozen rubric (including criteria, ordering, and maximum scores) and follow the same scoring pipeline. This comparison holds the agent’s actions and definition of success constant, allowing us to measure how the evidence format affects verification.
 
-We already had Microsoft's screenshot verifier implementation. We then built a DOM-based verifier with the same overall design and scoring behavior. The main difference is the evidence passed to it: **Microsoft's verifier receives screenshots, while our verifier receives ordered DOM files from the same browser trajectory.** 
+The [dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) contains 100 recorded browser tasks. In an initial audit of 44 tasks spanning 227 evaluation criteria, our DOM representation reduced evidence-loss cases from 14 to 6 compared with screenshots, **a 57% relative reduction.**
 
-## Setup of the experiment
+Browser-agent evaluation depends on what the recording preserves. A correct answer alone does not establish whether the agent visited the right page, applied the requested filter, or read the relevant information. Screenshots provide a visual record, but text can be clipped, URLs shortened, and control states difficult to distinguish. We built our browser infrastructure to capture these details explicitly and retain them throughout the agent’s execution.
 
-For the experiment, we used our own custom browser and ran the agent's tasks inside it. Each task execution produced the same trajectory in two evidence formats:  
-\- a sequence of screenshots showing the browser viewport.  
-\- a sequence of DOM files describing the browser state as text.
+That work began with detailed DOM captures and comparisons of page state before and after each action. These records preserved substantial detail, but individual raw captures and difference files could reach 20–80 MB. They also repeated page content across nested elements, making useful information difficult for a model to read efficiently.
 
-These are not two different agent attempts. Both evidence formats come from the same task execution and are paired with the same actions and final answer.
+We developed **DOMDiff**, a compact page representation that groups related information while removing unnecessary structure. Across 650 captured states, the readable DOMDiff averaged **4.84 KiB**, compared with 44.88 KiB for the detailed text view.
 
-We created our own paired dataset for this experiment: [WootzappLab/browser-agent-tasks](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks)
+We then moved the selection and grouping logic into the browser itself. Our custom Chromium commands construct DOMDiff from the same structured snapshot retained in the recording. This gives us a common source for the detailed evidence and the compact representation supplied to the agent, and lets us trace omissions back to either page capture or content selection.
 
-## Harness of the agent
+During a task, the harness supplies the model with DOMDiff, references to interactive controls, and context from previous actions. The model selects an action, the harness validates it, and `agent-browser` executes it in the Wootz browser. The resulting page becomes the next recorded state. Screenshots are saved alongside DOM evidence for later evaluation; the agent makes its decisions using text observations.
 
-The agent performs a task inside our custom Wootz browser, coordinated by a Python harness that manages actions and records the run. At each step, the browser captures the page and converts its structured content into a readable file, `dom_model.txt`. (This same file is used for agent trajectory in DOM based Verifier). The model receives this text, references to interactive elements, and context from previous steps to decide what to do next. The harness checks the proposed action, `agent-browser` executes it, and the cycle repeats until the task ends.
+The current DOM capture is configured around the viewport, so scrolling remains part of gathering evidence. Each state is recorded live, and missing observations are not reconstructed after the run.
 
-## Verifier pipeline
+For verification, the recorded attempt passes through the screenshot baseline and our DOM-based verifier. Each identifies the states relevant to the shared rubric, analyzes the selected evidence, and scores the trajectory. Because both evaluate the same attempt, differences can be investigated against a common action history and final answer.
 
-To make the comparison fair, we first generate **one frozen rubric** for each task. That exact same rubric \- with the same criteria, criterion order, maximum points, denominator, and hash is then passed to both verifiers. This ensures that the screenshot and DOM verifiers are being asked the same questions and scored against the same definition of success.
+Our initial audit measures **evidence loss**: whether the recording preserves the information needed to judge a task criterion.
 
-We then verified each recorded trajectory using both approaches: the Microsoft screenshot based verifier and our DOM based verifier.  
-In both cases, the verifier evaluates the available browser states against the same frozen rubric. It identifies the states relevant to each criterion, analyzes the selected evidence, and then applies the same scoring, outcome, validity, retry, failure-classification, and reporting pipeline.
+| Evidence format | Criteria with missing evidence | Evidence-loss rate |
+| ----- | ----: | ----: |
+| Screenshots : Microsoft Universal Verifier baseline | 14 / 227 | 6.2% |
+| DOMDiff : our DOM-based verifier | 6 / 227 | 2.6% |
 
-## Metric: Evidence loss
+We manually audit missing evidence separately from verifier reasoning errors. These results measure evidence preservation across the audited tasks; they do not represent an agent success rate. 
 
-The main metric we used to compare the two approaches is evidence loss: how often the evidence required for a rubric criterion is missing from one representation but available in the other.
+The suite gives teams a shared record for running browser tasks, inspecting agent behavior, and comparing verification methods. Developers can follow a score back to the recorded page state and investigate whether a failure came from the agent, the captured evidence, or the verifier.
 
-\- **Screenshot evidence loss** means that the required evidence was not sufficiently captured in the screenshots but was present in the DOM.  
-\- **DOM evidence loss** means that the required evidence was not sufficiently preserved in the DOM to verify the agent's trajectory.
-
-We manually audited the missing evidence. This allowed us to separate a capture problem from a verifier reasoning problem. If evidence was present but the verifier interpreted it incorrectly, that was treated as a scoring or reasoning error, not evidence loss.
-
-## Results
-
-Across 44 audited tasks containing 227 rubric criteria, the result was:
-
-| Evidence Format | Evidence Loss |
-| :---- | :---- |
-| Screenshots | 6.2% (14/227 criteria) |
-| DOM model | 2.6% (6/227criteria) |
-
-The DOM therefore showed **3.6 % less evidence loss** than screenshots.  
-Task based results are stored in:  
-[https://github.com/wootzapp/wootzapp\_web\_browser-/blob/evidence-error-2/results.md](https://github.com/wootzapp/wootzapp_web_browser-/blob/evidence-error-2/results.md)
-
-## What we observed
-
-The screenshot sequence did not always preserve the complete state of the agent's trajectory. An agent could correctly find information on a page, but that information might be outside the captured viewport, cut off, too difficult to read, or no longer visible in the next screenshot. The screenshot verifier could then penalize the trajectory because the evidence supplied to it did not prove what the agent had actually found.
-
-This was particularly noticeable for **URL navigation**. The DOM records the URL explicitly, while a screenshot may shorten it, hide part of it, or make it difficult for the verifier to read.
-
-The advantage of the DOM is that information such as text, labels, field values, buttons, selected controls, dialogs, errors, and final UI state can be stated explicitly. A screenshot may visually contain some of this information, but it can be difficult to read, clipped, hidden outside the viewport, or shown only in a shortened or relative form.
-
-## Repository structure
-
-```text
-evidence-error-experiment/
-├── .env.example                 # local API-key template
-├── requirements.txt             # pinned Python dependencies
-├── config/                      # endpoint and model configuration
-├── data/
-│   ├── data-new-screenshot/     # screenshot task folders
-│   └── data-new-dom-model/      # matching DOM-model task folders
-├── microsoft_verifier/          # standalone screenshot verifier
-├── dom_model/                   # standalone DOM-model verifier
-├── scripts/                     # rubric, comparison, audit, and report commands
-├── rubrics/                     # frozen rubrics and Phase A usage metrics
-├── manifests/                   # expected verifier-package hashes
-└── results/                     # isolated run inputs, outputs, and audits
-```
+Explore the [task dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks), [and recording harness](https://github.com/wootzapp/wootzapp_web_browser-/tree/model-task-recorder). 
