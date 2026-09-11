@@ -177,7 +177,7 @@ def ensure_browser_service(env_file: Path) -> None:
         "-d",
         "--no-recreate",
         "--wait",
-        "wootz-desktop",
+        "w8-core",
     ]
     completed = subprocess.run(
         command,
@@ -201,7 +201,7 @@ def restart_browser_service(env_file: Path) -> None:
         "--env-file",
         str(env_file),
         "restart",
-        "wootz-desktop",
+        "w8-core",
     ]
     completed = subprocess.run(
         command,
