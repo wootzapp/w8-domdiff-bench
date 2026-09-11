@@ -647,7 +647,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.no_browser_start:
             restart_browser_service(args.env_file.resolve())
         profile_provenance = claim_browser_profile_provenance(
-            os.environ.get("CONTAINER_NAME", "task-recorder-dom-diff-browser")
+            os.environ.get("CONTAINER_NAME", "w8-core-browser-engine")
         )
         runner_environment = os.environ.copy()
         runner_environment["RUNNER_BROWSER_PROFILE_PROVENANCE"] = json.dumps(
