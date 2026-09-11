@@ -1,8 +1,8 @@
 # **Introducing w8-domdiff-bench**
 
-We’re introducing a suite for recording and verifying browser-agent tasks, built on our custom Chromium browser. It brings together browser-native DOM capture, an agent execution harness, a paired trajectory dataset, and a DOM-based verifier. Together, these components make an agent’s actions and the evidence behind its answers available for inspection and evaluation.
+w8-domdiff-bench is a benchmark and evaluation suite for building more capable browser agents. Built on w8-core, our custom Chromium-based browser engine, it combines structured page observations, recorded trajectories, and DOM-based verification to turn browser interactions into useful feedback for model development.
 
-We use [**Microsoft’s Universal Verifier**](https://www.microsoft.com/en-us/research/articles/the-art-of-building-verifiers-for-computer-use-agents/) **as the baseline** for our benchmark. It evaluates browser-agent trajectories from screenshots by generating a task-specific rubric, selecting relevant evidence, and assigning scores for each criterion, the process, and the outcome. We built our DOM-based verifier around the same evaluation design, replacing screenshot evidence with ordered Model DOM files from the same browser execution.
+We used [**Microsoft’s Universal Verifier**](https://www.microsoft.com/en-us/research/articles/the-art-of-building-verifiers-for-computer-use-agents/) **as the baseline** for our benchmark. It evaluates browser-agent trajectories from screenshots by generating a task-specific rubric, selecting relevant evidence, and assigning scores for each criterion, the process, and the outcome. We built our DOM-based verifier around the same evaluation design, replacing screenshot evidence with ordered Model DOM files from the same browser execution.
 
 Both verifiers receive the exact same frozen rubric (including criteria, ordering, and maximum scores) and follow the same scoring pipeline. This comparison holds the agent’s actions and definition of success constant, allowing us to measure how the evidence format affects verification.
 
