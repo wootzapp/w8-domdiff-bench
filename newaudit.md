@@ -1,9 +1,5 @@
 # Data-New Tasks 1–100: Screenshot vs DOM-Model Results
 
-This standalone report covers the 98 completed and audited tasks from `data-new/`. It excludes all runs from the older `data/` dataset and excludes the later noncanonical rerun of Task 1. Tasks 77 and 97 are not included in the aggregates because Task 77 has no matching screenshot/DOM pair and Task 97 has no completed verifier run. Each task used one frozen rubric for both verifier modes and includes the saved score, token usage, criterion-level evidence audit, manual source findings, and artifact links.
-
-The numerical fields below were cross-checked against the canonical `20260909T_task001_data_new` through `20260909T_task019_data_new` comparison JSON files; the `20260912T_task020_data_new` through `20260912T_task030_data_new` and `20260912T_task061_data_new` through `20260912T_task070_data_new` runs; the `20260913T_task071_data_new` through `20260913T_task090_data_new` runs, excluding unavailable Task 77; the `20260914T_task031_data_new` through `20260914T_task060_data_new` runs (Task 47 uses the completed `_retry` run after an interrupted empty partial run); and the completed `20260913T_task091_data_new` through `20260914T_task100_data_new` runs, excluding unrun Task 97. Evidence-loss classifications come from the completed screenshot/DOM source audit recorded for each task.
-
 ## Overall result
 
 | Metric | Screenshot | DOM model |
