@@ -1,0 +1,549 @@
+{
+  "schema_version": "existing-output-evidence-audit/v1",
+  "task_id": "browser_task_089-postcode-civic-geography-20260909T091806Z",
+  "run_id": "20260913T_task089_data_new",
+  "run_dir": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_089-postcode-civic-geography-20260909T091806Z/20260913T_task089_data_new",
+  "rubric_sha256": "31a747cbdae946437d32ce2f8ae2ec81d89d1c630bd4ee658425f925b6985095",
+  "source_artifacts": {
+    "screenshot_result": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_089-postcode-civic-geography-20260909T091806Z/20260913T_task089_data_new/microsoft_verifier/result.json",
+    "dom_model_result": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_089-postcode-civic-geography-20260909T091806Z/20260913T_task089_data_new/dom_model/result.json"
+  },
+  "source_inventory": {
+    "screenshot": [
+      {
+        "index": 0,
+        "file": "_inputs/screenshot/screenshot0.png",
+        "bytes": 95762,
+        "sha256": "292c3321b627c1fa5dc63900ab3bce158ddc0e1729e9c8f8f5f92dbba7bfc129"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/screenshot/screenshot1.png",
+        "bytes": 95762,
+        "sha256": "292c3321b627c1fa5dc63900ab3bce158ddc0e1729e9c8f8f5f92dbba7bfc129"
+      }
+    ],
+    "dom_model": [
+      {
+        "index": 0,
+        "file": "_inputs/dom_model/dom_model0.txt",
+        "bytes": 722,
+        "sha256": "c6e84ba100d98809ec8c5b4869a1aebe8b27a3144c9ac84040e95d439b7e6599"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/dom_model/dom_model1.txt",
+        "bytes": 722,
+        "sha256": "c6e84ba100d98809ec8c5b4869a1aebe8b27a3144c9ac84040e95d439b7e6599"
+      }
+    ]
+  },
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Report 11 specific fields from the result object for SW1A2AA",
+      "max_points": 6,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a browser-like page with a checkbox label “Pretty-print” at the top and then a long JSON response beginning with `{\"status\":200,\"result\":{...}}`. Within the visible `result` object text, the following fields and values are readable: `\"postcode\":\"SW1A 2AA\"`, `\"country\":\"England\"`, `\"region\":\"London\"`, `\"admin_district\":\"Westminster\"`, `\"admin_ward\":\"St James's\"`, `\"parliamentary_constituency\":\"Cities of London and Westminster\"`, `\"longitude\":-0.12767`, `\"latitude\":51.503541`, `\"incode\":\"2AA\"`, `\"outcode\":\"SW1A\"`. Near the end of the visible text, inside `\"codes\":{...}` it shows `\"admin_district\":\"E09000033\"`.",
+            "criterion_analysis": "The screenshot contains all eleven requested fields inside the `result` object (with `codes.admin_district` inside `result.codes`). The agent’s predicted output lists exactly those 11 items and the values match what is visible in the screenshot.",
+            "discrepancies": "No discrepancies observed: the agent’s listed values (including postcode spacing, admin ward apostrophe, and the codes.admin_district value) align with the JSON text visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a browser-like page with a \"Pretty-print\" checkbox at top-left and a raw JSON response. In the JSON, I can read within \"result\": \"postcode\":\"SW1A 2AA\", \"country\":\"England\", \"region\":\"London\", \"admin_district\":\"Westminster\", \"admin_ward\":\"St James's\", \"parliamentary_constituency\":\"Cities of London and Westminster\", \"longitude\":-0.12767, \"latitude\":51.503541, \"incode\":\"2AA\", \"outcode\":\"SW1A\". Later in the same \"result\" object there is a \"codes\" object that includes \"admin_district\":\"E09000033\".",
+            "criterion_analysis": "The screenshot contains all 11 requested fields inside the result object (including the nested codes.admin_district). The agent’s predicted output lists exactly these fields and the values match what is visible in the screenshot.",
+            "discrepancies": "No discrepancies found: the agent’s listed values (SW1A 2AA, England, London, Westminster, St James's, Cities of London and Westminster, 51.503541, -0.12767, 2AA, SW1A, E09000033) are all visible in the screenshot’s JSON.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report 11 specific fields from the result object for SW1A2AA",
+          "earned_points": 6,
+          "post_image_earned_points": 6.0,
+          "max_points": 6,
+          "justification": "Agent provided all eleven requested fields—postcode, country, region, admin_district, admin_ward, parliamentary_constituency, latitude, longitude, incode, outcode, and codes.admin_district—and they match the expected values from the API’s result object for SW1A2AA.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest = Screenshot 2) show the postcodes.io JSON with a nested result object containing all requested fields: postcode \"SW1A 2AA\", country \"England\", region \"London\", admin_district \"Westminster\", admin_ward \"St James's\", parliamentary_constituency \"Cities of London and Westminster\", latitude 51.503541, longitude -0.12767, incode \"2AA\", outcode \"SW1A\", and within result.codes the admin_district code \"E09000033\".",
+          "post_image_justification": "The agent reported all eleven requested fields and each value matches what is visible in the result object (including codes.admin_district). No missing or incorrect fields per the latest screenshot.",
+          "reality_notes": "The screenshots show a raw JSON response with a top-level `status` and a nested `result` object for SW1A2AA. Within `result`, all requested fields are visibly present and readable: `postcode` appears as \"SW1A 2AA\" (with a space), `country` as \"England\", `region` as \"London\", `admin_district` as \"Westminster\", `admin_ward` as \"St James's\", `parliamentary_constituency` as \"Cities of London and Westminster\", `latitude` as 51.503541, `longitude` as -0.12767, `incode` as \"2AA\", `outcode` as \"SW1A\"; and within `result.codes`, `admin_district` appears as \"E09000033\"."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest = Screenshot 2) show the postcodes.io JSON with a nested result object containing all requested fields: postcode \"SW1A 2AA\", country \"England\", region \"London\", admin_district \"Westminster\", admin_ward \"St James's\", parliamentary_constituency \"Cities of London and Westminster\", latitude 51.503541, longitude -0.12767, incode \"2AA\", outcode \"SW1A\", and within result.codes the admin_district code \"E09000033\".",
+        "verifier_justification": "The agent reported all eleven requested fields and each value matches what is visible in the result object (including codes.admin_district). No missing or incorrect fields per the latest screenshot.",
+        "action_only_points": 6,
+        "final_points": 6.0,
+        "max_points": 6,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 6
+          },
+          {
+            "source_index": 1,
+            "score": 3
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL https://api.postcodes.io/postcodes/SW1A2AA with visible JSON beginning: {\"status\":200,\"result\":{\"postcode\":\"SW1A 2AA\",...\"country\":\"England\",...\"longitude\":-0.12767,\"latitude\":51.503541,...\"region\":\"London\",...\"incode\":\"2AA\",\"outcode\":\"SW1A\",\"parliamentary_constituency\":\"Cities of London and Westminster\",... . The snapshot content is truncated mid-field (ends at \"senedd_constituenc\"), and does not visibly include admin_district, admin_ward, or codes.admin_district within the provided DOM excerpt.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 0 requires 11 specific fields from the result object: postcode, country, region, admin_district, admin_ward, parliamentary_constituency, latitude, longitude, incode, outcode, and codes.admin_district.\n\nFrom DOM_MODEL_STATE_INDEX: 0, the DOM explicitly contains these required fields and exact values:\n- postcode: \"SW1A 2AA\"\n- country: \"England\"\n- region: \"London\"\n- parliamentary_constituency: \"Cities of London and Westminster\"\n- latitude: 51.503541\n- longitude: -0.12767\n- incode: \"2AA\"\n- outcode: \"SW1A\"\n\nHowever, the DOM excerpt shown is truncated and does not include (and therefore does not provide evidence for) the remaining required fields:\n- admin_district\n- admin_ward\n- codes.admin_district\n\nThus the browser DOM evidence supports only 8 of the 11 requested fields; the other 3 cannot be verified from the provided DOM-model state.",
+            "discrepancies": "The agent-predicted output includes values for admin_district (\"Westminster\"), admin_ward (\"St James's\"), and codes.admin_district (\"E09000033\"), but these fields/values are not visible in DOM_MODEL_STATE_INDEX: 0 due to truncation; therefore those three reported fields are not supported by the provided DOM evidence. The other eight reported fields match the visible JSON exactly.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report 11 specific fields from the result object for SW1A2AA",
+          "earned_points": 6,
+          "post_image_earned_points": 4.5,
+          "max_points": 6,
+          "justification": "The agent listed all eleven requested fields—postcode, country, region, admin_district, admin_ward, parliamentary_constituency, latitude, longitude, incode, outcode, and codes.admin_district—and each matches the documented result values for SW1A 2AA.",
+          "applicable_evidence": "Latest DOM-model state is INDEX 1 (chronologically later than 0). It visibly shows a truncated JSON `result` object containing: `postcode` \"SW1A 2AA\", `country` \"England\", `region` \"London\", `parliamentary_constituency` \"Cities of London and Westminster\", `latitude` 51.503541, `longitude` -0.12767, `incode` \"2AA\", `outcode` \"SW1A\". The DOM excerpt is truncated mid-key and does NOT show `admin_district`, `admin_ward`, or `result.codes` (thus not `codes.admin_district`).",
+          "post_image_justification": "The agent reported all 11 requested fields, but 3 of them (admin_district, admin_ward, codes.admin_district) are not evidenced anywhere in the provided DOM snapshots due to truncation. Per rules, missing evidence is unproven (UNKNOWN), so those 3 fields cannot receive credit. The other 8 fields are explicitly supported and match the visible values. Award partial credit proportional to 8/11 fields correctly evidenced.",
+          "reality_notes": "The visible DOM shows a JSON response with a `result` object that explicitly contains 8 of the 11 requested fields and their values (postcode, country, region, parliamentary_constituency, latitude, longitude, incode, outcode). The DOM excerpt is truncated mid-key and does not visibly include `admin_district`, `admin_ward`, or the nested `codes` object (so `codes.admin_district` is not evidenced in the provided snapshot)."
+        },
+        "verifier_evidence": "Latest DOM-model state is INDEX 1 (chronologically later than 0). It visibly shows a truncated JSON `result` object containing: `postcode` \"SW1A 2AA\", `country` \"England\", `region` \"London\", `parliamentary_constituency` \"Cities of London and Westminster\", `latitude` 51.503541, `longitude` -0.12767, `incode` \"2AA\", `outcode` \"SW1A\". The DOM excerpt is truncated mid-key and does NOT show `admin_district`, `admin_ward`, or `result.codes` (thus not `codes.admin_district`).",
+        "verifier_justification": "The agent reported all 11 requested fields, but 3 of them (admin_district, admin_ward, codes.admin_district) are not evidenced anywhere in the provided DOM snapshots due to truncation. Per rules, missing evidence is unproven (UNKNOWN), so those 3 fields cannot receive credit. The other 8 fields are explicitly supported and match the visible values. Award partial credit proportional to 8/11 fields correctly evidenced.",
+        "action_only_points": 6,
+        "final_points": 4.5,
+        "max_points": 6,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch",
+        "evidence_missing_language_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Use only result object fields (with sole exception of codes.admin_district) and keep fields distinct",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "All the values the agent reported are visible as top-level keys in `result` (e.g., `admin_district`, `admin_ward`, `parliamentary_constituency`) except the requested `codes.admin_district`, which is visible inside the `\"codes\":{...}` object as `\"admin_district\":\"E09000033\"`. The screenshot also shows many other `codes` fields (e.g., `\"parish\":\"E43000236\"`, `\"admin_county\":\"E99999999\"`, etc.), but the agent only references `codes.admin_district`.",
+            "criterion_analysis": "The agent kept `admin_district` (Westminster), `admin_ward` (St James's), `parliamentary_constituency` (Cities of London and Westminster), and `codes.admin_district` (E09000033) distinct and did not substitute with similarly named codes fields. This is consistent with the screenshot.",
+            "discrepancies": "No substitution/mix-up is evident. The agent did not incorrectly pull `admin_district` from the `codes` object or confuse constituency fields.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Visible fields are shown as direct properties of \"result\" (e.g., \"admin_district\":\"Westminster\", \"admin_ward\":\"St James's\", \"parliamentary_constituency\":\"Cities of London and Westminster\"). The \"codes\" object is also visible and includes \"admin_district\":\"E09000033\" among other code fields.",
+            "criterion_analysis": "The agent used the result object for the main fields and used only the allowed codes field (codes.admin_district). The reported fields are kept distinct: admin_district is \"Westminster\" (not the code), admin_ward is \"St James's\", parliamentary_constituency is the name, and codes.admin_district is the code value.",
+            "discrepancies": "None apparent. The agent did not substitute a similarly named codes field for the name fields; only codes.admin_district was used from codes.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Use only result object fields (with sole exception of codes.admin_district) and keep fields distinct",
+          "earned_points": 3,
+          "post_image_earned_points": 3.0,
+          "max_points": 3,
+          "justification": "All eleven values are sourced directly from the result object, with only codes.admin_district taken from the codes sub-object, and no fields were swapped or substituted.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest = Screenshot 2) show name fields (admin_district, admin_ward, parliamentary_constituency) as direct keys under result, and codes.admin_district under result.codes. The agent output uses the name fields from result and only the allowed codes.admin_district from the codes object.",
+          "post_image_justification": "No evidence of swapping/substitution: admin_district is the name (\"Westminster\"), admin_ward is the name (\"St James's\"), parliamentary_constituency is the name, and only codes.admin_district is taken from the codes sub-object, consistent with the constraint.",
+          "reality_notes": "In the screenshots, the name fields (`admin_district`, `admin_ward`, `parliamentary_constituency`) are top-level keys inside `result`, while the code value `codes.admin_district` is inside the nested `result.codes` object alongside many other code fields. The visible structure supports keeping the name fields distinct from the code field and using only `codes.admin_district` from the `codes` object (not similarly named codes like `admin_ward`, etc.)."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest = Screenshot 2) show name fields (admin_district, admin_ward, parliamentary_constituency) as direct keys under result, and codes.admin_district under result.codes. The agent output uses the name fields from result and only the allowed codes.admin_district from the codes object.",
+        "verifier_justification": "No evidence of swapping/substitution: admin_district is the name (\"Westminster\"), admin_ward is the name (\"St James's\"), parliamentary_constituency is the name, and only codes.admin_district is taken from the codes sub-object, consistent with the constraint.",
+        "action_only_points": 3,
+        "final_points": 3.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 7
+          },
+          {
+            "source_index": 1,
+            "score": 4
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the URL https://api.postcodes.io/postcodes/SW1A2AA returning JSON starting with: {\"status\":200,\"result\":{...}}. Within the visible portion of result, these fields are explicitly present with values: \"postcode\":\"SW1A 2AA\", \"country\":\"England\", \"longitude\":-0.12767, \"latitude\":51.503541, \"region\":\"London\", \"incode\":\"2AA\", \"outcode\":\"SW1A\", and \"parliamentary_constituency\":\"Cities of London and Westminster\".",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 1 (use only result object fields, with only result.codes.admin_district allowed; keep admin_district/admin_ward/parliamentary_constituency/codes.admin_district distinct).\n\nSupported by DOM evidence: The DOM shows a postcodes.io response containing a result object with several of the reported fields, and the agent’s reported values for normalized postcode (postcode), country, region, parliamentary_constituency, latitude, longitude, incode, and outcode match the exact values visible in DOM_MODEL_STATE_INDEX 0.\n\nNot supported by DOM evidence: The DOM snapshot is truncated mid-field (ends at \"senedd_constituenc...), and does not display \"admin_district\", \"admin_ward\", or the nested \"codes\" object (therefore cannot verify that \"codes.admin_district\" appears in result.codes nor that its value is \"E09000033\"). Because the required evidence for the codes/admin fields is not present in the provided DOM, we cannot confirm the agent adhered to the constraint of sourcing those specific fields only from result (and only codes.admin_district from result.codes).",
+            "discrepancies": "DOM_MODEL_STATE_INDEX 0 does not contain visible evidence for: result.admin_district (\"Westminster\"), result.admin_ward (\"St James's\"), or result.codes.admin_district (\"E09000033\"). Therefore, those parts of the agent output cannot be verified against the supplied DOM model state, even though other fields are verifiably present in result.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Use only result object fields (with sole exception of codes.admin_district) and keep fields distinct",
+          "earned_points": 3,
+          "post_image_earned_points": 2.0,
+          "max_points": 3,
+          "justification": "The agent used only fields from the result object and the single allowed codes.admin_district field. There were no substitutions or mix-ups among admin_district, admin_ward, parliamentary_constituency, or codes.admin_district.",
+          "applicable_evidence": "Latest DOM-model state INDEX 1 shows only top-level `result` fields listed above; it does not display `admin_district`, `admin_ward`, nor any `codes` object, so it cannot confirm whether the agent sourced those from `result` versus substituting from elsewhere, nor confirm distinctness for those missing fields. For the visible fields, they are clearly from `result` and correctly kept distinct.",
+          "post_image_justification": "For the 8 visible fields, the agent’s values align with `result` and are not swapped. However, because `admin_district`, `admin_ward`, and `codes.admin_district` are not shown, compliance for the key constraint (use only `result` + only `result.codes.admin_district`) cannot be verified for those parts. This warrants a partial deduction rather than full credit.",
+          "reality_notes": "Within the visible portion of `result`, the fields shown are top-level `result` members (e.g., `postcode`, `country`, `region`, `latitude`, `longitude`, `incode`, `outcode`, `parliamentary_constituency`). The DOM does not show any part of `result.codes` due to truncation, so whether `result.codes.admin_district` exists/what it is cannot be confirmed from the provided DOM. Likewise, `admin_district` and `admin_ward` are not visible, so field distinctness/sourcing for those cannot be assessed from the snapshot."
+        },
+        "verifier_evidence": "Latest DOM-model state INDEX 1 shows only top-level `result` fields listed above; it does not display `admin_district`, `admin_ward`, nor any `codes` object, so it cannot confirm whether the agent sourced those from `result` versus substituting from elsewhere, nor confirm distinctness for those missing fields. For the visible fields, they are clearly from `result` and correctly kept distinct.",
+        "verifier_justification": "For the 8 visible fields, the agent’s values align with `result` and are not swapped. However, because `admin_district`, `admin_ward`, and `codes.admin_district` are not shown, compliance for the key constraint (use only `result` + only `result.codes.admin_district`) cannot be verified for those parts. This warrants a partial deduction rather than full credit.",
+        "action_only_points": 3,
+        "final_points": 2.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Preserve exact formatting/precision as returned",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON in the screenshot shows exact formatting: `\"postcode\":\"SW1A 2AA\"` (with a space), `\"admin_ward\":\"St James's\"` (apostrophe), `\"longitude\":-0.12767` (negative sign and 5 decimal places), and `\"latitude\":51.503541` (6 decimal places). It also shows `\"incode\":\"2AA\"` and `\"outcode\":\"SW1A\"` with capitalization.",
+            "criterion_analysis": "The agent’s predicted output preserves capitalization, spacing, signs, and the coordinate precision exactly as displayed (latitude 51.503541; longitude -0.12767). No rounding or reformatting is apparent.",
+            "discrepancies": "None detected based on the visible values and precision in the screenshot versus the agent’s output.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON shows exact spellings and punctuation such as \"postcode\":\"SW1A 2AA\" (with a space), \"admin_ward\":\"St James's\" (with apostrophe), \"longitude\":-0.12767 (negative sign, 5 decimal places), \"latitude\":51.503541 (6 decimal places), and \"codes\":{\"admin_district\":\"E09000033\", ...}.",
+            "criterion_analysis": "The agent’s predicted output preserves formatting and precision exactly as displayed: the postcode includes the space, capitalization matches, and latitude/longitude precision matches the numbers shown.",
+            "discrepancies": "No formatting/precision mismatches are visible between the screenshot and the predicted output.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Preserve exact formatting/precision as returned",
+          "earned_points": 2,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent retained the exact capitalization, spacing (e.g., “SW1A 2AA”), and numeric precision for latitude and longitude as returned by the API.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest = Screenshot 2) display exact formatting: postcode includes a space (\"SW1A 2AA\"), admin_ward includes apostrophe (\"St James's\"), latitude shown as 51.503541 (6 dp) and longitude as -0.12767 (negative sign, 5 dp), and code \"E09000033\" in uppercase.",
+          "post_image_justification": "Agent preserved exact capitalization, spacing, punctuation, sign, and numeric precision exactly as shown in the latest screenshot.",
+          "reality_notes": "Exact formatting details are clearly visible in the JSON: postcode includes an internal space (\"SW1A 2AA\"), `admin_ward` includes an apostrophe (\"St James's\"), and coordinates show specific precision/signs (`latitude` 51.503541 with 6 decimal places; `longitude` -0.12767 with a negative sign and 5 decimal places). The code `E09000033` is shown as an uppercase alphanumeric string."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest = Screenshot 2) display exact formatting: postcode includes a space (\"SW1A 2AA\"), admin_ward includes apostrophe (\"St James's\"), latitude shown as 51.503541 (6 dp) and longitude as -0.12767 (negative sign, 5 dp), and code \"E09000033\" in uppercase.",
+        "verifier_justification": "Agent preserved exact capitalization, spacing, punctuation, sign, and numeric precision exactly as shown in the latest screenshot.",
+        "action_only_points": 2,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 6
+          },
+          {
+            "source_index": 1,
+            "score": 4
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the postcodes.io JSON at URL https://api.postcodes.io/postcodes/SW1A2AA with visible text including: \"\\\"postcode\\\":\\\"SW1A 2AA\\\"\", \"\\\"country\\\":\\\"England\\\"\", \"\\\"longitude\\\":-0.12767, \"\\\"latitude\\\":51.503541, \"\\\"region\\\":\\\"London\\\"\", \"\\\"incode\\\":\\\"2AA\\\"\", \"\\\"outcode\\\":\\\"SW1A\\\"\", and \"\\\"parliamentary_constituency\\\":\\\"Cities of London and Westminster\\\"\" within the \"result\" object. The snapshot is truncated (ends mid-field at \"\\\"senedd_constituenc\"), and does not display admin_district, admin_ward, or codes.admin_district in the visible portion.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 2 (preserve exact formatting/precision) is partially supported by DOM evidence: the DOM explicitly contains the exact strings/number precision for several reported fields (e.g., postcode \"SW1A 2AA\" with space and capitalization; country \"England\"; region \"London\"; parliamentary_constituency \"Cities of London and Westminster\"; latitude 51.503541 and longitude -0.12767 with shown precision; incode \"2AA\"; outcode \"SW1A\"). However, due to truncation of the DOM snapshot, the DOM does not provide evidence for the exact formatting/values of admin_district, admin_ward, or codes.admin_district as reported, so exactness for those cannot be confirmed from the supplied DOM-model state.",
+            "discrepancies": "The agent output includes admin_district: \"Westminster\", admin_ward: \"St James's\", and codes.admin_district: \"E09000033\", but these fields/values are not visible in DOM_MODEL_STATE_INDEX: 0 due to truncation; therefore their exact formatting/precision cannot be verified from the provided DOM evidence.",
+            "environment_issues_confirmed": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL: https://api.postcodes.io/postcodes/SW1A2AA) shows JSON beginning: {\"status\":200,\"result\":{\"postcode\":\"SW1A 2AA\",...\"country\":\"England\",...\"longitude\":-0.12767,\"latitude\":51.503541,...\"region\":\"London\",...\"incode\":\"2AA\",\"outcode\":\"SW1A\",\"parliamentary_constituency\":\"Cities of London and Westminster\",...}}. The visible DOM excerpt is truncated mid-field (ends at \"senedd_constituenc\") and does not display admin_district, admin_ward, or codes.admin_district within the provided snapshot text.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 2 (preserve exact formatting/precision) is supported for the subset of fields explicitly visible in the DOM text: postcode appears as \"SW1A 2AA\" (with space), country as \"England\", region as \"London\", latitude as 51.503541, longitude as -0.12767 (negative sign and precision), incode as \"2AA\", outcode as \"SW1A\", and parliamentary_constituency as \"Cities of London and Westminster\" (all directly shown in DOM_MODEL_STATE_INDEX: 1). However, the DOM snapshot provided is truncated and does not include the strings for admin_district, admin_ward, nor codes.admin_district, so exact-formatting compliance for those fields cannot be verified from the DOM evidence.",
+            "discrepancies": "Admin_district, admin_ward, and codes.admin_district values claimed in the agent output are not present in the provided DOM excerpt (DOM_MODEL_STATE_INDEX: 1) due to truncation, so their exact capitalization/spacing cannot be confirmed from the DOM-model state. All other claimed fields listed in the agent output match the exact visible strings/numeric precision in the DOM excerpt.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Preserve exact formatting/precision as returned",
+          "earned_points": 2,
+          "post_image_earned_points": 1.5,
+          "max_points": 2,
+          "justification": "All values—including the space in “SW1A 2AA,” the apostrophe in “St James’s,” and the five-decimal precision of latitude (51.503541) and longitude (−0.12767)—match the API’s formatting and precision exactly.",
+          "applicable_evidence": "Latest DOM-model state INDEX 1 explicitly shows exact formatting/precision for: `postcode` \"SW1A 2AA\" (space preserved), `country` \"England\", `region` \"London\", `parliamentary_constituency` \"Cities of London and Westminster\", `latitude` 51.503541, `longitude` -0.12767, `incode` \"2AA\", `outcode` \"SW1A\". It does not show `admin_district`, `admin_ward`, or `codes.admin_district` so their exact formatting cannot be checked.",
+          "post_image_justification": "No formatting/precision issues are evidenced for the 8 visible fields (they match exactly). But 3 fields’ exact text/format cannot be verified from the DOM due to truncation, so full-credit certainty is not possible. Apply a small deduction for unverifiable formatting on those 3 fields while crediting the clearly correct subset.",
+          "reality_notes": "Exact formatting/precision is directly observable for the fields present in the DOM: `postcode` includes a space (\"SW1A 2AA\"); `longitude` is negative and shown to 5 decimal places (-0.12767); `latitude` is shown to 6 decimal places (51.503541); and the capitalization/spelling of `country`, `region`, `incode`, `outcode`, and `parliamentary_constituency` are visible. The DOM does not include `admin_district`, `admin_ward`, or `codes.admin_district`, so their exact formatting cannot be verified from the provided evidence."
+        },
+        "verifier_evidence": "Latest DOM-model state INDEX 1 explicitly shows exact formatting/precision for: `postcode` \"SW1A 2AA\" (space preserved), `country` \"England\", `region` \"London\", `parliamentary_constituency` \"Cities of London and Westminster\", `latitude` 51.503541, `longitude` -0.12767, `incode` \"2AA\", `outcode` \"SW1A\". It does not show `admin_district`, `admin_ward`, or `codes.admin_district` so their exact formatting cannot be checked.",
+        "verifier_justification": "No formatting/precision issues are evidenced for the 8 visible fields (they match exactly). But 3 fields’ exact text/format cannot be verified from the DOM due to truncation, so full-credit certainty is not possible. Apply a small deduction for unverifiable formatting on those 3 fields while crediting the clearly correct subset.",
+        "action_only_points": 2,
+        "final_points": 1.5,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch",
+        "environment_issue_conclusion_mismatch",
+        "evidence_missing_language_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Stopping condition: stop after recording all 11 requested fields",
+      "max_points": 1,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 9
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The agent’s predicted output section (provided in the prompt) lists exactly 11 bullet points corresponding to the requested fields, with no additional extra fields. The screenshot itself is just the JSON response and does not indicate any other reporting requirements.",
+            "criterion_analysis": "The stopping condition is satisfied: the agent output contains the eleven requested fields and stops, with only a minimal preface (“From the result object for SW1A2AA:”) and labels for each field.",
+            "discrepancies": "No extra unrelated fields were added beyond the eleven requested items.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot itself is just the JSON response; it does not show the agent’s final response text on-screen. However, the provided 'Agent's Predicted Output' contains a list of exactly 11 bullet points corresponding to the 11 requested fields and does not include extra fields beyond a short lead-in line (\"From the result object for SW1A2AA:\").",
+            "criterion_analysis": "The agent stops after providing the 11 requested fields; the small introductory phrase is minimal and does not add unrelated extra data. This meets the stopping condition.",
+            "discrepancies": "No discrepancy with the stopping condition: no additional unrelated fields are present in the predicted output.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Stopping condition: stop after recording all 11 requested fields",
+          "earned_points": 1,
+          "post_image_earned_points": 1.0,
+          "max_points": 1,
+          "justification": "The output lists exactly the eleven requested fields and includes no additional unrelated information.",
+          "applicable_evidence": "Agent’s predicted output lists exactly eleven labeled lines corresponding to the requested fields and does not include any extra result/codes fields; screenshots are not needed to verify count/termination. Screenshot evidence is consistent with those fields being sufficient.",
+          "post_image_justification": "Stopping condition is met: the response records the 11 requested fields and stops, with only minimal contextual preface.",
+          "reality_notes": "The screenshot evidence itself only shows the JSON response, not an on-page final answer, but the task context indicates the intended output is limited to the eleven specified fields. Minimal labeling (e.g., field names paired with values) would be consistent with the stopping condition so long as no additional, non-requested result/codes fields are included beyond those eleven."
+        },
+        "verifier_evidence": "Agent’s predicted output lists exactly eleven labeled lines corresponding to the requested fields and does not include any extra result/codes fields; screenshots are not needed to verify count/termination. Screenshot evidence is consistent with those fields being sufficient.",
+        "verifier_justification": "Stopping condition is met: the response records the 11 requested fields and stops, with only minimal contextual preface.",
+        "action_only_points": 1,
+        "final_points": 1.0,
+        "max_points": 1,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 5
+          },
+          {
+            "source_index": 1,
+            "score": 2
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the browser at URL https://api.postcodes.io/postcodes/SW1A2AA with JSON beginning: {\"status\":200,\"result\":{\"postcode\":\"SW1A 2AA\", ... \"country\":\"England\", ... \"longitude\":-0.12767, \"latitude\":51.503541, ... \"region\":\"London\", ... \"incode\":\"2AA\",\"outcode\":\"SW1A\",\"parliamentary_constituency\":\"Cities of London and Westminster\", ... } (Snapshot is truncated mid-field: \"senedd_constituenc\").",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent’s predicted output includes exactly eleven requested fields (normalized postcode, country, region, admin_district, admin_ward, parliamentary_constituency, latitude, longitude, incode, outcode, codes.admin_district), satisfying the intent of Criterion 3 to stop after recording all 11 fields and not add extras.\nHowever, the DOM evidence provided is truncated and does not show several of the claimed fields (notably admin_district, admin_ward, and codes.admin_district), so from DOM alone we cannot fully confirm the completeness/appropriateness of stopping with exactly those 11 extracted fields based on visible result content. What is visible does support several of the 11 fields (postcode, country, region, latitude, longitude, incode, outcode, parliamentary_constituency).",
+            "discrepancies": "DOM_MODEL_STATE_INDEX: 0 is truncated and does not display the portions of the result object containing admin_district, admin_ward, or codes.admin_district, so those three values in the agent output are not evidenced in the provided DOM snapshot. No extra fields beyond the eleven requested were included in the agent output.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the postcodes.io JSON response with (within the visible `result` object) these exact fields/values: `\"postcode\":\"SW1A 2AA\"`, `\"country\":\"England\"`, `\"region\":\"London\"`, `\"longitude\":-0.12767`, `\"latitude\":51.503541`, `\"incode\":\"2AA\"`, `\"outcode\":\"SW1A\"`, and `\"parliamentary_constituency\":\"Cities of London and Westminster\"` at URL https://api.postcodes.io/postcodes/SW1A2AA. The snapshot is truncated mid-field (ends at `\"senedd_constituenc`), so `admin_district`, `admin_ward`, and `codes.admin_district` are not shown in the provided DOM text.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent output violates Criterion 3 (stop after recording exactly the 11 requested fields) because it includes extra content beyond the eleven fields: it adds a heading line `From the result object for SW1A2AA:` and additionally appends a rubric section (`**Criterion 3:** ... **Description:** ... **Max Points:** 1`). These additional lines are not among the eleven requested result fields, so the stopping condition is not met.",
+            "discrepancies": "Agent output contains non-field text beyond the 11 requested fields (a preface line and a full rubric/criterion block), so it does not stop immediately after recording the requested fields.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Stopping condition: stop after recording all 11 requested fields",
+          "earned_points": 1,
+          "post_image_earned_points": 1.0,
+          "max_points": 1,
+          "justification": "The agent’s output contains exactly the eleven requested fields and no additional fields or commentary.",
+          "applicable_evidence": "Criterion is about the agent’s final output content. The agent’s predicted output contains exactly the eleven requested fields as bullet points, preceded only by a short preface line: \"From the result object for SW1A2AA:\". No DOM evidence is needed to verify whether extra unrelated fields were added beyond those 11.",
+          "post_image_justification": "The response effectively stops after presenting the 11 requested fields; the brief preface is minimal structure/labeling and not an additional extracted field. This satisfies the stopping condition intent (no extra unrelated fields beyond the requested set).",
+          "reality_notes": "The requested stopping condition concerns the agent’s output format (only the eleven fields, no extras). The DOM itself only evidences the API response content and is truncated; it does not constrain whether extra explanatory text could appear in the agent’s answer. Thus, from DOM evidence, only the availability of the fields (8 visible, 3 not visible) can be grounded; whether the agent stopped after listing exactly 11 fields must be judged from the agent response text, not the DOM snapshot."
+        },
+        "verifier_evidence": "Criterion is about the agent’s final output content. The agent’s predicted output contains exactly the eleven requested fields as bullet points, preceded only by a short preface line: \"From the result object for SW1A2AA:\". No DOM evidence is needed to verify whether extra unrelated fields were added beyond those 11.",
+        "verifier_justification": "The response effectively stops after presenting the 11 requested fields; the brief preface is minimal structure/labeling and not an additional extracted field. This satisfies the stopping condition intent (no extra unrelated fields beyond the requested set).",
+        "action_only_points": 1,
+        "final_points": 1.0,
+        "max_points": 1,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "CONTRADICTED",
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    }
+  ]
+}

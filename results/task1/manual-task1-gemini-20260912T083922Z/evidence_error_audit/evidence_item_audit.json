@@ -1,0 +1,248 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "viewport-modern-1-cross-site-research-20260829T074513Z",
+  "run_id": "manual-task1-gemini-20260912T083922Z",
+  "rubric_sha256": "fac623938e43e710f25c70350a0989e6d1ce38338113f171c5de38c6529c6a15",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Navigate Xbox.com to the 'Best sellers' section",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 3.0,
+      "evidence_items": [
+        {
+          "evidence_id": "c0-xbox-games-navigation",
+          "evidence_requirement": "Agent used Xbox.com and navigated to the Xbox games section while attempting to locate the 'Best sellers' list",
+          "expected_value": "xbox.com home page followed by the 'XBOX games' page (https://www.xbox.com/en-US/games)",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot3.png",
+                "visible_text": "XBOX games",
+                "locator": "page header below the top navigation bar, left side"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The visual evidence and action history confirm the agent navigated Xbox.com to the games section to locate the Best sellers list. Full credit is maintained.",
+            "review_note": "Confirmed: screenshot3 shows the 'XBOX games' page after the footer-link click. No literal 'Best sellers' label is visible in any captured viewport; the rubric still grants full credit for a reasonable attempt, which both verifiers gave."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model3.txt",
+                "line_range": "m3:L9-L9",
+                "quoted_text": "- XBOX games"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent made a reasonable attempt by navigating to Xbox games and selecting a game from the catalog/top listings available. Per the criterion description and baseline justification, navigating to the games section and attempting to access a visible list satisfies the requirement. Full credit is maintained.",
+            "review_note": "Confirmed: dom_model3 shows the XBOX games page. The literal 'Best sellers' label is absent from DOM states 0-3 (grep over all four files), same as the screenshots, so the missing label is a shared capture gap, not an asymmetric loss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Open a product page for a game from 'Best sellers'",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 3.0,
+      "evidence_items": [
+        {
+          "evidence_id": "c1-madden-product-page",
+          "evidence_requirement": "Product page for the game selected from the list opened on Xbox.com",
+          "expected_value": "EA SPORTS™ Madden NFL 27 store product page (URL .../games/store/ea-sports-madden-nfl-27/9nj6f163vf8c)",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot4.png",
+                "visible_text": "EA SPORTS™ Madden NFL 27",
+                "locator": "product page header next to the box art, upper left"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The screenshots confirm that the agent successfully navigated to and opened the official product page for a game from the Best sellers list ('EA SPORTS™ Madden NFL 27'). Full credit is maintained.",
+            "review_note": "Confirmed: screenshot4 shows the Madden NFL 27 product page header with box art. The pre-click games list itself is below the captured viewport in screenshot3, the same gap as the DOM side."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model4.txt",
+                "line_range": "m4:L2-L2",
+                "quoted_text": "Title: Buy EA SPORTS™ Madden NFL 27 | Xbox"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The product page for the selected game was successfully opened and loaded on Xbox.com, as verified by DOM evidence across states 4-7. Baseline score of 3/3 is maintained.",
+            "review_note": "Confirmed: dom_model4 URL/Title show the product page. The clicked Madden link (ref e150) is absent from dom_model3 (alignment warning), matching the screenshot-side gap; the DOM analyses' PARTIAL/UNKNOWN wording about Best-sellers traceability triggered the disagreement flag, but it is a wording mismatch, not an evidence loss - both modalities lack the pre-click list."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report publisher, developer, and release date from the product page",
+      "max_points": 6,
+      "screenshot_final_points": 4.0,
+      "dom_model_final_points": 4.0,
+      "evidence_items": [
+        {
+          "evidence_id": "c2-publisher",
+          "evidence_requirement": "Publisher value shown on the product page",
+          "expected_value": "Electronic Arts",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot6.png",
+                "visible_text": "Published by - Electronic Arts",
+                "locator": "top-left metadata row directly below the BUY $69.99+ / CHOOSE EDITION bar"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 7 explicitly displays 'Published by' with 'Electronic Arts' directly underneath it, along with 'Developed by: Tiburon' and 'Release date: 8/13/2026'.",
+            "review_note": "Confirmed in screenshot6 (also as 'Electronic Arts - Sports' under the title in screenshot4). The agent falsely claimed the publisher was not shown; the verifier caught this and awarded partial credit (4/6) per the rubric."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model4.txt",
+                "line_range": "m4:L10-L10",
+                "quoted_text": "- Electronic Arts • Sports • 987"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "However, across states 4, 5, 6, and 7, the publisher 'Electronic Arts' is explicitly displayed in the header control text right next to the title ('EA SPORTS™ Madden NFL 27 Electronic Arts • Sports • 987').",
+            "review_note": "The value under the 'Published by' label is genuinely empty in dom_model5/7 (label at L9 with no value line after it), but 'Electronic Arts' is present in the header text of states 4-7; the DOM verifier found it and also awarded 4/6."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        },
+        {
+          "evidence_id": "c2-developer",
+          "evidence_requirement": "Developer value shown on the product page",
+          "expected_value": "Tiburon",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot6.png",
+                "visible_text": "Developed by - Tiburon",
+                "locator": "top metadata row below the buy bar, middle column"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent correctly reported the developer (Tiburon) and release date (8/13/2026) from the product page, and clearly noted that the publisher was missing/unavailable in the DOM evidence rather than fabricating it.",
+            "review_note": "Confirmed in screenshot6; the agent reported Tiburon and the verifier credited it."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model5.txt",
+                "line_range": "m5:L10-L11",
+                "quoted_text": "- Tiburon"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The DOM explicitly contains 'Developed by' followed by 'Tiburon', and 'Release date' followed by '8/13/2026', matching what the agent reported.",
+            "review_note": "Confirmed in dom_model5 (and dom_model7, same hash); the agent reported Tiburon and the verifier credited it."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        },
+        {
+          "evidence_id": "c2-release-date",
+          "evidence_requirement": "Release date value shown on the product page",
+          "expected_value": "8/13/2026",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot6.png",
+                "visible_text": "Release date - 8/13/2026",
+                "locator": "top metadata row below the buy bar, right column"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "- 'Release date' with the text '8/13/2026' directly underneath",
+            "review_note": "Confirmed in screenshot6; the agent reported 8/13/2026 and the verifier credited it."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model5.txt",
+                "line_range": "m5:L12-L13",
+                "quoted_text": "- 8/13/2026"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Under Context: Description (states 5 and 7), 'Developed by' is 'Tiburon' and 'Release date' is '8/13/2026'.",
+            "review_note": "Confirmed in dom_model5 (and dom_model7, same hash); the agent reported 8/13/2026 and the verifier credited it."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Respect constraints (no sign-in; no purchase or download; stop after recording details)",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 3.0,
+      "evidence_items": [
+        {
+          "evidence_id": "c3-no-signin-no-purchase",
+          "evidence_requirement": "Trajectory stayed logged out and never initiated sign-in, purchase, or download",
+          "expected_value": "Unauthenticated store page with purchase CTAs ('GET EA PLAY', 'BUY $69.99+') unclicked and no sign-in/checkout/download flow",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot5.png",
+                "visible_text": "GET EA PLAY  - OR -  BUY $69.99+",
+                "locator": "top action bar; buttons in default unclicked state, no sign-in or checkout modal anywhere on the page"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The visual evidence confirms that the agent adhered to all constraints: no sign-in was attempted, no purchase or download was initiated, and the agent stopped after inspecting the details. Full credit is maintained.",
+            "review_note": "Confirmed across screenshots 4-7: generic 'ME' profile placeholder, no auth dialog, buy buttons untouched; action history contains only scrolls and navigation clicks."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model4.txt",
+                "line_range": "m4:L34-L34",
+                "quoted_text": "[100] link \"Cart 0\""
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "DOM-model states 4, 5, 6, and 7 confirm that no sign-in was performed, no purchase or download buttons were triggered, and the agent concluded the session after gathering details.",
+            "review_note": "Confirmed: 'Cart 0' logged-out state and no sign-in/purchase interactions in DOM states 4-7; action history shows only scrolls and navigation."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,849 @@
+{
+  "task_id": "browser_task_094-eu-regulation-metadata-20260914T092727Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/tmp/evidence-reruns-91-100.VAbX5a/data-dom/task_94_rerun",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_94_rerun/20260914T_task94_rerun_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "dd3cc482d818e64a490ac97ab93402bf440a770eca29c4aca54cb37af6c25049",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_94_rerun/20260914T_task94_rerun_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_094-eu-regulation-metadata-20260914T092727Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_094-eu-regulation-metadata-20260914T092727Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e83",
+            "target": {
+              "ref": "e83",
+              "role": "link",
+              "name": "Document information"
+            },
+            "thoughts": "Need the Dates metadata and document number from the Document information view, so open that tab first."
+          },
+          "observed_after_url": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32016R0679"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "bbe84207381b0ea2080f0c86a2cb97a01ea68d2cbde637f388c2d3da64151f61",
+          "after_sha256": "71e13fbdb8de187613d39b7ef80fafa0336d33d64624155ec1b91ef380f4a05f",
+          "before_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R0679",
+          "after_url": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32016R0679"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e83' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "dd3cc482d818e64a490ac97ab93402bf440a770eca29c4aca54cb37af6c25049",
+    "criterion_order": [
+      "Record document number (CELEX) for EUR-Lex 32016R0679",
+      "Record complete Official Journal citation shown under the title",
+      "Open and use EUR-Lex 'Document information' view and labeled 'Dates' metadata",
+      "Report Date of document (from Dates metadata)",
+      "Report entry-into-force Date of effect (from Dates metadata) and distinguish it from application date",
+      "Report application Date of effect (from Dates metadata) and distinguish it from entry-into-force date"
+    ],
+    "maximum_points": [
+      2.0,
+      3.0,
+      2.0,
+      2.0,
+      3.0,
+      3.0
+    ],
+    "criterion_denominator": 15.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_94_rerun/20260914T_task94_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "result": {
+    "process_score": 0.06666666666666667,
+    "total_earned_points": 1.0,
+    "total_max_points": 15.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 194.201
+  },
+  "criteria": [
+    {
+      "criterion": "Record document number (CELEX) for EUR-Lex 32016R0679",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Even though the DOM contains the needed document number, the agent did not deliver it in the final output. Under the DOM rule, actions/DOM state do not substitute for an answer; the criterion is about recording/reporting the number. Keep baseline at 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record complete Official Journal citation shown under the title",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The citation is fully available in the DOM, but the agent did not record/deliver it in the final answer. Since ‘answers prove delivery,’ no credit for reporting the citation. Baseline (3/3) was incorrectly granted under a blocker exception; DOM shows access to the needed text.",
+      "penalty": false
+    },
+    {
+      "criterion": "Open and use EUR-Lex 'Document information' view and labeled 'Dates' metadata",
+      "action_only_points": 2.0,
+      "final_points": 1.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "This criterion measures using/opening Document information and relying on labeled Dates metadata. Despite the click error, the latest DOM state already contains the Dates section content, so the blocker is not substantiated as preventing access to Dates. However, the agent did not actually use it to extract/report anything. Minimal partial credit for attempting to open Document information via Action 1, but not completing the use/extraction.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report Date of document (from Dates metadata)",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The DOM supports the correct Date of document, but the agent did not report it. No delivery, so 0 points.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report entry-into-force Date of effect (from Dates metadata) and distinguish it from application date",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Although the DOM clearly contains the entry-into-force Date of effect and its label, the agent did not deliver it or distinguish it from application in the final output. Score 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report application Date of effect (from Dates metadata) and distinguish it from entry-into-force date",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The DOM supports the application Date of effect, but the agent did not report it. No delivery, so 0 points.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 27,
+    "o4-mini": 3,
+    "total": 30,
+    "api_attempts": 30,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 119281,
+      "completion_tokens": 12851,
+      "reasoning_tokens": 0,
+      "total_tokens": 132132
+    },
+    "o4-mini": {
+      "prompt_tokens": 16156,
+      "completion_tokens": 5090,
+      "reasoning_tokens": 3648,
+      "total_tokens": 21246
+    },
+    "combined": {
+      "prompt_tokens": 135437,
+      "completion_tokens": 17941,
+      "reasoning_tokens": 3648,
+      "total_tokens": 153378
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_94_rerun/20260914T_task94_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "bbe84207381b0ea2080f0c86a2cb97a01ea68d2cbde637f388c2d3da64151f61",
+        "byte_count": 10755,
+        "line_count": 275,
+        "estimated_tokens": 2647,
+        "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32016R0679",
+        "title": "Regulation - 2016/679 - EN - gdpr - EUR-Lex",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 9
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 10,
+            "end_line": 244
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 245,
+            "end_line": 247
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 248,
+            "end_line": 254
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 255,
+            "end_line": 258
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 259,
+            "end_line": 265
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 266,
+            "end_line": 270
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 271,
+            "end_line": 275
+          }
+        ],
+        "control_refs": [
+          "310",
+          "345",
+          "134",
+          "136",
+          "138",
+          "140",
+          "142",
+          "146",
+          "148",
+          "150",
+          "152",
+          "154",
+          "156",
+          "158",
+          "160",
+          "162",
+          "164",
+          "166",
+          "168",
+          "170",
+          "172",
+          "174",
+          "176",
+          "178",
+          "428",
+          "429",
+          "430",
+          "431",
+          "432",
+          "433",
+          "434",
+          "435",
+          "436",
+          "437",
+          "438",
+          "439",
+          "440",
+          "441",
+          "442",
+          "443",
+          "444",
+          "445",
+          "446",
+          "447",
+          "448",
+          "449",
+          "450",
+          "451",
+          "454",
+          "455",
+          "456",
+          "457",
+          "458",
+          "459",
+          "460",
+          "461",
+          "462",
+          "463",
+          "464",
+          "465",
+          "466",
+          "467",
+          "468",
+          "469",
+          "470",
+          "471",
+          "472",
+          "473",
+          "474",
+          "475",
+          "476",
+          "477",
+          "480",
+          "481",
+          "482",
+          "483",
+          "484",
+          "485",
+          "486",
+          "487",
+          "488",
+          "489",
+          "490",
+          "491",
+          "492",
+          "493",
+          "494",
+          "495",
+          "496",
+          "497",
+          "498",
+          "499",
+          "500",
+          "501",
+          "502",
+          "503",
+          "46",
+          "47",
+          "326",
+          "330",
+          "80",
+          "other",
+          "290",
+          "325",
+          "355",
+          "356",
+          "358",
+          "275",
+          "15",
+          "53"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L275"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_94_rerun/20260914T_task94_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "71e13fbdb8de187613d39b7ef80fafa0336d33d64624155ec1b91ef380f4a05f",
+        "byte_count": 5434,
+        "line_count": 91,
+        "estimated_tokens": 1342,
+        "url": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32016R0679",
+        "title": "Regulation - 2016/679 - EN - gdpr - EUR-Lex",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 67
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 68,
+            "end_line": 70
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 71,
+            "end_line": 77
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 78,
+            "end_line": 79
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 80,
+            "end_line": 87
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 88,
+            "end_line": 91
+          }
+        ],
+        "control_refs": [
+          "16955",
+          "17174",
+          "17096",
+          "17099",
+          "17116",
+          "17120",
+          "16962",
+          "other",
+          "16701",
+          "17112",
+          "17203",
+          "17206",
+          "17208",
+          "17280",
+          "16023",
+          "16024"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L91"
+      }
+    ],
+    "estimated_evidence_tokens": 3989,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 9,
+        "1": 10,
+        "2": 3,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      },
+      "1": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 13,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17265,
+        "estimated_input_tokens": 4317,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 11669,
+        "estimated_input_tokens": 2918,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13128,
+        "estimated_input_tokens": 3282,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1
+        ],
+        "char_count": 16047,
+        "estimated_input_tokens": 4012,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1
+        ],
+        "char_count": 16388,
+        "estimated_input_tokens": 4097,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1
+        ],
+        "char_count": 16708,
+        "estimated_input_tokens": 4177,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13424,
+        "estimated_input_tokens": 3356,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1
+        ],
+        "char_count": 17006,
+        "estimated_input_tokens": 4252,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13693,
+        "estimated_input_tokens": 3424,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13987,
+        "estimated_input_tokens": 3497,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 14299,
+        "estimated_input_tokens": 3575,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9580,
+        "estimated_input_tokens": 2395,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 9678,
+        "estimated_input_tokens": 2420,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 9649,
+        "estimated_input_tokens": 2413,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 9502,
+        "estimated_input_tokens": 2376,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 9766,
+        "estimated_input_tokens": 2442,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 9716,
+        "estimated_input_tokens": 2429,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9985,
+        "estimated_input_tokens": 2497,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 10436,
+        "estimated_input_tokens": 2609,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 11090,
+        "estimated_input_tokens": 2773,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 11722,
+        "estimated_input_tokens": 2931,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 12285,
+        "estimated_input_tokens": 3072,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/task_94_rerun/20260914T_task94_rerun_data_new/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/task_94_rerun/20260914T_task94_rerun_data_new/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/task_94_rerun/20260914T_task94_rerun_data_new/dom_model/run.log"
+}

@@ -1,0 +1,223 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_025-hacker-news-search-20260909T075205Z",
+  "run_id": "20260912T_task025_data_new",
+  "rubric_sha256": "10d8137e689425c914ae0a893656b68a76d41e713d5413a3983bfa3b7d0fda40",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use Algolia Hacker News search for query 'LLM'",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 3.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C0-E1",
+          "evidence_requirement": "Use Algolia Hacker News search for query 'LLM'",
+          "expected_value": "Criterion-relevant browser state and final task claim",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot5.png",
+                "visible_text": "Criterion-relevant visible browser state",
+                "locator": "Selected verifier evidence frame"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshots 2-6 all show the Algolia HN search UI with the query box containing exactly “LLM” and matching results displayed. Latest is Screenshot 6, which still shows query “LLM” on hn.algolia.com.",
+            "review_note": "Manual inspection confirmed that the screenshot evidence and the verifier interpretation agree."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model5.txt",
+                "line_range": "m5:L1-L2",
+                "quoted_text": "URL: https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 5 showing URL `https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn`, which explicitly includes `query=LLM`. Earlier DOM states (1–4) also show `query=LLM` in the URL. Action 1 typed “LLM” into the Algolia searchbox.",
+            "review_note": "Manual inspection confirmed that the DOM evidence and the verifier interpretation agree."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Apply required filters: Show HN posts and past-year time window",
+      "max_points": 4,
+      "screenshot_final_points": 4.0,
+      "dom_model_final_points": 4.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C1-E1",
+          "evidence_requirement": "Apply required filters: Show HN posts and past-year time window",
+          "expected_value": "Criterion-relevant browser state and final task claim",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot5.png",
+                "visible_text": "Criterion-relevant visible browser state",
+                "locator": "Selected verifier evidence frame"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 6 (latest) shows filters set to “Search: Show HN” and “for: Past Year.” Earlier screenshots show intermediate states (e.g., Stories/All time), but the latest confirms both required filters applied.",
+            "review_note": "Manual inspection confirmed that the screenshot evidence and the verifier interpretation agree."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model5.txt",
+                "line_range": "m5:L1-L2",
+                "quoted_text": "URL: https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 5 showing both required filters in the URL: `dateRange=pastYear` and `type=show_hn`, and the on-page controls reflect “Past Year” and “Show HN”. Earlier DOM states show partial progress (e.g., DOM 3 has `dateRange=pastYear` but still `type=story`).",
+            "review_note": "Manual inspection confirmed that the DOM evidence and the verifier interpretation agree."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Sort results by points (descending) and verify sort order",
+      "max_points": 3,
+      "screenshot_final_points": 2.0,
+      "dom_model_final_points": 2.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C2-E1",
+          "evidence_requirement": "Sort results by points (descending) and verify sort order",
+          "expected_value": "Criterion-relevant browser state and final task claim",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot5.png",
+                "visible_text": "Criterion-relevant visible browser state",
+                "locator": "Selected verifier evidence frame"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 6 (latest) shows sort dropdown set to “by Popularity.” The first three results shown have points in descending order (915, 537, 495), consistent with points-descending for the visible items, but there is no explicit “points” sort label shown beyond “Popularity,” and no URL parameters are visible in screenshots.",
+            "review_note": "Manual inspection confirmed that the screenshot evidence and the verifier interpretation agree."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model5.txt",
+                "line_range": "m5:L1-L2",
+                "quoted_text": "URL: https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 5 showing sort control “Popularity” and URL parameter `sort=byPopularity`. The DOM does not show a control explicitly labeled “Points” or “sort=points”. However, the visible results in DOM 5 are ordered by decreasing points (915, 537, 495).",
+            "review_note": "Manual inspection confirmed that the DOM evidence and the verifier interpretation agree."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report top matching results with required fields",
+      "max_points": 6,
+      "screenshot_final_points": 6.0,
+      "dom_model_final_points": 6.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C3-E1",
+          "evidence_requirement": "Report top matching results with required fields",
+          "expected_value": "Criterion-relevant browser state and final task claim",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot5.png",
+                "visible_text": "Criterion-relevant visible browser state",
+                "locator": "Selected verifier evidence frame"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 6 (latest) shows the top three results under Show HN + Past Year, including each title, points, and comment counts: (1) “Show HN: I built a tiny LLM…” 915 points, 134 comments; (2) “Show HN: Needle2…” 537 points, 185 comments; (3) “Show HN: How I topped…” 495 points, 126 comments. The agent’s predicted output matches these exactly.",
+            "review_note": "Manual inspection confirmed that the screenshot evidence and the verifier interpretation agree."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model5.txt",
+                "line_range": "m5:L1-L2",
+                "quoted_text": "URL: https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 5, which explicitly lists the top three results under `type=show_hn` + `dateRange=pastYear` and shows each item’s title, points, and comment count: (1) “Show HN: I built a tiny LLM to demystify how language models work” — 915 points — 134 comments; (2) “Show HN: Needle2: 14MB agentic LLM for phones, wearables, smart home and robots” — 537 points — 185 comments; (3) “Show HN: How I topped the HuggingFace open LLM leaderboard on two gaming GPUs” — 495 points — 126 comments. These match the agent’s reported output exactly.",
+            "review_note": "Manual inspection confirmed that the DOM evidence and the verifier interpretation agree."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Respect constraints and stopping condition",
+      "max_points": 4,
+      "screenshot_final_points": 4.0,
+      "dom_model_final_points": 4.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C4-E1",
+          "evidence_requirement": "Respect constraints and stopping condition",
+          "expected_value": "Criterion-relevant browser state and final task claim",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot5.png",
+                "visible_text": "Criterion-relevant visible browser state",
+                "locator": "Selected verifier evidence frame"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Across screenshots (latest Screenshot 6), there is no sign-in flow and no evidence of voting, commenting, or submission actions—only search/filtering. Screenshot 6 shows the final verified state with query+filters+sort and top results visible, consistent with stopping after verification.",
+            "review_note": "Manual inspection confirmed that the screenshot evidence and the verifier interpretation agree."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model4.txt",
+                "line_range": "m4:L1-L2",
+                "quoted_text": "URL: https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Across the action history, actions are limited to typing the query and clicking filter controls (no sign-in/vote/comment/submit actions). Latest DOM (DOM_MODEL_STATE_INDEX: 5) shows the final filtered results page; no evidence of signing in or performing prohibited interactions is present. DOM 5 also provides the verification point where query+filters+sort setting and top 3 results are all visible, meeting the stopping condition.",
+            "review_note": "Manual inspection confirmed that the DOM evidence and the verifier interpretation agree."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    }
+  ]
+}

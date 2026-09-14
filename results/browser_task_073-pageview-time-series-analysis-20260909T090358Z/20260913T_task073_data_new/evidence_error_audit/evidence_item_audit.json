@@ -1,0 +1,156 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_073-pageview-time-series-analysis-20260909T090358Z",
+  "run_id": "20260913T_task073_data_new",
+  "rubric_sha256": "d4a151184f452268c309515f8df93743958ec6050655eb59d4badc4a9368eb4f",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Report daily date–viewcount pairs from the supplied API response (or report missing/unavailable data)",
+      "max_points": 6,
+      "screenshot_final_points": 2.0,
+      "dom_model_final_points": 2.5,
+      "evidence_items": [
+        {
+          "evidence_id": "C1",
+          "evidence_requirement": "Report daily date–viewcount pairs from the supplied API response (or report missing/unavailable data)",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot3.png",
+                "visible_text": "Report daily date–viewcount pairs from the supplied API response (or report missing/unavailable data)",
+                "locator": "criterion-relevant content visible in screenshot3.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Because the authoritative API response shown in the screenshots contains all seven required day-count pairs and the agent reported four of them incorrectly, this is a substantive failure to report the daily view counts from the supplied response. Not a blocker; data were visible.",
+            "review_note": "Screenshot3 contains all seven API items; each DOM state ends during the fourth record and fully preserves only 2025-01-01 through 2025-01-03."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "The agent reported 7 date–count pairs with exact integers for 2025-01-04 through 2025-01-07, but the DOM evidence only supports the first three pairs. This is a critical source-fidelity failure (introducing unevidenced counts) rather than an uncontrollable blocker, because the agent did not report the limitation (truncation) and instead asserted values as if sourced from the response. Award credit only for the 3 pairs that are explicitly supported.",
+            "review_note": "Screenshot3 contains all seven API items; each DOM state ends during the fourth record and fully preserves only 2025-01-01 through 2025-01-03."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Compute and show arithmetic for the total over the reported days",
+      "max_points": 3,
+      "screenshot_final_points": 1.0,
+      "dom_model_final_points": 1.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C2",
+          "evidence_requirement": "Compute and show arithmetic for the total over the reported days",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot3.png",
+                "visible_text": "Compute and show arithmetic for the total over the reported days",
+                "locator": "criterion-relevant content visible in screenshot3.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent did show arithmetic, but it is not the correct total for the API-response values evidenced in the screenshots because several daily inputs were wrong. Award partial credit for showing stepwise addition methodology, but penalize heavily for incorrect inputs/total relative to the supplied response.",
+            "review_note": "The full seven-day arithmetic can be checked from screenshot3, while DOM lacks four required addends."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "The agent’s shown 7-day total arithmetic relies on four addends not evidenced in the DOM snapshots, so the claimed 39,449 total is not supported. However, the agent did correctly add the first three evidenced numbers as an intermediate step (6244 + 6029 = 12,273; + 5740 = 18,013). Give partial credit for demonstrating correct arithmetic structure/ability on the evidenced portion, but not for the unsupported 7-day total.",
+            "review_note": "The full seven-day arithmetic can be checked from screenshot3, while DOM lacks four required addends."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Identify highest-view date and show maximum-selection logic over the reported days",
+      "max_points": 3,
+      "screenshot_final_points": 1.0,
+      "dom_model_final_points": 1.5,
+      "evidence_items": [
+        {
+          "evidence_id": "C3",
+          "evidence_requirement": "Identify highest-view date and show maximum-selection logic over the reported days",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot3.png",
+                "visible_text": "Identify highest-view date and show maximum-selection logic over the reported days",
+                "locator": "criterion-relevant content visible in screenshot3.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Maximum identification is incorrect given the visible API response (7508 on 2025-01-05). However, the agent did provide explicit max-selection comparison logic over its listed values, so minimal partial credit for method but not correctness.",
+            "review_note": "The correct seven-day maximum can be checked from screenshot3, while DOM lacks four comparison values."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "From the evidenced subset, 2025-01-01 with 6244 is the maximum among the three visible items, and the agent’s max-selection logic is consistent for that subset. But the agent claimed it was the maximum over the full 7-day range without evidence for the missing four days. Award partial credit for correct max identification over the confirmed subset, but not full credit for the 7-day maximum claim.",
+            "review_note": "The correct seven-day maximum can be checked from screenshot3, while DOM lacks four comparison values."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Adhere to task constraints (source fidelity, timestamp conversion, no re-aggregation)",
+      "max_points": 3,
+      "screenshot_final_points": 0.0,
+      "dom_model_final_points": 0.5,
+      "evidence_items": [
+        {
+          "evidence_id": "C4",
+          "evidence_requirement": "Adhere to task constraints (source fidelity, timestamp conversion, no re-aggregation)",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot3.png",
+                "visible_text": "Adhere to task constraints (source fidelity, timestamp conversion, no re-aggregation)",
+                "locator": "criterion-relevant content visible in screenshot3.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Hard constraint breach: the agent did not use only the returned items / did not preserve exact integer view counts from the official response. No evidence of timezone shifting or re-aggregation, but the incorrect numbers constitute fabrication/mistranscription, so no credit.",
+            "review_note": "Exact seven-day source fidelity can be checked from screenshot3; DOM omits four returned records."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "While the agent’s timestamp-to-date conversion method and integer preservation are consistent with the evidenced items, the agent violates the hard constraint 'Use only the items returned by the supplied official API response' as evidenced here by presenting four additional exact daily counts not shown/confirmed in the supplied DOM snapshots (i.e., fabricated relative to the provided evidence). This is a major constraints breach, so minimal credit only.",
+            "review_note": "Exact seven-day source fidelity can be checked from screenshot3; DOM omits four returned records."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    }
+  ]
+}

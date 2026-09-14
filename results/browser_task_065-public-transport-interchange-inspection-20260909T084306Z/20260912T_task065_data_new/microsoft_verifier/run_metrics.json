@@ -1,0 +1,159 @@
+{
+  "task_id": "browser_task_065-public-transport-interchange-inspection-20260909T084306Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_065-public-transport-interchange-inspection-20260909T084306Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "543008185397c93552f530d9f11bfcefcbae78868854f88a68ac4f0697038ac0",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 38,
+    "screenshots": 39
+  },
+  "result": {
+    "process_score": 0.17391304347826086,
+    "total_earned_points": 4.0,
+    "total_max_points": 23.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 98.243
+  },
+  "criteria": [
+    {
+      "criterion": "Retrieve/use the official TfL StopPoint response for HUBKGX (or report inability to access it)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did access the official StopPoint response for HUBKGX, but the predicted output claims the JSON was truncated/inaccessible to the point key sections could not be read. That is contradicted by multiple screenshots showing required sections plainly visible. This criterion is about retrieving/using the official response OR reporting inability; retrieval/use is satisfied regardless of later extraction failures, so keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report StopPoint ID",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did not report any StopPoint ID and claimed it was not accessible, but the official response visibly contains it (\"id\": \"HUBKGX\"). This is a controllable omission/incorrect inability claim, so score should be reduced to 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report common name",
+      "action_only_points": 2.0,
+      "final_points": 1.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Although commonName is visible for some nested/child StopPoints, the required value is the HUBKGX commonName from the HUBKGX StopPoint response. The evidence provided does not clearly show HUBKGX's commonName itself, so we cannot confirm the agent had access to the correct required commonName. The agent also did not report any commonName. Given uncertainty and lack of verified HUBKGX commonName visibility, award credit only under 'could not extract' would require a real blocker, but no blocker is shown; still, since the specific field for HUBKGX commonName is not evidenced as visible, assign partial rather than zero.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report latitude and longitude",
+      "action_only_points": 3.0,
+      "final_points": 1.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent claimed lat/lon were not accessible and provided none. Screenshots demonstrate coordinates are visible somewhere in the response, contradicting the claimed total inaccessibility. But because the evidence does not unambiguously tie the shown lat/lon to the HUBKGX top-level object (vs a child StopPoint), full correctness cannot be confirmed. Award partial credit for being in the right response but not extracted/reported.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report every top-level transport mode",
+      "action_only_points": 4.0,
+      "final_points": 0.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did not list any modes and claimed it could not access the modes array, but the full set is clearly visible. This is a controllable failure to extract/report, so score should be 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report Zone value from additionalProperties (key = Zone)",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did not report Zone and claimed it was inaccessible, but the required Zone value is clearly visible in the correct location (additionalProperties where key==Zone). This is a controllable omission, so score should be 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report every Tube line identifier from lineModeGroups where modeName = tube",
+      "action_only_points": 5.0,
+      "final_points": 0.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did not report any tube line identifiers and claimed lineModeGroups(tube) was not accessible, directly contradicted by screenshot #15. This is a controllable extraction failure; score 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Stopping condition satisfied (no extra fields beyond requested set)",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The response does not contain the requested fields set, and it includes substantial extraneous explanation, violating the stopping/formatting requirement to stop after recording the requested fields. Score should be 0.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 57,
+    "o4-mini": 3,
+    "total": 60,
+    "api_attempts": 60,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 267744,
+      "completion_tokens": 15598,
+      "reasoning_tokens": 0,
+      "total_tokens": 283342
+    },
+    "o4-mini": {
+      "prompt_tokens": 27752,
+      "completion_tokens": 3985,
+      "reasoning_tokens": 2240,
+      "total_tokens": 31737
+    },
+    "combined": {
+      "prompt_tokens": 295496,
+      "completion_tokens": 19583,
+      "reasoning_tokens": 2240,
+      "total_tokens": 315079
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/microsoft_verifier/run.log"
+}

@@ -1,0 +1,493 @@
+{
+  "phase": "A",
+  "origin": "microsoft_generate_rubric",
+  "task_id": "browser_task_025-hacker-news-search-20260909T075205Z",
+  "frozen_rubric_sha256": "10d8137e689425c914ae0a893656b68a76d41e713d5413a3983bfa3b7d0fda40",
+  "criterion_count": 5,
+  "criterion_denominator": 20.0,
+  "criteria": [
+    "Use Algolia Hacker News search for query 'LLM'",
+    "Apply required filters: Show HN posts and past-year time window",
+    "Sort results by points (descending) and verify sort order",
+    "Report top matching results with required fields",
+    "Respect constraints and stopping condition"
+  ],
+  "maximum_points": [
+    3.0,
+    4.0,
+    3.0,
+    6.0,
+    4.0
+  ],
+  "rubric_generation_calls": 2,
+  "api_attempts": 2,
+  "retries": 0,
+  "call_metrics": {
+    "gpt-5.2": {
+      "logical_calls": 2,
+      "api_attempts": 2,
+      "retries": 0
+    },
+    "o4-mini": {
+      "logical_calls": 0,
+      "api_attempts": 0,
+      "retries": 0
+    }
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 11156,
+      "completion_tokens": 1711,
+      "reasoning_tokens": 0,
+      "total_tokens": 12867
+    },
+    "o4-mini": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    },
+    "combined": {
+      "prompt_tokens": 11156,
+      "completion_tokens": 1711,
+      "reasoning_tokens": 0,
+      "total_tokens": 12867
+    }
+  },
+  "preflight": {
+    "status": "ready",
+    "phase": "A",
+    "paid_calls_authorized": true,
+    "writes_authorized": true,
+    "dataset": {
+      "task_id": "browser_task_025-hacker-news-search-20260909T075205Z",
+      "task_alias": "browser_task_025-hacker-news-search-20260909T075205Z",
+      "actions": 5,
+      "screenshots": 6,
+      "dom_model_states": 6,
+      "alignment": {
+        "task_id": "browser_task_025-hacker-news-search-20260909T075205Z",
+        "action_count": 5,
+        "state_count": 6,
+        "initial_state": 0,
+        "final_state": 5,
+        "actions": [
+          {
+            "ordinal": 1,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e27",
+              "target": {
+                "ref": "e27",
+                "role": "searchbox",
+                "name": "Search stories by title, url or author"
+              },
+              "text": "LLM",
+              "thoughts": "Enter the search query ‘LLM’ into the main search box as the first step before applying filters for Show HN, date range, and sorting."
+            },
+            "observed_after_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+          },
+          {
+            "ordinal": 2,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e3",
+              "target": {
+                "ref": "e3",
+                "role": "combobox",
+                "name": "All time"
+              },
+              "thoughts": "Need to change date range from All time to past year before applying Show HN and sorting by points"
+            },
+            "observed_after_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+          },
+          {
+            "ordinal": 3,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e47",
+              "target": {
+                "ref": "e47",
+                "role": "button",
+                "name": "Past Year"
+              },
+              "thoughts": "Need to restrict results to the past year using the date range dropdown by selecting the Past Year option"
+            },
+            "observed_after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+          },
+          {
+            "ordinal": 4,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e1",
+              "target": {
+                "ref": "e1",
+                "role": "combobox",
+                "name": "Stories"
+              },
+              "thoughts": "Now I need to restrict to Show HN posts, so I’ll open the Stories type combobox to choose the appropriate filter."
+            },
+            "observed_after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+          },
+          {
+            "ordinal": 5,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e16",
+              "target": {
+                "ref": "e16",
+                "role": "option",
+                "name": "Show HN"
+              },
+              "thoughts": "Need to change the Stories filter from Stories to Show HN by selecting the Show HN option in the expanded combobox."
+            },
+            "observed_after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn"
+          }
+        ],
+        "transitions": [
+          {
+            "from_state": 0,
+            "action_ordinal": 1,
+            "to_state": 1,
+            "before_sha256": "3a903bbe2fbeb55318622ca6c50aae0f0a5991fff800d16504bc7fd7f43bd097",
+            "after_sha256": "297a321e7027c92ad347f50adbc81e585b0d85a8f1ab248a86a7b155c2b8f373",
+            "before_url": "https://hn.algolia.com/",
+            "after_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+          },
+          {
+            "from_state": 1,
+            "action_ordinal": 2,
+            "to_state": 2,
+            "before_sha256": "297a321e7027c92ad347f50adbc81e585b0d85a8f1ab248a86a7b155c2b8f373",
+            "after_sha256": "496c0cc37a509b4d4768e6cffe15e145f80b7cabb2346fecd7852036fd11a286",
+            "before_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story",
+            "after_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+          },
+          {
+            "from_state": 2,
+            "action_ordinal": 3,
+            "to_state": 3,
+            "before_sha256": "496c0cc37a509b4d4768e6cffe15e145f80b7cabb2346fecd7852036fd11a286",
+            "after_sha256": "b8d3e7a777122969ce7883fd2f29b0df410018efc3a9249a1f56424e5ef58e60",
+            "before_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story",
+            "after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+          },
+          {
+            "from_state": 3,
+            "action_ordinal": 4,
+            "to_state": 4,
+            "before_sha256": "b8d3e7a777122969ce7883fd2f29b0df410018efc3a9249a1f56424e5ef58e60",
+            "after_sha256": "6187665033bc6f7ba9880812c6fe50669361f391943cd8678b80eabdcac8f59e",
+            "before_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story",
+            "after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+          },
+          {
+            "from_state": 4,
+            "action_ordinal": 5,
+            "to_state": 5,
+            "before_sha256": "6187665033bc6f7ba9880812c6fe50669361f391943cd8678b80eabdcac8f59e",
+            "after_sha256": "36d863c83ed702704734a6e0fc6a25f36445b85fe899b208995dce178c7563c6",
+            "before_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story",
+            "after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn"
+          }
+        ],
+        "warnings": [
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e27' is not exposed by dom_model0",
+            "action_ordinal": 1,
+            "state_index": 0
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e3' is not exposed by dom_model1",
+            "action_ordinal": 2,
+            "state_index": 1
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e47' is not exposed by dom_model2",
+            "action_ordinal": 3,
+            "state_index": 2
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e1' is not exposed by dom_model3",
+            "action_ordinal": 4,
+            "state_index": 3
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e16' is not exposed by dom_model4",
+            "action_ordinal": 5,
+            "state_index": 4
+          }
+        ]
+      }
+    },
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    },
+    "rubric_output": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_025-hacker-news-search-20260909T075205Z.json",
+    "metrics_output": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_025-hacker-news-search-20260909T075205Z_generation_metrics.json",
+    "sidecar_outputs": [
+      "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_025-hacker-news-search-20260909T075205Z/task_data_with_canonical_rubric.json",
+      "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_025-hacker-news-search-20260909T075205Z/task_data_with_canonical_rubric.json"
+    ],
+    "models": [
+      "gpt-5.2",
+      "o4-mini"
+    ],
+    "verifier_packages": {
+      "microsoft_verifier": {
+        "package": "microsoft_verifier",
+        "root": "/data/isha/msexecute/evidence-error-experiment/microsoft_verifier",
+        "file_count": 33,
+        "tree_sha256": "90af71daf5ecc0770643ce9bc8552eaefa792fef198682dc10c36e288e9c5802",
+        "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/microsoft_verifier.json"
+      },
+      "dom_model": {
+        "package": "dom_model",
+        "root": "/data/isha/msexecute/evidence-error-experiment/dom_model",
+        "file_count": 52,
+        "tree_sha256": "66f01ab44f5e28fa377aff439b786a3ca995db77c6fd1057a2143216ad4d886b",
+        "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/dom_model.json"
+      }
+    },
+    "import_source": null
+  },
+  "note": "Phase A usage is separate; reasoning tokens are a subset of completion tokens.",
+  "final_preflight": {
+    "task_id": "browser_task_025-hacker-news-search-20260909T075205Z",
+    "task_alias": "browser_task_025-hacker-news-search-20260909T075205Z",
+    "actions": 5,
+    "screenshots": 6,
+    "dom_model_states": 6,
+    "alignment": {
+      "task_id": "browser_task_025-hacker-news-search-20260909T075205Z",
+      "action_count": 5,
+      "state_count": 6,
+      "initial_state": 0,
+      "final_state": 5,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e27",
+            "target": {
+              "ref": "e27",
+              "role": "searchbox",
+              "name": "Search stories by title, url or author"
+            },
+            "text": "LLM",
+            "thoughts": "Enter the search query ‘LLM’ into the main search box as the first step before applying filters for Show HN, date range, and sorting."
+          },
+          "observed_after_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e3",
+            "target": {
+              "ref": "e3",
+              "role": "combobox",
+              "name": "All time"
+            },
+            "thoughts": "Need to change date range from All time to past year before applying Show HN and sorting by points"
+          },
+          "observed_after_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e47",
+            "target": {
+              "ref": "e47",
+              "role": "button",
+              "name": "Past Year"
+            },
+            "thoughts": "Need to restrict results to the past year using the date range dropdown by selecting the Past Year option"
+          },
+          "observed_after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e1",
+            "target": {
+              "ref": "e1",
+              "role": "combobox",
+              "name": "Stories"
+            },
+            "thoughts": "Now I need to restrict to Show HN posts, so I’ll open the Stories type combobox to choose the appropriate filter."
+          },
+          "observed_after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+        },
+        {
+          "ordinal": 5,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e16",
+            "target": {
+              "ref": "e16",
+              "role": "option",
+              "name": "Show HN"
+            },
+            "thoughts": "Need to change the Stories filter from Stories to Show HN by selecting the Show HN option in the expanded combobox."
+          },
+          "observed_after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "3a903bbe2fbeb55318622ca6c50aae0f0a5991fff800d16504bc7fd7f43bd097",
+          "after_sha256": "297a321e7027c92ad347f50adbc81e585b0d85a8f1ab248a86a7b155c2b8f373",
+          "before_url": "https://hn.algolia.com/",
+          "after_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "297a321e7027c92ad347f50adbc81e585b0d85a8f1ab248a86a7b155c2b8f373",
+          "after_sha256": "496c0cc37a509b4d4768e6cffe15e145f80b7cabb2346fecd7852036fd11a286",
+          "before_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story",
+          "after_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "496c0cc37a509b4d4768e6cffe15e145f80b7cabb2346fecd7852036fd11a286",
+          "after_sha256": "b8d3e7a777122969ce7883fd2f29b0df410018efc3a9249a1f56424e5ef58e60",
+          "before_url": "https://hn.algolia.com/?dateRange=all&page=0&prefix=true&query=LLM&sort=byPopularity&type=story",
+          "after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "b8d3e7a777122969ce7883fd2f29b0df410018efc3a9249a1f56424e5ef58e60",
+          "after_sha256": "6187665033bc6f7ba9880812c6fe50669361f391943cd8678b80eabdcac8f59e",
+          "before_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story",
+          "after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "6187665033bc6f7ba9880812c6fe50669361f391943cd8678b80eabdcac8f59e",
+          "after_sha256": "36d863c83ed702704734a6e0fc6a25f36445b85fe899b208995dce178c7563c6",
+          "before_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=story",
+          "after_url": "https://hn.algolia.com/?dateRange=pastYear&page=0&prefix=true&query=LLM&sort=byPopularity&type=show_hn"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e27' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e3' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e47' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e1' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e16' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        }
+      ]
+    },
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_025-hacker-news-search-20260909T075205Z.json",
+    "frozen_rubric_sha256": "10d8137e689425c914ae0a893656b68a76d41e713d5413a3983bfa3b7d0fda40",
+    "criterion_order": [
+      "Use Algolia Hacker News search for query 'LLM'",
+      "Apply required filters: Show HN posts and past-year time window",
+      "Sort results by points (descending) and verify sort order",
+      "Report top matching results with required fields",
+      "Respect constraints and stopping condition"
+    ],
+    "criterion_descriptions": [
+      "Attempt the search on https://hn.algolia.com/ using the query term exactly \"LLM\" (no sign-in). Full credit if the agent clearly states the query and performs/attempts it on Algolia HN. If Algolia is inaccessible (down/captcha/network restrictions), full credit if the agent reports the blocker and, optionally, uses a clearly equivalent fallback (e.g., documented Algolia API endpoint) without signing in. Partial credit if the agent uses a non-Algolia method without first establishing Algolia is inaccessible.",
+      "Restrict results to Show HN posts and to the past year, using the current date shown by the browser to define the one-year window. Full credit if both constraints are applied and verified (e.g., tag=show_hn plus a \"past year\" UI filter, or an explicit created_at_i numeric range). If the Algolia UI does not support an exact past-year filter, full credit if the agent uses a reasonable equivalent workaround (numeric date range) and states it explicitly. Partial credit if only Show HN OR the past-year window is correctly applied/verified.",
+      "Sort the filtered results by points (highest first) and verify the sort criterion/order. Full credit if the agent uses/attempts the points sort and clearly confirms it (e.g., \"Sorted by points\" or uses the 'sort=points' index if applicable). If the interface prevents points-sorting for the chosen filters, full credit if the agent explains the limitation and still determines the highest-point results from the filtered set with clear evidence. Partial credit if sorting is attempted but not clearly verified.",
+      "Report the top results for the verified query+filters+sort, including for each: title, points, and comment count. Full credit if the agent provides the top three when three or more matches exist. If fewer than three matches exist in the filtered/sorted result set, full credit if the agent clearly states that and reports all available matches with the required fields. Partial credit if one listed item is incorrect or missing a field, or if the count of results reported does not match availability without explanation.",
+      "Comply with constraints (no sign-in; do not vote/comment/submit) and stop once the query, filters, sort order, and the (up to) three results have been verified. Full credit if no prohibited actions are taken and the agent does not continue unnecessary browsing after verification. Partial credit if minor extra navigation occurs but no constraints are violated."
+    ],
+    "maximum_points": [
+      3.0,
+      4.0,
+      3.0,
+      6.0,
+      4.0
+    ],
+    "criterion_denominator": 20.0,
+    "screenshot_sidecar_validated": true,
+    "dom_model_sidecar_validated": true,
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_025-hacker-news-search-20260909T075205Z_generation_metrics.json",
+    "rubric_generation_calls_during_scoring": 0,
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    }
+  }
+}

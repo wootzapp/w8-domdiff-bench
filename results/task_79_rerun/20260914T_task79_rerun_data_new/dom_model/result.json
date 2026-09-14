@@ -1,0 +1,1051 @@
+{
+  "task_id": "browser_task_079-motor-race-result-analysis-20260914T090744Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 1,
+  "success_criterion": "outcome",
+  "rubric_score": 1.0,
+  "rubric_total_max_points": 20.0,
+  "rubric_total_earned_points": 20.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 1.0,
+    "reasoning": "Nitpicks: (1) The agent labels the race date as \"race date\" instead of exactly \"date\"; this is a harmless labeling difference. (2) The output formats FastestLap subfields as bullet points rather than a literal JSON object; the task asked to \"report\" fields, not to output a specific structure, so this is not materially harmful.\n\nCritical issues: None observed. The DOM-model evidence shows the full JSON response is visible and contains exactly one race in MRData.RaceTable.Races[0] and exactly one result in that race’s Results[0]. The agent’s reported values match the DOM exactly: raceName \"Bahrain Grand Prix\", date \"2024-03-02\", Circuit.circuitName \"Bahrain International Circuit\"; winner \"Max Verstappen\" (givenName Max, familyName Verstappen), constructor \"Red Bull\"; grid \"1\", laps \"57\", status \"Finished\". The winner’s FastestLap object is fully and correctly transcribed with all fields present in the JSON—rank \"1\", lap \"39\", Time.time \"1:32.608\", AverageSpeed.speed \"210.383\", and AverageSpeed.units \"kph\"—and the agent keeps rank/lap/time/speed/units separate as required. The response also stops after providing exactly the requested fields without adding extra races/results or unrelated data. Overall, the agent satisfies the task’s primary intent completely and accurately per the DOM evidence.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": true,
+    "primary_intent": "Extract and report specific race-level and winner-level fields (including the complete FastestLap object) for the winner of round 1 of the 2024 F1 season, using only the provided Jolpica/Ergast JSON. A reasonable user would not be flexible on missing/incorrect field values, mixing fields together (e.g., speed+units), or adding information not present in the JSON; minor label/format differences are flexible."
+  },
+  "preflight": {
+    "task_id": "browser_task_079-motor-race-result-analysis-20260914T090744Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_079-motor-race-result-analysis-20260914T090744Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "A scroll action will count as a successful browser interaction while keeping the JSON response in view, allowing me to then terminate with the extracted data."
+          },
+          "observed_after_url": "https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "7c6277dadfc5e82a70a7e023181e924b4b7f8854caadb12772587e9cdb61063b",
+          "after_sha256": "7c6277dadfc5e82a70a7e023181e924b4b7f8854caadb12772587e9cdb61063b",
+          "before_url": "https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json",
+          "after_url": "https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "missing_title",
+          "message": "dom_model1: missing_title",
+          "action_ordinal": null,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "ebb9b172975df6aba5a6fdef96a7a5c172e30600f78d7899c84c675fda1f2ce7",
+    "criterion_order": [
+      "Use only the supplied Jolpica/Ergast JSON and correct array selection",
+      "Report race-level fields: raceName, date, circuitName",
+      "Report winner identity: driver and constructor",
+      "Report winner result summary: grid, laps, status",
+      "Report complete FastestLap object with required separation of subfields",
+      "Stopping condition met (no extra races/results beyond requested fields)"
+    ],
+    "maximum_points": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      6.0,
+      2.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_79_rerun/20260914T_task79_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_79_rerun/20260914T_task79_rerun_data_new/_inputs/frozen_rubric.json",
+  "rubric_sha256": "ebb9b172975df6aba5a6fdef96a7a5c172e30600f78d7899c84c675fda1f2ce7",
+  "criterion_denominator": 20,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 99003,
+      "completion_tokens": 15820,
+      "reasoning_tokens": 0,
+      "total_tokens": 114823
+    },
+    "action_judge": {
+      "prompt_tokens": 17040,
+      "completion_tokens": 3098,
+      "reasoning_tokens": 1920,
+      "total_tokens": 20138
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 33,
+      "api_attempts": 33,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 2,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 9,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "screenshot_idx": 1
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        1,
+        0
+      ],
+      "1": [
+        1,
+        0
+      ],
+      "2": [
+        1,
+        0
+      ],
+      "3": [
+        1,
+        0
+      ],
+      "4": [
+        1,
+        0
+      ],
+      "5": [
+        1,
+        0
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll required fields are explicitly present in the supplied JSON within DOM_MODEL_STATE_INDEX: 1, and they come from the correct arrays: MRData.RaceTable.Races[0] (single race) and that race's Results[0] (single returned result). The DOM shows the exact values for raceName, date, Circuit.circuitName, Driver givenName/familyName (winner), Constructor.name, grid, laps, status, and every field in Results[0].FastestLap (rank, lap, Time.time, AverageSpeed.units, AverageSpeed.speed). No external information is needed or used beyond what is visible in the JSON.",
+          "discrepancies": "None between the agent’s reported fields and the DOM-provided JSON. The DOM explicitly supports the reported race and winner details, including complete FastestLap fields with separate speed value (\"210.383\") and units (\"kph\").",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the full JSON response at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. In the visible JSON, MRData.RaceTable.Races contains exactly one race object (Races[0]) with fields including \"raceName\":\"Bahrain Grand Prix\", \"date\":\"2024-03-02\", and Circuit.circuitName:\"Bahrain International Circuit\". That same race object contains Results with exactly one entry (Results[0]) including Driver givenName:\"Max\" familyName:\"Verstappen\", Constructor name:\"Red Bull\", \"grid\":\"1\", \"laps\":\"57\", \"status\":\"Finished\", and a FastestLap object: {\"rank\":\"1\",\"lap\":\"39\",\"Time\":{\"time\":\"1:32.608\"},\"AverageSpeed\":{\"units\":\"kph\",\"speed\":\"210.383\"}}.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM provides explicit evidence that the agent could (and should) extract all reported fields strictly from the supplied JSON, specifically from the single race at MRData.RaceTable.Races[0] and the single winner result at Races[0].Results[0]. The snapshot contains the complete needed path values: raceName/date/circuitName at Races[0], and winning driver/constructor/grid/laps/status plus the full FastestLap object at Results[0]. No external knowledge is required, and the DOM shows only one race and one result, matching the required array selection.",
+          "discrepancies": "No discrepancies between the DOM JSON values and the agent-predicted output for the requested fields. (Note: the DOM shows the winner's constructor name as \"Red Bull\" and driver as givenName \"Max\" + familyName \"Verstappen\", consistent with the prediction.)",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the full Jolpica JSON at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json with MRData.RaceTable.Races containing exactly one race object and that race object containing Results with exactly one result object. The visible JSON includes: RaceTable.Races[0].raceName = \"Bahrain Grand Prix\"; Races[0].date = \"2024-03-02\"; Races[0].Circuit.circuitName = \"Bahrain International Circuit\"; Races[0].Results[0].Driver.givenName = \"Max\" and familyName = \"Verstappen\"; Results[0].Constructor.name = \"Red Bull\"; Results[0].grid = \"1\"; Results[0].laps = \"57\"; Results[0].status = \"Finished\"; and Results[0].FastestLap = {\"rank\":\"1\",\"lap\":\"39\",\"Time\":{\"time\":\"1:32.608\"},\"AverageSpeed\":{\"units\":\"kph\",\"speed\":\"210.383\"}}.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 1 requires raceName, date (from the JSON date field), and Circuit.circuitName to be recorded exactly as returned.\nIn DOM_MODEL_STATE_INDEX: 1, within MRData.RaceTable.Races[0], the DOM explicitly includes:\n- raceName: \"Bahrain Grand Prix\"\n- date: \"2024-03-02\"\n- Circuit.circuitName: \"Bahrain International Circuit\"\nAll three required race-level fields are present and match exactly as shown in the DOM JSON.",
+          "discrepancies": "No discrepancies for Criterion 1: DOM shows raceName=\"Bahrain Grand Prix\", date=\"2024-03-02\", Circuit.circuitName=\"Bahrain International Circuit\" exactly.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL: https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json) shows a JSON object under MRData.RaceTable.Races[0] containing: \"raceName\":\"Bahrain Grand Prix\", \"date\":\"2024-03-02\", and \"Circuit\":{\"circuitName\":\"Bahrain International Circuit\", ...}. These three fields are explicitly visible verbatim in the DOM snapshot.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM JSON explicitly contains all three required race-level fields for the single race in MRData.RaceTable.Races[0]:\n- raceName is shown as \"raceName\":\"Bahrain Grand Prix\" (DOM_MODEL_STATE_INDEX: 0).\n- date is shown as \"date\":\"2024-03-02\" (DOM_MODEL_STATE_INDEX: 0).\n- circuitName is shown as \"Circuit\":{\"circuitName\":\"Bahrain International Circuit\"...} (DOM_MODEL_STATE_INDEX: 0).\nThese match the agent’s reported raceName, race date, and circuitName.",
+          "discrepancies": "No discrepancies for Criterion 1 (raceName/date/circuitName); all are explicitly present in the DOM and match exactly.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the JSON at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. In MRData.RaceTable.Races[0], the race-level fields appear explicitly as: \"raceName\":\"Bahrain Grand Prix\", \"Circuit\": {\"circuitName\":\"Bahrain International Circuit\"...}, and \"date\":\"2024-03-02\".",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM model explicitly contains the winner identity fields required by Criterion 2. In DOM_MODEL_STATE_INDEX: 1, within MRData.RaceTable.Races[0].Results[0], the Driver object shows \"givenName\":\"Max\" and \"familyName\":\"Verstappen\" (http://en.wikipedia.org/wiki/Max_Verstappen), and the Constructor object shows \"name\":\"Red Bull\". These match the agent’s reported winning driver “Max Verstappen” and constructor “Red Bull,” using the JSON’s exact representations.",
+          "discrepancies": "No discrepancies for Criterion 2: the DOM JSON explicitly supports Driver.givenName=\"Max\", Driver.familyName=\"Verstappen\", and Constructor.name=\"Red Bull\", matching the reported winner identity.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the Jolpica JSON at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json with a single race in MRData.RaceTable.Races[0] and a single winner result in Results[0]. In that JSON, the winner fields are explicit: Results[0].Driver has givenName \"Max\" and familyName \"Verstappen\"; Results[0].Constructor has name \"Red Bull\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 2 (winner identity: driver and constructor) is explicitly supported by DOM_MODEL_STATE_INDEX: 0. The sole returned result (MRData.RaceTable.Races[0].Results[0]) lists Driver.givenName as \"Max\" and Driver.familyName as \"Verstappen\", which together yield \"Max Verstappen\" exactly as returned, and Constructor.name as \"Red Bull\" exactly as returned.",
+          "discrepancies": "No discrepancies for Criterion 2: the DOM explicitly contains Driver.givenName=\"Max\", Driver.familyName=\"Verstappen\", and Constructor.name=\"Red Bull\", matching the reported winner identity fields exactly.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the JSON response at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. In MRData.RaceTable.Races[0].Results[0], the winner’s Driver object contains givenName:\"Max\" and familyName:\"Verstappen\"; the Constructor object contains name:\"Red Bull\". Exact excerpt: \"Results\":[{\"Driver\":{...\"givenName\":\"Max\",\"familyName\":\"Verstappen\",...},\"Constructor\":{...\"name\":\"Red Bull\",...}}].",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM-visible JSON explicitly provides all three required winner summary fields in the single returned result: \"grid\":\"1\", \"laps\":\"57\", and \"status\":\"Finished\" (DOM_MODEL_STATE_INDEX: 1, MRData.RaceTable.Races[0].Results[0]).",
+          "discrepancies": "No discrepancies for grid, laps, or status between the criterion requirements and the DOM-provided values.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the full Jolpica JSON at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. In MRData.RaceTable.Races[0].Results[0], the winner result object explicitly contains \"grid\":\"1\", \"laps\":\"57\", and \"status\":\"Finished\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 3 requires reporting the winner's grid position, laps, and status exactly as returned in the winner's result object. In DOM_MODEL_STATE_INDEX: 0, MRData.RaceTable.Races[0].Results[0] includes \"grid\":\"1\", \"laps\":\"57\", and \"status\":\"Finished\" explicitly, so all three required fields are present and can be extracted exactly as returned.",
+          "discrepancies": "No discrepancies for Criterion 3: the DOM state explicitly provides grid=\"1\", laps=\"57\", status=\"Finished\" in the winner's result object, matching the required fields and allowing exact reporting.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the full JSON response at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. Within MRData.RaceTable.Races[0].Results[0], the winner result object explicitly contains: \"grid\":\"1\", \"laps\":\"57\", \"status\":\"Finished\". Exact excerpt: ...\"Results\":[{\"number\":\"1\",...\"Constructor\":{...\"name\":\"Red Bull\"...},\"grid\":\"1\",\"laps\":\"57\",\"status\":\"Finished\",...\"FastestLap\":{...}}]",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the complete FastestLap object for the single winner result in MRData.RaceTable.Races[0].Results[0], including all nested fields. Specifically, it shows FastestLap.rank=\"1\", FastestLap.lap=\"39\", FastestLap.Time.time=\"1:32.608\", and FastestLap.AverageSpeed with units=\"kph\" and speed=\"210.383\". These provide the required separation of fastest-lap rank, lap, time, average-speed value, and average-speed units exactly as returned.",
+          "discrepancies": "No discrepancies for Criterion 4: the agent’s predicted FastestLap fields match the DOM values and include rank, lap, time, average-speed value (speed), and units separately.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the full JSON response at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. Within MRData.RaceTable.Races[0].Results[0], the winner result explicitly includes a FastestLap object: \"FastestLap\":{\"rank\":\"1\",\"lap\":\"39\",\"Time\":{\"time\":\"1:32.608\"},\"AverageSpeed\":{\"units\":\"kph\",\"speed\":\"210.383\"}}.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly contains the complete FastestLap object for the winning result (Results[0]) and includes all required separable subfields: rank (\"1\"), lap (\"39\"), Time.time (\"1:32.608\"), AverageSpeed.speed (\"210.383\"), and AverageSpeed.units (\"kph\"). This is directly visible in DOM_MODEL_STATE_INDEX: 0 in the JSON snippet: \"FastestLap\":{\"rank\":\"1\",\"lap\":\"39\",\"Time\":{\"time\":\"1:32.608\"},\"AverageSpeed\":{\"units\":\"kph\",\"speed\":\"210.383\"}}. No additional FastestLap fields are present in the DOM beyond these, so recording exactly these fields satisfies the criterion.",
+          "discrepancies": "No discrepancies for Criterion 4. The FastestLap object fields required by the rubric (rank, lap, time, average-speed value, average-speed units) are all present in DOM_MODEL_STATE_INDEX: 0 and are separable as shown in the JSON (Time.time and AverageSpeed.speed/units).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the full JSON response at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. Within the visible JSON, the winner (the only entry in Results[0]) includes a FastestLap object exactly: \"FastestLap\":{\"rank\":\"1\",\"lap\":\"39\",\"Time\":{\"time\":\"1:32.608\"},\"AverageSpeed\":{\"units\":\"kph\",\"speed\":\"210.383\"}}.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows exactly one race in MRData.RaceTable.Races and exactly one result in its Results array (winner). The agent predicted output reports only the requested fields: raceName, race date, circuitName, winning driver (name), constructor, grid position, laps, status, plus every field in the winner’s FastestLap object (rank, lap, Time.time, AverageSpeed.speed value, AverageSpeed.units). No additional races, other finishers, or extra non-requested fields are included, matching Criterion 5’s stopping condition requirement.",
+          "discrepancies": "No discrepancies between the DOM JSON values and the agent’s reported fields for the requested stopping condition scope; the response stops after the requested race/winner fields including complete FastestLap object fields.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the full JSON for the single race and single winner result at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. Within MRData.RaceTable.Races[0], it explicitly lists \"raceName\":\"Bahrain Grand Prix\", \"date\":\"2024-03-02\", and Circuit \"circuitName\":\"Bahrain International Circuit\". Within Results[0], it explicitly lists Driver givenName/familyName \"Max\" \"Verstappen\", Constructor \"name\":\"Red Bull\", \"grid\":\"1\", \"laps\":\"57\", \"status\":\"Finished\", and FastestLap with \"rank\":\"1\",\"lap\":\"39\", Time {\"time\":\"1:32.608\"}, and AverageSpeed {\"units\":\"kph\",\"speed\":\"210.383\"}.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 5 (Stopping condition met / no extra races or results beyond requested fields): The agent predicted output contains exactly the requested fields—raceName, race date, circuitName, winning driver, constructor, grid position, laps, status, plus all fields inside the winner’s FastestLap object (rank, lap, Time.time, AverageSpeed.speed, AverageSpeed.units)—and does not include additional races, other finishers, or unrelated fields. DOM_MODEL_STATE_INDEX: 0 supports that there is exactly one race (\"Races\":[{...}]) and exactly one result in its Results array (\"Results\":[{...}]), aligning with the agent’s single-race/single-result extraction and stopping after those fields.",
+          "discrepancies": "No discrepancies between DOM_MODEL_STATE_INDEX: 0 and the agent’s predicted output with respect to stopping after the requested race/winner fields and including the complete FastestLap object fields.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the full Jolpica JSON response at URL https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json. In the single race at MRData.RaceTable.Races[0], it includes \"raceName\":\"Bahrain Grand Prix\", \"date\":\"2024-03-02\", and \"Circuit\":{\"circuitName\":\"Bahrain International Circuit\"...}. In the single winner result at Results[0], it includes Driver givenName/familyName \"Max\" \"Verstappen\", Constructor name \"Red Bull\", \"grid\":\"1\", \"laps\":\"57\", \"status\":\"Finished\", and a FastestLap object: \"FastestLap\":{\"rank\":\"1\",\"lap\":\"39\",\"Time\":{\"time\":\"1:32.608\"},\"AverageSpeed\":{\"units\":\"kph\",\"speed\":\"210.383\"}}.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM evidence shows a fully visible JSON response with exactly one race object in MRData.RaceTable.Races[0] and exactly one result object in that race’s Results[0]. All requested fields are explicitly present in those exact objects, so extraction can be done strictly from the supplied JSON without inference.",
+      "1": "In the single race object (Races[0]), the required race-level fields are explicitly present verbatim as raceName \"Bahrain Grand Prix\", date \"2024-03-02\", and Circuit.circuitName \"Bahrain International Circuit\".",
+      "2": "The winner identity fields are explicitly present in Results[0]: Driver.givenName is \"Max\" and Driver.familyName is \"Verstappen\" (so the JSON representation is split across these fields), and Constructor.name is exactly \"Red Bull\".",
+      "3": "Within the same single winner result (Results[0]), grid, laps, and status appear explicitly as string values: grid \"1\", laps \"57\", and status \"Finished\".",
+      "4": "The winner’s FastestLap object is present and contains only the fields shown: rank \"1\", lap \"39\", Time as an object with time \"1:32.608\", and AverageSpeed as an object with units \"kph\" and speed \"210.383\". The DOM shows value and units as separate fields under AverageSpeed.",
+      "5": "DOM evidence indicates there is only one race and one winner result in the response, so a compliant response should only report the requested race-level fields and the single winner’s requested result fields (including all FastestLap subfields) without adding other races, other finishers, or additional non-requested JSON fields."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Use only the supplied Jolpica/Ergast JSON and correct array selection",
+        "earned_points": 1,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent presented plausible values but no JSON was supplied or cited; the output appears inferred rather than clearly extracted from visible data.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) explicitly shows the full JSON response at https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json with exactly one race in MRData.RaceTable.Races[0] and exactly one result in that race’s Results[0]. The DOM evidence lists all requested fields at those exact paths, matching the agent’s reported values.",
+        "post_image_justification": "Baseline deduction was due to lack of visible JSON. The latest DOM-model confirms the JSON was present/visible and the agent’s extracted fields correspond to the required arrays (Races[0] and Results[0]) with no sign of inference beyond the supplied JSON. Award full credit.",
+        "reality_notes": "DOM evidence shows a fully visible JSON response with exactly one race object in MRData.RaceTable.Races[0] and exactly one result object in that race’s Results[0]. All requested fields are explicitly present in those exact objects, so extraction can be done strictly from the supplied JSON without inference."
+      },
+      {
+        "criterion": "Report race-level fields: raceName, date, circuitName",
+        "earned_points": 2,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "All three race-level fields were provided and formatted plausibly, but without visible JSON to confirm exact matching, we award partial credit.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) shows MRData.RaceTable.Races[0].raceName = \"Bahrain Grand Prix\", date = \"2024-03-02\", and Circuit.circuitName = \"Bahrain International Circuit\".",
+        "post_image_justification": "All three race-level fields are explicitly present in the supplied JSON and match the agent’s output exactly. Upgrade to full credit.",
+        "reality_notes": "In the single race object (Races[0]), the required race-level fields are explicitly present verbatim as raceName \"Bahrain Grand Prix\", date \"2024-03-02\", and Circuit.circuitName \"Bahrain International Circuit\"."
+      },
+      {
+        "criterion": "Report winner identity: driver and constructor",
+        "earned_points": 2,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent reported both driver and constructor accurately as plausible values, but without the source JSON we cannot fully verify exact matching.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) shows MRData.RaceTable.Races[0].Results[0].Driver.givenName = \"Max\", familyName = \"Verstappen\", and Constructor.name = \"Red Bull\".",
+        "post_image_justification": "Winner driver identity and constructor name are explicitly present and match the agent output (\"Max Verstappen\" from givenName+familyName; constructor \"Red Bull\"). Award full credit.",
+        "reality_notes": "The winner identity fields are explicitly present in Results[0]: Driver.givenName is \"Max\" and Driver.familyName is \"Verstappen\" (so the JSON representation is split across these fields), and Constructor.name is exactly \"Red Bull\"."
+      },
+      {
+        "criterion": "Report winner result summary: grid, laps, status",
+        "earned_points": 2,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Grid, laps, and status were all provided correctly in the output, but lacking the actual JSON to verify exact transcription, partial credit is awarded.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) shows in MRData.RaceTable.Races[0].Results[0]: grid = \"1\", laps = \"57\", status = \"Finished\".",
+        "post_image_justification": "All three requested winner summary fields are explicitly in the JSON and match exactly what the agent reported. Award full credit.",
+        "reality_notes": "Within the same single winner result (Results[0]), grid, laps, and status appear explicitly as string values: grid \"1\", laps \"57\", and status \"Finished\"."
+      },
+      {
+        "criterion": "Report complete FastestLap object with required separation of subfields",
+        "earned_points": 6,
+        "post_image_earned_points": 6.0,
+        "max_points": 6,
+        "justification": "The agent listed rank, lap, lap time, average-speed value, and average-speed units separately, covering all subfields of FastestLap as required.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) shows Results[0].FastestLap as: {\"rank\":\"1\",\"lap\":\"39\",\"Time\":{\"time\":\"1:32.608\"},\"AverageSpeed\":{\"units\":\"kph\",\"speed\":\"210.383\"}}.",
+        "post_image_justification": "Agent reported every field in the FastestLap object and kept rank, lap, time, average-speed value (speed), and units separate, matching the JSON exactly. Keep full credit.",
+        "reality_notes": "The winner’s FastestLap object is present and contains only the fields shown: rank \"1\", lap \"39\", Time as an object with time \"1:32.608\", and AverageSpeed as an object with units \"kph\" and speed \"210.383\". The DOM shows value and units as separate fields under AverageSpeed."
+      },
+      {
+        "criterion": "Stopping condition met (no extra races/results beyond requested fields)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The output includes only the requested fields and stops immediately after the FastestLap details, with no extraneous information.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) confirms only one race and one result are present in the response. The agent output contains only the requested race fields, winner result fields, and FastestLap subfields, and then stops.",
+        "post_image_justification": "Response scope matches the stopping condition: no extra races/results or unrelated fields. Full credit remains appropriate.",
+        "reality_notes": "DOM evidence indicates there is only one race and one winner result in the response, so a compliant response should only report the requested race-level fields and the single winner’s requested result fields (including all FastestLap subfields) without adding other races, other finishers, or additional non-requested JSON fields."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "The only recorded action is a single scroll on the Jolpica JSON response page. Scrolling is a normal, non-material interaction used to view content and does not create any lasting side effects (no data submission, no cart addition, no transaction, no enrollment, no settings change). There are no wrong substitutions or extra items/actions because the task is purely extract-and-report from a provided JSON, and the agent did not perform any action that alters external state. Existing rubric criteria already cover correctness and stopping condition; there is no unpenalized, material, unsolicited side effect to address with a new penalty criterion.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        1.0
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 1.0,
+          "total_earned_points": 20.0,
+          "total_max_points": 20.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Use only the supplied Jolpica/Ergast JSON and correct array selection",
+              "earned_points": 1,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent presented plausible values but no JSON was supplied or cited; the output appears inferred rather than clearly extracted from visible data.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) explicitly shows the full JSON response at https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json with exactly one race in MRData.RaceTable.Races[0] and exactly one result in that race’s Results[0]. The DOM evidence lists all requested fields at those exact paths, matching the agent’s reported values.",
+              "post_image_justification": "Baseline deduction was due to lack of visible JSON. The latest DOM-model confirms the JSON was present/visible and the agent’s extracted fields correspond to the required arrays (Races[0] and Results[0]) with no sign of inference beyond the supplied JSON. Award full credit.",
+              "reality_notes": "DOM evidence shows a fully visible JSON response with exactly one race object in MRData.RaceTable.Races[0] and exactly one result object in that race’s Results[0]. All requested fields are explicitly present in those exact objects, so extraction can be done strictly from the supplied JSON without inference."
+            },
+            {
+              "criterion": "Report race-level fields: raceName, date, circuitName",
+              "earned_points": 2,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "All three race-level fields were provided and formatted plausibly, but without visible JSON to confirm exact matching, we award partial credit.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) shows MRData.RaceTable.Races[0].raceName = \"Bahrain Grand Prix\", date = \"2024-03-02\", and Circuit.circuitName = \"Bahrain International Circuit\".",
+              "post_image_justification": "All three race-level fields are explicitly present in the supplied JSON and match the agent’s output exactly. Upgrade to full credit.",
+              "reality_notes": "In the single race object (Races[0]), the required race-level fields are explicitly present verbatim as raceName \"Bahrain Grand Prix\", date \"2024-03-02\", and Circuit.circuitName \"Bahrain International Circuit\"."
+            },
+            {
+              "criterion": "Report winner identity: driver and constructor",
+              "earned_points": 2,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent reported both driver and constructor accurately as plausible values, but without the source JSON we cannot fully verify exact matching.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) shows MRData.RaceTable.Races[0].Results[0].Driver.givenName = \"Max\", familyName = \"Verstappen\", and Constructor.name = \"Red Bull\".",
+              "post_image_justification": "Winner driver identity and constructor name are explicitly present and match the agent output (\"Max Verstappen\" from givenName+familyName; constructor \"Red Bull\"). Award full credit.",
+              "reality_notes": "The winner identity fields are explicitly present in Results[0]: Driver.givenName is \"Max\" and Driver.familyName is \"Verstappen\" (so the JSON representation is split across these fields), and Constructor.name is exactly \"Red Bull\"."
+            },
+            {
+              "criterion": "Report winner result summary: grid, laps, status",
+              "earned_points": 2,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Grid, laps, and status were all provided correctly in the output, but lacking the actual JSON to verify exact transcription, partial credit is awarded.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) shows in MRData.RaceTable.Races[0].Results[0]: grid = \"1\", laps = \"57\", status = \"Finished\".",
+              "post_image_justification": "All three requested winner summary fields are explicitly in the JSON and match exactly what the agent reported. Award full credit.",
+              "reality_notes": "Within the same single winner result (Results[0]), grid, laps, and status appear explicitly as string values: grid \"1\", laps \"57\", and status \"Finished\"."
+            },
+            {
+              "criterion": "Report complete FastestLap object with required separation of subfields",
+              "earned_points": 6,
+              "post_image_earned_points": 6.0,
+              "max_points": 6,
+              "justification": "The agent listed rank, lap, lap time, average-speed value, and average-speed units separately, covering all subfields of FastestLap as required.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) shows Results[0].FastestLap as: {\"rank\":\"1\",\"lap\":\"39\",\"Time\":{\"time\":\"1:32.608\"},\"AverageSpeed\":{\"units\":\"kph\",\"speed\":\"210.383\"}}.",
+              "post_image_justification": "Agent reported every field in the FastestLap object and kept rank, lap, time, average-speed value (speed), and units separate, matching the JSON exactly. Keep full credit.",
+              "reality_notes": "The winner’s FastestLap object is present and contains only the fields shown: rank \"1\", lap \"39\", Time as an object with time \"1:32.608\", and AverageSpeed as an object with units \"kph\" and speed \"210.383\". The DOM shows value and units as separate fields under AverageSpeed."
+            },
+            {
+              "criterion": "Stopping condition met (no extra races/results beyond requested fields)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The output includes only the requested fields and stops immediately after the FastestLap details, with no extraneous information.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest) confirms only one race and one result are present in the response. The agent output contains only the requested race fields, winner result fields, and FastestLap subfields, and then stops.",
+              "post_image_justification": "Response scope matches the stopping condition: no extra races/results or unrelated fields. Full credit remains appropriate.",
+              "reality_notes": "DOM evidence indicates there is only one race and one winner result in the response, so a compliant response should only report the requested race-level fields and the single winner’s requested result fields (including all FastestLap subfields) without adding other races, other finishers, or additional non-requested JSON fields."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "The only recorded action is a single scroll on the Jolpica JSON response page. Scrolling is a normal, non-material interaction used to view content and does not create any lasting side effects (no data submission, no cart addition, no transaction, no enrollment, no settings change). There are no wrong substitutions or extra items/actions because the task is purely extract-and-report from a provided JSON, and the agent did not perform any action that alters external state. Existing rubric criteria already cover correctness and stopping condition; there is no unpenalized, material, unsolicited side effect to address with a new penalty criterion.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Extract and report specific race-level and winner-level fields (including the complete FastestLap object) for the winner of round 1 of the 2024 F1 season, using only the provided Jolpica/Ergast JSON. A reasonable user would not be flexible on missing/incorrect field values, mixing fields together (e.g., speed+units), or adding information not present in the JSON; minor label/format differences are flexible.",
+      "reasoning": "Nitpicks: (1) The agent labels the race date as \"race date\" instead of exactly \"date\"; this is a harmless labeling difference. (2) The output formats FastestLap subfields as bullet points rather than a literal JSON object; the task asked to \"report\" fields, not to output a specific structure, so this is not materially harmful.\n\nCritical issues: None observed. The DOM-model evidence shows the full JSON response is visible and contains exactly one race in MRData.RaceTable.Races[0] and exactly one result in that race’s Results[0]. The agent’s reported values match the DOM exactly: raceName \"Bahrain Grand Prix\", date \"2024-03-02\", Circuit.circuitName \"Bahrain International Circuit\"; winner \"Max Verstappen\" (givenName Max, familyName Verstappen), constructor \"Red Bull\"; grid \"1\", laps \"57\", status \"Finished\". The winner’s FastestLap object is fully and correctly transcribed with all fields present in the JSON—rank \"1\", lap \"39\", Time.time \"1:32.608\", AverageSpeed.speed \"210.383\", and AverageSpeed.units \"kph\"—and the agent keeps rank/lap/time/speed/units separate as required. The response also stops after providing exactly the requested fields without adding extra races/results or unrelated data. Overall, the agent satisfies the task’s primary intent completely and accurately per the DOM evidence.",
+      "output_success": true
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        true
+      ],
+      "majority_output_success": true,
+      "all_results": [
+        {
+          "primary_intent": "Extract and report specific race-level and winner-level fields (including the complete FastestLap object) for the winner of round 1 of the 2024 F1 season, using only the provided Jolpica/Ergast JSON. A reasonable user would not be flexible on missing/incorrect field values, mixing fields together (e.g., speed+units), or adding information not present in the JSON; minor label/format differences are flexible.",
+          "reasoning": "Nitpicks: (1) The agent labels the race date as \"race date\" instead of exactly \"date\"; this is a harmless labeling difference. (2) The output formats FastestLap subfields as bullet points rather than a literal JSON object; the task asked to \"report\" fields, not to output a specific structure, so this is not materially harmful.\n\nCritical issues: None observed. The DOM-model evidence shows the full JSON response is visible and contains exactly one race in MRData.RaceTable.Races[0] and exactly one result in that race’s Results[0]. The agent’s reported values match the DOM exactly: raceName \"Bahrain Grand Prix\", date \"2024-03-02\", Circuit.circuitName \"Bahrain International Circuit\"; winner \"Max Verstappen\" (givenName Max, familyName Verstappen), constructor \"Red Bull\"; grid \"1\", laps \"57\", status \"Finished\". The winner’s FastestLap object is fully and correctly transcribed with all fields present in the JSON—rank \"1\", lap \"39\", Time.time \"1:32.608\", AverageSpeed.speed \"210.383\", and AverageSpeed.units \"kph\"—and the agent keeps rank/lap/time/speed/units separate as required. The response also stops after providing exactly the requested fields without adding extra races/results or unrelated data. Overall, the agent satisfies the task’s primary intent completely and accurately per the DOM evidence.",
+          "output_success": true
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The trajectory contains a single interaction (one scroll) on the Jolpica/Ergast JSON endpoint. The agent’s predicted output correctly extracts and reports exactly the requested fields (raceName, date, circuitName, winner driver/constructor, grid, laps, status, and all FastestLap subfields with speed and units separated) and does not add extraneous information. DOM-model evidence confirms the JSON was visible and that all reported values match MRData.RaceTable.Races[0] and Races[0].Results[0] exactly. The only noted issues (labeling “race date” vs “date”, and formatting FastestLap as bullets) are non-material and do not constitute failures under the calibration guidance, and the overall outcome is verified SUCCESS.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task specifies a concrete URL context, the exact JSON path (MRData.RaceTable.Races[0] and its Results[0]), and the precise fields to extract. The trajectory and DOM evidence show all required fields were present and unambiguous, and the agent completed it without needing assumptions or clarifications.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully achievable using a desktop browsing environment, involves no illegal, NSFW, or policy-violating actions, and requires only straightforward JSON extraction. There are no inherent impossibilities or Responsible AI concerns.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task clearly specifies the data source (the provided JSON URL), the exact fields to extract (raceName, date, circuitName, winning driver, constructor, grid, laps, status, and all FastestLap fields), and how to handle subfields. No essential information is missing or open to multiple interpretations.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task involves extracting data from a publicly accessible API response. It is technically feasible, poses no legal, NSFW, or Responsible AI concerns, and does not require unavailable credentials or impossible actions.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_79_rerun/20260914T_task79_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "7c6277dadfc5e82a70a7e023181e924b4b7f8854caadb12772587e9cdb61063b",
+        "byte_count": 1510,
+        "line_count": 8,
+        "estimated_tokens": 378,
+        "url": "https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 8
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m0:L1-L8"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_79_rerun/20260914T_task79_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "7c6277dadfc5e82a70a7e023181e924b4b7f8854caadb12772587e9cdb61063b",
+        "byte_count": 1510,
+        "line_count": 8,
+        "estimated_tokens": 378,
+        "url": "https://api.jolpi.ca/ergast/f1/2024/1/results/1/?format=json",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 8
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m1:L1-L8"
+      }
+    ],
+    "estimated_evidence_tokens": 756,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [
+      {
+        "state_index": 0,
+        "warning": "missing_title"
+      },
+      {
+        "state_index": 1,
+        "warning": "missing_title"
+      }
+    ],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 9
+      },
+      "1": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 14,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 7120,
+        "estimated_input_tokens": 1780,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 7117,
+        "estimated_input_tokens": 1780,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8689,
+        "estimated_input_tokens": 2173,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8692,
+        "estimated_input_tokens": 2173,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8870,
+        "estimated_input_tokens": 2218,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8867,
+        "estimated_input_tokens": 2217,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9418,
+        "estimated_input_tokens": 2355,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9272,
+        "estimated_input_tokens": 2318,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9907,
+        "estimated_input_tokens": 2477,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9631,
+        "estimated_input_tokens": 2408,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 10257,
+        "estimated_input_tokens": 2565,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 10035,
+        "estimated_input_tokens": 2509,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 5886,
+        "estimated_input_tokens": 1472,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 5690,
+        "estimated_input_tokens": 1423,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 5771,
+        "estimated_input_tokens": 1443,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 5673,
+        "estimated_input_tokens": 1419,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 5891,
+        "estimated_input_tokens": 1473,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 5754,
+        "estimated_input_tokens": 1439,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 5834,
+        "estimated_input_tokens": 1459,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 5883,
+        "estimated_input_tokens": 1471,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 5687,
+        "estimated_input_tokens": 1422,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 5768,
+        "estimated_input_tokens": 1442,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 23,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 5670,
+        "estimated_input_tokens": 1418,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 24,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 5888,
+        "estimated_input_tokens": 1472,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 25,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 5751,
+        "estimated_input_tokens": 1438,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 26,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 6369,
+        "estimated_input_tokens": 1593,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 27,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 6096,
+        "estimated_input_tokens": 1524,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 28,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 6257,
+        "estimated_input_tokens": 1565,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 2
+  },
+  "duration_sec": 149.419
+}

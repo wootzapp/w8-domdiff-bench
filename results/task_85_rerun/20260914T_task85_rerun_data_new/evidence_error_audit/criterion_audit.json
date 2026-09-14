@@ -1,0 +1,1069 @@
+{
+  "schema_version": "existing-output-evidence-audit/v1",
+  "task_id": "browser_task_085-asteroid-record-20260914T091428Z",
+  "run_id": "20260914T_task85_rerun_data_new",
+  "run_dir": "/data/isha/msexecute/evidence-error-experiment/results/task_85_rerun/20260914T_task85_rerun_data_new",
+  "rubric_sha256": "30a92a02be1e3cbe99d28189166d1f6ad37b51219014af78d6ca5d00a9d40407",
+  "source_artifacts": {
+    "screenshot_result": "/data/isha/msexecute/evidence-error-experiment/results/task_85_rerun/20260914T_task85_rerun_data_new/microsoft_verifier/result.json",
+    "dom_model_result": "/data/isha/msexecute/evidence-error-experiment/results/task_85_rerun/20260914T_task85_rerun_data_new/dom_model/result.json"
+  },
+  "source_inventory": {
+    "screenshot": [
+      {
+        "index": 0,
+        "file": "_inputs/screenshot/screenshot0.png",
+        "bytes": 210376,
+        "sha256": "0020414bcbda23403327bdf89fb5649c52689dce28e7b379bf86f6f647a9fcb2"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/screenshot/screenshot1.png",
+        "bytes": 210376,
+        "sha256": "0020414bcbda23403327bdf89fb5649c52689dce28e7b379bf86f6f647a9fcb2"
+      }
+    ],
+    "dom_model": [
+      {
+        "index": 0,
+        "file": "_inputs/dom_model/dom_model0.txt",
+        "bytes": 4819,
+        "sha256": "42ce40cdf76f57711046cb49566c46692ecf7336d25cba8864a313ab0e5bb4bf"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/dom_model/dom_model1.txt",
+        "bytes": 4819,
+        "sha256": "42ce40cdf76f57711046cb49566c46692ecf7336d25cba8864a313ab0e5bb4bf"
+      }
+    ]
+  },
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use only the supplied NASA/JPL SBDB response (99942 Apophis, phys-par=1)",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a raw JSON response on a page, with a visible checkbox label near the top left reading “Pretty-print”. In the JSON text, the \"source\" is visible as \"NASA/JPL Small-Body Database (SBDB) API\" and the object portion shows fields like \"fullname\":\"99942 Apophis (2004 MN4)\". The content appears to be the SBDB API response for Apophis and includes \"phys_par\" entries.",
+            "criterion_analysis": "The visible JSON content is explicitly from the NASA/JPL SBDB API and includes the requested fields within the same response. The agent’s predicted output claims to use only this response; this is consistent with what is shown (a single SBDB JSON payload containing object/orbit/phys_par info).",
+            "discrepancies": "No clear discrepancy: the screenshot shows the SBDB API JSON response and the agent’s output references only SBDB fields.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a page with a checkbox label near the top-left reading “Pretty-print” and a large JSON-like SBDB API response text block. In the visible JSON, the header includes: {\"signature\":{\"version\":\"1.3\",\"source\":\"NASA/JPL Small-Body Database (SBDB) API\"...}. The response includes an \"object\" section with fields like \"fullname\":\"99942 Apophis (2004 MN4)\" and flags \"neo\":true, \"pha\":true, and includes \"orbit\" and \"phys_par\" arrays.",
+            "criterion_analysis": "The screenshot provides the NASA/JPL SBDB API response content directly on-screen for 99942 Apophis with physical parameters present (phys_par array). The agent’s predicted output appears to be derived from fields visible in this supplied response rather than external sources, so the constraint to use only the supplied response is satisfied.",
+            "discrepancies": "No discrepancy evident: the predicted output values correspond to fields that are visibly present in the JSON shown in the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Use only the supplied NASA/JPL SBDB response (99942 Apophis, phys-par=1)",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent did not show the actual SBDB JSON response or indicate inability to extract fields. Instead, it presented values without evidence of sourcing from the supplied response, indicating fabrication.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show the SBDB API JSON payload on-screen with signature source \"NASA/JPL Small-Body Database (SBDB) API\" and includes the needed sections (object, orbit, phys_par) for 99942 Apophis. The agent output references fields that are visible in that supplied response.",
+          "post_image_justification": "Visual evidence confirms the needed values are present in the supplied SBDB response and the agent’s reported fields align with that response; no indication of using external sources. Increase to full credit.",
+          "reality_notes": "Screenshots show the SBDB API JSON response rendered directly on a page (with a “Pretty-print” checkbox) and clearly labeled as sourced from “NASA/JPL Small-Body Database (SBDB) API”. The response includes the needed top-level sections: an “object” block, an “orbit” block, and a “phys_par” array, all within the same on-screen payload for 99942 Apophis."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show the SBDB API JSON payload on-screen with signature source \"NASA/JPL Small-Body Database (SBDB) API\" and includes the needed sections (object, orbit, phys_par) for 99942 Apophis. The agent output references fields that are visible in that supplied response.",
+        "verifier_justification": "Visual evidence confirms the needed values are present in the supplied SBDB response and the agent’s reported fields align with that response; no indication of using external sources. Increase to full credit.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the full JSON response from URL `https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1`, including:\n- `\"object\":{\"fullname\":\"99942 Apophis (2004 MN4)\", ... \"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"}, ... \"pha\":true}`\n- `\"orbit\":{... \"epoch\":\"2461200.5\", ...}`\n- `\"phys_par\":[{... \"name\":\"H\",\"value\":\"19.09\",\"sigma\":\"0.19\",\"units\":null ...}, {... \"name\":\"diameter\",\"value\":\"0.34\",\"sigma\":\"0.04\",\"units\":\"km\" ...}]`",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent output claims all requested fields (object.fullname; object.orbit_class name+code; orbit.epoch; phys_par H value+sigma+units; phys_par diameter value+sigma+units; and object.pha) and each is explicitly present in DOM_MODEL_STATE_INDEX: 1. Specifically: object.fullname is shown as `\"fullname\":\"99942 Apophis (2004 MN4)\"`; orbit_class is `\"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"}`; orbit.epoch is `\"epoch\":\"2461200.5\"`; phys_par record with `\"name\":\"H\"` has `\"value\":\"19.09\"`, `\"sigma\":\"0.19\"`, `\"units\":null`; phys_par record with `\"name\":\"diameter\"` has `\"value\":\"0.34\"`, `\"sigma\":\"0.04\"`, `\"units\":\"km\"`; and hazardous flag is `\"pha\":true`.",
+            "discrepancies": "No discrepancies between the agent-predicted output and the DOM content for the requested fields. Values, epoch, units (including null), and boolean match DOM_MODEL_STATE_INDEX: 1 exactly.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL `https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1` and a single JSON response whose `signature.source` is `NASA/JPL Small-Body Database (SBDB) API` and includes `orbit`, `phys_par`, and `object` sections in the visible content.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll requested fields can be sourced directly from the single SBDB API JSON response visible in DOM_MODEL_STATE_INDEX 0 at the specified URL. No additional sources are needed or evidenced.",
+            "discrepancies": "No discrepancies; the DOM contains the SBDB response payload needed for the requested extraction.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Use only the supplied NASA/JPL SBDB response (99942 Apophis, phys-par=1)",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent provided field values without actually loading or showing the SBDB response for 99942 Apophis and appears to have fabricated the data rather than extracting from a visible JSON response.",
+          "applicable_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) shows the URL `https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1` with a single JSON payload whose `signature.source` is `NASA/JPL Small-Body Database (SBDB) API`, containing the `object`, `orbit`, and `phys_par` sections used for extraction.",
+          "post_image_justification": "The agent’s reported fields are all explicitly present in the supplied SBDB JSON response shown in the latest DOM state, with no need for outside knowledge. This satisfies the requirement to use only the supplied response.",
+          "reality_notes": "The DOM shows a single page containing the full SBDB API JSON response with clearly visible top-level sections including \"signature\", \"object\", \"orbit\", and \"phys_par\". All requested fields appear explicitly within that one JSON payload, so no additional sources or inference are necessary."
+        },
+        "verifier_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) shows the URL `https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1` with a single JSON payload whose `signature.source` is `NASA/JPL Small-Body Database (SBDB) API`, containing the `object`, `orbit`, and `phys_par` sections used for extraction.",
+        "verifier_justification": "The agent’s reported fields are all explicitly present in the supplied SBDB JSON response shown in the latest DOM state, with no need for outside knowledge. This satisfies the requirement to use only the supplied response.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report object.fullname exactly",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the JSON near the bottom, the object block visibly includes: \"fullname\":\"99942 Apophis (2004 MN4)\".",
+            "criterion_analysis": "The agent reported object.fullname as “99942 Apophis (2004 MN4)”, which matches the exact text visible in the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible JSON under \"object\", the text includes: \"fullname\":\"99942 Apophis (2004 MN4)\".",
+            "criterion_analysis": "Agent reported object.fullname as “99942 Apophis (2004 MN4)”, which matches the exact string visible in the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report object.fullname exactly",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "Although the output matches the known fullname for Apophis, there is no evidence in the action history that this was taken from the supplied response rather than fabricated.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show in the object block: \"fullname\":\"99942 Apophis (2004 MN4)\".",
+          "post_image_justification": "Agent reported object.fullname exactly as shown in the SBDB JSON. Full credit.",
+          "reality_notes": "In the visible “object” section of the JSON, the fullname field is clearly shown as the exact string: \"99942 Apophis (2004 MN4)\". Scoring should treat exact matching as including the parentheses and spacing as displayed."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show in the object block: \"fullname\":\"99942 Apophis (2004 MN4)\".",
+        "verifier_justification": "Agent reported object.fullname exactly as shown in the SBDB JSON. Full credit.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the SBDB API JSON at URL https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1. In the visible JSON under \"object\", the field appears explicitly as: \"fullname\":\"99942 Apophis (2004 MN4)\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains object.fullname in the rendered SBDB JSON response. Specifically, DOM_MODEL_STATE_INDEX 1 includes the exact substring: \"fullname\":\"99942 Apophis (2004 MN4)\", which directly supports the agent’s reported object.fullname value.",
+            "discrepancies": "None for this criterion. The agent’s reported object.fullname exactly matches the DOM text: 99942 Apophis (2004 MN4).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 → in `object`: `\"fullname\":\"99942 Apophis (2004 MN4)\"`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains `object.fullname` and it matches the value the agent reported.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report object.fullname exactly",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent output a known fullname but did not show or cite the supplied SBDB JSON response, indicating fabrication rather than extraction.",
+          "applicable_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) under `object` shows `\"fullname\":\"99942 Apophis (2004 MN4)\"`.",
+          "post_image_justification": "Agent output matches `object.fullname` exactly as shown in the response.",
+          "reality_notes": "In the DOM JSON under the \"object\" block, the field appears explicitly as \"fullname\":\"99942 Apophis (2004 MN4)\". The parentheses and spacing are part of the returned string and are visible in the DOM."
+        },
+        "verifier_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) under `object` shows `\"fullname\":\"99942 Apophis (2004 MN4)\"`.",
+        "verifier_justification": "Agent output matches `object.fullname` exactly as shown in the response.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report orbit class name and code from object.orbit_class",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the object section, the screenshot shows \"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"} (with both code and name visible).",
+            "criterion_analysis": "The agent’s output lists orbit_class name “Aten” and code “ATE”, matching what is visible and taken from object.orbit_class.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible JSON under \"object\", an \"orbit_class\" object appears as: \"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"}.",
+            "criterion_analysis": "Agent reported orbit class code ATE and name Aten. This matches what is shown in the screenshot and is sourced from object.orbit_class as required.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report orbit class name and code from object.orbit_class",
+          "earned_points": 0,
+          "post_image_earned_points": 3.0,
+          "max_points": 3,
+          "justification": "The agent provided the correct orbit class name and code, but without showing the SBDB response, this appears to be fabricated rather than extracted from the supplied response.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show object.orbit_class as {\"code\":\"ATE\",\"name\":\"Aten\"}.",
+          "post_image_justification": "Agent reported both name and code matching the object.orbit_class fields in the supplied response. Full credit.",
+          "reality_notes": "The screenshots show an “orbit_class” object nested within the “object” block, containing both \"code\":\"ATE\" and \"name\":\"Aten\" on-screen. This criterion should be interpreted as requiring both fields from that specific nested location (not from any other orbit classification text elsewhere)."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show object.orbit_class as {\"code\":\"ATE\",\"name\":\"Aten\"}.",
+        "verifier_justification": "Agent reported both name and code matching the object.orbit_class fields in the supplied response. Full credit.",
+        "action_only_points": 0,
+        "final_points": 3.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the SBDB JSON at URL https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1. In the visible content under the \"object\" field it explicitly contains: \"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"}.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion requires reporting orbit class name and code from object.orbit_class. DOM_MODEL_STATE_INDEX: 1 explicitly shows object.orbit_class with both required fields present: code = \"ATE\" and name = \"Aten\" (\"object\":{\"prefix\":null,\"shortname\":\"99942 Apophis\",\"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"}, ...}). This directly supports the claimed orbit class name and code and confirms they are sourced from object.orbit_class.",
+            "discrepancies": "No discrepancies for this criterion: the DOM explicitly provides both orbit_class.name (\"Aten\") and orbit_class.code (\"ATE\") under object.orbit_class, matching the reported values.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 → `object` contains `\"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"}`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBoth orbit class `name` and `code` are present under `object.orbit_class` exactly as required.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report orbit class name and code from object.orbit_class",
+          "earned_points": 0,
+          "post_image_earned_points": 3.0,
+          "max_points": 3,
+          "justification": "The agent provided orbit class name and code without evidence of parsing them from the SBDB response, indicating unsupported fabrication.",
+          "applicable_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) under `object.orbit_class` shows `\"code\":\"ATE\"` and `\"name\":\"Aten\"`.",
+          "post_image_justification": "Agent correctly reported both orbit class name and code from the required location (`object.orbit_class`).",
+          "reality_notes": "The DOM shows \"object.orbit_class\" as an object containing both required keys: \"code\":\"ATE\" and \"name\":\"Aten\". Both values are directly present under \"object\" → \"orbit_class\" (not elsewhere)."
+        },
+        "verifier_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) under `object.orbit_class` shows `\"code\":\"ATE\"` and `\"name\":\"Aten\"`.",
+        "verifier_justification": "Agent correctly reported both orbit class name and code from the required location (`object.orbit_class`).",
+        "action_only_points": 0,
+        "final_points": 3.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report orbit.epoch exactly",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the orbit block near the top portion of the JSON, the field \"epoch\":\"2461200.5\" is visible.",
+            "criterion_analysis": "The agent reported orbit.epoch as 2461200.5, which matches the screenshot exactly (including formatting as shown).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible JSON under \"orbit\", the field \"epoch\" is shown as: \"epoch\":\"2461200.5\".",
+            "criterion_analysis": "Agent reported orbit.epoch as 2461200.5, which matches the visible epoch value in the screenshot (noting the JSON shows it as a quoted string).",
+            "discrepancies": "Minor formatting difference: screenshot shows \"epoch\":\"2461200.5\" (string), while agent printed 2461200.5 without quotes; the numeric text itself matches exactly.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report orbit.epoch exactly",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The epoch value matches known data but was not shown to be extracted from the provided SBDB response, indicating fabrication.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show orbit block contains \"epoch\":\"2461200.5\".",
+          "post_image_justification": "Agent reported epoch value text correctly. Minor quote/string formatting differences are a nitpick; value preserved. Full credit.",
+          "reality_notes": "The orbit epoch is visible inside the “orbit” block as \"epoch\":\"2461200.5\" (shown as a quoted JSON string). The key reality point is that the literal numeric text 2461200.5 is what appears; quotation marks reflect JSON formatting rather than a different value."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show orbit block contains \"epoch\":\"2461200.5\".",
+        "verifier_justification": "Agent reported epoch value text correctly. Minor quote/string formatting differences are a nitpick; value preserved. Full credit.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (final)\nURL: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1\nIn the visible JSON, under the top-level key \"orbit\", the field appears exactly as:\n\"epoch\":\"2461200.5\"",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is to report orbit.epoch exactly. In DOM_MODEL_STATE_INDEX 1, the SBDB JSON explicitly shows the orbit epoch under \"orbit\" as \"epoch\":\"2461200.5\". This directly supports the agent-reported orbit.epoch value 2461200.5 with exact formatting/value preserved.",
+            "discrepancies": "None for orbit.epoch: the DOM shows \"epoch\":\"2461200.5\", matching the agent output.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 → in `orbit`: `\"epoch\":\"2461200.5\"`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly provides `orbit.epoch` with value `2461200.5`, matching the agent output.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report orbit.epoch exactly",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The epoch value was presented without any evidence from the actual SBDB JSON, suggesting it was assumed or fabricated.",
+          "applicable_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) under `orbit` shows `\"epoch\":\"2461200.5\"`.",
+          "post_image_justification": "Agent reported the epoch exactly as returned.",
+          "reality_notes": "The DOM shows the orbit epoch inside the top-level \"orbit\" object as a string field: \"epoch\":\"2461200.5\". The exact formatting includes the decimal and quotes in JSON."
+        },
+        "verifier_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) under `orbit` shows `\"epoch\":\"2461200.5\"`.",
+        "verifier_justification": "Agent reported the epoch exactly as returned.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report absolute magnitude (H) value and uncertainty from phys_par",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Within the \"phys_par\" array, one entry is visible containing \"name\":\"H\" and shows \"value\":\"19.09\" and \"sigma\":\"0.19\" (units are not shown as a string value; the JSON line shows title/notes/ref around it).",
+            "criterion_analysis": "The agent’s output reports H value 19.09 and uncertainty (sigma) 0.19, matching the visible phys_par record with name=\"H\".",
+            "discrepancies": "The agent additionally states “units: null”; the screenshot does show the H record and its value/sigma clearly, but the “units” for that record is not clearly legible as “null” in the provided pixels (it may be present but is not distinctly readable at this zoom).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the \"phys_par\" array, there is an entry containing: \"name\":\"H\", \"value\":\"19.09\", \"sigma\":\"0.19\" (units field appears as \"units\":null in that entry).",
+            "criterion_analysis": "Agent reported absolute magnitude value 19.09 and uncertainty 0.19 from the phys_par record named H. This matches the values visible in the screenshot.",
+            "discrepancies": "None for value/sigma. (Agent also mentioned units null, which is consistent with the visible \"units\":null but units were not required for this criterion.)",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report absolute magnitude (H) value and uncertainty from phys_par",
+          "earned_points": 0,
+          "post_image_earned_points": 3.0,
+          "max_points": 3,
+          "justification": "The agent provided plausible H value and uncertainty but did not present any evidence from the SBDB response; this appears fabricated rather than sourced.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show phys_par entry with \"name\":\"H\" having \"value\":\"19.09\" and \"sigma\":\"0.19\".",
+          "post_image_justification": "Agent reported H value and uncertainty matching the phys_par record named H. Full credit.",
+          "reality_notes": "Within the “phys_par” array, there is an entry with \"name\":\"H\" showing \"value\":\"19.09\" and \"sigma\":\"0.19\". The unit for H appears as null in at least one screenshot rendering, but the clearly legible required items are the value and sigma paired with name=H."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show phys_par entry with \"name\":\"H\" having \"value\":\"19.09\" and \"sigma\":\"0.19\".",
+        "verifier_justification": "Agent reported H value and uncertainty matching the phys_par record named H. Full credit.",
+        "action_only_points": 0,
+        "final_points": 3.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the SBDB API JSON at URL https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1. In the visible content under \"orbit\":{\"phys_par\":[...]} there is a phys_par entry with \"name\":\"H\" that reads: {\"desc\":\"absolute magnitude (magnitude at 1 au from Sun and observer)\", ... \"value\":\"19.09\", \"title\":\"absolute magnitude\", \"sigma\":\"0.19\", \"units\":null, \"name\":\"H\", ...}.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is to report absolute magnitude (H) value and uncertainty from the phys_par record named \"H\". DOM_MODEL_STATE_INDEX: 1 explicitly contains the phys_par object with \"name\":\"H\" and includes both \"value\":\"19.09\" and \"sigma\":\"0.19\" (with \"units\":null). Therefore the value and uncertainty are directly supported by the DOM model evidence.",
+            "discrepancies": "No discrepancy for this criterion: the DOM explicitly shows phys_par name \"H\" with value \"19.09\" and sigma \"0.19\".",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 → in `phys_par` array, entry with `\"name\":\"H\"` shows `\"value\":\"19.09\"` and `\"sigma\":\"0.19\"` (and `\"units\":null`).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe absolute magnitude record `phys_par` where `name` is `H` includes both the magnitude value and uncertainty, and they match the agent-reported `19.09` and `0.19` exactly (as strings in the JSON).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report absolute magnitude (H) value and uncertainty from phys_par",
+          "earned_points": 0,
+          "post_image_earned_points": 3.0,
+          "max_points": 3,
+          "justification": "The agent listed H and its uncertainty but did not extract or display the phys_par JSON, so the values are not confirmed as coming from the supplied response.",
+          "applicable_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) in the `phys_par` array includes an entry with `\"name\":\"H\"` showing `\"value\":\"19.09\"` and `\"sigma\":\"0.19\"` (and `\"units\":null`).",
+          "post_image_justification": "Agent reported the correct H value and uncertainty from the `phys_par` record named `H` (units were not required by the criterion but do not invalidate the requested value+uncertainty).",
+          "reality_notes": "Within the \"phys_par\" array, there is a record with \"name\":\"H\" that explicitly contains \"value\":\"19.09\" and \"sigma\":\"0.19\"; the DOM also shows its \"units\" field as null. Value and sigma are represented as strings in the JSON."
+        },
+        "verifier_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) in the `phys_par` array includes an entry with `\"name\":\"H\"` showing `\"value\":\"19.09\"` and `\"sigma\":\"0.19\"` (and `\"units\":null`).",
+        "verifier_justification": "Agent reported the correct H value and uncertainty from the `phys_par` record named `H` (units were not required by the criterion but do not invalidate the requested value+uncertainty).",
+        "action_only_points": 0,
+        "final_points": 3.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Report diameter value, uncertainty, and unit from phys_par",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the \"phys_par\" list, an entry is visible with \"name\":\"diameter\" and shows \"value\":\"0.34\", \"sigma\":\"0.04\", and \"units\":\"km\".",
+            "criterion_analysis": "The agent’s output reports diameter value 0.34, uncertainty 0.04, units km, which matches the phys_par record named “diameter” visible in the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the \"phys_par\" array, an entry includes: \"name\":\"diameter\", \"value\":\"0.34\", \"sigma\":\"0.04\", \"units\":\"km\".",
+            "criterion_analysis": "Agent reported diameter value 0.34, uncertainty 0.04, and units km, which matches the diameter phys_par record visible in the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report diameter value, uncertainty, and unit from phys_par",
+          "earned_points": 0,
+          "post_image_earned_points": 4.0,
+          "max_points": 4,
+          "justification": "Although the diameter details are plausible, the agent never showed the SBDB JSON to confirm extraction, indicating fabrication rather than correct sourcing.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show phys_par entry with \"name\":\"diameter\" having \"value\":\"0.34\", \"sigma\":\"0.04\", \"units\":\"km\".",
+          "post_image_justification": "Agent reported diameter value, uncertainty, and units exactly as shown for the phys_par record named diameter. Full credit.",
+          "reality_notes": "The “phys_par” array includes a distinct entry with \"name\":\"diameter\" that visibly contains \"value\":\"0.34\", \"sigma\":\"0.04\", and \"units\":\"km\". All three are clearly shown together in the same diameter record."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show phys_par entry with \"name\":\"diameter\" having \"value\":\"0.34\", \"sigma\":\"0.04\", \"units\":\"km\".",
+        "verifier_justification": "Agent reported diameter value, uncertainty, and units exactly as shown for the phys_par record named diameter. Full credit.",
+        "action_only_points": 0,
+        "final_points": 4.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the SBDB API JSON at URL https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1. In the visible JSON, under \"phys_par\" there is an entry with \"name\":\"diameter\" that reads: {\"desc\":\"effective body diameter\", ... \"title\":\"diameter\",\"value\":\"0.34\",\"sigma\":\"0.04\",\"units\":\"km\",\"name\":\"diameter\", ...}.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the required diameter physical-parameter record (as constrained: the phys_par record named \"diameter\") and includes all three required fields—value, uncertainty, and unit—exactly as returned: \"value\":\"0.34\", \"sigma\":\"0.04\", \"units\":\"km\" (DOM_MODEL_STATE_INDEX: 1, visible JSON under \"phys_par\" where \"name\":\"diameter\").",
+            "discrepancies": "No discrepancy between the criterion requirement (report diameter value, uncertainty, unit from phys_par name=\"diameter\") and the DOM evidence; all fields are present and explicit in DOM_MODEL_STATE_INDEX: 1.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 → in `phys_par` array, entry with `\"name\":\"diameter\"` shows `\"value\":\"0.34\"`, `\"sigma\":\"0.04\"`, `\"units\":\"km\"`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe diameter record is explicitly present with value, uncertainty, and unit, all matching the agent output exactly.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report diameter value, uncertainty, and unit from phys_par",
+          "earned_points": 0,
+          "post_image_earned_points": 4.0,
+          "max_points": 4,
+          "justification": "The agent provided diameter data but without sourcing from a visible phys_par record, indicating the information was assumed rather than extracted.",
+          "applicable_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) in the `phys_par` array includes an entry with `\"name\":\"diameter\"` showing `\"value\":\"0.34\"`, `\"sigma\":\"0.04\"`, and `\"units\":\"km\"`.",
+          "post_image_justification": "Agent reported diameter value, uncertainty, and unit exactly as returned from the required `phys_par` record.",
+          "reality_notes": "Within the \"phys_par\" array, there is a record with \"name\":\"diameter\" that explicitly contains \"value\":\"0.34\", \"sigma\":\"0.04\", and \"units\":\"km\". These are shown directly in the DOM JSON (with value/sigma as strings and units as a string)."
+        },
+        "verifier_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) in the `phys_par` array includes an entry with `\"name\":\"diameter\"` showing `\"value\":\"0.34\"`, `\"sigma\":\"0.04\"`, and `\"units\":\"km\"`.",
+        "verifier_justification": "Agent reported diameter value, uncertainty, and unit exactly as returned from the required `phys_par` record.",
+        "action_only_points": 0,
+        "final_points": 4.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Report potentially hazardous asteroid flag from object.pha",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the object block near the bottom of the JSON, the screenshot shows \"pha\":true (and also shows \"neo\":true nearby).",
+            "criterion_analysis": "The agent reported the potentially hazardous asteroid flag from object.pha as true, which matches the visible boolean value in the JSON.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the \"object\" section near the bottom of the screenshot, the fields include: \"neo\":true, \"pha\":true, and \"fullname\":\"99942 Apophis (2004 MN4)\".",
+            "criterion_analysis": "Agent reported the potentially hazardous asteroid flag from object.pha as true, which matches the visible \"pha\":true in the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report potentially hazardous asteroid flag from object.pha",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The output matches the known hazard flag but lacks evidence from the supplied response, indicating fabrication rather than extraction from object.pha.",
+          "applicable_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show in object block: \"pha\":true.",
+          "post_image_justification": "Agent reported the potentially hazardous asteroid flag as true, matching object.pha exactly as a boolean. Full credit.",
+          "reality_notes": "In the “object” block, the hazardous flag is explicitly shown as the boolean field \"pha\":true (near \"neo\":true). The screenshot evidence supports reading hazardous status strictly from object.pha as a JSON boolean."
+        },
+        "verifier_evidence": "Screenshots 1 and 2 (latest: Screenshot 2) show in object block: \"pha\":true.",
+        "verifier_justification": "Agent reported the potentially hazardous asteroid flag as true, matching object.pha exactly as a boolean. Full credit.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the SBDB API JSON at URL https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1. In the visible content, within the \"object\" block it explicitly lists: \"pha\":true (…\"object\":{\"prefix\":null,\"shortname\":\"99942 Apophis\",\"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"},\"neo\":true,\"pha\":true,\"fullname\":\"99942 Apophis (2004 MN4)\",…}).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is satisfied because the hazardous status is directly readable from the required field object.pha. In DOM_MODEL_STATE_INDEX: 1, the JSON under \"object\" explicitly contains the boolean \"pha\":true, which supports reporting the potentially hazardous asteroid flag as true exactly as returned.",
+            "discrepancies": "No discrepancy for this criterion: object.pha is explicitly shown as true in DOM_MODEL_STATE_INDEX: 1.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 → in `object`: `\"pha\":true`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe potentially hazardous asteroid flag is explicitly shown as boolean `true` in `object.pha`, matching the agent output.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report potentially hazardous asteroid flag from object.pha",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent reported the PHA flag without any evidence from the SBDB JSON response, indicating it was not extracted from object.pha.",
+          "applicable_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) under `object` shows the boolean `\"pha\":true`.",
+          "post_image_justification": "Agent reported the potentially hazardous asteroid flag from `object.pha` correctly as `true`.",
+          "reality_notes": "In the DOM JSON under \"object\", the potentially hazardous asteroid flag is explicitly present as a boolean: \"pha\":true. The DOM shows it as the JSON literal true (not a string)."
+        },
+        "verifier_evidence": "Latest DOM-model evidence (DOM_MODEL_STATE_INDEX: 1) under `object` shows the boolean `\"pha\":true`.",
+        "verifier_justification": "Agent reported the potentially hazardous asteroid flag from `object.pha` correctly as `true`.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Output scope: only requested fields; no extra SBDB fields",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 6
+          },
+          {
+            "source_index": 1,
+            "score": 6
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot itself is a large JSON payload with many fields beyond those requested (e.g., many orbit elements and multiple phys_par entries like albedo, thermal inertia, etc.). The agent’s predicted output (provided in the prompt) lists only: fullname, orbit_class name/code, orbit.epoch, H value/sigma (and notes units), diameter value/sigma/units, and pha flag.",
+            "criterion_analysis": "The agent’s output is scoped to the requested fields and does not add unrelated SBDB fields beyond minimal labels/structure. This satisfies the requirement to stop after the requested fields.",
+            "discrepancies": "No discrepancy: although the screenshot contains many additional fields, the agent did not include them in the final output.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The agent’s predicted output (provided in the prompt) lists: object.fullname, object.orbit_class name and code, orbit.epoch, phys_par H (value/sigma/units null), phys_par diameter (value/sigma/units), and object.pha. No additional SBDB fields like MOID, perihelion, albedo, etc. are included beyond these items.",
+            "criterion_analysis": "The predicted output stays within the requested scope: it reports exactly the requested object, orbit, and physical-parameter fields (with only minimal contextual labeling). Any extra information is limited to formatting and the optional mention of units=null for H, which is minor and not substantial unrequested SBDB content.",
+            "discrepancies": "No substantial extra fields included; output aligns with requested scope.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Output scope: only requested fields; no extra SBDB fields",
+          "earned_points": 2,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent’s output includes only the requested fields and no additional SBDB data.",
+          "applicable_evidence": "Agent predicted output includes only the requested fields; screenshots show many other SBDB fields exist but were not included. No evidence of substantial unrequested content in the output.",
+          "post_image_justification": "Output stays within scope (fullname, orbit_class name/code, orbit.epoch, H value/sigma, diameter value/sigma/units, pha). Keep full credit.",
+          "reality_notes": "Although the on-screen JSON contains many additional orbit elements and multiple physical parameters, the evidence description indicates the agent-style output (as referenced alongside the screenshots) is limited to the requested subset: fullname, orbit_class name/code, orbit.epoch, H value/sigma, diameter value/sigma/units, and pha. Minor inclusion of H’s units=null would still be consistent with staying near the requested fields rather than adding unrelated parameters."
+        },
+        "verifier_evidence": "Agent predicted output includes only the requested fields; screenshots show many other SBDB fields exist but were not included. No evidence of substantial unrequested content in the output.",
+        "verifier_justification": "Output stays within scope (fullname, orbit_class name/code, orbit.epoch, H value/sigma, diameter value/sigma/units, pha). Keep full credit.",
+        "action_only_points": 2,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 9
+          },
+          {
+            "source_index": 1,
+            "score": 9
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the SBDB API JSON at URL https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1. Within the visible content, the response includes the requested hazardous flag and orbit class under `\"object\"`: `\"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"}` and `\"pha\":true`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nRubric criterion (hazard/orbit-class sourcing): The task requires reading hazardous status from `object.pha` and orbit class from `object.orbit_class`. DOM_MODEL_STATE_INDEX 1 explicitly contains `\"object\":{\"orbit_class\":{\"code\":\"ATE\",\"name\":\"Aten\"},...\"pha\":true,...}` which directly supports the agent’s reported orbit class name/code (Aten/ATE) and PHA flag (true) as being taken from the specified fields in the supplied SBDB response.",
+            "discrepancies": "No discrepancy for this criterion: DOM explicitly shows `object.orbit_class` code/name and `object.pha` = true, matching the predicted output.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "Agent predicted output includes the requested fields (object.fullname, object.orbit_class name+code, orbit.epoch, phys_par H value+sigma, phys_par diameter value+sigma+units, object.pha) and does not introduce other SBDB fields beyond these items (aside from brief headings/formatting). DOM_MODEL_STATE_INDEX: 0 confirms these fields exist in the response.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent output stays within scope by reporting only the requested object/orbit/physical-parameter fields (with minor formatting labels) and stops after them; no substantial unrelated SBDB fields are added.",
+            "discrepancies": "No material scope overreach; formatting/section labels are not additional SBDB data fields.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Output scope: only requested fields; no extra SBDB fields",
+          "earned_points": 1,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent’s output included only the requested fields but added an extra “units” field for H, which was not asked for, resulting in slight scope creep.",
+          "applicable_evidence": "DOM_MODEL_STATE_INDEX: 1 confirms the requested fields exist in the SBDB response. The agent’s final output contains only the requested fields plus minor formatting/labels; it also includes `units: null` for H which was not requested, but no substantial extra SBDB fields are added.",
+          "post_image_justification": "Scope is essentially satisfied; the extra mention of H units is minor and does not add unrelated SBDB fields beyond the immediate phys_par record context. Award full credit.",
+          "reality_notes": "The DOM response includes many additional fields beyond those requested (e.g., other object identifiers and other orbit/phys_par metadata). The rubric’s scope check should treat section labels or minimal formatting as non-extra data, but any additional SBDB fields beyond the specified ones would be considered extra content."
+        },
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX: 1 confirms the requested fields exist in the SBDB response. The agent’s final output contains only the requested fields plus minor formatting/labels; it also includes `units: null` for H which was not requested, but no substantial extra SBDB fields are added.",
+        "verifier_justification": "Scope is essentially satisfied; the extra mention of H units is minor and does not add unrelated SBDB fields beyond the immediate phys_par record context. Award full credit.",
+        "action_only_points": 1,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "evidence_missing_language_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    }
+  ]
+}

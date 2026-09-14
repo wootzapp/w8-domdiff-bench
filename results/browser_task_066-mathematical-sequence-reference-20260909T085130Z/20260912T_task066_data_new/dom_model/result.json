@@ -1,0 +1,1605 @@
+{
+  "task_id": "browser_task_066-mathematical-sequence-reference-20260909T085130Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.75,
+  "rubric_total_max_points": 16.0,
+  "rubric_total_earned_points": 12.0,
+  "rubric_is_success": false,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: Minor formatting choices (bullets, line breaks, adding labels like “F_1 = …”) and not reproducing incidental surrounding punctuation/spacing around the OEIS link are not material.\n\nCritical issues: The task explicitly requires preserving the recurrence and initial conditions “exactly as displayed” on the MathWorld page and treating the MathWorld page as the source of truth. In the provided DOM-model evidence, the page is clearly loaded and it does show the eight-term run “1, 1, 2, 3, 5, 8, 13, 21” and “(OEIS A000045 )”, which matches the agent’s terms and OEIS identifier—so those parts are successful. However, the DOM snapshots provided do not display the actual recurrence formula nor the explicit initial-condition equalities/values; they appear as missing/blank placeholders (e.g., “with .” and “it is conventional to define .”). Because DOM is the ground truth for evaluation, there is no evidence that the agent actually read (or could see) the recurrence and initial conditions as displayed on the page in this run. The agent nevertheless outputs a standard recurrence (F_n = F_{n-1} + F_{n-2}) and standard initial conditions (F_0 = 0, F_1 = 1). These may be true in general, but under the task’s constraints and the available evidence, they are effectively unverified and could be from memory rather than “as displayed.” Since recurrence + initial conditions are key requested deliverables (not optional), this prevents concluding the task was successfully completed end-to-end.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Extract (verbatim/notation-preserving) key items shown on MathWorld’s Fibonacci Number page: the displayed recurrence, displayed initial conditions, the first eight positive-index terms (F1–F8 only), and the OEIS identifier. A reasonable user would be flexible on minor punctuation/formatting, but not flexible on using the wrong source, including F0 among the eight terms, or reporting a recurrence/initial conditions that are not exactly what the page displays."
+  },
+  "preflight": {
+    "task_id": "browser_task_066-mathematical-sequence-reference-20260909T085130Z",
+    "actions": 4,
+    "dom_model_states": 5,
+    "initial_state": 0,
+    "final_state": 4,
+    "alignment": {
+      "task_id": "browser_task_066-mathematical-sequence-reference-20260909T085130Z",
+      "action_count": 4,
+      "state_count": 5,
+      "initial_state": 0,
+      "final_state": 4,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e2",
+            "target": {
+              "ref": "e2",
+              "role": "generic",
+              "name": "×"
+            },
+            "thoughts": "The main definition sentence is partially obscured; close the cookie/notification modal (×) to clearly see the Fibonacci recurrence, initial conditions, and listed terms."
+          },
+          "observed_after_url": "https://mathworld.wolfram.com/FibonacciNumber.html"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e265",
+            "target": {
+              "ref": "e265",
+              "role": "button",
+              "name": "Accept & Close"
+            },
+            "thoughts": "Dismiss the cookie banner with its own Accept & Close button so underlying mathematical content, including the recurrence and initial conditions, becomes fully accessible and clickable."
+          },
+          "observed_after_url": "https://mathworld.wolfram.com/FibonacciNumber.html"
+        },
+        {
+          "ordinal": 3,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to find the visible recurrence, initial conditions, and list of first Fibonacci numbers, which are likely near the top text but currently truncated; scrolling should expose the formulas."
+          },
+          "observed_after_url": "https://mathworld.wolfram.com/FibonacciNumber.html"
+        },
+        {
+          "ordinal": 4,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": -800,
+            "thoughts": "The recurrence, initial conditions, and first terms are likely near the top of the article above the current viewport, so I should scroll back up to locate them in the visible DOM."
+          },
+          "observed_after_url": "https://mathworld.wolfram.com/FibonacciNumber.html"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "346b73729fdf77bfb175dd065e6340c271563fe504c7f6ba3e68ffa219f0e4ad",
+          "after_sha256": "60520b33e30a50829f69c726faca61ba05ed70afba888663d0c768897da9cd11",
+          "before_url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+          "after_url": "https://mathworld.wolfram.com/FibonacciNumber.html"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "60520b33e30a50829f69c726faca61ba05ed70afba888663d0c768897da9cd11",
+          "after_sha256": "421fb7b2e57945fe185314984d7d3893678510cdb1f2fa4b845d635257a7d27f",
+          "before_url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+          "after_url": "https://mathworld.wolfram.com/FibonacciNumber.html"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "421fb7b2e57945fe185314984d7d3893678510cdb1f2fa4b845d635257a7d27f",
+          "after_sha256": "e802acd469275421db9449f423156a05d3bf62ebe638fdfb7d7fb96759cf228d",
+          "before_url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+          "after_url": "https://mathworld.wolfram.com/FibonacciNumber.html"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "e802acd469275421db9449f423156a05d3bf62ebe638fdfb7d7fb96759cf228d",
+          "after_sha256": "421fb7b2e57945fe185314984d7d3893678510cdb1f2fa4b845d635257a7d27f",
+          "before_url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+          "after_url": "https://mathworld.wolfram.com/FibonacciNumber.html"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e2' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e265' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "968c547760de5254b62f0c731bf1ac922008b64893841d0bd4bc9c4da5c8b24c",
+    "criterion_order": [
+      "Use MathWorld Fibonacci Number page as source",
+      "Record displayed Fibonacci recurrence (exact notation)",
+      "Record initial conditions (exact notation)",
+      "Report first eight positive-index Fibonacci numbers (F1–F8 only)",
+      "Report linked OEIS identifier (exact as displayed)",
+      "Respect stopping condition and scope constraints"
+    ],
+    "maximum_points": [
+      2.0,
+      3.0,
+      3.0,
+      4.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 16.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/_inputs/frozen_rubric.json",
+  "rubric_sha256": "968c547760de5254b62f0c731bf1ac922008b64893841d0bd4bc9c4da5c8b24c",
+  "criterion_denominator": 16,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 113096,
+      "completion_tokens": 15377,
+      "reasoning_tokens": 0,
+      "total_tokens": 128473
+    },
+    "action_judge": {
+      "prompt_tokens": 20042,
+      "completion_tokens": 3161,
+      "reasoning_tokens": 1792,
+      "total_tokens": 23203
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 25,
+      "api_attempts": 25,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 5,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 7,
+        "2": 6,
+        "3": 10,
+        "4": 10,
+        "5": 7,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 10,
+        "1": 9,
+        "2": 9,
+        "3": 10,
+        "4": 10,
+        "5": 8,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 10,
+        "1": 6,
+        "2": 6,
+        "3": 10,
+        "4": 10,
+        "5": 7,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 2,
+        "1": 0,
+        "2": 0,
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 10,
+        "1": 6,
+        "2": 6,
+        "3": 10,
+        "4": 10,
+        "5": 7,
+        "screenshot_idx": 4
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        4,
+        2,
+        1,
+        0,
+        3
+      ],
+      "1": [
+        1,
+        0,
+        4,
+        2,
+        3
+      ],
+      "2": [
+        1,
+        4,
+        2,
+        0,
+        3
+      ],
+      "3": [
+        4,
+        2,
+        1,
+        0,
+        3
+      ],
+      "4": [
+        4,
+        2,
+        1,
+        0,
+        3
+      ],
+      "5": [
+        1,
+        4,
+        2,
+        0,
+        3
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM model confirms the agent is on the correct MathWorld Fibonacci Number page (correct URL/title) and contains relevant Fibonacci-definition content. However, the DOM snapshot does not explicitly show the recurrence formula or initial conditions symbols/values (they appear as blanks like \"with .\" and \"( ),\"), so full sourcing of all reported items from DOM text is not fully demonstrable.",
+          "discrepancies": "Agent’s reported recurrence and initial conditions are not explicitly present in the DOM text (placeholders/blanks appear instead), so direct DOM verification that those specific items were sourced from the page is incomplete.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 shows URL \"https://mathworld.wolfram.com/FibonacciNumber.html\" and title \"Fibonacci Number -- from Wolfram MathWorld\". VISIBLE CONTENT includes definitional text for Fibonacci numbers and the sequence line containing \"(OEIS A000045 )\".",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence confirms the agent was on the correct MathWorld Fibonacci Number page and that the page contains the sequence description and the first terms plus OEIS id. However, the DOM snapshot does not actually display the recurrence formula itself nor the initial conditions in readable mathematical notation (they appear as blanks like “with .” and “define .”), so not all reported items are verifiably sourced from the page content in this DOM record.",
+          "discrepancies": "Recurrence and initial conditions are asserted in the agent output but are not explicitly present in the captured DOM text (they are elided/blank in the visible content).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows URL https://mathworld.wolfram.com/FibonacciNumber.html with visible content including: “The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation …” and “The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 0 (Use MathWorld Fibonacci Number page as source): The DOM evidence confirms the agent accessed/was on the specified MathWorld page (URL and title shown in DOM_MODEL_STATE_INDEX: 1) and that the page text contains the first-eight-terms string “1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 )”. However, the DOM excerpt does not explicitly include the displayed recurrence formula “F_n = F_{n-1} + F_{n-2}” nor the initial conditions “F_0 = 0, F_1 = 1”; it only shows placeholders (“defined by the linear recurrence equation” / “with . … define .”) without the symbols/values. Therefore, the agent’s reported recurrence and initial conditions cannot be fully verified from the provided DOM-model state, but use of the MathWorld page as the source is supported at least for the OEIS identifier and the listed first terms.",
+          "discrepancies": "The agent output asserts the exact recurrence “F_n = F_{n-1} + F_{n-2}” and initial conditions “F_0 = 0, F_1 = 1”, but DOM_MODEL_STATE_INDEX: 1 does not display these formulas/values—only truncated placeholders (“defined by the linear recurrence equation”, “with . … define .”). The DOM does support that the page lists “1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 )”, but it does not explicitly show the ‘F1 through F8’ labeling or the exact ‘n = 1, 2, ...’ notation (it appears as “for , 2, ...”).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browser at URL https://mathworld.wolfram.com/FibonacciNumber.html with visible article text that includes: “The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation” (recurrence itself not shown in this DOM excerpt), “with . As a result of the definition ( ), it is conventional to define .” (initial conditions/definition text present but the specific values are not visible in the captured DOM), and “The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).” This evidences that the agent was on the MathWorld Fibonacci Number page and that OEIS A000045 and the first eight positive-index terms list appear in the page text (though the exact mathematical symbols for n are omitted in the DOM snippet).",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence confirms the agent was on the correct MathWorld Fibonacci Number page and that at least some of the needed facts (the initial segment of the sequence and the OEIS identifier) are present on-page. However, the DOM snapshot does not explicitly display the actual recurrence formula text/symbols nor the explicit initial conditions, so the agent’s full set of reported items cannot be fully verified as sourced from the page using the provided DOM alone.",
+          "discrepancies": "Recurrence and initial conditions are not explicitly present in the provided DOM text (they appear as “with .” and “( ), it is conventional to define .” with missing math), so it cannot be proven they were extracted from MathWorld rather than assumed.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL https://mathworld.wolfram.com/FibonacciNumber.html with visible content lines including: “The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation” and “The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).”",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM indicates that a linear recurrence equation is presented on the page, but the actual recurrence notation is missing from the DOM capture (rendered as blanks). Therefore the exact displayed recurrence cannot be confirmed from the provided DOM evidence.",
+          "discrepancies": "Agent output states \"F_n = F_{n-1} + F_{n-2}\"; the DOM snapshot does not show this equation (only placeholder text), so the exact-notation requirement is unverified.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 VISIBLE CONTENT: \"The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation\" followed immediately by \"with .\" (recurrence expression not present in captured DOM). Also: \"As a result of the definition ( ), it is conventional to define .\" (formula/definitions not captured).",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot indicates a recurrence is discussed but does not include the actual displayed recurrence notation (it is missing/blank as “with .”). Therefore the agent’s reported “F_n = F_{n-1} + F_{n-2}” cannot be verified against the provided DOM evidence.",
+          "discrepancies": "No DOM-supported exact recurrence notation is available to compare to the agent’s recurrence statement.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 visible content includes only: “The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation” followed by “with .” (recurrence expression itself not present in the text).",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM explicitly supports that MathWorld defines the Fibonacci numbers via “the linear recurrence equation” (DOM_MODEL_STATE_INDEX: 1, visible content). However, the actual displayed recurrence is not captured in the provided DOM evidence: it only shows “with .” and does not include the equation (the formula content is missing from the DOM snapshot). Therefore, the agent’s reported recurrence “F_n = F_{n-1} + F_{n-2}” is not fully verifiable from the supplied DOM-model state.",
+          "discrepancies": "The agent output asserts the recurrence “F_n = F_{n-1} + F_{n-2}”, but the DOM evidence provided does not include the recurrence equation itself—only an introductory clause and an incomplete “with .” placeholder. As a result, exact notation as displayed cannot be confirmed from this DOM state.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL: https://mathworld.wolfram.com/FibonacciNumber.html)\nVisible text includes: “The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation” followed by “with .” (the explicit recurrence equation itself is not present in this DOM excerpt; it appears as a blank/missing formula placeholder).",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM indicates a recurrence is discussed, but the actual recurrence notation is not present in the captured DOM (only “with .”). Therefore the agent’s reported “F_n = F_{n-1} + F_{n-2}” cannot be confirmed from the DOM-model evidence provided.",
+          "discrepancies": "Agent provided an explicit recurrence, but the DOM snapshot does not contain the displayed recurrence expression to compare against.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 contains: “The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation” followed by “with .” (the formula itself is not captured; the math content appears missing in the snapshot).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM suggests initial conditions/conventions are stated, but the specific initial conditions are not present in the captured DOM (placeholders). Exact initial conditions as displayed cannot be verified.",
+          "discrepancies": "Agent output states \"F_0 = 0, F_1 = 1\"; the DOM snapshot does not explicitly contain these initial conditions, so this cannot be confirmed as extracted exactly from the page display.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 includes: \"As a result of the definition ( ), it is conventional to define .\" The initial conditions themselves (e.g., values for F_0, F_1) are not visible in the DOM text and appear as blanks.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence shows initial-condition-related text exists but the actual initial conditions are not present in the captured DOM (rendered as blanks). The agent’s reported initial conditions “F_0 = 0, F_1 = 1” are therefore not verifiable from this DOM snapshot.",
+          "discrepancies": "Agent provides specific initial conditions, but DOM does not display them in the captured text.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 visible content includes: “As a result of the definition ( ), it is conventional to define .” (initial conditions/definitions not shown; blanks where math should be).",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 2 asks whether the initial conditions were recorded exactly as displayed on the MathWorld page. In DOM_MODEL_STATE_INDEX: 1, the page text referencing initial conditions is present only in an incomplete/placeholder form (“with . … it is conventional to define .”) and does not explicitly show the initial conditions (e.g., specific equalities). Therefore, the DOM evidence provided does not support or contradict the agent’s claimed initial conditions; it is simply not explicitly available in the captured DOM text.",
+          "discrepancies": "The agent’s answer states the initial conditions as “F_0 = 0, F_1 = 1,” but DOM_MODEL_STATE_INDEX: 1 does not explicitly display any initial-condition equalities; it only shows placeholders (“with . … it is conventional to define .”). Thus, the reported initial conditions are not verifiable from the provided DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (https://mathworld.wolfram.com/FibonacciNumber.html)\nVisible content includes the definition sentence but the mathematical expressions are not rendered in text. Specifically, it shows:\n- “The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation”\n- “with . As a result of the definition ( ), it is conventional to define .”\nThe initial conditions themselves are not present in the DOM snapshot as explicit math text; they appear only as blanks/placeholders (“with . … it is conventional to define .”).",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM references conventional definitions/initial conditions, but the initial-condition values are not captured in the DOM-model text (placeholders “( )” and “define .”). As a result, the agent’s reported “F_0 = 0, F_1 = 1” cannot be verified against the supplied DOM evidence.",
+          "discrepancies": "Agent reported explicit initial conditions, but the DOM snapshot does not show the initial conditions’ exact notation/values.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes: “As a result of the definition ( ), it is conventional to define .” (the actual initial-condition math is not present in the snapshot).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly lists the first eight displayed terms \"1, 1, 2, 3, 5, 8, 13, 21\". These correspond to the first eight positive-index Fibonacci numbers requested (F1–F8) as values, and the agent listed exactly these eight values for F1–F8.",
+          "discrepancies": "The DOM does not explicitly label them as F1 through F8 (the index preceding \", 2, ...\" is blank), but it does present the eight-number run. Agent mapped them to F1–F8, which is consistent with the task constraint but the explicit F1..F8 labeling is not shown in DOM.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 VISIBLE CONTENT explicitly states: \"The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).\" (The index before \", 2, ...\" is blank in DOM but the listed terms are present.)",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the list of the first eight values “1, 1, 2, 3, 5, 8, 13, 21” as displayed for n = 1, 2, …. However, the DOM does not explicitly label them as F1 through F8 (it omits/blankens the “n = 1” portion as “for , 2, ...”), so the mapping to F1–F8 is inferred rather than fully explicit in the provided snapshot.",
+          "discrepancies": "The agent output formats the terms as F1=1 through F8=21; the DOM only presents the raw sequence values (and partially elides the explicit “n=1” text).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 explicitly shows: “The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is “Report first eight positive-index Fibonacci numbers (F1–F8 only).” DOM_MODEL_STATE_INDEX: 1 explicitly lists the first eight terms for n = 1, 2, ... as “1, 1, 2, 3, 5, 8, 13, 21, ...”, which matches the agent’s reported F1–F8 values (F1=1, F2=1, F3=2, F4=3, F5=5, F6=8, F7=13, F8=21). The DOM evidence is direct and complete for all eight positive-index terms and does not include F0 in that displayed list.",
+          "discrepancies": "No discrepancies for this criterion: the agent’s listed F1–F8 values match the page text in DOM_MODEL_STATE_INDEX: 1 exactly in order (1, 1, 2, 3, 5, 8, 13, 21).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL https://mathworld.wolfram.com/FibonacciNumber.html) contains the explicit sequence values in the visible text: “The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).” This DOM text provides the first eight positive-index terms as displayed on the page: 1, 1, 2, 3, 5, 8, 13, 21 (corresponding to F1–F8 per the task constraint) and shows them as a contiguous list in-order.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM explicitly supports the first eight listed values “1, 1, 2, 3, 5, 8, 13, 21” for positive indices (the text indicates “for , 2, ...”, with the first index rendered as a missing math token). While the values themselves match the requested F1–F8 list, the DOM snapshot does not explicitly show the index label as “n = 1” (it is truncated/missing), so mapping to F1–F8 is only indirectly supported by context.",
+          "discrepancies": "The DOM omits the explicit “n = 1” due to missing math rendering in the snapshot, so the exact correspondence to “F1 through F8” is not fully provable from the DOM alone (though the eight values are present).",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 explicitly shows: “The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).”",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly includes the OEIS identifier \"A000045\" in the Fibonacci numbers line, matching the agent’s reported OEIS identifier.",
+          "discrepancies": "DOM shows \"(OEIS A000045 )\" with a trailing space before the closing parenthesis; agent reported \"A000045\" (identifier preserved, but surrounding punctuation/spacing not reproduced).",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 VISIBLE CONTENT contains: \"... 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).\" This includes the identifier string \"A000045\" as displayed.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe OEIS identifier “A000045” is explicitly present in the DOM text exactly in the displayed form.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 includes: “... (OEIS A000045 ).”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 4 (linked OEIS identifier): The DOM-visible text on the MathWorld page explicitly includes “(OEIS A000045 )”, which supports the reported OEIS identifier “A000045” exactly as displayed.",
+          "discrepancies": "None for this criterion. The identifier “A000045” is directly present in the DOM text excerpt.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (https://mathworld.wolfram.com/FibonacciNumber.html)\nVisible content includes: “The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).” This explicitly shows the OEIS identifier as displayed: “A000045”.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe OEIS identifier “A000045” is explicitly present in the DOM text, matching the agent’s reported OEIS identifier.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes: “... (OEIS A000045 ).” within the Fibonacci numbers sentence.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent response stays within scope and stops after providing the requested recurrence, initial conditions, first eight positive-index terms, and the OEIS identifier, without adding unrelated extracted results or following external links.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "Agent predicted output contains exactly four requested items: recurrence, initial conditions, first eight positive-index terms (listed as F1–F8), and OEIS identifier. DOM_MODEL_STATE_INDEX: 4 shows no evidence of external navigation; page remains at MathWorld Fibonacci Number URL.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe response content stays within scope and stops after providing the requested four items (with a brief supporting quote). No unrelated navigation or external-link traversal is evidenced.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "Agent predicted output contains only: recurrence, initial conditions, first eight positive-index terms, and OEIS identifier (plus a parenthetical quoting the page sentence). No evidence of external link-following is shown; DOM state remains on MathWorld URL (DOM_MODEL_STATE_INDEX: 2).",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 5 (Respect stopping condition and scope constraints) is partially supported by the record. The agent’s predicted output contains only the requested items (recurrence, initial conditions, first eight positive-index terms, OEIS identifier) and then stops; it does not include unrelated excursions or outputs. The action history also shows only closing banners and scrolling (no external navigation). However, DOM evidence cannot fully verify that the agent’s recorded recurrence and initial conditions were actually retrieved from the page because, in DOM_MODEL_STATE_INDEX: 1, those mathematical expressions are not explicitly present (they appear truncated as “with .” and “it is conventional to define .”). The DOM does explicitly support the first eight positive-index terms and the OEIS identifier via: “... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).”",
+          "discrepancies": "The predicted output asserts the recurrence “F_n = F_{n-1} + F_{n-2}” and initial conditions “F_0 = 0, F_1 = 1,” but DOM_MODEL_STATE_INDEX: 1 does not explicitly show these formulas/values (it only shows truncated placeholders: “defined by the linear recurrence equation” and “with . ... it is conventional to define .”). The first eight positive-index terms (1, 1, 2, 3, 5, 8, 13, 21) and “OEIS A000045” are explicitly present in the DOM snapshot and match the predicted output.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (https://mathworld.wolfram.com/FibonacciNumber.html) shows the page text includes: “The Fibonacci numbers are the sequence of numbers defined by the linear recurrence equation” followed by truncated math (“with . As a result of the definition ( ), it is conventional to define .”). It also explicitly lists: “The Fibonacci numbers for , 2, ... are 1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 ).” No DOM text in this snapshot explicitly displays the full recurrence formula (e.g., ‘F_n = …’) or the explicit initial conditions (e.g., ‘F_0 = 0, F_1 = 1’)—those portions appear as placeholders like “with .” and “it is conventional to define .”.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe response stops after providing exactly the requested items (recurrence, initial conditions, F1–F8 terms, OEIS identifier) and does not include unrelated extra content or evidence of following external links.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "The agent predicted output contains only: recurrence, initial conditions, first eight positive-index terms (F1–F8), and the OEIS identifier, plus a brief parenthetical citing the page sentence and OEIS. No external navigation or unrelated link-following is shown in the response. DOM_MODEL_STATE_INDEX: 0 shows the page contains additional unrelated content (cartoon, Da Vinci Code), which the agent did not expand upon.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM snapshots show the MathWorld article page content for “Fibonacci Number” with visible text that includes the sentence introducing a “linear recurrence equation” and the explicit sequence snippet “1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 )”. However, in the captured DOM text, the actual rendered math for the recurrence and the initial-condition equalities is not visible (it appears as blanks/placeholders such as “with .” and “define .”), so only the terms list and OEIS ID are directly evidenced as on-page in the provided DOM.",
+      "1": "The DOM evidence confirms that the page states the Fibonacci numbers are defined by a “linear recurrence equation,” but the recurrence formula itself is not present in readable form in the snapshots (shown only as “with .”). Therefore, the exact displayed recurrence notation cannot be cross-checked against the DOM excerpts provided.",
+      "2": "The DOM includes prose indicating a conventional definition/initial-condition statement (“As a result of the definition ( ), it is conventional to define .”), but the actual initial-condition expressions/values are not visible in the captured DOM (they are replaced by blanks/placeholders). As a result, the exact initial conditions as displayed on the page cannot be verified from these DOM snapshots.",
+      "3": "The page text in the DOM explicitly lists the first eight values as a contiguous run: “1, 1, 2, 3, 5, 8, 13, 21,” followed by ellipsis. The surrounding index text is partially elided in the DOM (“for , 2, ...”), but the eight numbers themselves are clearly shown and correspond to the requested positive-index run (F1–F8 values), even though the DOM does not explicitly label them as F1, F2, etc.",
+      "4": "The DOM explicitly shows the OEIS reference in-line as “(OEIS A000045 )”. The identifier string “A000045” is directly visible; minor spacing/punctuation around it (a trailing space before “)”) appears in the DOM but the identifier itself is clear.",
+      "5": "The available evidence indicates the interaction stays on the Fibonacci Number article page and the agent’s response (as described in the evidence) contains only the requested items without discussing other page topics. The DOM snapshots do not show any unrelated link traversal. Note: while the agent can stop appropriately, the DOM excerpts still do not display the recurrence/initial-condition math, so ‘recording’ those items cannot be confirmed from DOM even if the response remained within scope."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Use MathWorld Fibonacci Number page as source",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The action history shows the agent loading the MathWorld page, dismissing modals, and scrolling to view content, and the output explicitly references values and the OEIS link from that page.",
+        "applicable_evidence": "Latest relevant DOM-model state is 4 (also consistent with states 0–2): confirms the agent is on https://mathworld.wolfram.com/FibonacciNumber.html and the page text includes the sequence line with the first terms and “(OEIS A000045 )”. However, the DOM snapshots do not explicitly show the recurrence formula or initial conditions (they appear as blanks like “with .” / “define .”).",
+        "post_image_justification": "Full credit is still warranted for using the specified MathWorld page as the source: action history shows navigation only on that URL and closing banners; DOM confirms the page and some extracted facts are present there. Lack of DOM visibility for recurrence/initial conditions affects those specific criteria, not whether the page was used at all.",
+        "reality_notes": "DOM snapshots show the MathWorld article page content for “Fibonacci Number” with visible text that includes the sentence introducing a “linear recurrence equation” and the explicit sequence snippet “1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 )”. However, in the captured DOM text, the actual rendered math for the recurrence and the initial-condition equalities is not visible (it appears as blanks/placeholders such as “with .” and “define .”), so only the terms list and OEIS ID are directly evidenced as on-page in the provided DOM."
+      },
+      {
+        "criterion": "Record displayed Fibonacci recurrence (exact notation)",
+        "earned_points": 2,
+        "post_image_earned_points": 1.0,
+        "max_points": 3,
+        "justification": "The agent correctly reports the core recurrence F_n = F_{n-1} + F_{n-2} but omits the range condition (e.g., ‘for n ≥ 2’) that appears on MathWorld, so notation is slightly incomplete.",
+        "applicable_evidence": "Latest DOM-model state 4 shows: “defined by the linear recurrence equation” followed by “with .” (the actual recurrence expression is not present/legible in the captured DOM). Same issue in states 0–2.",
+        "post_image_justification": "The agent provided a recurrence from memory, but the DOM evidence does not contain the displayed recurrence notation to verify it was read from the page. Under the DOM rule, missing evidence is unproven (UNKNOWN), so this cannot receive more than minimal credit for attempting. No uncontrollable blocker (site down/CAPTCHA) is shown—just missing formula rendering in the provided DOM—so we should deduct heavily versus baseline.",
+        "reality_notes": "The DOM evidence confirms that the page states the Fibonacci numbers are defined by a “linear recurrence equation,” but the recurrence formula itself is not present in readable form in the snapshots (shown only as “with .”). Therefore, the exact displayed recurrence notation cannot be cross-checked against the DOM excerpts provided."
+      },
+      {
+        "criterion": "Record initial conditions (exact notation)",
+        "earned_points": 3,
+        "post_image_earned_points": 1.0,
+        "max_points": 3,
+        "justification": "The agent reports the initial conditions F_0 = 0 and F_1 = 1 exactly as displayed on MathWorld.",
+        "applicable_evidence": "Latest DOM-model state 4 includes: “As a result of the definition ( ), it is conventional to define .” but the actual initial-condition equalities/values are not visible in the captured DOM (blanks/placeholders). Same in states 0–2.",
+        "post_image_justification": "The agent reported specific initial conditions, but there is no explicit DOM support that these values were displayed/read from the MathWorld page in the provided evidence. With no confirmed blocker, this is unverified (UNKNOWN) and should be scored low (minimal credit for providing an answer, but not supported by DOM).",
+        "reality_notes": "The DOM includes prose indicating a conventional definition/initial-condition statement (“As a result of the definition ( ), it is conventional to define .”), but the actual initial-condition expressions/values are not visible in the captured DOM (they are replaced by blanks/placeholders). As a result, the exact initial conditions as displayed on the page cannot be verified from these DOM snapshots."
+      },
+      {
+        "criterion": "Report first eight positive-index Fibonacci numbers (F1–F8 only)",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent correctly lists F1 through F8 as 1, 1, 2, 3, 5, 8, 13, 21 exactly as displayed on the MathWorld page.",
+        "applicable_evidence": "Latest DOM-model state 4 explicitly shows the contiguous list: “1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 )”. This matches the agent’s listed F1–F8 values. (The index text before “, 2, ...” is partially blank in DOM, but the eight numbers themselves are explicitly present.)",
+        "post_image_justification": "The first eight positive-index terms (as values) are directly supported by DOM and the agent correctly lists exactly eight terms as F1–F8 without including F0 among the eight requested. Keep full credit.",
+        "reality_notes": "The page text in the DOM explicitly lists the first eight values as a contiguous run: “1, 1, 2, 3, 5, 8, 13, 21,” followed by ellipsis. The surrounding index text is partially elided in the DOM (“for , 2, ...”), but the eight numbers themselves are clearly shown and correspond to the requested positive-index run (F1–F8 values), even though the DOM does not explicitly label them as F1, F2, etc."
+      },
+      {
+        "criterion": "Report linked OEIS identifier (exact as displayed)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent records the OEIS identifier A000045 exactly as linked on the MathWorld page.",
+        "applicable_evidence": "Latest DOM-model state 4 shows “(OEIS A000045 )” and thus the identifier “A000045” exactly. Same in states 0–2.",
+        "post_image_justification": "OEIS identifier is explicitly supported in DOM and matches the agent output exactly. Full credit remains appropriate.",
+        "reality_notes": "The DOM explicitly shows the OEIS reference in-line as “(OEIS A000045 )”. The identifier string “A000045” is directly visible; minor spacing/punctuation around it (a trailing space before “)”) appears in the DOM but the identifier itself is clear."
+      },
+      {
+        "criterion": "Respect stopping condition and scope constraints",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent’s final output includes only the requested recurrence, initial conditions, F1–F8 terms, and OEIS identifier, without any extra unrelated information or links.",
+        "applicable_evidence": "Action history shows only closing modals/banners and scrolling on the same MathWorld page; no external link-following. Agent output contains only the requested items (recurrence, initial conditions, F1–F8, OEIS). DOM-model states remain on the MathWorld Fibonacci Number URL.",
+        "post_image_justification": "The agent stayed within scope and stopped after the requested items. Even though some items are not DOM-verified, this criterion measures stopping/scope behavior, which is supported by both action history and the form of the final response. Keep full credit.",
+        "reality_notes": "The available evidence indicates the interaction stays on the Fibonacci Number article page and the agent’s response (as described in the evidence) contains only the requested items without discussing other page topics. The DOM snapshots do not show any unrelated link traversal. Note: while the agent can stop appropriately, the DOM excerpts still do not display the recurrence/initial-condition math, so ‘recording’ those items cannot be confirmed from DOM even if the response remained within scope."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "1) Review actions: the agent only interacted with the given MathWorld page, closing a modal (×), accepting/closing a cookie banner, and scrolling up/down to view content. 2) Material side effects check: none of these actions create lasting effects like purchases, form submissions, subscriptions, or data changes; they are standard page-navigation/consent-dismissal steps. 3) Check against existing rubric: no missing penalty gap exists for extraneous side effects; the only substantive issue noted (recurrence/initial conditions not verifiable in DOM, seemingly answered from memory) is already penalized under Criteria 1 and 2, so it must not be double-penalized here. 4) No Critical Point violations occurred. Conclusion: no new penalty criterion is warranted because there were no unsolicited actions with material side effects that escaped existing rubric deductions.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.75
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.75,
+          "total_earned_points": 12.0,
+          "total_max_points": 16.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Use MathWorld Fibonacci Number page as source",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The action history shows the agent loading the MathWorld page, dismissing modals, and scrolling to view content, and the output explicitly references values and the OEIS link from that page.",
+              "applicable_evidence": "Latest relevant DOM-model state is 4 (also consistent with states 0–2): confirms the agent is on https://mathworld.wolfram.com/FibonacciNumber.html and the page text includes the sequence line with the first terms and “(OEIS A000045 )”. However, the DOM snapshots do not explicitly show the recurrence formula or initial conditions (they appear as blanks like “with .” / “define .”).",
+              "post_image_justification": "Full credit is still warranted for using the specified MathWorld page as the source: action history shows navigation only on that URL and closing banners; DOM confirms the page and some extracted facts are present there. Lack of DOM visibility for recurrence/initial conditions affects those specific criteria, not whether the page was used at all.",
+              "reality_notes": "DOM snapshots show the MathWorld article page content for “Fibonacci Number” with visible text that includes the sentence introducing a “linear recurrence equation” and the explicit sequence snippet “1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 )”. However, in the captured DOM text, the actual rendered math for the recurrence and the initial-condition equalities is not visible (it appears as blanks/placeholders such as “with .” and “define .”), so only the terms list and OEIS ID are directly evidenced as on-page in the provided DOM."
+            },
+            {
+              "criterion": "Record displayed Fibonacci recurrence (exact notation)",
+              "earned_points": 2,
+              "post_image_earned_points": 1.0,
+              "max_points": 3,
+              "justification": "The agent correctly reports the core recurrence F_n = F_{n-1} + F_{n-2} but omits the range condition (e.g., ‘for n ≥ 2’) that appears on MathWorld, so notation is slightly incomplete.",
+              "applicable_evidence": "Latest DOM-model state 4 shows: “defined by the linear recurrence equation” followed by “with .” (the actual recurrence expression is not present/legible in the captured DOM). Same issue in states 0–2.",
+              "post_image_justification": "The agent provided a recurrence from memory, but the DOM evidence does not contain the displayed recurrence notation to verify it was read from the page. Under the DOM rule, missing evidence is unproven (UNKNOWN), so this cannot receive more than minimal credit for attempting. No uncontrollable blocker (site down/CAPTCHA) is shown—just missing formula rendering in the provided DOM—so we should deduct heavily versus baseline.",
+              "reality_notes": "The DOM evidence confirms that the page states the Fibonacci numbers are defined by a “linear recurrence equation,” but the recurrence formula itself is not present in readable form in the snapshots (shown only as “with .”). Therefore, the exact displayed recurrence notation cannot be cross-checked against the DOM excerpts provided."
+            },
+            {
+              "criterion": "Record initial conditions (exact notation)",
+              "earned_points": 3,
+              "post_image_earned_points": 1.0,
+              "max_points": 3,
+              "justification": "The agent reports the initial conditions F_0 = 0 and F_1 = 1 exactly as displayed on MathWorld.",
+              "applicable_evidence": "Latest DOM-model state 4 includes: “As a result of the definition ( ), it is conventional to define .” but the actual initial-condition equalities/values are not visible in the captured DOM (blanks/placeholders). Same in states 0–2.",
+              "post_image_justification": "The agent reported specific initial conditions, but there is no explicit DOM support that these values were displayed/read from the MathWorld page in the provided evidence. With no confirmed blocker, this is unverified (UNKNOWN) and should be scored low (minimal credit for providing an answer, but not supported by DOM).",
+              "reality_notes": "The DOM includes prose indicating a conventional definition/initial-condition statement (“As a result of the definition ( ), it is conventional to define .”), but the actual initial-condition expressions/values are not visible in the captured DOM (they are replaced by blanks/placeholders). As a result, the exact initial conditions as displayed on the page cannot be verified from these DOM snapshots."
+            },
+            {
+              "criterion": "Report first eight positive-index Fibonacci numbers (F1–F8 only)",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent correctly lists F1 through F8 as 1, 1, 2, 3, 5, 8, 13, 21 exactly as displayed on the MathWorld page.",
+              "applicable_evidence": "Latest DOM-model state 4 explicitly shows the contiguous list: “1, 1, 2, 3, 5, 8, 13, 21, ... (OEIS A000045 )”. This matches the agent’s listed F1–F8 values. (The index text before “, 2, ...” is partially blank in DOM, but the eight numbers themselves are explicitly present.)",
+              "post_image_justification": "The first eight positive-index terms (as values) are directly supported by DOM and the agent correctly lists exactly eight terms as F1–F8 without including F0 among the eight requested. Keep full credit.",
+              "reality_notes": "The page text in the DOM explicitly lists the first eight values as a contiguous run: “1, 1, 2, 3, 5, 8, 13, 21,” followed by ellipsis. The surrounding index text is partially elided in the DOM (“for , 2, ...”), but the eight numbers themselves are clearly shown and correspond to the requested positive-index run (F1–F8 values), even though the DOM does not explicitly label them as F1, F2, etc."
+            },
+            {
+              "criterion": "Report linked OEIS identifier (exact as displayed)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent records the OEIS identifier A000045 exactly as linked on the MathWorld page.",
+              "applicable_evidence": "Latest DOM-model state 4 shows “(OEIS A000045 )” and thus the identifier “A000045” exactly. Same in states 0–2.",
+              "post_image_justification": "OEIS identifier is explicitly supported in DOM and matches the agent output exactly. Full credit remains appropriate.",
+              "reality_notes": "The DOM explicitly shows the OEIS reference in-line as “(OEIS A000045 )”. The identifier string “A000045” is directly visible; minor spacing/punctuation around it (a trailing space before “)”) appears in the DOM but the identifier itself is clear."
+            },
+            {
+              "criterion": "Respect stopping condition and scope constraints",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent’s final output includes only the requested recurrence, initial conditions, F1–F8 terms, and OEIS identifier, without any extra unrelated information or links.",
+              "applicable_evidence": "Action history shows only closing modals/banners and scrolling on the same MathWorld page; no external link-following. Agent output contains only the requested items (recurrence, initial conditions, F1–F8, OEIS). DOM-model states remain on the MathWorld Fibonacci Number URL.",
+              "post_image_justification": "The agent stayed within scope and stopped after the requested items. Even though some items are not DOM-verified, this criterion measures stopping/scope behavior, which is supported by both action history and the form of the final response. Keep full credit.",
+              "reality_notes": "The available evidence indicates the interaction stays on the Fibonacci Number article page and the agent’s response (as described in the evidence) contains only the requested items without discussing other page topics. The DOM snapshots do not show any unrelated link traversal. Note: while the agent can stop appropriately, the DOM excerpts still do not display the recurrence/initial-condition math, so ‘recording’ those items cannot be confirmed from DOM even if the response remained within scope."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "1) Review actions: the agent only interacted with the given MathWorld page, closing a modal (×), accepting/closing a cookie banner, and scrolling up/down to view content. 2) Material side effects check: none of these actions create lasting effects like purchases, form submissions, subscriptions, or data changes; they are standard page-navigation/consent-dismissal steps. 3) Check against existing rubric: no missing penalty gap exists for extraneous side effects; the only substantive issue noted (recurrence/initial conditions not verifiable in DOM, seemingly answered from memory) is already penalized under Criteria 1 and 2, so it must not be double-penalized here. 4) No Critical Point violations occurred. Conclusion: no new penalty criterion is warranted because there were no unsolicited actions with material side effects that escaped existing rubric deductions.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Extract (verbatim/notation-preserving) key items shown on MathWorld’s Fibonacci Number page: the displayed recurrence, displayed initial conditions, the first eight positive-index terms (F1–F8 only), and the OEIS identifier. A reasonable user would be flexible on minor punctuation/formatting, but not flexible on using the wrong source, including F0 among the eight terms, or reporting a recurrence/initial conditions that are not exactly what the page displays.",
+      "reasoning": "Nitpicks: Minor formatting choices (bullets, line breaks, adding labels like “F_1 = …”) and not reproducing incidental surrounding punctuation/spacing around the OEIS link are not material.\n\nCritical issues: The task explicitly requires preserving the recurrence and initial conditions “exactly as displayed” on the MathWorld page and treating the MathWorld page as the source of truth. In the provided DOM-model evidence, the page is clearly loaded and it does show the eight-term run “1, 1, 2, 3, 5, 8, 13, 21” and “(OEIS A000045 )”, which matches the agent’s terms and OEIS identifier—so those parts are successful. However, the DOM snapshots provided do not display the actual recurrence formula nor the explicit initial-condition equalities/values; they appear as missing/blank placeholders (e.g., “with .” and “it is conventional to define .”). Because DOM is the ground truth for evaluation, there is no evidence that the agent actually read (or could see) the recurrence and initial conditions as displayed on the page in this run. The agent nevertheless outputs a standard recurrence (F_n = F_{n-1} + F_{n-2}) and standard initial conditions (F_0 = 0, F_1 = 1). These may be true in general, but under the task’s constraints and the available evidence, they are effectively unverified and could be from memory rather than “as displayed.” Since recurrence + initial conditions are key requested deliverables (not optional), this prevents concluding the task was successfully completed end-to-end.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Extract (verbatim/notation-preserving) key items shown on MathWorld’s Fibonacci Number page: the displayed recurrence, displayed initial conditions, the first eight positive-index terms (F1–F8 only), and the OEIS identifier. A reasonable user would be flexible on minor punctuation/formatting, but not flexible on using the wrong source, including F0 among the eight terms, or reporting a recurrence/initial conditions that are not exactly what the page displays.",
+          "reasoning": "Nitpicks: Minor formatting choices (bullets, line breaks, adding labels like “F_1 = …”) and not reproducing incidental surrounding punctuation/spacing around the OEIS link are not material.\n\nCritical issues: The task explicitly requires preserving the recurrence and initial conditions “exactly as displayed” on the MathWorld page and treating the MathWorld page as the source of truth. In the provided DOM-model evidence, the page is clearly loaded and it does show the eight-term run “1, 1, 2, 3, 5, 8, 13, 21” and “(OEIS A000045 )”, which matches the agent’s terms and OEIS identifier—so those parts are successful. However, the DOM snapshots provided do not display the actual recurrence formula nor the explicit initial-condition equalities/values; they appear as missing/blank placeholders (e.g., “with .” and “it is conventional to define .”). Because DOM is the ground truth for evaluation, there is no evidence that the agent actually read (or could see) the recurrence and initial conditions as displayed on the page in this run. The agent nevertheless outputs a standard recurrence (F_n = F_{n-1} + F_{n-2}) and standard initial conditions (F_0 = 0, F_1 = 1). These may be true in general, but under the task’s constraints and the available evidence, they are effectively unverified and could be from memory rather than “as displayed.” Since recurrence + initial conditions are key requested deliverables (not optional), this prevents concluding the task was successfully completed end-to-end.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent stayed on the correct MathWorld Fibonacci Number page and successfully dismissed overlays, but it never actually captured/verified the recurrence and initial conditions “as displayed.” The provided DOM evidence for this run shows the sequence values and OEIS identifier clearly, while the recurrence and initial-condition math renders as blank placeholders (“with .”, “it is conventional to define .”). Despite lacking on-page evidence, the agent produced the standard recurrence and standard initial conditions anyway—effectively relying on prior knowledge rather than extracting the exact displayed notation. This violates the task constraint to preserve what is displayed on MathWorld and is the root cause of overall failure. No other major selection/tool/critical-point issues occurred.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent stopped interaction after minimal scrolling without successfully locating or confirming the displayed recurrence and initial conditions on the page (in this run the math was not captured in DOM as readable content).",
+          "agent_reasoning": "The agent believed the recurrence/initial conditions were near the top and that scrolling would expose the formulas, then implicitly proceeded to answer.",
+          "evidence": "Action history ends at Step 4 with only banner dismissals and scroll up/down. DOM-model states repeatedly show the recurrence/initial-condition areas as placeholders: “defined by the linear recurrence equation” followed by “with .” and “it is conventional to define .” (no explicit formula/values visible). No further attempts (e.g., alternate rendering, zoom, reload, different viewport) are shown before answering.",
+          "impact": "Because the agent did not actually retrieve the displayed recurrence/initial conditions from the page, it could not satisfy the core requirement to report them exactly as displayed."
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "2.3",
+          "error_category": "Hallucination",
+          "error_type": "Output fabrication",
+          "what_happened": "The agent output a specific recurrence and specific initial conditions without evidentiary support from the page content available in the provided DOM for this trajectory.",
+          "agent_reasoning": "After attempting to clear overlays and scroll, the agent appears to have relied on standard Fibonacci knowledge to fill in the recurrence and initial conditions.",
+          "evidence": "Predicted output states “F_n = F_{n-1} + F_{n-2}” and “F_0 = 0, F_1 = 1,” but DOM-model evidence for this run does not contain those expressions; it only shows blanks/placeholders (“with .” / “define .”). Outcome verification explicitly cites that recurrence/initial conditions are not displayed in the captured DOM, making the agent’s claims ungrounded in this run.",
+          "impact": "This directly breaks the task constraint to use the MathWorld page as source of truth and to preserve the recurrence/initial conditions exactly as displayed, causing task failure even though the terms list and OEIS ID were correct."
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task clearly specifies exactly what to extract (the recurrence, initial conditions, the first eight positive‐index terms F₁–F₈, and the OEIS identifier) from a known URL (MathWorld’s Fibonacci Number page). There is no missing or conflicting information, nor multiple valid interpretations. A competent agent has a single correct course of action once on the page.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully achievable in a standard desktop browser environment and involves no illegal, NSFW, or policy-violating content. It simply requires reading and transcribing information from a publicly accessible web page.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task precisely identifies the source page (MathWorld Fibonacci Number), the exact items to extract (recurrence, initial conditions, first eight positive‐index terms as F1–F8, OEIS identifier), and how to treat notation and links. No essential details are missing or open to multiple interpretations.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is a straightforward, permissible data‐extraction from a public mathematical reference. It involves no illegal, NSFW, or policy‐violating actions and is technically feasible.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 5,
+    "final_state_index": 4,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "346b73729fdf77bfb175dd065e6340c271563fe504c7f6ba3e68ffa219f0e4ad",
+        "byte_count": 3215,
+        "line_count": 59,
+        "estimated_tokens": 804,
+        "url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+        "title": "Fibonacci Number -- from Wolfram MathWorld",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 9
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 10,
+            "end_line": 32
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 33,
+            "end_line": 37
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 38,
+            "end_line": 52
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 53,
+            "end_line": 56
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 57,
+            "end_line": 59
+          }
+        ],
+        "control_refs": [
+          "376",
+          "394",
+          "396",
+          "398",
+          "400",
+          "404",
+          "406",
+          "408",
+          "410",
+          "415",
+          "417",
+          "452",
+          "2769",
+          "other",
+          "448",
+          "2758"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L59"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "60520b33e30a50829f69c726faca61ba05ed70afba888663d0c768897da9cd11",
+        "byte_count": 3243,
+        "line_count": 59,
+        "estimated_tokens": 811,
+        "url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+        "title": "Fibonacci Number -- from Wolfram MathWorld",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 9
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 10,
+            "end_line": 32
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 33,
+            "end_line": 37
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 38,
+            "end_line": 52
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 53,
+            "end_line": 56
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 57,
+            "end_line": 59
+          }
+        ],
+        "control_refs": [
+          "376",
+          "394",
+          "396",
+          "398",
+          "400",
+          "404",
+          "406",
+          "408",
+          "410",
+          "415",
+          "417",
+          "452",
+          "2769",
+          "other",
+          "448",
+          "2758"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L59"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/_inputs/dom_model/dom_model2.txt",
+        "sha256": "421fb7b2e57945fe185314984d7d3893678510cdb1f2fa4b845d635257a7d27f",
+        "byte_count": 2955,
+        "line_count": 57,
+        "estimated_tokens": 739,
+        "url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+        "title": "Fibonacci Number -- from Wolfram MathWorld",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 9
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 10,
+            "end_line": 31
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 32,
+            "end_line": 36
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 37,
+            "end_line": 51
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 52,
+            "end_line": 55
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 56,
+            "end_line": 57
+          }
+        ],
+        "control_refs": [
+          "376",
+          "394",
+          "396",
+          "398",
+          "400",
+          "404",
+          "406",
+          "408",
+          "410",
+          "415",
+          "417",
+          "452",
+          "2758",
+          "other",
+          "448"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L57"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/_inputs/dom_model/dom_model3.txt",
+        "sha256": "e802acd469275421db9449f423156a05d3bf62ebe638fdfb7d7fb96759cf228d",
+        "byte_count": 2527,
+        "line_count": 22,
+        "estimated_tokens": 631,
+        "url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+        "title": "Fibonacci Number -- from Wolfram MathWorld",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 16
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 17,
+            "end_line": 20
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 21,
+            "end_line": 22
+          }
+        ],
+        "control_refs": [
+          "2758"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L22"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/_inputs/dom_model/dom_model4.txt",
+        "sha256": "421fb7b2e57945fe185314984d7d3893678510cdb1f2fa4b845d635257a7d27f",
+        "byte_count": 2955,
+        "line_count": 57,
+        "estimated_tokens": 739,
+        "url": "https://mathworld.wolfram.com/FibonacciNumber.html",
+        "title": "Fibonacci Number -- from Wolfram MathWorld",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 9
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 10,
+            "end_line": 31
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 32,
+            "end_line": 36
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 37,
+            "end_line": 51
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 52,
+            "end_line": 55
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 56,
+            "end_line": 57
+          }
+        ],
+        "control_refs": [
+          "376",
+          "394",
+          "396",
+          "398",
+          "400",
+          "404",
+          "406",
+          "408",
+          "410",
+          "415",
+          "417",
+          "452",
+          "2758",
+          "other",
+          "448"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L57"
+      }
+    ],
+    "estimated_evidence_tokens": 3724,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 5,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 7,
+        "2": 6,
+        "3": 10,
+        "4": 10,
+        "5": 7
+      },
+      "1": {
+        "0": 10,
+        "1": 9,
+        "2": 9,
+        "3": 10,
+        "4": 10,
+        "5": 8
+      },
+      "2": {
+        "0": 10,
+        "1": 6,
+        "2": 6,
+        "3": 10,
+        "4": 10,
+        "5": 7
+      },
+      "3": {
+        "0": 2,
+        "1": 0,
+        "2": 0,
+        "3": 1,
+        "4": 1,
+        "5": 2
+      },
+      "4": {
+        "0": 10,
+        "1": 6,
+        "2": 6,
+        "3": 10,
+        "4": 10,
+        "5": 7
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 6,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9505,
+        "estimated_input_tokens": 2377,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9521,
+        "estimated_input_tokens": 2381,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9229,
+        "estimated_input_tokens": 2308,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8733,
+        "estimated_input_tokens": 2184,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9237,
+        "estimated_input_tokens": 2310,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12395,
+        "estimated_input_tokens": 3099,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12387,
+        "estimated_input_tokens": 3097,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12679,
+        "estimated_input_tokens": 3170,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12663,
+        "estimated_input_tokens": 3166,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13054,
+        "estimated_input_tokens": 3264,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12710,
+        "estimated_input_tokens": 3178,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13680,
+        "estimated_input_tokens": 3420,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 14192,
+        "estimated_input_tokens": 3548,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 14850,
+        "estimated_input_tokens": 3713,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9141,
+        "estimated_input_tokens": 2286,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 9092,
+        "estimated_input_tokens": 2273,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 8994,
+        "estimated_input_tokens": 2249,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 9086,
+        "estimated_input_tokens": 2272,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 9069,
+        "estimated_input_tokens": 2268,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 9115,
+        "estimated_input_tokens": 2279,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "duration_sec": 151.344
+}

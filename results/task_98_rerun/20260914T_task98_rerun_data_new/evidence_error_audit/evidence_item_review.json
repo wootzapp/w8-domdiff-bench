@@ -1,0 +1,458 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_098-solar-lunar-ephemeris-20260914T093705Z",
+  "run_id": "20260914T_task98_rerun_data_new",
+  "rubric_sha256": "5ce36d2eff177b2341d7b5591e6c6cffe5385ac37029b1673c22a7e23f7d5b0e",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Report geometry.coordinates (preserve order)",
+      "description": "Extract and report the exact value of geometry.coordinates from the supplied USNO response, preserving the returned coordinate order (do not swap lat/lon). Full credit if coordinates match exactly and order is preserved. Partial credit if correct numbers but order reversed. If geometry.coordinates is not present in the supplied response, award full credit if the agent clearly states it is missing/unavailable rather than guessing.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 explicitly shows geometry.coordinates as an array in this order: [-77.0369, 38.9072] (lon, lat). Screenshot 2 does not show geometry.",
+        "verifier_justification": "The agent output reports geometry.coordinates as [ -77.0369, 38.9072 ], matching the screenshot exactly and preserving order. The baseline justification claiming reversal is contradicted by the evidence.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a JSON response with a \"geometry\" object. Under it, \"coordinates\": [\n  -77.0369,\n  38.9072\n], and \"type\": \"Point\" are visible.",
+            "criterion_analysis": "The agent’s predicted output lists geometry.coordinates as [ -77.0369, 38.9072 ], which matches the screenshot exactly and preserves the returned order.",
+            "discrepancies": "None for this criterion; the predicted coordinates match what is visible.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 0 explicitly shows `\"geometry\": { \"coordinates\": [ -77.0369, 38.9072 ], \"type\": \"Point\" }` (latest state that includes geometry). Agent output matches exactly.",
+        "verifier_justification": "Supported by explicit DOM; coordinate order preserved (lon, lat). No adjustment from baseline.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"geometry\": { \"coordinates\": [ -77.0369, 38.9072 ], \"type\": \"Point\" }",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "No discrepancies. Agent output geometry.coordinates = [ -77.0369, 38.9072 ] matches DOM and preserves order.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report date fields: day, month, year, day_of_week",
+      "description": "Report day, month, year, and day_of_week exactly as given in the supplied USNO response for the requested date. Full credit if all four are present and correct. Partial credit if one field is missing/incorrect while others are correct. If one or more of these fields are not present in the supplied response, award full credit if the agent explicitly notes which are missing/unavailable and does not infer them.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows the main date fields including day: 21, month: 6, year: 2025, day_of_week: \"Saturday\".",
+        "verifier_justification": "Agent reported all four date fields exactly as shown in the latest screenshot.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Within \"properties\" → \"data\", the fields \"day\": 21, \"day_of_week\": \"Saturday\", and \"month\": 6 are visible. The \"year\" field for the main date is not visible in the screenshot portion shown (though a \"year\": 2025 appears inside \"closestphase\").",
+            "criterion_analysis": "The agent output includes day=21, month=6, year=2025, day_of_week=\"Saturday\". Day/month/day_of_week are supported by the visible \"data\" fields. However, the main \"year\" for the date is not visible in the screenshot, so the agent’s inclusion of year=2025 for the date is not directly supported by the shown pixels (even though 2025 is visible under closestphase).",
+            "discrepancies": "Agent asserts \"year: 2025\" as part of the main date fields; the screenshot segment shows day/month/day_of_week but does not show a top-level \"year\" next to them.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON response. Visible fields include: \"day\": 21, \"day_of_week\": \"Saturday\", \"month\": 6, and \"year\": 2025 (year appears at least once in the shown section). These appear in the main object near \"curphase\" and also within the visible \"closestphase\" block.",
+            "criterion_analysis": "The agent’s predicted output reports day=21, month=6, year=2025, day_of_week=\"Saturday\". All four values are clearly visible in the screenshot and match exactly, so this criterion is fully satisfied.",
+            "discrepancies": "None. The agent’s date fields match what is visible in the JSON.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 1 (latest) shows `day: 21`, `month: 6`, `year: 2025`, `day_of_week: \"Saturday\"` (also present in state 0). Agent output matches.",
+        "verifier_justification": "All required date fields are explicitly present and correctly reported. No adjustment.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"day\": 21, \"month\": 6, \"year\": 2025, \"day_of_week\": \"Saturday\"",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "No discrepancies. Agent reported day=21, month=6, year=2025, day_of_week=\"Saturday\" exactly as shown.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL https://aa.usno.navy.mil/api/rstt/oneday?date=2025-06-21&coords=38.9072,-77.0369) VISIBLE CONTENT includes: \"day\": 21, \"month\": 6, \"year\": 2025, \"day_of_week\": \"Saturday\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly contains all four requested date fields (day, month, year, day_of_week) with the same values the agent reported.",
+            "discrepancies": "No discrepancies between the agent output and the DOM evidence for day/month/year/day_of_week.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report timezone fields: tz and isdst",
+      "description": "Report tz and isdst exactly as returned by the supplied USNO response. Do not infer a local timezone or convert times. Full credit if both fields are included and correct. Partial credit if one is missing/incorrect. If tz and/or isdst are not present in the supplied response, award full credit if the agent clearly states they are missing/unavailable and does not guess them.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows isdst: false and tz: 0.0 in the main data. Screenshot 2 (latest) also shows isdst: false and tz: 0.0.",
+        "verifier_justification": "Agent reported tz: 0.0 and isdst: false exactly; no time conversion or inferred timezone added.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In \"properties\" → \"data\", the fields \"isdst\": false and \"tz\": 0.0 are visible (with \"tz\" appearing below \"label\": null).",
+            "criterion_analysis": "The agent’s predicted output reports tz: 0.0 and isdst: false, matching the screenshot values exactly.",
+            "discrepancies": "None; tz and isdst match what is visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the visible JSON, the main object shows \"isdst\": false. Lower in the screenshot (near the end of the shown JSON), it shows \"tz\": 0.0 and \"year\": 2025 (within the same visible block).",
+            "criterion_analysis": "The agent’s predicted output lists tz=0.0 and isdst=false. Both values are present and match the screenshot exactly; no time conversion or inferred timezone is indicated. Full credit.",
+            "discrepancies": "None. tz and isdst align with the on-screen JSON.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 1 (latest) explicitly shows `\"tz\": 0.0` and `\"isdst\": false` (state 0 shows isdst but tz not visible there). Agent output matches state 1.",
+        "verifier_justification": "Latest DOM supports both tz and isdst exactly as reported; no time conversion/inference needed. Keep baseline.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"isdst\": false, and (within the visible JSON snippet) no \"tz\" field is shown.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL",
+            "discrepancies": "Agent reported tz=0.0, but tz is not present in the provided DOM evidence snippet. isdst=false is supported by DOM.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes: \"tz\": 0.0, \"isdst\": false.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBoth timezone fields (tz and isdst) are explicitly present in the DOM evidence and match the agent’s reported values.",
+            "discrepancies": "No discrepancies between the agent output and the DOM evidence for tz/isdst.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report lunar phase summary: curphase and fracillum",
+      "description": "Report curphase and fracillum exactly as returned. Full credit if both present and correct. Partial credit if one missing/incorrect. If curphase and/or fracillum are not present in the supplied response, award full credit if the agent explicitly notes the missing field(s) and does not infer values.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows curphase: \"Waning Crescent\" and fracillum: \"21%\". Screenshot 2 (latest) also shows the same fields/values.",
+        "verifier_justification": "Agent’s curphase and fracillum match the response exactly.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In \"properties\" → \"data\", \"curphase\": \"Waning Crescent\" and \"fracillum\": \"21%\" are visible.",
+            "criterion_analysis": "The agent’s predicted output reports curphase \"Waning Crescent\" and fracillum \"21%\", which matches the screenshot exactly.",
+            "discrepancies": "None; both lunar phase summary fields match the visible JSON.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON in the screenshot includes \"curphase\": \"Waning Crescent\" and \"fracillum\": \"21%\" in the main section above the moondata array.",
+            "criterion_analysis": "The agent’s predicted output reports curphase=\"Waning Crescent\" and fracillum=\"21%\", matching the visible JSON exactly. Full credit.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 1 (latest) explicitly shows `\"curphase\": \"Waning Crescent\"` and `\"fracillum\": \"21%\"` (also visible in state 0). Agent output matches.",
+        "verifier_justification": "Both lunar-phase summary fields are explicitly supported by DOM evidence and correctly transcribed. Baseline rationale claiming fabrication is contradicted by DOM; raise to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"curphase\": \"Waning Crescent\", \"fracillum\": \"21%\"",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "No discrepancies. Agent reported curphase and fracillum exactly as shown.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes: \"curphase\": \"Waning Crescent\", \"fracillum\": \"21%\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly provides curphase and fracillum and they match what the agent reported.",
+            "discrepancies": "No discrepancies between the agent output and the DOM evidence for curphase/fracillum.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report every field in closestphase",
+      "description": "Extract and report all fields contained in closestphase from the supplied response, with no omissions and no added/inferred fields. Full credit if complete and exact. Partial credit if one or two fields omitted but remaining correct. If closestphase is absent from the supplied response, award full credit if the agent states it is missing/unavailable (without fabricating content).",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Screenshot 1 shows closestphase contains exactly five fields: day: 18, month: 6, year: 2025, phase: \"Last Quarter\", time: \"19:19\". No extra fields (day_of_week/isdst/tz/label) are shown within closestphase.",
+        "verifier_justification": "Agent reported closestphase with incorrect day (21 vs 18) and added fields not present in the supplied response (day_of_week, isdst, tz, label). This is a substantive accuracy/fabrication issue, so no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows \"closestphase\": { \"day\": 18, \"month\": 6, \"phase\": \"Last Quarter\", \"time\": \"19:19\", \"year\": 2025 } and then the closestphase object closes. No other fields (e.g., tz/isdst/label/day_of_week) are shown within closestphase in the visible portion.",
+            "criterion_analysis": "The agent output includes extra fields inside closestphase (day_of_week, isdst, tz, label) and also reports day as 21 instead of the visible closestphase day 18. Based on the screenshot, closestphase contains only day=18, month=6, phase=\"Last Quarter\", time=\"19:19\", year=2025. Therefore the agent’s closestphase reporting is incorrect and includes fabricated/non-visible fields.",
+            "discrepancies": "Agent claims closestphase day=21 and includes day_of_week, isdst, tz, label fields within closestphase; screenshot shows closestphase day=18 and does not show those extra fields inside closestphase.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM-model state 0 clearly shows `\"closestphase\": { \"day\": 18, \"month\": 6, \"phase\": \"Last Quarter\", \"time\": \"19:19\", \"year\": 2025 }` and separately shows a sibling `\"label\": null` outside closestphase. DOM-model state 1 is fragmentary around closestphase, so the clearest explicit structure is from state 0; nothing in state 1 explicitly shows extra fields (tz/isdst/day_of_week/label) inside closestphase.",
+        "verifier_justification": "Agent’s closestphase is contradicted on at least `day` (agent: 21 vs DOM: 18) and includes extra fields not shown as part of closestphase (day_of_week, isdst, tz, label). Since the task asks for every field in closestphase (no additions), this is a substantive error; keep at 0.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"closestphase\": { \"day\": 18, \"month\": 6, \"phase\": \"Last Quarter\", \"time\": \"19:19\", \"year\": 2025 } and also shows a separate sibling field: \"label\": null. No closestphase fields for tz/isdst/day_of_week/label are shown inside closestphase in the DOM evidence.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED",
+            "discrepancies": "Agent claimed closestphase.day=21 and included extra fields (day_of_week, isdst, tz, label) inside closestphase. DOM shows closestphase has only day=18, month=6, phase, time, year; and label=null appears outside closestphase (as a sibling under data), not within closestphase.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT shows an embedded closest-phase-like object fragment including: \"phase\": \"Last Quarter\", \"time\": \"19:19\", \"year\": 2025, and also shows \"month\": 6 and \"label\": null nearby. However, the DOM snippet is truncated/fragmentary and does not clearly delimit the full closestphase object or all of its fields (e.g., whether it includes day/day_of_week/isdst/tz).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nSome closestphase fields the agent reported (phase, time, year, month, label) are supported by explicit DOM text, but the DOM evidence does not explicitly show the complete closestphase object with all fields the agent listed (day, day_of_week, isdst, tz) as belonging to closestphase specifically, rather than elsewhere in the response.",
+            "discrepancies": "Potential over-attribution: the agent lists closestphase fields (day, day_of_week, isdst, tz) that are visible in the DOM but not explicitly shown as nested inside closestphase in the provided DOM snippet. Completeness of closestphase cannot be fully verified from the fragment.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Report all Moon events (moondata) as phen/time pairs in returned order",
+      "description": "List every phen/time pair contained in moondata in the exact order returned by the supplied response. Keep moondata separate from sundata, do not add events not present, and do not convert or reinterpret times. Full credit if all pairs are included and in correct order. Partial credit if one pair missing or order incorrect. If moondata is absent/empty in the supplied response, award full credit if the agent reports that and does not add events.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshot 1 shows moondata in order: (Rise, 06:16), (Upper Transit, 13:22), (Set, 20:41). Screenshot 2 (latest) shows the same three entries in the same order.",
+        "verifier_justification": "Agent listed all three moondata phen/time pairs in correct returned order.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows \"moondata\": [ { \"phen\": \"Rise\", \"time\": \"06:16\" }, { \"phen\": \"Upper Transit\", \"time\": \"13:22\" }, { \"phen\": \"Set\", \"time\": \"20:41\" } ] in that order.",
+            "criterion_analysis": "The agent’s predicted output lists the three moondata events with the same phen/time pairs in the same returned order. This matches the screenshot.",
+            "discrepancies": "None for moondata; all visible events are captured in order.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the \"moondata\": [ array with three objects in order: { \"phen\": \"Rise\", \"time\": \"06:16\" }, then { \"phen\": \"Upper Transit\", \"time\": \"13:22\" }, then { \"phen\": \"Set\", \"time\": \"20:41\" }.",
+            "criterion_analysis": "The agent lists three moondata phen/time pairs in the same order: Rise 06:16, Upper Transit 13:22, Set 20:41. This matches the screenshot exactly, so full credit.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "DOM-model state 1 (latest) explicitly shows `moondata` array with three entries in this order: (Rise, 06:16), (Upper Transit, 13:22), (Set, 20:41). Agent output lists exactly these three in the same order.",
+        "verifier_justification": "Moon events as returned are fully captured and correctly ordered. Baseline deduction assumed an extra event, but DOM shows only three; adjust to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"moondata\": [ { \"phen\": \"Rise\", \"time\": \"06:16\" }, { \"phen\": \"Upper Transit\", \"time\": \"13:22\" }, { \"phen\": \"Set\", \"time\": \"20:41\" } ]",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "No discrepancies. Agent listed all moondata phen/time pairs in the same order.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes: \"moondata\": [ { \"phen\": \"Rise\", \"time\": \"06:16\" }, { \"phen\": \"Upper Transit\", \"time\": \"13:22\" }, { \"phen\": \"Set\", \"time\": \"20:41\" } ].",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll moondata phen/time pairs are explicitly present and the agent listed them in the same returned order.",
+            "discrepancies": "No discrepancies in moondata events or ordering.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Report all Sun events (sundata) as phen/time pairs in returned order",
+      "description": "List every phen/time pair contained in sundata in the exact order returned by the supplied response. Keep sundata separate from moondata, do not add events not present, and do not convert or reinterpret times. Full credit if all pairs are included and in correct order. Partial credit if one pair missing or order incorrect. If sundata is absent/empty in the supplied response, award full credit if the agent reports that and does not add events.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows sundata entries in order: (Set, 00:37), (End Civil Twilight, 01:09), (Begin Civil Twilight, 09:11), (Rise, 09:43), (Upper Transit, 17:10).",
+        "verifier_justification": "Agent listed these sundata phen/time pairs in the correct returned order and kept sundata separate from moondata.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows \"sundata\": [ { \"phen\": \"Set\", \"time\": \"00:37\" }, { \"phen\": \"End Civil Twilight\", \"time\": \"01:09\" }, { \"phen\": \"Begin Civil Twilight\", \"time\": \"09:11\" }, ... ]. The list continues beyond the visible area; additional sundata events after \"Begin Civil Twilight\" are not visible in the screenshot.",
+            "criterion_analysis": "The agent’s output includes the first three sundata events exactly as visible, but then adds additional events (\"Rise\" 09:43, \"Upper Transit\" 17:10) that are not shown in this screenshot. Because the criterion requires using only the supplied response and not adding non-returned events, and the screenshot does not provide evidence those later events exist, the agent’s full sundata list is not supported by the visible pixels (at minimum, it goes beyond what can be verified here).",
+            "discrepancies": "Agent lists sundata events \"Rise\" (09:43) and \"Upper Transit\" (17:10) that are not visible in the screenshot; only the first three events are shown on-screen.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the start of the \"sundata\": [ array with visible entries in this order: { \"phen\": \"Set\", \"time\": \"00:37\" }, { \"phen\": \"End Civil Twilight\", \"time\": \"01:09\" }, { \"phen\": \"Begin Civil Twilight\", \"time\": \"09:11\" }, { \"phen\": \"Rise\", \"time\": \"09:43\" }, { \"phen\": \"Upper Transit\", \"time\": \"17:10\" }. No additional sundata items are visible below \"Upper Transit\" in the screenshot.",
+            "criterion_analysis": "The agent’s predicted output lists exactly these five sundata phen/time pairs in the same order. This is consistent with what is visible, so full credit based on the provided screenshot.",
+            "discrepancies": "No mismatch with the visible sundata entries. (Note: the screenshot does not show whether more sundata entries exist beyond what’s visible, but the agent’s list matches all entries shown.)",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "DOM-model state 1 (latest) explicitly shows `sundata` array with five entries in this order: (Set, 00:37), (End Civil Twilight, 01:09), (Begin Civil Twilight, 09:11), (Rise, 09:43), (Upper Transit, 17:10). Agent output lists exactly these five in the same order.",
+        "verifier_justification": "All returned Sun events are listed with correct phen/time pairs and preserved order. Baseline deduction (missing twilight types) is not supported by latest DOM. Adjust to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes: \"sundata\": [ { \"phen\": \"Set\", \"time\": \"00:37\" }, { \"phen\": \"End Civil Twilight\", \"time\": \"01:09\" }, { \"phen\": \"Begin Civil Twilight\", \"time\": \"09:11\" }, { \"phen\": \"Rise\", \"time\": \"09:43\" }, { \"phen\": \"Upper Transit\", \"time\": \"17:10\" } ].",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll sundata phen/time pairs are explicitly present and the agent listed them in the same returned order.",
+            "discrepancies": "No discrepancies in sundata events or ordering.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Adhere to task constraints and stopping condition",
+      "description": "The response must use only the supplied USNO response (no external data), preserve coordinate/event orders, keep moondata and sundata separate, avoid time conversions/inferred timezone, and stop after recording only the requested fields. Full credit if the agent complies and, if any required fields are missing from the supplied response, it explicitly notes their absence instead of fabricating. Partial credit if minor extra non-factual content is included but no fabrication/time conversion occurs. No credit if the agent invents data, converts times, infers timezone/DST, adds non-returned events, or violates the stopping condition substantially.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshot 1 shows closestphase only has the five fields listed (day=18 etc.), so agent’s added closestphase fields and wrong closestphase day are unsupported. Screenshots otherwise support geometry order (Screenshot 1), moondata order (Screenshots 1/2), sundata order (Screenshot 2), and tz/isdst/phase fields.",
+        "verifier_justification": "While the agent generally followed ordering and separation constraints and did not convert times, it violated the core 'use only supplied response' constraint by fabricating/adding fields within closestphase and misreporting closestphase day. This is more than a minor deviation, so reduce score accordingly.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows part of the USNO JSON with geometry.coordinates, data fields (curphase, fracillum, day/day_of_week/month, tz, isdst), closestphase (day=18, month=6, phase, time, year), moondata (3 events), and partial sundata (at least first 3 events). No CAPTCHA/login/error is visible.",
+            "criterion_analysis": "The agent preserves coordinate order and keeps moondata and sundata separate, and does not convert times. However, the agent appears to fabricate/incorrectly report closestphase fields (wrong day and added fields not shown) and includes additional sundata events not supported by the visible response. These issues violate the constraint to use only the supplied response and not add fields/events not returned (as evidenced in the screenshot).",
+            "discrepancies": "Predicted output includes extra closestphase fields not shown and wrong closestphase day; predicted output includes sundata events not visible in the provided screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows only the USNO JSON fields and arrays; it includes curphase/fracillum, date fields, isdst, moondata, and sundata. It also shows \"tz\": 0.0 near the bottom of the visible JSON. The screenshot does not show the \"geometry.coordinates\" portion, but it does show the event ordering and the lunar/timezone fields. No CAPTCHA, error, or login prompt is visible.",
+            "criterion_analysis": "From the screenshot, the agent appears to preserve the returned order for moondata and sundata and does not convert times (times are reproduced as in the JSON). Moondata and sundata are kept separate in the output. The agent also stops after listing the requested blocks without adding unrelated narrative. The only part not verifiable from this screenshot is geometry.coordinates (not visible in the captured section), but nothing in the screenshot contradicts the agent’s output; overall the constraints and stopping condition appear adhered to based on visible data.",
+            "discrepancies": "geometry.coordinates is not visible in this screenshot, so the agent’s stated coordinates cannot be confirmed from the pixels provided (though it is not contradicted by anything visible). All other listed fields (date, tz/isdst, curphase/fracillum, moondata, sundata) match the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "DOM-model state 1 (latest) supports tz/isdst, curphase/fracillum, and full moondata/sundata arrays as the agent reported. DOM-model state 0 supports geometry.coordinates. However, DOM-model state 0 contradicts the agent’s closestphase (wrong day; extra fields not shown inside closestphase) and shows `label:null` as sibling not within closestphase.",
+        "verifier_justification": "Agent largely followed constraints (no conversions; preserved array order; kept moondata/sundata separate; stopped after requested sections), but did fabricate/mis-attribute closestphase fields relative to the supplied response, which is a core constraint violation (“use only supplied response” / “every field in closestphase”). Award partial credit rather than full.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT shows only partial sundata list: \"sundata\": [ { \"phen\": \"Set\", \"time\": \"00:37\" }, { \"phen\": \"End Civil Twilight\", \"time\": \"01:09\" }, { \"phen\": \"Begin Civil Twilight\", \"time\": \"09:11\" }, (truncated in visible content). Also shows no tz field in the visible content. Closestphase shown in DOM conflicts with agent’s closestphase reporting.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL",
+            "discrepancies": "Violations relative to supplied DOM evidence: (1) Agent inferred/added tz=0.0 which is not present in DOM evidence; (2) Agent’s closestphase content conflicts with DOM evidence (day and extra fields); (3) Agent reported additional sundata events (Rise, Upper Transit) that are not visible in the provided DOM evidence snippet. Keeping moondata/sundata separate and preserving moondata order is supported; sundata order beyond the first three events is unproven from the provided DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT does not display geometry.coordinates; it does show the date/timezone/phase fields and moondata/sundata arrays. URL includes coords=38.9072,-77.0369, but the agent reported geometry.coordinates: [-77.0369, 38.9072], which is not shown in the DOM snippet.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent generally adheres to constraints on ordering and separation for moondata/sundata (supported by DOM). However, the reported geometry.coordinates value is not supported by the provided DOM evidence (geometry is not visible), so that portion cannot be verified as “using only the supplied USNO response” given the DOM excerpt. No evidence of time conversion or added events is present in the agent’s output.",
+            "discrepancies": "geometry.coordinates is reported by the agent but is not present/visible in the DOM evidence provided, so it is an unsupported claim in this evaluation context.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

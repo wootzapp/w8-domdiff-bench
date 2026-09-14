@@ -31,3 +31,18 @@ def test_initial_url_mismatch_fails(pair_factory):
     with pytest.raises(ValueError, match="Initial URL differs"):
         validate_alignment(task_id="x", initial_url="https://wrong.test", actions=[{"action": "click", "arguments": {}}], states=states)
 
+def test_same_origin_landing_redirect_is_a_warning(pair_factory):
+    pair = pair_factory()
+    initial = pair["dom"] / "dom_model0.txt"
+    initial.write_text(
+        initial.read_text(encoding="utf-8").replace("https://example.test/start", "https://example.test/en-US/"),
+        encoding="utf-8",
+    )
+    states = load_dom_model_states(pair["dom"], action_count=1)
+    receipt = validate_alignment(
+        task_id="x",
+        initial_url="https://example.test/",
+        actions=[{"action": "click", "url": "https://example.test/done", "arguments": {}}],
+        states=states,
+    )
+    assert [warning.code for warning in receipt.warnings] == ["initial_url_same_origin_redirect"]

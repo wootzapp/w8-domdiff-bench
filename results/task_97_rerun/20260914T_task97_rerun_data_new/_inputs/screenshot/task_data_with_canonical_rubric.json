@@ -1,0 +1,59 @@
+[
+  {
+    "task_id": "browser_task_097-dns-record-resolution-20260914T093312Z",
+    "confirmed_task": "On Google Public DNS, enter example.com and resolve it. On the results page, change RR Type to MX and resolve again. Report the complete result-configuration heading, Status number and mnemonic, TC, RD, RA, AD, and CD flags, the Question name and numeric/mnemonic type, and the name, numeric/mnemonic type, and data of every type-15 MX Answer record.\n\nStopping condition: Stop after the MX result heading, status, five flags, question, and every type-15 MX answer have been recorded.\n\nConstraints:\n- Perform the lookup through the supplied Google Public DNS form.\n- Use the MX result, not the initial default A result.\n- Do not report TTL because it changes with DNS cache age.\n- Do not report or treat any RRSIG record as an MX answer if DNSSEC detail is shown.",
+    "website": "https://dns.google/",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Use Google Public DNS web form and perform MX lookup for example.com",
+          "description": "Attempt the lookup via the Google Public DNS interface (dns.google) for name example.com and switch RR Type to MX (not the default A result), then resolve. Full credit if the agent clearly indicates it attempted dns.google and performed (or attempted to perform) an MX lookup for example.com, even if dns.google is blocked by CAPTCHA, unavailable, or errors prevent completing the resolve, provided the agent reports the blocker/error. Partial credit if the agent uses a different DNS tool without first attempting dns.google but still clearly performs an MX lookup for example.com. No credit if the agent only reports the A lookup or uses a different domain.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report complete MX result-configuration heading",
+          "condition": "Only score this if the agent successfully retrieves an MX results page/response view from dns.google with a visible heading; otherwise award full credit if the agent clearly states the heading was not accessible/visible due to site/UI/access limitations after attempting.",
+          "description": "Report the full result-configuration heading shown on the MX results view (as presented by Google Public DNS) for the MX lookup. Full credit if complete and specific to the MX lookup; partial credit if present but truncated/incomplete due to UI constraints while the agent still conveys the available heading text; no credit if it corresponds to the initial A lookup or is unrelated.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report Status code (number and mnemonic) for MX result",
+          "condition": "Only score this if a DNS response status is visible/obtainable from the dns.google MX response; otherwise award full credit if the agent reports it was not obtainable due to site/access/UI limitations after attempting.",
+          "description": "Provide the DNS response Status as both numeric value and mnemonic (e.g., \"0 NOERROR\") for the MX result. Full credit if both are provided and tied to the MX response; partial credit if only one (number or mnemonic) is provided but clearly tied to the MX response; no credit if wrong or taken from the A lookup.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report required DNS flags (TC, RD, RA, AD, CD) for MX result",
+          "condition": "Only score this if the flags are visible/obtainable from the dns.google MX response; otherwise award full credit if the agent reports the flags were not obtainable due to site/access/UI limitations after attempting.",
+          "description": "Report the values/states of the five specified flags from the MX response: TC, RD, RA, AD, CD. Full credit if all five are correctly captured for the MX result; partial credit if 3–4 flags are captured or if some are missing but the agent reports what is visible; no credit if fewer than 3 flags are provided when more are visible or if not tied to the MX response.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report Question name and Question type (numeric and mnemonic) for MX result",
+          "condition": "Only score this if the Question section is visible/obtainable from the dns.google MX response; otherwise award full credit if the agent reports it was not obtainable due to site/access/UI limitations after attempting.",
+          "description": "Record the Question section details from the MX lookup: the QNAME (example.com) and QTYPE as both numeric and mnemonic (MX / 15). Full credit if both name and numeric/mnemonic type are correctly provided and tied to the MX response; partial credit if name is correct but type lacks numeric or mnemonic (or vice versa); no credit if it corresponds to the A lookup or wrong name/type.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report every type-15 MX Answer record (name, type numeric/mnemonic, data) and exclude non-MX like RRSIG",
+          "condition": "Only score this if the Answer section for the MX query is visible/obtainable from the dns.google MX response; if no MX answers exist (e.g., NODATA) or the section is inaccessible, award full credit if the agent clearly reports that no MX answers were returned/visible or that the site/UI prevented viewing them after attempting.",
+          "description": "List every Answer record of RR type 15 (MX) returned for example.com from the MX lookup, and for each include: record name, type as numeric and mnemonic, and full data (including preference and mail exchanger). Must not include TTLs and must not treat any RRSIG (or other non-MX records) as MX answers even if DNSSEC details are shown. Full credit if all MX answers visible are included with required fields and no extras; partial credit if one MX record is missing or fields incomplete due to visibility/UI constraints while the agent captures the rest; no credit if answers are primarily incorrect (wrong type, includes TTL despite constraint, or includes RRSIG as MX).",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

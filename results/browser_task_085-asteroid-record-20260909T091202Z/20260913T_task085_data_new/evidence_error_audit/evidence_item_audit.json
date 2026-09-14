@@ -1,0 +1,327 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_085-asteroid-record-20260909T091202Z",
+  "run_id": "20260913T_task085_data_new",
+  "rubric_sha256": "30a92a02be1e3cbe99d28189166d1f6ad37b51219014af78d6ca5d00a9d40407",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use only the supplied NASA/JPL SBDB response (99942 Apophis, phys-par=1)",
+      "max_points": 2,
+      "screenshot_final_points": 2.0,
+      "dom_model_final_points": 2.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C1",
+          "evidence_requirement": "Use only the supplied NASA/JPL SBDB response (99942 Apophis, phys-par=1)",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "NASA/JPL Small-Body Database (SBDB) API response",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 1 (earliest) visibly contains the SBDB JSON response including the key sections (object, orbit, phys_par) for Apophis; it shows fields like \"object\":{\"fullname\":\"99942 Apophis (2004 MN4)\"...}, \"orbit\":{...\"epoch\":2461200.5...}, and phys_par entries. Screenshot 5 (later) also shows phys_par entries (H and diameter). Latest relevant evidence (Screenshot 5/6) still indicates this is an SBDB JSON response view, not an external source.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model0.txt",
+                "line_range": "m0:L1-L1",
+                "quoted_text": "URL: https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1"
+              },
+              {
+                "file": "dom_model0.txt",
+                "line_range": "m0:L7-L7",
+                "quoted_text": "- {\"signature\":{\"version\":\"1.3\",\"source\":\"NASA/JPL Small-Body Database (SBDB) API\"},\"orbit\":{\"moid_jup\":\"4.12\",\"n_dop_obs_used\":30,\"last_obs\":\"2022-04-09\",\"cov_epoch\":\"2459215.5\",\"first_obs\":\"2004-03-15\",\"epoch\":\"2461200.5\",\"not_valid_after\":null,\"elements\":[{\"value\":\"0.191\",\"units\":null,\"label\":\"e\",\"title\":\"eccentricity\",\"name\":\"e\",\"sigma\":\"1.8e-09\"},{\"label\":\"a\",\"units\":\"au\",\"value\":\"0.922\",\"name\":\"a\",\"title\":\"semi-major axis\",\"sigma\":\"1.6e-09\"},{\"sigma\":\"2.9e-09\",\"title\":\"perihelion distance\",\""
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest relevant DOM-models (e.g., states 4–5) show the agent at `https://ssd-api.jpl.nasa.gov/sbdb.api?sstr=99942&phys-par=1` with a JSON response starting with `signature` and `orbit` (including `epoch`). No evidence of any non-SBDB source being used; action history also indicates interaction only with this SBDB API page.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report object.fullname exactly",
+      "max_points": 2,
+      "screenshot_final_points": 0.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C2",
+          "evidence_requirement": "Report object.fullname exactly",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "object.fullname",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 1 shows object.fullname explicitly as \"fullname\":\"99942 Apophis (2004 MN4)\".",
+            "review_note": "object.fullname is visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Across the latest DOM-models, the visible JSON contains `signature` and part of `orbit`, but does not show any `object` block or `object.fullname` field anywhere in the visible DOM.",
+            "review_note": "object.fullname is visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report orbit class name and code from object.orbit_class",
+      "max_points": 3,
+      "screenshot_final_points": 0.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C3",
+          "evidence_requirement": "Report orbit class name and code from object.orbit_class",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "object.orbit_class name and code",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 1 shows object.orbit_class with both fields: \"orbit_class\":{\"name\":\"Aten\",\"code\":\"ATE\"}.",
+            "review_note": "object.orbit_class name/code are visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Latest DOM evidence shows no `object` section and therefore no `object.orbit_class` with `name` and `code` in the visible JSON.",
+            "review_note": "object.orbit_class name/code are visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report orbit.epoch exactly",
+      "max_points": 2,
+      "screenshot_final_points": 0.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C4",
+          "evidence_requirement": "Report orbit.epoch exactly",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "orbit.epoch: 2461200.5",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 shows within orbit: \"epoch\": \"2461200.5\". Screenshot 1 also shows \"epoch\":2461200.5 (without quotes). Latest relevant is Screenshot 2 showing the epoch value clearly.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model0.txt",
+                "line_range": "m0:L7-L7",
+                "quoted_text": "- {\"signature\":{\"version\":\"1.3\",\"source\":\"NASA/JPL Small-Body Database (SBDB) API\"},\"orbit\":{\"moid_jup\":\"4.12\",\"n_dop_obs_used\":30,\"last_obs\":\"2022-04-09\",\"cov_epoch\":\"2459215.5\",\"first_obs\":\"2004-03-15\",\"epoch\":\"2461200.5\",\"not_valid_after\":null,\"elements\":[{\"value\":\"0.191\",\"units\":null,\"label\":\"e\",\"title\":\"eccentricity\",\"name\":\"e\",\"sigma\":\"1.8e-09\"},{\"label\":\"a\",\"units\":\"au\",\"value\":\"0.922\",\"name\":\"a\",\"title\":\"semi-major axis\",\"sigma\":\"1.6e-09\"},{\"sigma\":\"2.9e-09\",\"title\":\"perihelion distance\",\""
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest DOM-models explicitly show within `orbit` the field `\"epoch\": \"2461200.5\"`.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report absolute magnitude (H) value and uncertainty from phys_par",
+      "max_points": 3,
+      "screenshot_final_points": 0.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C5",
+          "evidence_requirement": "Report absolute magnitude (H) value and uncertainty from phys_par",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot4.png",
+                "visible_text": "phys_par entry name H with value and sigma",
+                "locator": "criterion-relevant content manually inspected in screenshot4.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 5 (later than Screenshot 1) shows phys_par entry with name \"H\", value \"19.09\", sigma \"0.19\". Screenshot 1 also shows the same record.",
+            "review_note": "The H value and uncertainty are visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Latest DOM evidence does not show any `phys_par` section nor any record named `H` (no `value`/`sigma` visible).",
+            "review_note": "The H value and uncertainty are visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Report diameter value, uncertainty, and unit from phys_par",
+      "max_points": 4,
+      "screenshot_final_points": 0.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C6",
+          "evidence_requirement": "Report diameter value, uncertainty, and unit from phys_par",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot4.png",
+                "visible_text": "phys_par entry name diameter with value, sigma, and units",
+                "locator": "criterion-relevant content manually inspected in screenshot4.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 5 (latest relevant) shows phys_par diameter record: value \"0.34\", sigma \"0.04\", units \"km\". Screenshot 1 also shows a diameter record with the same value/sigma/units.",
+            "review_note": "The diameter value, uncertainty, and unit are visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Latest DOM evidence does not show any `phys_par` section nor any record named `diameter` (no diameter `value`, uncertainty, or `units` visible).",
+            "review_note": "The diameter value, uncertainty, and unit are visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Report potentially hazardous asteroid flag from object.pha",
+      "max_points": 2,
+      "screenshot_final_points": 0.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C7",
+          "evidence_requirement": "Report potentially hazardous asteroid flag from object.pha",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "object.pha",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 1 shows in object: \"pha\":true.",
+            "review_note": "The object.pha value is visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Latest DOM evidence shows no `object` section and thus no visible `object.pha` boolean.",
+            "review_note": "The object.pha value is visible in the screenshot JSON but absent from every truncated DOM state."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Output scope: only requested fields; no extra SBDB fields",
+      "max_points": 2,
+      "screenshot_final_points": 2.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C8",
+          "evidence_requirement": "Output scope: only requested fields; no extra SBDB fields",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "The final answer reports the visibility limitation rather than unrelated SBDB fields",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Agent predicted output contains only a statement of inability and includes no extra SBDB fields beyond what was requested (indeed, it includes none of the requested fields either). No screenshot is needed to verify the content of the agent’s text output.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model0.txt",
+                "line_range": "m0:L7-L7",
+                "quoted_text": "- {\"signature\":{\"version\":\"1.3\",\"source\":\"NASA/JPL Small-Body Database (SBDB) API\"},\"orbit\":{\"moid_jup\":\"4.12\",\"n_dop_obs_used\":30,\"last_obs\":\"2022-04-09\",\"cov_epoch\":\"2459215.5\",\"first_obs\":\"2004-03-15\",\"epoch\":\"2461200.5\",\"not_valid_after\":null,\"elements\":[{\"value\":\"0.191\",\"units\":null,\"label\":\"e\",\"title\":\"eccentricity\",\"name\":\"e\",\"sigma\":\"1.8e-09\"},{\"label\":\"a\",\"units\":\"au\",\"value\":\"0.922\",\"name\":\"a\",\"title\":\"semi-major axis\",\"sigma\":\"1.6e-09\"},{\"sigma\":\"2.9e-09\",\"title\":\"perihelion distance\",\""
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Agent output is a multi-paragraph explanation of inability and does not present the requested fields. DOM evidence also shows at least one requested field (`orbit.epoch`) was visible, contradicting the agent’s claim that it was not exposed.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    }
+  ]
+}

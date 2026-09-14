@@ -1,0 +1,236 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_079-motor-race-result-analysis-20260909T090855Z",
+  "run_id": "20260913T_task079_data_new",
+  "rubric_sha256": "ebb9b172975df6aba5a6fdef96a7a5c172e30600f78d7899c84c675fda1f2ce7",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use only the supplied Jolpica/Ergast JSON and correct array selection",
+      "max_points": 3,
+      "screenshot_final_points": 1.0,
+      "dom_model_final_points": 1.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C1",
+          "evidence_requirement": "Use only the supplied Jolpica/Ergast JSON and correct array selection",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "Use only the supplied Jolpica/Ergast JSON and correct array selection",
+                "locator": "criterion-relevant content visible in screenshot2.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Array selection (single race, single result) is consistent with the JSON, but the agent’s output includes multiple incorrect FastestLap values despite the correct values being visible in the supplied JSON. That is strong evidence of non-JSON sourcing or mis-extraction, so full credit is not warranted.",
+            "review_note": "Screenshot2 visibly contains Races[0].Results[0]; every DOM state clips before the Results array."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "The agent’s answer includes winner/result/FastestLap fields that are not visible anywhere in the supplied DOM evidence. Because the task constraint is “Use only the supplied JSON response” and the DOM evidence does not provide the winner/Results portion, there is no explicit support that those values were extracted from MRData.RaceTable.Races[0].Results[0] rather than inferred. This is not contradicted, but it is unconfirmed; award partial credit for being on the correct endpoint and referencing the correct structure, but deduct for lack of evidence that the required array selection/content was actually read from the supplied JSON.",
+            "review_note": "Screenshot2 visibly contains Races[0].Results[0]; every DOM state clips before the Results array."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report race-level fields: raceName, date, circuitName",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 2.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C2",
+          "evidence_requirement": "Report race-level fields: raceName, date, circuitName",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "Report race-level fields: raceName, date, circuitName",
+                "locator": "criterion-relevant content visible in screenshot2.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent’s reported raceName/date/circuitName match the supplied JSON exactly per the screenshots, so no score change.",
+            "review_note": "Screenshot2 contains raceName, date, and circuitName; DOM contains raceName/circuitName but clips before date."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "raceName is supported. circuitName is supported by earlier DOM-models (0–2) showing the full string, and nothing in the latest state contradicts it (it is merely truncated). The race date reported by the agent is not visible anywhere in the supplied DOM evidence, so it is unverified. Because 2 of 3 requested race-level fields are supported and 1 is not evidenced, reduce to partial credit.",
+            "review_note": "Screenshot2 contains raceName, date, and circuitName; DOM contains raceName/circuitName but clips before date."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report winner identity: driver and constructor",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C3",
+          "evidence_requirement": "Report winner identity: driver and constructor",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "Report winner identity: driver and constructor",
+                "locator": "criterion-relevant content visible in screenshot2.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent’s reported winning driver and constructor match the JSON exactly, so full credit remains.",
+            "review_note": "Screenshot2 visibly contains Max Verstappen and Red Bull; every DOM state clips before winner identity."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "The agent provided a specific winning driver and constructor, but the supplied DOM evidence provides no confirmation of any winner identity fields. This is a critical unverified extraction under the “use only supplied JSON” constraint (i.e., effectively unsupported/fabricated from the evidence available). Score 0.",
+            "review_note": "Screenshot2 visibly contains Max Verstappen and Red Bull; every DOM state clips before winner identity."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report winner result summary: grid, laps, status",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C4",
+          "evidence_requirement": "Report winner result summary: grid, laps, status",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "Report winner result summary: grid, laps, status",
+                "locator": "criterion-relevant content visible in screenshot2.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent’s grid/laps/status values match the JSON shown in screenshots, so keep full credit.",
+            "review_note": "Screenshot2 visibly contains grid, laps, and status; every DOM state clips before result fields."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Grid/laps/status are asserted but have no explicit support in the provided DOM evidence and are not shown as extracted from the JSON. Under the constraints, this is unsupported. Score 0.",
+            "review_note": "Screenshot2 visibly contains grid, laps, and status; every DOM state clips before result fields."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report complete FastestLap object with required separation of subfields",
+      "max_points": 6,
+      "screenshot_final_points": 1.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C5",
+          "evidence_requirement": "Report complete FastestLap object with required separation of subfields",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot2.png",
+                "visible_text": "Report complete FastestLap object with required separation of subfields",
+                "locator": "criterion-relevant content visible in screenshot2.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent preserved the subfield separation, but reported incorrect values for rank, Time.time, and AverageSpeed.speed compared to what is visibly in the supplied JSON. Because this criterion is specifically about exact, complete FastestLap extraction, this is a substantive failure; award minimal partial credit for structure only.",
+            "review_note": "Screenshot2 visibly contains the complete FastestLap object; every DOM state clips before FastestLap."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "The agent reports a FastestLap object with specific values, but none of it is evidenced in the supplied DOM-model JSON. Since the task requires reporting every field in the FastestLap object exactly as returned, and there is no confirmation that FastestLap exists or what it contains, this is unsupported. Score 0.",
+            "review_note": "Screenshot2 visibly contains the complete FastestLap object; every DOM state clips before FastestLap."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Stopping condition met (no extra races/results beyond requested fields)",
+      "max_points": 2,
+      "screenshot_final_points": 2.0,
+      "dom_model_final_points": 2.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C6",
+          "evidence_requirement": "Stopping condition met (no extra races/results beyond requested fields)",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot1.png",
+                "visible_text": "Stopping condition met (no extra races/results beyond requested fields)",
+                "locator": "criterion-relevant content visible in screenshot1.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Despite inaccuracies in FastestLap values (scored elsewhere), the response scope adheres to the stopping condition (no extraneous races/results/fields). Keep full credit for stopping behavior.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model0.txt",
+                "line_range": "m0:L7-L7",
+                "quoted_text": "- {\"MRData\":{\"xmlns\":\"\",\"series\":\"f1\",\"url\":\"https://api.jolpi.ca/ergast/f1/2024/1/results/1/\",\"limit\":\"30\",\"offset\":\"0\",\"total\":\"1\",\"RaceTable\":{\"position\":\"1\",\"season\":\"2024\",\"ro"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent’s response is scoped to the single race and the (claimed) single winner result, and it stops after listing the requested categories without introducing other races or other finishers. Even though many of the reported values are unsupported elsewhere, the stopping-condition aspect (no extra unrelated content) is satisfied. Keep full credit.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    }
+  ]
+}

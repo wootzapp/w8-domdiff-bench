@@ -1,0 +1,400 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_033-software-package-metadata-20260909T080442Z",
+  "run_id": "20260914T_task033_data_new",
+  "rubric_sha256": "e987f50a1508388eff19029c26216ddd2da448997aefb8b1e786319631b301d5",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access the Requests project page on PyPI (no sign-in)",
+      "description": "Navigate to https://pypi.org/project/requests/ (or an equivalent PyPI Requests project page) without signing in. Full credit if the agent attempts access but is blocked by an external issue (e.g., site down, CAPTCHA, rate limiting) and clearly reports the blocker. Partial credit if the agent uses PyPI inconsistently or only via cached/third-party mirrors.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 both show the official PyPI project page for Requests (header includes search bar and links “Log in”/“Register”), indicating access without signing in. Action history starts at https://pypi.org/project/requests/.",
+        "verifier_justification": "Meets the criterion: the correct PyPI project page was accessed and there is no sign-in flow shown (login/register links visible). No blockers.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the PyPI project page for “requests 2.34.2” with PyPI’s standard header (search bar “Type '/' to search projects”, links “Help”, “Docs”, “Log in”, “Register”). No sign-in prompt is active; the page content is visible.",
+            "criterion_analysis": "Meets the criterion: the Requests project page on PyPI is clearly open and viewable, and there is no indication the agent signed in (login/register links shown).",
+            "discrepancies": "None apparent between the screenshot and the requirement to access the PyPI Requests page without signing in.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the PyPI project page for Requests with the PyPI header (search bar, “Help”, “Docs”, “Log in”, “Register”). The page title area shows “requests 2.34.2” and the project tagline “Python HTTP for Humans.” No indication of being signed in is visible; “Log in” and “Register” links are present.",
+            "criterion_analysis": "Meets the criterion: the screenshot is clearly the Requests project page on PyPI and there is no sign-in wall; the presence of “Log in” suggests the user is not signed in.",
+            "discrepancies": "None relevant. The screenshot supports access to the correct PyPI project page without signing in.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 1 shows URL https://pypi.org/project/requests/#files with page title “requests · PyPI” and visible “Log in”/“Register” links (no signed-in UI). Action history starts at https://pypi.org/project/requests/ and includes a click on the Files tab.",
+        "verifier_justification": "Accessing the correct PyPI Requests project page without signing in is directly shown by the DOM states and action history. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL `https://pypi.org/project/requests/#files`, title `requests · PyPI`, and main navigation includes links `Log in` and `Register` (no indication of an authenticated session in the provided DOM).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the browser is on the Requests project page on PyPI (`pypi.org/project/requests/`) and there is no evidence of sign-in being used (only `Log in`/`Register` links are present).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://pypi.org/project/requests/\" with title \"requests · PyPI\" and main navigation includes \"Log in\" and \"Register\" (no indication of an authenticated session).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "No discrepancy: evidence shows access to the PyPI Requests project page without signing in.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Identify the latest displayed Requests release on the PyPI project page",
+      "description": "From the PyPI Requests project page, determine the single latest release as displayed there and clearly anchor all subsequent metadata to that same release. Full credit if the agent clearly identifies the latest displayed release (even if some fields are unavailable). Partial credit if the agent appears to use PyPI but does not make it clear which release is the latest or mixes releases. Full credit if page access is blocked and the agent explicitly states it cannot determine the latest release due to the blocker (no inference).",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 (earlier) shows the page heading “requests 2.34.2” and a green “LATEST RELEASE” badge in the Key dates box, anchoring 2.34.2 as the latest displayed release. Screenshot 2 (later) still shows heading “requests 2.34.2” on the Download files tab.",
+        "verifier_justification": "Unlike the baseline, the screenshots explicitly identify the latest displayed release via the “LATEST RELEASE” badge and version header. The agent’s output anchors to 2.34.2, consistent with the evidence.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Large heading text reads “requests 2.34.2”. In the right sidebar under “Key dates” it shows “Released: May 14, 2026” and a green label “LATEST RELEASE”.",
+            "criterion_analysis": "Meets the criterion: the screenshot explicitly marks the release as “LATEST RELEASE” and shows it is version 2.34.2, anchoring the ‘latest displayed release’ unambiguously.",
+            "discrepancies": "None; the agent’s predicted output identifying 2.34.2 as the latest aligns with the visible “LATEST RELEASE” badge.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "At the top of the project page, the large heading reads “requests 2.34.2”. The “Download files” tab is selected (highlighted), showing files for that release.",
+            "criterion_analysis": "The screenshot supports that the displayed release version is 2.34.2 and that the page is focused on that release’s download files. This is consistent with identifying the latest displayed release as the one shown in the header (though the screenshot alone doesn’t show a comparison to other releases).",
+            "discrepancies": "The agent claims it is the “latest displayed” release; the screenshot shows version 2.34.2 but does not explicitly show that it is the latest among all releases (no release list visible).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest DOM evidence includes state 1 header “requests 2.34.2” and Files tab content listing artifacts named “requests-2.34.2.tar.gz”, tying the Files view to version 2.34.2. State 0 (earlier) is also described as labeling “Latest release” for 2.34.2, but state 1 is the latest state and still shows the same version.",
+        "verifier_justification": "The DOM explicitly supports that the latest displayed release is 2.34.2, and the agent’s output identifies 2.34.2 as the latest release. Upgrade from baseline 0 to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "In the navigation for requests, the page header shows `requests 2.34.2` (DOM_MODEL_STATE_INDEX: 1, section `Navigation for requests`). The visible Files tab content lists artifacts named `requests-2.34.2.tar.gz`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe latest displayed release on the project page is evidenced as `2.34.2` by the header `requests 2.34.2`, and the Files tab content shown corresponds to that same version (e.g., `requests-2.34.2.tar.gz`).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows header/navigation text \"requests 2.34.2\" and in Key dates section shows \"Released: May 14, 2026\" and label \"Latest release\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "No discrepancy: the page explicitly labels the displayed release as the latest and shows version 2.34.2.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report version and upload date for the latest displayed release",
+      "description": "Provide the version number and the upload date shown on PyPI for the latest displayed Requests release. Full credit if both are correct and clearly tied to the same latest release. Partial credit if only one is correct/provided or the linkage to the latest release is ambiguous. Full credit if one/both are not displayed or cannot be accessed due to an external blocker and the agent explicitly reports them as unavailable (no inference).",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest relevant evidence is Screenshot 2: header shows “requests 2.34.2” and the Source Distribution row shows “Uploaded May 14, 2026”. Screenshot 1 also shows “Released: May 14, 2026” in Key dates.",
+        "verifier_justification": "Agent reported version 2.34.2 and upload date May 14, 2026, which are directly supported (especially by Screenshot 2’s explicit “Uploaded May 14, 2026”). Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The page header shows “requests 2.34.2” (version). In the right sidebar “Key dates” shows “Released: May 14, 2026” with a “LATEST RELEASE” badge.",
+            "criterion_analysis": "Version and date are visible and consistent for the same latest release. The agent’s predicted output matches the visible version (2.34.2) and the visible release date (May 14, 2026).",
+            "discrepancies": "Minor wording mismatch: the screenshot label is “Released: May 14, 2026” whereas the agent wrote “Upload date: May 14, 2026 (…showing 'Uploaded May 14, 2026')”. The screenshot does not show the word “Uploaded” anywhere in the visible area; only “Released” is visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Version visible in the header: “requests 2.34.2”. In the “Source Distribution” section under Download files, the line shows “requests-2.34.2.tar.gz (142.9 kB view details)” and beneath it: “Uploaded May 14, 2026” (with a small “Source” badge).",
+            "criterion_analysis": "The screenshot confirms both the version (2.34.2) and the upload date (May 14, 2026) for that displayed release. This matches the agent’s predicted output for those two fields.",
+            "discrepancies": "None for version and upload date; both are directly supported by visible text.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM evidence (state 1) shows header “requests 2.34.2”. In the Source Distribution row, it shows “Uploaded May 14, 2026” next to “requests-2.34.2.tar.gz”. Earlier state 0 shows “Released: May 14, 2026” (release date), but the agent reported an upload date; state 1 provides an explicit per-file upload date matching May 14, 2026.",
+        "verifier_justification": "Version 2.34.2 is fully supported. The date “May 14, 2026” is explicitly supported as an upload date for at least one file in that release (sdist). Although PyPI doesn’t show a single canonical ‘upload date for the whole release’ in the provided DOM, the agent’s stated upload date matches the visible upload date for the listed sdist file for that release, which is a defensible interpretation for “upload date displayed.” Minor ambiguity prevents perfect certainty, so award near-full.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows version in header: `requests 2.34.2`. In the Files tab, the source distribution line includes `Uploaded May 14, 2026` next to `requests-2.34.2.tar.gz`.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the version `2.34.2`. The DOM also supports an upload date of `May 14, 2026` for the source distribution file displayed for that release. However, the DOM evidence provided does not show an upload date for the built distribution/wheel file, nor a single canonical “release upload date” field—only the per-file upload date line that is visible.",
+            "discrepancies": "Agent output states `Upload date: May 14, 2026` as the release upload date. DOM only explicitly shows `Uploaded May 14, 2026` for the source distribution row that is visible in this snapshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows \"requests 2.34.2\" and Key dates includes \"Released: May 14, 2026\" plus timestamp \"2026-05-14 19:25:26 (+00:00)\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "Minor ambiguity: the agent called it \"Upload date\" while the DOM shows \"Released: May 14, 2026\" (and a timestamp). The date itself (May 14, 2026) is supported, but the label 'upload' vs 'released' is not explicitly confirmed in this snapshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report Requires Python value for the latest displayed release",
+      "description": "Report the exact 'Requires Python' value shown on PyPI for the latest displayed Requests release. Full credit if it matches the page exactly. Partial credit if formatting is slightly off but meaning is clearly the same. Full credit if the field is not displayed or cannot be accessed due to an external blocker and the agent explicitly reports it as unavailable (no inference).",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 1 shows no explicit field labeled “Requires Python” (only a badge list of Python versions). Screenshot 2 (Download files) also does not show a “Requires Python” field/value.",
+        "verifier_justification": "Given the visible UI in the screenshots, an explicit “Requires Python” value is not displayed. The agent reported it as not displayed rather than inferring a specifier. Full credit per the rubric’s allowance to report unavailability.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible content area under the “Requests” section, there are badges including “python 3.10 | 3.11 | 3.12 | 3.13 | 3.14 | 3.15”, but there is no explicit field labeled “Requires Python” shown in the screenshot.",
+            "criterion_analysis": "The agent claimed “Requires Python: Not displayed…”. Based on this screenshot alone, an explicit “Requires Python” value is indeed not visible; only a Python versions badge is shown (which is not the same as the exact ‘Requires Python’ field). So the agent’s ‘unavailable’ claim is supported by what’s visible.",
+            "discrepancies": "No direct discrepancy; however, the screenshot does show supported Python versions as a badge, which the agent did not mention. Still, it does not display an explicit “Requires Python” field/value in the visible area.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM evidence (state 1, Files tab) shows no visible field/value labeled “Requires Python” anywhere in the captured content.",
+        "verifier_justification": "Given the explicit DOM snapshot for the Files view does not display a Requires Python value, the agent’s response (‘Not displayed…in the current DOM’) matches what is verifiable from the provided evidence. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible content under the Files tab includes sections like `Download files`, `Source Distribution`, `Built Distribution`, and filtering UI text. There is no `Requires Python` field/value shown anywhere in the provided DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nWithin the provided DOM state, there is no displayed `Requires Python` value for the release content shown. Reporting this field as unavailable/not displayed is consistent with the DOM evidence.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content does not show any field/value labeled \"Requires Python\" anywhere in the provided snapshot (only general sections like Project links, Key dates, PyPI data, etc.).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL",
+            "discrepancies": "The agent reported \"Requires Python: Not displayed\". This cannot be fully verified as 'not displayed on the page' because we only have one snapshot of the Version tab and no evidence of scrolling/exploring sidebar metadata where Requires Python often appears. Evidence only supports that it is not present in the captured DOM snapshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report license for the latest displayed release",
+      "description": "Report the license shown on the PyPI project page for the latest displayed Requests release. Full credit if it matches the displayed value. Partial credit if the agent reports a related but not exact string when PyPI shows a specific one. Full credit if the field is missing/unclear or cannot be accessed due to an external blocker and the agent reports it as unavailable (no inference).",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Neither Screenshot 1 nor Screenshot 2 shows a “License” field/value in the visible areas (sidebar, description, or files list).",
+        "verifier_justification": "The agent correctly avoids inference and reports the license as not displayed. Since the screenshots do not show a license value, treating it as unavailable is appropriate. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the description area, example code block, sidebar “Project links” and “Key dates”, and badges. There is no visible line or field labeled “License” and no license value shown in the visible area.",
+            "criterion_analysis": "The agent reported “License: Not displayed…”. That matches the screenshot evidence: no license field/value is visible in this view, so marking it unavailable is consistent with the constraint not to infer.",
+            "discrepancies": "None based on the screenshot; the predicted output does not contradict any visible license information (since none is shown).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot is on the “Download files” tab and shows sections “Source Distribution” and “Built Distribution”, but no “License” field is visible anywhere in the captured area.",
+            "criterion_analysis": "The agent reports license as “Not displayed… (no license metadata visible in the current DOM for version 2.34.2)”. Based on the screenshot, license is indeed not visible in this view, so marking it unavailable is consistent with what can be verified from the screenshot.",
+            "discrepancies": "No mismatch: the agent did not assert a specific license string and instead stated it was not displayed, which aligns with the visible content.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM evidence (state 1, Files tab) shows no visible field/value labeled “License” anywhere in the captured content.",
+        "verifier_justification": "The agent reported that the license is not displayed in the current DOM; this is consistent with the provided DOM snapshot. Full credit for correctly reporting unavailability rather than inferring.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the Files tab and page header, but no metadata block containing `License` appears in the visible content provided. No license string/value is present anywhere in the snapshot text.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snapshot does not display any license value for the release/page content shown. Reporting the license as unavailable/not displayed is consistent with the DOM evidence.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content does not show any field/value labeled \"License\" in the provided snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL",
+            "discrepancies": "The agent reported \"License: Not displayed\". This cannot be fully verified as absent from the entire page because we only have one snapshot and no evidence of scrolling/exploring other sections where License metadata often appears. Evidence only supports that it is not present in the captured DOM snapshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Count number of Download files listed for the latest displayed release",
+      "description": "Navigate to the 'Download files' section for the same latest displayed release and report the number of files listed there (count only files for that release). Full credit if the count is correct and clearly tied to the latest release. Partial credit if the agent miscounts or includes files from other releases. Full credit if the list is not accessible/visible due to an uncontrollable blocker (site error, dynamic content not loading, missing section) and the agent explicitly reports the blocker/unavailability rather than inferring.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Latest evidence is Screenshot 2 on the Download files tab: exactly one file entry is visible under Source Distribution (“requests-2.34.2.tar.gz”). The Built Distribution header is visible, but no built-distribution file rows are visible in the captured area.",
+        "verifier_justification": "The agent claimed 2 files (sdist + wheel), but only 1 file entry is verifiable from the screenshot evidence provided. This is a substantive accuracy issue (likely counting unseen content). Award partial credit for navigating to Download files but misreporting the verified count.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Under “Download files”, the “Source Distribution” section shows exactly one file link: “requests-2.34.2.tar.gz (142.9 kB view details)”. The “Built Distribution” section header is visible along with explanatory text (“Filter files by name, interpreter, ABI, and platform.”), but no wheel file entries are visible in the screenshot.",
+            "criterion_analysis": "The screenshot only evidences 1 file listed (the sdist tar.gz). It does not show any built distribution files. Therefore, the agent’s claimed count of 2 files is not verified by this screenshot and is potentially incorrect given the visible list shows just one file entry.",
+            "discrepancies": "Agent predicted “Number of files…: 2 … and one built distribution wheel … listed”. The screenshot does not show any wheel entry; only the source tar.gz is visible. This is a discrepancy (possible hallucination or counting unseen content).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM evidence (state 1) under Download files: Source Distribution shows exactly one listed file row: “requests-2.34.2.tar.gz … Uploaded May 14, 2026.” Built Distribution section shows the text “Showing 1 of 1 file.” but the wheel filename row is not visible in the provided DOM snapshot.",
+        "verifier_justification": "The DOM explicitly supports 1 sdist file listed and indicates there is exactly 1 built distribution file (“Showing 1 of 1 file”). That supports a total of 2 files for the release, but only indirectly (one row + a count message), and the agent additionally named a specific wheel filename that is not shown in the DOM. Award high partial credit for the correct total count, with a deduction for the unverified wheel filename detail.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 under Built Distribution shows `Showing 1 of 1 file.` (twice). Under Source Distribution it lists a single file row: `requests-2.34.2.tar.gz ... Uploaded May 14, 2026`. No built distribution filename row is visible in the snapshot, only the count text.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that there is 1 built distribution file via `Showing 1 of 1 file.` and 1 source distribution file via the single listed sdist row `requests-2.34.2.tar.gz ...`. This implies 2 total files for the release, but the DOM snapshot does not explicitly present a combined total count nor does it show the wheel filename row, so the total-of-2 claim is only indirectly supported from separate cues.",
+            "discrepancies": "Agent output claims `Number of files ...: 2` and names the wheel (`requests-2.34.2-py3-none-any.whl`). The DOM supports 1 sdist and indicates 1 built distribution exists, but does not display the wheel filename in the provided evidence; the explicit wheel name is not verified by the DOM snapshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Respect constraints: no sign-in, no downloading/installing, no inference for missing metadata",
+      "description": "Comply with task constraints by not signing in, not downloading or installing the package, and not inferring missing metadata. Full credit if the agent stays within these limits and explicitly marks any missing fields as unavailable. Partial credit for minor/borderline issues. No credit if the agent signs in, downloads/installs, or fabricates metadata.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshots show user not signed in (“Log in”/“Register” links) and no evidence of downloading/installing. However, Screenshot 2 does not visually support the agent’s claim of an additional wheel file; only the sdist entry is shown.",
+        "verifier_justification": "Constraints about no sign-in and no downloading/installing appear satisfied. The main issue is a mild inference/hallucination risk: asserting a wheel file/count not supported by the visible evidence. This warrants a small deduction but not zero, since other constraints were respected and missing metadata was marked unavailable.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Top navigation shows “Log in” and “Register”, indicating the user is not signed in. The screenshot shows no downloads in progress and no installation commands executed; it’s a static project page view with tabs (“Description”, “Download files”, “Release history”).",
+            "criterion_analysis": "Constraints appear respected: no sign-in is shown, no download/install actions are visible. In the predicted output, the agent marks missing metadata (Requires Python, License) as not displayed rather than inventing values, which aligns with the constraints. However, the agent also states a specific file count (“2”) for the Download files tab, which is not visible in this screenshot and thus cannot be verified here (though this is more about evidence support than an explicit constraint violation).",
+            "discrepancies": "The agent’s predicted output asserts “Number of files…: 2 …listed on the Files tab”, but the screenshot is on the “Description” tab (underline under “Description” is visible) and does not show the “Download files” listing, so that claim is not supported by this screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the PyPI page with “Log in” / “Register” (not signed in). No downloading action is shown; only file links are visible. The agent’s predicted output explicitly marks “Requires Python” and “License” as not displayed.",
+            "criterion_analysis": "Constraints appear respected: no sign-in is shown, no installation/download is evidenced, and the agent does not infer missing metadata (it reports unavailable for Requires Python and License). However, the agent’s assertion about a wheel file/count may be an inference beyond what’s visible in the screenshot.",
+            "discrepancies": "Potential issue: claiming a wheel file exists/count=2 is not supported by the screenshot, suggesting inference. Other constraints (no sign-in, no install) appear satisfied.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.5,
+        "verifier_evidence": "Action history shows only clicking the Files tab; no clicks on download links. DOM state 1 shows “Log in”/“Register” (not signed in) and no evidence of download/install actions. Agent output marks Requires Python and License as not displayed rather than guessing values, but it does assert a specific wheel filename not shown in DOM.",
+        "verifier_justification": "Constraints are largely respected: no sign-in and no downloading/installing is supported by DOM and actions. However, asserting a specific wheel filename without DOM support is a minor inference. This warrants a small deduction but not a failure of the constraint criterion overall.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows no sign-in flow; only `Log in` link is present. The Files page includes `view details` links and `Copy` link, but no evidence of any download being initiated. The agent output marks missing fields as `Not displayed` rather than supplying values.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nNo DOM evidence indicates signing in or downloading/installing occurred. The agent’s responses for missing metadata (Requires Python, License) are explicitly reported as not displayed/unavailable rather than inferred, aligning with constraints.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "Action history shows only a click on the \"Files\" tab (no clicks on download links) and DOM_MODEL_STATE_INDEX: 0 shows \"Log in\"/\"Register\" (no sign-in). The agent output claims \"Number of files... 2\" but DOM_MODEL_STATE_INDEX: 0 does not include any listing of download files or file counts; it is on the Version tab (\"Project description\" selected=true, \"Files\" selected=false).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL",
+            "discrepancies": "Constraint compliance is mostly supported (no sign-in; no download/install actions shown; the agent marks some metadata as unavailable). However, the agent asserted a specific file count (2) without DOM evidence of the Files tab contents in the provided snapshot, which is effectively an inference/unverified claim under the 'no inference' constraint.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

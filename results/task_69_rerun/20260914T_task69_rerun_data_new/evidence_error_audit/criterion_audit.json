@@ -1,0 +1,1169 @@
+{
+  "schema_version": "existing-output-evidence-audit/v1",
+  "task_id": "browser_task_069-ip-network-registration-20260914T085250Z",
+  "run_id": "20260914T_task69_rerun_data_new",
+  "run_dir": "/data/isha/msexecute/evidence-error-experiment/results/task_69_rerun/20260914T_task69_rerun_data_new",
+  "rubric_sha256": "2e9f94d2e3c2b0d218506eacceb5a1cdbaf8c8feae59e06a46df40b539ee5e99",
+  "source_artifacts": {
+    "screenshot_result": "/data/isha/msexecute/evidence-error-experiment/results/task_69_rerun/20260914T_task69_rerun_data_new/microsoft_verifier/result.json",
+    "dom_model_result": "/data/isha/msexecute/evidence-error-experiment/results/task_69_rerun/20260914T_task69_rerun_data_new/dom_model/result.json"
+  },
+  "source_inventory": {
+    "screenshot": [
+      {
+        "index": 0,
+        "file": "_inputs/screenshot/screenshot0.png",
+        "bytes": 110856,
+        "sha256": "efe6d9a1b231478bf1d46f9cf9f6e8eb8c9aab62b1abe02a9de7042e93a2a753"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/screenshot/screenshot1.png",
+        "bytes": 75365,
+        "sha256": "9de5c0f5691387b925650396de50fa3dd76b3d9a4ad600ffcc739c4d2154390b"
+      }
+    ],
+    "dom_model": [
+      {
+        "index": 0,
+        "file": "_inputs/dom_model/dom_model0.txt",
+        "bytes": 2069,
+        "sha256": "90fee10188e29bab727fab23502c0e7bb13cabd73dea029e8381cf03b84eafae"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/dom_model/dom_model1.txt",
+        "bytes": 1318,
+        "sha256": "dfc45a2858a13fda251d52e8ffd72106305a7c862b24ff4538dd1c6661369769"
+      }
+    ]
+  },
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Extract top-level network handle",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON view with fields such as \"arin_originas0_originautnums\": [], \"cidr0_cidrs\" containing \"v4prefix\": \"8.8.8.0\" and \"length\": 24, and an \"endAddress\": \"8.8.8.255\". It also shows an \"entities\" array with an entity handle \"ABUSE5250-ARIN\" and links/remarks. There is no visible top-level network object section showing a top-level \"handle\" for the network (no \"handle\" field at the top level of the JSON is visible in this screenshot).",
+            "criterion_analysis": "Not satisfied based on the screenshot: the required top-level network handle is not visible anywhere in the shown portion. The agent’s predicted output states the JSON is truncated before the top-level network object appears; this is consistent with the screenshot, which shows entity details (abuse) and not a top-level network handle.",
+            "discrepancies": "No discrepancy: the agent did not claim a specific network handle, and the screenshot does not display it.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a JSON RDAP response in a scrollable pane with a \"Pretty-print\" checkbox at the top. Visible keys include \"cidr0_cidrs\" with v4prefix \"8.8.8.0\" and length 24, and \"endAddress\" : \"8.8.8.255\". It also shows an \"entities\" section with handles like \"ABUSE5250-ARIN\" and later \"handle\": \"ZG39-ARIN\". There is no visible top-level network object containing a top-level \"handle\" for the network (e.g., no \"network\" block header or a top-level \"handle\" near the root).",
+            "criterion_analysis": "The agent did not extract a top-level network handle, and the screenshot portion provided does not visibly contain the top-level network \"handle\" field. The only visible \"handle\" values are for entities (e.g., ABUSE5250-ARIN, ZG39-ARIN), not clearly the network handle.",
+            "discrepancies": "The agent predicted the JSON is truncated before the top-level network object appears; the screenshot indeed does not show an obvious top-level network handle, so this aligns with the agent’s claim.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level network handle",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the top-level network handle and did not attempt to scroll to reveal it.",
+          "applicable_evidence": "Latest screenshot (2 of 2) shows only entity handles (e.g., \"ABUSE5250-ARIN\") and other nested content; no clearly top-level network \"handle\" field is visible.",
+          "post_image_justification": "Agent did not report any network handle. Screenshots do not show the top-level network handle, but there is no confirmed uncontrollable blocker—agent could have scrolled further instead of concluding. Keep at 0.",
+          "reality_notes": "The visible JSON excerpt shows multiple \"handle\" fields, but they appear within objects inside the \"entities\" array (e.g., abuse contact and another entity). A top-level network \"handle\" at the root of the response is not visible in the screenshots, so any handle visible on-screen should not be assumed to be the network handle unless it is clearly at the top level."
+        },
+        "verifier_evidence": "Latest screenshot (2 of 2) shows only entity handles (e.g., \"ABUSE5250-ARIN\") and other nested content; no clearly top-level network \"handle\" field is visible.",
+        "verifier_justification": "Agent did not report any network handle. Screenshots do not show the top-level network handle, but there is no confirmed uncontrollable blocker—agent could have scrolled further instead of concluding. Keep at 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nURL: https://rdap.arin.net/registry/ip/8.8.8.8\nVISIBLE CONTENT (excerpt):\n- { ... \"endAddress\" : \"8.8.8.255\", \"entities\" : [ ... ], ... }\nNo visible \"handle\" field appears in the provided excerpt.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe supplied DOM excerpt shows parts of the RDAP JSON (including \"endAddress\" and nested \"entities\"), but it does not display the top-level network object's \"handle\" field. Therefore the top-level network handle cannot be extracted/verified from the provided evidence.",
+            "discrepancies": "Required top-level network field \"handle\" is not visible in the DOM excerpt; only nested entity handles (e.g., \"ABUSE5250-ARIN\", \"ZG39-ARIN\") appear, which are not the top-level network handle.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 at URL https://rdap.arin.net/registry/ip/8.8.8.8 shows visible JSON including keys \"cidr0_cidrs\", \"endAddress\": \"8.8.8.255\", and nested \"entities\" (e.g., an entity with \"handle\": \"ABUSE5250-ARIN\"). The visible snippet does not show any top-level network object's \"handle\" field.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence does not include the top-level network object's \"handle\" value. The only visible \"handle\" value is for a nested entity (\"ABUSE5250-ARIN\"), which is not the requested top-level network handle, so the required value cannot be extracted exactly from the supplied visible response.",
+            "discrepancies": "Requested: top-level network \"handle\". Evidence only shows a nested entity handle (\"ABUSE5250-ARIN\") and no top-level network handle field in the visible content.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level network handle",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report any handle value from the RDAP response.",
+          "applicable_evidence": "Latest DOM-model state 1 shows only nested entity handles such as \"ABUSE5250-ARIN\"; it does not display any top-level network \"handle\" field. State 0 likewise shows no top-level \"handle\" field in the visible excerpt.",
+          "post_image_justification": "The agent did not report a top-level network handle, and the DOM evidence does not expose it to extract. No basis to award points for the required handle value.",
+          "reality_notes": "The visible RDAP JSON excerpts shown do not include any top-level network \"handle\" field. The only \"handle\" values visible in the snippets are for nested entities (e.g., \"ABUSE5250-ARIN\"), which should not be treated as the top-level network handle."
+        },
+        "verifier_evidence": "Latest DOM-model state 1 shows only nested entity handles such as \"ABUSE5250-ARIN\"; it does not display any top-level network \"handle\" field. State 0 likewise shows no top-level \"handle\" field in the visible excerpt.",
+        "verifier_justification": "The agent did not report a top-level network handle, and the DOM evidence does not expose it to extract. No basis to award points for the required handle value.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Extract top-level network name",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Visible JSON includes \"cidr0_cidrs\" with v4prefix/length and an \"endAddress\": \"8.8.8.255\", plus nested \"entities\" information. There is no visible top-level network \"name\" field in the screenshot (no \"name\": ... at the top-level network object is shown).",
+            "criterion_analysis": "Not satisfied: the top-level network name cannot be extracted from the visible content. The agent’s predicted output (that required fields are not visible due to truncation) aligns with what is shown.",
+            "discrepancies": "No discrepancy: agent did not provide a network name, and none is visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Within the visible JSON, there is no visible top-level network \"name\" field. The screenshot shows \"cidr0_cidrs\", \"endAddress\", and an \"entities\" list with remarks and vCard content, but no \"name\" at the network top level is shown.",
+            "criterion_analysis": "No network name is extracted by the agent, and the screenshot does not provide the top-level network \"name\" value in the visible portion.",
+            "discrepancies": "Consistent with the agent’s statement that the needed top-level network fields are not visible in the supplied snippet.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level network name",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the top-level network name and did not scroll to view it.",
+          "applicable_evidence": "Latest screenshot (2 of 2) does not display any top-level network \"name\" field.",
+          "post_image_justification": "Agent did not provide the network name. While the name is not visible in the provided view, there is no evidence of an external blocker preventing scrolling to it. Keep at 0.",
+          "reality_notes": "No network \"name\" field is visible in the shown portion of the pretty-printed JSON. The content on screen is centered on CIDR info, endAddress, and entity objects/vCards rather than the top-level network identity fields."
+        },
+        "verifier_evidence": "Latest screenshot (2 of 2) does not display any top-level network \"name\" field.",
+        "verifier_justification": "Agent did not provide the network name. While the name is not visible in the provided view, there is no evidence of an external blocker preventing scrolling to it. Keep at 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVISIBLE CONTENT (excerpt) includes \"endAddress\" and nested entity objects, but no top-level \"name\" field is shown anywhere in the visible snippet.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe top-level network \"name\" value is not present in the provided DOM excerpt, so it cannot be reported or verified from the supplied response portion.",
+            "discrepancies": "Required top-level network field \"name\" is missing from the visible DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible JSON shows \"cidr0_cidrs\": [{\"v4prefix\":\"8.8.8.0\",\"length\":24}], \"endAddress\":\"8.8.8.255\", and nested \"entities\" with remarks. No top-level network \"name\" field is visible in the snippet.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe top-level network \"name\" is not present in the provided DOM-visible RDAP JSON snippet, so it cannot be reported exactly as returned from the top-level network object based on this evidence.",
+            "discrepancies": "Requested: top-level network \"name\". Evidence: no \"name\" field shown at the top level in the visible content.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level network name",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the network name.",
+          "applicable_evidence": "Latest DOM-model state 1 does not show any top-level network \"name\" field; state 0 also lacks a visible top-level \"name\".",
+          "post_image_justification": "The agent did not report the network name, and the DOM evidence provided does not include it in view. No credit can be given for an unreported/unverifiable value.",
+          "reality_notes": "No top-level network \"name\" field is visible anywhere in the provided DOM excerpts. As shown, the snippets include items like \"cidr0_cidrs\", \"endAddress\", and nested \"entities\", but not a network \"name\" value."
+        },
+        "verifier_evidence": "Latest DOM-model state 1 does not show any top-level network \"name\" field; state 0 also lacks a visible top-level \"name\".",
+        "verifier_justification": "The agent did not report the network name, and the DOM evidence provided does not include it in view. No credit can be given for an unreported/unverifiable value.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Extract top-level startAddress",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a \"cidr0_cidrs\" entry with \"v4prefix\": \"8.8.8.0\" and \"length\": 24, and shows \"endAddress\": \"8.8.8.255\". There is no visible explicit top-level network field labeled \"startAddress\" in the shown area.",
+            "criterion_analysis": "Not satisfied: although a v4 prefix is visible (8.8.8.0), the criterion requires the top-level network object's \"startAddress\" exactly as returned, and that specific field is not visible in the screenshot.",
+            "discrepancies": "No discrepancy: agent did not claim a startAddress value; the screenshot does not show a top-level startAddress field.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The visible JSON shows \"cidr0_cidrs\": [{ \"v4prefix\": \"8.8.8.0\", \"length\": 24 }]. There is no explicit top-level \"startAddress\" key shown in the visible portion.",
+            "criterion_analysis": "The required top-level \"startAddress\" field is not visible. Although \"v4prefix\" shows 8.8.8.0, the criterion requires the top-level network \"startAddress\" exactly as returned, which is not shown.",
+            "discrepancies": "The agent did not provide a startAddress and claimed it was not visible; screenshot supports that (no \"startAddress\" key visible).",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level startAddress",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the startAddress and did not scroll to view it.",
+          "applicable_evidence": "Latest screenshot (2 of 2) shows \"cidr0_cidrs\" with \"v4prefix\": \"8.8.8.0\" and \"length\": 24, but no explicit top-level \"startAddress\" key is visible.",
+          "post_image_justification": "Agent did not report startAddress. The explicit field isn’t visible; however, no blocker is shown. Keep at 0.",
+          "reality_notes": "A CIDR prefix value (\"v4prefix\": \"8.8.8.0\") is visible under a \"cidr0_cidrs\" structure, but there is no explicitly labeled top-level \"startAddress\" field shown in the screenshots. Scoring should distinguish between an inferred start from CIDR and an explicit \"startAddress\" key at the top level."
+        },
+        "verifier_evidence": "Latest screenshot (2 of 2) shows \"cidr0_cidrs\" with \"v4prefix\": \"8.8.8.0\" and \"length\": 24, but no explicit top-level \"startAddress\" key is visible.",
+        "verifier_justification": "Agent did not report startAddress. The explicit field isn’t visible; however, no blocker is shown. Keep at 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 8
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVISIBLE CONTENT shows: \"cidr0_cidrs\" : [ { \"v4prefix\" : \"8.8.8.0\", \"length\" : 24 } ] and \"endAddress\" : \"8.8.8.255\" but does not show any \"startAddress\" field.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe excerpt does not include the top-level network object's \"startAddress\" field, so the startAddress cannot be extracted/verified from the provided DOM evidence.",
+            "discrepancies": "Required top-level network field \"startAddress\" is not visible in the DOM excerpt.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level startAddress",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the startAddress.",
+          "applicable_evidence": "Latest DOM-model state 1 shows \"cidr0_cidrs\" with v4prefix but does not show an explicit top-level \"startAddress\" key/value. State 0 also lacks \"startAddress\".",
+          "post_image_justification": "The agent did not report startAddress, and the required explicit \"startAddress\" field is not visible in the supplied evidence. Score remains zero.",
+          "reality_notes": "The provided DOM excerpts do not display a \"startAddress\" field. While a CIDR prefix (\"v4prefix\": \"8.8.8.0\") is visible, the criterion requires the explicit top-level \"startAddress\" key/value, which is not shown."
+        },
+        "verifier_evidence": "Latest DOM-model state 1 shows \"cidr0_cidrs\" with v4prefix but does not show an explicit top-level \"startAddress\" key/value. State 0 also lacks \"startAddress\".",
+        "verifier_justification": "The agent did not report startAddress, and the required explicit \"startAddress\" field is not visible in the supplied evidence. Score remains zero.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Extract top-level endAddress",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 7
+          },
+          {
+            "source_index": 1,
+            "score": 2
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot visibly includes the line: \"endAddress\" : \"8.8.8.255\", near the top of the JSON output.",
+            "criterion_analysis": "The screenshot contains an endAddress value, but it is not clearly labeled as being within the top-level network object (the broader network object context is not visible). The agent did not extract it; they stated required fields cannot be read yet. Based strictly on the agent output, the criterion is not satisfied because no endAddress was reported.",
+            "discrepancies": "Agent claimed required fields like endAddress cannot be read; however, \"endAddress\" : \"8.8.8.255\" is plainly visible in the screenshot. This conflicts with the agent’s claim that endAddress is not yet exposed.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level endAddress",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the endAddress and did not scroll to view it.",
+          "applicable_evidence": "Both screenshots show an explicit line: \"endAddress\" : \"8.8.8.255\" in the JSON pane (visible without further scrolling).",
+          "post_image_justification": "Agent claimed the required fields could not yet be read, but endAddress is plainly visible in the supplied response view. Since the agent still did not extract/report it, keep score at 0 (no credit for an unreported value).",
+          "reality_notes": "The key/value pair \"endAddress\" : \"8.8.8.255\" is clearly visible in the JSON pane. However, the screenshots do not show enough surrounding context to confirm whether this \"endAddress\" is at the root/top-level network object versus within a nested structure; it is simply displayed among other top-level-looking fields in the excerpt."
+        },
+        "verifier_evidence": "Both screenshots show an explicit line: \"endAddress\" : \"8.8.8.255\" in the JSON pane (visible without further scrolling).",
+        "verifier_justification": "Agent claimed the required fields could not yet be read, but endAddress is plainly visible in the supplied response view. Since the agent still did not extract/report it, keep score at 0 (no credit for an unreported value).",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 8
+          },
+          {
+            "source_index": 1,
+            "score": 7
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVISIBLE CONTENT shows: \"endAddress\" : \"8.8.8.255\" (appearing at the top level of the visible JSON snippet).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe value \"endAddress\" : \"8.8.8.255\" is explicitly visible, but the excerpted DOM does not prove this field belongs to the top-level network object versus a nested network/object because the surrounding top-level structure (including objectClassName/network boundaries) is not shown in the provided snippet.",
+            "discrepancies": "Cannot conclusively verify that the displayed \"endAddress\" is from the top-level network object as required (scope/boundary not shown).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible JSON includes the field \"endAddress\": \"8.8.8.255\" at the top level of the currently visible object snippet.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe top-level \"endAddress\" value is explicitly shown as \"8.8.8.255\" in the visible RDAP JSON snippet.",
+            "discrepancies": "None for endAddress; value is directly present and matches the requested field format.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level endAddress",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the endAddress.",
+          "applicable_evidence": "Latest DOM-model state 1 explicitly shows \"endAddress\": \"8.8.8.255\". State 0 also shows the same value but with less clear scope; state 1 is the latest and supports the value’s presence.",
+          "post_image_justification": "Although the DOM evidence supports that an \"endAddress\" value is visible, the agent did not actually report it in the final answer (they stated it could not yet be read). Since this criterion scores reporting/extraction in the answer, not mere page content, no points.",
+          "reality_notes": "\"endAddress\": \"8.8.8.255\" is explicitly visible in both DOM excerpts. In state 1, the evidence indicates it appears at the top level of the visible object snippet; in state 0, the surrounding structure is truncated such that top-level vs nested scope is not fully demonstrated."
+        },
+        "verifier_evidence": "Latest DOM-model state 1 explicitly shows \"endAddress\": \"8.8.8.255\". State 0 also shows the same value but with less clear scope; state 1 is the latest and supports the value’s presence.",
+        "verifier_justification": "Although the DOM evidence supports that an \"endAddress\" value is visible, the agent did not actually report it in the final answer (they stated it could not yet be read). Since this criterion scores reporting/extraction in the answer, not mere page content, no points.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL",
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "evidence_missing_language_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Extract top-level network type",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The visible JSON excerpt includes \"cidr0_cidrs\", \"endAddress\", and nested \"entities\" details (e.g., \"objectClassName\": \"entity\"). There is no visible top-level network field named \"type\".",
+            "criterion_analysis": "Not satisfied: the top-level network \"type\" is not present in the screenshot view.",
+            "discrepancies": "No discrepancy: agent did not provide a type; screenshot does not show it.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No top-level network \"type\" field is visible in the screenshot. The JSON portion shown focuses on entities and vCard data and does not show a network \"type\" key.",
+            "criterion_analysis": "The agent did not provide a network type, and the screenshot does not show the top-level network \"type\" value.",
+            "discrepancies": "Consistent with the agent’s claim that top-level network fields are not visible (at least for \"type\").",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level network type",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the network type and did not scroll to view it.",
+          "applicable_evidence": "Latest screenshot (2 of 2) does not show any network \"type\" field.",
+          "post_image_justification": "Agent did not report type, and it is not visible in the shown portion. No confirmed blocker. Keep at 0.",
+          "reality_notes": "No \"type\" field for the network is visible anywhere in the displayed JSON portion. The only \"objectClassName\" values visible relate to entity objects, not a network \"type\"."
+        },
+        "verifier_evidence": "Latest screenshot (2 of 2) does not show any network \"type\" field.",
+        "verifier_justification": "Agent did not report type, and it is not visible in the shown portion. No confirmed blocker. Keep at 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVISIBLE CONTENT includes fields such as \"cidr0_cidrs\", \"endAddress\", \"entities\", but no \"type\" field is shown in the excerpt.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe top-level network \"type\" value is not visible in the supplied DOM excerpt, so it cannot be extracted/verified.",
+            "discrepancies": "Required top-level network field \"type\" is missing from the visible DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible JSON shows keys including \"arin_originas0_originautnums\", \"cidr0_cidrs\", \"endAddress\", and \"entities\". No top-level network \"type\" field is visible.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence does not show the top-level network object's \"type\" value, so it cannot be extracted exactly from the supplied visible response snippet.",
+            "discrepancies": "Requested: top-level network \"type\". Evidence: no \"type\" field shown at the top level in the visible content.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level network type",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the network type.",
+          "applicable_evidence": "Latest DOM-model state 1 does not show any top-level network \"type\" field; state 0 also does not show \"type\".",
+          "post_image_justification": "The agent did not report the type, and the visible evidence does not provide it to extract. Score stays at zero.",
+          "reality_notes": "No top-level network \"type\" field is visible in the DOM excerpts. The snippets show other keys and nested entities, but not any explicit \"type\" value for the network."
+        },
+        "verifier_evidence": "Latest DOM-model state 1 does not show any top-level network \"type\" field; state 0 also does not show \"type\".",
+        "verifier_justification": "The agent did not report the type, and the visible evidence does not provide it to extract. Score stays at zero.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Extract every top-level network status value",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the visible portion, there is no top-level network \"status\" array shown. The snippet focuses on CIDR info, an endAddress value, and an abuse entity (ABUSE5250-ARIN) with events and remarks.",
+            "criterion_analysis": "Not satisfied: no top-level network status values are visible to list, and the agent did not list any statuses.",
+            "discrepancies": "No discrepancy: agent did not list statuses and indicated truncation; screenshot supports that statuses aren’t visible here.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "A \"status\" array is visible inside an entity object: \"status\" : [ \"validated\" ]. There is no visible top-level network object \"status\" array in the screenshot portion.",
+            "criterion_analysis": "The only visible status value pertains to an entity (likely ABUSE contact), not necessarily the top-level network. The agent did not list any top-level network statuses, so the criterion is not met.",
+            "discrepancies": "Agent claimed the necessary fields were not visible; screenshot shows at least an entity status value (\"validated\"), but does not show a top-level network status array, so the agent’s general claim is mostly consistent for this criterion.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract every top-level network status value",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent did not extract or list any status values and did not scroll to reveal them.",
+          "applicable_evidence": "Screenshot 1 shows a \"status\": [\"validated\"] but it appears within an entity object (abuse), not clearly a top-level network status array. Latest screenshot (2 of 2) does not show a top-level network \"status\" array.",
+          "post_image_justification": "Agent did not list any status values. The only visible status is for an entity, and the task requires top-level network status values. No credit.",
+          "reality_notes": "A \"status\" array with the value \"validated\" is visible, but it appears inside an entity object (the one with role information like abuse), not clearly as a top-level network status array. The screenshots do not show a network-level \"status\" array."
+        },
+        "verifier_evidence": "Screenshot 1 shows a \"status\": [\"validated\"] but it appears within an entity object (abuse), not clearly a top-level network status array. Latest screenshot (2 of 2) does not show a top-level network \"status\" array.",
+        "verifier_justification": "Agent did not list any status values. The only visible status is for an entity, and the task requires top-level network status values. No credit.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVISIBLE CONTENT includes a nested entity with: \"status\" : [ \"validated\" ] and \"roles\" : [ \"abuse\" ] for handle \"ABUSE5250-ARIN\".\nNo top-level network \"status\" array is shown.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe only visible \"status\" array (\"validated\") is attached to a nested entity (ABUSE5250-ARIN), not to the top-level network object. The top-level network \"status\" values are not shown in the excerpt, so they cannot be listed/verified.",
+            "discrepancies": "Top-level network status values are not visible; only a nested entity status (\"validated\") appears, which does not satisfy the criterion.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible JSON includes \"endAddress\" and nested \"entities\" data (e.g., events, links, remarks) but does not show a top-level network \"status\" array anywhere in the visible snippet.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo top-level network \"status\" array values are visible in the supplied DOM evidence, so the complete set of top-level status values cannot be listed exactly as returned.",
+            "discrepancies": "Requested: every value in top-level network \"status\" array. Evidence: no \"status\" field visible.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract every top-level network status value",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent did not extract or report any status values.",
+          "applicable_evidence": "Latest DOM-model state 1 does not show any top-level network \"status\" array. State 0 shows a nested entity status [\"validated\"] associated with an abuse entity, not the top-level network.",
+          "post_image_justification": "The agent did not list any top-level network status values. The only visible status pertains to a nested entity and cannot be used. No credit.",
+          "reality_notes": "A \"status\": [\"validated\"] array is visible only for a nested entity (the abuse-related entity), not for the top-level network object. The DOM excerpts do not show any top-level network \"status\" array, so the network’s statuses cannot be enumerated from the shown content."
+        },
+        "verifier_evidence": "Latest DOM-model state 1 does not show any top-level network \"status\" array. State 0 shows a nested entity status [\"validated\"] associated with an abuse entity, not the top-level network.",
+        "verifier_justification": "The agent did not list any top-level network status values. The only visible status pertains to a nested entity and cannot be used. No credit.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Extract top-level parentHandle",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot does not show any \"parentHandle\" field at the top level (or elsewhere) in the visible JSON. The only clearly visible handle is the nested entity handle \"ABUSE5250-ARIN\".",
+            "criterion_analysis": "Not satisfied: parentHandle cannot be extracted from what is visible. Agent’s predicted output (need scroll/expanded view) is consistent with the absence of this field on screen.",
+            "discrepancies": "No discrepancy: no parentHandle was claimed; none is visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No \"parentHandle\" field is visible anywhere in the shown JSON segment. Visible handles include \"ABUSE5250-ARIN\" and \"ZG39-ARIN\" but no \"parentHandle\" key.",
+            "criterion_analysis": "The parentHandle is not reported by the agent and not visible in the screenshot, so the criterion is not satisfied.",
+            "discrepancies": "Consistent with the agent’s claim that the required top-level network fields are not visible.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level parentHandle",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the parentHandle and did not scroll to view it.",
+          "applicable_evidence": "Latest screenshot (2 of 2) shows no \"parentHandle\" field anywhere in view.",
+          "post_image_justification": "Agent did not report parentHandle. Field not visible; no confirmed blocker to prevent scrolling. Keep at 0.",
+          "reality_notes": "No \"parentHandle\" key is visible in the provided screenshots. Although entity handles are shown, there is no explicit parent/child network linkage field displayed."
+        },
+        "verifier_evidence": "Latest screenshot (2 of 2) shows no \"parentHandle\" field anywhere in view.",
+        "verifier_justification": "Agent did not report parentHandle. Field not visible; no confirmed blocker to prevent scrolling. Keep at 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVISIBLE CONTENT excerpt does not contain any \"parentHandle\" field.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe top-level network \"parentHandle\" field is not visible in the supplied DOM excerpt, so it cannot be extracted/verified.",
+            "discrepancies": "Required top-level network field \"parentHandle\" is missing from the visible DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible JSON shows \"endAddress\": \"8.8.8.255\" and nested entities (including \"handle\": \"ABUSE5250-ARIN\" for an entity). No top-level \"parentHandle\" field is visible.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence does not include the top-level network object's \"parentHandle\" value, so it cannot be extracted exactly from the provided visible response snippet.",
+            "discrepancies": "Requested: top-level network \"parentHandle\". Evidence: no \"parentHandle\" field visible at the top level.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract top-level parentHandle",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "The agent did not extract or report the parentHandle.",
+          "applicable_evidence": "Latest DOM-model state 1 shows no \"parentHandle\" field at the top level; state 0 also shows none.",
+          "post_image_justification": "The agent did not report parentHandle and it is not visible in the supplied evidence. Score remains zero.",
+          "reality_notes": "No \"parentHandle\" field is visible in the provided RDAP JSON excerpts. The snippets include nested entity handles but do not include any explicit top-level network \"parentHandle\" key/value."
+        },
+        "verifier_evidence": "Latest DOM-model state 1 shows no \"parentHandle\" field at the top level; state 0 also shows none.",
+        "verifier_justification": "The agent did not report parentHandle and it is not visible in the supplied evidence. Score remains zero.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Extract registrant entity fn from vCard",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows vCard content within an entity. In the vcardArray, an \"fn\" entry is visible: [\"fn\", { }, \"text\", \"Abuse\"]. It also shows [\"org\", {}, \"text\", \"Google Inc.\"] and an email \"network-abuse@google.com\". However, the screenshot does not show a registrant entity explicitly labeled as registrant, nor a registrant role; the visible entity includes \"roles\": [\"abuse\"].",
+            "criterion_analysis": "The agent did not extract any registrant entity fn. The only visible fn (\"Abuse\") is for an abuse role entity, not confirmed as the registrant entity. Therefore the criterion is not met.",
+            "discrepancies": "Agent claimed the registrant vCard (including fn) is not visible; the screenshot does show an fn value (\"Abuse\"), but it appears tied to an abuse entity rather than registrant. The agent’s claim about registrant fn specifically may still be plausible, but their broader claim that the vCard fn is not visible is contradicted by the visible \"fn\" line.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract registrant entity fn from vCard",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent did not extract or report the registrant fn and did not scroll to reveal the vCard section.",
+          "applicable_evidence": "Screenshot 1 shows an entity vCard with \"fn\" value \"Abuse\", and roles indicate that entity is an abuse contact. No registrant entity (and thus no registrant vCard fn) is visible in either screenshot.",
+          "post_image_justification": "Agent did not report a registrant entity fn. The visible fn is for the abuse role, not registrant, so it cannot satisfy the requirement. No credit.",
+          "reality_notes": "The screenshots show vCard content for an entity whose roles include \"abuse\"; within that vCard, the \"fn\" value shown is \"Abuse\" (and \"org\" is shown as \"Google Inc.\"). There is no visible indication of a registrant role/entity in the shown excerpt, so the only on-screen \"fn\" is for an abuse contact entity rather than a confirmed registrant entity."
+        },
+        "verifier_evidence": "Screenshot 1 shows an entity vCard with \"fn\" value \"Abuse\", and roles indicate that entity is an abuse contact. No registrant entity (and thus no registrant vCard fn) is visible in either screenshot.",
+        "verifier_justification": "Agent did not report a registrant entity fn. The visible fn is for the abuse role, not registrant, so it cannot satisfy the requirement. No credit.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVISIBLE CONTENT shows a nested entity (handle \"ABUSE5250-ARIN\", roles [\"abuse\"]) with vcardArray containing: [\"fn\", {}, \"text\", \"Abuse\"].\nNo entity with role \"registrant\" is visible in the excerpt; only nested entities including ABUSE5250-ARIN and a partial \"ZG39-ARIN\" object are shown.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nWhile an \"fn\" value (\"Abuse\") is visible for an entity with role \"abuse\", the registrant entity (and its vCard \"fn\") is not shown in the provided excerpt. Therefore the registrant entity fn cannot be extracted/verified from the supplied DOM evidence.",
+            "discrepancies": "Visible fn (\"Abuse\") corresponds to an abuse contact entity, not a registrant entity. Registrant role/entity and its vCard fn are not present in the excerpt.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible JSON shows nested \"entities\" including an entity with \"handle\": \"ABUSE5250-ARIN\", along with that entity's events, links, port43, and remarks. The snippet does not show any \"vcardArray\" nor any \"fn\" value for a registrant entity.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe registrant entity's vCard (\"vcardArray\") and its \"fn\" value are not present in the provided DOM-visible snippet, and the only visible handle belongs to a nested abuse entity (\"ABUSE5250-ARIN\"). Therefore, the registrant \"fn\" cannot be reported exactly from vCard evidence here.",
+            "discrepancies": "Requested: registrant entity vCard \"fn\". Evidence: no \"vcardArray\"/\"fn\" visible; only nested abuse entity details are shown.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Extract registrant entity fn from vCard",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent did not extract or report the registrant entity's fn value.",
+          "applicable_evidence": "Latest DOM-model state 1 does not show a registrant entity vcardArray/fn. State 0 shows an \"fn\" of \"Abuse\" for an entity with role \"abuse\", not registrant; no registrant entity is visible.",
+          "post_image_justification": "The agent did not report the registrant fn, and the DOM evidence does not expose a registrant vCard fn to extract. No credit.",
+          "reality_notes": "The only visible vCard \"fn\" value shown is \"Abuse\" for an entity whose role is \"abuse\" (not registrant). The excerpts do not show any entity with role \"registrant\" nor a registrant entity’s \"vcardArray\" containing an \"fn\" entry."
+        },
+        "verifier_evidence": "Latest DOM-model state 1 does not show a registrant entity vcardArray/fn. State 0 shows an \"fn\" of \"Abuse\" for an entity with role \"abuse\", not registrant; no registrant entity is visible.",
+        "verifier_justification": "The agent did not report the registrant fn, and the DOM evidence does not expose a registrant vCard fn to extract. No credit.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 8,
+      "criterion": "Use only supplied ARIN RDAP response and stop after recording requested fields",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 6
+          },
+          {
+            "source_index": 1,
+            "score": 4
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Agent’s predicted output contains no extracted RDAP field values; it only states that the visible JSON is truncated and more scrolling is needed. The screenshot indeed shows only a partial RDAP JSON (CIDR info, endAddress 8.8.8.255, and nested abuse entity content) and does not show the requested top-level network fields nor a registrant vCard \"fn\".",
+            "criterion_analysis": "Satisfied for this criterion: the agent did not introduce any external/hallucinated values and did not include unrelated fields beyond the stopping condition; the response is limited to stating insufficiency of visible data. This aligns with the constraint to use only the supplied response.",
+            "discrepancies": "No discrepancy: the agent claimed the needed fields were not visible; the screenshot supports that the requested top-level network fields and registrant fn are not present in the visible area.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Agent’s predicted output contains no extracted RDAP field values; it only states that the snippet is truncated and more scrolling is needed. The screenshot shows some RDAP values (e.g., endAddress \"8.8.8.255\" and entity vCard fn \"Abuse\"), but the agent did not report them.",
+            "criterion_analysis": "The agent did not introduce external/hallucinated values; they refrained from listing requested fields. While incomplete, their response adheres to the constraint of using only supplied RDAP response and does not add unrequested fields beyond the stopping condition. Thus, on the narrow scope of this criterion (no external info / no extra unrelated fields), it is satisfied.",
+            "discrepancies": "No hallucinated network fields were provided. The only mismatch is the agent’s assertion that required fields cannot be read even though some requested-type data (like endAddress) is visible; however, this criterion is about sourcing and stopping, not correctness/completeness.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Use only supplied ARIN RDAP response and stop after recording requested fields",
+          "earned_points": 2,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent did not include any external or unrequested information and only commented that more data is needed without hallucinating values.",
+          "applicable_evidence": "Agent output contains no extracted values and makes no claims about specific network fields; screenshots do not indicate the agent used external sources.",
+          "post_image_justification": "Agent did not hallucinate or introduce external/unrequested data. Their response stayed within constraints, even though incomplete. Full credit for this criterion.",
+          "reality_notes": "The on-screen evidence is a partial pretty-printed RDAP JSON response; it includes some requested-style fields (notably \"endAddress\") plus many non-requested nested entity/vCard details. Any answer that introduces values not present in this JSON excerpt would be unsupported; conversely, the screenshots themselves contain extra fields beyond the task’s stopping condition even though they are not required to be reported."
+        },
+        "verifier_evidence": "Agent output contains no extracted values and makes no claims about specific network fields; screenshots do not indicate the agent used external sources.",
+        "verifier_justification": "Agent did not hallucinate or introduce external/unrequested data. Their response stayed within constraints, even though incomplete. Full credit for this criterion.",
+        "action_only_points": 2,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 6
+          },
+          {
+            "source_index": 1,
+            "score": 3
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nThe agent’s predicted output states that the visible RDAP JSON snippet is truncated before the required top-level network object fields and registrant vCard fn appear.\nDOM excerpt indeed lacks required top-level fields (handle, name, startAddress, type, status, parentHandle) and lacks a registrant entity.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nWithin the provided DOM evidence, there is insufficient information to produce the requested final report fields without adding external/unsupported data. The agent’s decision not to invent values is consistent with the constraint to use only the supplied ARIN RDAP response and to stop once requested fields are recorded (which cannot be completed from the excerpt).",
+            "discrepancies": "None with the constraint-compliance aspect; the missing data prevents completion, but no extra non-requested RDAP fields were asserted as facts beyond the excerpt.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Use only supplied ARIN RDAP response and stop after recording requested fields",
+          "earned_points": 2,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent did not hallucinate or include any unrequested fields; it stayed within the supplied response scope.",
+          "applicable_evidence": "Agent output contains no invented RDAP values and explicitly states required fields are not visible. DOM-model evidence supports that many required fields (handle, name, startAddress, type, status, parentHandle, registrant fn) are not shown in the excerpts; only endAddress is visible in state 1.",
+          "post_image_justification": "The agent complied with the constraint to avoid hallucinating and did not add unrelated fields; they did not complete the requested extraction, but this criterion is about staying within the supplied response and stopping condition rather than correctness of the missing fields. Full credit maintained.",
+          "reality_notes": "Given the DOM excerpts are truncated and omit multiple required top-level network fields and the registrant vCard \"fn\", any attempt to provide those missing values would require information not present in the supplied visible response. The only reliably extractable requested field from the shown evidence is \"endAddress\" (and even then, state 0 does not fully prove scope)."
+        },
+        "verifier_evidence": "Agent output contains no invented RDAP values and explicitly states required fields are not visible. DOM-model evidence supports that many required fields (handle, name, startAddress, type, status, parentHandle, registrant fn) are not shown in the excerpts; only endAddress is visible in state 1.",
+        "verifier_justification": "The agent complied with the constraint to avoid hallucinating and did not add unrelated fields; they did not complete the requested extraction, but this criterion is about staying within the supplied response and stopping condition rather than correctness of the missing fields. Full credit maintained.",
+        "action_only_points": 2,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    }
+  ]
+}

@@ -1,8 +1,12 @@
 # Evidence Error Experiment
 
-This standalone experiment compares the Microsoft screenshot verifier with the DOM-model verifier using the same frozen rubric. It also supports an offline, human-confirmed audit of evidence that was available in each representation but missed by its verifier.
+This standalone experiment tests whether ordered DOM-model states preserve browser-agent trajectory evidence more reliably than screenshots. It uses Microsoft's [Universal Verifier](https://www.microsoft.com/en-us/research/articles/the-art-of-building-verifiers-for-computer-use-agents/) as the screenshot baseline and compares it with a matching DOM-model verifier whose intentional difference is the evidence representation it reads.
 
-The audit reads completed result files and source evidence only. It does not change verifier prompts, model calls, relevance, top-K selection, scoring, retries, validity, evidence handling, or reporting, and audit decisions are never passed back into either verifier.
+For a fair comparison, each logical task gets one canonical frozen rubric. The exact same rubric, criterion order, denominator, maximum points, task inputs, actions, and final answer are then used for both scoring runs. The verifier design remains aligned across relevance selection, evidence analysis, criterion and process scoring, outcome scoring, failure classification, validity checks, retries, and reporting.
+
+The paired task data comes from the [WootzappLab/browser-agent-tasks](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) dataset and from experiment-owned task copies under `data/` and `data-new/`. The full 44-task comparison, which produced **6.2% screenshot evidence loss** versus **2.6% DOM-model evidence loss**, is in [`results.md`](results.md).
+
+The audit reads completed verifier outputs and source evidence only. It does not change verifier prompts, model calls, relevance, top-K selection, scoring, retries, validity, evidence handling, or reporting, and audit decisions are never passed back into either verifier. Evidence loss is counted only when criterion-relevant evidence is unavailable in one representation but available in the other; ordinary scoring disagreements are kept separate.
 
 ## Repository structure
 

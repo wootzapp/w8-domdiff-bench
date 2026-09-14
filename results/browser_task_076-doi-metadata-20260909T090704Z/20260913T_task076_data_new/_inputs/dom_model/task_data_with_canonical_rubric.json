@@ -1,0 +1,61 @@
+[
+  {
+    "task_id": "browser_task_076-doi-metadata-20260909T090704Z",
+    "confirmed_task": "Using the Crossref response for DOI 10.1038/s41586-023-06747-5, report the work title, publisher, published date, work type, and every author in returned order.\n\nStopping condition: Stop after the title, publisher, published date, type, and complete ordered author list have been recorded from the message object.\n\nConstraints:\n- Use only the supplied Crossref response.\n- Read the date from message.published.date-parts and authors from message.author.\n- Preserve the author order and name spelling exactly as returned.\n- Do not substitute metadata from DOI.org or the publisher page.",
+    "website": "https://api.crossref.org/works/10.1038/s41586-023-06747-5",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Use only the supplied Crossref response (message object fields)",
+          "description": "Evaluate whether the agent’s reported metadata is derived exclusively from the provided Crossref response for DOI 10.1038/s41586-023-06747-5 (i.e., from the message object), without importing or substituting information from DOI.org, publisher pages, or other sources. Full credit if all reported fields are clearly consistent with the Crossref message object OR if the agent explicitly states that the supplied Crossref response/message object was not provided/accessible and therefore cannot be used. Partial credit if most fields match Crossref but one field appears inconsistent or sourced elsewhere. No credit if the agent fabricates metadata or primarily relies on non-Crossref sources when Crossref content is available.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report work title from message.title",
+          "description": "Record the work title exactly as returned in the Crossref message.title field (including capitalization/punctuation). Full credit if exact. If message.title is absent/empty in the supplied response, full credit if the agent explicitly reports that the title is not present in message.title (and does not substitute from elsewhere). Partial credit if minor deviation. No credit if wrong title is supplied when Crossref provides one, or if substituted from another source.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report publisher from message.publisher",
+          "description": "Record the publisher exactly as returned in the Crossref message.publisher field. Full credit if exact. If message.publisher is absent in the supplied response, full credit if the agent explicitly reports that publisher is not present in message.publisher (and does not substitute from elsewhere). Partial credit if minor deviation. No credit if wrong publisher is supplied when Crossref provides one, or if substituted from another source.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report published date from message.published.date-parts",
+          "description": "Read the published date specifically from message.published.date-parts and correctly transcribe the components provided (do not infer missing month/day). Full credit if correct and sourced from the right field. If message.published or message.published.date-parts is absent in the supplied response, full credit if the agent explicitly reports that published date is not present in message.published.date-parts (and does not substitute from adjacent fields like published-online). Partial credit if correct components but wrong formatting/reordering. No credit if an incorrect date is provided when message.published.date-parts is available, or if substituted from other fields/sources.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report work type from message.type",
+          "description": "Record the work type exactly as returned in the Crossref message.type field. Full credit if exact. If message.type is absent in the supplied response, full credit if the agent explicitly reports that type is not present in message.type (and does not substitute from elsewhere). Partial credit if minor formatting deviation. No credit if wrong type is supplied when Crossref provides one, or if substituted from another source.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report complete ordered author list from message.author",
+          "description": "List every author in message.author in the exact returned order, preserving name spelling exactly as returned (including given/family, initials, diacritics, hyphens, spacing). Full credit if complete and correctly ordered with exact spelling. If message.author is absent/empty in the supplied response, full credit if the agent explicitly reports that no authors are present in message.author (and does not substitute from elsewhere). Partial credit if one or two authors are missing/misordered or minor spelling deviations occur. No credit if many authors are missing, order not preserved, or names are substituted/normalized beyond what Crossref returned when message.author is available.",
+          "max_points": 6,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Stop after recording the requested fields (stopping condition)",
+          "description": "Assess whether the agent stops once the title, publisher, published date, type, and complete ordered author list have been recorded (or explicitly marked as unavailable in the supplied message object), without adding extra metadata beyond those items. Full credit if it stops appropriately. Partial credit if it adds minor extra info (e.g., DOI/URL) but still includes all required fields/availability notes. No credit if it omits required fields/availability notes or adds substantial unrelated content.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

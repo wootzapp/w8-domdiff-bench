@@ -1,0 +1,291 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_082-chess-game-result-inspection-20260914T091145Z",
+  "run_id": "20260914T_task82_rerun_data_new",
+  "rubric_sha256": "2080808bbccbe3444a4d2234275a959221a249014904721553df11db85c833d6",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access the specified public Lichess game page (Z01xx8LK) only",
+      "description": "Attempt to open and rely only on the public game page for ID Z01xx8LK (e.g., https://lichess.org/Z01xx8LK). Full credit if the agent attempts this page and either (a) can view it, or (b) is blocked by an uncontrollable factor (site down, CAPTCHA, hard login wall, network/region restriction) and clearly reports the blocker. No credit if the agent uses PGN download/API/other sites as the source while the page is accessible.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Action history shows State 1 is https://lichess.org/Z01xx8LK and the only recorded action is a scroll on that page. Screenshot analyses indicate a lichess.org game analysis/replay layout consistent with a single public game page; URL bar not visible in screenshots, but action history is authoritative for the URL.",
+        "verifier_justification": "Meets the requirement to access the specified public Lichess game page and use only it. No evidence of PGN/API/other-site usage, and the action history confirms the correct game URL was opened.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the lichess.org interface with the top-left text/logo “lichess.org”. It appears to be a game analysis/replay page (board centered, move list/analysis on the right, game summary panel on the left). The left panel shows a game card with “10+0 • Rated • Rapid” and player lines underneath, consistent with being on a specific game page rather than a generic landing page.",
+            "criterion_analysis": "This supports that the agent accessed a public Lichess game page view (with game summary and analysis). The screenshot does not explicitly show the URL bar, but the page content matches a single game’s public page layout and summary information. No evidence is shown of using PGN download/API/other sites as the source.",
+            "discrepancies": "The agent references the specific game ID URL (Z01xx8LK), but the screenshot does not display the URL, so the exact game ID cannot be verified solely from pixels. However, the visible page content is consistent with a public game page.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 1 (LATEST) shows URL https://lichess.org/Z01xx8LK with page title “Reini vs IloveAnya - Réti Opening: Réti Accepted • lichess.org”, indicating the specified public game page is open. Action history shows only a scroll on that same page.",
+        "verifier_justification": "The agent accessed the correct public Lichess game page and there is no DOM evidence of using other sources or encountering access blockers. Baseline score stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL \"https://lichess.org/Z01xx8LK\" and Title \"Reini vs IloveAnya - Réti Opening: Réti Accepted • lichess.org\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly shows the agent is on the specified public Lichess game page for game ID Z01xx8LK and is using that page as the source context.",
+            "discrepancies": "No discrepancy between required page (Z01xx8LK) and the DOM-reported URL/title.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://lichess.org/Z01xx8LK\" with page Title \"Reini vs IloveAnya - Réti Opening: Réti Accepted • lichess.org\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly places the browser on the specified public Lichess game page for game ID Z01xx8LK, satisfying the requirement to access that page. No blocker (login wall/CAPTCHA/error) is shown in the DOM snapshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Record time control, rated/casual status, and speed category as displayed",
+      "description": "From the visible game page UI, report the displayed time control, rated/casual status, and speed category (bullet/blitz/rapid/classical/etc.). Accept equivalent UI representations (text or icons) as long as they reflect what is shown on the page. Full credit if all three are correctly captured OR if one/more of these specific fields are not visible due to an uncontrollable page/UI rendering issue and the agent explicitly states what could not be seen and why. Partial credit if only 1–2 fields are captured when the missing fields appear to be available.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 1 analysis shows the summary header line “10+0 • Rated • Rapid” (time control, rated/casual status, speed). Screenshot 2 also shows the page but criterion 1 is already fully evidenced by Screenshot 1.",
+        "verifier_justification": "The agent’s reported time control (10+0), rated status (Rated), and speed category (Rapid) match what is visibly displayed in the screenshots.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the left game-summary card, the header line reads “10+0 • Rated • Rapid”. The “10+0” time control, “Rated” status, and “Rapid” speed category are all visible on that line.",
+            "criterion_analysis": "The agent’s predicted output (“Time control: 10+0”, “Rated”, “Rapid”) matches exactly what is visible in the screenshot. All three fields are present and readable, so this criterion is fully satisfied.",
+            "discrepancies": "None for these fields; the screenshot shows the same “10+0 • Rated • Rapid” string the agent reported.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 1 (LATEST) explicitly displays “10+0 • Rated • Rapid”. DOM-model state 0 also shows the same line, but state 1 is the final confirmation.",
+        "verifier_justification": "Agent reported time control (10+0), rated status (Rated), and speed category (Rapid) exactly as displayed. Full credit maintained.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes the line: \"10+0 • Rated • Rapid\". It also separately lists \"Rapid\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll three requested summary fields are directly displayed in the DOM: time control \"10+0\", rated status \"Rated\", and speed category \"Rapid\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes the summary line \"10+0 • Rated • Rapid\" (also separately shows \"Rapid\"). It also shows clocks as \"10:00\" / \"10:00\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll three requested summary fields are directly displayed in the DOM: time control \"10+0\", rated status \"Rated\", and speed category \"Rapid\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record both players' names, ratings, and rating changes (correct association)",
+      "description": "Report both player names with their displayed ratings and rating changes, keeping each correctly associated with the correct player/color as shown. Full credit if all are correct OR if one/more of these specific fields are not visible due to an uncontrollable page/UI issue and the agent explicitly states which fields are missing/unreadable. Partial credit if some fields are missing or swapped when the page appears to display them.",
+      "max_points": 5,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 5.0,
+        "verifier_evidence": "Screenshot 1 analysis shows player lines with names, ratings, and rating changes: “Reini (1894) +8” and “IloveAnya (2010) -31.” Screenshot 2 shows names with rating changes but not rating numbers. Latest screenshot does not contradict the earlier summary card; it is just a different section without ratings.",
+        "verifier_justification": "Player names, ratings, and rating changes (with correct association) are directly visible in Screenshot 1 and match the agent output. The absence of ratings in Screenshot 2 does not negate the earlier visible evidence.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The left summary card lists players as: “Reini (1894) +8” on the first line and “IloveAnya (2010) -31” on the second line (with a minus sign before 31).",
+            "criterion_analysis": "The agent’s predicted output reports White: Reini (1894) +8 and Black: IloveAnya (2010) −31. The names, ratings, and rating changes match the visible text in the screenshot, and the associations appear correct based on the ordering and the typical Lichess display in the summary card.",
+            "discrepancies": "Minor typography only: the screenshot shows “-31” while the agent used a “−31” character; meaning is the same. Otherwise consistent.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the bottom-right results area, the player lines show: \"Reini +8\" and below that \"IloveAnya −31\". Under each, the accuracy breakdown is visible (e.g., for Reini: \"66% Accuracy\"; for IloveAnya: \"58% Accuracy\"). However, the actual rating numbers (e.g., 1800s/2000s) are not visible anywhere in the screenshot next to the names—only the rating changes (+8 and −31) are shown.",
+            "criterion_analysis": "The screenshot supports the player names and rating changes with correct association (Reini +8; IloveAnya −31). The agent’s predicted output additionally claims specific ratings (Reini 1894, IloveAnya 2010), but those rating numbers are not visible in this screenshot, so they are not verifiable from the provided evidence. Based on the screenshot alone, the criterion is only partially supported because ratings are missing/unreadable here, and the agent did not flag them as not visible.",
+            "discrepancies": "Agent predicted output includes ratings \"(1894)\" and \"(2010)\". The screenshot only shows \"Reini +8\" and \"IloveAnya −31\" with no rating numbers visible, so the ratings in the output are unsupported by this screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "DOM-model state 1 (LATEST) shows the combined player tuples as link text: “Reini (1894) +8” and “IloveAnya (2010) −31”. The DOM evidence does not explicitly label which is White vs Black in the provided snippet. (State 0 shows the same tuples.)",
+        "verifier_justification": "The agent correctly reported both player names, ratings, and rating changes as displayed. However, the agent additionally bound them to White/Black (“White: Reini… Black: IloveAnya…”) without explicit DOM proof of that color association in the provided evidence. Since correct association to color is part of the criterion, award partial credit for accurately capturing the tuples but deduct for unproven color mapping.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT shows: \"(1894)\" then \"+8\" and later \"(2010)\" then \"−31\". Also under USEFUL PAGE ACTIONS: link \"Reini +8\" and link \"IloveAnya −31\". Further down: link text \"Reini (1894) +8\" and \"IloveAnya (2010) −31\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBoth player names, ratings, and rating changes are explicitly present in the DOM and correctly associable by the combined link texts: \"Reini (1894) +8\" and \"IloveAnya (2010) −31\".",
+            "discrepancies": "Color association (which player is White vs Black) is not explicitly labeled as \"White\"/\"Black\" in the provided DOM snippet; however, the page title ordering \"Reini vs IloveAnya\" and the result text later referencing \"White\" do not, by themselves, prove which name corresponds to which color within the DOM evidence provided. Names/ratings/diffs themselves are supported; explicit color binding is not fully proven by labels in this DOM excerpt.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 READ-ONLY CONTROL EVIDENCE lists \"Reini (1894) +8\" and \"IloveAnya (2010) −31\". VISIBLE CONTENT also includes \"(1894)\", \"+8\", \"(2010)\", and \"−31\" and a link \"Reini +8\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBoth players’ names, ratings, and rating changes are explicitly visible and correctly associable from the DOM: White is shown as \"Reini (1894) +8\" and Black as \"IloveAnya (2010) −31\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record termination/victory statement, winner, and number of moves",
+      "description": "Report the displayed termination and victory statement exactly as shown (or clearly paraphrased while preserving meaning), identify the winner based on the displayed result, and report the stated number of moves. Full credit if all are included and consistent with the page OR if these specific items are not visible due to an uncontrollable page/UI issue and the agent states what cannot be seen. Partial credit if only some are provided despite being available on the page.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 both show the termination/victory text “Checkmate • White is victorious,” supporting winner determination. However, neither screenshot shows an explicit labeled total move count; Screenshot 2 only shows a move number ‘33...’ in the move list, which is not the same as a clearly ‘stated number of moves’ field.",
+        "verifier_justification": "Full support for termination/victory statement and winner (White). The agent’s claim that the page stated the number of moves as 33 is not directly evidenced by the screenshots (no explicit move-count field shown). Because a key requested field (stated number of moves) is not supported by the provided visual evidence, reduce score.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the left summary card, below the player lines, it shows: “Checkmate • White is victorious”. The screenshot does not visibly show a move count number (no explicit “33 moves” text is visible anywhere in the shown panels).",
+            "criterion_analysis": "Termination/victory statement: The agent’s output matches the visible “Checkmate • White is victorious,” so that portion is supported. Winner: “White is victorious” supports the agent’s claim that White won (and thus Reini won). However, the stated number of moves is not visible in this screenshot, so the agent’s claim “Stated number of moves: 33” is not verifiable from the provided image and appears unsupported by screenshot evidence.",
+            "discrepancies": "Agent reported “33” moves, but the screenshot does not show any move-count field or a visible “33 moves” statement. The termination/victory statement matches exactly.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "At the top-left above the board area, text reads: \"Checkmate • White is victorious\". In the crosstable at the bottom center, the score shows \"Reini\" with \"1\" and \"IloveAnya\" with \"0\". On the right analysis pane, a move number \"33...\" is visible within the notation list (e.g., a line beginning with \"33...\"), but there is no explicit label stating \"33 moves\" or similar visible in the screenshot.",
+            "criterion_analysis": "The termination/victory statement is clearly visible and matches the agent’s quote. The winner can be inferred from the visible statement (White victorious) and supported by the crosstable showing Reini 1–0. The stated number of moves is not explicitly displayed as a move count in the screenshot; only a \"33...\" move number appears in the move list, which does not conclusively confirm the page ‘stated’ move count as 33. Thus, termination/winner are supported; move count is not fully supported by visible evidence.",
+            "discrepancies": "Agent predicted output claims: \"Stated number of moves: 33.\" The screenshot does not show an explicit move-count field; it only shows a move number \"33...\" in the analysis notation, so the claim that the page stated the move count as 33 is not directly confirmed.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 1 (LATEST) explicitly shows “Checkmate • White is victorious,” supporting the termination/victory statement and winner (White). Neither DOM-model state 1 nor state 0 shows an explicit labeled move-count field (e.g., “33 moves”); the agent’s claimed “33” is not evidenced as a displayed move count in the DOM analyses.",
+        "verifier_justification": "Termination/victory statement and winner are supported by the DOM. The stated number of moves is not explicitly displayed in the provided DOM evidence, so the agent’s “33” is unsupported (likely inferred). Deduct proportionally for the missing/unsupported move-count requirement while giving credit for the supported parts.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT contains \"Checkmate • White is victorious\". It also shows a standalone \"1\" near that line, but no explicit \"moves\" label or a clear move-count field is visible in the provided snippet.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nTermination/victory statement is explicitly shown as \"Checkmate • White is victorious\", which supports identifying the winner as \"White\". However, the stated number of moves is not explicitly shown as a labeled move count in the provided DOM evidence; the standalone \"1\" present near the result text is ambiguous and not proven to be the move count.",
+            "discrepancies": "The agent’s earlier reported move count (\"33\") is not supported by any explicit, labeled move-count text in the DOM evidence provided. Winner as \"White\" is supported; move count is not.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes \"Checkmate • White is victorious\". It also shows a result line \"1\" and in the embedded PGN header text shows \"[Result \\\"1-0\\\"]\" (note: constraint says not to use PGN for inference, but the termination line itself is directly visible outside the header too). The move list area shows moves but no explicit \"X moves\" count text is visible in the provided DOM excerpt.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nTermination/victory statement is explicitly shown as \"Checkmate • White is victorious\", which supports winner = White. However, the stated number of moves is not explicitly shown anywhere in the provided DOM evidence (no visible \"33 moves\" or similar), so that specific field is not supported by this DOM snapshot.",
+            "discrepancies": "Agent’s predicted output claimed \"Stated number of moves: 33\", but the DOM evidence provided does not display any explicit move-count label/number of moves statement.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Respect constraints and stopping condition",
+      "description": "Do not sign in, challenge players, or post in discussion. Do not download or infer from PGN/API; use only what is displayed on the page. Stop once all requested game-summary and player fields have been recorded (no unnecessary extra browsing). Full credit if all constraints are respected; partial credit for minor extra navigation that does not violate constraints; no credit if prohibited actions/data sources are used.",
+      "max_points": 5,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Action history shows only opening the game page and a scroll. Screenshot analyses show the user is not signed in (SIGN IN/REGISTER visible) and chat indicates sign-in required; no evidence of challenging, posting, or PGN/API usage. The agent output claims data came from the public page, but (per Criterion 3) the explicit move-count claim is not visually supported.",
+        "verifier_justification": "Constraints about not signing in/challenging/posting appear respected, and browsing stayed on the game page. However, because the agent reported at least one unsupported ‘displayed’ field (explicit move count), that creates some risk of noncompliance with “report displayed summary only / do not infer,” even though no direct evidence of PGN/API use exists. Apply a small penalty rather than large, since most fields are clearly from the page and no prohibited actions are evidenced.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Top-right shows “SIGN IN” and “REGISTER”, indicating the user is not signed in. No chat message is shown; left side says “Sign in to chat”. No evidence of posting or challenging is visible. The page shows standard analysis UI with move list on the right and game summary on the left.",
+            "criterion_analysis": "The screenshot supports that the agent did not sign in or use chat. There is no visible indication of PGN download/API usage; the agent’s predicted output claims they used only the public game page display. The stopping condition can’t be fully verified from a single screenshot, but there’s no evidence of prohibited actions.",
+            "discrepancies": "The agent states they stopped after recording all fields, but from screenshot evidence alone the move count is not visible; thus, if they reported “33” it likely came from somewhere not shown in this screenshot (or another part of the page not captured). No direct evidence of constraint violations is visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a lichess analysis view with the board, an analysis panel, and a chat area on the left that includes \"Spectator room\" and a \"Sign in to chat\" prompt. There is no visible CAPTCHA, no sign-in completion, no challenge dialog, and no discussion post UI being used. No PGN download dialog or API output is shown.",
+            "criterion_analysis": "Nothing in the screenshot indicates prohibited actions (signing in, challenging, posting). The view appears to be on the game/analysis page, consistent with using on-page displayed information. However, the agent’s predicted output includes ratings and a move count that are not clearly displayed in this screenshot, raising a concern that some details may have been obtained from elsewhere (or at least are not demonstrably from the visible page content here). Still, there is no direct visual evidence of PGN download/API usage or extra browsing in the screenshot.",
+            "discrepancies": "No discrepancy about prohibited actions is visible. Potential mismatch: the agent reports specific ratings and an explicit move count that are not shown in this screenshot, which makes it unclear whether they strictly used only visibly displayed fields (though this cannot be proven from the screenshot).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Action history shows only a scroll action. DOM-model state 1 (LATEST) shows the public page with sign-in prompts (chat disabled) and PGN download options present, but no evidence of clicking sign-in, challenging, posting, or downloading. However, the agent output includes a move count not supported as displayed, creating some risk of inference beyond the displayed summary.",
+        "verifier_justification": "No evidence of prohibited actions (sign-in/challenge/post) or navigation off the public game page. The agent did, however, report an unsupported move count, which conflicts with the constraint to report only the displayed game summary (not PGN-derived/inferred). Apply a modest deduction for this constraint-related issue while keeping most credit for otherwise respecting constraints and stopping promptly.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows a disabled chat input \"Sign in to chat\" (disabled=true) and shows no evidence of sign-in, challenging, posting, or other interactions beyond scrolling. It also includes \"PGN Download annotated\" / \"Download raw\" text in the page content area, indicating export options exist on the page, but no DOM evidence of clicking them. Action history shows only: scroll({\"pixels\": 800}).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nConstraints appear respected in the recorded interaction: only a scroll action is taken; there is no DOM evidence of signing in, challenging players, posting in discussion, or downloading/using PGN/API. The stopping condition (stop after recording all requested fields) cannot be fully verified from DOM alone, but the interaction history shows no extra navigation beyond a single scroll.",
+            "discrepancies": "None evidenced (no prohibited actions shown). Note: while PGN export controls/text are present, there is no evidence they were used.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows share/export options including \"PGN Download annotated\" and also includes a large inline PGN header block in VISIBLE CONTENT. Action history shows only Action 1: scroll({\"pixels\": 800}). There is a disabled chat input \"Sign in to chat\" and links \"Sign in\"/\"Register\" are present; no evidence of clicking them.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe action history evidences only scrolling and no prohibited interactions (no sign-in, no challenge, no posting). However, the DOM snapshot contains inline PGN header text; while its mere presence does not prove the agent downloaded a PGN, it also prevents confirming that no PGN-derived inference was used for fields not otherwise displayed (notably the move count, which lacks DOM support). Stopping condition compliance is partially supported because the agent produced a final summary, but one requested field (stated move count) is not evidenced from the page UI in the DOM provided.",
+            "discrepancies": "Predicted output included a move count not supported by the visible DOM; this raises a constraint risk (possible inference beyond displayed UI), though the DOM alone cannot prove the source.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

@@ -1,0 +1,451 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_099-consumer-product-recall-inspection-20260914T093848Z",
+  "run_id": "20260914T_task99_rerun_data_new",
+  "rubric_sha256": "f525c5189c79ff820071b6074d55eef71ded39a4ffa09746ef1f5c23d9f8a218",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Retrieve the recall object from the specified CPSC endpoint (RecallID=10000)",
+      "description": "Use only the recall object returned by https://www.saferproducts.gov/RestWebServices/Recall?RecallID=10000&format=json (or the equivalent supplied endpoint for RecallID=10000). Full credit if the agent clearly bases the response on that returned object OR clearly reports that the endpoint could not be accessed/returned no data (e.g., network error, non-JSON/empty response) without fabricating fields. Partial credit if the agent’s sourcing is unclear but content appears consistent with the endpoint. No credit if the agent primarily uses other sources/other recall IDs or fabricates content.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 show a JSON recall object with top-level field \"RecallID\": 10000, consistent with the specified endpoint response structure. Action history indicates interaction with a JSON viewer (pretty-print toggle). Latest relevant: Screenshot 2 still shows RecallID 10000.",
+        "verifier_justification": "Visual evidence supports that the agent was viewing the recall object for RecallID=10000 from the saferproducts REST service (even though the URL bar is not visible). This satisfies the criterion.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a page with a checked/unchecked UI option labeled “Pretty-print” at the top left and a JSON response displayed below. In the JSON, the first object begins with fields including \"RecallID\":10000 and includes other recall fields such as \"RecallNumber\":\"24299\". The JSON appears to be the output of a CPSC/saferproducts REST endpoint, but the browser address bar/URL is not visible in this screenshot.",
+            "criterion_analysis": "The visible JSON includes \"RecallID\":10000, strongly indicating the recall object for RecallID=10000 has been retrieved and is being used. Even though the exact URL is not visible, the content matches the expected recall object structure and includes RecallID 10000, which supports full credit.",
+            "discrepancies": "No direct discrepancy visible regarding use of RecallID=10000. However, the screenshot does not show the endpoint URL, so sourcing is supported by the JSON content rather than explicit URL evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a JSON response view with a checked “Pretty-print” checkbox at top-left. In the JSON, the first object includes fields like \"RecallID\": 10000, \"RecallNumber\": \"24299\", \"RecallDate\": \"2024-07-11T00:00:00\", and \"Title\": \"Claire's and Icing Stores Recalls Halloween Witch Hats Due to Burn Hazard and Violation of Federal Flammability Requirement\". The screenshot does not visibly show the browser address bar/URL, but it does show the recall object content for RecallID 10000.",
+            "criterion_analysis": "The visible JSON content corresponds to a recall object with RecallID 10000, consistent with the specified CPSC endpoint output. Even though the URL is not visible, the on-screen object clearly is the recall object for RecallID=10000. This supports that the agent used the correct recall object.",
+            "discrepancies": "No direct discrepancy with the screenshot regarding the recall object content; the main limitation is that the endpoint URL itself is not visible in the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest DOM-model state is 1 (chronologically later than state 0). State 1 URL is `https://www.saferproducts.gov/RestWebServices/Recall?RecallID=10000&format=json` and visible content shows a JSON array containing an object with `\"RecallID\": 10000`.\nAction history also indicates interaction on the same endpoint page (toggled “Pretty-print”).",
+        "verifier_justification": "The DOM explicitly shows the correct endpoint response for RecallID=10000 in the browser. This meets the criterion for retrieving/using the recall object from the specified endpoint, so the baseline partial credit should be raised to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL \"https://www.saferproducts.gov/RestWebServices/Recall?RecallID=10000&format=json\" and visible JSON beginning with \"[ { \\\"RecallID\\\": 10000, ... } ]\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the browser at the specified CPSC endpoint for RecallID=10000 and displays a JSON array containing a recall object with \"RecallID\": 10000.",
+            "discrepancies": "No discrepancy between the required endpoint/recall ID and the DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL `https://www.saferproducts.gov/RestWebServices/Recall?RecallID=10000&format=json` and VISIBLE CONTENT includes a JSON array with an object beginning `{\"RecallID\":10000,\"RecallNumber\":\"24299\",\"RecallDate\":\"2024-07-11T00:00:00\",...}`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the recall object returned by the specified CPSC endpoint for RecallID=10000 in JSON form, so the task’s required source is present and identifiable in the DOM evidence.",
+            "discrepancies": "No discrepancies for criterion 0; the endpoint and RecallID match the task.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report recall identifiers and core fields (RecallID, RecallNumber, RecallDate, Title)",
+      "description": "Report RecallID, RecallNumber, RecallDate, and Title exactly as returned in the recall object. Full credit if all four are present and exact OR if the agent explicitly states which of these fields are missing/not present in the returned object (or that the object could not be retrieved) and does not invent values. Partial credit if one field is missing or has minor transcription errors when the fields are present. No credit if multiple are incorrect/fabricated.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 both visibly contain the requested top-level fields: \"RecallID\": 10000, \"RecallNumber\": \"24299\", \"RecallDate\": \"2024-07-11T00:00:00\", and the full \"Title\" string. Latest: Screenshot 2 confirms the same values.",
+        "verifier_justification": "Agent output matches the visible values exactly (minor difference: quotes around RecallNumber in JSON vs not in output is a nitpick). Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Within the JSON shown, the following fields are visible: \"RecallID\":10000, \"RecallNumber\":\"24299\", \"RecallDate\":\"2024-07-11T00:00:00\", and \"Title\":\"Claire's and Icing Stores Recalls Halloween Witch Hats Due to Burn Hazard and Violation of Federal Flammability Requirement\".",
+            "criterion_analysis": "The agent’s predicted output lists RecallID 10000, RecallNumber 24299, RecallDate 2024-07-11T00:00:00, and the exact Title text. These match what is visible in the screenshot, so this criterion is fully satisfied.",
+            "discrepancies": "None; the identifiers and title in the predicted output match the screenshot text.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Within the displayed JSON, the following fields are visible: \"RecallID\": 10000, \"RecallNumber\": \"24299\", \"RecallDate\": \"2024-07-11T00:00:00\", and \"Title\": \"Claire's and Icing Stores Recalls Halloween Witch Hats Due to Burn Hazard and Violation of Federal Flammability Requirement\".",
+            "criterion_analysis": "The agent’s predicted output includes these four fields and matches what is visible in the screenshot (including the RecallDate timestamp format and the Title wording).",
+            "discrepancies": "Agent output shows RecallNumber without quotes (24299) while the JSON shows \"RecallNumber\": \"24299\"; this is a formatting difference, but the value itself matches. Otherwise none.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest state 1 shows top-level fields: `RecallID`: 10000, `RecallNumber`: \"24299\", `RecallDate`: \"2024-07-11T00:00:00\", and `Title`: \"Claire's and Icing Stores Recalls Halloween Witch Hats Due to Burn Hazard and Violation of Federal Flammability Requirement\". State 0 shows the same fields/values.",
+        "verifier_justification": "Agent output reports all four required fields and they match the DOM exactly. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 JSON includes: \"RecallID\": 10000, \"RecallNumber\": \"24299\", \"RecallDate\": \"2024-07-11T00:00:00\", \"Title\": \"Claire's and Icing Stores Recalls Halloween Witch Hats Due to Burn Hazard and Violation of Federal Flammability Requirement\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll four requested core fields (RecallID, RecallNumber, RecallDate, Title) are present in the DOM JSON and match the agent predicted output values.",
+            "discrepancies": "No discrepancies found for RecallID/RecallNumber/RecallDate/Title vs DOM.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 JSON includes `\"RecallID\":10000`, `\"RecallNumber\":\"24299\"`, `\"RecallDate\":\"2024-07-11T00:00:00\"`, and `\"Title\":\"Claire's and Icing Stores Recalls Halloween Witch Hats Due to Burn Hazard and Violation of Federal Flammability Requirement\"`. Agent predicted output lists the same four fields with these values.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll four required core fields (RecallID, RecallNumber, RecallDate, Title) are explicitly present in the DOM JSON and are transcribed in the agent’s predicted output exactly as shown.",
+            "discrepancies": "None observed for these four fields.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report all Products entries (Name and NumberOfUnits for each product)",
+      "description": "From the explicitly named Products array in the returned recall object, report every product's Name and NumberOfUnits. Full credit if all product objects are included with both fields exact OR if Products is empty/missing in the returned object and the agent explicitly reports that (without substituting from other text fields). Partial credit if some but not all products are included (when multiple exist) or one of the two fields per product is missing. No credit if products are substituted from Description/other fields or fabricated.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 show the \"Products\" array with a single object: \"Name\": \"Halloween Witch Hats\" and \"NumberOfUnits\": \"About 5,700 (In addition, about 450 were sold in Canada)\". Latest: Screenshot 2 confirms the same.",
+        "verifier_justification": "Agent output lists the product entry with both requested fields, matching wording/punctuation and quantity as shown. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON contains a \"Products\" array showing an object with \"Name\":\"Halloween Witch Hats\" and \"NumberOfUnits\":\"About 5,700 (In addition, about 450 were sold in Canada)\".",
+            "criterion_analysis": "The predicted output includes the product Name and NumberOfUnits exactly as shown in the Products array in the screenshot. Only one product entry is visible, and it is reported. Full credit.",
+            "discrepancies": "None; the product fields match exactly.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON shows a \"Products\": [ ... ] array containing an object with \"Name\": \"Halloween Witch Hats\" and \"NumberOfUnits\": \"About 5,700 (In addition, about 450 were sold in Canada)\" (both visible on screen).",
+            "criterion_analysis": "The agent’s predicted output lists one product with Name \"Halloween Witch Hats\" and NumberOfUnits \"About 5,700 (In addition, about 450 were sold in Canada)\", which matches the visible product entry.",
+            "discrepancies": "No discrepancies observed for product Name/NumberOfUnits relative to what is visible.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest state 1 shows `Products`: an array with one object including `Name`: \"Halloween Witch Hats\" and `NumberOfUnits`: \"About 5,700 (In addition, about 450 were sold in Canada)\". State 0 shows the same.",
+        "verifier_justification": "Agent output includes the single product entry with both Name and NumberOfUnits exactly as shown, including parentheses text. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows \"Products\": [ { \"Name\": \"Halloween Witch Hats\", ... \"NumberOfUnits\": \"About 5,700 (In addition, about 450 were sold in Canada)\" } ].",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Products array is present and contains one object. The agent output reports that product's Name and NumberOfUnits exactly as shown in the DOM JSON.",
+            "discrepancies": "No discrepancies for the single Products entry.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 JSON includes `\"Products\":[{\"Name\":\"Halloween Witch Hats\",...\"NumberOfUnits\":\"About 5,700 (In addition, about 450 were sold in Canada)\"}]`. Agent predicted output includes Products with Name `Halloween Witch Hats` and NumberOfUnits `About 5,700 (In addition, about 450 were sold in Canada)`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Products array is present with one product object, and the agent output includes the product Name and NumberOfUnits exactly as shown in the DOM evidence.",
+            "discrepancies": "None for the single product entry.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report all Injuries entries (Name for each)",
+      "description": "From the explicitly named Injuries array, report every Injuries Name exactly as returned. Full credit if all entries are captured OR if Injuries is empty/missing and the agent explicitly reports that (without substituting from Description/ConsumerContact). Partial credit if some entries are omitted when multiple exist or minor transcription errors occur. No credit if injuries are invented or substituted from disallowed fields.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 show the \"Injuries\" array with one object containing \"Name\": \"None reported.\" Latest: Screenshot 2 is consistent.",
+        "verifier_justification": "Agent output reports the injuries name exactly as shown and includes the only visible entry. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON shows an \"Injuries\" array with one object: {\"Name\":\"None reported.\"}.",
+            "criterion_analysis": "The predicted output lists Injuries: Name: None reported. which matches the Injuries array entry shown. Full credit.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON shows an \"Injuries\": [ ... ] array with an object containing \"Name\": \"None reported.\" (visible).",
+            "criterion_analysis": "The agent’s predicted output includes Injuries: Name: \"None reported.\" which matches the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest state 1 shows `Injuries`: [ { `Name`: \"None reported.\" } ]. State 0 shows the same.",
+        "verifier_justification": "Agent output correctly captured the Injuries Name exactly. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows \"Injuries\": [ { \"Name\": \"None reported.\" } ].",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Injuries array is present and contains one entry. The agent output includes the Injuries Name exactly as in the DOM JSON.",
+            "discrepancies": "No discrepancies for Injuries Name.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 JSON includes `\"Injuries\":[{\"Name\":\"None reported.\"}]`. Agent predicted output includes `Injuries: - Name: None reported.`",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Injuries array contains one entry and the agent captured the Injuries Name exactly as returned.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report all Retailers entries (Name for each)",
+      "description": "From the explicitly named Retailers array, report every Retailers Name exactly as returned. Full credit if all entries are captured OR if Retailers is empty/missing and the agent explicitly reports that. Partial credit if some entries are omitted when multiple exist or minor transcription errors occur. No credit if retailer names are invented or substituted from disallowed fields.",
+      "max_points": 1,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshots 1 and 2 show the \"Retailers\" array with one object whose \"Name\" is \"Claire's and Icing stores nationwide from July 2023 through December 2023 for about $15.\" Latest: Screenshot 2 confirms this string.",
+        "verifier_justification": "Agent output reproduces the Retailers Name string exactly as shown. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON shows a \"Retailers\" array with one object whose \"Name\" reads: \"Claire's and Icing stores nationwide from July 2023 through December 2023 for about $15.\".",
+            "criterion_analysis": "The predicted output includes that exact retailer Name string. Since the criterion requests every Retailers Name, and one is visible and captured, full credit.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON shows a \"Retailers\": [ ... ] array. The first retailer object contains \"Name\": \"Claire's and Icing stores nationwide from July 2023 through December 2023 for about $15.\" (visible), and \"CompanyID\": \"\" (also visible).",
+            "criterion_analysis": "The agent’s predicted output includes the Retailers Name exactly as shown in the screenshot. No additional retailer entries are visible in the screenshot portion, so completeness cannot be disproven from this view, but the shown entry is correctly captured.",
+            "discrepancies": "None for the visible retailer entry.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Latest state 1 shows `Retailers`: [ { `Name`: \"Claire's and Icing stores nationwide from July 2023 through December 2023 for about $15.\" } ]. State 0 shows the same.",
+        "verifier_justification": "Agent output matches the single Retailers Name string exactly. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows \"Retailers\": [ { \"Name\": \"Claire's and Icing stores nationwide from July 2023 through December 2023 for about $15.\", \"CompanyID\": \"\" } ].",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Retailers array is present and contains one entry. The agent output includes the Retailers Name exactly as in the DOM JSON.",
+            "discrepancies": "No discrepancies for Retailers Name.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 JSON includes `\"Retailers\":[{\"Name\":\"Claire's and Icing stores nationwide from July 2023 through December 2023 for about $15.\",\"CompanyID\":\"\"}]`. Agent predicted output lists the same Retailers Name string.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Retailers array is present with one retailer Name, and the agent recorded it exactly.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Report all ManufacturerCountries entries (Country for each)",
+      "description": "From the explicitly named ManufacturerCountries array, report every Country value exactly as returned. Full credit if all countries are listed OR if the array is empty/missing and the agent explicitly reports that. Partial credit if one country is missing/altered when multiple exist. No credit if countries are fabricated or sourced from non-array text.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Screenshot 1 explicitly shows a \"ManufacturerCountries\" array containing at least one object with \"Country\": \"China\". (Screenshot 2 section shown does not include this array, but earlier screenshot provides clear evidence it exists and is non-empty.)",
+        "verifier_justification": "Agent output incorrectly states no manufacturer countries listed, contradicting Screenshot 1 which shows \"China\". This is a substantive omission/incorrect extraction, so no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON includes a \"ManufacturerCountries\" array with one object: {\"Country\":\"China\"}.",
+            "criterion_analysis": "The agent’s predicted output claims: \"ManufacturerCountries: - Country: [none listed in ManufacturerCountries array]\". This is contradicted by the screenshot, which clearly shows Country China in the ManufacturerCountries array. No credit.",
+            "discrepancies": "Predicted output says no manufacturer countries listed, but the screenshot shows \"ManufacturerCountries\":[{\"Country\":\"China\"}].",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "ManufacturerCountries is not shown in latest state 1, but it is explicitly shown in earlier state 0 as `ManufacturerCountries`: [ { `Country`: \"China\" } ]. Agent output claims none listed.",
+        "verifier_justification": "Even though the latest DOM snapshot doesn’t display this field, an earlier DOM-model state explicitly shows ManufacturerCountries with Country \"China\". The agent’s statement that none are listed is contradicted by DOM evidence, so the baseline 0/2 remains appropriate.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 JSON includes `\"ManufacturerCountries\":[{\"Country\":\"China\"}]`. Agent predicted output states `ManufacturerCountries: - Country: [none listed in ManufacturerCountries array]`.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe DOM evidence explicitly shows a ManufacturerCountries array containing Country `China`, but the agent output incorrectly reports that none are listed.",
+            "discrepancies": "Agent missed/incorrectly reported ManufacturerCountries. Expected: `China`.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Report all Hazards, Remedies, and RemedyOptions entries (Name/Option for each)",
+      "description": "From the explicitly named Hazards array, report every Hazards Name; from the Remedies array, report every Remedies Name; and from the RemedyOptions array, report every RemedyOptions Option, exactly as returned. Full credit if all entries across all three arrays are included OR if any of these arrays are empty/missing and the agent explicitly reports that for each relevant array (without substituting from Description/ConsumerContact). Partial credit if one of the arrays is incomplete/missing from the response despite being present in the object, or if some entries are omitted when multiple exist. No credit if values are fabricated or substituted from disallowed fields.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Screenshot 1 explicitly shows: Hazards array with one object Name \"The hats violate the federal flammability requirements, posing a risk of burn injuries to consumers.\", Remedies array with one object Name \"Consumers should immediately stop using the recalled hats and return the product to any Claire's or Icing store for a full refund.\", and RemedyOptions array with one object Option \"Refund\".",
+        "verifier_justification": "Agent output states Hazards/Remedies/RemedyOptions are none listed, directly contradicting Screenshot 1 where each array contains an entry. No credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON shows \"Hazards\":[{\"Name\":\"The hats violate the federal flammability requirements, posing a risk of burn injuries to consumers.\",\"HazardType\":\"\"}] and \"Remedies\":[{\"Name\":\"Consumers should immediately stop using the recalled hats and return the product to any Claire's or Icing store for a full refund.\"}] and \"RemedyOptions\":[{\"Option\":\"Refund\"}].",
+            "criterion_analysis": "The predicted output incorrectly states there are no entries listed in Hazards, Remedies, and RemedyOptions. The screenshot clearly shows one entry in each of these arrays with specific text. Therefore, the criterion is not satisfied (no credit).",
+            "discrepancies": "Predicted output reports Hazards/Remedies/RemedyOptions as none listed, but the screenshot shows explicit values for all three arrays (hazard statement, remedy instruction, and option \"Refund\").",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Hazards/Remedies/RemedyOptions are not shown in latest state 1, but they are explicitly shown in earlier state 0 as:\n- `Hazards`: [ { `Name`: \"The hats violate federal flammability requirements, posing a risk of burn injuries to consumers.\" } ]\n- `Remedies`: [ { `Name`: \"Consumers should immediately stop using the recalled hats and return the product to any Claire's or Icing store for a full refund.\" } ]\n- `RemedyOptions`: [ { `Option`: \"Refund\" } ]\nAgent output claims none listed for all three.",
+        "verifier_justification": "Earlier DOM evidence directly shows one entry in each of Hazards, Remedies, and RemedyOptions, so the agent’s claim that none are listed is contradicted. Baseline 0/4 remains correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 JSON includes `\"Hazards\":[{\"Name\":\"The hats violate federal flammability requirements, posing a risk of burn injuries to consumers.\",...}]`, `\"Remedies\":[{\"Name\":\"Consumers should immediately stop using the recalled hats and return the product to any Claire's or Icing store for a full refund.\"}]`, and `\"RemedyOptions\":[{\"Option\":\"Refund\"}]`. Agent predicted output reports Hazards/Remedies/RemedyOptions as `[none listed ...]` for each.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nAll three arrays (Hazards, Remedies, RemedyOptions) are explicitly present in the DOM with one entry each, but the agent output incorrectly states none are listed for each array.",
+            "discrepancies": "Agent missed/incorrectly reported: Hazards Name, Remedies Name, and RemedyOptions Option. Expected hazard name text, remedy name text, and option `Refund` exactly as in DOM.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Adhere to extraction constraints (no substitution; exact transcription; no fabrication)",
+      "description": "Preserve dates, quantities, punctuation, and wording exactly as returned for the fields that are present, and read values only from the explicitly named arrays/fields requested (do not substitute from Description or ConsumerContact). Full credit if the agent maintains exactness for reported fields and does not fabricate; if data is unavailable/empty/missing, the agent should say so rather than guess. Partial credit for minor formatting/transcription deviations that do not change meaning. No credit for clear fabrication or systematic substitution from disallowed fields.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Screenshot 1 shows explicit values for ManufacturerCountries (China), Hazards, Remedies, and RemedyOptions, which the agent output marked as absent. Screenshots 1 and 2 also show several correctly transcribed fields (RecallID/Number/Date/Title; Products; Injuries; Retailers).",
+        "verifier_justification": "Despite correctly transcribing some fields, the agent fabricated/incorrectly asserted absence for multiple arrays that are visibly present with concrete values (ManufacturerCountries/Hazards/Remedies/RemedyOptions). This is a major violation of the extraction constraints (no fabrication; exact extraction), warranting no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot’s JSON includes explicit entries for ManufacturerCountries (\"China\"), Hazards (the flammability/burn injury hazard sentence), Remedies (stop using and return for full refund), and RemedyOptions (\"Refund\").",
+            "criterion_analysis": "The predicted output fabricates absence for several arrays that are visibly present (ManufacturerCountries, Hazards, Remedies, RemedyOptions). While some fields (Recall identifiers, Products, Injuries, Retailers) are transcribed correctly, the incorrect 'none listed' claims violate the 'no fabrication' constraint. This warrants no credit for adherence to extraction constraints.",
+            "discrepancies": "Agent output contradicts visible JSON by claiming multiple arrays have no entries when they do (ManufacturerCountries/Hazards/Remedies/RemedyOptions).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows explicit JSON fields/arrays for RecallID/RecallNumber/RecallDate/Title; Products with Name and NumberOfUnits; Injuries with Name; Retailers with Name. It also shows \"Manufacturers\": [] (empty) and begins \"Distributors\": [ but the content is cut off below. No \"ManufacturerCountries\", \"Hazards\", \"Remedies\", or \"RemedyOptions\" arrays are visible in this screenshot portion.",
+            "criterion_analysis": "For fields visible in the screenshot (Recall identifiers, Products, Injuries, Retailers), the agent’s predicted output appears to preserve wording/punctuation exactly. However, the agent’s predicted output states placeholders like \"[none listed in ManufacturerCountries array]\" and \"[none listed in Hazards array]\" / \"Remedies\" / \"RemedyOptions\". The screenshot does not show those arrays at all, so the claim that they are absent/empty is not verifiable from the provided pixels. This is a potential fabrication risk: the agent should only assert emptiness if the array is visible as empty or confirmed missing. Thus, constraint adherence is only partially supported by the screenshot.",
+            "discrepancies": "The agent claims no entries for ManufacturerCountries/Hazards/Remedies/RemedyOptions, but the screenshot does not display these arrays (so it does not confirm they are empty/missing). The screenshot does show \"Manufacturers\": [] (empty), which the agent did not report (not requested), but it contradicts nothing. Overall discrepancy is about unverifiable assertions of 'none listed' for arrays not shown.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "State 0 explicitly contains requested array values for ManufacturerCountries (China), Hazards Name, Remedies Name, and RemedyOptions Option (Refund), which agent output incorrectly reported as absent. For other fields (identifiers, product, injuries, retailers), states 0 and 1 support that the agent transcribed them exactly.",
+        "verifier_justification": "The agent preserved exact transcription for several fields, but made clear incorrect absence claims for multiple arrays that are present in DOM evidence (ManufacturerCountries, Hazards, Remedies, RemedyOptions). That is a substantive constraint violation (incorrect omission/false 'none listed'), so partial credit is warranted but not full. Baseline 1/3 is appropriate to keep.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows arrays present for Products/Injuries/Retailers, and also shows \"Manufacturers\": [] (empty). The visible DOM snapshot does not show Hazards, Remedies, RemedyOptions, or ManufacturerCountries fields/arrays.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nFor the fields that are visible in the DOM (RecallID/RecallNumber/RecallDate/Title, Products Name/NumberOfUnits, Injuries Name, Retailers Name), the agent transcription appears exact and consistent with the DOM. However, the agent also asserted that \"ManufacturerCountries\" and the arrays \"Hazards\", \"Remedies\", and \"RemedyOptions\" are \"[none listed ...]\" without DOM evidence that those specific arrays exist and are empty/missing. The DOM does show \"Manufacturers\": [] but does not display any \"ManufacturerCountries\" field/array, nor any Hazards/Remedies/RemedyOptions arrays; therefore those 'none listed' claims are not fully supported by the provided DOM evidence.",
+            "discrepancies": "Agent output includes statements about ManufacturerCountries/Hazards/Remedies/RemedyOptions being absent/none listed, but these fields are not shown in the DOM snapshot; absence cannot be concluded from the provided DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 provides exact strings for ManufacturerCountries Country (`China`), Hazards Name, Remedies Name, and RemedyOptions Option (`Refund`). Agent predicted output instead states `[none listed...]` for these arrays, despite the DOM containing explicit values. Other fields (RecallID/RecallNumber/RecallDate/Title; Products Name/NumberOfUnits; Injuries Name; Retailers Name) match the DOM exactly.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent adhered to exact transcription and no-substitution constraints for several fields (core identifiers, product, injuries, retailer), but violated the extraction constraint by asserting absence (`[none listed]`) for ManufacturerCountries, Hazards, Remedies, and RemedyOptions even though those arrays contain explicit entries in the DOM. This is an incorrect omission rather than a permissible 'missing in object' report.",
+            "discrepancies": "Incorrectly reported nonexistence for arrays that are present: ManufacturerCountries (China), Hazards (flammability/burn hazard sentence), Remedies (stop use/return for refund sentence), RemedyOptions (Refund).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

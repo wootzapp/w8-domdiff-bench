@@ -1,0 +1,68 @@
+[
+  {
+    "task_id": "browser_task_098-solar-lunar-ephemeris-20260914T093705Z",
+    "confirmed_task": "Using the supplied USNO response for 2025-06-21 at coordinates 38.9072,-77.0369, report geometry.coordinates; day, month, year, and day_of_week; tz and isdst; curphase and fracillum; every field in closestphase; and every phen/time pair in moondata and sundata in returned order.\n\nStopping condition: Stop after the location, date, timezone/DST values, lunar phase details, closest phase, and all returned Moon and Sun events have been recorded.\n\nConstraints:\n- Use only the supplied USNO response.\n- Preserve geometry coordinate order and every event array's returned order.\n- Keep moondata and sundata separate.\n- Do not convert times, infer a local timezone, or add events not returned by the response.",
+    "website": "https://aa.usno.navy.mil/api/rstt/oneday?date=2025-06-21&coords=38.9072,-77.0369",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Report geometry.coordinates (preserve order)",
+          "description": "Extract and report the exact value of geometry.coordinates from the supplied USNO response, preserving the returned coordinate order (do not swap lat/lon). Full credit if coordinates match exactly and order is preserved. Partial credit if correct numbers but order reversed. If geometry.coordinates is not present in the supplied response, award full credit if the agent clearly states it is missing/unavailable rather than guessing.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report date fields: day, month, year, day_of_week",
+          "description": "Report day, month, year, and day_of_week exactly as given in the supplied USNO response for the requested date. Full credit if all four are present and correct. Partial credit if one field is missing/incorrect while others are correct. If one or more of these fields are not present in the supplied response, award full credit if the agent explicitly notes which are missing/unavailable and does not infer them.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report timezone fields: tz and isdst",
+          "description": "Report tz and isdst exactly as returned by the supplied USNO response. Do not infer a local timezone or convert times. Full credit if both fields are included and correct. Partial credit if one is missing/incorrect. If tz and/or isdst are not present in the supplied response, award full credit if the agent clearly states they are missing/unavailable and does not guess them.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report lunar phase summary: curphase and fracillum",
+          "description": "Report curphase and fracillum exactly as returned. Full credit if both present and correct. Partial credit if one missing/incorrect. If curphase and/or fracillum are not present in the supplied response, award full credit if the agent explicitly notes the missing field(s) and does not infer values.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report every field in closestphase",
+          "description": "Extract and report all fields contained in closestphase from the supplied response, with no omissions and no added/inferred fields. Full credit if complete and exact. Partial credit if one or two fields omitted but remaining correct. If closestphase is absent from the supplied response, award full credit if the agent states it is missing/unavailable (without fabricating content).",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report all Moon events (moondata) as phen/time pairs in returned order",
+          "description": "List every phen/time pair contained in moondata in the exact order returned by the supplied response. Keep moondata separate from sundata, do not add events not present, and do not convert or reinterpret times. Full credit if all pairs are included and in correct order. Partial credit if one pair missing or order incorrect. If moondata is absent/empty in the supplied response, award full credit if the agent reports that and does not add events.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report all Sun events (sundata) as phen/time pairs in returned order",
+          "description": "List every phen/time pair contained in sundata in the exact order returned by the supplied response. Keep sundata separate from moondata, do not add events not present, and do not convert or reinterpret times. Full credit if all pairs are included and in correct order. Partial credit if one pair missing or order incorrect. If sundata is absent/empty in the supplied response, award full credit if the agent reports that and does not add events.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Adhere to task constraints and stopping condition",
+          "description": "The response must use only the supplied USNO response (no external data), preserve coordinate/event orders, keep moondata and sundata separate, avoid time conversions/inferred timezone, and stop after recording only the requested fields. Full credit if the agent complies and, if any required fields are missing from the supplied response, it explicitly notes their absence instead of fabricating. Partial credit if minor extra non-factual content is included but no fabrication/time conversion occurs. No credit if the agent invents data, converts times, infers timezone/DST, adds non-returned events, or violates the stopping condition substantially.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

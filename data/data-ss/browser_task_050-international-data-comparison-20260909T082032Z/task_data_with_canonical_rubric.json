@@ -1,0 +1,61 @@
+[
+  {
+    "task_id": "browser_task_050-international-data-comparison-20260909T082032Z",
+    "confirmed_task": "Using the official World Bank API response for the Population, total indicator covering India, Brazil, and Nigeria from 2020 through 2026, identify the latest year for which all three countries have non-null values. Report that common year, each country’s exact value, and rank the countries from highest to lowest population.\n\nStopping condition: Stop after the latest common non-null year, all three exact population values, and the descending ranking have been recorded.\n\nConstraints:\n- Use only the official API response at the supplied URL.\n- Do not substitute data from the blocked World Bank visual-data page or another source.\n- Treat null as unavailable and do not infer or interpolate missing values.\n- Preserve the full integer values rather than rounding them.",
+    "website": "https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Use only the official World Bank API response at the supplied URL (or clearly report if inaccessible)",
+          "description": "Agent must base all findings strictly on the JSON returned by the provided World Bank API endpoint. Full credit if the agent uses only that API response, OR if it attempts to use the URL and clearly reports that the API is inaccessible/blocked/down (without substituting other sources). Partial credit if the agent uses the API but also references outside sources (e.g., World Bank visual-data pages) even if values are unaffected. No credit if the agent substitutes values from non-API sources or fabricates values not present in the API response.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Identify the latest year (2020–2026) where all three countries have non-null population values (or conclude none exists)",
+          "description": "Agent must scan the API response for India (IND), Brazil (BRA), and Nigeria (NGA) across 2020–2026 and determine the latest year for which all three have non-null values. Full credit if the year is correct and is the latest common non-null year. If no such common year exists in 2020–2026 (because one or more countries are null for every year in that range), full credit if the agent explicitly states that no latest common non-null year exists within 2020–2026 per the API and does not infer/interpolate. Partial credit if the agent finds a common non-null year but not the latest one. No credit if the year includes any null value, is outside 2020–2026, or if the agent infers/interpolates missing data instead of treating null as unavailable.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report exact Population, total value for India in the latest common non-null year (full integer, no rounding)",
+          "description": "If a latest common non-null year exists, provide India's exact integer population value from the API for that year. Full credit if the value matches the API exactly and is not rounded/truncated. Partial credit if the correct year is used but the value is altered by formatting mistakes (e.g., rounding). If no common non-null year exists (as established in the prior criterion), full credit for leaving this blank/omitted and explicitly aligning with the stated unavailability rather than inventing a value. No credit if the value is from a different year, is inferred, or is not an exact integer from the API.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report exact Population, total value for Brazil in the latest common non-null year (full integer, no rounding)",
+          "description": "If a latest common non-null year exists, provide Brazil's exact integer population value from the API for that year. Full credit if the value matches the API exactly and is not rounded/truncated. Partial credit if the correct year is used but the value is altered by formatting mistakes (e.g., rounding). If no common non-null year exists (as established in the prior criterion), full credit for leaving this blank/omitted and explicitly aligning with the stated unavailability rather than inventing a value. No credit if the value is from a different year, is inferred, or is not an exact integer from the API.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report exact Population, total value for Nigeria in the latest common non-null year (full integer, no rounding)",
+          "description": "If a latest common non-null year exists, provide Nigeria's exact integer population value from the API for that year. Full credit if the value matches the API exactly and is not rounded/truncated. Partial credit if the correct year is used but the value is altered by formatting mistakes (e.g., rounding). If no common non-null year exists (as established in the prior criterion), full credit for leaving this blank/omitted and explicitly aligning with the stated unavailability rather than inventing a value. No credit if the value is from a different year, is inferred, or is not an exact integer from the API.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Rank countries from highest to lowest population for that year (or state ranking cannot be produced)",
+          "description": "If a latest common non-null year exists, rank India, Brazil, and Nigeria by population (descending) using the exact values for that year. Full credit if ordering is correct and consistent with the reported integers. If no common non-null year exists, full credit if the agent clearly states the ranking cannot be produced under the task constraints (no inference). Partial credit if ranking is correct but contains minor presentation ambiguity. No credit if ordering contradicts the values or uses values from different years.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Stopping condition respected (stop after required outputs, or after establishing unavailability)",
+          "description": "Agent should stop once it provides the latest common non-null year, the three exact values, and the descending ranking. If it determines earlier that the API is inaccessible or that no latest common non-null year exists within 2020–2026, full credit if it stops after clearly stating that conclusion (without adding inferred values). Partial credit if it includes minor extra non-conflicting context. No credit if it continues and introduces conflicting/irrelevant results or fabricated data.",
+          "max_points": 1,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

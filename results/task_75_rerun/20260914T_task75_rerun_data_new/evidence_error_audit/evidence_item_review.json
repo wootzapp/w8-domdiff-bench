@@ -1,0 +1,369 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_075-collectible-card-rules-20260914T090059Z",
+  "run_id": "20260914T_task75_rerun_data_new",
+  "rubric_sha256": "6f14affeb38c269013e39e45b0490af6aae0f1273b38089a71952b4518441c09",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use only the exact-card Scryfall API response at the provided URL",
+      "description": "Evaluate whether the agent relied exclusively on the JSON returned by the exact-card endpoint (https://api.scryfall.com/cards/named?exact=Black%20Lotus) and did not use other sources, other Scryfall endpoints, or inferred/guessed values. Full credit if all reported fields are clearly attributable to that single response OR if the agent attempts to access the URL and clearly reports an access/blocker (e.g., network error, rate limit, downtime) or that the endpoint returned an error object that prevents extraction. Partial credit if the agent appears to use the right card but also mixes in external knowledge or other endpoints. No credit if the agent uses a different card response or clearly fabricates fields while claiming they came from the URL.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 show a single Scryfall JSON card object for “Black Lotus” (object:\"card\"), including fields like name, mana_cost, type_line, oracle_text, reserved, and legalities. However, neither screenshot shows the browser address bar or explicitly displays the requested exact-card endpoint URL (cards/named?exact=Black%20Lotus). Action history also does not show a navigation to the exact URL—only a scroll action on /cards/named.",
+        "verifier_justification": "Because the exact provided URL is not visually confirmed and the action history does not show opening the full exact-card URL, it’s not provable the agent used only that endpoint. Still, the data clearly comes from a single Scryfall card JSON response for Black Lotus and no other sources/endpoints are evidenced, so partial credit is appropriate rather than full.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a raw JSON response in a browser-like view with a \"Pretty-print\" checkbox at the top. In the JSON, fields include \"name\":\"Black Lotus\", \"scryfall_uri\":\"https://scryfall.com/card/vma/4/black-lotus\", and \"uri\":\"https://api.scryfall.com/cards/bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd\". The content is clearly a single Scryfall card object (\"object\":\"card\").",
+            "criterion_analysis": "The visible JSON indicates the agent is using a Scryfall card JSON response for Black Lotus, consistent with an exact-card lookup. The screenshot supports that the reported fields could be taken from this one response, and there’s no evidence of other sources/endpoints being used in the screenshot.",
+            "discrepancies": "The screenshot does not explicitly show the browser address bar or the exact requested endpoint URL (https://api.scryfall.com/cards/named?exact=Black%20Lotus). It does show a card \"uri\" for a specific card ID, which is consistent with having fetched the exact-card endpoint and receiving this card object, but the exact URL used is not visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a JSON blob in a browser-like view with a visible “Pretty-print” checkbox at top. Within the JSON, fields include `\"name\":\"Black Lotus\"`, `\"scryfall_uri\":\"https://scryfall.com/card/vma/4/black-lotus\"`, and `\"uri\":\"https://api.scryfall.com/cards/bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd\"`. It appears to be a single Scryfall card object response (not a list), but the exact request URL `https://api.scryfall.com/cards/named?exact=Black%20Lotus` is not visibly shown anywhere in the screenshot.",
+            "criterion_analysis": "The content visible is consistent with an exact-card Scryfall API card object for Black Lotus (it clearly contains the card name and the card `uri`). However, because the screenshot does not display the endpoint URL used, the screenshot alone cannot confirm the agent used *only* the exact-card endpoint at the provided URL (cards/named?exact=...). Still, all reported fields in the predicted output are present in the visible JSON and could plausibly come from this single response.",
+            "discrepancies": "Agent claims the source is `https://api.scryfall.com/cards/named?exact=Black%20Lotus`, but the screenshot does not show that URL—only the returned card JSON with `uri` pointing to a specific card ID endpoint.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows the browser at https://api.scryfall.com/cards/named?exact=Black%20Lotus with a single JSON object (\"object\":\"card\") containing the requested fields. It includes \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", \"type_line\":\"Artifact\", \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\", \"reserved\":true, and within \"legalities\" the keys \"vintage\":\"restricted\", \"legacy\":\"banned\", \"commander\":\"banned\". No evidence of other endpoints/sources being used.",
+        "verifier_justification": "The agent’s reported fields are all directly present in the single exact-card JSON response at the provided URL, with no indication of mixing sources or using other endpoints. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browser at URL \"https://api.scryfall.com/cards/named?exact=Black%20Lotus\" and displays a single JSON object beginning with {\"object\":\"card\",...} that includes the queried card fields (e.g., \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", \"type_line\":\"Artifact\", \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\", \"reserved\":true) and the nested \"legalities\" map including \"vintage\":\"restricted\", \"legacy\":\"banned\", and \"commander\":\"banned\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly shows the agent is using the exact-card Scryfall endpoint response at the provided URL. In DOM_MODEL_STATE_INDEX: 1, the URL bar is \"https://api.scryfall.com/cards/named?exact=Black%20Lotus\" and the visible content is the JSON card object containing the exact reported fields: \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", \"type_line\":\"Artifact\", \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\", \"reserved\":true, and within \"legalities\" the format values \"vintage\":\"restricted\", \"legacy\":\"banned\", \"commander\":\"banned\". No other endpoints or external sources are evidenced in the DOM snapshot.",
+            "discrepancies": "No discrepancies between the agent-predicted output fields and the DOM-visible JSON for the specified fields at DOM_MODEL_STATE_INDEX: 1.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL: https://api.scryfall.com/cards/named?exact=Black%20Lotus and the response begins with {\"object\":\"card\", ... \"name\":\"Black Lotus\", ... \"mana_cost\":\"{0}\", ... \"type_line\":\"Artifact\", \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\", ... \"legalities\":{...\"legacy\":\"banned\",...\"vintage\":\"restricted\",...\"commander\":\"banned\"...}, ... \"reserved\":true, ...}.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll recorded fields in the agent predicted output (name, mana_cost, type_line, oracle_text, reserved, and the three specified legalities) appear verbatim within the single JSON response visible at the provided exact-card Scryfall API URL in DOM_MODEL_STATE_INDEX: 0. There is no DOM evidence indicating use of other endpoints or sources beyond this response.",
+            "discrepancies": "No discrepancies between the predicted output fields and the visible JSON for the provided URL.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Record card identity fields: name, mana_cost, type_line",
+      "description": "Report the card's name, mana_cost, and type_line exactly as returned in the response (including braces/mana symbols and punctuation). Full credit if all three are present and exact OR if the agent cannot retrieve/read the response from the provided URL (or it returns an error object) and explicitly states that these fields cannot be extracted under the constraints. Partial credit if 1–2 fields are missing or have minor transcription differences despite successful access to the response. No credit if the fields correspond to a different card or are materially incorrect/fabricated.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 explicitly show: \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", \"type_line\":\"Artifact\".",
+        "verifier_justification": "Agent’s reported identity fields match the visible JSON exactly.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Within the JSON, the following are visible: \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", and \"type_line\":\"Artifact\".",
+            "criterion_analysis": "All three identity fields requested (name, mana_cost, type_line) are present and match the agent’s predicted output exactly, including the mana symbol formatting \"{0}\".",
+            "discrepancies": "No discrepancies between the predicted output and the visible JSON for these fields.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the JSON visible: `\"name\":\"Black Lotus\"`, `\"mana_cost\":\"{0}\"`, and `\"type_line\":\"Artifact\"` are all readable.",
+            "criterion_analysis": "The agent’s predicted output matches the screenshot exactly for identity fields: name is \"Black Lotus\", mana_cost is \"{0}\", and type_line is \"Artifact\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 explicitly shows in the JSON: \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", \"type_line\":\"Artifact\".",
+        "verifier_justification": "Agent output matches these three identity fields exactly (including braces in mana_cost). Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the exact-card JSON at URL https://api.scryfall.com/cards/named?exact=Black%20Lotus. In the visible JSON object: \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", and \"type_line\":\"Artifact\" appear explicitly.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains all three identity fields required by Criterion 1. In DOM_MODEL_STATE_INDEX: 1 (URL: https://api.scryfall.com/cards/named?exact=Black%20Lotus), the JSON includes \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", and \"type_line\":\"Artifact\" exactly as quoted, satisfying exact transcription requirements.",
+            "discrepancies": "No discrepancies for Criterion 1: the agent output matches the DOM evidence for name, mana_cost, and type_line exactly (\"Black Lotus\", \"{0}\", \"Artifact\").",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", and \"type_line\":\"Artifact\" within the visible JSON object.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe predicted output reports identity fields exactly as shown: name \"Black Lotus\", mana_cost \"{0}\", and type_line \"Artifact\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record complete oracle_text",
+      "description": "Report the complete oracle_text exactly as returned, preserving line breaks and mana symbols. Full credit if the entire oracle_text is included with exact wording/symbols OR if the agent cannot retrieve/read the response from the provided URL (or it returns an error object / lacks oracle_text) and explicitly states that oracle_text cannot be extracted under the constraints. Partial credit if oracle_text is present but truncated, paraphrased, or has minor symbol/text errors when the response was accessible. No credit if oracle_text is missing without explanation despite accessible response, or clearly not from the response.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 show \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\"",
+        "verifier_justification": "Agent reproduced the complete oracle_text exactly as shown, preserving the mana symbol and punctuation.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON shows \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\"",
+            "criterion_analysis": "The complete oracle_text is visible and the agent’s predicted output matches the text exactly (including the \"{T}\" symbol and punctuation). No line breaks are shown in the oracle_text in the screenshot, and none are needed here.",
+            "discrepancies": "No discrepancies between the predicted output and the visible oracle_text.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON shows `\"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\"` (single line, with `{T}` and punctuation).",
+            "criterion_analysis": "The oracle_text in the agent’s predicted output matches exactly what is visible in the screenshot, including the mana symbol formatting `{T}` and the wording.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\" as a single string in the JSON.",
+        "verifier_justification": "Agent output reproduces oracle_text exactly as shown in the DOM evidence (including \"{T}\" and punctuation). The baseline deduction rationale (wording mismatch) is not supported by the DOM; therefore award full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the Scryfall exact-card JSON at URL https://api.scryfall.com/cards/named?exact=Black%20Lotus. In the visible JSON, the field appears explicitly as: \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\"",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM model explicitly contains the complete oracle_text value for the exact-card response. In DOM_MODEL_STATE_INDEX 1 at https://api.scryfall.com/cards/named?exact=Black%20Lotus, the JSON includes \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\" This matches the agent’s reported oracle_text exactly, including the mana symbol formatting \"{T}\" and punctuation, and there are no line breaks indicated in the response for this field.",
+            "discrepancies": "None for oracle_text: the agent output \"{T}, Sacrifice this artifact: Add three mana of any one color.\" and DOM_MODEL_STATE_INDEX 1 shows \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\"",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\"",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe predicted output’s oracle_text matches the complete oracle_text string visible in the response, including the {T} symbol and punctuation. The DOM shows oracle_text as a single line, and the output preserves it exactly.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record reserved flag",
+      "description": "Report the boolean reserved flag exactly as returned (true/false). Full credit if correct and exact boolean string OR if the agent cannot retrieve/read the response from the provided URL (or it returns an error object / lacks the field) and explicitly states the reserved flag cannot be extracted under the constraints. Partial credit if reserved is reported but not as a boolean (e.g., 'Yes') when the response was accessible. No credit if missing without explanation despite accessible response, or wrong/fabricated value.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 show the boolean field \"reserved\":true.",
+        "verifier_justification": "Agent reported reserved as true, matching the JSON boolean.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON includes the field \"reserved\":true (visible near other booleans like \"foil\":false and \"promo\":false).",
+            "criterion_analysis": "The reserved flag is visible and is the boolean true, matching the agent’s predicted output exactly.",
+            "discrepancies": "No discrepancies for the reserved flag.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON includes `\"reserved\":true` (visible near other boolean fields like `\"foil\":false`, etc.).",
+            "criterion_analysis": "Agent reported `reserved: true`, which matches the visible boolean value exactly.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows the boolean field \"reserved\":true in the JSON.",
+        "verifier_justification": "Agent reported reserved: true, matching the JSON boolean exactly. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the Scryfall exact-card JSON at URL https://api.scryfall.com/cards/named?exact=Black%20Lotus. In the visible JSON, the field appears explicitly as: \"reserved\":true (near the legalities object and games array).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe criterion asks to report the boolean reserved flag exactly as returned. In DOM_MODEL_STATE_INDEX 1, the response explicitly contains the reserved flag with a boolean value: \"reserved\":true. This directly supports the agent’s reported reserved value (true) with exact matching boolean string.",
+            "discrepancies": "No discrepancy for the reserved flag: agent output reserved: true matches DOM evidence \"reserved\":true.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes the field \"reserved\":true.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe predicted output reports reserved: true, matching the boolean value in the visible JSON exactly.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Record format legalities: Vintage, Legacy, Commander",
+      "description": "Report legality values only from legalities.vintage, legalities.legacy, and legalities.commander, preserving legality strings exactly as returned (e.g., 'legal', 'restricted', 'banned', 'not_legal'). Full credit if all three are provided and match exactly OR if the agent cannot retrieve/read the response from the provided URL (or it returns an error object / lacks legalities) and explicitly states these legality fields cannot be extracted under the constraints. Partial credit if one is missing or minor string mismatches occur when the response was accessible. No credit if two or more are missing without explanation despite accessible response, or values are clearly incorrect/fabricated, or sourced from elsewhere.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshots 1 and 2 show legalities entries including \"vintage\":\"restricted\", \"legacy\":\"banned\", and \"commander\":\"banned\".",
+        "verifier_justification": "All three reported legality values exactly match the legalities subfields visible in the response; no mismatch to penalize.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "A \"legalities\" object is visible in the JSON. It includes \"vintage\":\"restricted\", \"legacy\":\"banned\", and \"commander\":\"banned\" (alongside other formats like \"standard\":\"not_legal\").",
+            "criterion_analysis": "All three required legality values (legalities.vintage, legalities.legacy, legalities.commander) are present and match the agent’s predicted output exactly, using the correct strings from the legalities object.",
+            "discrepancies": "No discrepancies between predicted output and the visible legalities values.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON shows a `\"legalities\"` object with entries including `\"vintage\":\"restricted\"`, `\"legacy\":\"banned\"`, and `\"commander\":\"banned\"` (these are readable in the legalities list).",
+            "criterion_analysis": "Agent’s predicted output reports Vintage = \"restricted\", Legacy = \"banned\", Commander = \"banned\", and these match exactly the legality strings visible in the screenshot under `legalities`.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows within \"legalities\": \"vintage\":\"restricted\", \"legacy\":\"banned\", \"commander\":\"banned\".",
+        "verifier_justification": "Agent reported the three required legality values from the specified keys and they match exactly. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the Scryfall exact-card JSON at URL https://api.scryfall.com/cards/named?exact=Black%20Lotus. In the visible JSON, the nested object \"legalities\" contains: \"legacy\":\"banned\", \"vintage\":\"restricted\", and \"commander\":\"banned\" (excerpt: ...\"legalities\":{...\"legacy\":\"banned\",...\"vintage\":\"restricted\",...\"commander\":\"banned\",...}).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM model explicitly includes the required format legality fields under the \"legalities\" object for the exact-card response. Specifically, in DOM_MODEL_STATE_INDEX 1 at https://api.scryfall.com/cards/named?exact=Black%20Lotus, the JSON shows legalities.vintage = \"restricted\", legalities.legacy = \"banned\", and legalities.commander = \"banned\", matching the rubric requirement to read only from those three keys and preserve legality strings exactly.",
+            "discrepancies": "No discrepancies for this criterion: the agent-reported values (vintage \"restricted\", legacy \"banned\", commander \"banned\") match the DOM evidence exactly.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes \"legalities\":{...\"legacy\":\"banned\",...\"vintage\":\"restricted\",...\"commander\":\"banned\"...}.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe predicted output reports the three required legality strings taken from the specified paths and matching the JSON exactly: legalities.vintage \"restricted\", legalities.legacy \"banned\", legalities.commander \"banned\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Respect task constraints (no pricing/links; stop after requested fields)",
+      "description": "Do not use pricing fields or follow purchase links, and stop once all requested identity, oracle text, reserved flag, and specified legality fields have been recorded. Full credit if the agent reports only the requested fields (or, if blocked, reports the blocker and stops) and avoids price/purchase-link content. Partial credit if extra unrelated fields are included but constraints are otherwise respected. No credit if pricing fields/purchase links are used or emphasized contrary to constraints, or if the agent continues beyond what is needed.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots show the response contains extra fields like prices and purchase_uris, but the agent’s final answer only lists the requested fields (name, mana_cost, type_line, oracle_text, reserved, and the three legalities).",
+        "verifier_justification": "Constraints are respected: no pricing fields or purchase links used, and the agent stops after providing exactly what was requested.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows many additional fields beyond what was requested, including a \"prices\" object (e.g., \"usd\":null, \"usd_foil\":null) and multiple \"purchase_uris\" links. The agent’s predicted output, however, lists only the requested fields (name, mana_cost, type_line, oracle_text, reserved, and the three legalities).",
+            "criterion_analysis": "Although the underlying JSON contains pricing and purchase links, the agent’s predicted output does not use them and stops after reporting the requested fields. This aligns with the constraints to avoid pricing/purchase links and stop after the requested items.",
+            "discrepancies": "No discrepancy in the agent’s output content; it avoids the pricing/purchase fields even though they are visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot includes many additional fields beyond those requested (e.g., `prices`, `purchase_uris`, `related_uris`). The agent’s predicted output section only lists: name, mana_cost, type_line, oracle_text, reserved, and the three requested legality fields.",
+            "criterion_analysis": "The agent’s predicted output respects constraints: it does not cite pricing fields or purchase links and it stops after the requested fields. Although the screenshot contains pricing/link fields, the agent did not include them in the output.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 1 includes additional forbidden sections like \"prices\" and \"purchase_uris\" in the JSON, but the agent’s predicted output lists only the requested fields (name, mana_cost, type_line, oracle_text, reserved, and the three legalities) and stops.",
+        "verifier_justification": "No pricing fields or purchase links were used/reported, and the response stops after the requested fields. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the Scryfall exact-card JSON at URL https://api.scryfall.com/cards/named?exact=Black%20Lotus. In the visible JSON: \"name\":\"Black Lotus\", \"mana_cost\":\"{0}\", \"type_line\":\"Artifact\", \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\", \"reserved\":true, and \"legalities\": { ... \"legacy\":\"banned\", ... \"vintage\":\"restricted\", ... \"commander\":\"banned\" ... }. The same DOM also contains pricing/purchase fields (e.g., \"prices\":{...\"tix\":\"59.76\"} and \"purchase_uris\":{...}) even though they were not to be used.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent’s final response adheres to the constraint-focused rubric criterion (avoid pricing/purchase links and stop after requested fields). From the predicted output, the agent reports only the requested fields: name, mana_cost, type_line, oracle_text, reserved, and the three specified legality values (vintage/legacy/commander), and does not include any pricing fields or purchase links. DOM_MODEL_STATE_INDEX: 1 confirms the reported values are present in the API response (e.g., \"mana_cost\":\"{0}\", \"oracle_text\":\"{T}, Sacrifice this artifact: Add three mana of any one color.\", \"reserved\":true, and legalities \"vintage\":\"restricted\", \"legacy\":\"banned\", \"commander\":\"banned\"). Although the DOM includes pricing and purchase_uris, the agent did not use them, satisfying the constraint.",
+            "discrepancies": "No discrepancy between the agent-reported requested fields and DOM_MODEL_STATE_INDEX: 1 for those fields. Note: The DOM contains forbidden fields (\"prices\", \"purchase_uris\"), but the agent’s output does not reference them.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 contains many additional fields (e.g., \"prices\", \"purchase_uris\"), but the agent predicted output only lists: name, mana_cost, type_line, oracle_text, reserved, and the three legality fields. The predicted output includes the source URL and does not include any price values or purchase links.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent output respects constraints by (a) not using pricing fields and not following purchase links, and (b) stopping after recording exactly the requested identity, oracle text, reserved flag, and the specified legality fields (no extra unrelated fields are reported).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

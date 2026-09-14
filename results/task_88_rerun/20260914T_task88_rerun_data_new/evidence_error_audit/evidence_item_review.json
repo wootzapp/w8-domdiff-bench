@@ -1,0 +1,363 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_088-television-season-analysis-20260914T091851Z",
+  "run_id": "20260914T_task88_rerun_data_new",
+  "rubric_sha256": "d2fdb96b6054746d69994126190fbfb081d8e7b2a8f1e5d5a29a41f39492c3a2",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Restrict analysis to TVMaze episode list for show 82 and season = 1 only",
+      "description": "Uses only the supplied TVMaze /shows/82/episodes response (as provided in context) and filters strictly to records where season equals 1. Full credit if no later-season episodes or non-supplied sources are used. Partial credit if mostly season 1 is used but one or more later-season records leak into calculations or reporting. No credit if the analysis is based primarily on other sources or seasons.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshots 1 and 2 show the TVMaze JSON episode objects for show 82 with visible records all having \"season\": 1 (episodes numbered 1 through 10). No later-season records are visible in-frame. Action history shows only a wait after starting at /shows/82/episodes.",
+        "verifier_justification": "The agent’s output only uses season 1 data and does not reference later seasons or outside sources. The screenshots support that the visible data used are season=1 records from the supplied endpoint. No evidence contradicts the season=1-only restriction.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a browser view of a JSON array from TVMaze with multiple episode objects. Visible fields include \"id\", \"url\", \"name\", \"season\":1, \"number\", \"type\":\"regular\", \"airdate\", \"airtime\", \"airstamp\", \"runtime\":60, \"rating\":{\"average\":...}, \"image\", and \"summary\". All clearly visible episode objects in the screenshot display \"season\":1 (e.g., entries with ids 4952 through 4961 are visible, each showing \"season\":1). No episode with \"season\":2 (or other season) is visible in the screenshot segment shown.",
+            "criterion_analysis": "The screenshot evidence is consistent with restricting attention to season=1 records from the /shows/82/episodes response: the visible records are all season 1. The agent’s predicted output also only discusses “Season 1” and does not mention later seasons. Based on the screenshot segment, there is no indication the agent used non-season-1 records.",
+            "discrepancies": "No contradiction is visible: the screenshot shows only season 1 records in the portion displayed, matching the agent’s season-1-only framing. However, the screenshot is only a partial view of the full response; it does not prove no later-season records exist below the fold, but it also does not show the agent using them.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a browser view of a JSON response (TVMaze episodes). Visible records include multiple objects with fields like \"id\", \"url\", \"name\", \"season\":1, \"number\", \"airdate\", \"rating\":{\"average\":...}. The visible portion shows episodes with season set to 1 and numbers 1 through 10 (e.g., \"name\":\"Winter is Coming\", \"season\":1, \"number\":1; later \"name\":\"Fire and Blood\", \"season\":1, \"number\":10). No episodes with season other than 1 are visible in the screenshot portion.",
+            "criterion_analysis": "The agent’s predicted output states it used only season 1 records from the supplied /shows/82/episodes list. The screenshot evidence (visible JSON objects all showing \"season\":1) is consistent with restricting to season 1 and using the supplied TVMaze episode list. There is no visible leakage of later seasons in what’s shown.",
+            "discrepancies": "No contradiction visible: the screenshot shows season=1 episodes in the JSON, aligning with the agent’s season-1-only framing. However, the screenshot only shows a portion of the response, so it cannot prove that the agent never referenced non-visible later-season records; it only supports that season 1 data is present and used.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest relevant evidence: DOM_MODEL_STATE_INDEX 1 shows the response at https://api.tvmaze.com/shows/82/episodes as a JSON array where every visible episode object has \"season\": 1 (numbers 1–10). The agent output references only season-1 episodes and does not use later-season records or other sources. DOM evidence analyses for criterion 0 in states 0 and 1 both mark this as SUPPORTED.",
+        "verifier_justification": "The agent’s reported data is confined to records with season=1 from the supplied TVMaze episode list for show 82, consistent with the DOM evidence (all visible records are season 1). No leakage of later seasons or external sources is present.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browser at URL https://api.tvmaze.com/shows/82/episodes with a visible JSON array of episode objects. Every visible object has \"season\":1 and includes fields used in the agent’s report: e.g., id 4952 has \"season\":1,\"number\":1,\"name\":\"Winter is Coming\",\"airdate\":\"2011-04-17\",\"rating\":{\"average\":8.2}; id 4961 has \"season\":1,\"number\":10,\"name\":\"Fire and Blood\",\"airdate\":\"2011-06-19\",\"rating\":{\"average\":8.9}. The snapshot lists ten consecutive season-1 records with numbers 1 through 10 (ids 4952–4961), and no season != 1 records are shown in the visible content.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence supports that the agent restricted to the supplied TVMaze /shows/82/episodes response and (within what is shown) used only records where \"season\": 1. In DOM_MODEL_STATE_INDEX:1, all visible episode objects explicitly contain \"season\":1 (for ids 4952 through 4961). The agent’s reported first and last season-1 episodes (\"Winter is Coming\" number 1 airdate 2011-04-17; \"Fire and Blood\" number 10 airdate 2011-06-19) match the corresponding season-1 objects in the DOM. The agent’s highest-rating ties (\"Baelor\" and \"Fire and Blood\" at rating.average 8.9) are also season-1 objects in the DOM (id 4960 and 4961). No later-season episodes are referenced in the agent output, and none are needed beyond the season-1 objects shown.",
+            "discrepancies": "No discrepancies with criterion 0 are evidenced: the DOM shows only season=1 records in the visible snapshot, and the agent output references only season 1 episodes (numbers 1–10) from that response.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the URL https://api.tvmaze.com/shows/82/episodes returning a JSON array whose visible items are all season=1 episodes numbered 1 through 10. Each record explicitly includes fields \"season\":1, \"number\":<1-10>, \"name\", \"airdate\", and \"rating\":{\"average\":...}. Examples from the visible content include: {\"name\":\"Winter is Coming\",\"season\":1,\"number\":1,\"airdate\":\"2011-04-17\",\"rating\":{\"average\":8.2}} and {\"name\":\"Fire and Blood\",\"season\":1,\"number\":10,\"airdate\":\"2011-06-19\",\"rating\":{\"average\":8.9}}. The list also includes season 1 episodes 2-9, all with \"season\":1, culminating with {\"name\":\"Baelor\",\"season\":1,\"number\":9,\"airdate\":\"2011-06-12\",\"rating\":{\"average\":8.9}}.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent’s reported results are derived solely from records with \"season\": 1 in the supplied TVMaze response. DOM_MODEL_STATE_INDEX: 0 contains exactly the season 1 episodes (\"season\":1) with within-season \"number\" 1 through 10, matching the agent’s season-1 count of 10 and boundary episodes: first episode is explicitly \"name\":\"Winter is Coming\",\"season\":1,\"number\":1,\"airdate\":\"2011-04-17\" and final episode is explicitly \"name\":\"Fire and Blood\",\"season\":1,\"number\":10,\"airdate\":\"2011-06-19\". For highest rating ties, the DOM shows the maximum non-null \"rating\":{\"average\":8.9} appearing on two season-1 records: episode 9 (\"name\":\"Baelor\",\"number\":9,\"airdate\":\"2011-06-12\",\"rating\":{\"average\":8.9}) and episode 10 (\"name\":\"Fire and Blood\",\"number\":10,\"airdate\":\"2011-06-19\",\"rating\":{\"average\":8.9}). No later-season episodes appear in the visible JSON, and the agent’s reported episodes are all among these season=1 records.",
+            "discrepancies": "No discrepancies with the rubric criterion are evidenced: the DOM evidence provided (DOM_MODEL_STATE_INDEX: 0) only shows season=1 records, and the agent’s outputs reference only those season=1 episodes and their fields.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report correct season-1 episode count",
+      "description": "Counts the number of episode records with season = 1 and reports that count. Full credit for an accurate count based on the filtered season-1 records. Partial credit if a counting method is described but the final number is off by a small margin due to an obvious mistake (e.g., off-by-one) while still using season=1 records. No credit if count includes other seasons or is missing entirely.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 display season 1 episodes with within-season numbers 1 through 10, implying 10 season-1 records in the visible set.",
+        "verifier_justification": "The agent reported 10 season-1 episodes, which matches the visible season-1 episode list numbered 1–10. No contrary evidence of additional season-1 episodes is shown.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows season 1 episodes with \"number\" values 1 through 10 visible: number:1 (\"Winter is Coming\"), 2 (\"The Kingsroad\"), 3 (\"Lord Snow\"), 4 (\"Cripples, Bastards, and Broken Things\"), 5 (\"The Wolf and the Lion\"), 6 (\"A Golden Crown\"), 7 (\"You Win or You Die\"), 8 (\"The Pointy End\"), 9 (\"Baelor\"), 10 (\"Fire and Blood\").",
+            "criterion_analysis": "From the visible data, there are 10 season-1 episodes (numbers 1–10). The agent’s predicted output states “10 episodes,” which matches what is visible in the screenshot.",
+            "discrepancies": "None: the predicted count (10) aligns with the visible season 1 episode numbering 1 through 10.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot displays season 1 episodes numbered 1 through 10, including: (1) \"Winter is Coming\" and continuing through (10) \"Fire and Blood\". The visible list includes ten distinct episode objects with \"season\":1 and \"number\":1..10.",
+            "criterion_analysis": "The agent reported a season 1 episode count of 10. This matches the visible season 1 episode objects numbered 1–10 in the screenshot, supporting the correctness of the count.",
+            "discrepancies": "None apparent: the agent’s count (10) matches the visible set (numbers 1–10) shown on screen.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest relevant evidence: DOM_MODEL_STATE_INDEX 1 lists ten season-1 episode objects with within-season \"number\" values 1 through 10. The DOM evidence analyses for criterion 1 indicate exactly 10 season=1 records displayed.",
+        "verifier_justification": "Counting season=1 records in the supplied response yields 10, matching the agent’s season-1 episode count. No adjustment needed.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the URL https://api.tvmaze.com/shows/82/episodes returning a JSON array whose visible portion includes 10 records with \"season\":1 and \"number\" values 1 through 10:\n- \"name\":\"Winter is Coming\",\"season\":1,\"number\":1\n- \"name\":\"The Kingsroad\",\"season\":1,\"number\":2\n- \"name\":\"Lord Snow\",\"season\":1,\"number\":3\n- \"name\":\"Cripples, Bastards, and Broken Things\",\"season\":1,\"number\":4\n- \"name\":\"The Wolf and the Lion\",\"season\":1,\"number\":5\n- \"name\":\"A Golden Crown\",\"season\":1,\"number\":6\n- \"name\":\"You Win or You Die\",\"season\":1,\"number\":7\n- \"name\":\"The Pointy End\",\"season\":1,\"number\":8\n- \"name\":\"Baelor\",\"season\":1,\"number\":9\n- \"name\":\"Fire and Blood\",\"season\":1,\"number\":10",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe predicted output’s season-1 episode count is 10. In DOM_MODEL_STATE_INDEX: 1, there are exactly 10 episode objects displayed with \"season\":1, corresponding to within-season \"number\" values 1 through 10 (inclusive). This directly supports the reported count of 10 based solely on season=1 records shown in the supplied response.",
+            "discrepancies": "No discrepancy for this criterion: the DOM shows 10 season=1 episode records (numbers 1-10), matching the predicted season-1 count of 10.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the URL https://api.tvmaze.com/shows/82/episodes returning a JSON array where the visible season=1 records include ten entries with \"season\":1 and \"number\" values 1 through 10: (1) id 4952 \"name\":\"Winter is Coming\",\"season\":1,\"number\":1; (2) id 4953 \"season\":1,\"number\":2; (3) id 4954 \"season\":1,\"number\":3; (4) id 4955 \"season\":1,\"number\":4; (5) id 4956 \"season\":1,\"number\":5; (6) id 4957 \"season\":1,\"number\":6; (7) id 4958 \"season\":1,\"number\":7; (8) id 4959 \"season\":1,\"number\":8; (9) id 4960 \"season\":1,\"number\":9; (10) id 4961 \"season\":1,\"number\":10. Snapshot is marked truncated=False, so the visible list is complete for what is displayed in this state.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe predicted output reports a season 1 episode count of 10. In DOM_MODEL_STATE_INDEX 0, there are exactly ten episode objects explicitly labeled with \"season\":1 (ids 4952 through 4961) and within-season \"number\" values from 1 to 10, supporting a count of 10 season-1 episodes based on the supplied response and the season=1 filter.",
+            "discrepancies": "None for this criterion (season-1 episode count). The DOM state explicitly contains ten season=1 records, matching the reported count of 10.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report boundary episodes (first and final) for season 1 with required fields",
+      "description": "Identifies the first and final episodes within season 1 (by within-season episode number) and reports for each: name, episode number (the within-season number), and airdate. Full credit if both boundary episodes are correct and all required fields are included. Partial credit if boundaries are correct but one required field is missing for one/both episodes, or if boundaries are chosen incorrectly but still from season 1. No credit if boundary episodes come from other seasons or are not reported.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshots 1 and 2 show episode 1: \"Winter is Coming\" (number 1, airdate 2011-04-17) and episode 10: \"Fire and Blood\" (number 10, airdate 2011-06-19). Screenshot 2 is the latest and is consistent with screenshot 1.",
+        "verifier_justification": "The agent correctly identified the first and final season-1 episodes by within-season number and provided the required fields (name, number, airdate) matching the JSON shown.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The first visible season-1 episode object shows \"name\":\"Winter is Coming\", \"season\":1, \"number\":1, and \"airdate\":\"2011-04-17\". The last visible season-1 episode object shown includes \"name\":\"Fire and Blood\", \"season\":1, \"number\":10, and \"airdate\":\"2011-06-19\".",
+            "criterion_analysis": "The agent’s predicted output identifies the first episode as “Winter is Coming” (number 1, airdate 2011-04-17) and the final episode as “Fire and Blood” (number 10, airdate 2011-06-19). These match the corresponding fields visible in the screenshot.",
+            "discrepancies": "None: boundary episode names, within-season numbers, and airdates match what is displayed in the JSON.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "For the first season-1 episode, the screenshot shows: \"name\":\"Winter is Coming\", \"season\":1, \"number\":1, \"airdate\":\"2011-04-17\". For the final season-1 episode, it shows: \"name\":\"Fire and Blood\", \"season\":1, \"number\":10, \"airdate\":\"2011-06-19\".",
+            "criterion_analysis": "The agent’s predicted output identifies the first episode as \"Winter is Coming\" (number 1, airdate 2011-04-17) and the final as \"Fire and Blood\" (number 10, airdate 2011-06-19). These fields are directly visible in the screenshot and match exactly, so the boundary episode reporting is supported and complete.",
+            "discrepancies": "None: names, within-season numbers, and airdates for the boundary episodes match what is shown in the JSON on screen.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest relevant evidence: DOM_MODEL_STATE_INDEX 1 explicitly shows season 1 episode number 1 as \"name\":\"Winter is Coming\" with \"airdate\":\"2011-04-17\", and season 1 episode number 10 as \"name\":\"Fire and Blood\" with \"airdate\":\"2011-06-19\". The DOM evidence analyses for criterion 2 mark this as SUPPORTED.",
+        "verifier_justification": "The agent correctly identified the first (number=1) and final (number=10) season-1 episodes and included all required fields (name, within-season number, airdate) exactly as shown in the DOM.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the JSON episode list at URL https://api.tvmaze.com/shows/82/episodes. Within the visible content, the first season-1 episode record includes: \"name\":\"Winter is Coming\",\"season\":1,\"number\":1,\"airdate\":\"2011-04-17\". The final season-1 episode record shown includes: \"name\":\"Fire and Blood\",\"season\":1,\"number\":10,\"airdate\":\"2011-06-19\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains both boundary episodes for season 1 (by within-season \"number\"). The first season-1 episode is evidenced by the record with \"season\":1 and \"number\":1, which lists name and airdate as \"name\":\"Winter is Coming\" and \"airdate\":\"2011-04-17\" (DOM_MODEL_STATE_INDEX: 1). The final season-1 episode is evidenced by the record with \"season\":1 and \"number\":10, which lists name and airdate as \"name\":\"Fire and Blood\" and \"airdate\":\"2011-06-19\" (DOM_MODEL_STATE_INDEX: 1). These satisfy the criterion’s required fields (name, within-season episode number, airdate) for both boundary episodes, and both are from season 1.",
+            "discrepancies": "No discrepancies for this criterion: the predicted boundary episodes (Winter is Coming #1, 2011-04-17; Fire and Blood #10, 2011-06-19) match the season-1 records shown in DOM_MODEL_STATE_INDEX: 1.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the JSON episode list at URL https://api.tvmaze.com/shows/82/episodes. Within the visible content, the first season-1 record has \"season\":1 and \"number\":1 with \"name\":\"Winter is Coming\" and \"airdate\":\"2011-04-17\". Also within season 1, the record with \"number\":10 has \"name\":\"Fire and Blood\" and \"airdate\":\"2011-06-19\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe criterion requires identifying the first and final episodes within season 1 by within-season episode number and reporting name, episode number, and airdate.\n\nFrom DOM_MODEL_STATE_INDEX 0:\n- First season-1 episode is explicitly shown as: \"season\":1, \"number\":1, \"name\":\"Winter is Coming\", \"airdate\":\"2011-04-17\".\n- Final season-1 episode is explicitly shown as: \"season\":1, \"number\":10, \"name\":\"Fire and Blood\", \"airdate\":\"2011-06-19\".\n\nThese DOM-backed fields match the agent’s reported boundary episodes (Winter is Coming #1, 2011-04-17; Fire and Blood #10, 2011-06-19).",
+            "discrepancies": "No discrepancies for this criterion: the DOM explicitly contains the required name/number/airdate for the season-1 first (number 1) and final (number 10) episodes, and they match the agent output.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Identify maximum non-null rating.average among season-1 episodes using rating.average for ranking",
+      "description": "Finds the highest displayed (non-null) rating.average among season-1 episodes and uses that value as the maximum for tie selection. Full credit if the maximum is correctly determined and null ratings are excluded from maximum calculation as specified. Partial credit if the agent uses rating.average but mishandles nulls (e.g., treats null as 0 without stating) yet still largely identifies the correct top-rated set. No credit if ranking is based on another field (e.g., overall rating, votes, or summary text) or includes later seasons.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshots 1 and 2 show rating.average values for season 1 episodes; the highest visible value is 8.9 (appearing on episodes 9 and 10). Screenshot 2 (latest) still shows 8.9 for eps 9 and 10 and no higher value.",
+        "verifier_justification": "The agent used rating.average for ranking and correctly identified 8.9 as the maximum non-null season-1 rating.average supported by the screenshots.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Visible rating.average values for season 1 episodes include: ep1 8.2, ep2 8.2, ep3 8.1, ep4 8.2, ep5 8.5, ep6 8.6, ep7 8.8, ep8 8.2, ep9 8.9, ep10 8.9. Each appears as \"rating\":{\"average\":<value>}\" in the visible JSON objects.",
+            "criterion_analysis": "Among the visible non-null rating.average values, the maximum is 8.9 (seen for episodes 9 and 10). The agent’s predicted output states the maximum season-1 rating.average is 8.9, which is supported by the screenshot.",
+            "discrepancies": "No discrepancy: the screenshot shows 8.9 as the highest visible rating.average and the output matches.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows several \"rating\":{\"average\":...} values for season 1 episodes, including: 8.2 (episode 1), 8.2 (episode 2), 8.3 (episode 3), 8.2 (episode 4), 8.5 (episode 5), 8.6 (episode 6), 8.8 (episode 7), 8.2 (episode 8), 8.9 (episode 9 \"Baelor\"), and 8.9 (episode 10 \"Fire and Blood\"). All displayed rating.average values are non-null in the visible portion.",
+            "criterion_analysis": "The agent claims the maximum non-null season-1 rating.average is 8.9. The screenshot supports this: the highest visible rating.average value is 8.9, appearing for episodes 9 and 10, with no higher value shown. The agent also correctly uses rating.average (as shown in the JSON) for ranking.",
+            "discrepancies": "No mismatch: the maximum shown (8.9) aligns with the agent’s stated maximum. The screenshot does not show any null rating.average values, so null-handling is not testable here, but the maximum determination is consistent with visible data.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest relevant evidence: DOM_MODEL_STATE_INDEX 1 shows rating.average values for season-1 episodes, with the highest displayed non-null rating.average being 8.9 (appearing for episodes 9 and 10). Earlier episodes shown have lower values (e.g., 8.8, 8.6, 8.5, 8.2, 8.0). The DOM evidence analyses for criterion 3 mark this as SUPPORTED.",
+        "verifier_justification": "Using rating.average for ranking, the maximum non-null value among the displayed season-1 episodes is 8.9, matching the agent’s stated maximum. No null-handling issue is evidenced in the DOM (ratings are shown as non-null).",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the JSON episode list at URL https://api.tvmaze.com/shows/82/episodes. Within the visible content, all listed records have \"season\":1 and include \"rating\":{\"average\":...}. Notably: episode number 9 has \"name\":\"Baelor\" with \"rating\":{\"average\":8.9} and episode number 10 has \"name\":\"Fire and Blood\" with \"rating\":{\"average\":8.9}. Earlier season-1 episodes shown have lower rating averages (e.g., ep7 \"rating\":{\"average\":8.8}, ep6 8.6, ep5 8.5, ep1 8.2, etc.).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent’s claimed maximum non-null season-1 rating.average (8.9) and the complete set of ties at that maximum are directly supported by DOM state 1. The DOM shows season-1 episode 9 (\"Baelor\") has rating.average 8.9 and season-1 episode 10 (\"Fire and Blood\") has rating.average 8.9, while all other visible season-1 episodes have rating.average values below 8.9 (8.8 or lower). Thus, using rating.average for ranking and including all ties for the maximum non-null value is satisfied by the DOM evidence provided.",
+            "discrepancies": "No discrepancy for this criterion: the DOM explicitly supports that the maximum non-null rating.average among the shown season-1 episodes is 8.9, and that exactly episodes 9 and 10 are tied at 8.9.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the JSON episode list at URL https://api.tvmaze.com/shows/82/episodes, including multiple season=1 records with explicit rating.average values. In the visible content, the season 1 episodes include: (a) id 4960 \"name\":\"Baelor\",\"season\":1,\"number\":9,\"airdate\":\"2011-06-12\",\"rating\":{\"average\":8.9}; and (b) id 4961 \"name\":\"Fire and Blood\",\"season\":1,\"number\":10,\"airdate\":\"2011-06-19\",\"rating\":{\"average\":8.9}. Other season=1 episodes shown have lower rating.average values: e.g., id 4958 \"You Win or You Die\" rating.average 8.8; id 4957 rating.average 8.6; id 4956 rating.average 8.5; several at 8.2 and one at 8.0. No season=1 entry in the visible DOM excerpt shows rating.average higher than 8.9, and the listed maxima are non-null (8.9).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly provides rating.average for each displayed season=1 episode, enabling identification of the maximum non-null rating.average using the correct field. In DOM_MODEL_STATE_INDEX 0, the highest observed non-null rating.average among season=1 entries is 8.9, appearing for \"Baelor\" (season 1, number 9) and \"Fire and Blood\" (season 1, number 10). All other visible season=1 rating.average values are < 8.9 (e.g., 8.8 for \"You Win or You Die\"). This supports the agent’s selection of the maximum value (8.9) and inclusion of all ties at that maximum, without using later-season records or other ranking fields.",
+            "discrepancies": "No discrepancy for this criterion: the DOM shows the maximum season-1 rating.average is 8.9 and that two episodes (\"Baelor\" and \"Fire and Blood\") tie at that value, matching the agent’s reported maximum and ties.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report all season-1 episodes tied for highest rating with required fields (no arbitrary tie-breaking)",
+      "description": "Reports every season-1 episode whose rating.average equals the season-1 maximum (including all ties) and for each provides: name, episode number (within-season), airdate, and rating.average. Full credit if all and only the tied maximum episodes are listed with complete fields. Partial credit if one tied episode is omitted or an extra non-max episode is included, or if one required field is missing for one episode. No credit if ties are broken arbitrarily (listing only one when multiple share the max) or if required fields are not provided.",
+      "max_points": 5,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 5.0,
+        "verifier_evidence": "Screenshots 1 and 2 show two episodes with rating.average = 8.9: episode 9 \"Baelor\" (airdate 2011-06-12) and episode 10 \"Fire and Blood\" (airdate 2011-06-19). No other visible episode shares 8.9 in the latest screenshot.",
+        "verifier_justification": "The agent listed all ties for the maximum rating.average (both eps 9 and 10) and included all required fields (name, within-season number, airdate, rating.average). No missing ties are evidenced in the screenshots.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Two season-1 episodes in the screenshot have \"rating\":{\"average\":8.9}: (1) \"name\":\"Baelor\", \"number\":9, \"airdate\":\"2011-06-12\"; and (2) \"name\":\"Fire and Blood\", \"number\":10, \"airdate\":\"2011-06-19\". No other visible episode shows rating.average 8.9.",
+            "criterion_analysis": "The agent lists both episodes tied at the maximum rating.average=8.9 and includes the required fields (name, within-season episode number, airdate, rating.average) for each. This matches the screenshot evidence and satisfies the “no arbitrary tie-breaking” requirement for the visible data.",
+            "discrepancies": "None: the two tied episodes reported by the agent (Baelor; Fire and Blood) and their numbers/dates/ratings align with the JSON shown.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows two season-1 episodes with \"rating\":{\"average\":8.9}: episode 9 \"name\":\"Baelor\", \"number\":9, \"airdate\":\"2011-06-12\"; and episode 10 \"name\":\"Fire and Blood\", \"number\":10, \"airdate\":\"2011-06-19\". Other season-1 episodes shown have lower averages (e.g., 8.8 for episode 7).",
+            "criterion_analysis": "The agent lists all season-1 episodes tied for the highest rating.average (8.9): \"Baelor\" (ep 9) and \"Fire and Blood\" (ep 10), and includes the required fields (name, episode number, airdate, rating.average). This exactly matches what is visible in the screenshot, and no other episode shown shares 8.9.",
+            "discrepancies": "None: the two tied episodes and their details match the screenshot; no extra non-max episode is included and no max-tied episode is omitted (based on visible season-1 data).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 5.0,
+        "verifier_evidence": "Latest relevant evidence: DOM_MODEL_STATE_INDEX 1 shows exactly two season-1 episodes with rating.average = 8.9: episode 9 \"Baelor\" (airdate 2011-06-12) and episode 10 \"Fire and Blood\" (airdate 2011-06-19). It also shows episode 1 \"Winter is Coming\" has rating.average 8.2 (not 8.9). The DOM evidence analyses for criterion 4 mark the two-episode tie set as SUPPORTED.",
+        "verifier_justification": "The agent listed all and only the episodes tied for the maximum non-null rating.average (8.9) and provided the required fields (name, within-season number, airdate, rating.average) for each. The baseline deduction (omitting episode 1) is not warranted because the DOM shows episode 1 is 8.2 and not tied for the maximum.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the JSON response at URL https://api.tvmaze.com/shows/82/episodes including season 1 episode objects with rating.average values. In the visible content, the season=1 episodes include:\n- {\"name\":\"Baelor\",\"season\":1,\"number\":9,\"airdate\":\"2011-06-12\",\"rating\":{\"average\":8.9}} \n- {\"name\":\"Fire and Blood\",\"season\":1,\"number\":10,\"airdate\":\"2011-06-19\",\"rating\":{\"average\":8.9}}\nOther season 1 episodes in the same DOM excerpt have lower rating.average values (e.g., 8.8, 8.6, 8.5, 8.2, 8.0).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 4 requires listing every season-1 episode tied for the maximum non-null rating.average, with name, within-season episode number, airdate, and rating.average.\n\nFrom DOM_MODEL_STATE_INDEX 1, the maximum displayed season-1 rating.average present in the excerpt is 8.9, appearing for two season 1 episodes: \"Baelor\" (number 9, airdate 2011-06-12) and \"Fire and Blood\" (number 10, airdate 2011-06-19). The agent output lists both episodes (i.e., does not break ties) and includes all required fields for each (name, episode number, airdate, rating.average), matching the DOM values exactly. No additional episode in the shown season-1 list has rating.average=8.9, so the tie set as reported aligns with the DOM evidence.",
+            "discrepancies": "No discrepancies for Criterion 4: the DOM shows two season-1 episodes tied at rating.average 8.9 (\"Baelor\" and \"Fire and Blood\"), and the agent output reports both with matching name/number/airdate/rating.average.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the JSON episode list at URL https://api.tvmaze.com/shows/82/episodes. Within the visible content, season=1 episodes include:\n- {\"name\":\"Baelor\",\"season\":1,\"number\":9,\"airdate\":\"2011-06-12\",\"rating\":{\"average\":8.9}} (id 4960)\n- {\"name\":\"Fire and Blood\",\"season\":1,\"number\":10,\"airdate\":\"2011-06-19\",\"rating\":{\"average\":8.9}} (id 4961)\nOther season 1 ratings shown are lower: e.g., \"You Win or You Die\" has rating.average 8.8 (number 7), and others are 8.6/8.5/8.2/8.0 etc. Thus the maximum non-null rating.average displayed for season 1 is 8.9 and there are two ties at that maximum (episodes 9 and 10).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 4 requires reporting every season-1 episode tied for the highest non-null rating.average, with name, within-season episode number, airdate, and rating.average, and not breaking ties arbitrarily. The DOM (STATE_INDEX 0) explicitly shows season 1 episodes with rating.average values, where the maximum displayed is 8.9 and exactly two season=1 records have that value: \"Baelor\" (number 9, airdate 2011-06-12, rating.average 8.9) and \"Fire and Blood\" (number 10, airdate 2011-06-19, rating.average 8.9). The agent’s predicted output lists both of these episodes and includes all required fields for each, satisfying the tie-handling requirement. No additional season-1 episode in the DOM shares rating.average 8.9, and the output does not include any non-max episodes in the tied-max list.",
+            "discrepancies": "No discrepancies for this criterion: the DOM shows two season-1 episodes tied at the maximum rating.average (8.9)—\"Baelor\" and \"Fire and Blood\"—and the predicted output reports both with name, within-season number, airdate, and rating.average.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Stopping condition adherence (report only requested outputs)",
+      "description": "Stops after reporting: the season-1 count, the first and final season-1 episode details, and all highest-rating tie episode details. Full credit if no extra episodes (e.g., all season-1 episodes, later seasons) or unrequested content (e.g., summaries) are included. Partial credit if minor additional context is provided but does not add extra episodes or violate constraints. No credit if the response continues with additional seasons, full episode listings beyond the requested subsets, or uses summaries despite the constraint.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Agent output includes only: season-1 count, first/final episode details, the maximum rating value, and the tied top-rated episodes; it does not include summaries or other episodes. Screenshots show summaries exist in the JSON but were not used in output.",
+        "verifier_justification": "The response adheres to the stopping condition by ending after reporting exactly the requested items, without extra episode listings or summaries.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The agent’s predicted output (provided in the prompt) contains only: season 1 episode count, first and final episode details, and the maximum rating plus the tied episodes (Baelor and Fire and Blood). The screenshot itself shows additional episode objects and summaries, but that is the data source display, not the agent’s final report.",
+            "criterion_analysis": "The predicted output adheres to the stopping condition: it does not list all episodes, does not include summaries, and does not discuss other seasons. It stops after the requested items (count, boundaries, and highest-rating ties).",
+            "discrepancies": "No discrepancy: although summaries are visible in the screenshot JSON, the agent did not reproduce them in the final output, consistent with the constraint.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The agent’s predicted output (provided in the prompt) contains only: season-1 episode count, first episode details, final episode details, maximum rating value, and the list of episodes tied at that maximum. It does not include summaries or a full list of all episodes beyond what’s required.",
+            "criterion_analysis": "The stopping condition is satisfied by the predicted output: it stops after reporting the season-1 count, boundary episodes, and the highest-rating ties. No later seasons, no additional episode listings, and no summaries are included.",
+            "discrepancies": "No discrepancy: the output content is limited to the requested items; nothing in the screenshot suggests the agent added extra unrequested content.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest relevant evidence: DOM_MODEL_STATE_INDEX 1 provides the full season-1 listing (numbers 1–10) with the fields needed. The agent output includes the season-1 count, the first and final episode details, and the max-rating tie episodes, and does not include extra episode listings, later seasons, or summaries. DOM evidence analyses for criterion 5 mark this as SUPPORTED.",
+        "verifier_justification": "The response adheres to the stopping condition by reporting only the requested subsets (count, boundary episodes, and all max-rating ties) and then stopping, without unrequested extras.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the full JSON array for show 82 episodes including all season=1 records with number, airdate, name, and rating.average fields. Evidence includes:\n- Episode 1 record: \"name\":\"Winter is Coming\",\"season\":1,\"number\":1,\"airdate\":\"2011-04-17\",\"rating\":{\"average\":8.2}\n- Episode 9 record: \"name\":\"Baelor\",\"season\":1,\"number\":9,\"airdate\":\"2011-06-12\",\"rating\":{\"average\":8.9}\n- Episode 10 record: \"name\":\"Fire and Blood\",\"season\":1,\"number\":10,\"airdate\":\"2011-06-19\",\"rating\":{\"average\":8.9}\n- The visible list includes season 1 episodes numbered 1 through 10 (each has \"season\":1 and consecutive \"number\" values 1..10).\nURL evidence: DOM state URL is https://api.tvmaze.com/shows/82/episodes, matching the task context source for the episode list.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe predicted output satisfies the selected rubric criterion (Stopping condition adherence) because it reports only: (1) the season-1 episode count, (2) first and final season-1 episode details, and (3) all season-1 episodes tied for the maximum non-null rating.average, and then stops.\n\nDOM support that these reported subsets are sufficient and complete:\n- Season 1 scope and boundaries are fully represented in DOM_MODEL_STATE_INDEX: 1: episodes with \"season\":1 appear with \"number\":1 through \"number\":10, establishing the first (number=1) and final (number=10) episodes within season 1.\n- The maximum displayed season-1 rating.average in the DOM is 8.9, and exactly two season-1 episodes have that value: episode 9 (\"Baelor\") and episode 10 (\"Fire and Blood\"). The predicted output reports both, fulfilling the “report every tie” requirement while not listing any other episodes.\n- The predicted output does not include summaries, does not list all season-1 episodes beyond the required boundary and highest-rating ties, and does not mention later seasons—consistent with stopping immediately after the requested items.",
+            "discrepancies": "No discrepancies for Criterion 5 are evidenced. The predicted output does not add extra episodes, later seasons, or summaries, and it stops after the requested count/boundaries/highest-rating ties.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the browser at URL https://api.tvmaze.com/shows/82/episodes with an inline JSON array that includes exactly the season=1 episode records numbered 1 through 10, each with name, season, number, airdate, and rating.average. Specifically visible:\n- Season 1, number 1: \"name\":\"Winter is Coming\",\"season\":1,\"number\":1,\"airdate\":\"2011-04-17\",\"rating\":{\"average\":8.2}\n- ...\n- Season 1, number 9: \"name\":\"Baelor\",\"season\":1,\"number\":9,\"airdate\":\"2011-06-12\",\"rating\":{\"average\":8.9}\n- Season 1, number 10: \"name\":\"Fire and Blood\",\"season\":1,\"number\":10,\"airdate\":\"2011-06-19\",\"rating\":{\"average\":8.9}\nNo content from seasons >1 is shown in this DOM snapshot; no additional episode rows beyond season 1 are visible in the provided evidence.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe predicted output adheres to the stopping condition by reporting only: (1) the season-1 episode count, (2) first and final season-1 episode details, and (3) all season-1 episodes tied for highest non-null rating.average—without listing extra episodes, later seasons, or summaries.\n- The DOM evidence (DOM_MODEL_STATE_INDEX: 0) contains season=1 episodes numbered 1 through 10, enabling a season-1 count of 10 and identifying boundaries (number 1 \"Winter is Coming\" and number 10 \"Fire and Blood\").\n- The same DOM evidence shows the maximum season-1 rating.average as 8.9 and that it is shared by exactly two season-1 episodes: number 9 \"Baelor\" (airdate 2011-06-12) and number 10 \"Fire and Blood\" (airdate 2011-06-19). The predicted output reports both ties and stops there.\n- The predicted output does not include later-season episodes or a full season-1 episode listing, and it does not include summaries, matching the required stopping condition scope.",
+            "discrepancies": "No stopping-condition discrepancies are evident: the predicted output stops after providing the season-1 count, first/final episode details, and all highest-rating ties, and does not add extra episodes, later seasons, or summaries.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

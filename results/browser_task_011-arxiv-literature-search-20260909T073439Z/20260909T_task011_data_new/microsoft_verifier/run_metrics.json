@@ -1,0 +1,137 @@
+{
+  "task_id": "browser_task_011-arxiv-literature-search-20260909T073439Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_011-arxiv-literature-search-20260909T073439Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "8154a1385faa60d8797d38cd3790be785d2a99dc77c1de0f22ef29f1e639920b",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 9,
+    "screenshots": 10
+  },
+  "result": {
+    "process_score": 0.25,
+    "total_earned_points": 5.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 128.63
+  },
+  "criteria": [
+    {
+      "criterion": "Use arXiv Advanced Search with required filters (cs.LG, last 30 days, exact-title phrase, newest first)",
+      "action_only_points": 2.0,
+      "final_points": 3.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Compared to the baseline, the screenshots do confirm that exact-phrase title filtering, a 30-day date range using the browser date, and newest-first sorting were successfully applied on the results page. However, the required cs.LG category restriction was not applied (only top-level Computer Science (cs) is in the query summary), so this cannot receive full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report the most recent matching paper (Paper #1) with required metadata",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did not report the actual most recent paper from the newest-first results (it missed/ignored result #1) and also claimed a different arXiv ID/title/author. This is a critical correctness error for this criterion.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report the 2nd most recent matching paper (Paper #2) with required metadata",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Although the screenshot clearly supports what the second-most-recent paper actually is (2609.08663, MoEMB…, Xuanming Cui), the agent did not report that as the second-most-recent item and instead provided an unsupported different paper for slot #2. This is a critical error for the criterion as stated.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report the 3rd most recent matching paper (Paper #3) with required metadata",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "No visual evidence supports the agent’s claimed third-most-recent paper, and the agent also failed to provide the required full title for the purported third paper. With no blocker preventing viewing more results (pagination is visible), this remains an unsubstantiated/fabricated item.",
+      "penalty": false
+    },
+    {
+      "criterion": "Verification checks recorded for each reported paper (category, date window, exact title phrase)",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Verification checks are not correctly recorded/satisfied: (a) category cs.LG is false for the newest visible item; (b) per-paper submission date is not shown for all listed items and two listed items aren’t evidenced at all; (c) two reported titles are missing, so the exact phrase check can’t be verified. Overall, this criterion fails.",
+      "penalty": false
+    },
+    {
+      "criterion": "Stopping condition and constraints compliance (stop after 3; no login; no submissions/modifications)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Constraints (no login, no submission/modification) appear complied with. The agent did stop after three items, satisfying the stopping condition in form (though not in correctness, which is handled by other criteria). Keep full credit here.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 21,
+    "o4-mini": 3,
+    "total": 24,
+    "api_attempts": 24,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 137508,
+      "completion_tokens": 13456,
+      "reasoning_tokens": 0,
+      "total_tokens": 150964
+    },
+    "o4-mini": {
+      "prompt_tokens": 24999,
+      "completion_tokens": 3066,
+      "reasoning_tokens": 1856,
+      "total_tokens": 28065
+    },
+    "combined": {
+      "prompt_tokens": 162507,
+      "completion_tokens": 16522,
+      "reasoning_tokens": 1856,
+      "total_tokens": 179029
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/microsoft_verifier/run.log"
+}

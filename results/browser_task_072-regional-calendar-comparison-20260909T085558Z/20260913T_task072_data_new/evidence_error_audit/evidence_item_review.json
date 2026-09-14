@@ -1,0 +1,764 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_072-regional-calendar-comparison-20260909T085558Z",
+  "run_id": "20260913T_task072_data_new",
+  "rubric_sha256": "231a2296aa6a12b6ac225c3ca067a8b4ec03f032f694482c3b3796132483bfa7",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use only the official GOV.UK bank-holidays JSON response at the supplied URL (or clearly report access failure)",
+      "description": "Full credit if the agent’s reported values are sourced exclusively from https://www.gov.uk/bank-holidays.json, with no mixing of other sources or assumptions. Also award full credit if the agent attempts to use the URL but cannot access/retrieve it due to external issues (site down/blocked/network error) and clearly reports that limitation instead of guessing. Partial credit if GOV.UK JSON is used but mixed with other sources or inferred assumptions. No credit if the agent provides specific dates/bunting that are not supported by the GOV.UK JSON when it was accessible.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          42,
+          18,
+          17,
+          47
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Action History shows only navigation/actions on https://www.gov.uk/bank-holidays.json. Screenshots throughout show a GOV.UK-style pretty-printed JSON response with divisions and events (e.g., Screenshot 1 shows top-level structure; later screenshots show additional years). No screenshots indicate use of any other source or access failure.",
+        "verifier_justification": "Both the authoritative Action History and the screenshots are consistent with the agent using only the official GOV.UK bank-holidays JSON endpoint and not mixing sources. No contradiction or fabrication about source usage is evidenced.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a browser view of the GOV.UK bank holidays JSON (pretty-printed). At the top left it shows the text “Pretty-print” with a checked checkbox. The visible content is JSON with top-level keys including “england-and-wales” and later “scotland”, each containing a “division” field and an “events” array of objects with fields like “title”, “date”, “notes”, and “bunting”. No other sources/pages are visible.",
+            "criterion_analysis": "This screenshot supports that the agent is using the official GOV.UK JSON response (it is clearly a JSON listing for bank holidays with the expected structure and divisions). There’s no visible evidence of other sources being used. However, the screenshot only shows a portion of the JSON and does not itself verify the specific 2026 values the agent later reported.",
+            "discrepancies": "No discrepancy regarding source usage is visible; the screenshot aligns with using the GOV.UK JSON. The screenshot does not confirm whether the agent actually reached/used the 2026 entries when producing the final reported dates.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 42,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON view (a checkbox labeled “Pretty-print” is visible and checked). The visible JSON entries include titles and dates such as “Easter Monday” with date “2027-03-29”, “Early May bank holiday” with date “2027-05-03”, “Spring bank holiday” with date “2027-05-31”, “Battle of the Boyne (Orangemen’s Day)” with date “2027-07-12”, “Summer bank holiday” with date “2027-08-30”, “Christmas Day” with date “2027-12-27” (notes: “Substitute day”), “Boxing Day” with date “2027-12-28” (notes: “Substitute day”), “New Year’s Day” with date “2028-01-03” (notes: “Substitute day”), and the start of “St Patrick’s Day” with date “2028-03-17”. Each entry shows a boolean “bunting” field (true/false) in the visible objects.",
+            "criterion_analysis": "The screenshot supports that the agent is viewing an official bank-holidays JSON-like response with the expected structure (title/date/notes/bunting). However, the screenshot does not show the URL bar nor any explicit indicator that this is specifically https://www.gov.uk/bank-holidays.json, and it does not show any 2026 entries for Scotland or England-and-Wales. Therefore, the agent’s predicted 2026 values are not verifiable from this screenshot and appear unsupported by the visible data (which is for 2027–2028).",
+            "discrepancies": "Agent’s predicted output lists 2026 Scotland (2nd January, Summer bank holiday, St Andrew’s Day) and 2026 England & Wales Summer bank holiday. The screenshot only shows 2027 and 2028 event objects (e.g., 2027-08-30 Summer bank holiday) and no 2026 section/division content. Thus the predicted 2026 dates/bunting values are not supported by what is visible here.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 18,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON page (top-left shows a checked \"Pretty-print\" checkbox). The visible content is a list of objects with fields including \"title\", \"date\", \"notes\", and \"bunting\". Visible 2026 entries include titles like \"2nd January\", \"Good Friday\", \"Early May bank holiday\", \"Spring bank holiday\", \"World Cup bank holiday\", \"Summer bank holiday\", and \"St Andrew’s Day\" with ISO dates and bunting booleans. The browser address bar is not visible, so the URL itself cannot be confirmed from the pixels.",
+            "criterion_analysis": "Partial support. The screenshot content is consistent with the GOV.UK bank-holidays JSON structure (titles/dates/bunting), but because the URL is not visible in the screenshot, it cannot be fully confirmed that the source is exactly https://www.gov.uk/bank-holidays.json. No evidence of mixing other sources is visible.",
+            "discrepancies": "Agent context claims use of the GOV.UK JSON at the supplied URL; the screenshot does not display the URL, so that specific claim is not directly verifiable from the screenshot alone.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 17,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON view (top-left text: “Pretty-print” with a checked box). Visible JSON entries include multiple objects with fields “title”, “date”, “notes”, and “bunting”. The visible events (all shown with 2025 dates) include: \n- “2nd January” with date “2025-01-02” and bunting true.\n- “Good Friday” with date “2025-04-18” and bunting false.\n- “Early May bank holiday” with date “2025-05-05” and bunting true.\n- “Spring bank holiday” with date “2025-05-26” and bunting true.\n- “Summer bank holiday” with date “2025-08-04” and bunting true.\n- “St Andrew’s Day” with date “2025-12-01”, notes “Substitute day”, bunting true.\n- “Christmas Day” with date “2025-12-25” and bunting true.\n- “Boxing Day” with date “2025-12-26” and bunting true.\nAt the bottom, the next object begins with a “title” starting “New Year’s Day” but the rest is cut off. No 2026 dates are visible anywhere in this screenshot, and the screenshot does not visibly show the surrounding division key (e.g., whether this is within “scotland” or “england-and-wales”).",
+            "criterion_analysis": "Criterion 0 is about using only the official GOV.UK JSON at the supplied URL. The screenshot is consistent with the GOV.UK bank-holidays JSON being displayed (pretty-printed JSON with bank holiday event objects). However, the screenshot provides no visual evidence for the agent’s *specific* 2026 values in the predicted output; only 2025 events are visible. Therefore, from this screenshot alone, we can confirm the user is viewing an official-style JSON response, but we cannot verify that the reported 2026 dates/bunting values (or England & Wales 2026 Summer bank holiday date) were actually sourced from the JSON as shown here, because 2026 entries are not visible.",
+            "discrepancies": "The agent’s predicted output reports 2026 Scotland events and a 2026 England-and-Wales date. The screenshot only shows 2025 entries (e.g., “2nd January” = 2025-01-02; “Summer bank holiday” = 2025-08-04; “St Andrew’s Day” = 2025-12-01 substitute day). No 2026 entries are visible, and the screenshot does not show an “england-and-wales” section at all. Thus, the predicted 2026 values are unsupported by the screenshot evidence provided.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 47,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON view (top-left shows the label “Pretty-print” with a checked box). The visible JSON entries are for calendar year 2028 with titles and dates including: “Good Friday” date “2028-04-14” bunting false; “Easter Monday” date “2028-04-17” bunting true; “Early May bank holiday” date “2028-05-01” bunting true; “Spring bank holiday” date “2028-05-29” bunting true; “Battle of the Boyne (Orangemen’s Day)” date “2028-07-12” bunting false; “Summer bank holiday” date “2028-08-28” bunting true; “Christmas Day” date “2028-12-25” bunting true; “Boxing Day” date “2028-12-26” bunting true. No 2026 Scotland or England-and-Wales sections are visible in this screenshot.",
+            "criterion_analysis": "The screenshot confirms the agent is looking at a GOV.UK bank holidays JSON in a browser, but the only visible evidence is 2028 event data and it does not show the 2026 Scotland or England-and-Wales entries the agent reported. Therefore, based on this screenshot alone, the agent’s specific 2026 dates/bunting values are not supported/verified by visible GOV.UK JSON content. There is also no visible access failure message; it’s just not showing the needed year/divisions in-frame.",
+            "discrepancies": "Agent’s predicted output lists 2026 Scotland events (2nd January, Summer bank holiday, St Andrew’s Day) and an England-and-Wales 2026 Summer bank holiday date. The screenshot instead shows 2028 events (including a “Battle of the Boyne (Orangemen’s Day)” which is a NI-related holiday) and does not display any 2026 entries or the scotland/england-and-wales divisions. Thus the predicted output values are not corroborated by what is visible.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          48,
+          47,
+          46,
+          45,
+          44
+        ],
+        "final_points": 1.5,
+        "verifier_evidence": "Latest relevant DOM-model state is 48 (also 44-47). These show the agent is on https://www.gov.uk/bank-holidays.json and viewing a pretty-printed JSON response (england-and-wales division, 2019 events visible). No DOM evidence shows 2026 entries or the scotland division.",
+        "verifier_justification": "The evidence supports that the agent used the official GOV.UK JSON endpoint (correct URL, JSON visible). However, DOM evidence does not substantiate that the specific 2026 values reported were actually retrieved from that response (they are not visible anywhere in the captured DOM). This warrants a deduction from full credit because the agent provided specific facts without DOM support for those facts.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 48,
+            "dom_model_state_idx": 48,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 48\nURL: https://www.gov.uk/bank-holidays.json\nSnapshot visible content (m48:L1-L7): shows the start of a pretty-printed JSON object with the key \"england-and-wales\" and an \"events\" array containing 2019 entries, e.g. { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"bunting\": true }, { \"title\": \"Good Friday\", \"date\": \"2019-04-19\", \"bunting\": false }, { \"title\": \"Easter Monday\", \"date\": \"2019-04-22\", \"bunting\": true }, { \"title\": \"Early May bank holiday\", \"date\": \"2019-05-06\", \"bunting\": true }, { \"title\": \"Spring bank holiday\", \"date\": \"2019-05-27\", \"bunting\": true }.\nNo visible \"scotland\" division is present in the captured DOM excerpt, and no visible calendar year 2026 event entries are shown for either \"scotland\" or \"england-and-wales\" in this snapshot (the visible dates are in 2019).",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 0 asks whether the reported 2026 Scotland and England-and-Wales values are sourced exclusively from the official GOV.UK JSON at the supplied URL. The DOM evidence does confirm the browser was on the correct official URL (https://www.gov.uk/bank-holidays.json) at DOM_MODEL_STATE_INDEX 48. However, the only explicit event data visible in the DOM excerpt is for the \"england-and-wales\" division in 2019 (e.g., \"New Year’s Day\" with date \"2019-01-01\"). The DOM evidence provided does not include any visible 2026 entries nor any visible \"scotland\" division/events, so it cannot support or verify that the agent’s reported 2026 dates and bunting values were actually read from the GOV.UK JSON rather than inferred. Because the necessary 2026/scotland and 2026/summer-bank-holiday records are absent from the provided DOM-model scope, support for exclusive sourcing is unproven rather than contradicted.",
+            "discrepancies": "The agent’s predicted output reports 2026 events (Scotland: \"2nd January\" 2026-01-02 bunting true; \"Summer bank holiday\" 2026-08-03 bunting true; \"St Andrew’s Day\" 2026-11-30 bunting true; and England and Wales \"Summer bank holiday\" 2026-08-31), but DOM_MODEL_STATE_INDEX 48 only shows partial \"england-and-wales\" event data for 2019 and does not show any 2026 entries or any \"scotland\" division. Thus, the DOM evidence cannot substantiate that the reported 2026 values came from the official JSON content visible/available in the DOM snapshot provided.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 47,
+            "dom_model_state_idx": 47,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 47 shows the browser at URL https://www.gov.uk/bank-holidays.json with VISIBLE CONTENT beginning `{ \"england-and-wales\": { \"division\": \"england-and-wales\", \"events\": [ { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"notes\": \"\", \"bunting\": true }, { \"title\": \"Good Friday\", \"date\": \"2019-04-19\", ... } ...` (snapshot is truncated mid-list). No visible content in this DOM excerpt includes any 2026 events, the `scotland` division, or the specific titles “2nd January”, “Summer bank holiday”, or “St Andrew’s Day” for 2026, nor “Summer bank holiday” for England and Wales in 2026.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe criterion requires that the reported dates/bunting values be sourced exclusively from the official GOV.UK JSON at https://www.gov.uk/bank-holidays.json. While the DOM evidence confirms the agent was on the correct official URL (DOM_MODEL_STATE_INDEX: 47) and viewing JSON content, the provided DOM snapshot only shows part of the `england-and-wales` events for 2019 and is truncated before reaching later years. It does not show any 2026 entries and does not show the `scotland` division at all. Therefore, the DOM-model evidence cannot substantiate that the agent’s specific 2026 Scotland (2nd January, Summer bank holiday, St Andrew’s Day) and 2026 England-and-Wales (Summer bank holiday) values were actually read from the official JSON response rather than inferred or obtained elsewhere.",
+            "discrepancies": "Agent predicted output contains specific 2026 dates and bunting values, but DOM_MODEL_STATE_INDEX: 47 only evidences 2019 england-and-wales events and provides no DOM-visible support for any 2026 events or for the scotland division. Thus, the answer’s specific 2026 claims are not evidenced in the provided DOM snapshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 46,
+            "dom_model_state_idx": 46,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 46 shows the agent at URL https://www.gov.uk/bank-holidays.json with visible JSON content beginning \"{ \\\"england-and-wales\\\": { \\\"division\\\": \\\"england-and-wales\\\", \\\"events\\\": [ { \\\"title\\\": \\\"New Year’s Day\\\", \\\"date\\\": \\\"2019-01-01\\\", \\\"notes\\\": \\\"\\\", \\\"bunting\\\": true }, { \\\"title\\\": \\\"Good Friday\\\", \\\"date\\\": \\\"2019-04-19\\\", ...\". This confirms interaction with the official GOV.UK bank-holidays JSON endpoint, but the visible DOM evidence only includes 2019 england-and-wales entries and is truncated mid-line (\"{ \\\"ti\"). No Scotland division or 2026 events are present in the provided DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 0 requires that the reported dates/bunting be sourced exclusively from the official GOV.UK JSON at the supplied URL (or a clearly reported access failure). The DOM evidence (State 46) supports that the agent was using the correct official URL (https://www.gov.uk/bank-holidays.json) and viewing its JSON content. However, the DOM evidence does not show any of the specific 2026 entries the agent reported (Scotland 2nd January, Scotland Summer bank holiday, Scotland St Andrew’s Day, or England-and-Wales Summer bank holiday 2026), nor even the Scotland division at all; it only shows 2019 england-and-wales events and is truncated. Therefore, we can only partially support the criterion: the agent used the official source URL, but the DOM record provided cannot substantiate that the specific reported 2026 values were actually obtained from that source rather than inferred/guessed.",
+            "discrepancies": "Agent reported 2026 Scotland and England-and-Wales dates/bunting, but DOM_MODEL_STATE_INDEX: 46 only evidences england-and-wales events for 2019 and provides no visible 2026 events and no scotland division. Thus the DOM evidence does not support the specific claimed 2026 values, even though it does show the correct GOV.UK JSON endpoint was opened.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 45,
+            "dom_model_state_idx": 45,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 45 shows the agent at URL https://www.gov.uk/bank-holidays.json with visible JSON beginning `{ \"england-and-wales\": { \"division\": \"england-and-wales\", \"events\": [ { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", ... } ...` and the snapshot is truncated mid-entry (`\"ti`). No DOM evidence shows any 2026 entries, any Scotland division, or any of the specific events used in the agent’s reported output.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence confirms the agent accessed the official GOV.UK JSON URL, but the provided DOM snapshot does not contain (or otherwise demonstrate) the 2026 Scotland/England-and-Wales events used to produce the reported dates/bunting values. Therefore it cannot be verified from the DOM-model state that the agent’s specific reported values were sourced exclusively from the official JSON response (as opposed to inferred/guessed).",
+            "discrepancies": "Agent reported multiple 2026 dates/bunting values for Scotland and a 2026 Summer bank holiday date for England and Wales, but the only provided DOM-model evidence shows partial 2019 england-and-wales events and does not show scotland or any 2026 data. Thus sourcing cannot be established from the DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 44,
+            "dom_model_state_idx": 44,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 44 shows the agent is on the official URL `https://www.gov.uk/bank-holidays.json`. The visible JSON content begins with `{ \"england-and-wales\": { \"division\": \"england-and-wales\", \"events\": [ { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"notes\": \"\", \"bunting\": true }, { \"title\": \"Good Friday\", \"date\": \"2019-04-19\", ... } ... ] } }` (snippet truncated in-view at `\"ti`). No Scotland division or any 2026 events are visible in this DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence supports that the agent used the official GOV.UK bank-holidays JSON endpoint because the recorded browser state URL is exactly `https://www.gov.uk/bank-holidays.json` (DOM_MODEL_STATE_INDEX: 44). However, the DOM snapshot only shows a portion of the `england-and-wales` events for 2019 and does not display (a) the `scotland` division, (b) any events for calendar year 2026, or (c) the specific event titles/dates/bunting values the agent reported (Scotland “2nd January”, “Summer bank holiday”, “St Andrew’s Day”; and England-and-Wales “Summer bank holiday” for 2026). Therefore, while use of the official URL is evidenced, exclusive sourcing of the specific reported 2026 values from that JSON is not fully supported by the provided DOM-model state.",
+            "discrepancies": "The agent’s predicted output includes multiple 2026-specific facts (Scotland: dates and bunting for “2nd January”, “Summer bank holiday”, “St Andrew’s Day”; England and Wales: “Summer bank holiday” date). DOM_MODEL_STATE_INDEX: 44 does not show any 2026 entries nor the `scotland` division, so the DOM evidence cannot substantiate those specific values as coming from the official JSON response (even though the URL itself is official).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C1",
+          "evidence_requirement": "Use only the official GOV.UK bank-holidays JSON response at the supplied URL (or clearly report access failure)",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "Use only the official GOV.UK bank-holidays JSON response at the supplied URL (or clearly report access failure)",
+                "locator": "criterion-relevant content visible in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Both the authoritative Action History and the screenshots are consistent with the agent using only the official GOV.UK bank-holidays JSON endpoint and not mixing sources. No contradiction or fabrication about source usage is evidenced.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model48.txt",
+                "line_range": "m48:L7-L7",
+                "quoted_text": "- { \"england-and-wales\": { \"division\": \"england-and-wales\", \"events\": [ { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"notes\": \"\", \"bunting\": true }, { \"title\": \"Good Friday\","
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The evidence supports that the agent used the official GOV.UK JSON endpoint (correct URL, JSON visible). However, DOM evidence does not substantiate that the specific 2026 values reported were actually retrieved from that response (they are not visible anywhere in the captured DOM). This warrants a deduction from full credit because the agent provided specific facts without DOM support for those facts.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Scotland 2026 — report '2nd January' date and bunting",
+      "description": "From the scotland division for calendar year 2026, locate the event whose returned title exactly matches '2nd January' and report its ISO date and boolean bunting exactly as returned. Full credit if title match is exact and both fields are correct. Also award full credit if the agent documents that the GOV.UK JSON was inaccessible or that the scotland/2026 '2nd January' event is not present in the official response (rather than inferring from another year). Partial credit if only date or bunting is correct, or if title matching is slightly off but the intended event is clearly identified and data matches the JSON. No credit if wrong division/year or inferred from another year despite data being available.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          18,
+          0,
+          19,
+          17,
+          16
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 19 (latest/most relevant) explicitly shows an event object with title \"2nd January\", date \"2026-01-02\", bunting true. Earlier Screenshot 1 shows Scotland section but only earlier years; however Screenshot 19 provides the needed 2026 fields.",
+        "verifier_justification": "The agent’s reported date and bunting for the 2026 \"2nd January\" event match the screenshot evidence exactly (ISO date and boolean). While the division header isn’t visible in Screenshot 19, there is no evidence contradicting that this is from the Scotland division, and the fields match the official JSON content shown.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible “scotland” section, the screenshot shows event objects including one with `\"title\":\"2nd January\"` and `\"date\":\"2019-01-02\"` and `\"bunting\":true`. Further down, it also shows `\"title\":\"2nd January\"` with `\"date\":\"2020-01-02\"`, and another with `\"date\":\"2021-01-04\"` (with notes indicating substitute day). No `\"date\":\"2026-01-02\"` for “2nd January” is visible in the screenshot.",
+            "criterion_analysis": "The agent’s predicted output claims Scotland “2nd January” for 2026 is `2026-01-02` with bunting `true`, but the screenshot does not show the 2026 Scotland “2nd January” entry—only 2019–2021 entries are visible for that title. Therefore, the screenshot does not support the agent’s specific 2026 claim, and the correctness cannot be verified from this image.",
+            "discrepancies": "Agent reported a 2026 Scotland “2nd January” date/bunting, but the screenshot only visibly contains “2nd January” entries for 2019, 2020, and 2021 (not 2026).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 18,
+            "screenshot_evidence": "A visible JSON object shows: \"title\": \"2nd January\", \"date\": \"2026-01-02\", \"notes\": \"\", \"bunting\": true.",
+            "criterion_analysis": "Supported for the event fields themselves: the screenshot directly shows the '2nd January' event with date \"2026-01-02\" and bunting true, matching the agent’s predicted output values. However, the screenshot does not show the enclosing division key (scotland) so division membership is not verifiable from this image alone.",
+            "discrepancies": "No discrepancy on the date/bunting values for the visible \"2nd January\" entry; division (scotland) is asserted in the output but not shown in the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          26,
+          41,
+          40,
+          36,
+          30
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM-model states cited for this criterion (e.g., 26, 30, 36, 40, 41) show only england-and-wales 2019 snippets; none show scotland division or year 2026, and none show an event titled '2nd January' for 2026.",
+        "verifier_justification": "No explicit DOM support for Scotland/2026 '2nd January' date or bunting. The agent asserted specific values, which are unproven from the provided official-response DOM. Score should be reduced to 0 rather than crediting an unsupported factual claim.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 26,
+            "dom_model_state_idx": 26,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 26 shows URL https://www.gov.uk/bank-holidays.json with visible JSON content starting at the \"england-and-wales\" division and listing 2019 events (e.g., \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"bunting\": true). The snapshot is truncated mid-item and contains no visible \"scotland\" division content and no visible 2026 entries.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe only provided DOM snapshot segment (state 26) does not include the scotland division nor any 2026 events. Therefore, the DOM-model evidence cannot verify (support) or falsify the agent’s reported Scotland 2026 '2nd January' date (\"2026-01-02\") and bunting (true).",
+            "discrepancies": "Agent claims Scotland 2026 data was extracted, but DOM_MODEL_STATE_INDEX: 26 provides no scotland/2026 visibility to substantiate that claim.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 41,
+            "dom_model_state_idx": 41,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 41 (URL https://www.gov.uk/bank-holidays.json) shows only a partial pretty-printed JSON beginning with the \"england-and-wales\" division and 2019 events (e.g., \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"bunting\": true). No \"scotland\" division content is visible, and no 2026 entries are visible in this DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM evidence (state 41) does not contain the scotland division nor any 2026 events, so it cannot substantiate the agent’s reported Scotland 2026 \"2nd January\" date (\"2026-01-02\") or bunting value (true). It also cannot confirm whether a scotland/2026 \"2nd January\" event is present or absent in the official response.",
+            "discrepancies": "Agent claims Scotland 2026 \"2nd January\" has date \"2026-01-02\" and bunting true, but the DOM evidence supplied shows only england-and-wales 2019 events and provides no scotland/2026 data to verify those fields.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 40,
+            "dom_model_state_idx": 40,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 40 (m40:L1-L7)\nURL: https://www.gov.uk/bank-holidays.json\nVisible content shows the start of the JSON under \"england-and-wales\" with 2019 events (e.g., \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"bunting\": true; \"title\": \"Good Friday\", \"date\": \"2019-04-19\", \"bunting\": false; etc.). The snapshot is truncated mid-line and contains no visible \"scotland\" division and no 2026 entries.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe agent reported Scotland 2026 \"2nd January\" as date \"2026-01-02\" with bunting true, but the only provided DOM evidence (state 40) shows only part of the england-and-wales division and only 2019 events. There is no DOM evidence of the scotland division nor any 2026 event data, so the claimed date and bunting cannot be verified against the official response from the supplied DOM-model state.",
+            "discrepancies": "Claim requires scotland division, year 2026, event title exactly \"2nd January\" with its \"date\" and \"bunting\" fields. DOM state 40 contains neither scotland nor 2026 nor the \"2nd January\" event, so the claim is unsupported by the provided evidence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 36,
+            "dom_model_state_idx": 36,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 36 shows URL https://www.gov.uk/bank-holidays.json with visible JSON beginning under the key \"england-and-wales\" and events for 2019 (e.g., { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"bunting\": true }, { \"title\": \"Good Friday\", \"date\": \"2019-04-19\", \"bunting\": false }, etc.). There is no visible \"scotland\" division content, no 2026 year content, and no visible event titled \"2nd January\" in the provided DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM-model evidence does not include the scotland division nor any 2026 entries, so it cannot substantiate (or refute) the agent’s reported Scotland 2026 '2nd January' date and bunting. The page view shown is limited to england-and-wales events around 2019, and the DOM snapshot does not cover the required location in the JSON.",
+            "discrepancies": "Agent claims Scotland 2026 '2nd January' date \"2026-01-02\" and bunting true, but no DOM evidence is shown for scotland/2026 or for that title/date/bunting. Not enough evidence to verify title match, date, bunting, division, or year.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 30,
+            "dom_model_state_idx": 30,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 30 (https://www.gov.uk/bank-holidays.json). Visible JSON begins with `{ \"england-and-wales\": { \"division\": \"england-and-wales\", \"events\": [ { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", ... \"bunting\": true }, { \"title\": \"Good Friday\", \"date\": \"2019-04-19\", ... } ...` and is truncated mid-2019 (`\"ti`). No `scotland` division content and no 2026 entries are visible in this DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM-model evidence does not include the `scotland` division or any 2026 events, so it cannot verify (support or contradict) the agent’s reported Scotland 2026 event titled exactly `2nd January` with date `2026-01-02` and bunting `true`. The only evidenced content is a partial `england-and-wales` list around 2019.",
+            "discrepancies": "Agent reported Scotland 2026 `2nd January` -> date `2026-01-02`, bunting `true`, but DOM_MODEL_STATE_INDEX 30 contains neither `scotland` nor any 2026 event data, so the claim is unsubstantiated by the provided evidence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C2",
+          "evidence_requirement": "Scotland 2026 — report '2nd January' date and bunting",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot18.png",
+                "visible_text": "Scotland 2026 — report '2nd January' date and bunting",
+                "locator": "criterion-relevant content visible in screenshot18.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent’s reported date and bunting for the 2026 \"2nd January\" event match the screenshot evidence exactly (ISO date and boolean). While the division header isn’t visible in Screenshot 19, there is no evidence contradicting that this is from the Scotland division, and the fields match the official JSON content shown.",
+            "review_note": "Screenshot18 visibly contains Scotland 2026 2nd January (2026-01-02, bunting true); every DOM state clips near the start of the 2019 England-and-Wales array."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "No explicit DOM support for Scotland/2026 '2nd January' date or bunting. The agent asserted specific values, which are unproven from the provided official-response DOM. Score should be reduced to 0 rather than crediting an unsupported factual claim.",
+            "review_note": "Screenshot18 visibly contains Scotland 2026 2nd January (2026-01-02, bunting true); every DOM state clips near the start of the 2019 England-and-Wales array."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Scotland 2026 — report 'Summer bank holiday' date and bunting",
+      "description": "From the scotland division for calendar year 2026, locate the event whose returned title exactly matches 'Summer bank holiday' and report its ISO date and boolean bunting exactly as returned. Full credit if exact title match and correct date+bunting. Also award full credit if the agent documents that the GOV.UK JSON was inaccessible or that the scotland/2026 'Summer bank holiday' event is not present in the official response (rather than inferring). Partial credit if one of date/bunting is missing or incorrect but division/year and title are correct and the other field matches the JSON. No credit if the date is inferred from another year or taken from a different division when the correct data was available.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          18,
+          29,
+          0,
+          19,
+          17
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 19 explicitly shows \"title\": \"Summer bank holiday\", \"date\": \"2026-08-03\", \"bunting\": true. Other screenshots (e.g., Screenshot 30) show different years/divisions, but Screenshot 19 is the relevant 2026 record.",
+        "verifier_justification": "The agent’s Scotland 2026 \"Summer bank holiday\" date and bunting are consistent with the JSON entry visible in Screenshot 19. No conflicting screenshot shows a different 2026-08-03 bunting value.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Within the visible “scotland” events list, the screenshot shows `\"title\":\"Summer bank holiday\"` with `\"date\":\"2019-08-05\"` and `\"bunting\":true`, plus a `\"title\":\"Summer bank holiday\"` with `\"date\":\"2020-08-03\"` and `\"bunting\":true`, and another with `\"date\":\"2021-08-02\"` (with bunting true). There is no visible Scotland “Summer bank holiday” entry for 2026 in the screenshot.",
+            "criterion_analysis": "The predicted output states Scotland “Summer bank holiday” in 2026 is `2026-08-03` with bunting `true`. The screenshot does not show 2026; it shows 2019–2021 for this event title. So the screenshot cannot substantiate the 2026 value and does not verify the agent’s claim.",
+            "discrepancies": "Agent’s output gives a 2026 Scotland “Summer bank holiday” date, but the screenshot only shows the event in earlier years (2019, 2020, 2021), not 2026.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 18,
+            "screenshot_evidence": "A visible JSON object shows: \"title\": \"Summer bank holiday\", \"date\": \"2026-08-03\", \"notes\": \"\", \"bunting\": true.",
+            "criterion_analysis": "Supported for the event fields: the screenshot directly shows the 'Summer bank holiday' entry with date \"2026-08-03\" and bunting true, matching the agent’s predicted output for Scotland’s summer bank holiday. The screenshot does not show that this entry is under the scotland division, so division/year scoping beyond the date string cannot be confirmed from pixels alone.",
+            "discrepancies": "No discrepancy for the visible date/bunting values; the 'scotland division' requirement is not verifiable from the screenshot because the division header/key is not visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 29,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON list of bank holiday events with fields including \"title\", \"date\", \"notes\", and \"bunting\". Visible entries include:\n- \"Summer bank holiday\" with \"date\": \"2025-08-25\", \"bunting\": true\n- \"Christmas Day\" with \"date\": \"2025-12-25\", \"bunting\": true\n- \"Boxing Day\" with \"date\": \"2025-12-26\", \"bunting\": true\n- \"New Year\u0019s Day\" with \"date\": \"2026-01-01\", \"bunting\": true\n- \"St Patrick\u0019s Day\" with \"date\": \"2026-03-17\", \"bunting\": true\n- \"Good Friday\" with \"date\": \"2026-04-03\", \"bunting\": false\n- \"Easter Monday\" with \"date\": \"2026-04-06\", \"bunting\": true\n- \"Early May bank holiday\" with \"date\": \"2026-05-04\", \"bunting\": true\nThe screenshot does not show a Scotland division header, nor any 2026 Scotland \"Summer bank holiday\" entry, nor a \"2026-08-03\" date anywhere in view.",
+            "criterion_analysis": "This criterion requires the Scotland division, year 2026, event titled exactly \"Summer bank holiday\" with its date and bunting. The only \"Summer bank holiday\" visible is dated 2025-08-25 (and bunting true), which appears to be from another division (likely england-and-wales), not Scotland 2026. Therefore the screenshot does not provide evidence to support the agent\u0019s reported Scotland 2026 \"Summer bank holiday\" date \"2026-08-03\" and bunting true, and the agent\u0019s output is not verifiable from this screenshot and appears inconsistent with what is shown (the visible Summer bank holiday is 2025-08-25).",
+            "discrepancies": "Agent predicted: Scotland 2026 \"Summer bank holiday\" = \"2026-08-03\", bunting true. Screenshot shows \"Summer bank holiday\" = \"2025-08-25\", bunting true, and does not show any Scotland section or any 2026 Summer bank holiday entry.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          26,
+          41,
+          40,
+          36,
+          30
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Same as above: available DOM states show only partial england-and-wales 2019; no scotland division and no 2026 entries; no visible Scotland 2026 'Summer bank holiday' record.",
+        "verifier_justification": "No explicit DOM support for Scotland/2026 'Summer bank holiday' date or bunting. The reported values are therefore unverified and should not receive credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 26,
+            "dom_model_state_idx": 26,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 26 displays only partial \"england-and-wales\" JSON around 2019 (e.g., Good Friday 2019-04-19 bunting false; Easter Monday 2019-04-22 bunting true). No \"scotland\" division and no 2026 events are visible in this snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nBecause the DOM-model evidence does not show the scotland division or any 2026 'Summer bank holiday' entry, it cannot confirm whether Scotland 2026 'Summer bank holiday' has date \"2026-08-03\" and bunting true as the agent reported.",
+            "discrepancies": "The agent output includes a Scotland 2026 'Summer bank holiday' record, but it is not evidenced by the provided DOM snapshot (state 26).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 41,
+            "dom_model_state_idx": 41,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 41 (URL https://www.gov.uk/bank-holidays.json) visible content includes england-and-wales events with dates in 2019 (e.g., \"Good Friday\" 2019-04-19, \"Spring bank holiday\" 2019-05-27) and is truncated mid-entry. There is no visible \"scotland\" division and no visible 2026 event list.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence does not include the scotland division or any 2026 events, so it cannot support or contradict the agent’s reported Scotland 2026 \"Summer bank holiday\" date (\"2026-08-03\") and bunting value (true), nor can it confirm the event’s presence/absence in the official response.",
+            "discrepancies": "Agent claims Scotland 2026 \"Summer bank holiday\" has date \"2026-08-03\" and bunting true, but the DOM evidence provided contains no scotland/2026 events from which to verify the title match, date, or bunting value.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 40,
+            "dom_model_state_idx": 40,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 40 (m40:L1-L7)\nURL: https://www.gov.uk/bank-holidays.json\nVisible content shows england-and-wales division and 2019 events only; the content is truncated (ends around \"{ \\\"ti\"). No \"scotland\" division content and no 2026 events are visible.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe agent reported Scotland 2026 \"Summer bank holiday\" as date \"2026-08-03\" with bunting true, but the provided DOM snapshot does not include the scotland division or any 2026 entries. Therefore, the date and bunting value for Scotland’s 2026 \"Summer bank holiday\" cannot be verified from the supplied DOM-model evidence.",
+            "discrepancies": "Agent provides a specific Scotland 2026 event (\"Summer bank holiday\") date and bunting, but DOM state 40 does not show scotland/2026 or the event title, preventing validation.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 36,
+            "dom_model_state_idx": 36,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 36 only shows a truncated snippet of the \"england-and-wales\" events list for 2019 and does not display any \"scotland\" division or any 2026 events. No visible event titled \"Summer bank holiday\" for Scotland 2026 appears in the snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence provided does not include Scotland’s 2026 events, so it cannot confirm the Scotland 2026 'Summer bank holiday' date or bunting as reported by the agent.",
+            "discrepancies": "Agent reports Scotland 2026 'Summer bank holiday' as date \"2026-08-03\" with bunting true, but the DOM snapshot does not show Scotland data nor 2026 entries to verify exact title/date/bunting from the official response.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 30,
+            "dom_model_state_idx": 30,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 30 (https://www.gov.uk/bank-holidays.json). Visible content shows only the start of the `england-and-wales` object and events dated in 2019 (e.g., `\"date\": \"2019-05-27\"`). The snapshot does not display `scotland` nor any 2026 entries.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nBecause the DOM evidence does not show the `scotland` division or year 2026, the agent’s reported Scotland 2026 event titled exactly `Summer bank holiday` with date `2026-08-03` and bunting `true` cannot be verified against the supplied DOM model state.",
+            "discrepancies": "Agent reported Scotland 2026 `Summer bank holiday` -> `2026-08-03`, bunting `true`, but the DOM snapshot contains only partial `england-and-wales` 2019 data and therefore provides no basis to confirm or refute this Scotland/2026 claim.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C3",
+          "evidence_requirement": "Scotland 2026 — report 'Summer bank holiday' date and bunting",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot18.png",
+                "visible_text": "Scotland 2026 — report 'Summer bank holiday' date and bunting",
+                "locator": "criterion-relevant content visible in screenshot18.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent’s Scotland 2026 \"Summer bank holiday\" date and bunting are consistent with the JSON entry visible in Screenshot 19. No conflicting screenshot shows a different 2026-08-03 bunting value.",
+            "review_note": "Screenshot18 visibly contains Scotland 2026 Summer bank holiday (2026-08-03, bunting true); it is absent from every DOM snapshot."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "No explicit DOM support for Scotland/2026 'Summer bank holiday' date or bunting. The reported values are therefore unverified and should not receive credit.",
+            "review_note": "Screenshot18 visibly contains Scotland 2026 Summer bank holiday (2026-08-03, bunting true); it is absent from every DOM snapshot."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Scotland 2026 — report 'St Andrew’s Day' date and bunting",
+      "description": "From the scotland division for calendar year 2026, locate the event whose returned title exactly matches the JSON title for St Andrew’s Day (including punctuation) and report its ISO date and boolean bunting exactly as returned. Full credit if title is matched as returned and date+bunting are exact. Also award full credit if the agent documents that the GOV.UK JSON was inaccessible or that the scotland/2026 St Andrew’s Day event is not present in the official response (rather than inferring). Partial credit if date/bunting is correct but punctuation in the title is not preserved, or if only one of date/bunting is correct while the other is missing/incorrect. No credit if wrong year/division or inferred date when data was available.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          18,
+          29,
+          0,
+          19,
+          17
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 19 explicitly shows \"title\": \"St Andrew’s Day\" (with curly apostrophe), \"date\": \"2026-11-30\", \"bunting\": true.",
+        "verifier_justification": "The agent preserved the returned title punctuation and exactly matched the ISO date and bunting boolean shown in Screenshot 19. No evidence indicates a different value for the 2026 entry.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The visible “scotland” section includes events such as “St Andrew’s Day” with `\"date\":\"2019-12-02\"` and notes `\"Substitute day\"` and bunting true, and later “St Andrew’s Day” with `\"date\":\"2020-11-30\"` and bunting true, and another “St Andrew’s Day” with `\"date\":\"2021-11-30\"` with bunting true. The screenshot does not display a 2026 “St Andrew’s Day” entry.",
+            "criterion_analysis": "The agent’s predicted output reports Scotland “St Andrew’s Day” for 2026 as `2026-11-30` bunting `true`. Since the screenshot shows only up to 2021 for this event and does not include the 2026 entry, the screenshot does not provide evidence that the agent’s 2026 values are taken from the JSON (or that they are correct). Also, the screenshot uses the curly apostrophe in `St Andrew’s Day`, matching the agent’s punctuation, but the year is not shown.",
+            "discrepancies": "Agent provided a 2026 Scotland “St Andrew’s Day” date/bunting, but the screenshot only visibly shows 2019–2021 entries for that title, not 2026.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 18,
+            "screenshot_evidence": "A visible JSON object shows: \"title\": \"St Andrew’s Day\", \"date\": \"2026-11-30\", \"notes\": \"\", \"bunting\": true. The apostrophe in Andrew’s is a curly apostrophe as shown.",
+            "criterion_analysis": "Supported for title/date/bunting: the screenshot shows the title punctuation \"St Andrew’s Day\" and the date \"2026-11-30\" with bunting true, matching the agent’s predicted output. As with prior criteria, the scotland division context is not visible in this screenshot.",
+            "discrepancies": "No discrepancy for the fields shown (including punctuation). The agent attributes it to Scotland; that division label is not visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 29,
+            "screenshot_evidence": "The screenshot shows JSON event entries around late 2025 and early/mid 2026, including \"New Year\u0019s Day\" (2026-01-01), \"St Patrick\u0019s Day\" (2026-03-17), \"Good Friday\" (2026-04-03), \"Easter Monday\" (2026-04-06), and \"Early May bank holiday\" (2026-05-04). There is no visible entry with the title \"St Andrew\u0019s Day\" (or \"St Andrew\u0019s Day\" with any punctuation), and no visible date \"2026-11-30\" in the screenshot. The division context (scotland) is not visible.",
+            "criterion_analysis": "The criterion requires the Scotland division 2026 \"St Andrew\u0019s Day\" event title as returned (including punctuation) plus its date and bunting. Since no \"St Andrew\u0019s Day\" entry is visible in the screenshot, the agent\u0019s reported values (date \"2026-11-30\", bunting true) cannot be confirmed from this screenshot. There is also no evidence in the screenshot that the agent matched the exact returned title punctuation for this event.",
+            "discrepancies": "Agent predicted: Scotland 2026 \"St Andrew\u0019s Day\" = \"2026-11-30\", bunting true. Screenshot contains no \"St Andrew\u0019s Day\" entry and no \"2026-11-30\" date; thus the output is unsupported by the visible evidence.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          26,
+          40,
+          36,
+          30,
+          28
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM-model states (e.g., 26, 28, 30, 36, 40) do not show scotland division or any 2026 events; no 'St Andrew’s Day' entry is visible, so neither title punctuation nor date/bunting can be confirmed.",
+        "verifier_justification": "No explicit DOM support for Scotland/2026 'St Andrew’s Day' date or bunting (or exact returned title punctuation). The agent’s specific claim is unproven; award 0.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 26,
+            "dom_model_state_idx": 26,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 26 shows a truncated JSON view of \"england-and-wales\" events in 2019 with curly-brace structure and fields \"title\", \"date\", \"notes\", \"bunting\". There is no visible scotland section and no visible St Andrew’s Day entry for any year, including 2026.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM-model evidence does not contain the scotland division nor any 2026 events, so it cannot validate the agent’s Scotland 2026 St Andrew’s Day (including the exact punctuation in the title) date \"2026-11-30\" and bunting true.",
+            "discrepancies": "Agent’s title includes “St Andrew’s Day” with a curly apostrophe; however, the DOM snapshot does not show this event/title at all, so exact title match and associated fields cannot be checked.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 40,
+            "dom_model_state_idx": 40,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 40 (m40:L1-L7)\nURL: https://www.gov.uk/bank-holidays.json\nVisible content includes england-and-wales division with 2019 events and fields (\"title\", \"date\", \"notes\", \"bunting\"). No scotland division is visible; no 2026 events are visible; snapshot truncates before later parts of the JSON.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe agent reported Scotland 2026 St Andrew’s Day (including punctuation) as date \"2026-11-30\" with bunting true. However, the provided DOM evidence does not include any scotland division content or any 2026 entries, so neither the exact returned title/punctuation nor the date and bunting fields can be confirmed from the supplied DOM-model state.",
+            "discrepancies": "Requirement is to match the returned JSON title for St Andrew’s Day (including punctuation) in scotland division for year 2026 and report its date and bunting. DOM state 40 lacks all of scotland/2026 and thus cannot substantiate the agent’s title/date/bunting claims.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 36,
+            "dom_model_state_idx": 36,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 36 shows only england-and-wales 2019 events in the visible JSON and does not include any scotland events or any 2026 events. There is no visible St Andrew’s Day entry (nor its exact punctuation) in the snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nBecause the DOM-model evidence does not show the scotland division or the relevant 2026 portion of the JSON, it cannot verify the presence, exact returned title/punctuation (e.g., apostrophe type), date, or bunting value for Scotland’s 2026 St Andrew’s Day event.",
+            "discrepancies": "Agent reports 'St Andrew’s Day' with date \"2026-11-30\" and bunting true, but no DOM evidence is provided showing the scotland/2026 event or the exact title punctuation as returned by the JSON.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 30,
+            "dom_model_state_idx": 30,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 30 (https://www.gov.uk/bank-holidays.json). Evidence includes partial `england-and-wales` events list (2019 dates) and truncates before completing even that list. There is no visible `scotland` section and no visible 2026 content or any `St Andrew`-titled event.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM-model evidence lacks the `scotland` division and 2026 entries, so it cannot validate the agent’s Scotland 2026 `St Andrew’s Day` (including punctuation) date `2026-11-30` and bunting `true`. Title punctuation correctness also cannot be checked from the provided snapshot.",
+            "discrepancies": "Agent reported Scotland 2026 `St Andrew’s Day` -> `2026-11-30`, bunting `true`, but DOM_MODEL_STATE_INDEX 30 contains no `scotland`/2026 event data and no `St Andrew` entry to compare (including the exact apostrophe character).",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 28,
+            "dom_model_state_idx": 28,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 28 (https://www.gov.uk/bank-holidays.json) shows only the beginning of the pretty-printed JSON in the visible DOM, specifically part of the \"england-and-wales\" → \"events\" array with 2019 entries. Exact visible excerpt includes: { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"notes\": \"\", \"bunting\": true }, { \"title\": \"Good Friday\", \"date\": \"2019-04-19\", ... }. The content is truncated mid-entry at \"{ \\\"ti\" and does not display any \"scotland\" division content, any 2026 entries, nor any event titled \"St Andrew’s Day\" with a 2026 date/bunting value.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe rubric criterion requires DOM evidence from the scotland division for calendar year 2026 for the event whose returned title matches \"St Andrew’s Day\" and to verify its ISO date and boolean bunting as returned. In DOM_MODEL_STATE_INDEX 28, the only visible DOM content is partial \"england-and-wales\" events from 2019, and the JSON is truncated before later years/divisions appear. There is no DOM-visible \"scotland\" section, no 2026 content, and no \"St Andrew’s Day\" entry to substantiate the agent’s claimed \"2026-11-30\" and bunting value. Therefore, the DOM snapshot provided cannot support, contradict, or partially confirm the specific 2026 Scotland/St Andrew’s Day date and bunting requirement.",
+            "discrepancies": "The agent predicted output asserts (a) Scotland 2026 \"St Andrew’s Day\" date \"2026-11-30\" with bunting true. However, DOM_MODEL_STATE_INDEX 28 does not show any scotland division content or any 2026 entries; it only shows partial england-and-wales 2019 events. Thus, the claimed St Andrew’s Day 2026 date/bunting is not evidenced by the provided DOM state.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C4",
+          "evidence_requirement": "Scotland 2026 — report 'St Andrew’s Day' date and bunting",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot18.png",
+                "visible_text": "Scotland 2026 — report 'St Andrew’s Day' date and bunting",
+                "locator": "criterion-relevant content visible in screenshot18.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent preserved the returned title punctuation and exactly matched the ISO date and bunting boolean shown in Screenshot 19. No evidence indicates a different value for the 2026 entry.",
+            "review_note": "Screenshot18 visibly contains Scotland 2026 St Andrew’s Day (2026-11-30, bunting true); it is absent from every DOM snapshot."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "No explicit DOM support for Scotland/2026 'St Andrew’s Day' date or bunting (or exact returned title punctuation). The agent’s specific claim is unproven; award 0.",
+            "review_note": "Screenshot18 visibly contains Scotland 2026 St Andrew’s Day (2026-11-30, bunting true); it is absent from every DOM snapshot."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "England and Wales 2026 — report 'Summer bank holiday' date",
+      "description": "From the england-and-wales division for calendar year 2026, locate the event whose returned title exactly matches 'Summer bank holiday' and report its ISO date exactly as returned. Full credit if correct date from correct division/year with exact title match. Also award full credit if the agent documents that the GOV.UK JSON was inaccessible or that the england-and-wales/2026 'Summer bank holiday' event is not present in the official response (rather than inferring). Partial credit if the correct event is identified but the date is formatted incorrectly (not ISO) or omitted. No credit if the date is inferred from another year or taken from a different division when the correct data was available.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          30,
+          8,
+          0,
+          10,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows within the england-and-wales events list an entry \"Summer bank holiday\" with date \"2026-08-31\" (and bunting true visible). Screenshots 9 and 31 also show the same title/date pair, though division label may be cropped in those.",
+        "verifier_justification": "The agent’s England-and-Wales 2026 Summer bank holiday date \"2026-08-31\" is directly supported by Screenshot 1 within the england-and-wales section, satisfying the division/year constraint.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible “england-and-wales” events list near the top, the screenshot shows “Summer bank holiday” entries for multiple years, including `\"title\":\"Summer bank holiday\",\"date\":\"2026-08-31\",\"notes\":\"\",\"bunting\":true` (this 2026 entry is visible in the screenshot).",
+            "criterion_analysis": "The screenshot directly supports the England-and-Wales 2026 “Summer bank holiday” date as `2026-08-31`. The agent’s predicted output reports England and Wales – Summer bank holiday date: `\"2026-08-31\"`, which matches what is visible.",
+            "discrepancies": "No discrepancy for this item: the predicted output matches the visible 2026 England-and-Wales “Summer bank holiday” date.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 30,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON list of bank holiday event objects with fields including \"title\", \"date\", \"notes\", and \"bunting\". Visible event titles and dates include: \"Battle of the Boyne (Orangemen’s Day)\" with date \"2026-07-13\" (notes: \"Substitute day\", bunting: false), \"Summer bank holiday\" with date \"2026-08-31\" (notes: \"\", bunting: true), \"Christmas Day\" with date \"2026-12-25\" (bunting: true), \"Boxing Day\" with date \"2026-12-28\" (notes: \"Substitute day\", bunting: true), \"New Year’s Day\" with date \"2027-01-01\" (bunting: true), \"St Patrick’s Day\" with date \"2027-03-17\" (bunting: true), \"Good Friday\" with date \"2027-03-26\" (bunting: false), and \"Easter Monday\" with date \"2027-03-29\" (bunting: true). The screenshot does not show the enclosing division key (e.g., \"england-and-wales\") for the visible events; only the event objects themselves are visible in the viewport.",
+            "criterion_analysis": "Criterion 4 requires the England-and-Wales division’s 2026 event titled exactly \"Summer bank holiday\" and its ISO date. The screenshot clearly shows an event object with title \"Summer bank holiday\" and date \"2026-08-31\" (and bunting true). This supports the agent’s reported England-and-Wales 2026 Summer bank holiday date of \"2026-08-31\". However, because the division header/key is not visible in the screenshot, the image alone cannot confirm that this particular \"Summer bank holiday\" entry is specifically within the \"england-and-wales\" section rather than another division. It does confirm the title/date pair exists in the displayed JSON.",
+            "discrepancies": "The agent’s predicted output states England and Wales – 2026 Summer bank holiday date: \"2026-08-31\". This matches the visible JSON entry for \"Summer bank holiday\" with date \"2026-08-31\". The only potential gap is that the screenshot does not show the division label \"england-and-wales\", so the agent’s attribution to that division is not directly verifiable from this screenshot alone.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 8,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON list of bank holiday events with fields \"title\", \"date\", \"notes\", and \"bunting\". Visible entries include (among others):\n- \"Early May bank holiday\" with date \"2026-05-04\" and \"bunting\": true\n- \"Spring bank holiday\" with date \"2026-05-25\" and \"bunting\": true\n- \"Summer bank holiday\" with date \"2026-08-31\" and \"bunting\": true\n- \"Christmas Day\" with date \"2026-12-25\" and \"bunting\": true\n- \"Boxing Day\" with date \"2026-12-28\" with notes \"Substitute day\" and \"bunting\": true\nBelow that, 2027 entries begin (e.g., \"New Year’s Day\" date \"2027-01-01\"). The screenshot does not visibly show the enclosing division name (e.g., \"england-and-wales\") in this cropped view, but it clearly shows a 2026 event titled exactly \"Summer bank holiday\" with ISO date \"2026-08-31\" and bunting true.",
+            "criterion_analysis": "Criterion 4 asks for the England-and-Wales division’s 2026 event titled exactly \"Summer bank holiday\" and its ISO date. The screenshot contains an event with title exactly \"Summer bank holiday\" and date exactly \"2026-08-31\" (with bunting true). This supports the agent’s reported England-and-Wales 2026 Summer bank holiday date \"2026-08-31\". However, the screenshot alone does not explicitly display that this event is under the \"england-and-wales\" division; it is consistent with that division’s typical list and matches the required title/date, but division membership is not directly verifiable from the visible pixels.",
+            "discrepancies": "The agent’s predicted output states England and Wales – 2026 Summer bank holiday date: \"2026-08-31\". The screenshot shows a \"Summer bank holiday\" entry with date \"2026-08-31\", which aligns. No contradiction is visible. The only missing confirmation from the screenshot is the explicit label indicating the \"england-and-wales\" division—this is not shown in the cropped screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          26,
+          23,
+          20,
+          0,
+          45
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM-model state 0 shows 'Summer bank holiday' for england-and-wales in 2019 (date 2019-08-26). Later states (20, 23, 26, 45, 48) still only show early england-and-wales 2019 content; none show england-and-wales 2026 'Summer bank holiday'.",
+        "verifier_justification": "No explicit DOM support for the 2026 england-and-wales 'Summer bank holiday' date. The agent’s reported 2026-08-31 is unverified from the provided official-response DOM, so credit should be removed.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 45,
+            "dom_model_state_idx": 45,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 45 (https://www.gov.uk/bank-holidays.json) displays england-and-wales events for 2019 (e.g., `\"title\": \"New Year’s Day\", \"date\": \"2019-01-01\"`, `\"Good Friday\"`, etc.) and is truncated before later content. There is no visible 2026 section and no visible event with exact title `\"Summer bank holiday\"` for 2026 in this snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM-model evidence provided does not include the england-and-wales division’s calendar year 2026 entries, so it cannot support or contradict the agent’s claim that England and Wales ‘Summer bank holiday’ in 2026 is on `2026-08-31`. The necessary event/title/date is not present in the captured DOM evidence.",
+            "discrepancies": "The agent output includes `England and Wales – 2026 - Summer bank holiday date: \"2026-08-31\"`, but the DOM snapshot only shows partial 2019 england-and-wales events and does not show a 2026 `\"Summer bank holiday\"` entry.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 26,
+            "dom_model_state_idx": 26,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 26 shows the \"england-and-wales\" division but only for 2019 entries (e.g., \"Early May bank holiday\" date 2019-05-06). The visible content is truncated and does not include any 2026 entries or the 2026 \"Summer bank holiday\" item.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nAlthough the evidence includes the england-and-wales division, it does not include calendar year 2026 and does not show a \"Summer bank holiday\" entry for 2026. Thus, the DOM-model evidence cannot confirm the agent-reported England and Wales 2026 Summer bank holiday date \"2026-08-31\".",
+            "discrepancies": "Agent reports an England-and-Wales 2026 Summer bank holiday date, but DOM_MODEL_STATE_INDEX: 26 provides no 2026 context to verify it.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 23,
+            "dom_model_state_idx": 23,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 23 (https://www.gov.uk/bank-holidays.json) shows the pretty-printed JSON beginning of the `england-and-wales` object with `\"division\": \"england-and-wales\"` and an `\"events\"` array containing only 2019 entries in the visible excerpt, e.g. `{\"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", ...}`, `{\"title\": \"Good Friday\", \"date\": \"2019-04-19\", ...}`, `{\"title\": \"Easter Monday\", \"date\": \"2019-04-22\", ...}`, `{\"title\": \"Early May bank holiday\", \"date\": \"2019-05-06\", ...}`, `{\"title\": \"Spring bank holiday\", \"date\": \"2019-05-27\", ...}`. The visible content is truncated mid-entry (`\"ti...`) and does not include any 2026 events nor a `\"Summer bank holiday\"` entry for 2026.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe criterion requires DOM evidence that, within the `england-and-wales` division for calendar year 2026, there is an event whose returned title exactly matches `Summer bank holiday` and then to report its ISO `date` exactly as returned. In DOM_MODEL_STATE_INDEX 23, the only visible `england-and-wales` events are from 2019, and the snapshot is truncated before showing later entries/years. No DOM text in the provided state shows any 2026 section or an event titled `Summer bank holiday` with date `2026-08-31` (or any 2026 date). Therefore, the agent’s claimed England-and-Wales 2026 Summer bank holiday date cannot be verified or falsified from the provided DOM evidence and remains unproven.",
+            "discrepancies": "Agent predicted output asserts `England and Wales – 2026 - Summer bank holiday date: \"2026-08-31\"`, but DOM_MODEL_STATE_INDEX 23 only shows partial 2019 `england-and-wales` events and provides no DOM-supported evidence of a 2026 `Summer bank holiday` entry or its date.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 20,
+            "dom_model_state_idx": 20,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 20 (m20:L1-L7) at https://www.gov.uk/bank-holidays.json shows only a truncated snippet of the JSON beginning in the \"england-and-wales\" division with 2019 events: visible text includes \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\" ... and subsequent 2019 entries (e.g., \"Good Friday\" \"2019-04-19\", \"Easter Monday\" \"2019-04-22\", etc.). The visible content cuts off mid-entry (\"{ \\\"ti\"), and contains no 2026 entries and no \"Summer bank holiday\" for 2026.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe rubric criterion requires DOM evidence that, within the \"england-and-wales\" division for calendar year 2026, the event with returned title exactly \"Summer bank holiday\" has a specific ISO date. In DOM_MODEL_STATE_INDEX 20, the only visible \"england-and-wales\" events are for 2019, and there is no visible 2026 section nor any visible \"Summer bank holiday\" entry for 2026. Because the DOM snapshot does not cover the relevant year/event, it cannot support or contradict the agent’s claimed England-and-Wales 2026 \"Summer bank holiday\" date (\"2026-08-31\").",
+            "discrepancies": "Agent output claims England and Wales (2026) \"Summer bank holiday\" date is \"2026-08-31\", but DOM_MODEL_STATE_INDEX 20 provides no DOM-visible evidence of any 2026 events or of a \"Summer bank holiday\" entry; it only shows 2019 entries and is truncated mid-stream.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the page at URL https://www.gov.uk/bank-holidays.json with visible JSON beginning `{\"england-and-wales\":{\"division\":\"england-and-wales\",\"events\":[{...` and includes an event entry `{\"title\":\"Summer bank holiday\",\"date\":\"2019-08-26\",\"notes\":\"\",...` (truncated after `\"notes\":`). No 2026 entries are visible in this DOM snapshot, and no later DOM states are provided to verify 2026 content.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe rubric criterion requires confirming, from the `england-and-wales` division for calendar year 2026, the event whose returned title exactly matches `Summer bank holiday` and reporting its ISO date as returned. The only available DOM evidence (DOM_MODEL_STATE_INDEX: 0) shows `england-and-wales` events for 2019 (including `Summer bank holiday` with date `2019-08-26`), but does not display any 2026 `england-and-wales` events. Because there is no DOM-model coverage of the 2026 portion of the response, the agent’s reported `2026-08-31` cannot be verified from the provided DOM evidence.",
+            "discrepancies": "Agent predicted output claims `England and Wales – 2026 - Summer bank holiday date: \"2026-08-31\"`, but DOM_MODEL_STATE_INDEX: 0 only evidences `Summer bank holiday` for 2019 (`\"date\":\"2019-08-26\"`) and provides no 2026 `england-and-wales` data. Therefore the 2026 date claim is unsupported by the provided DOM snapshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C5",
+          "evidence_requirement": "England and Wales 2026 — report 'Summer bank holiday' date",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot8.png",
+                "visible_text": "England and Wales 2026 — report 'Summer bank holiday' date",
+                "locator": "criterion-relevant content visible in screenshot8.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent’s England-and-Wales 2026 Summer bank holiday date \"2026-08-31\" is directly supported by Screenshot 1 within the england-and-wales section, satisfying the division/year constraint.",
+            "review_note": "Screenshot8 visibly contains England-and-Wales Summer bank holiday (2026-08-31); it is absent from every DOM snapshot."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "No explicit DOM support for the 2026 england-and-wales 'Summer bank holiday' date. The agent’s reported 2026-08-31 is unverified from the provided official-response DOM, so credit should be removed.",
+            "review_note": "Screenshot8 visibly contains England-and-Wales Summer bank holiday (2026-08-31); it is absent from every DOM snapshot."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Stopping condition adhered to (only required events recorded)",
+      "description": "Full credit if the agent outputs exactly the requested items and nothing beyond them: the three specified Scotland events (each with date and bunting) plus the England-and-Wales 'Summer bank holiday' date. Partial credit if extra irrelevant events/years/divisions are included but the required ones are still present and correct. No credit if required items are omitted or the response substantially fails to follow the stopping instruction.",
+      "max_points": 1,
+      "screenshot_context": {
+        "selected_indices": [
+          42,
+          38,
+          0,
+          48,
+          47
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Agent’s predicted final answer text contains exactly the three requested Scotland events (each with date and bunting) and the England-and-Wales Summer bank holiday date; no extra events. No screenshot contradicts the content-length/scope of the predicted output (screenshots do not show the final response UI).",
+        "verifier_justification": "The provided predicted output adheres to the stopping condition by including only the four required records and nothing additional.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The agent’s predicted output (shown in the prompt) lists exactly four items: three Scotland events (2nd January, Summer bank holiday, St Andrew’s Day) each with date and bunting, and one England-and-Wales item (Summer bank holiday date). The screenshot itself is just the JSON and does not show the agent output rendered.",
+            "criterion_analysis": "The stopping condition concerns output scope. The predicted output includes only the requested Scotland events (three) and the England-and-Wales Summer bank holiday date; it does not include extra events or years. So, the stopping condition appears adhered to.",
+            "discrepancies": "None regarding scope: the predicted output does not add extra items beyond the requested four pieces of information.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 42,
+            "screenshot_evidence": "The screenshot contains only a JSON list of bank holiday event objects (with fields “title”, “date”, “notes”, “bunting”) for dates in 2027 and 2028 as visible. There is no display of the agent’s final written response within the screenshot itself.",
+            "criterion_analysis": "Evaluating the agent’s predicted output against the stopping condition: the predicted output includes exactly the requested items (three Scotland events with date and bunting; plus England-and-Wales Summer bank holiday date) and does not include additional events. So the stopping condition appears adhered to in the predicted output. The screenshot itself doesn’t confirm the correctness of those particular 2026 items, but criterion 5 is about including only required items, which the predicted output does.",
+            "discrepancies": "No discrepancy regarding inclusion/extraneous items: the predicted output contains only the four requested records. (Separate issue: the screenshot does not show those 2026 records at all.)",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 47,
+            "screenshot_evidence": "The screenshot itself is just a pretty-printed JSON snippet showing multiple event objects (all for 2028) and does not show the agent’s final written response. The agent’s predicted output (provided separately) contains four lines of requested data: three Scotland events each with date and bunting, plus England and Wales Summer bank holiday date.",
+            "criterion_analysis": "Judging by the predicted output text, the agent adhered to the stopping condition: it lists exactly the three specified Scotland events with date and bunting values, and the England-and-Wales Summer bank holiday date, without extra events. The screenshot does not provide contrary evidence about the amount of output (it doesn’t show the response text).",
+            "discrepancies": "No discrepancy regarding the *stopping condition* itself: the predicted output includes only the requested items. (Separately, the screenshot does not validate the correctness of the 2026 values, but that is not what this criterion evaluates.)",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 38,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON view (with a checked “Pretty-print” checkbox at top-left). Visible entries include events with titles and dates such as:\n- \"Easter Monday\" date \"2027-03-29\" bunting true\n- \"Early May bank holiday\" date \"2027-05-03\" bunting true\n- \"Spring bank holiday\" date \"2027-05-31\" bunting true\n- \"Battle of the Boyne (Orangemen’s Day)\" date \"2027-07-12\" bunting false\n- \"Summer bank holiday\" date \"2027-08-30\" bunting true\n- \"Christmas Day\" date \"2027-12-27\" notes \"Substitute day\" bunting true\n- \"Boxing Day\" date \"2027-12-28\" notes \"Substitute day\" bunting true\n- \"New Year’s Day\" date \"2028-01-03\" notes \"Substitute day\" bunting true\n- The next visible entry begins \"St Patrick’s Day\" date \"2028-03-17\" (partially visible).\nNo 2026 entries are visible in this screenshot, and there is no visible indication of the \"scotland\" or \"england-and-wales\" division headers in the cropped view—only a list of event objects with commas between them.",
+            "criterion_analysis": "Criterion 5 is about whether the agent’s final output included only the required items (three specified Scotland 2026 events with date+bunting, plus England-and-Wales 2026 Summer bank holiday date) and nothing extra. The screenshot itself does not show the agent’s final output; it only shows a portion of the GOV.UK JSON around 2027–2028 events. Therefore, the screenshot cannot directly confirm whether the agent stopped after recording exactly the requested four items, nor can it verify that those recorded items came from 2026 Scotland/England-and-Wales sections. It does, however, show that the visible JSON content is not the 2026 Scotland/England-and-Wales data requested, so the predicted output is not supported by what is visible here.",
+            "discrepancies": "The agent’s predicted output reports 2026 Scotland events and a 2026 England-and-Wales Summer bank holiday date. The screenshot shows only 2027 and 2028-dated events (e.g., 2027-03-29, 2027-08-30, 2028-01-03), and does not display any 2026 entries or Scotland/England-and-Wales division context. Thus, the screenshot does not corroborate the claimed 2026 values and suggests the agent was viewing different years than those reported.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 48,
+            "screenshot_evidence": "The screenshot shows a pretty-printed JSON view (checkbox “Pretty-print” checked). Visible entries are bank holiday events with fields: \"title\", \"date\", \"notes\", \"bunting\". The visible titles and dates are: \"Good Friday\" date \"2028-04-14\" bunting false; \"Easter Monday\" date \"2028-04-17\" bunting true; \"Early May bank holiday\" date \"2028-05-01\" bunting true; \"Spring bank holiday\" date \"2028-05-29\" bunting true; \"Battle of the Boyne (Orangemen’s Day)\" date \"2028-07-12\" bunting false; \"Summer bank holiday\" date \"2028-08-28\" bunting true; \"Christmas Day\" date \"2028-12-25\" bunting true; \"Boxing Day\" date \"2028-12-26\" bunting true. No 2026 entries are visible. No section headers for “scotland” or “england-and-wales” are visible in this screenshot; it only shows a list of events for a single division/year context not explicitly labeled in the visible area.",
+            "criterion_analysis": "Criterion 5 is about the stopping condition in the agent’s output (only the required Scotland 2026 events plus England-and-Wales 2026 summer bank holiday date, and nothing else). The screenshot does not display the agent’s output; it only shows 2028 JSON entries. Therefore, the screenshot provides no direct visual evidence about whether the agent included extra irrelevant items or stopped exactly after recording the required four items. The screenshot also cannot corroborate that the agent was actually viewing 2026 Scotland/England-and-Wales entries when extracting data.",
+            "discrepancies": "Agent’s predicted output is about 2026 Scotland (2nd January, Summer bank holiday, St Andrew’s Day with bunting values) and 2026 England-and-Wales Summer bank holiday date. The screenshot instead shows 2028 events (e.g., Good Friday 2028-04-14, Summer bank holiday 2028-08-28) and does not show any 2026 dates or the Scotland/England-and-Wales divisions. Thus, the predicted output is not supported by the visible screenshot content (and cannot be verified against it).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          26,
+          16,
+          44,
+          11,
+          48
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "This criterion is about output scope; it can be assessed directly from the agent’s predicted output text (lists exactly 3 Scotland events with date+bunting and 1 England-and-Wales summer bank holiday date; no extras). DOM evidence is not required to verify scope.",
+        "verifier_justification": "The agent output includes only the requested four items and stops, satisfying the stopping condition regardless of whether the underlying values were evidenced. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 26,
+            "dom_model_state_idx": 26,
+            "screenshot_evidence": "Agent predicted output includes exactly: (a) three Scotland items ('2nd January', 'Summer bank holiday', 'St Andrew’s Day') each with date and bunting, and (b) one England and Wales item (Summer bank holiday date). DOM_MODEL_STATE_INDEX: 26 is not needed to verify output length/scope, only the agent’s final content.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent’s recorded output adheres to the stopping condition by listing only the three specified Scotland events (with date and bunting) and the England-and-Wales Summer bank holiday date, without adding other events or years.",
+            "discrepancies": "None regarding stopping condition/scope (note: correctness of the recorded values is assessed in criteria 1-4 and remains unevidenced by the provided DOM snapshot).",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 16,
+            "dom_model_state_idx": 16,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 16 shows URL https://www.gov.uk/bank-holidays.json with pretty-printed JSON visible only for part of the \"england-and-wales\" object. The visible snippet contains 2019 events such as { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"bunting\": true }, { \"title\": \"Good Friday\", \"date\": \"2019-04-19\", \"bunting\": false }, etc., and is truncated (ends mid-token at \"{ \\\"ti\"). No 2026 entries, no \"scotland\" division, and no \"Summer bank holiday\" for 2026 are visible in this DOM evidence.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 5 (stopping condition adhered to) concerns whether the agent output contains exactly the required items and nothing more. The DOM-model evidence provided (State 16) does not show the agent’s final response content in the DOM, nor does it show extraction of the 2026 Scotland/England-and-Wales events needed to assess whether the output stopped after recording exactly those items. The only DOM text available is a partial 2019 \"england-and-wales\" events list, so the DOM cannot substantiate compliance with the stopping condition (or noncompliance).",
+            "discrepancies": "The DOM evidence does not contain the 2026 Scotland events (\"2nd January\", \"Summer bank holiday\", \"St Andrew’s Day\") or the 2026 England-and-Wales \"Summer bank holiday\" entry; thus the browser-derived factual basis for the agent’s recorded 2026 dates/bunting values is not present in the DOM snapshot used for evaluation.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C6",
+          "evidence_requirement": "Stopping condition adhered to (only required events recorded)",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot42.png",
+                "visible_text": "Stopping condition adhered to (only required events recorded)",
+                "locator": "criterion-relevant content visible in screenshot42.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The provided predicted output adheres to the stopping condition by including only the four required records and nothing additional.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model26.txt",
+                "line_range": "m26:L7-L7",
+                "quoted_text": "- { \"england-and-wales\": { \"division\": \"england-and-wales\", \"events\": [ { \"title\": \"New Year’s Day\", \"date\": \"2019-01-01\", \"notes\": \"\", \"bunting\": true }, { \"title\": \"Good Friday\","
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent output includes only the requested four items and stops, satisfying the stopping condition regardless of whether the underlying values were evidenced. Keep full credit.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          }
+        }
+      ]
+    }
+  ]
+}

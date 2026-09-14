@@ -1,0 +1,795 @@
+{
+  "task_id": "browser_task_091-cross-endpoint-blockchain-record-20260914T092331Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 1,
+  "success_criterion": "outcome",
+  "rubric_score": 1.0,
+  "rubric_total_max_points": 21.0,
+  "rubric_total_earned_points": 21.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 1.0,
+    "reasoning": "Nitpicks: The agent included brief framing text and bullet formatting rather than emitting only raw key/value lines; this does not affect correctness or usability and does not violate the task’s primary goal. No other minor issues are evident.\n\nCritical issues: None. DOM-model state 0 shows the required endpoint https://blockstream.info/api/block-height/800000 returning a single hash: 00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054. The action history and DOM-model state 1 show the agent constructed the follow-up URL in the documented form https://blockstream.info/api/block/{hash} using that exact hash, and successfully retrieved the block JSON. The predicted output reports all required fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash), and the values match the DOM evidence exactly (including preserving the Unix timestamp integer and full-length hashes, and keeping size and weight distinct). The agent’s outcome therefore satisfies the task fully up to the stated stopping condition.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": true,
+    "primary_intent": "The user wanted the agent to deterministically resolve the Bitcoin block hash for height 800000 using Blockstream’s documented /api/block-height/800000 endpoint, then fetch the exact block JSON via the documented /api/block/{hash} URL, and report specific fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) exactly as returned. A reasonable user would not be flexible on using the correct height/hash, using the correct endpoint format, or preserving the exact hash/timestamp values; they would be flexible on minor formatting (bullets, brief preface text)."
+  },
+  "preflight": {
+    "task_id": "browser_task_091-cross-endpoint-blockchain-record-20260914T092331Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_091-cross-endpoint-blockchain-record-20260914T092331Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "visit_url",
+          "arguments": {
+            "action": "visit_url",
+            "url": "https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054",
+            "thoughts": "Use the hash from the block-height endpoint to request the detailed block record at the documented /api/block/{hash} URL."
+          },
+          "observed_after_url": "https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "1847830d13cdde79ccee761e60f2afaec357e1caea3448a6e150ed894059a556",
+          "after_sha256": "0a638cfd324e34e9437fcb1451895c6a12e0124145a42287e2bf29adcf714f4e",
+          "before_url": "https://blockstream.info/api/block-height/800000",
+          "after_url": "https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "missing_title",
+          "message": "dom_model1: missing_title",
+          "action_ordinal": null,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "c594cfe6a041f7fc5690e1f8f8f8fc13f658d4743fcc53b14c72a5bb8e16ba8f",
+    "criterion_order": [
+      "Resolve block hash using Blockstream block-height endpoint",
+      "Construct only the documented /api/block/{hash} follow-up URL from the resolved hash",
+      "Retrieve the exact block record via /api/block/{hash} (external dependency-aware)",
+      "Report required fields from the exact block response",
+      "Preserve exact returned values and distinctions (hashes, timestamp, size vs weight)",
+      "Stop after reporting the resolved hash and the requested block fields"
+    ],
+    "maximum_points": [
+      3.0,
+      2.0,
+      2.0,
+      8.0,
+      3.0,
+      3.0
+    ],
+    "criterion_denominator": 21.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_91_rerun/20260914T_task91_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_91_rerun/20260914T_task91_rerun_data_new/_inputs/frozen_rubric.json",
+  "rubric_sha256": "c594cfe6a041f7fc5690e1f8f8f8fc13f658d4743fcc53b14c72a5bb8e16ba8f",
+  "criterion_denominator": 21,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 59528,
+      "completion_tokens": 8673,
+      "reasoning_tokens": 0,
+      "total_tokens": 68201
+    },
+    "action_judge": {
+      "prompt_tokens": 15258,
+      "completion_tokens": 3619,
+      "reasoning_tokens": 2304,
+      "total_tokens": 18877
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 15,
+      "api_attempts": 15,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 2,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 9,
+        "2": 2,
+        "3": 1,
+        "4": 2,
+        "5": 1,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 2,
+        "1": 9,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 3,
+        "screenshot_idx": 1
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        0,
+        1
+      ],
+      "1": [
+        1,
+        0
+      ],
+      "2": [
+        1,
+        0
+      ],
+      "3": [
+        1,
+        0
+      ],
+      "4": [
+        1,
+        0
+      ],
+      "5": [
+        1,
+        0
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM-model explicitly captures the documented Blockstream block-height endpoint for height 800000 and shows exactly one returned hash value, which satisfies resolving the block hash via `/api/block-height/800000`.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL `https://blockstream.info/api/block-height/800000` with VISIBLE CONTENT consisting of a single line: `00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054`.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nGiven the resolved hash in DOM_MODEL_STATE_INDEX: 0 and the recorded visit to `https://blockstream.info/api/block/{hash}`, the follow-up URL construction matches the documented `/api/block/{hash}` form and uses the same hash with no substitution.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 provides the resolved hash `00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054` from `https://blockstream.info/api/block-height/800000`. Action history shows State 1 / Action 1 visiting `https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054`.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe follow-up URL present in the DOM is exactly of the documented form /api/block/{hash}, constructed as https://blockstream.info/api/block/ + 00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054.",
+          "discrepancies": "DOM evidence does not include the prior /api/block-height/800000 response, so it cannot prove this hash was returned by that endpoint; it only shows that the /api/block/{hash} URL was used.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL: https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows the /api/block/{hash} request returned the exact block record JSON for that hash (the JSON fields are visible in the page content), indicating successful retrieval.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT contains a JSON object: {\"id\":\"00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054\",\"height\":800000,\"version\":874340352,\"timestamp\":1690168629,\"tx_count\":3721,\"size\":1634536,\"weight\":3992881,\"merkle_root\":\"91f01a00530c8c83617190048ea8b0814d506cf24dfdbcf8893f8f0cab7f0855\",\"previousblockhash\":\"000000000000000000012117ad9f72c1c0e42227c2d042dca23e6b96bd9fbb55\",...}",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll requested fields are present in the DOM-captured JSON for the exact /api/block/{hash} response, and the agent output lists all of them.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes the required fields and values: id \"00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054\", height 800000, timestamp 1690168629, tx_count 3721, size 1634536, weight 3992881, merkle_root \"91f01a00530c8c83617190048ea8b0814d506cf24dfdbcf8893f8f0cab7f0855\", previousblockhash \"000000000000000000012117ad9f72c1c0e42227c2d042dca23e6b96bd9fbb55\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe reported values in the agent output match the exact DOM-shown values with no conversion (timestamp remains a Unix integer) and size and weight are kept distinct as separate numeric fields.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows exact hashes and timestamp in JSON: timestamp 1690168629; id and merkle_root and previousblockhash are full-length hex strings; size 1634536 and weight 3992881 are separate keys with distinct values.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe stopping condition is about the agent’s completion behavior and output. The DOM-model does not contain the final answer text nor any DOM evidence of subsequent exploration after the block fields. Based on the provided predicted output, the agent appears to stop after reporting the resolved hash and all requested fields, but this is not fully verifiable from DOM alone.",
+          "discrepancies": "Cannot fully confirm from DOM-model whether additional navigation or lookups occurred after the reported output, because only DOM_MODEL_STATE_INDEX: 0 is provided and it does not cover later states or the final response content.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 only evidences the resolved hash from `/api/block-height/800000` and does not include the agent’s final response content. The agent predicted output (provided in the prompt) reports the resolved hash and the requested fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) and does not indicate further lookups beyond the single `/api/block/{hash}` request.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent output stops after reporting the resolved hash and requested fields and does not show additional lookups. However, the output includes brief introductory commentary, which is slightly beyond 'only the required outputs' but does not violate the stopping condition materially.",
+          "discrepancies": "Includes small extra commentary/formatting (intro line and bullet formatting) beyond the raw requested fields.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 provides the block JSON needed for the requested report; the agent predicted output contains only the resolved block hash and the requested fields, plus minimal framing text.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM state shows the block-height response as plain text containing exactly one 64-hex-character hash on its own line for height 800000; there is no additional JSON wrapping or multiple-hash output visible.",
+      "1": "DOM evidence supports that the follow-up request uses the /api/block/{hash} pattern with the same full hash string; the page content itself does not restate that this hash came from the height endpoint, but state 0 displays the source hash.",
+      "2": "The /api/block/{hash} page renders a JSON object directly in the visible content (not an HTML table), indicating the record was retrieved successfully in the captured state.",
+      "3": "All requested keys (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) are visibly present in the JSON object and have concrete values; the JSON also contains additional fields (e.g., version and others truncated with ellipsis in the evidence), but those are not required.",
+      "4": "The DOM shows hashes as full-length lowercase hex strings and timestamp as an integer Unix value; size and weight appear as separate numeric fields with distinct values, with no units specified in the response.",
+      "5": "DOM states capture only the endpoint outputs needed to report the hash and block fields; they do not contain the agent’s final written response or prove absence of additional navigation beyond the shown two requests, so compliance with 'stop after reporting' can only be inferred from the limited recorded states."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Resolve block hash using Blockstream block-height endpoint",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent did not use or show any request to the documented /api/block-height/800000 endpoint. Instead, it assumed a block hash without resolving it via the specified endpoint.",
+        "applicable_evidence": "DOM-model state 0 (latest/only for this step) shows URL https://blockstream.info/api/block-height/800000 with visible content consisting of exactly one 64-hex hash: 00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054.",
+        "post_image_justification": "The DOM explicitly confirms the required block-height endpoint was used for height 800000 and returned a single hash, satisfying the criterion. Baseline 0/3 should be increased to full credit.",
+        "reality_notes": "DOM state shows the block-height response as plain text containing exactly one 64-hex-character hash on its own line for height 800000; there is no additional JSON wrapping or multiple-hash output visible."
+      },
+      {
+        "criterion": "Construct only the documented /api/block/{hash} follow-up URL from the resolved hash",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent correctly constructed the URL https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054 with the given hash in the documented format.",
+        "applicable_evidence": "DOM-model state 0 provides the resolved hash. Action history shows visit_url to https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054, which matches the documented /api/block/{hash} pattern using the same hash from state 0. DOM-model state 1 shows that same /api/block/{hash} URL.",
+        "post_image_justification": "Evidence supports the follow-up URL was constructed exactly as required (only /api/block/{hash}, using the resolved hash). Keep full credit.",
+        "reality_notes": "DOM evidence supports that the follow-up request uses the /api/block/{hash} pattern with the same full hash string; the page content itself does not restate that this hash came from the height endpoint, but state 0 displays the source hash."
+      },
+      {
+        "criterion": "Retrieve the exact block record via /api/block/{hash} (external dependency-aware)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent visited the constructed URL and successfully retrieved the block record, as evidenced by the detailed fields in the output.",
+        "applicable_evidence": "DOM-model state 1 (latest/only for this retrieval) shows the /api/block/{hash} endpoint returning a JSON object containing block fields (e.g., id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash), indicating successful retrieval.",
+        "post_image_justification": "The block record was retrieved successfully from the exact /api/block/{hash} URL, so full credit is warranted. Keep baseline score.",
+        "reality_notes": "The /api/block/{hash} page renders a JSON object directly in the visible content (not an HTML table), indicating the record was retrieved successfully in the captured state."
+      },
+      {
+        "criterion": "Report required fields from the exact block response",
+        "earned_points": 8,
+        "post_image_earned_points": 8.0,
+        "max_points": 8,
+        "justification": "All eight required fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) were reported and match the block record.",
+        "applicable_evidence": "DOM-model state 1 contains all required keys and values in the JSON: id 00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054; height 800000; timestamp 1690168629; tx_count 3721; size 1634536; weight 3992881; merkle_root 91f01a00530c8c83617190048ea8b0814d506cf24dfdbcf8893f8f0cab7f0855; previousblockhash 000000000000000000012117ad9f72c1c0e42227c2d042dca23e6b96bd9fbb55. Agent predicted output reports all eight fields with these same values.",
+        "post_image_justification": "All requested fields are present in the block response and were reported by the agent consistent with the DOM evidence. Keep full credit.",
+        "reality_notes": "All requested keys (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) are visibly present in the JSON object and have concrete values; the JSON also contains additional fields (e.g., version and others truncated with ellipsis in the evidence), but those are not required."
+      },
+      {
+        "criterion": "Preserve exact returned values and distinctions (hashes, timestamp, size vs weight)",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent reproduced all hash values and the Unix timestamp exactly as returned, and clearly kept size and weight as distinct fields.",
+        "applicable_evidence": "DOM-model state 1 shows hashes as full 64-hex strings and timestamp as integer 1690168629; size and weight are distinct keys with values 1634536 and 3992881 respectively. Agent predicted output reproduces these values without conversion and keeps size and weight separate.",
+        "post_image_justification": "No evidence of abbreviation, conversion, or conflation of size/weight; values match DOM exactly. Keep full credit.",
+        "reality_notes": "The DOM shows hashes as full-length lowercase hex strings and timestamp as an integer Unix value; size and weight appear as separate numeric fields with distinct values, with no units specified in the response."
+      },
+      {
+        "criterion": "Stop after reporting the resolved hash and the requested block fields",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent stopped immediately after listing the requested block fields without any additional commentary or unrelated actions.",
+        "applicable_evidence": "Agent predicted output contains only the resolved block hash and the requested block fields (plus minimal framing text). DOM-models do not directly capture the agent’s final response behavior beyond the recorded navigation, but action history shows only the single /api/block/{hash} visit after the height endpoint context, and no evidence of additional lookups is present.",
+        "post_image_justification": "Within the available evidence, the agent’s provided output satisfies the stopping condition (it ends after reporting the resolved hash and requested fields). Minor framing text is a nitpick and does not violate the condition. Keep full credit.",
+        "reality_notes": "DOM states capture only the endpoint outputs needed to report the hash and block fields; they do not contain the agent’s final written response or prove absence of additional navigation beyond the shown two requests, so compliance with 'stop after reporting' can only be inferred from the limited recorded states."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "Reviewing the action history and DOM evidence: the agent (1) used the block-height endpoint (implicitly, via provided context) to obtain the hash for height 800000, then (2) constructed the documented follow-up URL https://blockstream.info/api/block/{hash} and visited it, retrieving the JSON block record. There are no actions beyond these two API calls. No material side effects are possible or evidenced here (no cart additions, transactions, signups, or data submission). Any minor extra commentary/formatting in the agent’s output is already encompassed by the existing rubric’s stop/conciseness considerations and does not constitute a material unsolicited action. Therefore, there are no extraneous or unsolicited actions with lasting consequences that went unpenalized.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        1.0
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 1.0,
+          "total_earned_points": 21.0,
+          "total_max_points": 21.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Resolve block hash using Blockstream block-height endpoint",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent did not use or show any request to the documented /api/block-height/800000 endpoint. Instead, it assumed a block hash without resolving it via the specified endpoint.",
+              "applicable_evidence": "DOM-model state 0 (latest/only for this step) shows URL https://blockstream.info/api/block-height/800000 with visible content consisting of exactly one 64-hex hash: 00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054.",
+              "post_image_justification": "The DOM explicitly confirms the required block-height endpoint was used for height 800000 and returned a single hash, satisfying the criterion. Baseline 0/3 should be increased to full credit.",
+              "reality_notes": "DOM state shows the block-height response as plain text containing exactly one 64-hex-character hash on its own line for height 800000; there is no additional JSON wrapping or multiple-hash output visible."
+            },
+            {
+              "criterion": "Construct only the documented /api/block/{hash} follow-up URL from the resolved hash",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent correctly constructed the URL https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054 with the given hash in the documented format.",
+              "applicable_evidence": "DOM-model state 0 provides the resolved hash. Action history shows visit_url to https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054, which matches the documented /api/block/{hash} pattern using the same hash from state 0. DOM-model state 1 shows that same /api/block/{hash} URL.",
+              "post_image_justification": "Evidence supports the follow-up URL was constructed exactly as required (only /api/block/{hash}, using the resolved hash). Keep full credit.",
+              "reality_notes": "DOM evidence supports that the follow-up request uses the /api/block/{hash} pattern with the same full hash string; the page content itself does not restate that this hash came from the height endpoint, but state 0 displays the source hash."
+            },
+            {
+              "criterion": "Retrieve the exact block record via /api/block/{hash} (external dependency-aware)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent visited the constructed URL and successfully retrieved the block record, as evidenced by the detailed fields in the output.",
+              "applicable_evidence": "DOM-model state 1 (latest/only for this retrieval) shows the /api/block/{hash} endpoint returning a JSON object containing block fields (e.g., id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash), indicating successful retrieval.",
+              "post_image_justification": "The block record was retrieved successfully from the exact /api/block/{hash} URL, so full credit is warranted. Keep baseline score.",
+              "reality_notes": "The /api/block/{hash} page renders a JSON object directly in the visible content (not an HTML table), indicating the record was retrieved successfully in the captured state."
+            },
+            {
+              "criterion": "Report required fields from the exact block response",
+              "earned_points": 8,
+              "post_image_earned_points": 8.0,
+              "max_points": 8,
+              "justification": "All eight required fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) were reported and match the block record.",
+              "applicable_evidence": "DOM-model state 1 contains all required keys and values in the JSON: id 00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054; height 800000; timestamp 1690168629; tx_count 3721; size 1634536; weight 3992881; merkle_root 91f01a00530c8c83617190048ea8b0814d506cf24dfdbcf8893f8f0cab7f0855; previousblockhash 000000000000000000012117ad9f72c1c0e42227c2d042dca23e6b96bd9fbb55. Agent predicted output reports all eight fields with these same values.",
+              "post_image_justification": "All requested fields are present in the block response and were reported by the agent consistent with the DOM evidence. Keep full credit.",
+              "reality_notes": "All requested keys (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) are visibly present in the JSON object and have concrete values; the JSON also contains additional fields (e.g., version and others truncated with ellipsis in the evidence), but those are not required."
+            },
+            {
+              "criterion": "Preserve exact returned values and distinctions (hashes, timestamp, size vs weight)",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent reproduced all hash values and the Unix timestamp exactly as returned, and clearly kept size and weight as distinct fields.",
+              "applicable_evidence": "DOM-model state 1 shows hashes as full 64-hex strings and timestamp as integer 1690168629; size and weight are distinct keys with values 1634536 and 3992881 respectively. Agent predicted output reproduces these values without conversion and keeps size and weight separate.",
+              "post_image_justification": "No evidence of abbreviation, conversion, or conflation of size/weight; values match DOM exactly. Keep full credit.",
+              "reality_notes": "The DOM shows hashes as full-length lowercase hex strings and timestamp as an integer Unix value; size and weight appear as separate numeric fields with distinct values, with no units specified in the response."
+            },
+            {
+              "criterion": "Stop after reporting the resolved hash and the requested block fields",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent stopped immediately after listing the requested block fields without any additional commentary or unrelated actions.",
+              "applicable_evidence": "Agent predicted output contains only the resolved block hash and the requested block fields (plus minimal framing text). DOM-models do not directly capture the agent’s final response behavior beyond the recorded navigation, but action history shows only the single /api/block/{hash} visit after the height endpoint context, and no evidence of additional lookups is present.",
+              "post_image_justification": "Within the available evidence, the agent’s provided output satisfies the stopping condition (it ends after reporting the resolved hash and requested fields). Minor framing text is a nitpick and does not violate the condition. Keep full credit.",
+              "reality_notes": "DOM states capture only the endpoint outputs needed to report the hash and block fields; they do not contain the agent’s final written response or prove absence of additional navigation beyond the shown two requests, so compliance with 'stop after reporting' can only be inferred from the limited recorded states."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "Reviewing the action history and DOM evidence: the agent (1) used the block-height endpoint (implicitly, via provided context) to obtain the hash for height 800000, then (2) constructed the documented follow-up URL https://blockstream.info/api/block/{hash} and visited it, retrieving the JSON block record. There are no actions beyond these two API calls. No material side effects are possible or evidenced here (no cart additions, transactions, signups, or data submission). Any minor extra commentary/formatting in the agent’s output is already encompassed by the existing rubric’s stop/conciseness considerations and does not constitute a material unsolicited action. Therefore, there are no extraneous or unsolicited actions with lasting consequences that went unpenalized.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "The user wanted the agent to deterministically resolve the Bitcoin block hash for height 800000 using Blockstream’s documented /api/block-height/800000 endpoint, then fetch the exact block JSON via the documented /api/block/{hash} URL, and report specific fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) exactly as returned. A reasonable user would not be flexible on using the correct height/hash, using the correct endpoint format, or preserving the exact hash/timestamp values; they would be flexible on minor formatting (bullets, brief preface text).",
+      "reasoning": "Nitpicks: The agent included brief framing text and bullet formatting rather than emitting only raw key/value lines; this does not affect correctness or usability and does not violate the task’s primary goal. No other minor issues are evident.\n\nCritical issues: None. DOM-model state 0 shows the required endpoint https://blockstream.info/api/block-height/800000 returning a single hash: 00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054. The action history and DOM-model state 1 show the agent constructed the follow-up URL in the documented form https://blockstream.info/api/block/{hash} using that exact hash, and successfully retrieved the block JSON. The predicted output reports all required fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash), and the values match the DOM evidence exactly (including preserving the Unix timestamp integer and full-length hashes, and keeping size and weight distinct). The agent’s outcome therefore satisfies the task fully up to the stated stopping condition.",
+      "output_success": true
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        true
+      ],
+      "majority_output_success": true,
+      "all_results": [
+        {
+          "primary_intent": "The user wanted the agent to deterministically resolve the Bitcoin block hash for height 800000 using Blockstream’s documented /api/block-height/800000 endpoint, then fetch the exact block JSON via the documented /api/block/{hash} URL, and report specific fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) exactly as returned. A reasonable user would not be flexible on using the correct height/hash, using the correct endpoint format, or preserving the exact hash/timestamp values; they would be flexible on minor formatting (bullets, brief preface text).",
+          "reasoning": "Nitpicks: The agent included brief framing text and bullet formatting rather than emitting only raw key/value lines; this does not affect correctness or usability and does not violate the task’s primary goal. No other minor issues are evident.\n\nCritical issues: None. DOM-model state 0 shows the required endpoint https://blockstream.info/api/block-height/800000 returning a single hash: 00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054. The action history and DOM-model state 1 show the agent constructed the follow-up URL in the documented form https://blockstream.info/api/block/{hash} using that exact hash, and successfully retrieved the block JSON. The predicted output reports all required fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash), and the values match the DOM evidence exactly (including preserving the Unix timestamp integer and full-length hashes, and keeping size and weight distinct). The agent’s outcome therefore satisfies the task fully up to the stated stopping condition.",
+          "output_success": true
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The trajectory successfully follows the required two-step Blockstream workflow: (1) resolve the hash for height 800000 via the documented /api/block-height/800000 endpoint (present in DOM state 0), then (2) fetch the exact block JSON via the documented /api/block/{hash} URL (Action 1 / DOM state 1). The agent’s predicted output reports exactly the requested fields (id, height, timestamp, tx_count, size, weight, merkle_root, previousblockhash) and the values match the DOM evidence verbatim, preserving full hashes and the Unix timestamp and keeping size and weight distinct. No material errors occurred; minor formatting/preface text is explicitly deemed acceptable by the verification notes and does not violate the stopping condition.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `visit_url` with unknown argument(s): thoughts. Valid arguments are: url.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `visit_url`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `visit_url` with unknown argument(s): thoughts. Valid arguments are: url."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task clearly specifies the block height (800000), the exact Blockstream API endpoints (/api/block‐height/800000 and /api/block/{hash}), and the specific fields to report. The trajectory evidence shows the agent successfully resolved the hash and retrieved the block record without guessing or making assumptions. There is no missing information or multiple valid interpretations that would prevent a competent agent from executing the task.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully achievable using the given API endpoints; it involves no illegal, NSFW, or otherwise disallowed content and does not require credentials beyond public endpoints. The agent successfully completed the task, demonstrating that it was neither impossible nor inherently invalid.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task provides the exact endpoints, parameters (block height 800000), follow-up URL pattern, and required output fields, so there is no missing or unclear information. A competent agent can execute it without making assumptions.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible using the public Blockstream API, does not require unavailable credentials, and poses no legal, NSFW, or policy issues.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_91_rerun/20260914T_task91_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "1847830d13cdde79ccee761e60f2afaec357e1caea3448a6e150ed894059a556",
+        "byte_count": 292,
+        "line_count": 7,
+        "estimated_tokens": 73,
+        "url": "https://blockstream.info/api/block-height/800000",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 7
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m0:L1-L7"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_91_rerun/20260914T_task91_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "0a638cfd324e34e9437fcb1451895c6a12e0124145a42287e2bf29adcf714f4e",
+        "byte_count": 718,
+        "line_count": 7,
+        "estimated_tokens": 180,
+        "url": "https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 7
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m1:L1-L7"
+      }
+    ],
+    "estimated_evidence_tokens": 253,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [
+      {
+        "state_index": 0,
+        "warning": "missing_title"
+      },
+      {
+        "state_index": 1,
+        "warning": "missing_title"
+      }
+    ],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 9,
+        "2": 2,
+        "3": 1,
+        "4": 2,
+        "5": 1
+      },
+      "1": {
+        "0": 2,
+        "1": 9,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 3
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 6,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 6361,
+        "estimated_input_tokens": 1591,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 6816,
+        "estimated_input_tokens": 1704,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          5
+        ],
+        "char_count": 6368,
+        "estimated_input_tokens": 1592,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8026,
+        "estimated_input_tokens": 2007,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          5
+        ],
+        "char_count": 6670,
+        "estimated_input_tokens": 1668,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8427,
+        "estimated_input_tokens": 2107,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          5
+        ],
+        "char_count": 7039,
+        "estimated_input_tokens": 1760,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8867,
+        "estimated_input_tokens": 2217,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          5
+        ],
+        "char_count": 7199,
+        "estimated_input_tokens": 1800,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 9276,
+        "estimated_input_tokens": 2319,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 130.805
+}

@@ -1,0 +1,747 @@
+{
+  "task_id": "browser_task_070-unicode-ideograph-inspection-20260914T085343Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/tmp/evidence-reruns-61-70.6Gq7A3/data-dom/task_70_rerun",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_70_rerun/20260914T_task70_rerun_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "d0ffe495ad2e47d67d52c42148e989a21aba2a4aa8fd88b63ab4a62c2b792f5e",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_70_rerun/20260914T_task70_rerun_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_070-unicode-ideograph-inspection-20260914T085343Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_070-unicode-ideograph-inspection-20260914T085343Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to scroll to ensure all linguistic reading fields (Mandarin, Japanese On, Korean, Vietnamese) and the glyph field remain visible and confirmed from the Unihan record before compiling final answer."
+          },
+          "observed_after_url": "https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "be00d61e09d78f283b2d13c881a80e4fe5ca6d6cfb4cee51108efb097c16bcd8",
+          "after_sha256": "2ed63ce3a5adaf7830e28e26ce108332d7459531acfa2da326e32fa823ee5785",
+          "before_url": "https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00",
+          "after_url": "https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "d0ffe495ad2e47d67d52c42148e989a21aba2a4aa8fd88b63ab4a62c2b792f5e",
+    "criterion_order": [
+      "Access the Unicode Unihan record for U+4E00 (or clearly report access failure)",
+      "Respect task constraints (sole source, exact copying, no extra fields, stop at requested fields)",
+      "Record code-point identity and displayed glyph",
+      "Record numeric and encoding fields (decimal, UTF-8, UTF-16)",
+      "Record total stroke count",
+      "Record definition",
+      "Record Mandarin reading",
+      "Record Japanese On reading",
+      "Record Korean reading",
+      "Record Vietnamese reading"
+    ],
+    "maximum_points": [
+      2.0,
+      2.0,
+      2.0,
+      3.0,
+      1.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_70_rerun/20260914T_task70_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "result": {
+    "process_score": 0.4,
+    "total_earned_points": 8.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 165.164
+  },
+  "criteria": [
+    {
+      "criterion": "Access the Unicode Unihan record for U+4E00 (or clearly report access failure)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Access to the correct Unihan record for U+4E00 is explicitly supported by the latest DOM-model state, so the baseline score stands.",
+      "penalty": false
+    },
+    {
+      "criterion": "Respect task constraints (sole source, exact copying, no extra fields, stop at requested fields)",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent’s output includes kDefinition and multiple language-reading fields that are not evidenced anywhere in the provided DOM-model snapshots. Under the DOM-rule constraints, those parts are unproven and thus the response does not demonstrate it used only the displayed labeled fields / copied exactly as displayed. This is a substantive constraint violation in the context of the provided evidence, so reduce to 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record code-point identity and displayed glyph",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Both the code-point identity (U+4E00) and the displayed glyph (一) are explicitly shown and match the agent output.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record numeric and encoding fields (decimal, UTF-8, UTF-16)",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "All three requested numeric/encoding fields match exactly what is displayed in the DOM evidence.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record total stroke count",
+      "action_only_points": 1.0,
+      "final_points": 1.0,
+      "max_points": 1.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Total stroke count is explicitly displayed as 1 and matches the agent output.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record definition",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Because kDefinition is not visible in the provided DOM evidence, the agent’s reported definition is unsupported (cannot be verified as copied from the displayed record). This warrants a score of 0 rather than baseline full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record Mandarin reading",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The Mandarin reading in the agent output is not supported by the provided DOM evidence (no kMandarin field shown). Therefore, no credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record Japanese On reading",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The Japanese On reading in the agent output is not supported by the provided DOM evidence (no kJapaneseOn field shown). Therefore, no credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record Korean reading",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The Korean reading in the agent output is not supported by the provided DOM evidence (no kKorean field shown). Therefore, no credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record Vietnamese reading",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The Vietnamese reading in the agent output is not supported by the provided DOM evidence (no kVietnamese field shown). Therefore, no credit.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 14,
+    "o4-mini": 3,
+    "total": 17,
+    "api_attempts": 17,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 82211,
+      "completion_tokens": 12070,
+      "reasoning_tokens": 0,
+      "total_tokens": 94281
+    },
+    "o4-mini": {
+      "prompt_tokens": 16940,
+      "completion_tokens": 4056,
+      "reasoning_tokens": 2368,
+      "total_tokens": 20996
+    },
+    "combined": {
+      "prompt_tokens": 99151,
+      "completion_tokens": 16126,
+      "reasoning_tokens": 2368,
+      "total_tokens": 115277
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_70_rerun/20260914T_task70_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "be00d61e09d78f283b2d13c881a80e4fe5ca6d6cfb4cee51108efb097c16bcd8",
+        "byte_count": 4644,
+        "line_count": 117,
+        "estimated_tokens": 1157,
+        "url": "https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00",
+        "title": "Unihan data for U+4E00",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 89
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 90,
+            "end_line": 111
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 112,
+            "end_line": 117
+          }
+        ],
+        "control_refs": [
+          "Unicode",
+          "41",
+          "4",
+          "26",
+          "59",
+          "62",
+          "13",
+          "17",
+          "20",
+          "23",
+          "51",
+          "54",
+          "100",
+          "106",
+          "112",
+          "118",
+          "124",
+          "130",
+          "136",
+          "142",
+          "148",
+          "154",
+          "167",
+          "173",
+          "179",
+          "185",
+          "191"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L117"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_70_rerun/20260914T_task70_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "2ed63ce3a5adaf7830e28e26ce108332d7459531acfa2da326e32fa823ee5785",
+        "byte_count": 4677,
+        "line_count": 154,
+        "estimated_tokens": 1163,
+        "url": "https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00",
+        "title": "Unihan data for U+4E00",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 119
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 120,
+            "end_line": 146
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 147,
+            "end_line": 150
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 151,
+            "end_line": 154
+          }
+        ],
+        "control_refs": [
+          "167",
+          "173",
+          "179",
+          "185",
+          "191",
+          "197",
+          "203",
+          "209",
+          "215",
+          "221",
+          "227",
+          "233",
+          "239",
+          "245",
+          "251",
+          "257",
+          "263",
+          "269",
+          "283",
+          "289",
+          "295",
+          "301",
+          "307",
+          "311",
+          "316",
+          "other",
+          "148",
+          "154",
+          "348"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L154"
+      }
+    ],
+    "estimated_evidence_tokens": 2320,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 4,
+        "2": 8,
+        "3": 10,
+        "4": 10,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "1": {
+        "0": 10,
+        "1": 5,
+        "2": 9,
+        "3": 8,
+        "4": 10,
+        "5": 1,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 5,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "7": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "8": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "9": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 5,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 11558,
+        "estimated_input_tokens": 2890,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 11617,
+        "estimated_input_tokens": 2905,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 13406,
+        "estimated_input_tokens": 3352,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 13347,
+        "estimated_input_tokens": 3337,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 13600,
+        "estimated_input_tokens": 3400,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 13649,
+        "estimated_input_tokens": 3413,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 13864,
+        "estimated_input_tokens": 3466,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 14043,
+        "estimated_input_tokens": 3511,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "char_count": 14295,
+        "estimated_input_tokens": 3574,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/task_70_rerun/20260914T_task70_rerun_data_new/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/task_70_rerun/20260914T_task70_rerun_data_new/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/task_70_rerun/20260914T_task70_rerun_data_new/dom_model/run.log"
+}

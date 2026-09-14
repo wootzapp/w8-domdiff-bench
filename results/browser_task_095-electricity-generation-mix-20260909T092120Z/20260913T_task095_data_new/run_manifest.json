@@ -1,0 +1,234 @@
+{
+  "status": "complete",
+  "phase": "B",
+  "paid_calls_authorized": true,
+  "writes_performed": true,
+  "preflight": {
+    "task_id": "browser_task_095-electricity-generation-mix-20260909T092120Z",
+    "task_alias": "browser_task_095-electricity-generation-mix-20260909T092120Z",
+    "actions": 1,
+    "screenshots": 2,
+    "dom_model_states": 2,
+    "alignment": {
+      "task_id": "browser_task_095-electricity-generation-mix-20260909T092120Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "The JSON is truncated in the visible snapshot; scrolling may reveal the full generationmix array for the 12:00–12:30 record so I can list all fuels and percentages and compute the sum."
+          },
+          "observed_after_url": "https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "f51dfddbcc2bbf9663318e53ee5f1806689b116adc738c73d25ad03badd75869",
+          "after_sha256": "f51dfddbcc2bbf9663318e53ee5f1806689b116adc738c73d25ad03badd75869",
+          "before_url": "https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z",
+          "after_url": "https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "missing_title",
+          "message": "dom_model1: missing_title",
+          "action_ordinal": null,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_095-electricity-generation-mix-20260909T092120Z.json",
+    "frozen_rubric_sha256": "7d5a5a273e604a77efabed606d75705b44c94f7111244a300e7c2a6f2108eb8c",
+    "criterion_order": [
+      "Select the exact requested data record (from 2025-01-01T12:00Z to 2025-01-01T12:30Z)",
+      "Report every generationmix fuel-perc pair in returned order with exact precision",
+      "Identify all fuels with perc equal to zero (explicit zeros only)",
+      "Calculate the sum of all returned perc values for the selected record"
+    ],
+    "criterion_descriptions": [
+      "Use only the single data record whose 'from' value is exactly 2025-01-01T12:00Z and whose 'to' value is exactly 2025-01-01T12:30Z, even if the API response includes adjacent intervals. Full credit if the correct bounded record is selected and no data from other intervals is mixed in. Full credit also if the agent makes a reasonable attempt to query the API but the exact record is not returned due to external factors (API down/error/rate limit/no data) and the agent clearly reports that the exact bounded record is unavailable. Partial credit if the agent selects an adjacent/overlapping interval while clearly stating the boundary mismatch and that the exact interval was not available in the response. No credit if the agent uses the wrong interval without acknowledging the mismatch or combines multiple records as if they were the requested one.",
+      "For the selected record (only), list every (fuel, perc) pair from its generationmix array, preserving the exact returned order and the exact decimal precision as provided. Full credit if all pairs are included once, in order, with unchanged numeric formatting. If the exact requested record is unavailable due to external API limitations and the agent clearly reports that unavailability (per criterion 1), award full credit for not fabricating values; otherwise, if an adjacent interval is explicitly used (with mismatch disclosed), grade based on correctness for that disclosed interval. Partial credit if all fuels are correct but order is changed or minor formatting/precision changes occur. No credit if fuels/perc values are missing, added, or materially altered for the claimed record.",
+      "Explicitly name every fuel in the selected record whose perc value is exactly 0 (as returned), and do not treat omitted fuels as zero. Full credit if all and only explicitly-zero fuels are identified. If the exact requested record is unavailable and the agent clearly reports that unavailability without inventing data, award full credit. Partial credit if some zero fuels are missed or a non-zero fuel is incorrectly flagged as zero. No credit if the agent infers zeros for fuels not present in the generationmix array.",
+      "Compute the total by summing only the perc values present in the selected record's generationmix array (no inference from generation quantities). Full credit if the sum is correct for that record. If the exact requested record is unavailable due to external API limitations and the agent clearly reports that and does not fabricate a total, award full credit. Partial credit if arithmetic is slightly off but clearly based on the correct list of perc values for the record actually reported. No credit if the sum uses the wrong interval without disclosure, includes inferred/omitted fuels, or is not provided when data is available."
+    ],
+    "maximum_points": [
+      4.0,
+      4.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 12.0,
+    "screenshot_sidecar_validated": true,
+    "dom_model_sidecar_validated": true,
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_095-electricity-generation-mix-20260909T092120Z_generation_metrics.json",
+    "rubric_generation_calls_during_scoring": 0,
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    }
+  },
+  "verifier_packages": {
+    "microsoft_verifier": {
+      "package": "microsoft_verifier",
+      "root": "/data/isha/msexecute/evidence-error-experiment/microsoft_verifier",
+      "file_count": 33,
+      "tree_sha256": "90af71daf5ecc0770643ce9bc8552eaefa792fef198682dc10c36e288e9c5802",
+      "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/microsoft_verifier.json"
+    },
+    "dom_model": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model",
+      "file_count": 52,
+      "tree_sha256": "66f01ab44f5e28fa377aff439b786a3ca995db77c6fd1057a2143216ad4d886b",
+      "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/dom_model.json"
+    }
+  },
+  "runtime": {
+    "openai": "2.16.0",
+    "tiktoken": "0.12.0",
+    "httpx": "0.28.1",
+    "Pillow": "12.1.0",
+    "pydantic": "2.12.5",
+    "azure-identity": "missing",
+    "python": "3.12.3"
+  },
+  "commands": {
+    "microsoft_verifier": [
+      "/data/isha/msexecute/evidence-error-experiment/.venv/bin/python",
+      "-m",
+      "microsoft_verifier.runner",
+      "--input",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/screenshot",
+      "--rubric-file",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/frozen_rubric.json",
+      "--eval-config",
+      "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical",
+      "--output",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/microsoft_verifier",
+      "--judge-model",
+      "gpt-5.2",
+      "--o4mini-model",
+      "o4-mini",
+      "--rubric-threshold",
+      "0.8",
+      "--max-images-per-criterion",
+      "5",
+      "--majority-vote-instances",
+      "1",
+      "--success",
+      "outcome",
+      "--redo-eval"
+    ],
+    "dom_model": [
+      "/data/isha/msexecute/evidence-error-experiment/.venv/bin/python",
+      "-m",
+      "dom_model.runner",
+      "--input",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/dom_model",
+      "--rubric-file",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/frozen_rubric.json",
+      "--generation-metrics",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/rubric_generation_metrics.json",
+      "--eval-config",
+      "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical",
+      "--output",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/dom_model",
+      "--judge-model",
+      "gpt-5.2",
+      "--o4mini-model",
+      "o4-mini",
+      "--rubric-threshold",
+      "0.8",
+      "--max-evidence-per-criterion",
+      "5",
+      "--min-relevance-threshold",
+      "0",
+      "--dom-model-state-char-budget",
+      "350000",
+      "--majority-vote-instances",
+      "1",
+      "--success",
+      "outcome",
+      "--redo-eval"
+    ]
+  },
+  "verifier_parity": {
+    "status": "passed",
+    "only_intentional_difference": "evidence_loader_and_representation",
+    "controls": {
+      "judge_model": "gpt-5.2",
+      "action_judge_model": "o4-mini",
+      "rubric_threshold": "0.8",
+      "max_evidence_items_per_criterion": "5",
+      "min_relevance_threshold": "0",
+      "majority_vote_instances": "1",
+      "success_criterion": "outcome",
+      "redo_eval": true
+    }
+  },
+  "source_inputs": {
+    "screenshot": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_095-electricity-generation-mix-20260909T092120Z",
+    "dom_model": "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_095-electricity-generation-mix-20260909T092120Z",
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_095-electricity-generation-mix-20260909T092120Z.json",
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_095-electricity-generation-mix-20260909T092120Z_generation_metrics.json"
+  },
+  "isolated_inputs": {
+    "screenshot": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/screenshot",
+    "dom_model": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/dom_model",
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/frozen_rubric.json",
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/rubric_generation_metrics.json"
+  },
+  "phase_a_usage_separate_from_scoring": {
+    "gpt-5.2": {
+      "prompt_tokens": 11279,
+      "completion_tokens": 1577,
+      "reasoning_tokens": 0,
+      "total_tokens": 12856
+    },
+    "o4-mini": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    },
+    "combined": {
+      "prompt_tokens": 11279,
+      "completion_tokens": 1577,
+      "reasoning_tokens": 0,
+      "total_tokens": 12856
+    }
+  },
+  "rubric_generation_calls_during_scoring": 0,
+  "run_root": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new",
+  "microsoft_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/microsoft_verifier/run_metrics.json",
+  "dom_model_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/dom_model/run_metrics.json",
+  "comparison_report": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/comparison.md"
+}

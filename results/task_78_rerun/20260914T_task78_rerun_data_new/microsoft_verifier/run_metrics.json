@@ -1,0 +1,137 @@
+{
+  "task_id": "browser_task_078-cross-endpoint-game-data-20260914T090704Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/tmp/evidence-reruns-71-80.zx1OaR/data-ss/task_78_rerun",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "fc0553ae76f7d38f74791ed0b8d2518a353fa3a7bbc068449bdc7ffe0bd460e1",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 1,
+    "screenshots": 2
+  },
+  "result": {
+    "process_score": 0.6,
+    "total_earned_points": 12.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 105.931
+  },
+  "criteria": [
+    {
+      "criterion": "Use only the supplied Pikachu Pokémon response and its returned species.url",
+      "action_only_points": 3.0,
+      "final_points": 2.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent’s reported data references only two resources: the /pokemon/pikachu response (claimed) and the species endpoint. However, because the screenshots do not display the species.url inside the /pokemon response, we cannot verify that the species page was reached via the returned species.url (even though it matches the typical value). Still, there is no evidence the agent used any additional endpoints beyond the species page, and the action history shows only that one species URL visit. Slightly reduce from full credit due to inability to verify the exact “returned species.url” linkage from the supplied Pokémon response in the visual evidence.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report required Pokémon fields (id, raw height, raw weight, base_experience)",
+      "action_only_points": 4.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent reported all four required Pokémon fields exactly matching Screenshot 1, and did not convert height/weight units. Keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report all types in slot order using exact API strings",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Because the types array is not visible in the provided evidence, the agent’s type reporting is unsupported by screenshots/action history. This is effectively unverifiable and could be fabricated; score should be reduced to 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Compute and report the highest base stat (include ties) from complete stats array",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "With no stats array shown, the agent’s highest-stat claim is unsupported; additionally, it is identified as incorrect in the rubric’s reality notes. Keep at 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Open species.url and report species fields (color.name, habitat.name, capture_rate, generation.name)",
+      "action_only_points": 4.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "All four requested species fields are directly supported by Screenshot 2 and match the agent’s output exactly. Full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Stop after recording all requested fields (no extra/unrequested outputs)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Meets the stopping condition and avoids unrequested extra content. Full credit.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 9,
+    "o4-mini": 3,
+    "total": 12,
+    "api_attempts": 12,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 59780,
+      "completion_tokens": 5612,
+      "reasoning_tokens": 0,
+      "total_tokens": 65392
+    },
+    "o4-mini": {
+      "prompt_tokens": 16204,
+      "completion_tokens": 4134,
+      "reasoning_tokens": 2688,
+      "total_tokens": 20338
+    },
+    "combined": {
+      "prompt_tokens": 75984,
+      "completion_tokens": 9746,
+      "reasoning_tokens": 2688,
+      "total_tokens": 85730
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/microsoft_verifier/run.log"
+}

@@ -1,0 +1,626 @@
+{
+  "task_id": "browser_task_078-cross-endpoint-game-data-20260914T090704Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/tmp/evidence-reruns-71-80.zx1OaR/data-dom/task_78_rerun",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "fc0553ae76f7d38f74791ed0b8d2518a353fa3a7bbc068449bdc7ffe0bd460e1",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_078-cross-endpoint-game-data-20260914T090704Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_078-cross-endpoint-game-data-20260914T090704Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "visit_url",
+          "arguments": {
+            "action": "visit_url",
+            "url": "https://pokeapi.co/api/v2/pokemon-species/pikachu",
+            "thoughts": "The Pokémon data we need is already visible; next I must open the species.url from this response to retrieve the species fields."
+          },
+          "observed_after_url": "https://pokeapi.co/api/v2/pokemon-species/pikachu"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "192bfa1dc8f9f56e5c58a220846232af1bc96d988725eb03aacc31ac34ee6b37",
+          "after_sha256": "2e2a61399fa80ef92cc5a172ba56027ffe5650feb0e50fd3208cb4aecb7cba5e",
+          "before_url": "https://pokeapi.co/api/v2/pokemon/pikachu",
+          "after_url": "https://pokeapi.co/api/v2/pokemon-species/pikachu"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "missing_title",
+          "message": "dom_model1: missing_title",
+          "action_ordinal": null,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "fc0553ae76f7d38f74791ed0b8d2518a353fa3a7bbc068449bdc7ffe0bd460e1",
+    "criterion_order": [
+      "Use only the supplied Pikachu Pokémon response and its returned species.url",
+      "Report required Pokémon fields (id, raw height, raw weight, base_experience)",
+      "Report all types in slot order using exact API strings",
+      "Compute and report the highest base stat (include ties) from complete stats array",
+      "Open species.url and report species fields (color.name, habitat.name, capture_rate, generation.name)",
+      "Stop after recording all requested fields (no extra/unrequested outputs)"
+    ],
+    "maximum_points": [
+      3.0,
+      4.0,
+      3.0,
+      4.0,
+      4.0,
+      2.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "result": {
+    "process_score": 0.6,
+    "total_earned_points": 12.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 162.363
+  },
+  "criteria": [
+    {
+      "criterion": "Use only the supplied Pikachu Pokémon response and its returned species.url",
+      "action_only_points": 3.0,
+      "final_points": 2.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent appears to have used only the Pokémon endpoint and a species endpoint, and there is no evidence of extra endpoints being used. But the strict constraint is “use only the supplied Pokémon response and its returned species.url”; because the DOM does not show the `species.url` inside the Pokémon JSON, we cannot explicitly verify that the visited species URL was the one returned by that response (only that it is a plausible species endpoint). Per the DOM rule, this is only partially confirmed, so reduce from full credit to partial.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report required Pokémon fields (id, raw height, raw weight, base_experience)",
+      "action_only_points": 4.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "All four required Pokémon fields are present in the agent output and match the DOM exactly, with raw height/weight preserved and no conversion.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report all types in slot order using exact API strings",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Because the DOM evidence does not display the types array, the agent’s reported type(s) and slot order are unverified. Under the DOM rule, lack of evidence means UNKNOWN rather than supported; award no credit rather than assuming correctness.",
+      "penalty": false
+    },
+    {
+      "criterion": "Compute and report the highest base stat (include ties) from complete stats array",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The highest-base-stat computation cannot be verified from DOM evidence because the complete stats array is not shown. The agent nonetheless asserted a specific highest stat/value; with no supporting DOM evidence, this is not creditable under the rules (and cannot be checked for tie-handling).",
+      "penalty": false
+    },
+    {
+      "criterion": "Open species.url and report species fields (color.name, habitat.name, capture_rate, generation.name)",
+      "action_only_points": 4.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "All four requested species fields are reported and match the species JSON in the DOM exactly.",
+      "penalty": false
+    },
+    {
+      "criterion": "Stop after recording all requested fields (no extra/unrequested outputs)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Meets the stopping condition: the response stops after providing the requested items and does not add extraneous content beyond minimal headings/labels.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 22,
+    "o4-mini": 3,
+    "total": 25,
+    "api_attempts": 25,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 115470,
+      "completion_tokens": 13473,
+      "reasoning_tokens": 0,
+      "total_tokens": 128943
+    },
+    "o4-mini": {
+      "prompt_tokens": 16926,
+      "completion_tokens": 2753,
+      "reasoning_tokens": 1344,
+      "total_tokens": 19679
+    },
+    "combined": {
+      "prompt_tokens": 132396,
+      "completion_tokens": 16226,
+      "reasoning_tokens": 1344,
+      "total_tokens": 148622
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "192bfa1dc8f9f56e5c58a220846232af1bc96d988725eb03aacc31ac34ee6b37",
+        "byte_count": 7780,
+        "line_count": 8,
+        "estimated_tokens": 1945,
+        "url": "https://pokeapi.co/api/v2/pokemon/pikachu",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 8
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m0:L1-L8"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "2e2a61399fa80ef92cc5a172ba56027ffe5650feb0e50fd3208cb4aecb7cba5e",
+        "byte_count": 8259,
+        "line_count": 8,
+        "estimated_tokens": 2053,
+        "url": "https://pokeapi.co/api/v2/pokemon-species/pikachu",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 8
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m1:L1-L8"
+      }
+    ],
+    "estimated_evidence_tokens": 3998,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [
+      {
+        "state_index": 0,
+        "warning": "missing_title"
+      },
+      {
+        "state_index": 1,
+        "warning": "missing_title"
+      }
+    ],
+    "relevance": {
+      "0": {
+        "0": 8,
+        "1": 10,
+        "2": 0,
+        "3": 0,
+        "4": 1,
+        "5": 1
+      },
+      "1": {
+        "0": 2,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 10,
+        "5": 1
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 9,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 15304,
+        "estimated_input_tokens": 3826,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 15659,
+        "estimated_input_tokens": 3915,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "char_count": 16298,
+        "estimated_input_tokens": 4075,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 15880,
+        "estimated_input_tokens": 3970,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 16277,
+        "estimated_input_tokens": 4070,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "char_count": 16458,
+        "estimated_input_tokens": 4115,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 16700,
+        "estimated_input_tokens": 4175,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "char_count": 16811,
+        "estimated_input_tokens": 4203,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17128,
+        "estimated_input_tokens": 4282,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "char_count": 17322,
+        "estimated_input_tokens": 4331,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17288,
+        "estimated_input_tokens": 4322,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          5
+        ],
+        "char_count": 17831,
+        "estimated_input_tokens": 4458,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 13117,
+        "estimated_input_tokens": 3280,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 13165,
+        "estimated_input_tokens": 3292,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 13031,
+        "estimated_input_tokens": 3258,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 13309,
+        "estimated_input_tokens": 3328,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 13130,
+        "estimated_input_tokens": 3283,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/dom_model/run.log"
+}

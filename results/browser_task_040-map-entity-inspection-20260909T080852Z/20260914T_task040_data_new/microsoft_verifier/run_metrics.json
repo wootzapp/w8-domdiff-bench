@@ -1,0 +1,181 @@
+{
+  "task_id": "browser_task_040-map-entity-inspection-20260909T080852Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_040-map-entity-inspection-20260909T080852Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_040-map-entity-inspection-20260909T080852Z/20260914T_task040_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "2f5a5cab05458d03a0e495ac223e152659863ab23a1d08ce8b9ad6bfd8dcac8e",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_040-map-entity-inspection-20260909T080852Z/20260914T_task040_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 1,
+    "screenshots": 2
+  },
+  "result": {
+    "process_score": 0.78125,
+    "total_earned_points": 12.5,
+    "total_max_points": 16.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 86.505
+  },
+  "criteria": [
+    {
+      "criterion": "Access OpenStreetMap search for 'British Museum, London'",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Evidence clearly confirms OSM search was accessed and the intended query was used. No adjustment needed.",
+      "penalty": false
+    },
+    {
+      "criterion": "Navigate to the exact British Museum OSM object page",
+      "action_only_points": 4.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": "Only score this criterion if OpenStreetMap is accessible enough to interact with search results/map.",
+      "is_condition_met": true,
+      "is_applicable": true,
+      "final_justification": "The exact British Museum object page (relation 177044) is open; this satisfies the constraint to select the Great Russell Street museum, not a similarly named result. Keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record displayed OSM object type and ID",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": "Only score this criterion if the exact British Museum object page is opened.",
+      "is_condition_met": true,
+      "is_applicable": true,
+      "final_justification": "Object type and ID are directly visible and match the agent’s output. Full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report addr:street tag value",
+      "action_only_points": 1.0,
+      "final_points": 1.0,
+      "max_points": 1.0,
+      "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+      "is_condition_met": true,
+      "is_applicable": true,
+      "final_justification": "addr:street value is visible and correctly reported. Full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report addr:city tag value",
+      "action_only_points": 1.0,
+      "final_points": 1.0,
+      "max_points": 1.0,
+      "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+      "is_condition_met": true,
+      "is_applicable": true,
+      "final_justification": "addr:city value is visible and correctly reported. Full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report addr:postcode tag value",
+      "action_only_points": 1.0,
+      "final_points": 1.0,
+      "max_points": 1.0,
+      "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+      "is_condition_met": true,
+      "is_applicable": true,
+      "final_justification": "addr:postcode value is visible and correctly reported. Full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report tourism tag value",
+      "action_only_points": 1.0,
+      "final_points": 0.0,
+      "max_points": 1.0,
+      "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+      "is_condition_met": true,
+      "is_applicable": true,
+      "final_justification": "The agent reported “tourism: museum,” but the provided screenshot evidence does not display the tourism tag/value, so this is unsupported by the record. Since the task required reporting missing tags as unavailable rather than inferring, and the agent did not do so, this should be scored as not correctly extracted.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report museum tag value",
+      "action_only_points": 1.0,
+      "final_points": 0.0,
+      "max_points": 1.0,
+      "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+      "is_condition_met": true,
+      "is_applicable": true,
+      "final_justification": "The agent reported “museum: archaeological,” but the museum tag/value is not visible in the evidence provided; therefore the reported value is not verifiable and appears inferred/hallucinated relative to the screenshots. Score should be reduced to 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report website tag value",
+      "action_only_points": 1.0,
+      "final_points": 0.0,
+      "max_points": 1.0,
+      "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+      "is_condition_met": true,
+      "is_applicable": true,
+      "final_justification": "The agent reported a website value, but it is not shown in the provided screenshots. Because the instruction says to report missing tags as unavailable rather than inferring, and the evidence does not support the specific website claim, award 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Respect constraints (no sign-in/edit; stop after recording requested info)",
+      "action_only_points": 2.0,
+      "final_points": 1.5,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "No evidence of signing in or editing. The agent did stop after presenting an answer; however, it did not correctly handle unverified tags (tourism/museum/website). This does not violate the no-edit/no-login constraint, but it does mean they effectively ‘stopped’ without reliably recording all requested tag values. Minor deduction is appropriate rather than full loss because the constraint focus is primarily no sign-in/edit.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 10,
+    "o4-mini": 3,
+    "total": 13,
+    "api_attempts": 13,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 61530,
+      "completion_tokens": 6054,
+      "reasoning_tokens": 0,
+      "total_tokens": 67584
+    },
+    "o4-mini": {
+      "prompt_tokens": 16312,
+      "completion_tokens": 3605,
+      "reasoning_tokens": 2048,
+      "total_tokens": 19917
+    },
+    "combined": {
+      "prompt_tokens": 77842,
+      "completion_tokens": 9659,
+      "reasoning_tokens": 2048,
+      "total_tokens": 87501
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_040-map-entity-inspection-20260909T080852Z/20260914T_task040_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_040-map-entity-inspection-20260909T080852Z/20260914T_task040_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_040-map-entity-inspection-20260909T080852Z/20260914T_task040_data_new/microsoft_verifier/run.log"
+}

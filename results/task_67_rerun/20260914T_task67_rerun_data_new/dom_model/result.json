@@ -1,0 +1,712 @@
+{
+  "task_id": "browser_task_067-chemical-reference-data-20260914T085132Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.5,
+  "rubric_total_max_points": 15.0,
+  "rubric_total_earned_points": 7.5,
+  "rubric_is_success": false,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: (1) The formula is rendered on the page with subscript markup (\"H _{2} O\"), while the agent wrote \"H2O\" with an explanatory note; this is a minor transcription-format issue that doesn’t change the chemical identity. (2) The agent included extra fields (Method/Comment) beyond the requested five fields; this is minor scope creep.\n\nCritical issues: The task’s primary deliverable includes the CODATA experimental gas-phase standard enthalpy of formation with its unit and the exact cited reference wording from the specified NIST record. In the provided DOM-model evidence (states 0 and 1), the page is indeed the correct NIST water record and it does show the four identity fields (formula, molecular weight 18.0153, InChIKey XLYOFNOQVPJJNP-UHFFFAOYSA-N, CAS 7732-18-5). However, the DOM excerpts do not show any CODATA enthalpy-of-formation row/value, uncertainty, units, or reference text. Despite this, the agent output asserts a specific value (−241.826 ± 0.040 kJ/mol) and a reference (“Cox, Wagman, et al., 1984”) and claims they were taken directly and preserved exactly. With no DOM-confirmed evidence of that enthalpy entry being visible/recorded from the page during the agent’s interaction (only a scroll action is logged, and the thermochemistry table content is not captured), this enthalpy/unit/reference portion is unsubstantiated relative to the ground-truth evidence we have, and it is also the key part that differentiates a correct completion from partial identity extraction. Because the task explicitly requires exact CODATA experimental gas-phase data and exact reference wording from the record, failing to reliably provide that (and instead providing an unverifiable specific value/reference) means the user did not get the required, trustworthy final deliverable.\n\nOverall: The agent successfully accessed the right NIST record and correctly reported the four identity fields, but it did not verifiably extract the required CODATA experimental gas-phase enthalpy of formation (with unit and reference) from the record as required. This is a critical miss for the task outcome.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Extract and report five specific fields (4 identity identifiers plus the CODATA experimental gas-phase standard enthalpy of formation including unit and reference) directly from the NIST Chemistry WebBook water record (ID=C7732185). The user would be flexible on minor formatting (e.g., subscript rendering) but not flexible on using the wrong source, omitting the enthalpy/unit/reference, or giving an incorrect/non-CODATA/non-gas-phase value or reference."
+  },
+  "preflight": {
+    "task_id": "browser_task_067-chemical-reference-data-20260914T085132Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_067-chemical-reference-data-20260914T085132Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "I must perform at least one successful browser action before terminating; scrolling a bit maintains context while satisfying this requirement."
+          },
+          "observed_after_url": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "b1c8996aa6f68ee9ec47b7be51d9c1dc34d14c9c8a78a20f3482993f8ed5e667",
+          "after_sha256": "df35ef1540ac14f4a4725a9d41bd14b3be266eb205d0eff37e2098ebdcaea808",
+          "before_url": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1",
+          "after_url": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "1cf91356f00e3863c1d3520912f1db9c10bd6dbb0ff4e94e142d2f02e4d2392e",
+    "criterion_order": [
+      "Access the specified NIST Chemistry WebBook record for water (ID=C7732185)",
+      "Report identity fields from the record: formula, molecular weight, IUPAC InChIKey, and CAS Registry Number",
+      "Report CODATA experimental gas-phase standard enthalpy of formation (with unit and reference)",
+      "Preserve exact transcription as feasible and stop after required fields"
+    ],
+    "maximum_points": [
+      3.0,
+      4.0,
+      6.0,
+      2.0
+    ],
+    "criterion_denominator": 15.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/_inputs/frozen_rubric.json",
+  "rubric_sha256": "1cf91356f00e3863c1d3520912f1db9c10bd6dbb0ff4e94e142d2f02e4d2392e",
+  "criterion_denominator": 15,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 62808,
+      "completion_tokens": 7664,
+      "reasoning_tokens": 0,
+      "total_tokens": 70472
+    },
+    "action_judge": {
+      "prompt_tokens": 14746,
+      "completion_tokens": 4049,
+      "reasoning_tokens": 2816,
+      "total_tokens": 18795
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 14,
+      "api_attempts": 14,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 2,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 10,
+        "2": 3,
+        "3": 8,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 10,
+        "1": 1,
+        "2": 0,
+        "3": 2,
+        "screenshot_idx": 1
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        1,
+        0
+      ],
+      "1": [
+        0,
+        1
+      ],
+      "2": [
+        0,
+        1
+      ],
+      "3": [
+        0,
+        1
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM-model evidence directly shows the browser is at the specified NIST Chemistry WebBook record URL containing ID=C7732185 with Mask=1, and the page title is “Water,” which matches the required record context.",
+          "discrepancies": "None for access/provenance. The criterion only requires accessing the specified record; the DOM explicitly shows the correct URL and title.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL: https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1 and Title: Water. Visible content includes the section header/link list: “Information on this page: Gas phase thermochemistry data References Notes” and “Gas phase thermochemistry data”.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM-model explicitly shows the browser is on the specified NIST Chemistry WebBook record for water via the exact URL containing \"ID=C7732185&Mask=1\" and the page title/heading \"Water\".",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1\" with Title: \"Water\" and visible heading text \"Water\" under \"NIST Chemistry WebBook , SRD 69\".",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll four required identity fields (formula, molecular weight, IUPAC Standard InChIKey, CAS Registry Number) are explicitly present in the DOM for the specified water record.",
+          "discrepancies": "The agent predicted output adds an explanatory parenthetical about subscripts (\"H2O\" with 2 as subscript) rather than reproducing the exact DOM text form \"H _{2} O\". The underlying value matches, but the transcription format is not exactly as displayed.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content includes:\n- \"Formula : H _{2} O\"\n- \"Molecular weight : 18.0153\"\n- \"IUPAC Standard InChIKey: XLYOFNOQVPJJNP-UHFFFAOYSA-N\"\n- \"CAS Registry Number: 7732-18-5\"",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot confirms we are on a page that contains/links to “Gas phase thermochemistry data,” but the required CODATA experimental gas-phase standard enthalpy of formation entry (numeric value with uncertainty, unit, and the cited reference wording) is not present in the provided DOM evidence. Without the actual CODATA ΔfH°gas line visible in the DOM-model evidence, the agent’s reported value/unit/reference cannot be verified against this state.",
+          "discrepancies": "The agent predicted output provides a specific ΔfH°gas value, units, and a reference (“Cox, Wagman, et al., 1984”), but none of these exact strings are shown in the DOM evidence snippet for DOM_MODEL_STATE_INDEX: 1, so they are unsubstantiated by the provided DOM model.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes the header “Gas phase thermochemistry data” and navigation text “Information on this page: Gas phase thermochemistry data References Notes,” but it does NOT display any enthalpy-of-formation table row/value, uncertainty, units, or any CODATA entry/reference text in the visible DOM excerpt provided.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence provided does not include the CODATA experimental gas-phase standard enthalpy of formation entry (value ± uncertainty, unit, and cited reference). Without the thermochemistry content rendered in this DOM snapshot, the agent’s reported enthalpy and reference cannot be verified against the DOM-model evidence.",
+          "discrepancies": "Agent predicted output supplies \"-241.826 ± 0.040 kJ/mol\" and reference wording (\"Cox, Wagman, et al., 1984\"), but none of this appears in DOM_MODEL_STATE_INDEX: 0 evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows a navigation item/section label \"Gas phase thermochemistry data\" but does not display any enthalpy-of-formation table/values, CODATA wording, units, uncertainty, or references in the visible content excerpt.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent output includes the five requested categories, but (a) exact transcription is not fully preserved for the formula formatting as displayed in the DOM (\"H _{2} O\" vs \"H2O\"), (b) the CODATA thermochemistry components are not verifiable from the provided DOM snapshot, and (c) the response continues beyond the stopping condition by adding extra fields (method/comment).",
+          "discrepancies": "Extra unrequested content beyond the five required fields (method/comment). Formula formatting not exactly as displayed in DOM. Enthalpy/unit/reference not evidenced in the provided DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 supports exact text for the four identity fields, but does not include the CODATA enthalpy entry. The agent predicted output also includes additional non-required lines (e.g., \"Method: Review\", \"Comment: CODATA Review value\").",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM-model states explicitly show the page titled “Water” within “NIST Chemistry WebBook , SRD 69,” and the on-page content corresponds to the record with ID=C7732185 (visible in the page context). Navigation links/section list (“Information on this page: Gas phase thermochemistry data References Notes”) are present, supporting that the correct record page is open.",
+      "1": "DOM-model state 0 visibly contains all four identity fields on the Water record: “Formula : H _{2} O”, “Molecular weight : 18.0153”, “IUPAC Standard InChIKey: XLYOFNOQVPJJNP-UHFFFAOYSA-N”, and “CAS Registry Number: 7732-18-5”. Note the formula is rendered with explicit subscript markup/spacing (“H _{2} O”) rather than plain “H2O,” so exact-format transcription matters here.",
+      "2": "Across the provided DOM-model excerpts, the “Gas phase thermochemistry data” section header/link is visible, but no actual thermochemistry table rows are shown—there is no visible CODATA line, no ΔfH° value, no uncertainty, no unit text, and no reference wording in the snippets. Therefore, any specific CODATA experimental gas-phase enthalpy-of-formation value/unit/reference cannot be confirmed from these DOM states alone.",
+      "3": "The DOM evidence supports exact transcription for the four identity fields (including the formula’s subscript/spacing as displayed), but does not provide the enthalpy entry needed to assess exactness for that field. The criterion’s “stop after required fields” aspect should be interpreted as: the response should contain only the four identity items plus the CODATA experimental gas-phase formation-enthalpy entry (including unit and the reference wording), with no additional metadata; however, the DOM snippets do not show the enthalpy/reference text to compare for verbatim preservation."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Access the specified NIST Chemistry WebBook record for water (ID=C7732185)",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The Action History shows only navigation to the generic cbook.cgi page and a single scroll action, with no navigation or retrieval of the specific water record (ID=C7732185). The agent’s output claims to use that record, but there is no browsing evidence supporting access to it.",
+        "applicable_evidence": "DOM-model state 1 (latest) shows URL https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1 with Title 'Water' and page content for the Water record. DOM-model state 0 also shows the same URL/title. Action History is ambiguous (starts at generic cbook.cgi), but DOM states explicitly confirm the specified record page is open.",
+        "post_image_justification": "Despite the limited Action History, the DOM-model evidence explicitly confirms access to the specified NIST WebBook record for water (ID=C7732185). Therefore the baseline 0/3 should be raised to full credit.",
+        "reality_notes": "DOM-model states explicitly show the page titled “Water” within “NIST Chemistry WebBook , SRD 69,” and the on-page content corresponds to the record with ID=C7732185 (visible in the page context). Navigation links/section list (“Information on this page: Gas phase thermochemistry data References Notes”) are present, supporting that the correct record page is open."
+      },
+      {
+        "criterion": "Report identity fields from the record: formula, molecular weight, IUPAC InChIKey, and CAS Registry Number",
+        "earned_points": 4,
+        "post_image_earned_points": 3.5,
+        "max_points": 4,
+        "justification": "The agent reported all four identity fields exactly as they appear for water on NIST: Formula “H2O”, Molecular weight “18.0153”, IUPAC InChIKey “XLYOFNOQVPJJNP-UHFFFAOYSA-N”, and CAS Registry Number “7732-18-5”.",
+        "applicable_evidence": "DOM-model state 0 explicitly shows: 'Formula : H _{2} O', 'Molecular weight : 18.0153', 'IUPAC Standard InChIKey: XLYOFNOQVPJJNP-UHFFFAOYSA-N', and 'CAS Registry Number: 7732-18-5'. (State 0 is the relevant evidence for identity fields; state 1 does not show these lines in the provided excerpt.)",
+        "post_image_justification": "All four identity fields reported by the agent match the values shown in the DOM. The only issue is exact transcription of the formula formatting: the page displays it with subscript markup/spacing ('H _{2} O'), while the agent outputs plain 'H2O' with an explanatory note. This is a minor exactness deviation, so award near-full but not perfect credit.",
+        "reality_notes": "DOM-model state 0 visibly contains all four identity fields on the Water record: “Formula : H _{2} O”, “Molecular weight : 18.0153”, “IUPAC Standard InChIKey: XLYOFNOQVPJJNP-UHFFFAOYSA-N”, and “CAS Registry Number: 7732-18-5”. Note the formula is rendered with explicit subscript markup/spacing (“H _{2} O”) rather than plain “H2O,” so exact-format transcription matters here."
+      },
+      {
+        "criterion": "Report CODATA experimental gas-phase standard enthalpy of formation (with unit and reference)",
+        "earned_points": 0,
+        "post_image_earned_points": 0.0,
+        "max_points": 6,
+        "justification": "There is no evidence in the Action History that the agent accessed or extracted the CODATA gas-phase ΔfH° entry from the NIST record. The values and reference appear to be asserted without browsing support, and extra fields (Method, Comment) were added beyond the required information.",
+        "applicable_evidence": "DOM-model state 1 (latest) shows the header/link 'Gas phase thermochemistry data' but does not display any CODATA experimental gas-phase standard enthalpy of formation value, uncertainty, units, or reference wording. DOM-model state 0 similarly does not show the required thermochemistry table/entry—only the navigation/section label is visible.",
+        "post_image_justification": "The agent asserted a specific CODATA gas-phase ΔfH° value, uncertainty, units, and reference wording, but none of those are present in the provided DOM-model evidence. There is also no DOM-confirmed uncontrollable blocker preventing access to the entry; it simply was not captured/shown. Under the DOM rule, this claim is unproven (fabricated relative to the available evidence), so no credit for this criterion.",
+        "reality_notes": "Across the provided DOM-model excerpts, the “Gas phase thermochemistry data” section header/link is visible, but no actual thermochemistry table rows are shown—there is no visible CODATA line, no ΔfH° value, no uncertainty, no unit text, and no reference wording in the snippets. Therefore, any specific CODATA experimental gas-phase enthalpy-of-formation value/unit/reference cannot be confirmed from these DOM states alone."
+      },
+      {
+        "criterion": "Preserve exact transcription as feasible and stop after required fields",
+        "earned_points": 0,
+        "post_image_earned_points": 1.0,
+        "max_points": 2,
+        "justification": "The agent’s output includes extra unrequested content (Method and Comment fields) and does not stop after the five required items, violating the stopping condition.",
+        "applicable_evidence": "DOM-model state 0 shows exact formatting for identity fields (notably 'Formula : H _{2} O'). No DOM evidence is available for the enthalpy entry to assess exact transcription there. The agent's output includes extra unrequested fields ('Method', 'Comment') beyond the five required fields/stopping condition.",
+        "post_image_justification": "The response does not adhere to the stopping condition because it adds extra fields (Method/Comment). Also, the formula was not transcribed in the exact on-page format. Given these are controllable formatting/constraint issues (even though relatively minor), award partial credit.",
+        "reality_notes": "The DOM evidence supports exact transcription for the four identity fields (including the formula’s subscript/spacing as displayed), but does not provide the enthalpy entry needed to assess exactness for that field. The criterion’s “stop after required fields” aspect should be interpreted as: the response should contain only the four identity items plus the CODATA experimental gas-phase formation-enthalpy entry (including unit and the reference wording), with no additional metadata; however, the DOM snippets do not show the enthalpy/reference text to compare for verbatim preservation."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "Review the Action History: the only recorded browser action is a scroll by 800 pixels on the NIST WebBook water record page. Scrolling is normal exploratory/navigation behavior required to view content on the page and has no lasting material side effects (no downloads, no external submissions, no cart/transactions, no account changes). The existing rubric already penalizes issues in the response content (extra unrequested fields, non-verbatim transcription, and unsupported enthalpy/reference). There are no additional extraneous or unsolicited actions with material consequences that were not already covered by the rubric. Therefore no new penalty criterion is needed.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.5
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.5,
+          "total_earned_points": 7.5,
+          "total_max_points": 15.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Access the specified NIST Chemistry WebBook record for water (ID=C7732185)",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The Action History shows only navigation to the generic cbook.cgi page and a single scroll action, with no navigation or retrieval of the specific water record (ID=C7732185). The agent’s output claims to use that record, but there is no browsing evidence supporting access to it.",
+              "applicable_evidence": "DOM-model state 1 (latest) shows URL https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1 with Title 'Water' and page content for the Water record. DOM-model state 0 also shows the same URL/title. Action History is ambiguous (starts at generic cbook.cgi), but DOM states explicitly confirm the specified record page is open.",
+              "post_image_justification": "Despite the limited Action History, the DOM-model evidence explicitly confirms access to the specified NIST WebBook record for water (ID=C7732185). Therefore the baseline 0/3 should be raised to full credit.",
+              "reality_notes": "DOM-model states explicitly show the page titled “Water” within “NIST Chemistry WebBook , SRD 69,” and the on-page content corresponds to the record with ID=C7732185 (visible in the page context). Navigation links/section list (“Information on this page: Gas phase thermochemistry data References Notes”) are present, supporting that the correct record page is open."
+            },
+            {
+              "criterion": "Report identity fields from the record: formula, molecular weight, IUPAC InChIKey, and CAS Registry Number",
+              "earned_points": 4,
+              "post_image_earned_points": 3.5,
+              "max_points": 4,
+              "justification": "The agent reported all four identity fields exactly as they appear for water on NIST: Formula “H2O”, Molecular weight “18.0153”, IUPAC InChIKey “XLYOFNOQVPJJNP-UHFFFAOYSA-N”, and CAS Registry Number “7732-18-5”.",
+              "applicable_evidence": "DOM-model state 0 explicitly shows: 'Formula : H _{2} O', 'Molecular weight : 18.0153', 'IUPAC Standard InChIKey: XLYOFNOQVPJJNP-UHFFFAOYSA-N', and 'CAS Registry Number: 7732-18-5'. (State 0 is the relevant evidence for identity fields; state 1 does not show these lines in the provided excerpt.)",
+              "post_image_justification": "All four identity fields reported by the agent match the values shown in the DOM. The only issue is exact transcription of the formula formatting: the page displays it with subscript markup/spacing ('H _{2} O'), while the agent outputs plain 'H2O' with an explanatory note. This is a minor exactness deviation, so award near-full but not perfect credit.",
+              "reality_notes": "DOM-model state 0 visibly contains all four identity fields on the Water record: “Formula : H _{2} O”, “Molecular weight : 18.0153”, “IUPAC Standard InChIKey: XLYOFNOQVPJJNP-UHFFFAOYSA-N”, and “CAS Registry Number: 7732-18-5”. Note the formula is rendered with explicit subscript markup/spacing (“H _{2} O”) rather than plain “H2O,” so exact-format transcription matters here."
+            },
+            {
+              "criterion": "Report CODATA experimental gas-phase standard enthalpy of formation (with unit and reference)",
+              "earned_points": 0,
+              "post_image_earned_points": 0.0,
+              "max_points": 6,
+              "justification": "There is no evidence in the Action History that the agent accessed or extracted the CODATA gas-phase ΔfH° entry from the NIST record. The values and reference appear to be asserted without browsing support, and extra fields (Method, Comment) were added beyond the required information.",
+              "applicable_evidence": "DOM-model state 1 (latest) shows the header/link 'Gas phase thermochemistry data' but does not display any CODATA experimental gas-phase standard enthalpy of formation value, uncertainty, units, or reference wording. DOM-model state 0 similarly does not show the required thermochemistry table/entry—only the navigation/section label is visible.",
+              "post_image_justification": "The agent asserted a specific CODATA gas-phase ΔfH° value, uncertainty, units, and reference wording, but none of those are present in the provided DOM-model evidence. There is also no DOM-confirmed uncontrollable blocker preventing access to the entry; it simply was not captured/shown. Under the DOM rule, this claim is unproven (fabricated relative to the available evidence), so no credit for this criterion.",
+              "reality_notes": "Across the provided DOM-model excerpts, the “Gas phase thermochemistry data” section header/link is visible, but no actual thermochemistry table rows are shown—there is no visible CODATA line, no ΔfH° value, no uncertainty, no unit text, and no reference wording in the snippets. Therefore, any specific CODATA experimental gas-phase enthalpy-of-formation value/unit/reference cannot be confirmed from these DOM states alone."
+            },
+            {
+              "criterion": "Preserve exact transcription as feasible and stop after required fields",
+              "earned_points": 0,
+              "post_image_earned_points": 1.0,
+              "max_points": 2,
+              "justification": "The agent’s output includes extra unrequested content (Method and Comment fields) and does not stop after the five required items, violating the stopping condition.",
+              "applicable_evidence": "DOM-model state 0 shows exact formatting for identity fields (notably 'Formula : H _{2} O'). No DOM evidence is available for the enthalpy entry to assess exact transcription there. The agent's output includes extra unrequested fields ('Method', 'Comment') beyond the five required fields/stopping condition.",
+              "post_image_justification": "The response does not adhere to the stopping condition because it adds extra fields (Method/Comment). Also, the formula was not transcribed in the exact on-page format. Given these are controllable formatting/constraint issues (even though relatively minor), award partial credit.",
+              "reality_notes": "The DOM evidence supports exact transcription for the four identity fields (including the formula’s subscript/spacing as displayed), but does not provide the enthalpy entry needed to assess exactness for that field. The criterion’s “stop after required fields” aspect should be interpreted as: the response should contain only the four identity items plus the CODATA experimental gas-phase formation-enthalpy entry (including unit and the reference wording), with no additional metadata; however, the DOM snippets do not show the enthalpy/reference text to compare for verbatim preservation."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "Review the Action History: the only recorded browser action is a scroll by 800 pixels on the NIST WebBook water record page. Scrolling is normal exploratory/navigation behavior required to view content on the page and has no lasting material side effects (no downloads, no external submissions, no cart/transactions, no account changes). The existing rubric already penalizes issues in the response content (extra unrequested fields, non-verbatim transcription, and unsupported enthalpy/reference). There are no additional extraneous or unsolicited actions with material consequences that were not already covered by the rubric. Therefore no new penalty criterion is needed.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Extract and report five specific fields (4 identity identifiers plus the CODATA experimental gas-phase standard enthalpy of formation including unit and reference) directly from the NIST Chemistry WebBook water record (ID=C7732185). The user would be flexible on minor formatting (e.g., subscript rendering) but not flexible on using the wrong source, omitting the enthalpy/unit/reference, or giving an incorrect/non-CODATA/non-gas-phase value or reference.",
+      "reasoning": "Nitpicks: (1) The formula is rendered on the page with subscript markup (\"H _{2} O\"), while the agent wrote \"H2O\" with an explanatory note; this is a minor transcription-format issue that doesn’t change the chemical identity. (2) The agent included extra fields (Method/Comment) beyond the requested five fields; this is minor scope creep.\n\nCritical issues: The task’s primary deliverable includes the CODATA experimental gas-phase standard enthalpy of formation with its unit and the exact cited reference wording from the specified NIST record. In the provided DOM-model evidence (states 0 and 1), the page is indeed the correct NIST water record and it does show the four identity fields (formula, molecular weight 18.0153, InChIKey XLYOFNOQVPJJNP-UHFFFAOYSA-N, CAS 7732-18-5). However, the DOM excerpts do not show any CODATA enthalpy-of-formation row/value, uncertainty, units, or reference text. Despite this, the agent output asserts a specific value (−241.826 ± 0.040 kJ/mol) and a reference (“Cox, Wagman, et al., 1984”) and claims they were taken directly and preserved exactly. With no DOM-confirmed evidence of that enthalpy entry being visible/recorded from the page during the agent’s interaction (only a scroll action is logged, and the thermochemistry table content is not captured), this enthalpy/unit/reference portion is unsubstantiated relative to the ground-truth evidence we have, and it is also the key part that differentiates a correct completion from partial identity extraction. Because the task explicitly requires exact CODATA experimental gas-phase data and exact reference wording from the record, failing to reliably provide that (and instead providing an unverifiable specific value/reference) means the user did not get the required, trustworthy final deliverable.\n\nOverall: The agent successfully accessed the right NIST record and correctly reported the four identity fields, but it did not verifiably extract the required CODATA experimental gas-phase enthalpy of formation (with unit and reference) from the record as required. This is a critical miss for the task outcome.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Extract and report five specific fields (4 identity identifiers plus the CODATA experimental gas-phase standard enthalpy of formation including unit and reference) directly from the NIST Chemistry WebBook water record (ID=C7732185). The user would be flexible on minor formatting (e.g., subscript rendering) but not flexible on using the wrong source, omitting the enthalpy/unit/reference, or giving an incorrect/non-CODATA/non-gas-phase value or reference.",
+          "reasoning": "Nitpicks: (1) The formula is rendered on the page with subscript markup (\"H _{2} O\"), while the agent wrote \"H2O\" with an explanatory note; this is a minor transcription-format issue that doesn’t change the chemical identity. (2) The agent included extra fields (Method/Comment) beyond the requested five fields; this is minor scope creep.\n\nCritical issues: The task’s primary deliverable includes the CODATA experimental gas-phase standard enthalpy of formation with its unit and the exact cited reference wording from the specified NIST record. In the provided DOM-model evidence (states 0 and 1), the page is indeed the correct NIST water record and it does show the four identity fields (formula, molecular weight 18.0153, InChIKey XLYOFNOQVPJJNP-UHFFFAOYSA-N, CAS 7732-18-5). However, the DOM excerpts do not show any CODATA enthalpy-of-formation row/value, uncertainty, units, or reference text. Despite this, the agent output asserts a specific value (−241.826 ± 0.040 kJ/mol) and a reference (“Cox, Wagman, et al., 1984”) and claims they were taken directly and preserved exactly. With no DOM-confirmed evidence of that enthalpy entry being visible/recorded from the page during the agent’s interaction (only a scroll action is logged, and the thermochemistry table content is not captured), this enthalpy/unit/reference portion is unsubstantiated relative to the ground-truth evidence we have, and it is also the key part that differentiates a correct completion from partial identity extraction. Because the task explicitly requires exact CODATA experimental gas-phase data and exact reference wording from the record, failing to reliably provide that (and instead providing an unverifiable specific value/reference) means the user did not get the required, trustworthy final deliverable.\n\nOverall: The agent successfully accessed the right NIST record and correctly reported the four identity fields, but it did not verifiably extract the required CODATA experimental gas-phase enthalpy of formation (with unit and reference) from the record as required. This is a critical miss for the task outcome.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent performed only a single scroll action on the NIST WebBook water record page and then produced a detailed final response claiming multiple identity fields and a CODATA experimental gas-phase enthalpy of formation (value, uncertainty, unit, and reference) were extracted “directly” and “preserved exactly.” DOM evidence supports that the correct record (ID=C7732185) was open and that the four identity fields were visible, but the provided DOM snapshots do not show any thermochemistry table rows or the CODATA ΔfH°gas entry. Therefore, the agent’s specific enthalpy/unit/reference claims are ungrounded relative to the trajectory evidence (fabricated), which is the critical required deliverable. Additionally, the agent did not preserve the exact on-page formula formatting and added extra unrequested fields (method/comment), which violates strict transcription/stopping constraints though these are minor compared to the missing/unverifiable CODATA extraction.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent did not actually navigate to and capture the CODATA experimental gas-phase standard enthalpy of formation row (value ± uncertainty, unit, and exact reference wording) from the record; it only scrolled once and never demonstrated locating/extracting the required thermochemistry entry.",
+          "agent_reasoning": "The agent stated it was scrolling “to perform at least one successful browser action,” not to reach and extract the thermochemistry table.",
+          "evidence": "Action history shows only Action 1: scroll(pixels=800). DOM-model states 0 and 1 show only headers/links (e.g., “Gas phase thermochemistry data”) but no CODATA ΔfH°gas line, no values, units, uncertainty, or reference text. Environment issues are marked False.",
+          "impact": "The key task requirement (CODATA experimental gas-phase enthalpy of formation with unit and exact reference) was not verifiably extracted, leading to overall task failure."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "2.3",
+          "error_category": "Hallucination",
+          "error_type": "Output fabrication",
+          "what_happened": "The agent provided a specific CODATA gas-phase ΔfH°gas value (−241.826 ± 0.040 kJ/mol) and reference wording (“Cox, Wagman, et al., 1984”) and claimed they were taken directly from the record, but there is no evidence in the DOM snapshots that these strings were ever visible or extracted.",
+          "agent_reasoning": "Implicitly assumed/claimed the CODATA entry details were available and copied from the page, despite not actually surfacing the table content in the logged trajectory.",
+          "evidence": "Criterion 2 DOM evidence: states 0 and 1 do not display any enthalpy-of-formation row/value/units/reference. Rubric explicitly scores Criterion 2 as 0/6 because the asserted value/unit/reference are not present in DOM evidence and no blocker is confirmed.",
+          "impact": "Introduced ungrounded core thermochemistry data, breaking the requirement to use CODATA experimental gas-phase data from the specified record and undermining correctness/trust."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "1.4",
+          "error_category": "Selection",
+          "error_type": "Wrong values or constraint violation",
+          "what_happened": "The agent did not preserve exact transcription as displayed for at least the formula formatting, and it did not adhere to the instruction to stop after providing exactly the requested fields (it added extra non-requested fields).",
+          "agent_reasoning": "Tried to be helpful by explaining subscripts and adding contextual lines (method/comment), but this violated the strict “preserve exactly” and “stop after required fields” constraints.",
+          "evidence": "DOM shows formula rendered as “H _{2} O” while agent output uses “H2O” with an explanation. Agent output also includes extra lines: “Method: Review” and “Comment: CODATA Review value,” which are beyond the five requested outputs. Rubric Criterion 3 notes these as controllable constraint issues.",
+          "impact": "Minor but material compliance issues with the task’s exact-transcription and stopping-condition constraints (though secondary to the missing/unverifiable CODATA extraction)."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[3.5] Incomplete task execution: The agent did not actually navigate to and capture the CODATA experimental gas-phase standard enthalpy of formation row (value ± uncertainty, unit, and exact reference wording) from the record; it only scrolled once and never demonstrated locating/extracting the required thermochemistry entry."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task provides a clear starting URL (https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1) and explicitly lists all five fields to extract (formula, molecular weight, IUPAC InChIKey, CAS Registry Number, and the CODATA experimental gas-phase standard enthalpy of formation with its unit and reference). There is no missing information or multiple plausible interpretations of what to extract. The agent’s difficulty arose from a failure to capture the thermochemistry entry, not from any ambiguity in the instructions or context.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible and legal: it requires only standard web browsing and data transcription from a publicly available NIST Chemistry WebBook record. There are no illegal, NSFW, or Responsible AI concerns, nor is the task inherently impossible given the provided URL and context.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies exactly which data to extract (formula, molecular weight, IUPAC InChIKey, CAS number, and CODATA experimental gas-phase standard enthalpy of formation with unit and reference) from a uniquely identified NIST WebBook record (ID=C7732185). All necessary parameters are provided, and there is no scope for multiple interpretations.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible using standard web interaction; it does not require unavailable credentials, illegal actions, or NSFW content, nor does it violate any responsible-AI policy.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "b1c8996aa6f68ee9ec47b7be51d9c1dc34d14c9c8a78a20f3482993f8ed5e667",
+        "byte_count": 3465,
+        "line_count": 65,
+        "estimated_tokens": 867,
+        "url": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1",
+        "title": "Water",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 58
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 59,
+            "end_line": 61
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 62,
+            "end_line": 63
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 64,
+            "end_line": 65
+          }
+        ],
+        "control_refs": [
+          "81",
+          "84",
+          "9",
+          "10",
+          "52",
+          "137",
+          "59",
+          "145",
+          "147",
+          "148",
+          "157",
+          "74",
+          "65"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L65"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "df35ef1540ac14f4a4725a9d41bd14b3be266eb205d0eff37e2098ebdcaea808",
+        "byte_count": 4272,
+        "line_count": 58,
+        "estimated_tokens": 1068,
+        "url": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C7732185&Mask=1",
+        "title": "Water",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 58
+          }
+        ],
+        "control_refs": [
+          "185",
+          "249",
+          "252",
+          "258",
+          "261",
+          "264",
+          "267",
+          "270",
+          "285",
+          "297",
+          "300",
+          "309",
+          "321",
+          "324"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L58"
+      }
+    ],
+    "estimated_evidence_tokens": 1935,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 3,
+        "3": 8
+      },
+      "1": {
+        "0": 10,
+        "1": 1,
+        "2": 0,
+        "3": 2
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ]
+    },
+    "validation_retries": 5,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 8671,
+        "estimated_input_tokens": 2168,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 9476,
+        "estimated_input_tokens": 2369,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          2
+        ],
+        "char_count": 10289,
+        "estimated_input_tokens": 2573,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 10857,
+        "estimated_input_tokens": 2715,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          2
+        ],
+        "char_count": 10654,
+        "estimated_input_tokens": 2664,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 11180,
+        "estimated_input_tokens": 2795,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 11463,
+        "estimated_input_tokens": 2866,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 11787,
+        "estimated_input_tokens": 2947,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 12123,
+        "estimated_input_tokens": 3031,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 140.602
+}

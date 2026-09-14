@@ -13,9 +13,6 @@ def load_trajectory(task_root: str | Path) -> Trajectory:
     trajectory = Trajectory.from_folder(root)
     if trajectory is None:
         raise ValueError(f"Microsoft trajectory parser could not load {root}")
-    action_events = [event for event in trajectory.events if event.get("action") is not None]
-    if not action_events:
-        raise ValueError(f"Trajectory contains no browser actions: {root / 'web_surfer.log'}")
     return trajectory
 
 

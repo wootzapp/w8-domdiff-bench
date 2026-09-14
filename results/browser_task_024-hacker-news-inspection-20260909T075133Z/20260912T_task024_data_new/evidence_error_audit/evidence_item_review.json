@@ -1,0 +1,177 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_024-hacker-news-inspection-20260909T075133Z",
+  "run_id": "20260912T_task024_data_new",
+  "rubric_sha256": "c3c7c4d619065b4c6191ec5934aa1368727ebecdba8fd35a44bb32f42ce4e196",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access Hacker News front page and view story list",
+      "description": "Access Hacker News and view the front-page story list.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [0, 1],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 and Screenshot 2 both show the standard Hacker News front page UI (orange header, story list with numbered rows, footer in Screenshot 2). Latest is Screenshot 2, which still shows the front-page list and footer.",
+        "verifier_justification": "Visual evidence confirms the agent accessed https://news.ycombinator.com/ and the front-page story list is loaded and readable. No change from baseline.",
+        "evidence_analyses": []
+      },
+      "dom_model_context": {
+        "selected_indices": [1, 0],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest DOM is state 1: URL is https://news.ycombinator.com/ with title \"Hacker News\" and a ranked story list table visible. Action history shows a scroll on that page.",
+        "verifier_justification": "This explicitly supports that the agent accessed the Hacker News front page and viewed the story list. No adjustment needed.",
+        "evidence_analyses": []
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C0-E1",
+          "evidence_requirement": "Hacker News front page and ranked story list",
+          "expected_value": "news.ycombinator.com front page with numbered stories",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [{"file": "screenshot0.png", "visible_text": "Hacker News; numbered story list", "locator": "Header and main list"}],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 1 and Screenshot 2 both show the standard Hacker News front page UI (orange header, story list with numbered rows, footer in Screenshot 2). Latest is Screenshot 2, which still shows the front-page list and footer.",
+            "review_note": "Manual inspection confirms the Hacker News header and numbered front-page list."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [{"file": "dom_model0.txt", "line_range": "m0:L8-L10", "quoted_text": "Hacker News new | past | comments | ask | show | jobs | submit login"}],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest DOM is state 1: URL is https://news.ycombinator.com/ with title \"Hacker News\" and a ranked story list table visible. Action history shows a scroll on that page.",
+            "review_note": "DOM explicitly preserves the URL, title, navigation, and ranked story table."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Inspect exactly the first 30 front-page stories (or clearly report inability)",
+      "description": "Inspect the first 30 front-page stories.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [1, 0],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshot 1 shows stories numbered 1–23 (23 partially). Screenshot 2 shows stories numbered 11–30 and the footer. Combined, the screenshots cover items 1–30, though not all in one view.",
+        "verifier_justification": "Although the agent did not enumerate each story in the final answer, the screenshots substantiate that the first 30 stories were viewable/inspected across the scroll (1–23 in Screenshot 1, and 24–30 visible in Screenshot 2, with 11–23 overlapping). This is sufficient to support that the agent could inspect exactly the first 30 without going beyond 30. Award full credit.",
+        "evidence_analyses": []
+      },
+      "dom_model_context": {
+        "selected_indices": [1, 0],
+        "final_points": 1.0,
+        "verifier_evidence": "Latest DOM is state 1: the story list includes items numbered up to 30 and shows #1, #2, then jumps to #8 through #30; items #3–#7 are not present in the provided DOM snapshot. Earlier DOM (state 0) shows #1–#26 only. There is no DOM evidence that #3–#7 were inspected.",
+        "verifier_justification": "Only partial support that the agent inspected exactly the first 30 stories: the evidence does show many within 1–30 (including #30), but it does not explicitly include #3–#7, so a complete inspection of #1–#30 cannot be confirmed under the DOM rule. Baseline score remains appropriate.",
+        "evidence_analyses": []
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C1-E1",
+          "evidence_requirement": "Complete coverage of stories 1 through 30 across ordered states",
+          "expected_value": "Every rank from 1 through 30 is present across the evidence sequence",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [{"file": "screenshot0.png", "visible_text": "Stories 1–23", "locator": "Initial viewport"}, {"file": "screenshot1.png", "visible_text": "Stories 11–30", "locator": "Scrolled viewport"}],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 1 shows stories numbered 1–23 (23 partially). Screenshot 2 shows stories numbered 11–30 and the footer. Combined, the screenshots cover items 1–30, though not all in one view.",
+            "review_note": "The two screenshots overlap and jointly show every rank from 1 through 30."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [{"file": "dom_model0.txt", "line_range": "m0:L15-L24", "quoted_text": "Muse – Meta’s personal AI agent ( meta.com )"}, {"file": "dom_model1.txt", "line_range": "m1:L48-L55", "quoted_text": "30. |  | The Microeconomics of Artificial Intelligence (2025) ( direct.mit.edu )"}],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Latest DOM is state 1: the story list includes items numbered up to 30 and shows #1, #2, then jumps to #8 through #30; items #3–#7 are not present in the provided DOM snapshot. Earlier DOM (state 0) shows #1–#26 only. There is no DOM evidence that #3–#7 were inspected.",
+            "review_note": "The verifier evaluated each state separately and failed to aggregate them: state 0 explicitly contains rows 3–7 and reaches 26, while state 1 reaches 30. Together they prove complete 1–30 coverage."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Identify GitHub-linked stories among the 30 (count + titles)",
+      "description": "Count github.com-linked stories among the first 30 and list their titles.",
+      "max_points": 7,
+      "screenshot_context": {
+        "selected_indices": [1, 0],
+        "final_points": 7.0,
+        "verifier_evidence": "In Screenshot 1, item #20 is titled “I-have-ADHD: A skill to stop coding agents from burying the answer” with domain shown as (github.com/ayghri). No other visible domains in Screenshot 1 are github.com. In Screenshot 2 (latest), among items 11–30, only item #20 shows a github.com domain; the rest are other domains.",
+        "verifier_justification": "The agent’s count (1) and the listed GitHub-linked title match the visual evidence across the inspected top-30 range. Since items 1–30 are covered across the screenshots and only #20 is marked with a github.com domain, full credit is warranted.",
+        "evidence_analyses": []
+      },
+      "dom_model_context": {
+        "selected_indices": [1, 0],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest DOM is state 1: among the visible items within the first-30 numbering shown (#1–#2 and #8–#30), exactly one row shows a github.com domain: #20 \"I-have-ADHD: A skill to stop coding agents from burying the answer\" with source \"github.com/ayghri\". The DOM does not show #3–#7, so it cannot confirm whether additional GitHub-linked stories exist there.",
+        "verifier_justification": "The agent’s listed GitHub-linked title (#20) is supported by the DOM. However, the agent’s claimed total count of 1 across the full top 30 is not fully verifiable because #3–#7 are missing from the evidence; additional github.com links cannot be ruled out. Award partial credit for correctly identifying at least one GitHub-linked story and providing its title, but not full credit for the overall count completeness.",
+        "evidence_analyses": []
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C2-E1",
+          "evidence_requirement": "Exactly one github.com-linked story among ranks 1–30, with its title",
+          "expected_value": "1 — I-have-ADHD: A skill to stop coding agents from burying the answer",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [{"file": "screenshot0.png", "visible_text": "20. I-have-ADHD: A skill to stop coding agents from burying the answer (github.com/ayghri)", "locator": "Story row 20; viewport also covers rows 1–23"}, {"file": "screenshot1.png", "visible_text": "Rows 11–30 with no second github.com domain", "locator": "Scrolled list"}],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "In Screenshot 1, item #20 is titled “I-have-ADHD: A skill to stop coding agents from burying the answer” with domain shown as (github.com/ayghri). No other visible domains in Screenshot 1 are github.com. In Screenshot 2 (latest), among items 11–30, only item #20 shows a github.com domain; the rest are other domains.",
+            "review_note": "Across the two screenshots, all 30 domains are visible and only row 20 is github.com."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [{"file": "dom_model0.txt", "line_range": "m0:L15-L24", "quoted_text": "Muse – Meta’s personal AI agent ( meta.com )"}, {"file": "dom_model0.txt", "line_range": "m0:L49-L50", "quoted_text": "I-have-ADHD: A skill to stop coding agents from burying the answer ( github.com/ayghri )"}, {"file": "dom_model1.txt", "line_range": "m1:L44-L55", "quoted_text": "The Microeconomics of Artificial Intelligence (2025) ( direct.mit.edu )"}],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Latest DOM is state 1: among the visible items within the first-30 numbering shown (#1–#2 and #8–#30), exactly one row shows a github.com domain: #20 \"I-have-ADHD: A skill to stop coding agents from burying the answer\" with source \"github.com/ayghri\". The DOM does not show #3–#7, so it cannot confirm whether additional GitHub-linked stories exist there.",
+            "review_note": "The DOM verifier correctly found row 20 but failed to use state 0, where rows 3–7 and their non-GitHub domains are explicit. The union proves the reported count of one."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Respect constraints (no sign-in and no interactive actions)",
+      "description": "Do not sign in, vote, comment, submit, or create an account.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [1, 0],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows a “login” link (not signed in) and only the story list; no voting/commenting/submitting UI interactions are evidenced. Screenshot 2 likewise shows the list and footer without any prohibited interaction indicators.",
+        "verifier_justification": "No evidence of signing in, voting, commenting, submitting, or creating an account. Only scrolling occurred. Keep full credit.",
+        "evidence_analyses": []
+      },
+      "dom_model_context": {
+        "selected_indices": [1, 0],
+        "final_points": 2.0,
+        "verifier_evidence": "Action history shows only a scroll action. DOM states show the normal front page with a \"login\" link but no evidence of sign-in, voting, commenting, submitting, or account creation interactions.",
+        "verifier_justification": "Constraints were respected; no prohibited actions are evidenced. Keep full credit.",
+        "evidence_analyses": []
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C3-E1",
+          "evidence_requirement": "Only passive inspection and scrolling; no prohibited interaction",
+          "expected_value": "Logged out with only one scroll action",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [{"file": "screenshot0.png", "visible_text": "login", "locator": "Top-right header"}],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 1 shows a “login” link (not signed in) and only the story list; no voting/commenting/submitting UI interactions are evidenced. Screenshot 2 likewise shows the list and footer without any prohibited interaction indicators.",
+            "review_note": "The screenshots remain on the list page and the action history contains only scrolling."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [{"file": "dom_model0.txt", "line_range": "m0:L8-L9", "quoted_text": "login"}],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Action history shows only a scroll action. DOM states show the normal front page with a \"login\" link but no evidence of sign-in, voting, commenting, submitting, or account creation interactions.",
+            "review_note": "DOM and action history explicitly show a logged-out page and only a scroll action."
+          }
+        }
+      ]
+    }
+  ]
+}

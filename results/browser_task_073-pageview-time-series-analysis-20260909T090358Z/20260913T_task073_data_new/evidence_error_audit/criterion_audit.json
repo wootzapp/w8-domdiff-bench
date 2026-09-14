@@ -1,0 +1,908 @@
+{
+  "schema_version": "existing-output-evidence-audit/v1",
+  "task_id": "browser_task_073-pageview-time-series-analysis-20260909T090358Z",
+  "run_id": "20260913T_task073_data_new",
+  "run_dir": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_073-pageview-time-series-analysis-20260909T090358Z/20260913T_task073_data_new",
+  "rubric_sha256": "d4a151184f452268c309515f8df93743958ec6050655eb59d4badc4a9368eb4f",
+  "source_artifacts": {
+    "screenshot_result": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_073-pageview-time-series-analysis-20260909T090358Z/20260913T_task073_data_new/microsoft_verifier/result.json",
+    "dom_model_result": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_073-pageview-time-series-analysis-20260909T090358Z/20260913T_task073_data_new/dom_model/result.json"
+  },
+  "source_inventory": {
+    "screenshot": [
+      {
+        "index": 0,
+        "file": "_inputs/screenshot/screenshot0.png",
+        "bytes": 58713,
+        "sha256": "833606bf58dbe899e72a9b8bacb6afe025e486bd4ea8c171693a4070f1fc5499"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/screenshot/screenshot1.png",
+        "bytes": 58713,
+        "sha256": "833606bf58dbe899e72a9b8bacb6afe025e486bd4ea8c171693a4070f1fc5499"
+      },
+      {
+        "index": 2,
+        "file": "_inputs/screenshot/screenshot2.png",
+        "bytes": 58713,
+        "sha256": "833606bf58dbe899e72a9b8bacb6afe025e486bd4ea8c171693a4070f1fc5499"
+      },
+      {
+        "index": 3,
+        "file": "_inputs/screenshot/screenshot3.png",
+        "bytes": 58713,
+        "sha256": "833606bf58dbe899e72a9b8bacb6afe025e486bd4ea8c171693a4070f1fc5499"
+      },
+      {
+        "index": 4,
+        "file": "_inputs/screenshot/screenshot4.png",
+        "bytes": 70393,
+        "sha256": "4c355488f50b665cc60796db2910273e9a0688c193a2c8dab4f26f1a1c453111"
+      }
+    ],
+    "dom_model": [
+      {
+        "index": 0,
+        "file": "_inputs/dom_model/dom_model0.txt",
+        "bytes": 810,
+        "sha256": "532db7f0d5be8c3508a3ce6f0acb55c2df8bee746a45b2aaca20a8b667b19d67"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/dom_model/dom_model1.txt",
+        "bytes": 810,
+        "sha256": "532db7f0d5be8c3508a3ce6f0acb55c2df8bee746a45b2aaca20a8b667b19d67"
+      },
+      {
+        "index": 2,
+        "file": "_inputs/dom_model/dom_model2.txt",
+        "bytes": 810,
+        "sha256": "532db7f0d5be8c3508a3ce6f0acb55c2df8bee746a45b2aaca20a8b667b19d67"
+      },
+      {
+        "index": 3,
+        "file": "_inputs/dom_model/dom_model3.txt",
+        "bytes": 810,
+        "sha256": "532db7f0d5be8c3508a3ce6f0acb55c2df8bee746a45b2aaca20a8b667b19d67"
+      },
+      {
+        "index": 4,
+        "file": "_inputs/dom_model/dom_model4.txt",
+        "bytes": 810,
+        "sha256": "2a9a66cbd338b4430269ad3373eb27c018fc26c1489d0e0cea3ca4d49bfbf2c9"
+      }
+    ]
+  },
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Report daily date–viewcount pairs from the supplied API response (or report missing/unavailable data)",
+      "max_points": 6,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          },
+          {
+            "source_index": 2,
+            "score": 10
+          },
+          {
+            "source_index": 3,
+            "score": 10
+          },
+          {
+            "source_index": 4,
+            "score": 8
+          }
+        ],
+        "selected_indices": [
+          3,
+          2,
+          1,
+          0,
+          4
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "The screenshot shows a JSON response beginning with something like: {\"items\":[{...\"article\":\"Apollo_11\"...\"timestamp\":\"2025010100\"...\"views\":6244}, { ...\"timestamp\":\"2025010200\"...\"views\":6029}, { ...\"timestamp\":\"2025010300\"...\"views\":5740}, { ...\"timestamp\":\"2025010400\"...\"views\":7025}, { ...\"timestamp\":\"2025010500\"...\"views\":7508}, { ...\"timestamp\":\"2025010600\"...\"views\":5495}, { ...\"timestamp\":\"2025010700\"...\"views\":4804}]} (all seven items are visible on screen). A \"Pretty-print\" label with an unchecked checkbox is visible at the top left.",
+            "criterion_analysis": "The screenshot contains all 7 date/view pairs needed. However, the agent’s predicted output does not match the visible counts for multiple days (it lists 5504/5333/5254/5345 for days 4–7, but the screenshot shows 7025/7508/5495/4804). Therefore, the agent did not correctly report the daily date–viewcount pairs from the supplied response.",
+            "discrepancies": "Agent output discrepancies vs screenshot: \n- 2025-01-04: agent 5504, screenshot shows views 7025.\n- 2025-01-05: agent 5333, screenshot shows views 7508.\n- 2025-01-06: agent 5254, screenshot shows views 5495.\n- 2025-01-07: agent 5345, screenshot shows views 4804.\nThe first three (6244, 6029, 5740) match what’s visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot shows a plain JSON response area with a \"Pretty-print\" checkbox at the top. In the visible JSON, an object contains an \"items\" array with seven item objects. Each item includes fields like \"project\":\"en.wikipedia\", \"article\":\"Apollo_11\", \"granularity\":\"daily\", \"timestamp\": and \"views\". The seven visible timestamp–views pairs are:\n- \"timestamp\":\"2025010100\" with \"views\":6244\n- \"timestamp\":\"2025010200\" with \"views\":6029\n- \"timestamp\":\"2025010300\" with \"views\":5740\n- \"timestamp\":\"2025010400\" with \"views\":7025\n- \"timestamp\":\"2025010500\" with \"views\":7508\n- \"timestamp\":\"2025010600\" with \"views\":5495\n- \"timestamp\":\"2025010700\" with \"views\":4804",
+            "criterion_analysis": "The screenshot contains all 7 required daily items for 2025-01-01 through 2025-01-07 (timestamps end in \"00\" and correspond to each day). However, the agent’s predicted output does not match the visible response for days 2025-01-04 through 2025-01-07: the screenshot shows 7025, 7508, 5495, 4804, while the agent reported 5504, 5333, 5254, 5345. Therefore, although the response visibly includes all 7 pairs, the agent’s reported date–count pairs are partially incorrect and not fully faithful to the supplied API response.",
+            "discrepancies": "Agent predicted counts for 2025-01-04..2025-01-07 that contradict the screenshot. Screenshot shows:\n- 2025010400 = 7025 (agent: 5504)\n- 2025010500 = 7508 (agent: 5333)\n- 2025010600 = 5495 (agent: 5254)\n- 2025010700 = 4804 (agent: 5345)\nThe first three days (6244, 6029, 5740) do match what is visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a browser/page with a small label “Pretty-print” and an unchecked/checked box next to it. Below, a JSON response is visible with an \"items\" array containing 7 objects for article \"Apollo_11\". The visible objects include timestamps and views:\n- \"timestamp\":\"2025010100\" with \"views\":6244\n- \"timestamp\":\"2025010200\" with \"views\":6029\n- \"timestamp\":\"2025010300\" with \"views\":5740\n- \"timestamp\":\"2025010400\" with \"views\":7025\n- \"timestamp\":\"2025010500\" with \"views\":7508\n- \"timestamp\":\"2025010600\" with \"views\":5495\n- \"timestamp\":\"2025010700\" with \"views\":4804",
+            "criterion_analysis": "The screenshot provides all 7 timestamp–view pairs needed. However, the agent’s predicted output does not match the screenshot for multiple days: it lists 2025-01-04 as 5504 (screenshot shows 7025), 2025-01-05 as 5333 (screenshot shows 7508), 2025-01-06 as 5254 (screenshot shows 5495), and 2025-01-07 as 5345 (screenshot shows 4804). Only the first three days (6244, 6029, 5740) match what is visible. Therefore, the date–viewcount reporting is incorrect/incomplete relative to the supplied API response shown in the screenshot.",
+            "discrepancies": "Agent claimed views for 2025-01-04..2025-01-07 as 5504/5333/5254/5345, but the screenshot’s JSON shows 7025/7508/5495/4804 for timestamps 2025010400..2025010700. Agent also reported 7 pairs, but 4 of them are not supported by the visible response.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a Wikimedia Pageviews API JSON response area with a visible `{\"items\":[ ... ]}` array. Seven item objects are visible, each containing fields including `project:\"en.wikipedia\"`, `article:\"Apollo_11\"`, `granularity:\"daily\"`, `access:\"all-access\"`, `agent:\"user\"`, a `timestamp`, and a `views` integer. The visible timestamp–views pairs are:\n- `\"timestamp\":\"2025010100\"`, `\"views\":6244`\n- `\"timestamp\":\"2025010200\"`, `\"views\":6029`\n- `\"timestamp\":\"2025010300\"`, `\"views\":5740`\n- `\"timestamp\":\"2025010400\"`, `\"views\":7025`\n- `\"timestamp\":\"2025010500\"`, `\"views\":7508`\n- `\"timestamp\":\"2025010600\"`, `\"views\":5495`\n- `\"timestamp\":\"2025010700\"`, `\"views\":4804`\nA \"Pretty-print\" label with an unchecked checkbox is visible at the top left of the content area.",
+            "criterion_analysis": "The screenshot contains all 7 daily items for 2025-01-01 through 2025-01-07 and their exact integer view counts, so the correct date–count pairs can be reported from the provided response. However, the agent’s predicted output does not match what is visible: it reports different view counts for multiple dates (e.g., it lists 5504 for 2025-01-04 but the screenshot shows 7025; lists 5333 for 2025-01-05 but screenshot shows 7508; etc.). Therefore, the agent did not correctly report the daily date–viewcount pairs from the supplied API response.",
+            "discrepancies": "Agent output vs screenshot mismatches:\n- 2025-01-04: agent 5504, screenshot shows views 7025.\n- 2025-01-05: agent 5333, screenshot shows views 7508.\n- 2025-01-06: agent 5254, screenshot shows views 5495.\n- 2025-01-07: agent 5345, screenshot shows views 4804.\nAlso, agent includes an odd typo `\"timestamp\": \"timestamp\": \"2025010300\"` not reflected in screenshot formatting.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "The screenshot shows a JSON response with an \"items\" array. The following full item entries are clearly visible:\n- timestamp \"2025010100\" with \"views\": 6244\n- timestamp \"2025010200\" with \"views\": 6029\n- timestamp \"2025010300\" with \"views\": 5740\n- timestamp \"2025010400\" with \"views\": 7025\n- timestamp \"2025010500\" with \"views\": 7508\nBelow that, the next item begins and shows keys (project/article/granularity/timestamp...), and the timestamp line for \"2025010600\" is partially visible, but its \"views\" value is not visible in the screenshot. No entry for \"2025010700\" is visible in the screenshot.",
+            "criterion_analysis": "The agent’s predicted output reports 7 date–count pairs for 2025-01-01 through 2025-01-07. However, the screenshot only provides view counts for 5 days (Jan 1–5), and the visible values for Jan 4 and Jan 5 contradict the agent’s reported values: the screenshot shows 2025010400 has 7025 views (agent reported 5504) and 2025010500 has 7508 views (agent reported 5333). The screenshot does not show the views for 2025010600 or any item for 2025010700, so those cannot be verified and appear fabricated given the constraint to use only returned items.",
+            "discrepancies": "Major mismatch: agent claims 2025-01-04=5504 and 2025-01-05=5333, but screenshot shows 2025010400 views=7025 and 2025010500 views=7508. Agent also claims counts for 2025-01-06 and 2025-01-07, but the screenshot does not show views for 2025010600 and does not show any 2025010700 item at all.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report daily date–viewcount pairs from the supplied API response (or report missing/unavailable data)",
+          "earned_points": 0,
+          "post_image_earned_points": 2.0,
+          "max_points": 6,
+          "justification": "The agent output lists seven date–viewcount pairs, but there is no evidence in the action history that these values were actually extracted from the API response. The counts appear fabricated without supporting data.",
+          "applicable_evidence": "Screenshots 1-4 (latest is Screenshot 4) clearly show the full JSON `items` array with 7 daily objects and these exact timestamp→views pairs: 2025010100→6244, 2025010200→6029, 2025010300→5740, 2025010400→7025, 2025010500→7508, 2025010600→5495, 2025010700→4804. The agent output instead reports 2025010400→5504, 2025010500→5333, 2025010600→5254, 2025010700→5345 (mismatching 4 of 7).",
+          "post_image_justification": "Because the authoritative API response shown in the screenshots contains all seven required day-count pairs and the agent reported four of them incorrectly, this is a substantive failure to report the daily view counts from the supplied response. Not a blocker; data were visible.",
+          "reality_notes": "Screenshots show a raw JSON response with an `items` array containing 7 daily objects for article `Apollo_11`, each with `timestamp` in the form `YYYYMMDD00` and an integer `views`. The full set visible across screenshots includes: 2025010100→6244, 2025010200→6029, 2025010300→5740, 2025010400→7025, 2025010500→7508, 2025010600→5495, 2025010700→4804. One screenshot variant only shows view counts through 2025010500 and only partial visibility for 2025010600 (no views shown) and no 2025010700 line, so in that view the last two days can’t be verified from what’s on-screen."
+        },
+        "verifier_evidence": "Screenshots 1-4 (latest is Screenshot 4) clearly show the full JSON `items` array with 7 daily objects and these exact timestamp→views pairs: 2025010100→6244, 2025010200→6029, 2025010300→5740, 2025010400→7025, 2025010500→7508, 2025010600→5495, 2025010700→4804. The agent output instead reports 2025010400→5504, 2025010500→5333, 2025010600→5254, 2025010700→5345 (mismatching 4 of 7).",
+        "verifier_justification": "Because the authoritative API response shown in the screenshots contains all seven required day-count pairs and the agent reported four of them incorrectly, this is a substantive failure to report the daily view counts from the supplied response. Not a blocker; data were visible.",
+        "action_only_points": 0,
+        "final_points": 2.0,
+        "max_points": 6,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 4
+          },
+          {
+            "source_index": 1,
+            "score": 6
+          },
+          {
+            "source_index": 2,
+            "score": 6
+          },
+          {
+            "source_index": 3,
+            "score": 4
+          },
+          {
+            "source_index": 4,
+            "score": 4
+          }
+        ],
+        "selected_indices": [
+          2,
+          1,
+          4,
+          3,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows a truncated JSON line beginning with: {\"items\":[{\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"granularity\":\"daily\",\"timestamp\":\"2025010100\",...\"views\":6244},{...\"timestamp\":\"2025010200\",...\"views\":6029},{...\"timestamp\":\"2025010300\",...\"views\":5740},{\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"gra\nThis visible evidence explicitly contains only the first three (3) complete timestamp/views pairs (2025010100→6244, 2025010200→6029, 2025010300→5740). The text is cut off immediately after starting the 4th item (\"gra...), so items for 2025010400–2025010700 are not shown in this DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent’s reported output lists seven (7) date–count pairs from 2025-01-01 through 2025-01-07, but the DOM-model evidence only explicitly supports three (3) daily items (timestamps 2025010100, 2025010200, 2025010300 with views 6244, 6029, 5740). Because the evidence is truncated mid-4th item, the remaining four (4) pairs (2025-01-04 to 2025-01-07 and their counts) are not verifiable from the supplied DOM snapshot, so reporting all seven as sourced from the visible API response is only partially supported.",
+            "discrepancies": "Agent claims 7 pairs and states items 3–7 are “taken directly from the same visible API JSON,” but DOM evidence only visibly contains 3 complete items; days 4–7 are not present/visible in the provided DOM-model evidence.",
+            "environment_issues_confirmed": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the API response is visibly truncated mid-JSON. Visible text includes only the beginning of the items array: `{\"items\":[{\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"granularity\":\"daily\",\"timestamp\":\"2025010100\",...\"views\":6244},{...\"timestamp\":\"2025010200\"...\"views\":6029},{...\"timestamp\":\"2025010300\"...\"views\":5740},{\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"gra` and then cuts off.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence explicitly contains 3 complete timestamp/view pairs (2025010100→6244, 2025010200→6029, 2025010300→5740). It does not contain the remaining 4 days (2025010400–2025010700) because the JSON is truncated in the visible DOM evidence. The agent’s answer reports all 7 date-count pairs, but only the first three are supported by the provided DOM-model state; the other four pairs are not evidenced here.",
+            "discrepancies": "Agent output includes 4 additional pairs (2025010400/5504, 2025010500/5333, 2025010600/5254, 2025010700/5345) that are not present in DOM_MODEL_STATE_INDEX: 1 due to truncation; thus they appear fabricated relative to the supplied DOM evidence.",
+            "environment_issues_confirmed": true,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 (final). URL shown as https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107. Visible JSON fragment: `{ \"items\": [ { ... \"timestamp\": \"2025010100\", ... \"views\": 6244 }, { ... \"timestamp\": \"2025010200\", ... \"views\": 6029 }, { ... \"timestamp\": \"2025010300\", ... \"views\": 5740 }, {`.\nOnly the first three item objects (timestamps 2025010100/2025010200/2025010300 with views 6244/6029/5740) are explicitly present in the DOM snapshot; the remaining items are not shown.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent output reports seven date–count pairs for 2025-01-01 through 2025-01-07. However, DOM_MODEL_STATE_INDEX: 4 only explicitly evidences three items (2025010100→6244, 2025010200→6029, 2025010300→5740). Therefore, only the first three reported date–count pairs are supported by the DOM evidence; the remaining four pairs (2025-01-04 through 2025-01-07 and their counts) are not evidenced in the provided DOM model.",
+            "discrepancies": "Agent claims additional daily items (2025010400/2025010500/2025010600/2025010700 and their view counts) that are not present in the visible DOM evidence. Thus, the report of all seven date–count pairs cannot be fully verified from the supplied DOM snapshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows URL https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107 and VISIBLE CONTENT beginning: {\"items\":[{\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"granularity\":\"daily\",\"timestamp\":\"2025010100\",\"access\":\"all-access\",\"agent\":\"user\",\"views\":6244},{...\"timestamp\":\"2025010200\"...\"views\":6029},{...\"timestamp\":\"2025010300\"...\"views\":5740},{\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"gra... (truncated mid-4th item).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence explicitly contains only the first three complete daily items (timestamps 2025010100, 2025010200, 2025010300 with views 6244, 6029, 5740). The remaining four date–count pairs required for 2025-01-04 through 2025-01-07 are not present in the provided DOM snapshot because the JSON is visibly truncated at the start of the 4th item (\"...\"gra\"). Therefore the agent’s full list of seven date-count pairs is not fully supported by the DOM-model evidence; only the first three pairs are supported.",
+            "discrepancies": "Agent reported 7 date–count pairs (2025-01-01 through 2025-01-07). DOM state 3 only evidences the first 3 pairs: 2025010100→6244, 2025010200→6029, 2025010300→5740. Counts/dates for 2025010400–2025010700 are not evidenced in the DOM snapshot and thus appear fabricated/unsupported relative to the supplied response evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 (m0:L1-L7)\nURL: https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107\nVISIBLE CONTENT (truncated mid-JSON):\n- {\"items\":[\n  {\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"granularity\":\"daily\",\"timestamp\":\"2025010100\",\"access\":\"all-access\",\"agent\":\"user\",\"views\":6244},\n  {\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"granularity\":\"daily\",\"timestamp\":\"2025010200\",\"access\":\"all-access\",\"agent\":\"user\",\"views\":6029},\n  {\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"granularity\":\"daily\",\"timestamp\":\"2025010300\",\"access\":\"all-access\",\"agent\":\"user\",\"views\":5740},\n  {\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"gra\n(only the first three items are fully visible; the 4th is cut off)",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent output reports 7 daily date–viewcount pairs for 2025-01-01 through 2025-01-07. However, the supplied DOM evidence only contains three complete timestamp/view pairs (2025010100→6244, 2025010200→6029, 2025010300→5740). There is no DOM support for four additional days (2025-01-04 through 2025-01-07) and their view counts, so those reported pairs are not derived from the provided response text.",
+            "discrepancies": "Agent reported additional pairs not present in DOM evidence:\n- 2025-01-04: 5504 (not shown)\n- 2025-01-05: 5333 (not shown)\n- 2025-01-06: 5254 (not shown)\n- 2025-01-07: 5345 (not shown)\nDOM shows only 2025-01-01:6244, 2025-01-02:6029, 2025-01-03:5740 (via timestamps 2025010100/0200/0300).",
+            "environment_issues_confirmed": true
+          }
+        ],
+        "scoring": {
+          "criterion": "Report daily date–viewcount pairs from the supplied API response (or report missing/unavailable data)",
+          "earned_points": 6,
+          "post_image_earned_points": 2.5,
+          "max_points": 6,
+          "justification": "The agent listed all seven dates (2025-01-01 through 2025-01-07) exactly once with their corresponding integer view counts, correctly converted from the timestamps and covering the full range without omission or duplication.",
+          "applicable_evidence": "Latest DOM evidence is DOM_MODEL_STATE_INDEX: 4 (and earlier states 0–3 are consistent): the visible API JSON is truncated after 3 complete items. It explicitly shows only:\n- timestamp 2025010100 views 6244\n- timestamp 2025010200 views 6029\n- timestamp 2025010300 views 5740\nThe remaining days (2025010400–2025010700) are not visible/confirmed anywhere in the provided DOM-model snapshots.",
+          "post_image_justification": "The agent reported 7 date–count pairs with exact integers for 2025-01-04 through 2025-01-07, but the DOM evidence only supports the first three pairs. This is a critical source-fidelity failure (introducing unevidenced counts) rather than an uncontrollable blocker, because the agent did not report the limitation (truncation) and instead asserted values as if sourced from the response. Award credit only for the 3 pairs that are explicitly supported.",
+          "reality_notes": "The DOM-model snapshots show the Pageviews API response as truncated mid-JSON. Only the first three complete items are visibly present with full timestamp and views fields: timestamp 2025010100 → views 6244, timestamp 2025010200 → views 6029, timestamp 2025010300 → views 5740. The 4th item begins but is cut off, and no complete items for 2025010400–2025010700 are visible in the provided DOM evidence. Scoring should treat only those three date-count pairs as explicitly evidenced; the remaining four days cannot be verified from the shown response text."
+        },
+        "verifier_evidence": "Latest DOM evidence is DOM_MODEL_STATE_INDEX: 4 (and earlier states 0–3 are consistent): the visible API JSON is truncated after 3 complete items. It explicitly shows only:\n- timestamp 2025010100 views 6244\n- timestamp 2025010200 views 6029\n- timestamp 2025010300 views 5740\nThe remaining days (2025010400–2025010700) are not visible/confirmed anywhere in the provided DOM-model snapshots.",
+        "verifier_justification": "The agent reported 7 date–count pairs with exact integers for 2025-01-04 through 2025-01-07, but the DOM evidence only supports the first three pairs. This is a critical source-fidelity failure (introducing unevidenced counts) rather than an uncontrollable blocker, because the agent did not report the limitation (truncation) and instead asserted values as if sourced from the response. Award credit only for the 3 pairs that are explicitly supported.",
+        "action_only_points": 6,
+        "final_points": 2.5,
+        "max_points": 6,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "CONTRADICTED",
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch",
+        "environment_issue_conclusion_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Compute and show arithmetic for the total over the reported days",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 2
+          },
+          {
+            "source_index": 2,
+            "score": 2
+          },
+          {
+            "source_index": 3,
+            "score": 2
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          3,
+          2,
+          1,
+          0,
+          4
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "The screenshot shows the seven individual daily view integers in the JSON items array (6244, 6029, 5740, 7025, 7508, 5495, 4804). The screenshot itself does not show any summed total or arithmetic—only the raw daily items.",
+            "criterion_analysis": "The agent’s predicted total (39,449) is computed from incorrect daily values (days 4–7 don’t match the screenshot), so the shown arithmetic and total are not correct for the API response visible in the screenshot. Thus this criterion is not satisfied based on screenshot-verified numbers.",
+            "discrepancies": "Agent summed: 6244+6029+5740+5504+5333+5254+5345, but the screenshot’s corresponding values for days 4–7 are 7025, 7508, 5495, 4804. Therefore both the arithmetic inputs and resulting total conflict with the visible response.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot itself does not show any arithmetic or totals—only the JSON items with daily \"views\" values: 6244, 6029, 5740, 7025, 7508, 5495, 4804.",
+            "criterion_analysis": "The agent’s predicted output includes explicit summation steps and a total (39,449), but because several daily values used by the agent (for 2025-01-04 to 2025-01-07) do not match the screenshot, the shown arithmetic is not summing the correct visible counts. Using the screenshot’s values would require a different total. Thus the criterion is not satisfied as written (total must be computed from the reported/returned daily counts).",
+            "discrepancies": "Agent’s arithmetic is based on incorrect daily counts for 4 of the 7 days compared to the screenshot, so the total 39,449 is unsupported by the visible API response values (which include 7025 and 7508, etc.).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot itself does not show any summed total; it only shows the raw JSON items with daily \"views\" values (6244, 6029, 5740, 7025, 7508, 5495, 4804).",
+            "criterion_analysis": "The agent’s predicted output shows arithmetic and a total of 39,449, but because several daily counts used in that arithmetic do not match the counts visible in the screenshot, the total is not faithful to the supplied API response. Using the screenshot’s counts, the total would need to be computed from 6244+6029+5740+7025+7508+5495+4804 (not the agent’s numbers). Thus this criterion is not satisfied.",
+            "discrepancies": "Agent’s arithmetic sums a set that includes incorrect values (e.g., 5504 instead of 7025, 5333 instead of 7508, etc.), producing a total (39,449) that is unsupported by the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot only shows the raw JSON items with per-day `views` values (6244, 6029, 5740, 7025, 7508, 5495, 4804). There is no displayed total or arithmetic on-screen—only the individual daily entries.",
+            "criterion_analysis": "The agent’s predicted output shows arithmetic and a total (39,449), but that total is based on incorrect daily counts for several days compared to the screenshot. Using the screenshot’s visible counts, the correct sum would be 6244 + 6029 + 5740 + 7025 + 7508 + 5495 + 4804 = 42,845, not 39,449. Thus the agent’s total calculation is not supported by the supplied API response as visible in the screenshot.",
+            "discrepancies": "Agent total uses wrong inputs (not matching screenshot for 01-04 through 01-07) and produces 39,449. Screenshot-implied total would be 42,845 if summed from visible counts.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "The screenshot itself shows only individual daily \"views\" values for timestamps 2025010100 (6244), 2025010200 (6029), 2025010300 (5740), 2025010400 (7025), and 2025010500 (7508). No total or arithmetic sum is shown on-screen.",
+            "criterion_analysis": "The agent provides arithmetic and a total (39,449), but it is not consistent with the visible data because the agent used different values for at least Jan 4 and Jan 5 than what the screenshot shows. Also, the screenshot does not provide the Jan 6 and Jan 7 view counts, so a correct seven-day total cannot be computed from the screenshot alone. Therefore the shown arithmetic/total in the agent output is unsupported and likely incorrect relative to the visible API items.",
+            "discrepancies": "Agent’s total is computed from a set of daily counts that conflict with the screenshot for Jan 4 and Jan 5 and include Jan 6/7 counts not visible in the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Compute and show arithmetic for the total over the reported days",
+          "earned_points": 3,
+          "post_image_earned_points": 1.0,
+          "max_points": 3,
+          "justification": "The agent correctly showed step-by-step addition of the seven reported view counts and arrived at the correct total (39,449) for those values.",
+          "applicable_evidence": "Screenshots 1-4 show the correct daily counts (6244, 6029, 5740, 7025, 7508, 5495, 4804). The agent’s arithmetic sums a different (incorrect) set of numbers and arrives at 39,449, whereas summing the screenshot values would yield 42,845.",
+          "post_image_justification": "The agent did show arithmetic, but it is not the correct total for the API-response values evidenced in the screenshots because several daily inputs were wrong. Award partial credit for showing stepwise addition methodology, but penalize heavily for incorrect inputs/total relative to the supplied response.",
+          "reality_notes": "The screenshots themselves do not display any computed totals—only per-day `views` integers. When all seven daily values are visible (6244, 6029, 5740, 7025, 7508, 5495, 4804), they can be summed to a single 7-day total; when only the first five are visible in the partial screenshot, only a partial total can be computed from on-screen evidence."
+        },
+        "verifier_evidence": "Screenshots 1-4 show the correct daily counts (6244, 6029, 5740, 7025, 7508, 5495, 4804). The agent’s arithmetic sums a different (incorrect) set of numbers and arrives at 39,449, whereas summing the screenshot values would yield 42,845.",
+        "verifier_justification": "The agent did show arithmetic, but it is not the correct total for the API-response values evidenced in the screenshots because several daily inputs were wrong. Award partial credit for showing stepwise addition methodology, but penalize heavily for incorrect inputs/total relative to the supplied response.",
+        "action_only_points": 3,
+        "final_points": 1.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 2
+          },
+          {
+            "source_index": 2,
+            "score": 3
+          },
+          {
+            "source_index": 3,
+            "score": 1
+          },
+          {
+            "source_index": 4,
+            "score": 2
+          }
+        ],
+        "selected_indices": [
+          2,
+          4,
+          1,
+          0,
+          3
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 visibly provides daily view integers for only three days: 6244 (timestamp 2025010100), 6029 (2025010200), 5740 (2025010300). No visible integers are provided for timestamps 2025010400–2025010700 due to truncation (JSON cuts off at \"...{\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"gra\").",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent shows explicit arithmetic for a seven-day total (ending at 39,449) based on seven daily counts, but only the first three addends (6244, 6029, 5740) are supported by the DOM evidence. The arithmetic steps involving the four unsupported daily counts cannot be validated against the provided API response snapshot. Therefore, the total computation is only partially supported by the evidence available.",
+            "discrepancies": "Total and intermediate sums include four daily counts (5504, 5333, 5254, 5345) that are not visible in the DOM evidence, so the 7-day total 39,449 is not fully supported by the provided snapshot.",
+            "environment_issues_confirmed": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 provides only three view integers explicitly: 6244, 6029, 5740 (embedded in the truncated JSON). No DOM evidence shows the other four daily counts or any totals.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe arithmetic shown in the agent answer (summing seven days to 39,449) cannot be validated against the DOM evidence because only the first three addends are present in the DOM-model snapshot. For the subset that is evidenced, the agent does show intermediate arithmetic steps, but the majority of the sum relies on unevidenced daily counts.",
+            "discrepancies": "The reported seven-day total (39,449) depends on four daily counts not present in DOM_MODEL_STATE_INDEX: 1. Therefore the total is not supported by the supplied response evidence.",
+            "environment_issues_confirmed": true,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 only shows three view counts in the response fragment: 6244 (timestamp 2025010100), 6029 (timestamp 2025010200), 5740 (timestamp 2025010300). No DOM evidence is shown for any additional view counts beyond these three.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent shows explicit arithmetic for a seven-day total (ending at 39,449) that uses four additional daily counts not present in DOM_MODEL_STATE_INDEX: 4. From DOM evidence alone, only a partial total over the first three evidenced days can be validated (6244 + 6029 + 5740). The full seven-day arithmetic and total cannot be confirmed from the supplied DOM snapshot.",
+            "discrepancies": "Agent’s seven-day summation includes values for 2025-01-04 through 2025-01-07 that are not evidenced in DOM_MODEL_STATE_INDEX: 4; therefore, the claimed total 39,449 is not verifiable from the provided DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 provides exact integers for only three days: views 6244 (timestamp 2025010100), 6029 (2025010200), 5740 (2025010300). The JSON is truncated before additional days’ view integers are shown.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent computed and displayed a 7-day total (39,449) using seven daily counts. However, the supplied DOM evidence only supports three daily counts; the other four addends used in the arithmetic (5504, 5333, 5254, 5345) are not present in the DOM snapshot. Thus, the shown arithmetic for a 7-day total is not supported by (and conflicts with the constraint to use only returned items evidenced here). A partial total over evidenced items could be computed (6244+6029+5740), but the agent did not limit the sum to available items.",
+            "discrepancies": "Total arithmetic includes four daily values not evidenced in DOM state 3, so the resulting 39,449 total is not verifiable from the supplied response snapshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows only three complete daily view counts in the visible JSON:\n- timestamp 2025010100 views 6244\n- timestamp 2025010200 views 6029\n- timestamp 2025010300 views 5740\nThe JSON is visibly truncated after the third full item (\"...{\\\"project\\\":\\\"en.wikipedia\\\",\\\"article\\\":\\\"Apollo_11\\\",\\\"gra\").",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent computes a 7-day total (39,449) using seven daily counts, but the DOM evidence provides only three complete daily counts. Because four of the addends are not present in the DOM evidence, the shown arithmetic is not supported by (and therefore contradicts the requirement to use only) the supplied response items.",
+            "discrepancies": "Agent’s total uses unsupported addends for 2025-01-04..2025-01-07. Based strictly on DOM-visible items, the only defensible partial sum would be 6244 + 6029 + 5740 (= 18,013) over available items; the agent instead reports a 7-day sum of 39,449.",
+            "environment_issues_confirmed": true
+          }
+        ],
+        "scoring": {
+          "criterion": "Compute and show arithmetic for the total over the reported days",
+          "earned_points": 3,
+          "post_image_earned_points": 1.0,
+          "max_points": 3,
+          "justification": "The agent provided step-by-step addition of the seven reported counts and arrived at the correct total of 39,449 views using exactly the listed values.",
+          "applicable_evidence": "Latest DOM evidence (DOM_MODEL_STATE_INDEX: 4) provides only three view integers (6244, 6029, 5740). No DOM evidence provides the other four daily counts needed for a 7-day total in the agent’s arithmetic.",
+          "post_image_justification": "The agent’s shown 7-day total arithmetic relies on four addends not evidenced in the DOM snapshots, so the claimed 39,449 total is not supported. However, the agent did correctly add the first three evidenced numbers as an intermediate step (6244 + 6029 = 12,273; + 5740 = 18,013). Give partial credit for demonstrating correct arithmetic structure/ability on the evidenced portion, but not for the unsupported 7-day total.",
+          "reality_notes": "Because the DOM evidence exposes only three daily view integers (6244, 6029, 5740), only a total over those available items can be computed using explicit evidence. The visible-data arithmetic would be 6244 + 6029 + 5740 = 18013. Any seven-day total necessarily depends on four additional daily counts that are not present in the provided DOM snapshots due to truncation, so such arithmetic cannot be grounded in the displayed response."
+        },
+        "verifier_evidence": "Latest DOM evidence (DOM_MODEL_STATE_INDEX: 4) provides only three view integers (6244, 6029, 5740). No DOM evidence provides the other four daily counts needed for a 7-day total in the agent’s arithmetic.",
+        "verifier_justification": "The agent’s shown 7-day total arithmetic relies on four addends not evidenced in the DOM snapshots, so the claimed 39,449 total is not supported. However, the agent did correctly add the first three evidenced numbers as an intermediate step (6244 + 6029 = 12,273; + 5740 = 18,013). Give partial credit for demonstrating correct arithmetic structure/ability on the evidenced portion, but not for the unsupported 7-day total.",
+        "action_only_points": 3,
+        "final_points": 1.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "CONTRADICTED",
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "environment_issue_conclusion_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Identify highest-view date and show maximum-selection logic over the reported days",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 2
+          },
+          {
+            "source_index": 2,
+            "score": 2
+          },
+          {
+            "source_index": 3,
+            "score": 2
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          3,
+          2,
+          1,
+          0,
+          4
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "From the visible JSON items, the daily view counts include 6244 (2025010100), 6029 (2025010200), 5740 (2025010300), 7025 (2025010400), 7508 (2025010500), 5495 (2025010600), and 4804 (2025010700). The largest visible integer among these is 7508, associated with timestamp 2025010500.",
+            "criterion_analysis": "Given the screenshot values, the maximum should be 7508 on 2025-01-05 (timestamp 2025010500). The agent instead claimed the maximum was 6244 on 2025-01-01, which contradicts the visible data. Even though the agent showed comparison steps, they are based on incorrect counts.",
+            "discrepancies": "Agent claims max is 6244 on 2025-01-01; screenshot shows a higher value 7508 on 2025010500 (2025-01-05), and also 7025 on 2025010400. So the max date and count in the agent output are wrong per the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "From the visible JSON items, the largest \"views\" value among the seven shown appears to be 7508, associated with \"timestamp\":\"2025010500\". Other values visible include 7025 (2025010400), 6244 (2025010100), 6029 (2025010200), 5740 (2025010300), 5495 (2025010600), 4804 (2025010700). The screenshot itself does not show any max-selection logic text—only the raw values.",
+            "criterion_analysis": "The agent’s predicted output claims the highest day is 2025-01-01 with 6244 views, and provides comparison steps. This contradicts the visible response where 7508 (on 2025010500) is clearly higher than 6244. Therefore the maximum identification and selection logic in the agent output are incorrect relative to the supplied API response shown in the screenshot.",
+            "discrepancies": "Agent claims max is 6244 on 2025-01-01, but the screenshot shows a higher value: 7508 on timestamp 2025010500 (i.e., 2025-01-05).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "From the visible JSON in the screenshot, the largest daily \"views\" value among the listed items appears to be 7508 at \"timestamp\":\"2025010500\". Other high values shown include 7025 at 2025010400.",
+            "criterion_analysis": "The agent identified the maximum as 6244 on 2025-01-01, but the screenshot shows higher counts later in the week (notably 7508 on 2025-01-05). Therefore, the highest-view date/count and the max-selection logic in the predicted output are incorrect relative to the supplied API response shown.",
+            "discrepancies": "Agent’s claimed maximum (6244 on 2025-01-01) conflicts with the screenshot, which shows 7508 on timestamp 2025010500 (2025-01-05) and 7025 on 2025010400, both greater than 6244.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Visible daily `views` values in the JSON include 6244 (2025010100), 6029 (2025010200), 5740 (2025010300), 7025 (2025010400), 7508 (2025010500), 5495 (2025010600), 4804 (2025010700). Among these, 7508 is the largest value and it corresponds to timestamp 2025010500.",
+            "criterion_analysis": "The agent identified the maximum as 6244 on 2025-01-01, but the screenshot clearly shows higher counts later in the week (7025 on 2025-01-04 and 7508 on 2025-01-05). Therefore the agent’s maximum-selection result and logic are incorrect relative to the visible API response.",
+            "discrepancies": "Agent claims max is 6244 on 2025-01-01; screenshot shows a higher max of 7508 on timestamp 2025010500 (date 2025-01-05).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "Visible daily counts include 6244 (2025010100), 6029 (2025010200), 5740 (2025010300), 7025 (2025010400), and 7508 (2025010500). Among these visible values, 7508 is the largest and is associated with timestamp 2025010500.",
+            "criterion_analysis": "The agent identifies the highest day as 2025-01-01 with 6244, but the screenshot shows at least two higher values later in the period: 7025 on 2025-01-04 and 7508 on 2025-01-05. Even without seeing Jan 6–7, the maximum among the visible items is 7508 on 2025-01-05, so the agent’s maximum-selection result and logic are contradicted by the screenshot evidence.",
+            "discrepancies": "Agent claims max is 6244 on 2025-01-01; screenshot shows 7508 on 2025010500 (2025-01-05) which is greater than 6244, and also shows 7025 on 2025010400.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Identify highest-view date and show maximum-selection logic over the reported days",
+          "earned_points": 3,
+          "post_image_earned_points": 1.0,
+          "max_points": 3,
+          "justification": "The agent compared each of the seven reported counts and correctly identified 6244 on 2025-01-01 as the maximum, documenting the comparison steps.",
+          "applicable_evidence": "Screenshots 1-4 show the maximum daily views is 7508 on timestamp 2025010500 (date 2025-01-05). Agent output claims the max is 6244 on 2025-01-01 and compares against its own incorrect numbers.",
+          "post_image_justification": "Maximum identification is incorrect given the visible API response (7508 on 2025-01-05). However, the agent did provide explicit max-selection comparison logic over its listed values, so minimal partial credit for method but not correctness.",
+          "reality_notes": "From the full visible 7-day list in the screenshots, the highest `views` value is 7508, associated with timestamp 2025010500 (date 2025-01-05 after YYYY-MM-DD conversion). Even in the partial screenshot (showing through 2025010500), 7508 on 2025010500 is already the maximum among the visible items."
+        },
+        "verifier_evidence": "Screenshots 1-4 show the maximum daily views is 7508 on timestamp 2025010500 (date 2025-01-05). Agent output claims the max is 6244 on 2025-01-01 and compares against its own incorrect numbers.",
+        "verifier_justification": "Maximum identification is incorrect given the visible API response (7508 on 2025-01-05). However, the agent did provide explicit max-selection comparison logic over its listed values, so minimal partial credit for method but not correctness.",
+        "action_only_points": 3,
+        "final_points": 1.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 2
+          },
+          {
+            "source_index": 2,
+            "score": 3
+          },
+          {
+            "source_index": 3,
+            "score": 1
+          },
+          {
+            "source_index": 4,
+            "score": 2
+          }
+        ],
+        "selected_indices": [
+          2,
+          4,
+          1,
+          0,
+          3
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows three view counts: 6244 (2025010100), 6029 (2025010200), 5740 (2025010300). It does not show the remaining four days’ counts due to truncation after the start of the 4th item.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent identifies 2025-01-01 with 6244 as the maximum across seven days and provides comparison logic across all seven reported counts. From the DOM evidence, we can confirm that among the three visible days, 6244 is the highest (6244 > 6029 > 5740). However, because counts for 2025-01-04 through 2025-01-07 are not visible, the claim that 6244 is the maximum over the full seven-day window is not fully supported by the provided snapshot.",
+            "discrepancies": "Maximum-selection steps compare against four daily counts not present in the DOM evidence; cannot confirm that none of the missing days exceed 6244.",
+            "environment_issues_confirmed": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows views for timestamps 2025010100 (6244), 2025010200 (6029), 2025010300 (5740). The DOM snapshot does not show later days’ views, so it does not provide a complete set for max selection across 7 days.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nWithin the three evidenced days, 6244 (2025010100) is indeed the maximum among {6244, 6029, 5740}. However, because the DOM evidence lacks the remaining four days, the claim that 2025-01-01 is the maximum over the full 7-day range is not supported by the provided DOM-model state.",
+            "discrepancies": "Agent asserts the maximum over 2025-01-01 through 2025-01-07 is 6244 on 2025-01-01, but DOM_MODEL_STATE_INDEX: 1 does not include 2025-01-04 through 2025-01-07 counts needed to confirm this.",
+            "environment_issues_confirmed": true,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 evidences view counts for three days only: 6244 (2025010100), 6029 (2025010200), 5740 (2025010300). No DOM evidence is shown for counts on 2025-01-04 through 2025-01-07.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent identifies the maximum as 6244 on 2025-01-01 and provides comparison steps across seven days. From the DOM evidence provided, 6244 is indeed the maximum among the three evidenced days (6244, 6029, 5740). However, because four days are not evidenced in the DOM snapshot, the claim that 6244 is the maximum over the full 7-day range cannot be fully validated.",
+            "discrepancies": "Maximum-selection logic is applied to seven reported counts, but only three counts are evidenced in DOM_MODEL_STATE_INDEX: 4; thus, the maximum over the full 7-day set is not provable from the supplied DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 evidences daily views for three timestamps: 2025010100 has 6244, 2025010200 has 6029, 2025010300 has 5740. The remaining days are not shown due to truncation.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nWithin the three evidenced days, selecting the maximum would yield 6244 on 2025-01-01 (from timestamp 2025010100). The agent’s stated maximum (6244 on 2025-01-01) is consistent with those three items. But the task requires the maximum over all seven days in the API response; because four days are not evidenced in the DOM snapshot, it cannot be confirmed that 6244 is the maximum across the full 7-day range from the supplied response.",
+            "discrepancies": "Agent asserts the maximum over all seven days without DOM evidence for days 4–7; a higher value could exist in the unseen portion of the response.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 provides three complete daily view counts:\n- 2025010100: 6244\n- 2025010200: 6029\n- 2025010300: 5740\nNo DOM evidence is shown for later days (response is truncated).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent’s maximum-selection logic and conclusion (6244 on 2025-01-01) is consistent with the three visible items (6244 > 6029 > 5740). However, because the DOM evidence does not include 2025-01-04 through 2025-01-07, it is not supported that 6244 is the maximum over the full 7-day range; it is only supported as the maximum among the three visible days.",
+            "discrepancies": "Agent claims the maximum over 2025-01-01..2025-01-07, but the DOM evidence only supports a maximum over the visible subset (2025-01-01..2025-01-03).",
+            "environment_issues_confirmed": true
+          }
+        ],
+        "scoring": {
+          "criterion": "Identify highest-view date and show maximum-selection logic over the reported days",
+          "earned_points": 3,
+          "post_image_earned_points": 1.5,
+          "max_points": 3,
+          "justification": "The agent correctly compared each of the seven daily counts, maintained a running maximum, and identified 6244 on 2025-01-01 as the highest, with clear comparison steps.",
+          "applicable_evidence": "Latest DOM evidence (DOM_MODEL_STATE_INDEX: 4) supports only three days’ counts: 6244 (2025-01-01), 6029 (2025-01-02), 5740 (2025-01-03). No DOM evidence for 2025-01-04..2025-01-07 counts.",
+          "post_image_justification": "From the evidenced subset, 2025-01-01 with 6244 is the maximum among the three visible items, and the agent’s max-selection logic is consistent for that subset. But the agent claimed it was the maximum over the full 7-day range without evidence for the missing four days. Award partial credit for correct max identification over the confirmed subset, but not full credit for the 7-day maximum claim.",
+          "reality_notes": "From the DOM-visible subset (three days), the maximum-selection logic can only be applied to {6244 (2025-01-01), 6029 (2025-01-02), 5740 (2025-01-03)}, where 6244 on 2025-01-01 is the maximum among the evidenced items. The DOM does not provide the remaining four days’ counts, so the maximum over the full seven-day range cannot be confirmed from the supplied DOM evidence; it can only be asserted as a maximum over the available (visible) items."
+        },
+        "verifier_evidence": "Latest DOM evidence (DOM_MODEL_STATE_INDEX: 4) supports only three days’ counts: 6244 (2025-01-01), 6029 (2025-01-02), 5740 (2025-01-03). No DOM evidence for 2025-01-04..2025-01-07 counts.",
+        "verifier_justification": "From the evidenced subset, 2025-01-01 with 6244 is the maximum among the three visible items, and the agent’s max-selection logic is consistent for that subset. But the agent claimed it was the maximum over the full 7-day range without evidence for the missing four days. Award partial credit for correct max identification over the confirmed subset, but not full credit for the 7-day maximum claim.",
+        "action_only_points": 3,
+        "final_points": 1.5,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch",
+        "environment_issue_conclusion_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Adhere to task constraints (source fidelity, timestamp conversion, no re-aggregation)",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 9
+          },
+          {
+            "source_index": 1,
+            "score": 9
+          },
+          {
+            "source_index": 2,
+            "score": 9
+          },
+          {
+            "source_index": 3,
+            "score": 9
+          },
+          {
+            "source_index": 4,
+            "score": 7
+          }
+        ],
+        "selected_indices": [
+          3,
+          2,
+          1,
+          0,
+          4
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "The screenshot shows a single API response JSON with an \"items\" array of seven objects for article \"Apollo_11\" with daily timestamps \"2025010100\" through \"2025010700\" and view counts as listed (6244, 6029, 5740, 7025, 7508, 5495, 4804). No other sources or pages are shown.",
+            "criterion_analysis": "The agent violated source fidelity by reporting multiple view counts (for 2025-01-04 through 2025-01-07) that are not the exact integers visible in the supplied API response. Timestamp-to-date conversion itself (YYYY-MM-DD from YYYYMMDD00) is conceptually fine, and no timezone shift is evidenced, but the incorrect integers indicate the response was not faithfully used.",
+            "discrepancies": "Agent output includes counts not present in the screenshot’s API items (5504/5333/5254/5345). This is inconsistent with the constraint to use only the returned items and preserve exact integers.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot shows the official-looking JSON response with seven daily items and exact integer view counts. The values visible for 2025010400..2025010700 are 7025, 7508, 5495, 4804. No other sources or aggregations are visible; it is a direct API response display with a \"Pretty-print\" checkbox.",
+            "criterion_analysis": "The agent violates source fidelity constraints by reporting several view counts that do not match what is returned in the visible API response. While the agent does convert timestamps to YYYY-MM-DD in their narrative, they effectively fabricate/alter four daily counts compared to the screenshot’s returned items, which is a major constraint violation (use only returned items and preserve exact integers).",
+            "discrepancies": "Agent’s reported counts differ from the API response shown in the screenshot for 4 days, indicating the output is not strictly derived from (and does not preserve) the returned items/integers.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the official-looking JSON response with 7 daily items and exact integer view counts. Timestamps are in the form YYYYMMDD00 (e.g., 2025010500) and views are integers (e.g., 7508).",
+            "criterion_analysis": "The agent’s output violates source-fidelity constraints because it reports several view counts that are not present in the supplied response visible in the screenshot (i.e., it effectively fabricates/uses incorrect numbers for multiple days). While the agent does convert timestamps to YYYY-MM-DD format, the underlying counts do not match the API response shown, so constraints are not adhered to.",
+            "discrepancies": "Agent reports values (5504, 5333, 5254, 5345) that are not in the screenshot’s JSON for the corresponding timestamps, indicating use of non-response data or transcription errors rather than “only the items returned by the supplied official API response.”",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot provides the authoritative source data (the JSON items array) with exact integers for `views` per timestamp. No other sources or aggregates are shown. The timestamps are in the form `YYYYMMDD00` (e.g., 2025010100).",
+            "criterion_analysis": "The agent did not adhere to the 'use only items returned' / 'preserve exact integers' constraint: it reported several view counts that do not match the exact integers visible in the screenshot’s API response (notably for 2025-01-04 through 2025-01-07). While the agent did convert timestamps to YYYY-MM-DD format conceptually, the incorrect counts indicate source fidelity was violated (effectively introducing non-response data). No evidence suggests timezone shifting or re-aggregation, but the primary constraint breach is incorrect transcription/fabrication of counts.",
+            "discrepancies": "Agent’s reported counts for multiple dates differ from the API response visible in the screenshot, indicating values were not taken strictly from the supplied response.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "The screenshot shows a Wikimedia Pageviews API JSON \"items\" list with exact integers for several days (e.g., 6244, 6029, 5740, 7025, 7508). It does not show all seven days’ view counts; the item with timestamp 2025010600 is only partially visible and its views are not visible; no 2025010700 item is visible.",
+            "criterion_analysis": "The agent’s output violates source-fidelity constraints because it reports daily counts for days not visible in the supplied response screenshot (Jan 6–7), and it reports incorrect values for days that are visible (Jan 4–5). The agent does convert timestamps to YYYY-MM-DD format in their narrative, but because multiple counts appear invented/altered compared to the visible API response, the constraint \"Use only the items returned by the supplied official API response\" is not met based on this screenshot.",
+            "discrepancies": "Agent uses view counts that do not match the screenshot (Jan 4/5) and includes additional day counts (Jan 6/7) not evidenced in the screenshot’s returned items view.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Adhere to task constraints (source fidelity, timestamp conversion, no re-aggregation)",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "The agent fabricated view counts without evidence from the API response, thus violating source fidelity even though timestamps were properly converted.",
+          "applicable_evidence": "Screenshots 1-4 provide the exact integers returned by the API. Agent output includes multiple integers not present for the corresponding timestamps (e.g., uses 5504 where response shows 7025). Timestamp-to-date conversion approach is fine, but source fidelity and exact-integer preservation are violated.",
+          "post_image_justification": "Hard constraint breach: the agent did not use only the returned items / did not preserve exact integer view counts from the official response. No evidence of timezone shifting or re-aggregation, but the incorrect numbers constitute fabrication/mistranscription, so no credit.",
+          "reality_notes": "The on-screen data are daily (granularity `daily`) items with timestamps formatted as `YYYYMMDD00`; the task’s date conversion is simply taking the YYYY-MM-DD portion (e.g., 2025010400→2025-01-04) without implying any timezone shift. The key constraint grounded by screenshots is that exact integer `views` must match those shown in the JSON; any differing integers would not be supported by the displayed response. Also, in the partial screenshot where Jan 6–7 view values are not visible, reporting those counts would go beyond what is evidenced on-screen unless another screenshot provides them."
+        },
+        "verifier_evidence": "Screenshots 1-4 provide the exact integers returned by the API. Agent output includes multiple integers not present for the corresponding timestamps (e.g., uses 5504 where response shows 7025). Timestamp-to-date conversion approach is fine, but source fidelity and exact-integer preservation are violated.",
+        "verifier_justification": "Hard constraint breach: the agent did not use only the returned items / did not preserve exact integer view counts from the official response. No evidence of timezone shifting or re-aggregation, but the incorrect numbers constitute fabrication/mistranscription, so no credit.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 6
+          },
+          {
+            "source_index": 1,
+            "score": 7
+          },
+          {
+            "source_index": 2,
+            "score": 7
+          },
+          {
+            "source_index": 3,
+            "score": 6
+          },
+          {
+            "source_index": 4,
+            "score": 4
+          }
+        ],
+        "selected_indices": [
+          2,
+          1,
+          3,
+          0,
+          4
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 URL matches the requested endpoint: https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107. Visible JSON includes timestamps in the form YYYYMMDD00 (e.g., 2025010100) and integer views (e.g., 6244). The JSON is visibly truncated mid-item (ends with \"...\\\"Apollo_11\\\",\\\"gra\").",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent preserves integers and converts timestamps like 2025010100 to dates like 2025-01-01, which is consistent with the visible format in the DOM evidence. However, the constraint “Use only the items returned by the supplied official API response” cannot be confirmed for days 4–7 because the DOM evidence does not display those returned items; yet the agent reports specific counts for those days and asserts they were “taken directly from the same visible API JSON.” Given the truncation, this overreaches what is evidenced. No timezone shifting or re-aggregation is evidenced, but source-fidelity for the missing four days is not supported.",
+            "discrepancies": "Agent reports view counts for 2025-01-04 to 2025-01-07 without DOM-evidenced support from the provided API response snapshot; thus the ‘use only returned items’ constraint adherence is only partially evidenced.",
+            "environment_issues_confirmed": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 indicates the response is truncated mid-item (ends at `{\"project\":\"en.wikipedia\",\"article\":\"Apollo_11\",\"gra`). Only the first three days’ view counts are visible in the DOM evidence.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe constraints require using only items returned by the supplied official API response. Based on the DOM-model evidence provided here, only three items’ view counts are actually available to the agent from the supplied response snapshot; nonetheless the agent reports four additional exact integers and treats them as “taken directly from the same visible API JSON,” which is not supported by the DOM evidence and violates source-fidelity constraints (introducing data not evidenced in the supplied response). Timestamp-to-date conversion and integer preservation for the first three items are consistent with the evidence, but the overall response includes unevidenced/fabricated daily counts.",
+            "discrepancies": "Agent claims items 3–7 are visible and taken directly from the API JSON; DOM_MODEL_STATE_INDEX: 1 shows truncation and does not display items beyond the beginning of item 4, so reporting exact counts for days 4–7 breaches the “use only returned items” constraint as evidenced.",
+            "environment_issues_confirmed": true
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "Constraint-relevant DOM evidence in DOM_MODEL_STATE_INDEX: 4 is limited to the first three `items` entries: timestamps 2025010100/2025010200/2025010300 with views 6244/6029/5740. The JSON fragment ends mid-object after the third item, so additional returned items (if any) are not visible in this DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nTimestamp conversion for the evidenced items is consistent with the constraint (YYYY-MM-DD from timestamps like 2025010100). However, the agent reports four additional daily counts (for 2025-01-04 through 2025-01-07) without DOM evidence showing those items in the supplied response. That means source-fidelity (“use only the items returned by the supplied official API response”) cannot be confirmed for those four days from the DOM model provided here, so overall adherence is only partially supported.",
+            "discrepancies": "Un-evidenced extension beyond DOM-proven items: the agent attributes counts for 2025-01-04..2025-01-07 to the supplied API response, but DOM_MODEL_STATE_INDEX: 4 does not show those items; therefore, compliance with the ‘use only returned items’ constraint is not fully supported by the DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the API response is truncated in visible content (ends at \"{\\\"project\\\":\\\"en.wikipedia\\\",\\\"article\\\":\\\"Apollo_11\\\",\\\"gra...\") but does provide exact integers for the first three days’ views. The agent’s response includes four additional daily view integers not present in state 3.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe constraint requires using only items returned by the supplied official API response. Based on the only provided DOM-model evidence, the response content available to verify includes only three full items; the agent introduced additional days and view counts not evidenced in the supplied response snapshot. Timestamp-to-date conversion for the first three items would be consistent (YYYY-MM-DD from YYYYMMDD00), but the major violation is source fidelity: the agent’s inclusion of days 4–7 and their counts is not supported by the provided API response evidence. View counts are kept as integers, and no timezone re-aggregation is shown, but the unsupported numbers violate the “use only returned items” constraint under the evidence provided.",
+            "discrepancies": "Four daily counts (for 2025-01-04 through 2025-01-07) and all dependent computations (7-day total, max over 7 days) are not grounded in the supplied DOM-model API response snapshot and thus fail source-fidelity.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 contains only three fully visible items and is truncated mid-4th item (\"...\\\"article\\\":\\\"Apollo_11\\\",\\\"gra\"). The task constraint says to use only items returned by the supplied official API response; the only items demonstrably present in the supplied DOM evidence are those first three complete items.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent output violates source-fidelity constraints relative to the supplied DOM evidence by introducing four additional daily counts (2025-01-04..2025-01-07) that are not shown in the provided response text. Timestamp-to-date conversion for the first three items is consistent with the evidence, but the unsupported extra items constitute fabrication relative to the supplied evidence snapshot.",
+            "discrepancies": "Unsubstantiated/fabricated (relative to DOM evidence) daily counts for 2025-01-04..2025-01-07 were used in reporting, totaling, and max selection. This fails the “use only the items returned by the supplied official API response” constraint as evidenced here (only 3 items are actually shown).",
+            "environment_issues_confirmed": true
+          }
+        ],
+        "scoring": {
+          "criterion": "Adhere to task constraints (source fidelity, timestamp conversion, no re-aggregation)",
+          "earned_points": 3,
+          "post_image_earned_points": 0.5,
+          "max_points": 3,
+          "justification": "The agent strictly used the API items, left timestamps as daily YYYY-MM-DD, did not change timezones or aggregate beyond daily counts, and preserved all integer view counts exactly.",
+          "applicable_evidence": "Latest DOM evidence (DOM_MODEL_STATE_INDEX: 4) confirms the timestamp format YYYYMMDD00 and integer views for the first three items; it does not show items for 2025010400–2025010700. Agent output includes exact integers for those missing days and states they were taken from the visible JSON.",
+          "post_image_justification": "While the agent’s timestamp-to-date conversion method and integer preservation are consistent with the evidenced items, the agent violates the hard constraint 'Use only the items returned by the supplied official API response' as evidenced here by presenting four additional exact daily counts not shown/confirmed in the supplied DOM snapshots (i.e., fabricated relative to the provided evidence). This is a major constraints breach, so minimal credit only.",
+          "reality_notes": "The DOM evidence supports that timestamps are in the form YYYYMMDD00 (e.g., 2025010100) with integer views, and converting these to YYYY-MM-DD dates (2025-01-01, etc.) preserves the intended daily granularity without timezone manipulation. However, the response content shown is truncated after three complete items, so source-fidelity can only be verified for those three items; any additional exact daily counts for 2025-01-04 through 2025-01-07 are not explicitly supported by the provided DOM snapshots and therefore cannot be treated as evidenced under the 'use only returned items' constraint."
+        },
+        "verifier_evidence": "Latest DOM evidence (DOM_MODEL_STATE_INDEX: 4) confirms the timestamp format YYYYMMDD00 and integer views for the first three items; it does not show items for 2025010400–2025010700. Agent output includes exact integers for those missing days and states they were taken from the visible JSON.",
+        "verifier_justification": "While the agent’s timestamp-to-date conversion method and integer preservation are consistent with the evidenced items, the agent violates the hard constraint 'Use only the items returned by the supplied official API response' as evidenced here by presenting four additional exact daily counts not shown/confirmed in the supplied DOM snapshots (i.e., fabricated relative to the provided evidence). This is a major constraints breach, so minimal credit only.",
+        "action_only_points": 3,
+        "final_points": 0.5,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "CONTRADICTED",
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch",
+        "environment_issue_conclusion_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    }
+  ]
+}

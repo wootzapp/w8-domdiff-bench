@@ -1,0 +1,242 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_075-collectible-card-rules-20260909T090552Z",
+  "run_id": "20260913T_task075_data_new",
+  "rubric_sha256": "6f14affeb38c269013e39e45b0490af6aae0f1273b38089a71952b4518441c09",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use only the exact-card Scryfall API response at the provided URL",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 2.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C1",
+          "evidence_requirement": "Use only the exact-card Scryfall API response at the provided URL",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "Use only the exact-card Scryfall API response at the provided URL",
+                "locator": "criterion-relevant content visible in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Keep full credit. There is direct visual evidence (Screenshot 1) that the data came from the exact-card named endpoint for Black Lotus, satisfying the source constraint.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model5.txt",
+                "line_range": "m5:L7-L7",
+                "quoted_text": "- { \"object\": \"card\", \"id\": \"bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd\", \"oracle_id\": \"5089ec1a-f881-4d55-af14-5d996171203b\", \"multiverse_ids\": [382866], \"mtgo_id\": 53155, \"mtgo_foil_id"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "DOM evidence supports the agent used the correct exact-card endpoint for Black Lotus, but does not support that the reported mana_cost/type_line/oracle_text/reserved/legalities values were actually extracted from that single response (they are not visible anywhere). Under the DOM rule, those parts are unproven, so full credit for exclusive reliance is not justified; still, partial credit is warranted because the correct endpoint and card identity are explicitly shown.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Record card identity fields: name, mana_cost, type_line",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 1.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C2",
+          "evidence_requirement": "Record card identity fields: name, mana_cost, type_line",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "Record card identity fields: name, mana_cost, type_line",
+                "locator": "criterion-relevant content visible in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Keep full credit. The agent reported all three identity fields and they match the API response exactly as shown.",
+            "review_note": "Screenshot0 contains name, mana_cost, and type_line; DOM preserves only the early name field before clipping."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Name is supported by DOM; mana_cost and type_line are not evidenced in the provided DOM, so they are unverified rather than confirmed. Award partial credit for the one identity field that is explicitly supported.",
+            "review_note": "Screenshot0 contains name, mana_cost, and type_line; DOM preserves only the early name field before clipping."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record complete oracle_text",
+      "max_points": 3,
+      "screenshot_final_points": 0.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C3",
+          "evidence_requirement": "Record complete oracle_text",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "Record complete oracle_text",
+                "locator": "criterion-relevant content visible in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Reduce to zero. The agent’s output oracle_text is \"{T}, Sacrifice Black Lotus: Add three mana of any one color.\" which contradicts the visible response text (it must be exact). This is a substantive mismatch, not a minor nitpick.",
+            "review_note": "Screenshot0 contains oracle_text, while every DOM state clips before oracle_text."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "There is no DOM support that the oracle_text reported by the agent was read from the response, and no blocker is evidenced (just missing/truncated evidence). Under the DOM rule, this is unproven, so no credit.",
+            "review_note": "Screenshot0 contains oracle_text, while every DOM state clips before oracle_text."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record reserved flag",
+      "max_points": 2,
+      "screenshot_final_points": 2.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C4",
+          "evidence_requirement": "Record reserved flag",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot5.png",
+                "visible_text": "Record reserved flag",
+                "locator": "criterion-relevant content visible in screenshot5.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Keep full credit. The agent reported `reserved: true`, matching the response exactly.",
+            "review_note": "Screenshot5 visibly contains reserved=true; every DOM state clips before reserved."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "The reserved boolean is not evidenced in the DOM, and no uncontrollable blocker is confirmed; the agent’s specific boolean claim is therefore unproven. No credit.",
+            "review_note": "Screenshot5 visibly contains reserved=true; every DOM state clips before reserved."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Record format legalities: Vintage, Legacy, Commander",
+      "max_points": 4,
+      "screenshot_final_points": 4.0,
+      "dom_model_final_points": 0.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C5",
+          "evidence_requirement": "Record format legalities: Vintage, Legacy, Commander",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot5.png",
+                "visible_text": "Record format legalities: Vintage, Legacy, Commander",
+                "locator": "criterion-relevant content visible in screenshot5.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Keep full credit. The agent’s three legality strings match the values shown under the specified keys in the API response.",
+            "review_note": "Screenshot5 visibly contains Vintage, Legacy, and Commander legalities; every DOM state clips before legalities."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "No DOM evidence supports the three legality strings being extracted from legalities.vintage/legacy/commander. With no confirmed blocker and no visibility of the fields, the claims are unproven. No credit.",
+            "review_note": "Screenshot5 visibly contains Vintage, Legacy, and Commander legalities; every DOM state clips before legalities."
+          },
+          "classification": "DOM_EVIDENCE_MISSING",
+          "advantage": "NOT_COMPARABLE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Respect task constraints (no pricing/links; stop after requested fields)",
+      "max_points": 2,
+      "screenshot_final_points": 2.0,
+      "dom_model_final_points": 2.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C6",
+          "evidence_requirement": "Respect task constraints (no pricing/links; stop after requested fields)",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot6.png",
+                "visible_text": "Respect task constraints (no pricing/links; stop after requested fields)",
+                "locator": "criterion-relevant content visible in screenshot6.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Keep full credit. The agent did not output pricing fields or purchase links and stopped after reporting the requested fields; merely viewing the JSON portions that contain prices/links is not itself a violation.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model2.txt",
+                "line_range": "m2:L7-L7",
+                "quoted_text": "- { \"object\": \"card\", \"id\": \"bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd\", \"oracle_id\": \"5089ec1a-f881-4d55-af14-5d996171203b\", \"multiverse_ids\": [382866], \"mtgo_id\": 53155, \"mtgo_foil_id"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Constraint adherence is supported by the content of the final answer (no pricing/links; stops after requested fields). Although the DOM is truncated and cannot prove what existed further down, there is also no evidence of prohibited usage; the delivered answer itself respects the constraints. Full credit.",
+            "review_note": "Both source sequences contain criterion-relevant evidence and both verifier analyses identify/use that evidence; any point difference is scoring judgment, not source loss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    }
+  ]
+}

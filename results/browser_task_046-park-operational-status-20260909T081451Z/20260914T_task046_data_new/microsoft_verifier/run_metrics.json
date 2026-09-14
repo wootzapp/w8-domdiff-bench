@@ -1,0 +1,148 @@
+{
+  "task_id": "browser_task_046-park-operational-status-20260909T081451Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_046-park-operational-status-20260909T081451Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "e24fd31de542dbb9ecf85ffa9e52387f76f4eba36181c54daaeb2de5917686b9",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 2,
+    "screenshots": 3
+  },
+  "result": {
+    "process_score": 0.1,
+    "total_earned_points": 2.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 89.88
+  },
+  "criteria": [
+    {
+      "criterion": "Access Yosemite Current Conditions page (NPS) and locate the Active Alerts module",
+      "action_only_points": 0.0,
+      "final_points": 1.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did access the Current Conditions page and reached the part labeled “ALERTS,” which is a reasonable attempt to locate the alerts module. However, there is no evidence the agent successfully viewed the active alerts content/cards on that page; later, the browsing ended on a 404. This merits partial credit for locating the section label but not the actual module contents.",
+      "penalty": false
+    },
+    {
+      "criterion": "Active park-alert count on Yosemite Current Conditions page",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The evidence does not display any active park alerts to count, and the agent did not report a count in the final output (it timed out). While a later 404 occurred, the Current Conditions page itself was accessible earlier; the missing count is therefore not supported as an unavoidable blocker. Score remains 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report the first two active park-alert titles (or all if fewer than two)",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Because no active alert titles are visible in evidence and the agent’s final output contains no titles (only an error), this criterion is not met. The 404 does not establish that the needed titles were inaccessible on the Current Conditions page—only that the agent later hit an error. Score remains 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report displayed Tioga Road status",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Tioga Road status is not visible in the provided evidence and the agent did not report it in the output. There is also no confirmed uncontrollable blocker preventing scrolling/finding the Tioga Road status on the accessible Current Conditions page. Score remains 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Access Yosemite Entrance Reservations page (NPS)",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 1.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "There is no evidence the agent accessed the Entrance Reservations page, nor did the agent report a blocker specific to that page. Ending on a 404 is not sufficient evidence of an uncontrollable blocker preventing access to Entrance Reservations. Score remains 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Determine 2026 entrance timed-reservation requirement from Entrance Reservations page",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Because the agent never reached the Entrance Reservations page (per evidence) and did not report any 2026 timed-entry requirement (or state it was TBD), this criterion is not met. Score remains 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Follow constraints and stopping condition",
+      "action_only_points": 0.0,
+      "final_points": 1.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Constraints about not making a reservation appear to be followed (no evidence of booking actions). However, the agent did not satisfy the stopping condition because none of the required outputs (alert count/titles, Tioga Road status, 2026 policy) were recorded; instead the run ended with an error. Award partial credit for not violating booking constraints but penalize heavily for not completing the required reporting/stopping condition.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 11,
+    "o4-mini": 3,
+    "total": 14,
+    "api_attempts": 14,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 70953,
+      "completion_tokens": 7039,
+      "reasoning_tokens": 0,
+      "total_tokens": 77992
+    },
+    "o4-mini": {
+      "prompt_tokens": 17130,
+      "completion_tokens": 3790,
+      "reasoning_tokens": 2368,
+      "total_tokens": 20920
+    },
+    "combined": {
+      "prompt_tokens": 88083,
+      "completion_tokens": 10829,
+      "reasoning_tokens": 2368,
+      "total_tokens": 98912
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/microsoft_verifier/run.log"
+}

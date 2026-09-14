@@ -1,0 +1,578 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_070-unicode-ideograph-inspection-20260914T085343Z",
+  "run_id": "20260914T_task70_rerun_data_new",
+  "rubric_sha256": "d0ffe495ad2e47d67d52c42148e989a21aba2a4aa8fd88b63ab4a62c2b792f5e",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access the Unicode Unihan record for U+4E00 (or clearly report access failure)",
+      "description": "Use the supplied Unicode Unihan record page for code point U+4E00 (e.g., https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00). Full credit if the agent successfully uses the page OR if the page is inaccessible (down, blocked, CAPTCHA) and the agent clearly reports that it could not access the record. Partial credit if the agent appears to use an incorrect page but indicates uncertainty or inability to reach the Unihan record.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows the Unihan Database page with the title “Unihan data for U+4E00,” indicating the correct record page. Screenshot 2 shows Unihan-style field tables but not the U+4E00 header; the latest relevant confirmation of U+4E00 is Screenshot 1.",
+        "verifier_justification": "The screenshot evidence confirms the agent accessed the Unihan record for U+4E00. No access failure is shown.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The page header reads “Unihan Database” and the main title reads “Unihan data for U+4E00”. The URL is not visible, but the page content clearly indicates the Unihan record for code point U+4E00.",
+            "criterion_analysis": "Fully satisfied: the screenshot shows the Unicode Unihan record page specifically for U+4E00.",
+            "discrepancies": "No discrepancy: the agent’s context/predicted output refers to the Unihan record for U+4E00, which matches the screenshot title.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a Unicode Unihan “GetUnihanData” style page section with tables labeled “Data type” and “Value”, including entries like “kCihaiT”, “kCowles”, “kDaeJaweon”, “kFennIndex”, “kGSR”, “kHanYu”, “kKangXi”, “kKarlgren”, etc. A subsection header “Dictionary-like Data” is visible with another table listing fields such as “kCangjie”, “kFenn”, “kFourCornerCode”, “kGradeLevel”, “kHDZRadBreak”, “kHKGlyph”, “kMojiJoho”, “kPhonetic”, and “kUnihanCore2020”. The code point label “U+4E00” itself is not visible in this screenshot segment.",
+            "criterion_analysis": "The screenshot strongly indicates the agent is on a Unicode Unihan record page (the field names match Unihan database fields). However, because the codepoint identity (U+4E00) is not shown in the visible portion, the screenshot does not conclusively prove it is specifically the U+4E00 record—though it is consistent with being on such a record.",
+            "discrepancies": "Agent context references U+4E00, but the screenshot portion provided does not display the code point line or glyph/identity area to confirm it is U+4E00.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 0 and state 1 both show URL https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00 and title “Unihan data for U+4E00” (latest: state 1).",
+        "verifier_justification": "Access to the correct Unihan record for U+4E00 is explicitly supported by the latest DOM-model state, so the baseline score stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL \"https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00\" and Title \"Unihan data for U+4E00\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM model explicitly indicates the Unicode Unihan record page for code point U+4E00 was accessed (matching URL parameter codepoint=4E00 and the page title).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=4E00\" and Title \"Unihan data for U+4E00\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM model explicitly indicates the Unihan record page for code point U+4E00 is open (correct URL parameter and page title).",
+            "discrepancies": "No discrepancy noted for page access/source selection in the DOM evidence provided.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Respect task constraints (sole source, exact copying, no extra fields, stop at requested fields)",
+      "description": "Information must be taken only from the displayed Unihan record for U+4E00; readings/encodings must be copied exactly as shown (no transliteration/translation/normalization; preserve diacritics, capitalization, punctuation, spacing); do not substitute a related ideograph; and stop after reporting the requested identity/encodings/stroke count/definition and the four language readings. Full credit if all constraints are followed. Partial credit if minor extra non-conflicting content is included or minor formatting differences occur while the core data remains clearly from the record. No credit if the agent fabricates/infer values, uses other sources, or reports a different character’s data.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshot 1 visibly includes the glyph box, Encoding Forms (Decimal/UTF-8/UTF-16/UTF-32), and IRG Sources including kTotalStrokes. Screenshot 2 shows dictionary/index fields (e.g., kCangjie, kFourCornerCode) but does not show kDefinition, kMandarin, kJapaneseOn, kKorean, or kVietnamese. Thus, the agent’s reported definition and language readings are not supported by any shown labeled fields in the provided record screenshots.",
+        "verifier_justification": "Because the task requires using only the supplied record and copying the labeled fields exactly as displayed, and the provided evidence does not display the definition/readings that the agent reported, those parts are unsupported by evidence and appear fabricated relative to what is shown. The agent did at least correctly and exactly copy the visible encoding/stroke information and did not add extra unrelated fields in the final output.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows only some fields: a “Glyph” box (glyph not clearly legible), an “Encoding Forms” table (Decimal/UTF-8/UTF-16/UTF-32), and an “IRG Sources” table including “kTotalStrokes 1”. No “kDefinition”, “kMandarin”, “kJapaneseOn”, “kKorean”, or “kVietnamese” fields are visible in this screenshot.",
+            "criterion_analysis": "Not satisfied: the agent’s predicted output includes fields (definition and all four readings) that are not shown anywhere in the provided screenshot, so they are not verifiably copied “only from the supplied record” as displayed here. Encodings and stroke count appear copied exactly from visible fields, but adding unseen definition/readings violates the “use only the supplied record” constraint given the single screenshot evidence.",
+            "discrepancies": "Agent output claims a definition and readings (Mandarin/Japanese On/Korean/Vietnamese), but the screenshot does not display those labeled fields or values. The encodings and kTotalStrokes in the agent output do match visible values, but the additional linguistic fields are unsupported by this screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Visible fields in the screenshot include index/dictionary codes (e.g., “kCihaiT 1.101”, “kCowles 5133”, “kKangXi 0075.010”, “kKarlgren 175”, “kHKGlyph 0001”, “kMojiJoho MJ006294”, “kPhonetic 1499”, “kUnihanCore2020 GHJKMPT”). The screenshot does not show encodings (UTF-8/UTF-16), decimal value, kTotalStrokes, kDefinition, or the language reading fields (Mandarin/Japanese On/Korean/Vietnamese).",
+            "criterion_analysis": "From the screenshot alone, there is no way to verify that the agent copied the requested values exactly from the record, because the requested fields are not visible. The predicted output includes many fields (glyph, decimal, encodings, definition, readings) that are not shown here; thus compliance with “use only the supplied record” and “exact copying” cannot be confirmed. Also, since the screenshot lacks those fields, we cannot verify whether the agent stopped after the requested fields (though the predicted output appears to include only requested items).",
+            "discrepancies": "The agent’s predicted output contains items (glyph, decimal, UTF-8/UTF-16 encodings, kTotalStrokes, kDefinition, and multiple readings) that are not visible anywhere in this screenshot segment, so the screenshot does not support that those were read/copied from the displayed record section.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM-model state 0 and state 1 show glyph/encoding/stroke fields, but neither state shows labeled fields for kDefinition, kMandarin, kJapaneseOn, kKorean, or kVietnamese (latest: state 1).",
+        "verifier_justification": "The agent’s output includes kDefinition and multiple language-reading fields that are not evidenced anywhere in the provided DOM-model snapshots. Under the DOM-rule constraints, those parts are unproven and thus the response does not demonstrate it used only the displayed labeled fields / copied exactly as displayed. This is a substantive constraint violation in the context of the provided evidence, so reduce to 0.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes some required fields (e.g., \"Glyph 一\", \"Decimal 19968\", \"UTF-8 E4 B8 80\", \"UTF-16 4E00\", and \"kTotalStrokes | 1\") but does not display kDefinition, kMandarin, kJapaneseOn, kKorean, or kVietnamese in the provided snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe snapshot supports that the agent used the Unihan record for U+4E00 and can copy certain labeled fields exactly as displayed (glyph/encodings/strokes). However, the DOM evidence provided does not include the definition or the requested language reading fields, so it cannot verify that those were sourced only from the displayed record or copied exactly as shown, nor can it verify the stopping condition was applied based strictly on those fields.",
+            "discrepancies": "Language reading fields and definition are not present in the supplied DOM snapshot, so constraints about exact copying from labeled fields cannot be fully verified for those items.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 contains labeled fields for encodings (\"Decimal | UTF-8 | UTF-16 | UTF-32\"), stroke count (\"kTotalStrokes | 1\"), but does not show any fields for kDefinition/kMandarin/kJapaneseOn/kKorean/kVietnamese in the captured tables.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent output includes kDefinition and language readings that are not present in the supplied DOM snapshot. Therefore the response cannot be verified as using only the displayed record fields in the provided evidence, and appears to introduce unsupported (possibly inferred or from outside the shown DOM) values.",
+            "discrepancies": "Agent output includes: \"kDefinition: one; a, an; alone\", \"kMandarin: yī\", \"kJapaneseOn: ICHI ITSU\", \"kKorean: IL\", \"kVietnamese: nhất\"—none of these labeled fields/values appear in DOM_MODEL_STATE_INDEX: 0.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record code-point identity and displayed glyph",
+      "description": "Report the code point identity for U+4E00 and the displayed glyph exactly as shown on the Unihan record. Full credit if both are correct and match the record. Partial credit if only one is provided or if a small display discrepancy occurs attributable to font/rendering while the identity is correct. No credit if the code point is wrong or the glyph/character corresponds to a different code point.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshot 1 shows the code point identity in the title: “Unihan data for U+4E00.” The glyph display box is present but the glyph itself is not legible enough in the screenshot to verify it is “一.” Screenshot 2 does not show the code point identity or glyph.",
+        "verifier_justification": "Code-point identity is clearly supported by Screenshot 1, but the exact displayed glyph cannot be verified from the provided image clarity. Partial credit is appropriate.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The title shows “Unihan data for U+4E00” (code-point identity). In the “Glyph” section, there is a large rectangular glyph display area with a small square/box-like mark in the center; the actual ideograph “一” is not clearly readable in the screenshot pixels.",
+            "criterion_analysis": "Partial: the code-point identity (U+4E00) is clearly visible and correct. The displayed glyph cannot be confidently read as “一” from this screenshot due to the tiny/unclear rendering in the glyph box.",
+            "discrepancies": "Agent output lists Glyph: “一”. The screenshot’s glyph area is present but the glyph itself is not legible enough to verify it matches “一”. Code point matches.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 0 and state 1 show “Unihan data for U+4E00” and a row labeled “Glyph” with “一” (latest: state 1).",
+        "verifier_justification": "Both the code-point identity (U+4E00) and the displayed glyph (一) are explicitly shown and match the agent output.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows \"Unihan data for U+4E00\" and within Table 1 the header line includes \"Glyph 一\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly provides the code-point identity (U+4E00 via title and URL) and the displayed glyph (\"Glyph 一\").",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows heading \"Unihan data for U+4E00\" and the glyph displayed as \"Glyph 一\" / standalone \"一\" (e.g., Table rows include \"Glyph 一\").",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe code point identity (U+4E00) and the displayed glyph (一) are explicitly present in the DOM snapshot.",
+            "discrepancies": "No discrepancy between the DOM text (U+4E00, glyph 一) and the agent-reported identity/glyph.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record numeric and encoding fields (decimal, UTF-8, UTF-16)",
+      "description": "Report the Decimal value, UTF-8 encoding, and UTF-16 encoding exactly as displayed in the Unihan record. Full credit if all three match exactly. Partial credit if one or two are correct, or if a field is missing from the page and the agent explicitly notes it is not shown in the record view they can access. No credit if values are incorrect or appear inferred rather than copied.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 1 Encoding Forms table shows: Decimal 19968; UTF-8 E4 B8 80; UTF-16 4E00. (UTF-32 00004E00 also shown but not requested.) Screenshot 2 does not show encodings.",
+        "verifier_justification": "Agent’s output matches the visible Encoding Forms values exactly, including spacing/case.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In “Encoding Forms”, the row shows: Decimal “19968”; UTF-8 “E4 B8 80”; UTF-16 “4E00”; UTF-32 “00004E00”.",
+            "criterion_analysis": "Fully satisfied: the agent’s predicted output for Decimal (19968), UTF-8 (E4 B8 80), and UTF-16 (4E00) matches exactly what is visible in the screenshot table.",
+            "discrepancies": "None for these encoding fields; they align with the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 0 and state 1 show the Encoding Forms table with “Decimal 19968”, “UTF-8 E4 B8 80”, and “UTF-16 4E00” (latest: state 1).",
+        "verifier_justification": "All three requested numeric/encoding fields match exactly what is displayed in the DOM evidence.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 Table 1 shows under Encoding Forms: \"Decimal ... UTF-8 UTF-16 UTF-32\" followed by values \"19968 E4 B8 80 4E00 00004E00\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the requested numeric/encoding fields and values as displayed: Decimal \"19968\", UTF-8 \"E4 B8 80\", and UTF-16 \"4E00\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 Table shows \"Decimal | UTF-8 | UTF-16 | UTF-32\" with values \"19968 | E4 B8 80 | 4E00 | 00004E00\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nDecimal, UTF-8, and UTF-16 values are explicitly shown and match the agent output: 19968; E4 B8 80; 4E00.",
+            "discrepancies": "No discrepancy for decimal/UTF-8/UTF-16; (UTF-32 also appears in DOM but was not required by the task).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Record total stroke count",
+      "description": "Report the total stroke count from the labeled Unihan field for U+4E00. Full credit if it matches exactly. Partial credit if the stroke-count field is not visible/absent in the accessible record view and the agent explicitly states it is not displayed. No credit if wrong or omitted without explanation.",
+      "max_points": 1,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshot 1 IRG Sources table shows kTotalStrokes with value “1.” Screenshot 2 does not show kTotalStrokes.",
+        "verifier_justification": "Agent reported stroke count as 1, matching the displayed kTotalStrokes value.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the “IRG Sources” table, the row labeled “kTotalStrokes” has value “1”.",
+            "criterion_analysis": "Fully satisfied: the agent reported total stroke count 1, matching the visible kTotalStrokes value.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "DOM-model state 0 and state 1 show a Unihan field row “kTotalStrokes | 1” (latest: state 1).",
+        "verifier_justification": "Total stroke count is explicitly displayed as 1 and matches the agent output.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes row \"kTotalStrokes | 1\" (also repeated in multiple tables, e.g., Table 3).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly lists the total stroke count as \"kTotalStrokes | 1\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes the row \"kTotalStrokes | 1\" under \"Data type | Value\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nTotal stroke count is explicitly shown as kTotalStrokes = 1 and matches the agent output.",
+            "discrepancies": "No discrepancy for the stroke count value.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Record definition",
+      "description": "Report the definition exactly as displayed in the Unihan record’s labeled definition field. Full credit if exact. Partial credit if the definition field is not visible/absent in the accessible record view and the agent explicitly states it is not displayed. No credit if paraphrased, missing without explanation, or replaced with external knowledge.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither Screenshot 1 nor Screenshot 2 displays a row labeled kDefinition or any definition text for U+4E00.",
+        "verifier_justification": "The agent provided a specific definition even though the supplied screenshot evidence does not show the kDefinition field/value. Under the constraint to use only the supplied record as displayed, this is unsupported and should not receive credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No “kDefinition” row/value is visible anywhere in the screenshot; only “Encoding Forms” and “IRG Sources” are shown, and below that a “Dictionary Indices” header begins but with no definition visible.",
+            "criterion_analysis": "Not satisfied: the agent provided a definition (“one; a, an; alone”), but the definition field is not visible in the provided screenshot, so it cannot be confirmed as copied from this record view.",
+            "discrepancies": "Agent output includes kDefinition text not shown in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No “kDefinition” row is visible in the screenshot. The visible sections are lists of dictionary indices and a “Dictionary-like Data” table (kCangjie, kFenn, kFourCornerCode, kGradeLevel, kHDZRadBreak, kHKGlyph, kMojiJoho, kPhonetic, kUnihanCore2020).",
+            "criterion_analysis": "The agent’s predicted output provides a definition (“one; a, an; alone”), but the screenshot does not display the kDefinition field, so the correctness/exactness cannot be verified against the screenshot evidence.",
+            "discrepancies": "Predicted output claims a kDefinition value, but the screenshot does not show kDefinition at all.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither DOM-model state 0 nor state 1 displays a row labeled “kDefinition” or any definition text (latest: state 1).",
+        "verifier_justification": "Because kDefinition is not visible in the provided DOM evidence, the agent’s reported definition is unsupported (cannot be verified as copied from the displayed record). This warrants a score of 0 rather than baseline full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 tables list fields such as kRSUnicode, kTotalStrokes, and many dictionary indices, but there is no visible row for \"kDefinition\" nor any definition text in the provided snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM snapshot does not include the labeled definition field (kDefinition) or any definition value, so the definition cannot be confirmed from this DOM evidence.",
+            "discrepancies": "Agent’s predicted output included a definition, but kDefinition is not present in the supplied DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 tables list various fields (e.g., kIICore, kIRG_* sources, kRSUnicode, kTotalStrokes) but do not show any \"kDefinition\" row/value.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent reported a definition, but the provided DOM snapshot does not display a kDefinition field/value. Thus the reported definition is unsupported by the supplied Unihan record evidence.",
+            "discrepancies": "Agent output includes \"Definition (kDefinition): one; a, an; alone\" but DOM_MODEL_STATE_INDEX: 0 does not show a kDefinition label or that value.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Record Mandarin reading",
+      "description": "Report the Mandarin reading from the labeled Unihan field exactly as displayed. Full credit if exact. Partial credit if the field is not visible/absent and the agent explicitly states it is not displayed. No credit if missing without explanation or substituted from outside knowledge.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither screenshot shows a kMandarin field/value.",
+        "verifier_justification": "Mandarin reading reported by the agent is not supported by the provided Unihan record screenshots and thus cannot be credited under the task constraints.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No “kMandarin” field or Mandarin reading appears in the visible tables/sections of the screenshot.",
+            "criterion_analysis": "Not satisfied: the agent reported “kMandarin: yī” but the screenshot does not show the kMandarin field/value, so it’s unsupported by the provided evidence.",
+            "discrepancies": "Mandarin reading in agent output is not visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No Mandarin reading field (e.g., “kMandarin”) is visible in the screenshot. The visible rows are various dictionary/index fields, and the “Dictionary-like Data” table does not include kMandarin.",
+            "criterion_analysis": "The predicted output includes “kMandarin: yī”, but since kMandarin is not shown in the screenshot, the value cannot be verified as exactly copied from the record as displayed.",
+            "discrepancies": "Predicted output includes kMandarin, but it is not present in the visible screenshot region.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither DOM-model state 0 nor state 1 displays a row labeled “kMandarin” or any Mandarin reading (latest: state 1).",
+        "verifier_justification": "The Mandarin reading in the agent output is not supported by the provided DOM evidence (no kMandarin field shown). Therefore, no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 does not show any row labeled \"kMandarin\" or a Mandarin reading value; only fields like kCangjie, kFourCornerCode, etc., are visible.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot does not contain the kMandarin field/value, so the Mandarin reading cannot be verified as copied from the displayed Unihan record.",
+            "discrepancies": "Agent’s predicted output included a Mandarin reading, but kMandarin is not present in the supplied DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 does not display any field labeled \"kMandarin\" or a Mandarin reading value.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent reported a Mandarin reading, but the supplied DOM evidence does not contain the kMandarin field/value.",
+            "discrepancies": "Agent output includes \"Mandarin reading (kMandarin): yī\" but DOM_MODEL_STATE_INDEX: 0 contains no \"kMandarin\" label/value.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Record Japanese On reading",
+      "description": "Report the Japanese On reading from the labeled Unihan field exactly as displayed. Full credit if exact. Partial credit if the field is not visible/absent and the agent explicitly states it is not displayed. No credit if missing without explanation or if a different Japanese reading type is provided instead.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither screenshot shows a kJapaneseOn field/value.",
+        "verifier_justification": "Japanese On reading reported by the agent is not supported by the provided Unihan record screenshots; no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No “kJapaneseOn” field or Japanese On reading appears in the visible portion of the screenshot.",
+            "criterion_analysis": "Not satisfied: the agent reported “kJapaneseOn: ICHI ITSU” but the screenshot does not show that field/value.",
+            "discrepancies": "Japanese On reading in agent output is not visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No Japanese On reading field (e.g., “kJapaneseOn”) is visible in the screenshot; the “Dictionary-like Data” table shown does not include it.",
+            "criterion_analysis": "The agent’s predicted output provides “kJapaneseOn: ICHI ITSU”, but the screenshot does not show the kJapaneseOn field, so accuracy and exact formatting cannot be confirmed.",
+            "discrepancies": "Predicted output contains a Japanese On reading not supported by the visible screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither DOM-model state 0 nor state 1 displays a row labeled “kJapaneseOn” or any Japanese On reading (latest: state 1).",
+        "verifier_justification": "The Japanese On reading in the agent output is not supported by the provided DOM evidence (no kJapaneseOn field shown). Therefore, no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 does not show any row labeled \"kJapaneseOn\" or a Japanese On reading value in the visible tables.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot lacks the kJapaneseOn field/value, so the Japanese On reading cannot be verified from this evidence.",
+            "discrepancies": "Agent’s predicted output included a Japanese On reading, but kJapaneseOn is not present in the supplied DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 does not display any field labeled \"kJapaneseOn\" or a Japanese On reading value.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent reported a Japanese On reading, but the supplied DOM evidence does not contain the kJapaneseOn field/value.",
+            "discrepancies": "Agent output includes \"Japanese On reading (kJapaneseOn): ICHI ITSU\" but DOM_MODEL_STATE_INDEX: 0 contains no \"kJapaneseOn\" label/value.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 8,
+      "criterion": "Record Korean reading",
+      "description": "Report the Korean reading from the labeled Unihan field exactly as displayed. Full credit if exact. Partial credit if the field is not visible/absent and the agent explicitly states it is not displayed. No credit if missing without explanation or incorrect.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither screenshot shows a kKorean field/value.",
+        "verifier_justification": "Korean reading reported by the agent is not supported by the provided Unihan record screenshots; no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No “kKorean” field or Korean reading appears in the visible portion of the screenshot.",
+            "criterion_analysis": "Not satisfied: the agent reported “kKorean: IL” but the screenshot does not show that field/value.",
+            "discrepancies": "Korean reading in agent output is not visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No Korean reading field (e.g., “kKorean”) is visible in the screenshot; only dictionary/index fields are shown.",
+            "criterion_analysis": "The predicted output includes “kKorean: IL”, but this cannot be verified from the screenshot because kKorean is not displayed.",
+            "discrepancies": "Predicted output includes a Korean reading field/value not visible in the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither DOM-model state 0 nor state 1 displays a row labeled “kKorean” or any Korean reading (latest: state 1).",
+        "verifier_justification": "The Korean reading in the agent output is not supported by the provided DOM evidence (no kKorean field shown). Therefore, no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 does not show any row labeled \"kKorean\" or any Korean reading value in the visible tables.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot lacks the kKorean field/value, so the Korean reading cannot be verified from this evidence.",
+            "discrepancies": "Agent’s predicted output included a Korean reading, but kKorean is not present in the supplied DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 does not display any field labeled \"kKorean\" or a Korean reading value.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent reported a Korean reading, but the supplied DOM evidence does not contain the kKorean field/value.",
+            "discrepancies": "Agent output includes \"Korean reading (kKorean): IL\" but DOM_MODEL_STATE_INDEX: 0 contains no \"kKorean\" label/value.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 9,
+      "criterion": "Record Vietnamese reading",
+      "description": "Report the Vietnamese reading from the labeled Unihan field exactly as displayed (including diacritics). Full credit if exact. Partial credit if the field is not visible/absent and the agent explicitly states it is not displayed. No credit if missing without explanation or incorrect/normalized.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither screenshot shows a kVietnamese field/value.",
+        "verifier_justification": "Vietnamese reading reported by the agent is not supported by the provided Unihan record screenshots; no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No “kVietnamese” field or Vietnamese reading appears in the visible portion of the screenshot.",
+            "criterion_analysis": "Not satisfied: the agent reported “kVietnamese: nhất” but the screenshot does not show that field/value.",
+            "discrepancies": "Vietnamese reading in agent output is not visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No Vietnamese reading field (e.g., “kVietnamese”) is visible in the screenshot; the visible tables do not include it.",
+            "criterion_analysis": "The predicted output includes “kVietnamese: nhất”, but the screenshot provides no evidence for the kVietnamese field/value, so exactness (including diacritics) cannot be confirmed.",
+            "discrepancies": "Predicted output includes a Vietnamese reading that is not shown in this screenshot segment.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "Neither DOM-model state 0 nor state 1 displays a row labeled “kVietnamese” or any Vietnamese reading (latest: state 1).",
+        "verifier_justification": "The Vietnamese reading in the agent output is not supported by the provided DOM evidence (no kVietnamese field shown). Therefore, no credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 does not show any row labeled \"kVietnamese\" or any Vietnamese reading value in the visible tables.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot lacks the kVietnamese field/value, so the Vietnamese reading cannot be verified from this evidence.",
+            "discrepancies": "Agent’s predicted output included a Vietnamese reading, but kVietnamese is not present in the supplied DOM evidence.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 does not display any field labeled \"kVietnamese\" or a Vietnamese reading value.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent reported a Vietnamese reading, but the supplied DOM evidence does not contain the kVietnamese field/value.",
+            "discrepancies": "Agent output includes \"Vietnamese reading (kVietnamese): nhất\" but DOM_MODEL_STATE_INDEX: 0 contains no \"kVietnamese\" label/value.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

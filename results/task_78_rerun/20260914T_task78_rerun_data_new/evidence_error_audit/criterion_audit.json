@@ -1,0 +1,791 @@
+{
+  "schema_version": "existing-output-evidence-audit/v1",
+  "task_id": "browser_task_078-cross-endpoint-game-data-20260914T090704Z",
+  "run_id": "20260914T_task78_rerun_data_new",
+  "run_dir": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new",
+  "rubric_sha256": "fc0553ae76f7d38f74791ed0b8d2518a353fa3a7bbc068449bdc7ffe0bd460e1",
+  "source_artifacts": {
+    "screenshot_result": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/microsoft_verifier/result.json",
+    "dom_model_result": "/data/isha/msexecute/evidence-error-experiment/results/task_78_rerun/20260914T_task78_rerun_data_new/dom_model/result.json"
+  },
+  "source_inventory": {
+    "screenshot": [
+      {
+        "index": 0,
+        "file": "_inputs/screenshot/screenshot0.png",
+        "bytes": 362168,
+        "sha256": "04351044f578b5f6d28d2c8a4c44741cac99242030cb806ec70eb487878aacee"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/screenshot/screenshot1.png",
+        "bytes": 362758,
+        "sha256": "71767e234c0774389941d39094ef28d64011870c4e1931138da57c6745bb0a8c"
+      }
+    ],
+    "dom_model": [
+      {
+        "index": 0,
+        "file": "_inputs/dom_model/dom_model0.txt",
+        "bytes": 7780,
+        "sha256": "192bfa1dc8f9f56e5c58a220846232af1bc96d988725eb03aacc31ac34ee6b37"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/dom_model/dom_model1.txt",
+        "bytes": 8259,
+        "sha256": "2e2a61399fa80ef92cc5a172ba56027ffe5650feb0e50fd3208cb4aecb7cba5e"
+      }
+    ]
+  },
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use only the supplied Pikachu Pokémon response and its returned species.url",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 9
+          },
+          {
+            "source_index": 1,
+            "score": 9
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a browser-like page with a checkbox labeled “Pretty-print” at the top and a large JSON document. Near the top-left of the JSON, visible fields include `\"id\":25`, `\"name\":\"pikachu\"`, `\"capture_rate\":190`, and a `\"pokedex_numbers\"` array with many `\"url\":\"https://pokeapi.co/api/v2/pokedex/...\"` entries. The screenshot also shows a `\"habitat\":{\"name\":\"forest\",\"url\":\"https://pokeapi.co/api/v2/pokemon-habitat/2/\"}`, `\"color\":{\"name\":\"yellow\",\"url\":\"https://pokeapi.co/api/v2/pokemon-color/10/\"}`, and `\"generation\":{\"name\":\"generation-i\",\"url\":\"https://pokeapi.co/api/v2/generation/1/\"}`. There is no visible `\"height\"`, `\"weight\"`, `\"base_experience\"`, `\"types\"`, or `\"stats\"` in the shown portion, and no visible `\"species\":{\"url\":...}` field in this screenshot segment.",
+            "criterion_analysis": "The visible JSON looks like a Pokémon species response (it contains `capture_rate`, `color`, `habitat`, `generation`, and many `pokedex_numbers`). The agent’s predicted output claims using both the Pokémon endpoint and then opening `species.url`. This screenshot only provides direct evidence for the species fields, not for the Pokémon endpoint fields or the presence/usage of `species.url` from the Pokémon response. Therefore, from this screenshot alone, it cannot be verified that the agent used only the supplied Pokémon response plus its returned `species.url` (the Pokémon response and the `species.url` reference are not visible here).",
+            "discrepancies": "Agent claims they followed `species.url = https://pokeapi.co/api/v2/pokemon-species/pikachu`, but the screenshot does not visibly show a `species.url` coming from the Pokémon response; it only shows the species JSON itself. Also, the screenshot does not show anything from `https://pokeapi.co/api/v2/pokemon/pikachu` (no height/weight/base_experience/types/stats visible).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a browser-like view containing a large JSON payload (pretty-print unchecked). Visible fields include \"id\":25, \"name\":\"pikachu\", \"base_experience\":112, \"height\":4, \"weight\":60, plus long arrays like \"abilities\", \"game_indices\", and \"held_items\". A \"species\" object with a \"url\" is not visible anywhere in the shown portion of the JSON, and there is no visible second page/result for the species endpoint.",
+            "criterion_analysis": "From the screenshot alone, we can confirm the agent is using a PokéAPI Pokémon response JSON (Pikachu) as a source. However, the screenshot does not show the \"species.url\" value, nor any evidence of opening/fetching that returned species.url. Therefore, it is not visually verifiable that the agent limited sources to only the supplied Pokémon response plus its species.url; the species-related claims are not supported by what is visible.",
+            "discrepancies": "Agent’s predicted output includes values from species.url (color/habitat/capture_rate/generation), but the screenshot does not show the species.url field or any species endpoint response. Thus, species sourcing cannot be confirmed from the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Use only the supplied Pikachu Pokémon response and its returned species.url",
+          "earned_points": 3,
+          "post_image_earned_points": 2.0,
+          "max_points": 3,
+          "justification": "The agent’s output only references data from the supplied Pokémon response and its species.url without introducing any additional sources or endpoints.",
+          "applicable_evidence": "Screenshot 1 shows a Pikachu /pokemon/ JSON with id/base_experience/height/weight but does not show the embedded species.url field in the visible portion. Screenshot 2 shows a /pokemon-species/ JSON for pikachu with the requested species fields, but it also does not prove it was reached specifically by following the species.url from the /pokemon/ response (species.url not visible in screenshots). Action history shows a single visit_url to https://pokeapi.co/api/v2/pokemon-species/pikachu.",
+          "post_image_justification": "The agent’s reported data references only two resources: the /pokemon/pikachu response (claimed) and the species endpoint. However, because the screenshots do not display the species.url inside the /pokemon response, we cannot verify that the species page was reached via the returned species.url (even though it matches the typical value). Still, there is no evidence the agent used any additional endpoints beyond the species page, and the action history shows only that one species URL visit. Slightly reduce from full credit due to inability to verify the exact “returned species.url” linkage from the supplied Pokémon response in the visual evidence.",
+          "reality_notes": "Screenshots show two separate JSON views: one clearly a Pokémon endpoint payload for Pikachu (with id/base_experience/height/weight visible) and one clearly a species-style payload (with capture_rate, color, habitat, generation, and extensive pokedex_numbers). However, neither screenshot visibly shows the Pokémon payload’s embedded species object (and thus the exact species.url string), nor do the screenshots prove the species payload was opened specifically by following that species.url from the Pokémon payload. The species page also contains many other nested URLs (e.g., pokedex entries), but the shown content does not indicate those were opened."
+        },
+        "verifier_evidence": "Screenshot 1 shows a Pikachu /pokemon/ JSON with id/base_experience/height/weight but does not show the embedded species.url field in the visible portion. Screenshot 2 shows a /pokemon-species/ JSON for pikachu with the requested species fields, but it also does not prove it was reached specifically by following the species.url from the /pokemon/ response (species.url not visible in screenshots). Action history shows a single visit_url to https://pokeapi.co/api/v2/pokemon-species/pikachu.",
+        "verifier_justification": "The agent’s reported data references only two resources: the /pokemon/pikachu response (claimed) and the species endpoint. However, because the screenshots do not display the species.url inside the /pokemon response, we cannot verify that the species page was reached via the returned species.url (even though it matches the typical value). Still, there is no evidence the agent used any additional endpoints beyond the species page, and the action history shows only that one species URL visit. Slightly reduce from full credit due to inability to verify the exact “returned species.url” linkage from the supplied Pokémon response in the visual evidence.",
+        "action_only_points": 3,
+        "final_points": 2.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 8
+          },
+          {
+            "source_index": 1,
+            "score": 2
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the browser at URL `https://pokeapi.co/api/v2/pokemon/pikachu` with a JSON object including fields like `\"id\":25`, `\"base_experience\":112`, `\"height\":4`, `\"weight\":60`, and many nested URLs (e.g., ability/item/version URLs). The visible snapshot is explicitly marked `truncated=False` but only includes content through part of `held_items` and does not display `types`, `stats`, or the `species` object/`species.url`. There is no DOM-model state provided for `https://pokeapi.co/api/v2/pokemon-species/pikachu` (only an action history line indicating a visit).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence supports that the agent used the Pikachu Pokémon endpoint at `https://pokeapi.co/api/v2/pokemon/pikachu` (DOM_MODEL_STATE_INDEX 0 URL) and that some reported fields could be taken from this single response: `id` (DOM shows `\"id\":25`), `base_experience` (DOM shows `\"base_experience\":112`), `height` (DOM shows `\"height\":4`), and `weight` (DOM shows `\"weight\":60`).\n\nHowever, the DOM evidence does not include the `species` object/`species.url`, nor does it show the `types` array or the `stats` array needed for the “highest base stat” computation. Additionally, there is no DOM-model snapshot of the species URL content; only the action history claims a visit to `https://pokeapi.co/api/v2/pokemon-species/pikachu`. Therefore, it cannot be verified from DOM evidence that the agent sourced the remaining Pokémon fields (types, stats, species.url) and all four species fields exclusively from the supplied Pokémon response plus its returned `species.url` (and no other endpoints).",
+            "discrepancies": "1) Species-url follow cannot be verified: DOM provides no `species.url` field within the Pokémon JSON and no DOM snapshot for the visited `https://pokeapi.co/api/v2/pokemon-species/pikachu`, so the claimed species fields (color.name, habitat.name, capture_rate, generation.name) are not DOM-supported.\n2) Pokémon `types` and `stats` cannot be verified: DOM_MODEL_STATE_INDEX 0 visible JSON segment does not include `types` or `stats`, so the reported `types` (slot 1: electric) and highest base stat (special-attack: 50) are not supported by the provided DOM evidence.\n3) Constraint “use only the supplied Pokémon response and its returned species.url” is only partially evidenced: while the Pokémon endpoint URL is evidenced, the linkage to the exact `species.url` returned by that response is not evidenced in DOM, leaving open (unproven) whether other sources/endpoints were used.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Use only the supplied Pikachu Pokémon response and its returned species.url",
+          "earned_points": 3,
+          "post_image_earned_points": 2.0,
+          "max_points": 3,
+          "justification": "Agent used only the provided Pikachu Pokémon response and the species.url resource, with no additional endpoints or external sources.",
+          "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 confirms the agent accessed https://pokeapi.co/api/v2/pokemon/pikachu. DOM_MODEL_STATE_INDEX 1 confirms a visit to https://pokeapi.co/api/v2/pokemon-species/pikachu and shows species JSON fields. However, DOM_MODEL_STATE_INDEX 0 does not display the `species` object/`species.url`, and thus does not explicitly confirm that the species page visited was reached via the exact `species.url` returned in the Pokémon response (linkage is not DOM-evidenced).",
+          "post_image_justification": "The agent appears to have used only the Pokémon endpoint and a species endpoint, and there is no evidence of extra endpoints being used. But the strict constraint is “use only the supplied Pokémon response and its returned species.url”; because the DOM does not show the `species.url` inside the Pokémon JSON, we cannot explicitly verify that the visited species URL was the one returned by that response (only that it is a plausible species endpoint). Per the DOM rule, this is only partially confirmed, so reduce from full credit to partial.",
+          "reality_notes": "DOM evidence shows a Pokémon endpoint JSON page with id/base_experience/height/weight visible, but the captured Pokémon JSON does not include the species object/species.url, types array, or stats array within the provided snapshot. A separate DOM snapshot shows the species JSON content with the requested species fields visible. Because the species.url value is not visible in the Pokémon snapshot, the DOM does not explicitly establish that the species page visited was reached via the exact species.url returned in the Pokémon response, nor does it show whether any other endpoints were used."
+        },
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 0 confirms the agent accessed https://pokeapi.co/api/v2/pokemon/pikachu. DOM_MODEL_STATE_INDEX 1 confirms a visit to https://pokeapi.co/api/v2/pokemon-species/pikachu and shows species JSON fields. However, DOM_MODEL_STATE_INDEX 0 does not display the `species` object/`species.url`, and thus does not explicitly confirm that the species page visited was reached via the exact `species.url` returned in the Pokémon response (linkage is not DOM-evidenced).",
+        "verifier_justification": "The agent appears to have used only the Pokémon endpoint and a species endpoint, and there is no evidence of extra endpoints being used. But the strict constraint is “use only the supplied Pokémon response and its returned species.url”; because the DOM does not show the `species.url` inside the Pokémon JSON, we cannot explicitly verify that the visited species URL was the one returned by that response (only that it is a plausible species endpoint). Per the DOM rule, this is only partially confirmed, so reduce from full credit to partial.",
+        "action_only_points": 3,
+        "final_points": 2.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report required Pokémon fields (id, raw height, raw weight, base_experience)",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 8
+          },
+          {
+            "source_index": 1,
+            "score": 6
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the screenshot’s visible JSON, `\"id\":25` is clearly shown near the beginning. No `\"height\"`, `\"weight\"`, or `\"base_experience\"` fields are visible in the shown portion of the JSON.",
+            "criterion_analysis": "The agent reports `id: 25`, `height: 4`, `weight: 60`, `base_experience: 112`. The screenshot supports `id: 25` only. Because height/weight/base_experience are not visible in this screenshot, they cannot be corroborated here; however, they are not contradicted by visible pixels either. Based strictly on screenshot evidence, only the id is verifiable, so this is at best partial support.",
+            "discrepancies": "Agent includes height/weight/base_experience values, but the screenshot segment does not show those fields at all, so their correctness is not supported by this screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible JSON text, the following fields are clearly shown near the beginning: \"id\":25, \"base_experience\":112, \"height\":4, and \"weight\":60.",
+            "criterion_analysis": "The agent’s predicted output reports id 25, height 4, weight 60, and base_experience 112. These match the values visible in the screenshot, and there is no unit conversion shown in the agent output (raw numbers preserved). Full satisfaction is supported for these four fields.",
+            "discrepancies": "None for these fields; the predicted output matches the visible JSON values.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report required Pokémon fields (id, raw height, raw weight, base_experience)",
+          "earned_points": 4,
+          "post_image_earned_points": 4.0,
+          "max_points": 4,
+          "justification": "All four required fields (id: 25, height: 4, weight: 60, base_experience: 112) are present and match the raw API values without unit conversion.",
+          "applicable_evidence": "Screenshot 1 (latest relevant for these fields) visibly contains \"id\": 25, \"base_experience\": 112, \"height\": 4, \"weight\": 60 near the top of the /pokemon/ payload. Screenshot 2 is a species payload and is not relevant for height/weight/base_experience.",
+          "post_image_justification": "Agent reported all four required Pokémon fields exactly matching Screenshot 1, and did not convert height/weight units. Keep full credit.",
+          "reality_notes": "In the Pokémon JSON screenshot, the required raw fields are visibly present and readable near the top: id 25, base_experience 112, height 4, weight 60. The species JSON screenshot does not display height/weight/base_experience, but it does show id 25; it appears to be a different resource type where those fields are not expected."
+        },
+        "verifier_evidence": "Screenshot 1 (latest relevant for these fields) visibly contains \"id\": 25, \"base_experience\": 112, \"height\": 4, \"weight\": 60 near the top of the /pokemon/ payload. Screenshot 2 is a species payload and is not relevant for height/weight/base_experience.",
+        "verifier_justification": "Agent reported all four required Pokémon fields exactly matching Screenshot 1, and did not convert height/weight units. Keep full credit.",
+        "action_only_points": 4,
+        "final_points": 4.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the PokéAPI JSON for https://pokeapi.co/api/v2/pokemon/pikachu including the required fields in the visible content: \"id\":25, \"base_experience\":112, \"height\":4, \"weight\":60.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains all four required Pokémon fields and values without any unit conversion: id=25, base_experience=112, height=4, weight=60 (all shown verbatim in DOM_MODEL_STATE_INDEX: 0 at URL https://pokeapi.co/api/v2/pokemon/pikachu).",
+            "discrepancies": "No discrepancies for this criterion: the agent-reported values (id 25, height 4, weight 60, base_experience 112) match the DOM JSON exactly, and there is no evidence of height/weight conversion.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report required Pokémon fields (id, raw height, raw weight, base_experience)",
+          "earned_points": 4,
+          "post_image_earned_points": 4.0,
+          "max_points": 4,
+          "justification": "All four fields (id 25, height 4, weight 60, base_experience 112) match the raw API values without unit conversion.",
+          "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 (latest/only Pokémon-page evidence) explicitly shows: \"id\": 25, \"base_experience\": 112, \"height\": 4, \"weight\": 60.",
+          "post_image_justification": "All four required Pokémon fields are present in the agent output and match the DOM exactly, with raw height/weight preserved and no conversion.",
+          "reality_notes": "The Pokémon JSON DOM snapshot explicitly includes the four required fields and their raw numeric values: \"id\": 25, \"base_experience\": 112, \"height\": 4, \"weight\": 60. The DOM does not indicate any alternative unit display, so scoring should be based on exact raw value transcription."
+        },
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 0 (latest/only Pokémon-page evidence) explicitly shows: \"id\": 25, \"base_experience\": 112, \"height\": 4, \"weight\": 60.",
+        "verifier_justification": "All four required Pokémon fields are present in the agent output and match the DOM exactly, with raw height/weight preserved and no conversion.",
+        "action_only_points": 4,
+        "final_points": 4.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report all types in slot order using exact API strings",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 1
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows no `\"types\"` array or any `\"type\":{\"name\":...}` entries in the visible JSON portion.",
+            "criterion_analysis": "The agent reports a single type `electric` in slot 1. The screenshot provides no evidence of types or slot ordering (it appears to be a species response, not the Pokémon response containing `types`). Therefore, the agent’s types output cannot be verified from this screenshot.",
+            "discrepancies": "Agent claims type slot 1 is `electric`, but the screenshot does not show any type information to confirm or refute it.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the \"abilities\" array and other arrays, but the \"types\" array is not visible anywhere in the displayed portion of the JSON (no occurrences of a \"types\" key can be read in the screenshot).",
+            "criterion_analysis": "Because the screenshot does not display the \"types\" section, it cannot confirm whether Pikachu’s types (and slot order) were extracted correctly. The agent claims only one type (electric, slot 1), but this is unsupported by the visible pixels.",
+            "discrepancies": "Agent output lists types (slot 1: electric), but the screenshot does not show the types array to verify ordering or exact strings.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report all types in slot order using exact API strings",
+          "earned_points": 3,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "The agent correctly listed the single type in slot 1 as “electric,” matching the API string and slot order.",
+          "applicable_evidence": "Neither Screenshot 1 nor Screenshot 2 shows the \"types\" array or any type slot entries. The agent output claims types slot 1: electric, but there is no screenshot support for this section.",
+          "post_image_justification": "Because the types array is not visible in the provided evidence, the agent’s type reporting is unsupported by screenshots/action history. This is effectively unverifiable and could be fabricated; score should be reduced to 0.",
+          "reality_notes": "Neither screenshot segment shows the Pokémon response’s types array or any type slot entries. The Pokémon JSON view shown is scrolled through other sections (abilities/game_indices/held_items), and the species JSON view is a different schema that does not include Pokémon types. As a result, type strings and slot ordering cannot be visually confirmed from the provided screenshots."
+        },
+        "verifier_evidence": "Neither Screenshot 1 nor Screenshot 2 shows the \"types\" array or any type slot entries. The agent output claims types slot 1: electric, but there is no screenshot support for this section.",
+        "verifier_justification": "Because the types array is not visible in the provided evidence, the agent’s type reporting is unsupported by screenshots/action history. This is effectively unverifiable and could be fabricated; score should be reduced to 0.",
+        "action_only_points": 3,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the Pikachu JSON payload at URL https://pokeapi.co/api/v2/pokemon/pikachu. Within the visible content, the `types` field appears in the JSON structure (though the snapshot is truncated before the `types` array contents are shown). The visible portion includes top-level fields and arrays like `abilities`, `past_abilities`, `forms`, `game_indices`, `held_items`, etc., but no explicit `types` array entries (e.g., no `\"types\":[{\"slot\":...` text is present in the captured visible content).",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 2 requires DOM evidence that the agent reported “all types in slot order using exact API strings.” In DOM_MODEL_STATE_INDEX 0, while the page is the correct endpoint (https://pokeapi.co/api/v2/pokemon/pikachu) and the JSON is shown, the DOM snapshot provided is truncated before any `types` array values (and thus any `type.name` strings or `slot` order) are visible. Therefore, the DOM model does not explicitly support or contradict the agent’s claimed type list/order (e.g., “slot 1: electric”), because the relevant `types` data is not present in the provided DOM evidence.",
+            "discrepancies": "The agent’s predicted output asserts types: “slot 1: electric,” but DOM_MODEL_STATE_INDEX 0 does not display any `types` array entries or `type.name` strings to verify ordering or exactness. No DOM evidence is provided for the `types` field contents.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the URL https://pokeapi.co/api/v2/pokemon-species/pikachu and the visible JSON includes fields like \"capture_rate\":190, \"color\":{\"name\":\"yellow\",...}, \"habitat\":{\"name\":\"forest\",...}, and \"generation\":{\"name\":\"generation-i\",...}. It does not display any Pokémon endpoint (https://pokeapi.co/api/v2/pokemon/pikachu) content such as a \"types\" array with slot ordering.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe only provided DOM-model state is the species endpoint JSON, which lacks the Pokémon endpoint’s \"types\" array needed to verify that all types were reported, in correct slot order, using exact type.name strings. Therefore the agent’s reported types (e.g., \"slot 1: electric\") cannot be validated from DOM_MODEL_STATE_INDEX: 1.",
+            "discrepancies": "No discrepancy can be confirmed from DOM_MODEL_STATE_INDEX: 1 because the relevant evidence (the Pokémon \"types\" array) is absent. The agent output includes a type list, but it is unsupported by the provided DOM evidence.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Report all types in slot order using exact API strings",
+          "earned_points": 3,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "Pikachu’s single type ‘electric’ was correctly reported in slot 1 with the exact API string.",
+          "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 does not show the `types` array content (it is not present in the captured portion). DOM_MODEL_STATE_INDEX 1 is the species endpoint and contains no Pokémon `types` data.",
+          "post_image_justification": "Because the DOM evidence does not display the types array, the agent’s reported type(s) and slot order are unverified. Under the DOM rule, lack of evidence means UNKNOWN rather than supported; award no credit rather than assuming correctness.",
+          "reality_notes": "In the provided Pokémon JSON DOM snapshot, the types array contents (including slot numbers and type.name strings) are not visible, so the DOM evidence cannot confirm the actual type list or slot order. The species DOM snapshot does not contain types information either."
+        },
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 0 does not show the `types` array content (it is not present in the captured portion). DOM_MODEL_STATE_INDEX 1 is the species endpoint and contains no Pokémon `types` data.",
+        "verifier_justification": "Because the DOM evidence does not display the types array, the agent’s reported type(s) and slot order are unverified. Under the DOM rule, lack of evidence means UNKNOWN rather than supported; award no credit rather than assuming correctness.",
+        "action_only_points": 3,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Compute and report the highest base stat (include ties) from complete stats array",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No `\"stats\"` array is visible anywhere in the shown portion of the JSON. The visible content includes species-related fields like `\"capture_rate\"`, `\"habitat\"`, `\"color\"`, and many `\"flavor_text_entries\"` snippets, but not Pokémon base stats.",
+            "criterion_analysis": "The agent claims the highest base stat is `special-attack: 50`. Since the screenshot does not display the stats array, there is no screenshot-based support for the highest-stat calculation or whether ties were handled. It cannot be validated from this screenshot.",
+            "discrepancies": "Agent provides a highest base stat result, but the screenshot contains no stats data to substantiate the comparison.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot contains many fields (abilities, game_indices, held_items), but the \"stats\" array is not visible in the shown portion (no readable \"stats\" key or base_stat values appear).",
+            "criterion_analysis": "The agent reports the highest base stat as \"special-attack: 50\". Since the complete stats array is not visible in the screenshot, there is no way to verify the maximum base_stat computation or whether ties exist. Thus, this criterion is not verifiably satisfied from the screenshot evidence.",
+            "discrepancies": "Agent claims a computed highest stat (special-attack 50), but the screenshot does not show the stats array, so the claim is unverified and could omit higher stats or ties.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Compute and report the highest base stat (include ties) from complete stats array",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent incorrectly identified special-attack (50) as the highest stat instead of speed (90), so the highest base stat was not correctly reported.",
+          "applicable_evidence": "Neither Screenshot 1 nor Screenshot 2 shows the Pokémon \"stats\" array or any base_stat values. The agent output states the highest base stat is special-attack: 50, but there is no evidence for stats and (per rubric reality notes) it is incorrect vs. expected speed 90.",
+          "post_image_justification": "With no stats array shown, the agent’s highest-stat claim is unsupported; additionally, it is identified as incorrect in the rubric’s reality notes. Keep at 0.",
+          "reality_notes": "The stats array (and base_stat values) is not visible in either screenshot segment. The Pokémon JSON screenshot does not show a stats key in the displayed portion, and the species JSON does not contain base stats. Therefore, any claim about the highest base stat (or ties) cannot be validated from the screenshot evidence alone."
+        },
+        "verifier_evidence": "Neither Screenshot 1 nor Screenshot 2 shows the Pokémon \"stats\" array or any base_stat values. The agent output states the highest base stat is special-attack: 50, but there is no evidence for stats and (per rubric reality notes) it is incorrect vs. expected speed 90.",
+        "verifier_justification": "With no stats array shown, the agent’s highest-stat claim is unsupported; additionally, it is identified as incorrect in the rubric’s reality notes. Keep at 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the Pikachu JSON at URL https://pokeapi.co/api/v2/pokemon/pikachu. In the visible content snippet, the response includes keys like \"id\":25, \"base_experience\":112, \"height\":4, \"weight\":60, plus other arrays (abilities, game_indices, held_items). However, within the provided visible content for this DOM state, there is no displayed \"stats\" array content (no occurrences of a \"stats\" key, no \"base_stat\" values, and no stat names such as \"attack\", \"speed\", etc.). There is also no DOM-model state provided for https://pokeapi.co/api/v2/pokemon-species/pikachu (only an action history line indicates a visit, but no resulting DOM snapshot is included).",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 3 requires computing the highest base stat by examining the complete `stats` array and reporting the max `base_stat` and corresponding stat name(s), including ties.\n\nIn DOM_MODEL_STATE_INDEX: 0 (https://pokeapi.co/api/v2/pokemon/pikachu), the visible JSON excerpt does not include the `stats` array at all (no `stats` / `base_stat` fields are present in the provided DOM evidence). Because the `stats` array is absent from the DOM-model snapshot, the DOM evidence cannot support or contradict the agent’s claimed highest stat (\"special-attack: 50\"), nor can it verify that the comparison was performed over the complete stats array.\n\nAdditionally, there is no DOM-model snapshot for the visited species URL that might indirectly confirm stats (it would not anyway). Therefore, the rubric criterion cannot be evaluated from the supplied DOM-model evidence.",
+            "discrepancies": "The agent output claims the highest base stat is \"special-attack: 50\", but DOM_MODEL_STATE_INDEX: 0 does not display the `stats` array or any `base_stat` values; thus this claim is not supported by the provided DOM evidence. No tie-handling can be verified for the same reason.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 contains only the species JSON at https://pokeapi.co/api/v2/pokemon-species/pikachu (e.g., \"capture_rate\":190, \"color\":{\"name\":\"yellow\"...}, \"habitat\":{\"name\":\"forest\"...}, \"generation\":{\"name\":\"generation-i\"...}). There is no \"stats\" array or any Pokémon base stats content in this DOM state.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nComputing the highest base stat requires the complete Pokémon endpoint \"stats\" array, which is not present in DOM_MODEL_STATE_INDEX: 1. As a result, the agent’s claim that the highest stat is \"special-attack: 50\" cannot be verified against the provided DOM-model evidence, and ties (if any) also cannot be assessed.",
+            "discrepancies": "No discrepancy can be confirmed from DOM_MODEL_STATE_INDEX: 1 because the Pokémon \"stats\" array is not shown. The agent reported a single highest stat/value, but this is unsupported by the available DOM evidence.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Compute and report the highest base stat (include ties) from complete stats array",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "Agent misidentified the highest base stat: the highest is ‘speed’ at 90, but the agent reported ‘special-attack’ at 50, which is incorrect.",
+          "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 does not show the `stats` array or any `base_stat` values/stat names in the captured portion. DOM_MODEL_STATE_INDEX 1 (species endpoint) contains no base stats.",
+          "post_image_justification": "The highest-base-stat computation cannot be verified from DOM evidence because the complete stats array is not shown. The agent nonetheless asserted a specific highest stat/value; with no supporting DOM evidence, this is not creditable under the rules (and cannot be checked for tie-handling).",
+          "reality_notes": "The provided Pokémon JSON DOM snapshot does not show the stats array or any base_stat values/stat names, so the DOM evidence cannot support verifying a highest-base-stat computation (including tie handling). The species JSON DOM snapshot also does not contain base stats."
+        },
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 0 does not show the `stats` array or any `base_stat` values/stat names in the captured portion. DOM_MODEL_STATE_INDEX 1 (species endpoint) contains no base stats.",
+        "verifier_justification": "The highest-base-stat computation cannot be verified from DOM evidence because the complete stats array is not shown. The agent nonetheless asserted a specific highest stat/value; with no supporting DOM evidence, this is not creditable under the rules (and cannot be checked for tie-handling).",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Open species.url and report species fields (color.name, habitat.name, capture_rate, generation.name)",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 4
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot explicitly shows species fields: `\"color\":{\"name\":\"yellow\",...}`, `\"habitat\":{\"name\":\"forest\",...}`, `\"capture_rate\":190`, and `\"generation\":{\"name\":\"generation-i\",...}`.",
+            "criterion_analysis": "The agent’s species outputs—`color.name: yellow`, `habitat.name: forest`, `capture_rate: 190`, `generation.name: generation-i`—match exactly what is visible in the screenshot. This criterion is satisfied based on the screenshot evidence.",
+            "discrepancies": "No discrepancies for the four species fields; the agent’s reported values match the visible JSON.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Only a single JSON payload is visible (Pikachu Pokémon response). There is no visible content from https://pokeapi.co/api/v2/pokemon-species/pikachu or any species JSON fields like \"color\", \"habitat\", \"capture_rate\", or \"generation\" in the screenshot.",
+            "criterion_analysis": "The agent’s predicted output includes species fields (color.name yellow, habitat.name forest, capture_rate 190, generation.name generation-i). The screenshot does not show the species.url nor the species endpoint response, so these values cannot be confirmed and appear unsupported by the provided visual evidence.",
+            "discrepancies": "Agent reports four species fields, but the screenshot contains no species response data; therefore these reported values are not corroborated by the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Open species.url and report species fields (color.name, habitat.name, capture_rate, generation.name)",
+          "earned_points": 4,
+          "post_image_earned_points": 4.0,
+          "max_points": 4,
+          "justification": "The agent fetched the species.url and accurately reported color: yellow, habitat: forest, capture_rate: 190, and generation: generation-i.",
+          "applicable_evidence": "Screenshot 2 (latest and relevant) clearly shows species fields: color.name = \"yellow\", habitat.name = \"forest\", capture_rate = 190, generation.name = \"generation-i\". Action history confirms visiting https://pokeapi.co/api/v2/pokemon-species/pikachu.",
+          "post_image_justification": "All four requested species fields are directly supported by Screenshot 2 and match the agent’s output exactly. Full credit.",
+          "reality_notes": "The species JSON screenshot clearly includes all four requested species fields and their values as displayed: color.name is \"yellow\", habitat.name is \"forest\", capture_rate is 190, and generation.name is \"generation-i\". The screenshot does not show the preceding navigation step (following species.url), but it does show the target species fields directly in the JSON."
+        },
+        "verifier_evidence": "Screenshot 2 (latest and relevant) clearly shows species fields: color.name = \"yellow\", habitat.name = \"forest\", capture_rate = 190, generation.name = \"generation-i\". Action history confirms visiting https://pokeapi.co/api/v2/pokemon-species/pikachu.",
+        "verifier_justification": "All four requested species fields are directly supported by Screenshot 2 and match the agent’s output exactly. Full credit.",
+        "action_only_points": 4,
+        "final_points": 4.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 10
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (https://pokeapi.co/api/v2/pokemon-species/pikachu) visibly includes: \"capture_rate\":190; \"color\":{\"name\":\"yellow\",\"url\":\"https://pokeapi.co/api/v2/pokemon-color/10/\"}; \"habitat\":{\"name\":\"forest\",\"url\":\"https://pokeapi.co/api/v2/pokemon-habitat/2/\"}; \"generation\":{\"name\":\"generation-i\",\"url\":\"https://pokeapi.co/api/v2/generation/1/\"}.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll four requested species fields are explicitly present in DOM_MODEL_STATE_INDEX: 1 and match the agent’s reported values: color.name = \"yellow\", habitat.name = \"forest\", capture_rate = 190, generation.name = \"generation-i\".",
+            "discrepancies": "None for the four required species fields; they are directly supported by DOM_MODEL_STATE_INDEX: 1.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ],
+        "scoring": {
+          "criterion": "Open species.url and report species fields (color.name, habitat.name, capture_rate, generation.name)",
+          "earned_points": 4,
+          "post_image_earned_points": 4.0,
+          "max_points": 4,
+          "justification": "All four species fields (yellow, forest, 190, generation-i) match the species URL data exactly.",
+          "applicable_evidence": "DOM_MODEL_STATE_INDEX 1 (latest/only species-page evidence) explicitly shows: color.name = \"yellow\"; habitat.name = \"forest\"; capture_rate = 190; generation.name = \"generation-i\".",
+          "post_image_justification": "All four requested species fields are reported and match the species JSON in the DOM exactly.",
+          "reality_notes": "The species JSON DOM snapshot explicitly shows all four requested fields and their nested names as plain JSON: color.name is \"yellow\", habitat.name is \"forest\", capture_rate is 190, and generation.name is \"generation-i\". These values are directly verifiable from the DOM evidence without additional interpretation."
+        },
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 1 (latest/only species-page evidence) explicitly shows: color.name = \"yellow\"; habitat.name = \"forest\"; capture_rate = 190; generation.name = \"generation-i\".",
+        "verifier_justification": "All four requested species fields are reported and match the species JSON in the DOM exactly.",
+        "action_only_points": 4,
+        "final_points": 4.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "evidence_missing_language_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Stop after recording all requested fields (no extra/unrequested outputs)",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot itself is just a JSON page view with a “Pretty-print” checkbox and scrollable JSON; it does not show the agent’s final written response. The agent’s predicted output text includes only the requested Pokémon fields, the highest base stat, and the four species fields, without extra unrelated data.",
+            "criterion_analysis": "Although the screenshot doesn’t display the final response, the provided predicted output appears to stop after the requested items (Pokémon fields, types, highest stat, and the four species fields) and does not add extra endpoints or unrelated information. This meets the stopping condition as written.",
+            "discrepancies": "No clear discrepancy regarding stopping/extra output; the agent’s predicted output contains only requested categories.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot itself is just a long JSON response view and does not display the agent’s final narrative output. The agent’s predicted output text contains only the requested Pokémon fields, a highest-stat line, and the four species fields (no additional extra data beyond those items).",
+            "criterion_analysis": "Based on the predicted output content (not the screenshot rendering), the agent appears to stop after the requested items and does not add unrelated fields. This satisfies the 'stop after recording requested fields' requirement; however, this is an output-structure check rather than something the screenshot can confirm.",
+            "discrepancies": "No discrepancy regarding extra/unrequested outputs; the predicted output contains only the requested categories.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Stop after recording all requested fields (no extra/unrequested outputs)",
+          "earned_points": 2,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The agent’s output contains only the requested Pokémon and species fields and stops without adding any extra content.",
+          "applicable_evidence": "Agent’s predicted output contains only the requested Pokémon fields, types list, highest base stat, and the four species fields; no extra endpoints/fields are included. Screenshots do not contradict this.",
+          "post_image_justification": "Meets the stopping condition and avoids unrequested extra content. Full credit.",
+          "reality_notes": "The screenshots only show raw JSON pages and do not show the agent’s final written report, so ‘stopping after requested fields’ cannot be verified from the images themselves. The visible browsing context does not inherently indicate whether additional unrequested endpoints were queried beyond viewing these JSON payloads."
+        },
+        "verifier_evidence": "Agent’s predicted output contains only the requested Pokémon fields, types list, highest base stat, and the four species fields; no extra endpoints/fields are included. Screenshots do not contradict this.",
+        "verifier_justification": "Meets the stopping condition and avoids unrequested extra content. Full credit.",
+        "action_only_points": 2,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 1
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the agent is on URL `https://pokeapi.co/api/v2/pokemon/pikachu` and the visible JSON includes the requested Pokémon fields: `\"id\":25`, `\"base_experience\":112`, `\"height\":4`, `\"weight\":60`. (It also shows many additional fields, but the rubric criterion evaluated here is about stopping after reporting requested items.) No DOM snapshot is provided for the species endpoint after Action 1 (which attempted to visit `https://pokeapi.co/api/v2/pokemon-species/pikachu`).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 5 is about stopping after recording all requested Pokémon fields, highest-stat comparison, and the four species fields, with no extra/unrequested outputs.\n\nSupported by final answer content: The agent’s predicted output contains only the requested items (Pokémon: id, height, weight, base_experience, types; highest base stat; Species: color.name, habitat.name, capture_rate, generation.name) plus one small label line (“From …”) and an explicit stop marker (“**Criterion 5:** …”), which is minor extra context but still within the criterion’s allowance for minor extra context.\n\nNot fully verifiable from DOM evidence: While DOM_MODEL_STATE_INDEX: 0 explicitly contains the Pokémon fields `id/height/weight/base_experience`, there is no DOM-model snapshot for the species URL contents or for the `stats` array/types list needed to validate the ‘highest base stat’ computation and slot-ordered types. Thus, the “stop after all requested fields” behavior is visible in the agent’s provided output, but the DOM model cannot fully substantiate that all required data were actually retrieved from the allowed endpoints (especially species fields and stats/types), limiting the evidence to PARTIAL.",
+            "discrepancies": "1) Missing DOM evidence for the species endpoint content: Action 1 visits `https://pokeapi.co/api/v2/pokemon-species/pikachu`, but no DOM_MODEL_STATE shows `color.name`, `habitat.name`, `capture_rate`, or `generation.name`.\n2) Missing DOM evidence for the Pokémon `types` array and complete `stats` array: DOM_MODEL_STATE_INDEX: 0 snapshot is truncated mid-JSON (ends during `held_items`), and does not display the `types` or `stats` arrays; therefore the reported `types` slot order and ‘highest base stat(s)’ (including tie handling) cannot be confirmed from the DOM model.\n3) Minor extra text in the agent output beyond requested fields: “From …” headings and a “Criterion 5” line; criterion allows minor extra context, so this is not necessarily a violation but is extra non-requested content.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 provides only the species JSON; the agent’s predicted output includes Pokémon fields (id/height/weight/base_experience/types/highest stat) plus the four species fields (color/habitat/capture_rate/generation).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent output contains only the requested Pokémon fields (including the highest-stat comparison) and the four requested species fields, with no additional unrelated endpoints or extra data beyond the task requirements. Minor formatting/section headings do not add unrequested content.",
+            "discrepancies": "None regarding stopping/extra output: the response appears to stop after listing the requested items.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Stop after recording all requested fields (no extra/unrequested outputs)",
+          "earned_points": 2,
+          "post_image_earned_points": 2.0,
+          "max_points": 2,
+          "justification": "The output lists only the requested Pokémon and species fields with no extraneous information.",
+          "applicable_evidence": "Agent’s predicted output includes only the requested Pokémon fields (id/height/weight/base_experience/types + highest stat) and the four species fields, with minor section headers. No extra endpoints or unrelated data are included.",
+          "post_image_justification": "Meets the stopping condition: the response stops after providing the requested items and does not add extraneous content beyond minimal headings/labels.",
+          "reality_notes": "The scoring for ‘stop after requested fields’ should focus on whether the final response includes only the specified Pokémon fields + highest-stat result + the four species fields; minor headings/formatting are not additional data. DOM evidence itself does not constrain response length, but it does show that only the species page contains the four species fields, while the Pokémon snapshot lacks types/stats; thus, ‘stopping’ can be assessed independently from whether all required data were actually evidenced in the DOM."
+        },
+        "verifier_evidence": "Agent’s predicted output includes only the requested Pokémon fields (id/height/weight/base_experience/types + highest stat) and the four species fields, with minor section headers. No extra endpoints or unrelated data are included.",
+        "verifier_justification": "Meets the stopping condition: the response stops after providing the requested items and does not add extraneous content beyond minimal headings/labels.",
+        "action_only_points": 2,
+        "final_points": 2.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL",
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    }
+  ]
+}

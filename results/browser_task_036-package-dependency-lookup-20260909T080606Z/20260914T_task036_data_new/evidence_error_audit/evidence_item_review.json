@@ -1,0 +1,282 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_036-package-dependency-lookup-20260909T080606Z",
+  "run_id": "20260914T_task036_data_new",
+  "rubric_sha256": "21c4811a4e548e87e00a1e3531cb01097dc7c0680f13eb540ec9481d4dd05203",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access the Debian Bookworm curl package page (packages.debian.org/bookworm/curl)",
+      "description": "Use the Debian Packages Bookworm page for curl. Full credit if the agent attempts to access packages.debian.org/bookworm/curl but is blocked by an external issue (e.g., site outage, CAPTCHA, network error) and clearly reports the blocker. Partial credit if the agent uses Debian Packages but not clearly the Bookworm curl page (e.g., wrong release) while describing the mismatch. No credit if the agent uses an unrelated source without noting inability to access the required page.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Action History shows navigation to https://packages.debian.org/bookworm/curl and a scroll on that page. Screenshot 1 (earliest) visually confirms the Bookworm curl package page via breadcrumb \"/ packages / bookworm (oldstable) / web / curl\" and header \"Package: curl (7.88.1-10+deb12u15)\". Screenshot 2 shows relevant sections of the same Debian Packages curl page but does not explicitly show the URL/breadcrumb.",
+        "verifier_justification": "Both the action history and Screenshot 1 directly confirm the agent accessed the correct Debian Bookworm curl package page. No adjustment needed.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the Debian Packages website with breadcrumb text near the top reading \"/ packages / bookworm (oldstable) / web / curl\" and a large header \"Package: curl (7.88.1-10+deb12u15)\". This indicates the Bookworm curl package page on packages.debian.org.",
+            "criterion_analysis": "Meets the criterion. The visible breadcrumb explicitly includes \"bookworm (oldstable)\" and the page is clearly for the curl package, consistent with being on the Bookworm curl package page.",
+            "discrepancies": "No discrepancy apparent: the screenshot content aligns with being on the Bookworm curl page.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a Debian Packages page section titled “Other Packages Related to curl” and a “Download curl” table, consistent with packages.debian.org styling. However, the browser address bar/URL is not visible anywhere in the screenshot, and no explicit “bookworm” label is visible in the captured area.",
+            "criterion_analysis": "Partial support only. The content appears to be the curl package page on Debian Packages, but the screenshot does not literally confirm the exact URL packages.debian.org/bookworm/curl or that it is specifically the Bookworm release. Therefore, the screenshot alone cannot fully verify the criterion.",
+            "discrepancies": "Agent output asserts it is the Bookworm curl page and references a heading “Package: curl (7.88.1-10+deb12u15)”, but that heading/version text is not visible in this screenshot portion, and the URL is not visible.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 1 (latest) shows URL https://packages.debian.org/bookworm/curl?pow_referer= and page title “Debian -- Details of package curl in bookworm,” confirming the Bookworm curl package page is open. State 0 (earlier) is consistent.",
+        "verifier_justification": "Evidence explicitly supports that the agent accessed the correct Debian Bookworm curl package page. No blocker indicated. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL \"https://packages.debian.org/bookworm/curl?pow_referer=\" and Title \"Debian -- Details of package curl in bookworm\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM confirms the agent is on the Debian Packages Bookworm curl details page (packages.debian.org/bookworm/curl).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://packages.debian.org/bookworm/curl?pow_referer=\" and Title \"Debian -- Details of package curl in bookworm\". Visible content includes \"Package: curl (7.88.1-10+deb12u15)\" and the page section label \"Download curl\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the agent is on the Debian Packages page for curl in the Bookworm release via both the URL path (/bookworm/curl) and the page title indicating \"in bookworm\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report the Bookworm curl package version",
+      "description": "Record the exact curl version string shown on the Bookworm curl page. Full credit for an exact match, or if the agent cannot view the version due to an external access/rendering issue and explicitly states that. Partial credit for an incomplete but clearly Bookworm-tied version (e.g., missing Debian revision suffix) when the page is otherwise accessible. No credit for a version from a different release/source without explaining a blocker.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 1 shows the package header line \"Package: curl (7.88.1-10+deb12u15)\". This is the version string the agent reported.",
+        "verifier_justification": "The agent’s reported Bookworm curl version exactly matches the version displayed in Screenshot 1. No adjustment needed.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "At the top of the content area, the page title line reads: \"Package: curl (7.88.1-10+deb12u15)\".",
+            "criterion_analysis": "Meets the criterion. The agent’s predicted output version \"7.88.1-10+deb12u15\" matches the version string visible in the screenshot header.",
+            "discrepancies": "None: the reported version matches what is shown on the page.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 1 (latest) contains the version string in multiple places (e.g., source filenames and dependency line “dep: libcurl4 (= 7.88.1-10+deb12u15)”). State 0 also shows header “Package: curl (7.88.1-10+deb12u15)”.",
+        "verifier_justification": "Agent reported version “7.88.1-10+deb12u15,” which is explicitly present in the DOM evidence (including the latest state). Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes source package links with version string \"curl_7.88.1-10+deb12u15\" (e.g., \"curl_7.88.1-10+deb12u15.dsc\" and \"curl_7.88.1-10+deb12u15.debian.tar.xz\"). Also shows dependency line \"dep: libcurl4 (= 7.88.1-10+deb12u15)\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM contains the Bookworm curl version string 7.88.1-10+deb12u15, matching the agent-reported version.",
+            "discrepancies": "The DOM snapshot does not explicitly show the header text \"Package: curl (7.88.1-10+deb12u15)\"; however, the exact version string is still explicitly present elsewhere on the page (source package filenames and the libcurl4 dependency constraint).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 Visible content includes the exact header text: \"Package: curl (7.88.1-10+deb12u15)\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM contains the Bookworm curl package version string exactly as displayed in the page header.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "List every architecture in the 'Download curl' table",
+      "description": "Provide the complete set of architectures listed in the 'Download curl' table on the Bookworm curl page. Full credit if all listed architectures are included with none missing, OR if the agent cannot access/see the table due to an external issue (page section not loading, blocked access) and clearly reports that limitation. Partial credit if most architectures are listed but one or more are missing or an extra non-listed architecture is included. No credit if architectures are omitted without any noted blocker.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 2 (latest relevant) shows the “Download curl” table and its Architecture column entries. The visible architectures listed are: amd64, arm64, armel, armhf, i386, mips64el, mipsel, ppc64el, s390x. No additional architectures are visible in the provided screenshot evidence.",
+        "verifier_justification": "The agent’s output lists exactly the architectures visible in the “Download curl” table in Screenshot 2, with none missing and no extras (based on evidence provided). The baseline deduction mentioning an omitted riscv64 is not supported by the screenshot evidence. Increase to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the “Download curl” table, the Architecture column visibly lists: amd64, arm64, armel, armhf, i386, mips64el, mipsel, ppc64el, s390x. Each appears as a blue link on the left side of the table.",
+            "criterion_analysis": "Satisfied. The agent’s predicted output lists exactly these architectures, matching what is visible in the screenshot with no extras and none missing (based on the visible table).",
+            "discrepancies": "None observed for the architecture list; it aligns with the screenshot’s Architecture column entries.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 1 (latest) shows the “Download curl” table with Architecture rows: amd64, arm64, armel, armhf, i386, mips64el, mipsel, ppc64el, s390x (9 total).",
+        "verifier_justification": "Agent listed exactly those nine architectures; the latest DOM supports completeness and accuracy. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 TABLE 2 (\"Architecture | Package Size | Installed Size | Files\") lists: amd64, arm64, armel, armhf, i386, mips64el, mipsel, ppc64el, s390x (9 architecture rows).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll architectures the agent listed are explicitly present in the \"Download curl\" table in the DOM, and the table does not show any additional architectures beyond those nine.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "List all required dependencies under 'Depends' with displayed version constraints",
+      "description": "Extract and report every package shown under the Depends section for Bookworm curl, including each displayed version constraint exactly as shown. Must exclude Recommends, Suggests, Pre-Depends, Breaks, Conflicts, and other non-Depends relations. Full credit for a complete and accurate Depends list with correct constraints, OR if the agent is unable to view the Depends section due to an external access/rendering issue and explicitly states that. Partial credit if the correct Depends packages are mostly identified but one or more constraints are missing/incorrect, or if one dependency is missed. No credit if dependencies are largely incorrect, include optional relations, or are omitted without noting a blocker.",
+      "max_points": 6,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 6.0,
+        "verifier_evidence": "Screenshots 1 and 2 show the Depends entries under “Other Packages Related to curl” with red dep markers. The visible Depends are: libc6 (>= 2.34), libcurl4 (= 7.88.1-10+deb12u15), zlib1g (>= 1:1.1.4).",
+        "verifier_justification": "The agent listed all Depends shown in the screenshots and reproduced the version constraints exactly as displayed, while excluding optional relationships. The baseline deduction about a mismatched zlib1g constraint is contradicted by the screenshot evidence (it shows \">= 1:1.1.4\"). Increase to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the \"Other Packages Related to curl\" section, under the legend indicating \"depends\" (red dot), the visible dependency entries include:\n- \"dep: libc6 (>= 2.34)\" (with description \"GNU C Library: Shared libraries\")\n- \"dep: libcurl4 (= 7.88.1-10+deb12u15)\" (with description \"easy-to-use client-side URL transfer library (OpenSSL flavour)\")\n- \"dep: zlib1g (>= 1:1.1.4)\" (with description \"compression library - runtime\")\nThe screenshot does not show any additional Depends items beyond these three (at least within the visible area).",
+            "criterion_analysis": "Meets the criterion based on the visible Depends list. The agent’s predicted output lists exactly these three dependencies with the same version constraints, and does not include Recommends/Suggests. Since only these Depends entries are visible in the screenshot, the output is supported by the provided evidence.",
+            "discrepancies": "No discrepancy between the predicted output and what is visible: dependencies and constraints match the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Under “Other Packages Related to curl” with the legend showing “depends / recommends / suggests / enhances”, three dependency entries are visible with red ‘dep’ markers: (1) “libc6 (>= 2.34)”; (2) “libcurl4 (= 7.88.1-10+deb12u15)”; (3) “zlib1g (>= 1:1.1.4)”.",
+            "criterion_analysis": "Satisfied. The agent’s predicted output lists these three Depends entries and includes the same version constraints as displayed. The screenshot shows only these items under Depends in the visible area, and no optional relationships (Recommends/Suggests/etc.) are included by the agent.",
+            "discrepancies": "No mismatch found: dependency names and constraints match the screenshot text. (The note about libc6-udeb as a virtual provider is consistent with the screenshot line “also a virtual package provided by libc6-udeb”.)",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 6.0,
+        "verifier_evidence": "DOM-model state 1 (latest) under “Other Packages Related to curl” shows Depends entries: “dep: libc6 (>= 2.34)” (with a provider note about libc6-udeb), “dep: libcurl4 (= 7.88.1-10+deb12u15)”, and “dep: zlib1g (>= 1:1.1.4)”. State 0 matches.",
+        "verifier_justification": "Agent reported all and only the Depends packages with the displayed version constraints, and did not incorrectly include the provider note as an extra dependency. Fully supported by latest DOM. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 under \"Other Packages Related to curl\" shows dependency entries:\n- \"dep: libc6 (>= 2.34)\" (with note \"also a virtual package provided by libc6-udeb\")\n- \"dep: libcurl4 (= 7.88.1-10+deb12u15)\"\n- \"dep: zlib1g (>= 1:1.1.4)\".\nTable 1 indicates columns include depends/recommends/suggests/enhances, and the visible dep lines correspond to depends entries.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly lists exactly three Depends entries with version constraints: libc6 (>= 2.34), libcurl4 (= 7.88.1-10+deb12u15), and zlib1g (>= 1:1.1.4). The agent’s dependency list matches these, and it appropriately excludes the virtual provider note (libc6-udeb) as a separate dependency.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 under \"Other Packages Related to curl\" shows Depends entries prefixed by \"dep:\":\n- \"dep: libc6 (>= 2.34)\"\n- \"dep: libcurl4 (= 7.88.1-10+deb12u15)\"\n- \"dep: zlib1g (>= 1:1.1.4)\".\nTable 1 also indicates a header row with columns \"depends | recommends | suggests | enhances\" but only the \"dep:\" items above are explicitly listed in visible content.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll packages shown under the Depends section in the provided DOM snapshot are extractable with their displayed version constraints, and they match the agent’s recorded Depends list. Optional relationships (Recommends/Suggests/etc.) are not included in the extracted list.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Respect constraints (no download/install; remain on Bookworm package page; stop after recording required info)",
+      "description": "Do not download or install anything. Remain on the Debian Bookworm curl package page while collecting the required information, and stop after reporting the Bookworm version, complete architecture list, and all Depends. Full credit if these constraints are respected (minor unavoidable redirects within packages.debian.org to the same Bookworm curl context are acceptable). Partial credit if there is unnecessary extra navigation but no download/install occurs and constraints are otherwise respected. No credit if the agent downloads/installs the package or violates the stop condition in a way that materially departs from the task.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Action History shows only a scroll action on the packages.debian.org Bookworm curl page. Screenshots show only informational sections and download links/tables with no evidence of any download/install being initiated, and no navigation off the Bookworm curl package context.",
+        "verifier_justification": "No evidence of downloading/installing, and the agent remained on the Bookworm curl package page. The output stops after providing exactly the requested version, architectures, and Depends. No adjustment needed.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the Debian Packages curl page content (Bookworm) and does not show any download dialogs, installation commands, or navigation away from packages.debian.org. A right sidebar contains links including \"Download Source Package curl\" (links like \".dsc\" and \".tar\"), but there is no indication any link was clicked or any download started. The screenshot does not show the \"Download curl\" architecture table at all—only the top package header and the Depends section are visible.",
+            "criterion_analysis": "Partially supported. The 'no download/install' and 'remain on the Bookworm package page' constraints appear satisfied by the screenshot (still on the Bookworm curl page, no download UI). However, the task also required reporting architectures from the \"Download curl\" table and stopping after collecting them; the screenshot provides no evidence that the architecture list/table was viewed on-page. Thus, while constraints are not visibly violated, completion of the required-architecture collection cannot be confirmed from this screenshot alone.",
+            "discrepancies": "The agent’s predicted output includes a detailed architecture list from a \"Download curl\" table, but that table/architecture list is not visible anywhere in this screenshot, so those architecture claims are not verifiable from the provided image.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the Debian Packages page content (dependencies section and download table). There are no visible download dialogs, terminal outputs, package installation prompts, or evidence of leaving the page. The page includes links like “Download Source Package curl:” and “list of files”, but none are shown as clicked/opened.",
+            "criterion_analysis": "Likely satisfied based on available evidence. Nothing in the screenshot indicates downloading or installing occurred, and the content appears to remain on the same Debian Packages curl page. However, the ‘stop after recording required info’ aspect cannot be directly verified from the screenshot alone; it is assessed indirectly and is not contradicted by the screenshot.",
+            "discrepancies": "Agent claims they remained on the Bookworm curl package page and did not download/install; the screenshot does not contradict this. The screenshot also does not provide proof that the agent stopped exactly at the stopping condition, but there is no evidence of extra navigation or downloads.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Action history shows only a scroll action. DOM-model state 1 (latest) remains on https://packages.debian.org/bookworm/curl?pow_referer= with no evidence of downloading/installing. No navigation away is shown.",
+        "verifier_justification": "Constraints are respected per available evidence: remained on the Bookworm curl page and only scrolled; no evidence of download/install; output stops after required info. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the page remains at \"https://packages.debian.org/bookworm/curl?pow_referer=\". Action history shows only Action 1: scroll({\"pixels\": 800}). No DOM evidence of any download/install action occurring.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nWithin the available DOM/action evidence, the agent stayed on the Bookworm curl page, did not download or install anything, and (per the provided predicted output) stopped after reporting version, architectures, and Depends.",
+            "discrepancies": "The DOM cannot fully prove the agent did not click any download link outside the logged actions; however, the recorded action history shows only a scroll and no navigation away from the page.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows only on-page content for the Bookworm curl package. The action history indicates only Action 1: scroll({\"pixels\": 800}). The visible content includes only links (e.g., source package download links) but no evidence of any click/download/installation action being taken.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nNo DOM evidence indicates the agent downloaded or installed anything, and the only recorded interaction is scrolling. The agent remained on the Bookworm curl package page context while extracting version/architectures/Depends and (per the provided predicted output) stopped after reporting those items.",
+            "discrepancies": "Architectures: The DOM snapshot (Table 2) explicitly shows only one architecture row: \"amd64\". The agent’s reported full architecture list (amd64, arm64, armel, armhf, i386, mips64el, mipsel, ppc64el, s390x) is not supported by the provided DOM evidence, so while constraints are respected, the “complete architecture list” claim is not evidenced in this DOM state.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

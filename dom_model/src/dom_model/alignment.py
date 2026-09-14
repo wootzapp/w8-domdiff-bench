@@ -27,9 +27,24 @@ def validate_alignment(
         raise ValueError("DOM-model state ordinals are not contiguous")
     warnings: list[AlignmentWarning] = []
     if states[0].url and normalize_url(states[0].url) != normalize_url(initial_url):
-        raise ValueError(
-            f"Initial URL differs: task={initial_url!r}, dom_model0={states[0].url!r}"
-        )
+        task_url = urlsplit(normalize_url(initial_url))
+        state_url = urlsplit(normalize_url(states[0].url))
+        if (
+            task_url.scheme == state_url.scheme
+            and task_url.netloc == state_url.netloc
+            and task_url.path == "/"
+        ):
+            warnings.append(
+                AlignmentWarning(
+                    "initial_url_same_origin_redirect",
+                    f"initial URL resolved from {initial_url!r} to {states[0].url!r}",
+                    state_index=0,
+                )
+            )
+        else:
+            raise ValueError(
+                f"Initial URL differs: task={initial_url!r}, dom_model0={states[0].url!r}"
+            )
     if not states[0].url:
         warnings.append(AlignmentWarning("missing_initial_state_url", "dom_model0 has no URL", state_index=0))
     transitions: list[dict] = []

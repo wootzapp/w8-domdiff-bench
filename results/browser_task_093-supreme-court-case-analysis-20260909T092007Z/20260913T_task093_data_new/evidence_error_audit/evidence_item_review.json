@@ -1,0 +1,402 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_093-supreme-court-case-analysis-20260909T092007Z",
+  "run_id": "20260913T_task093_data_new",
+  "rubric_sha256": "c49eaa21d4a9edd5fde2cc07d823703bf25320782831a5f91ca52c9c0b249dbb",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use the correct Oyez case page (Brown v. Board of Education of Topeka (1), not Brown II)",
+      "description": "Evaluate whether the agent sourced information from the specified Oyez page for Brown v. Board of Education of Topeka (1) (e.g., 347 U.S. 483) and did not substitute Brown II or other sources. Full credit if the agent uses the Brown I page or, if Oyez is inaccessible/blocked, the agent explicitly states it could not access/verify the Brown I page and therefore cannot reliably extract the requested fields. Partial credit if the agent appears to use Oyez but the case version is ambiguous. No credit if the agent clearly uses Brown II or non-Oyez sources in place of the specified page when the Brown I page is accessible.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          2,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 1 (latest relevant for identity) shows the Oyez case title “Brown v. Board of Education of Topeka (1)” and citation “347US 483 (1954)”. Action history also shows the URL https://www.oyez.org/cases/1940-1955/347us483. Screenshots 2-3 do not show the title/URL.",
+        "verifier_justification": "Evidence confirms the agent used the correct Brown I Oyez page (347 U.S. 483) and did not substitute Brown II. No adjustment needed.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The page header shows the Oyez site branding (“Oyez”). The large case title panel on the left clearly reads “Brown v. Board of Education of Topeka (1)”. In the case details, the “Citation” line visible on the page reads “347US 483 (1954)”.",
+            "criterion_analysis": "The screenshot directly confirms the agent is on the correct Oyez case page for Brown I (Brown v. Board of Education of Topeka (1), 347 U.S. 483), not Brown II. This supports that the agent sourced from the correct case page.",
+            "discrepancies": "No discrepancy: the agent’s predicted output references the same Brown I page and citation that are visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot shows the Oyez page content with the sections titled “Question” and “Conclusion.” The text discusses segregation and references “Plessy v. Ferguson” and the “separate but equal” doctrine. No case title header, URL bar, or explicit identifier like “347 U.S. 483” or “Brown II” is visible in this screenshot.",
+            "criterion_analysis": "Partial support only. The screenshot is consistent with Brown v. Board of Education content, but it does not explicitly show that this is the Brown v. Board of Education of Topeka (1) page (nor does it show the case citation). It also does not show anything indicating Brown II. Because the visible content matches Brown I’s typical Question/Conclusion sections, the agent’s claim is plausible but not fully verifiable from this screenshot alone.",
+            "discrepancies": "Agent’s predicted output asserts the specific Oyez page (Brown I / 347 U.S. 483). The screenshot does not display the case title, citation, or URL to confirm it is Brown I rather than another related page; thus the screenshot cannot directly substantiate that specificity.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows an Oyez case page section with headings and dates: a label \"REARGUED\" with dates \"Dec 7 - 9, 1953\" and a label \"DECIDED\" with date \"May 17, 1954\". On the right is a list of advocates (e.g., \"Thurgood Marshall\", \"John W. Davis\", \"Spottswood Robinson III\", \"T. Justin Moore\", \"J. Lindsay Almond, Jr.\", \"J. Lee Rankin\", \"H. Albert Young\", \"Louis L. Redding\", \"Jack Greenberg\"). Near the bottom, the heading \"Facts of the case\" is visible. The screenshot does not show the case title, citation \"347 U.S. 483\", or an explicit indicator that this is Brown I vs Brown II.",
+            "criterion_analysis": "The visible content (Decided date May 17, 1954; reargued Dec 7–9, 1953; and the advocate list including Marshall/Davis) is consistent with the Brown v. Board of Education (Brown I) Oyez page, but the screenshot itself does not explicitly display the case name/version or URL/citation. Therefore, the screenshot provides only ambiguous/indirect support that the correct page is being used; it does not conclusively verify Brown I (1) rather than another related page.",
+            "discrepancies": "Agent’s predicted output asserts the page is specifically Brown v. Board of Education of Topeka (1) and gives a URL/citation; none of that (case name, docket, citation, URL) is visible in this screenshot. No contradiction is visible, but key confirming identifiers are not shown.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model states 0, 1, and 2 (latest = 2) all show URL https://www.oyez.org/cases/1940-1955/347us483 and title/header 'Brown v. Board of Education of Topeka (1) | Oyez' with citation '347 US 483 (1954)'.",
+        "verifier_justification": "Agent used the correct Brown I Oyez page (347us483) and did not substitute Brown II. Baseline already matches evidence.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows URL https://www.oyez.org/cases/1940-1955/347us483 and Title \"Brown v. Board of Education of Topeka (1) | Oyez\". The visible header line includes \"Brown v. Board of Education of Topeka (1)\" and the metadata includes \"Citation 347 US 483 (1954)\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the agent is on the Oyez page for \"Brown v. Board of Education of Topeka (1)\" with citation 347 US 483, satisfying the requirement to use Brown I (not Brown II).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browser at URL https://www.oyez.org/cases/1940-1955/347us483 with page title text \"Brown v. Board of Education of Topeka (1) | Oyez\" and the case header line \"Brown v. Board of Education of Topeka (1)\". In the visible case metadata it explicitly lists: \"Docket no. 1\"; \"Decided by Warren Court\"; \"Argued Dec 9 - 11, 1952\"; \"Reargued Dec 7 - 9, 1953\"; and \"Decided May 17, 1954\". These elements tie the content to Brown v. Board of Education of Topeka (1) (not another case) and match the starting URL 347us483.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion evaluated: Use the correct Oyez case page (Brown v. Board of Education of Topeka (1), not Brown II).\nThe DOM evidence explicitly identifies the page as \"Brown v. Board of Education of Topeka (1)\" and the URL is https://www.oyez.org/cases/1940-1955/347us483 (DOM_MODEL_STATE_INDEX: 1). The visible metadata includes \"Citation 347 US 483 (1954)\" and \"Docket no. 1\", consistent with the Brown I page. No DOM evidence indicates navigation to Brown II or any other case page within the provided state. Therefore, the agent’s use of the correct Oyez Brown I page is supported by the DOM model.",
+            "discrepancies": "None for this criterion. (Note: the provided DOM state does not display the Question section or Conclusion decision card, but that absence does not conflict with the evidence that the correct Brown I page is loaded.)",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL https://www.oyez.org/cases/1940-1955/347us483, Title \"Brown v. Board of Education of Topeka (1) | Oyez\", and visible case header text \"Brown Board of Education of Topeka (1)\" with Citation \"347 US 483 (1954)\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "No discrepancy: the DOM explicitly identifies the case page as Brown v. Board of Education of Topeka (1) with citation 347 US 483, matching Brown I and not Brown II.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report identity & docket metadata (docket number and deciding Court)",
+      "description": "Check that the agent reported the docket number and the deciding Court as displayed on the Brown I Oyez page. Full credit if both are present and correct, OR if the agent indicates the page/these fields were not accessible or did not render (e.g., site blocking/dynamic content failure) after a reasonable attempt. Partial credit if only one of the two is reported or there are minor copying errors. No credit if both are missing/incorrect without any access/rendering issue noted.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          2,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows “DOCKET NO. 1” and “DECIDED BY Warren Court.” (This is the only screenshot showing these fields.)",
+        "verifier_justification": "Agent reported both docket number and deciding Court exactly as displayed. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the case metadata area, the screenshot shows “DOCKET NO.” with value “1”. It also shows “DECIDED BY” with value “Warren Court”.",
+            "criterion_analysis": "Both required identity/metadata fields (docket number and deciding Court) are visible and match the agent’s predicted output (“Docket number: 1” and “Deciding Court: Warren Court”). Full credit is supported by the screenshot.",
+            "discrepancies": "No discrepancy: the reported docket number and deciding Court align with the values displayed on the page.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 2 (latest) metadata shows 'Docket no. 1' and 'Decided by Warren Court'.",
+        "verifier_justification": "Agent reported docket number 1 and deciding Court 'Warren Court', which exactly matches the latest DOM. Baseline deduction was based on an incorrect assumption; correct it to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 metadata line includes \"Docket no. 1\" and \"Decided by Warren Court\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBoth required identity fields (docket number and deciding Court) are present in the DOM and match the agent output: docket no. 1; decided by Warren Court.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (https://www.oyez.org/cases/1940-1955/347us483, Title: \"Brown v. Board of Education of Topeka (1) | Oyez\"). Visible case metadata line includes: \"Docket no. 1\" and \"Decided by Warren Court\" (also shown in the same block as \"Location Monroe School\").",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snapshot for Brown v. Board of Education of Topeka (1) explicitly shows both identity fields required by Criterion 1. In DOM_MODEL_STATE_INDEX: 1, the visible content includes the text \"Docket no. 1\" (docket number) and \"Decided by Warren Court\" (deciding Court).",
+            "discrepancies": "No discrepancies for Criterion 1: the agent’s reported docket number (\"1\") and deciding Court (\"Warren Court\") match the DOM text \"Docket no. 1\" and \"Decided by Warren Court\" in DOM_MODEL_STATE_INDEX: 1.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes metadata line \"Docket no. 1\" and \"Decided by Warren Court\" in the visible content block (also repeated in the structured labels list: \"Docket no.\" then \"1\"; \"Decided by\" then \"Warren Court\").",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "None: agent reported docket number 1 and deciding Court Warren Court, which match the DOM.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report all required dates with argued vs. reargued ranges kept distinct",
+      "description": "Verify the agent reported (a) argued dates, (b) reargued dates, and (c) decided date from the Brown I Oyez page, keeping argued and reargued ranges distinct. Full credit if all three are present and clearly separated, OR if the agent states the page/dates were inaccessible or did not render despite an attempt. Partial credit if one date field is missing or argued/reargued are present but not clearly distinguished. No credit if dates are wrong/merged with no stated access/rendering limitation.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0,
+          2
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 1 shows ARGUED “Dec 9 – 11, 1952”. Screenshot 2 (later state) shows REARGUED “Dec 7 - 9, 1953” and DECIDED “May 17, 1954.”",
+        "verifier_justification": "All required dates are visible across the screenshots and the agent’s output matches them, with argued vs reargued kept distinct. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows an “ARGUED” label with dates “Dec 9 – 11, 1952”. A “REARGUED” label is visible but the actual reargued dates are cut off below the fold and not readable in this screenshot. No “DECIDED” date is visible in this screenshot.",
+            "criterion_analysis": "Only the argued date range is verifiable from the screenshot. The agent’s predicted output includes reargued dates (“December 7–9, 1953”) and decided date (“May 17, 1954”), but those are not visible here, so this screenshot cannot substantiate them. Based strictly on screenshot evidence, the criterion is only partially supported (argued dates confirmed; reargued/decided not confirmable from this image).",
+            "discrepancies": "The agent claims specific reargued and decided dates, but this screenshot does not display them (reargued dates are not visible; decided date not shown). The screenshot does not contradict the agent’s dates; it simply provides no visual support for those two fields.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot clearly shows: under \"REARGUED\" the date range \"Dec 7 - 9, 1953\"; under \"DECIDED\" the date \"May 17, 1954\". The argued dates section is not visible in the screenshot (only reargued and decided are shown in the left-center column).",
+            "criterion_analysis": "The screenshot confirms reargued dates and decided date, but does not show the argued date range. The agent’s predicted output includes argued dates (\"December 9–11, 1952\"), reargued dates (\"December 7–9, 1953\"), and decided date (\"May 17, 1954\") and keeps them distinct. Only two of those (reargued and decided) can be verified from this screenshot; argued dates are unsupported by the visible evidence. As a result, based strictly on the screenshot, this is partial confirmation.",
+            "discrepancies": "Agent claims argued dates are Dec 9–11, 1952, but the screenshot does not display any \"Argued\" label or the 1952 range—so that portion is not verifiable from this image. The reargued and decided dates in the predicted output match what is visible (Dec 7–9, 1953; May 17, 1954).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 2 (latest) shows: 'Argued Dec 9 - 11, 1952', 'Reargued Dec 7 - 9, 1953', and 'Decided May 17, 1954'.",
+        "verifier_justification": "Agent reported all three date fields accurately and kept argued vs. reargued distinct. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 metadata line shows \"Argued Dec 9 - 11, 1952\"; \"Reargued Dec 7 - 9, 1953\"; \"Decided May 17, 1954\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll three date fields are explicitly shown, and argued vs. reargued ranges are distinct as required.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL: https://www.oyez.org/cases/1940-1955/347us483) shows the case header metadata including the dates fields. In the visible content it lists: \"Argued Dec 9 - 11, 1952\"; \"Reargued Dec 7 - 9, 1953\"; and \"Decided May 17, 1954\". These appear both in the summary line (\"Argued Dec 9 - 11, 1952 Reargued Dec 7 - 9, 1953 Decided May 17, 1954\") and again as labeled rows: \"Argued\" -> \"Dec 9 - 11, 1952\"; \"Reargued\" -> \"Dec 7 - 9, 1953\"; \"Decided\" -> \"May 17, 1954\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is satisfied because the DOM explicitly contains all three required date fields and keeps argued vs. reargued ranges distinct. Specifically, DOM_MODEL_STATE_INDEX 1 shows (1) argued date range \"Dec 9 - 11, 1952\", (2) reargued date range \"Dec 7 - 9, 1953\", and (3) decided date \"May 17, 1954\", each under its own label (\"Argued\", \"Reargued\", \"Decided\").",
+            "discrepancies": "No discrepancies for this criterion: the dates reported in the agent output (Argued: December 9–11, 1952; Reargued: December 7–9, 1953; Decided: May 17, 1954) match the DOM text in DOM_MODEL_STATE_INDEX 1.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the date fields as displayed: \"Argued Dec 9 - 11, 1952\", \"Reargued Dec 7 - 9, 1953\", and \"Decided May 17, 1954\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+            "discrepancies": "None: agent kept argued vs. reargued ranges distinct and reported the decided date exactly as shown in the DOM.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report the displayed Question from the Oyez page",
+      "description": "Evaluate whether the agent reported the Question exactly as displayed on the Brown I Oyez page. Full credit if accurately copied, OR if the agent notes that the Question section was not accessible/visible due to Oyez access/rendering issues. Partial credit if meaning is correct but noticeably paraphrased. No credit if missing or substituted with an outside/incorrect issue statement when the Oyez Question is accessible.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 3 shows the Question text: “Does the segregation of public education based solely on race violate the Equal Protection Clause of the Fourteenth Amendment?”",
+        "verifier_justification": "Agent’s output matches the displayed Question as shown in the screenshot (no meaningful paraphrase beyond what is displayed). Upgrade to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "Under the heading “Question,” the screenshot clearly shows: “Does the segregation of public education based solely on race violate the Equal Protection Clause of the Fourteenth Amendment?”",
+            "criterion_analysis": "Satisfied. The agent’s predicted output reproduces the Question exactly as shown in the screenshot (same wording and punctuation).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 2 (latest) Question section reads: 'Does the segregation of public education based solely on race violate the Equal Protection Clause of the Fourteenth Amendment?'",
+        "verifier_justification": "Agent’s Question matches the displayed Question exactly. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 under the \"Question\" heading: \"Does the segregation of public education based solely on race violate the Equal Protection Clause of the Fourteenth Amendment?\"",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent’s reported Question matches the Question text displayed in the DOM.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Conclusion card decision details (split and prevailing side)",
+      "description": "Check that the agent reported both the decision split (vote count) and the prevailing side as shown on the Oyez Conclusion decision card. Full credit if both match the card, OR if the agent indicates the Conclusion card was not accessible/did not load. Partial credit if only one is provided or the source is unclear. No credit if incorrect/invented with no stated access/rendering limitation.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 3 Conclusion card shows “UNANIMOUS DECISION FOR BROWN ET AL.”",
+        "verifier_justification": "Agent correctly reported decision split (unanimous) and prevailing side (for Brown et al.) from the Conclusion card. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "In the “Conclusion” card area, the screenshot shows the line “UNANIMOUS DECISION FOR BROWN ET AL.” This indicates both the split (unanimous) and prevailing side (for Brown et al.).",
+            "criterion_analysis": "Satisfied. The agent reported “Unanimous decision” and “for Brown et al.” which matches the visible text on the Conclusion decision card.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model state 2 (latest) Conclusion card shows decision split as 'Unanimous decision' and prevailing side as 'for Brown et al.'. No numeric vote count is shown in the cited evidence.",
+        "verifier_justification": "Agent reported both the split ('Unanimous decision') and prevailing side ('for Brown et al.') exactly as displayed on the Conclusion card. Baseline deduction for missing a numeric vote count is not supported by the DOM evidence; award full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 in the \"Conclusion\" section decision card text: \"Unanimous decision\" and \"for Brown et al.\" (also shown together as \"Unanimous decision for Brown et al.\").",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows both the decision split (Unanimous decision) and prevailing side (for Brown et al.), consistent with the agent output.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Conclusion card majority-opinion author",
+      "description": "Evaluate whether the majority-opinion author is reported and matches the author listed on the Conclusion decision card. Full credit if correct, OR if the agent reports it could not access/load the Conclusion card to verify. Partial credit if the correct justice is named but with minor formatting/name issues. No credit if missing/wrong without any access issue noted.",
+      "max_points": 1,
+      "screenshot_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshot 3 shows “MAJORITY OPINION BY EARL WARREN.”",
+        "verifier_justification": "Agent correctly identified Earl Warren as majority-opinion author from the Conclusion card. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "In the Conclusion card, the screenshot shows: “MAJORITY OPINION BY EARL WARREN.”",
+            "criterion_analysis": "Satisfied. The agent’s predicted output lists the majority-opinion author as Earl Warren, matching the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "DOM-model state 2 (latest) Conclusion card includes 'majority opinion by Earl Warren'.",
+        "verifier_justification": "Agent correctly reported Earl Warren as the majority-opinion author. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 Conclusion card includes: \"majority opinion by Earl Warren\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe majority-opinion author is explicitly listed as Earl Warren on the Conclusion card.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Conclusion card one-line holding immediately below the majority-opinion label",
+      "description": "Check that the agent copied the one-line holding that appears immediately below the majority-opinion label on the Oyez Conclusion card, without substituting the longer explanatory paragraph or outside summaries. Full credit if the exact one-line holding is provided, OR if the agent clearly states it could not view/load that one-line holding due to Oyez access/rendering issues (and therefore cannot quote it). Partial credit if nearly exact with small omissions/edits that keep the same sentence structure. No credit if it uses the longer paragraph, paraphrases broadly, or pulls from non-Conclusion/external sources when the one-line holding is accessible.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 3 shows the one-line holding immediately under the majority-opinion label: “Separate but equal educational facilities for racial minorities is inherently unequal violating the Equal Protection Clause of the Fourteenth Amendment.”",
+        "verifier_justification": "Agent reproduced the one-line holding consistent with what is displayed under the majority-opinion label on the Conclusion card, and did not substitute the longer paragraph. Upgrade to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "Immediately below the “MAJORITY OPINION BY EARL WARREN” label, the one-line holding displayed reads: “Separate but equal educational facilities for racial minorities is inherently unequal violating the Equal Protection Clause of the Fourteenth Amendment” (as shown on the card).",
+            "criterion_analysis": "Satisfied. The agent’s predicted output quotes the same one-line holding (with the same wording/order as visible on the decision card), and does not substitute the longer paragraph below.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          2,
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM-model state 2 (latest) Conclusion card one-line holding appears as: 'Separate but equal educational facilities for racial minorities is inherently unequal, violating the Equal Protection Clause of the Fourteenth Amendment.' (DOM analysis also notes an unpunctuated variant elsewhere, but latest evidence includes comma and period).",
+        "verifier_justification": "Agent’s holding matches the displayed one-line holding in substance and wording, with only minor punctuation differences (comma/period). This is a nitpick and does not constitute substituting a longer paragraph or outside summary. Increase to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 Conclusion card line immediately below/with the majority label includes: \"Separate but equal educational facilities for racial minorities is inherently unequal violating the Equal Protection Clause of the Fourteenth Amendment\" (and also appears with punctuation as: \"Separate but equal educational facilities for racial minorities is inherently unequal, violating the Equal Protection Clause of the Fourteenth Amendment.\").",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM contains the one-line holding text on the Conclusion card, and the agent reproduced it in substance. However, the DOM also shows a punctuated version (with a comma after \"unequal\" and a period at the end), while the agent’s version omits that punctuation; this is a minor fidelity issue rather than a substitution with the longer paragraph.",
+            "discrepancies": "Minor copy fidelity: DOM shows \"inherently unequal, violating...\" with comma and terminal period; agent wrote \"inherently unequal violating...\" without the comma/period.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

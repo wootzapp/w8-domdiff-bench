@@ -1,0 +1,126 @@
+{
+  "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z/20260914T_task044_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "91a73e9ce7cbb9cfa0fb89a1c190e63915795fb801c4c3a183f71d4b2fc9165d",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z/20260914T_task044_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 11,
+    "screenshots": 12
+  },
+  "result": {
+    "process_score": 0.4375,
+    "total_earned_points": 7.0,
+    "total_max_points": 16.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 95.837
+  },
+  "criteria": [
+    {
+      "criterion": "Apply correct USGS query filters (UTC range, worldwide, magnitude threshold)",
+      "action_only_points": 5.0,
+      "final_points": 3.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Magnitude ≥4.5 and Worldwide are clearly correct, but the custom UTC 24-hour range is not correctly entered/verified in the final visible state; the datetime inputs appear corrupted/concatenated, conflicting with the agent’s claim of a clean 24-hour window. This is a controllable execution error rather than an uncontrollable blocker. Award partial credit for correctly setting magnitude and worldwide but not the date range.",
+      "penalty": false
+    },
+    {
+      "criterion": "Order results by magnitude (largest to smallest)",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The requirement is to order results by magnitude (largest to smallest). The latest screenshot with results explicitly shows sorting is ‘Newest First,’ contradicting the agent’s claim that ordering by magnitude was applied. No visual confirmation shows magnitude-desc sorting in effect. Therefore, no credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report top three results with required fields (preserve USGS order for ties, UTC times)",
+      "action_only_points": 5.0,
+      "final_points": 0.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent’s reported ‘first three’ results do not match the displayed first three results in the evidence, and the agent’s list appears to be based on an unverified magnitude sort. While the required fields (magnitude/place/UTC time) are the right kinds of fields, the actual entries are inconsistent with the evidence and include likely fabricated/unsupported items (e.g., the 5.1 South Sandwich Islands entry not shown). This is a critical accuracy failure.",
+      "penalty": false
+    },
+    {
+      "criterion": "Handle fewer-than-three results correctly",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The ‘fewer than three results’ scenario does not apply because the evidence shows 16 matches. The agent did not invent extra entries to reach three due to scarcity. Full credit for correctly handling the conditional requirement (even though the chosen three were incorrect, that is scored in Criterion 2).",
+      "penalty": false
+    },
+    {
+      "criterion": "Respect constraints: no alerts/notifications and proper UTC handling disclosure",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Constraints appear respected: no alerts/notifications were enabled, and UTC is clearly indicated by the site (inputs and results). Although the agent mishandled the time range entry and sorting, this criterion is specifically about alerts and UTC disclosure/handling; the agent stated UTC and the site supports UTC labeling. Full credit.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 26,
+    "o4-mini": 3,
+    "total": 29,
+    "api_attempts": 29,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 140371,
+      "completion_tokens": 11286,
+      "reasoning_tokens": 0,
+      "total_tokens": 151657
+    },
+    "o4-mini": {
+      "prompt_tokens": 21989,
+      "completion_tokens": 3343,
+      "reasoning_tokens": 1984,
+      "total_tokens": 25332
+    },
+    "combined": {
+      "prompt_tokens": 162360,
+      "completion_tokens": 14629,
+      "reasoning_tokens": 1984,
+      "total_tokens": 176989
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z/20260914T_task044_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z/20260914T_task044_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z/20260914T_task044_data_new/microsoft_verifier/run.log"
+}

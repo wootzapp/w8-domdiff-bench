@@ -1,0 +1,126 @@
+{
+  "task_id": "browser_task_045-weather-forecast-extraction-20260909T081343Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_045-weather-forecast-extraction-20260909T081343Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_045-weather-forecast-extraction-20260909T081343Z/20260914T_task045_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "3ef97ba5958cfe041448d9d42a54ac4ad18b27d24a7a7bfbf0b4e4d15ec878ee",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_045-weather-forecast-extraction-20260909T081343Z/20260914T_task045_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 5,
+    "screenshots": 6
+  },
+  "result": {
+    "process_score": 1.0,
+    "total_earned_points": 20.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": true,
+    "outcome_success": true,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 67.045
+  },
+  "criteria": [
+    {
+      "criterion": "Use National Weather Service forecast page for Downtown Seattle (or report access blocker)",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent used the NWS MapClick page for Downtown Seattle and the site was accessible (no CAPTCHA/error). No adjustment needed.",
+      "penalty": false
+    },
+    {
+      "criterion": "Identify the first displayed daytime forecast period and the immediately following nighttime period (or report ambiguity)",
+      "action_only_points": 0.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent correctly followed the instruction to use the first displayed daytime period (not the first period overall) and then the immediately following nighttime period. The baseline justification claiming the agent assumed the period is contradicted by the screenshots, which confirm Wednesday is indeed the first displayed daytime period and Wednesday Night is next.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report required fields for the daytime period (with unavailable handling)",
+      "action_only_points": 5.0,
+      "final_points": 5.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent reported all required fields for the daytime period: name (Wednesday), conditions (Mostly sunny), temperature (High near 75°F), wind (calm becoming NNW around 6 mph), and correctly marked precipitation chance as unavailable since no % is stated in the detailed forecast text.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report required fields for the nighttime period (with unavailable handling)",
+      "action_only_points": 5.0,
+      "final_points": 5.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent reported all required fields for the nighttime period: name (Wednesday Night), conditions (Increasing clouds), temperature (Low around 57°F), wind (light and variable), and correctly marked precipitation chance as unavailable since no % is stated.",
+      "penalty": false
+    },
+    {
+      "criterion": "Respect constraints and stopping condition (no guessing; one pair only; no permissions)",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "All constraints and stopping condition were respected: no permissions enabled, exactly one daytime+nighttime pair reported, and precipitation chance handled as 'unavailable' when not stated.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 16,
+    "o4-mini": 3,
+    "total": 19,
+    "api_attempts": 19,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 86204,
+      "completion_tokens": 6361,
+      "reasoning_tokens": 0,
+      "total_tokens": 92565
+    },
+    "o4-mini": {
+      "prompt_tokens": 17481,
+      "completion_tokens": 2817,
+      "reasoning_tokens": 1536,
+      "total_tokens": 20298
+    },
+    "combined": {
+      "prompt_tokens": 103685,
+      "completion_tokens": 9178,
+      "reasoning_tokens": 1536,
+      "total_tokens": 112863
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_045-weather-forecast-extraction-20260909T081343Z/20260914T_task045_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_045-weather-forecast-extraction-20260909T081343Z/20260914T_task045_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_045-weather-forecast-extraction-20260909T081343Z/20260914T_task045_data_new/microsoft_verifier/run.log"
+}

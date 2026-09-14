@@ -1,0 +1,611 @@
+{
+  "task_id": "browser_task_082-chess-game-result-inspection-20260914T091145Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/tmp/evidence-reruns-81-90.JfFp73/data-dom/task_82_rerun",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_82_rerun/20260914T_task82_rerun_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "2080808bbccbe3444a4d2234275a959221a249014904721553df11db85c833d6",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_82_rerun/20260914T_task82_rerun_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_082-chess-game-result-inspection-20260914T091145Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_082-chess-game-result-inspection-20260914T091145Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Scroll to ensure all summary fields (time control, rated status, speed, result text, and move count) are fully visible in the DOM before final reporting."
+          },
+          "observed_after_url": "https://lichess.org/Z01xx8LK"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "31fa0f9c2316dfcc5e91636c3b3e374babbf24823fc60ec3269a037dcbef9b26",
+          "after_sha256": "d7e6c9c003557b42908982c7b65bbd85dece26d2a5537f8720876a6d3d596960",
+          "before_url": "https://lichess.org/Z01xx8LK",
+          "after_url": "https://lichess.org/Z01xx8LK"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "2080808bbccbe3444a4d2234275a959221a249014904721553df11db85c833d6",
+    "criterion_order": [
+      "Access the specified public Lichess game page (Z01xx8LK) only",
+      "Record time control, rated/casual status, and speed category as displayed",
+      "Record both players' names, ratings, and rating changes (correct association)",
+      "Record termination/victory statement, winner, and number of moves",
+      "Respect constraints and stopping condition"
+    ],
+    "maximum_points": [
+      3.0,
+      3.0,
+      5.0,
+      4.0,
+      5.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_82_rerun/20260914T_task82_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "result": {
+    "process_score": 0.85,
+    "total_earned_points": 17.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": true,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 157.078
+  },
+  "criteria": [
+    {
+      "criterion": "Access the specified public Lichess game page (Z01xx8LK) only",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent accessed the correct public Lichess game page and there is no DOM evidence of using other sources or encountering access blockers. Baseline score stands.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record time control, rated/casual status, and speed category as displayed",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent reported time control (10+0), rated status (Rated), and speed category (Rapid) exactly as displayed. Full credit maintained.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record both players' names, ratings, and rating changes (correct association)",
+      "action_only_points": 5.0,
+      "final_points": 4.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent correctly reported both player names, ratings, and rating changes as displayed. However, the agent additionally bound them to White/Black (“White: Reini… Black: IloveAnya…”) without explicit DOM proof of that color association in the provided evidence. Since correct association to color is part of the criterion, award partial credit for accurately capturing the tuples but deduct for unproven color mapping.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record termination/victory statement, winner, and number of moves",
+      "action_only_points": 4.0,
+      "final_points": 3.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Termination/victory statement and winner are supported by the DOM. The stated number of moves is not explicitly displayed in the provided DOM evidence, so the agent’s “33” is unsupported (likely inferred). Deduct proportionally for the missing/unsupported move-count requirement while giving credit for the supported parts.",
+      "penalty": false
+    },
+    {
+      "criterion": "Respect constraints and stopping condition",
+      "action_only_points": 5.0,
+      "final_points": 4.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "No evidence of prohibited actions (sign-in/challenge/post) or navigation off the public game page. The agent did, however, report an unsupported move count, which conflicts with the constraint to report only the displayed game summary (not PGN-derived/inferred). Apply a modest deduction for this constraint-related issue while keeping most credit for otherwise respecting constraints and stopping promptly.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 14,
+    "o4-mini": 3,
+    "total": 17,
+    "api_attempts": 17,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 81372,
+      "completion_tokens": 9151,
+      "reasoning_tokens": 0,
+      "total_tokens": 90523
+    },
+    "o4-mini": {
+      "prompt_tokens": 15208,
+      "completion_tokens": 2632,
+      "reasoning_tokens": 1472,
+      "total_tokens": 17840
+    },
+    "combined": {
+      "prompt_tokens": 96580,
+      "completion_tokens": 11783,
+      "reasoning_tokens": 1472,
+      "total_tokens": 108363
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_82_rerun/20260914T_task82_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "31fa0f9c2316dfcc5e91636c3b3e374babbf24823fc60ec3269a037dcbef9b26",
+        "byte_count": 5963,
+        "line_count": 230,
+        "estimated_tokens": 1480,
+        "url": "https://lichess.org/Z01xx8LK",
+        "title": "Reini vs IloveAnya - Réti Opening: Réti Accepted • lichess.org",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 183
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 184,
+            "end_line": 194
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 195,
+            "end_line": 209
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 210,
+            "end_line": 222
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 223,
+            "end_line": 225
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 226,
+            "end_line": 230
+          }
+        ],
+        "control_refs": [
+          "Event",
+          "Site",
+          "Date",
+          "Round",
+          "White",
+          "Black",
+          "Result",
+          "GameId",
+          "UTCDate",
+          "UTCTime",
+          "WhiteElo",
+          "BlackElo",
+          "WhiteRatingDiff",
+          "BlackRatingDiff",
+          "Variant",
+          "TimeControl",
+          "Termination",
+          "Annotator",
+          "24",
+          "87",
+          "31",
+          "82",
+          "89",
+          "120",
+          "689",
+          "690",
+          "709",
+          "other",
+          "84",
+          "792",
+          "121",
+          "685",
+          "686",
+          "687",
+          "688",
+          "691",
+          "729",
+          "731",
+          "925",
+          "769",
+          "27"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L230"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_82_rerun/20260914T_task82_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "d7e6c9c003557b42908982c7b65bbd85dece26d2a5537f8720876a6d3d596960",
+        "byte_count": 7862,
+        "line_count": 281,
+        "estimated_tokens": 1947,
+        "url": "https://lichess.org/Z01xx8LK",
+        "title": "Reini vs IloveAnya - Réti Opening: Réti Accepted • lichess.org",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 240
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 241,
+            "end_line": 246
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 247,
+            "end_line": 252
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 253,
+            "end_line": 273
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 274,
+            "end_line": 276
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 277,
+            "end_line": 281
+          }
+        ],
+        "control_refs": [
+          "Event",
+          "Site",
+          "Date",
+          "Round",
+          "White",
+          "Black",
+          "Result",
+          "GameId",
+          "UTCDate",
+          "UTCTime",
+          "WhiteElo",
+          "BlackElo",
+          "WhiteRatingDiff",
+          "BlackRatingDiff",
+          "Variant",
+          "TimeControl",
+          "Termination",
+          "Annotator",
+          "24",
+          "709",
+          "729",
+          "731",
+          "other",
+          "31",
+          "82",
+          "84",
+          "87",
+          "89",
+          "91",
+          "792",
+          "120",
+          "121",
+          "685",
+          "686",
+          "687",
+          "688",
+          "689",
+          "690",
+          "691",
+          "756",
+          "760",
+          "925",
+          "769",
+          "27"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L281"
+      }
+    ],
+    "estimated_evidence_tokens": 3427,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 8,
+        "4": 10
+      },
+      "1": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 9,
+        "4": 9
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 5,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11260,
+        "estimated_input_tokens": 2815,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 13215,
+        "estimated_input_tokens": 3304,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 15246,
+        "estimated_input_tokens": 3812,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 13291,
+        "estimated_input_tokens": 3323,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 15563,
+        "estimated_input_tokens": 3891,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 13632,
+        "estimated_input_tokens": 3408,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 14057,
+        "estimated_input_tokens": 3515,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 14370,
+        "estimated_input_tokens": 3593,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 14630,
+        "estimated_input_tokens": 3658,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/task_82_rerun/20260914T_task82_rerun_data_new/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/task_82_rerun/20260914T_task82_rerun_data_new/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/task_82_rerun/20260914T_task82_rerun_data_new/dom_model/run.log"
+}

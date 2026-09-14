@@ -1,0 +1,544 @@
+{
+  "task_id": "browser_task_048-corporate-filing-filtering-20260909T081902Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_048-corporate-filing-filtering-20260909T081902Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "c8197d17535a38a70b94467043e3b15de71f9f6afc6ce6cacf16ebc253dfbecb",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_048-corporate-filing-filtering-20260909T081902Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_048-corporate-filing-filtering-20260909T081902Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e37",
+            "target": {
+              "ref": "e37",
+              "role": "checkbox",
+              "name": "Accounts"
+            },
+            "thoughts": "Need to apply the Accounts category filter via the on-page checkbox before identifying the three newest account filings."
+          },
+          "observed_after_url": "https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "b812e46f01ed2caf8323846ec9132c8355e76091dda8878489d71d7a90fd8eb7",
+          "after_sha256": "9c854df7a098cb71d82f3b783ac8ce97250e348588e9f958b926493a125e6b11",
+          "before_url": "https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history",
+          "after_url": "https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e37' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "c8197d17535a38a70b94467043e3b15de71f9f6afc6ce6cacf16ebc253dfbecb",
+    "criterion_order": [
+      "Navigate to Tesco PLC Companies House filing history (correct company/page)",
+      "Apply the 'Accounts' category filter via the page interface",
+      "Record newest (most recent) account filing #1 details",
+      "Record newest account filing #2 details",
+      "Record newest account filing #3 details",
+      "Respect constraints and stopping condition"
+    ],
+    "maximum_points": [
+      3.0,
+      4.0,
+      3.0,
+      3.0,
+      3.0,
+      4.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "result": {
+    "process_score": 0.3,
+    "total_earned_points": 6.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 103.629
+  },
+  "criteria": [
+    {
+      "criterion": "Navigate to Tesco PLC Companies House filing history (correct company/page)",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "No adjustment needed: DOM evidence directly supports that the agent was on Tesco PLC’s Companies House filing history page for company number 00445790.",
+      "penalty": false
+    },
+    {
+      "criterion": "Apply the 'Accounts' category filter via the page interface",
+      "action_only_points": 4.0,
+      "final_points": 1.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Baseline assumed visible application of the Accounts filter, but the DOM provides no confirmation that the Accounts checkbox exists in-view, is checked, or that results are filtered. This is a controllable verification failure (insufficient evidence), not an uncontrollable blocker. Score reduced substantially.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record newest (most recent) account filing #1 details",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent provided specific filing details (date/type/description/period) but there is no DOM support for any of those strings or even the presence of the filings list. Because the prerequisite (Accounts filter visibly applied) is also unverified, these details are effectively ungrounded relative to the provided evidence. Score reduced to 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record newest account filing #2 details",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "No DOM support for the claimed second-newest accounts filing fields; with no evidenced filtered list, correctness cannot be validated and the provided specifics are unsupported. Score reduced to 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record newest account filing #3 details",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The claimed third-newest filing details are not supported by DOM evidence and cannot be validated; this is not an uncontrollable blocker shown in the DOM. Score reduced to 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Respect constraints and stopping condition",
+      "action_only_points": 4.0,
+      "final_points": 2.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Constraints about not signing in/following/filing and not opening/downloading PDFs are not contradicted, so partial credit is warranted. But the key requirements tied to stopping (Accounts filter visibly applied via UI + three newest matching filings recorded) are not evidenced, so full credit is not justified.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 11,
+    "o4-mini": 3,
+    "total": 14,
+    "api_attempts": 14,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 58362,
+      "completion_tokens": 7100,
+      "reasoning_tokens": 0,
+      "total_tokens": 65462
+    },
+    "o4-mini": {
+      "prompt_tokens": 16064,
+      "completion_tokens": 3858,
+      "reasoning_tokens": 2432,
+      "total_tokens": 19922
+    },
+    "combined": {
+      "prompt_tokens": 74426,
+      "completion_tokens": 10958,
+      "reasoning_tokens": 2432,
+      "total_tokens": 85384
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "b812e46f01ed2caf8323846ec9132c8355e76091dda8878489d71d7a90fd8eb7",
+        "byte_count": 1936,
+        "line_count": 47,
+        "estimated_tokens": 484,
+        "url": "https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history",
+        "title": "TESCO PLC filing history - Find and update company information - GOV.UK",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 27
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 28,
+            "end_line": 38
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 39,
+            "end_line": 41
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 42,
+            "end_line": 44
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 45,
+            "end_line": 47
+          }
+        ],
+        "control_refs": [
+          "54",
+          "18",
+          "11",
+          "60",
+          "15",
+          "16",
+          "44",
+          "46",
+          "48",
+          "69",
+          "other",
+          "42",
+          "30"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L47"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "9c854df7a098cb71d82f3b783ac8ce97250e348588e9f958b926493a125e6b11",
+        "byte_count": 1992,
+        "line_count": 47,
+        "estimated_tokens": 498,
+        "url": "https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history",
+        "title": "TESCO PLC filing history - Find and update company information - GOV.UK",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 27
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 28,
+            "end_line": 38
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 39,
+            "end_line": 41
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 42,
+            "end_line": 44
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 45,
+            "end_line": 47
+          }
+        ],
+        "control_refs": [
+          "1802",
+          "1809",
+          "1814",
+          "1816",
+          "1748",
+          "1833",
+          "1772",
+          "1791",
+          "1795",
+          "1832",
+          "other",
+          "1768",
+          "1703"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L47"
+      }
+    ],
+    "estimated_evidence_tokens": 982,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 2
+      },
+      "1": {
+        "0": 9,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 3
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 2,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8495,
+        "estimated_input_tokens": 2124,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 8548,
+        "estimated_input_tokens": 2137,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 10775,
+        "estimated_input_tokens": 2694,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 10828,
+        "estimated_input_tokens": 2707,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 11093,
+        "estimated_input_tokens": 2774,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 11040,
+        "estimated_input_tokens": 2760,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/dom_model/run.log"
+}

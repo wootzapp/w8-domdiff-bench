@@ -1,0 +1,1240 @@
+{
+  "schema_version": "existing-output-evidence-audit/v1",
+  "task_id": "viewport-modern-23-requests-pull-request-inspection-20260829T084451Z",
+  "run_id": "20260910T113316Z",
+  "run_dir": "/data/isha/msexecute/evidence-error-experiment/results/task23/20260910T113316Z",
+  "rubric_sha256": "dd52e47e7db0b8a9ebe57ae41a2401c6c5ac3dec04f4f30d048b826660a2d735",
+  "source_artifacts": {
+    "screenshot_result": "/data/isha/msexecute/evidence-error-experiment/results/task23/20260910T113316Z/microsoft_verifier/result.json",
+    "dom_model_result": "/data/isha/msexecute/evidence-error-experiment/results/task23/20260910T113316Z/dom_model/result.json"
+  },
+  "source_inventory": {
+    "screenshot": [
+      {
+        "index": 0,
+        "file": "_inputs/screenshot/screenshot0.png",
+        "bytes": 157752,
+        "sha256": "dacf17c8b8be5a951f672735558b58bc26092ce107afb090cbc8dfea1cbe5e4d"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/screenshot/screenshot1.png",
+        "bytes": 171063,
+        "sha256": "f3e62ef8db8abe91b9e1c1d2bdb7110432ec7597078e1beb637270d751a39ed8"
+      },
+      {
+        "index": 2,
+        "file": "_inputs/screenshot/screenshot2.png",
+        "bytes": 155805,
+        "sha256": "2d92892abcf59b6917b42ed3a52dce4f166f04285b7816343281151f4e204db6"
+      },
+      {
+        "index": 3,
+        "file": "_inputs/screenshot/screenshot3.png",
+        "bytes": 167797,
+        "sha256": "af8e761931716da59361d54db38bc2fa858b93e701db36cc63565169abebb141"
+      },
+      {
+        "index": 4,
+        "file": "_inputs/screenshot/screenshot4.png",
+        "bytes": 108520,
+        "sha256": "ccd2b4933ee6cac7da15de5dae888aa3a3f0adcb492f523964a182780f08236a"
+      }
+    ],
+    "dom_model": [
+      {
+        "index": 0,
+        "file": "_inputs/dom_model/dom_model0.txt",
+        "bytes": 6119,
+        "sha256": "10e7871a24884544b44d9578b82635e0fa45b5f758771b9e439726495a221757"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/dom_model/dom_model1.txt",
+        "bytes": 12566,
+        "sha256": "54917edb4fef3e06aeee63b9bab4a3f47940e5c4782d1774c038c88d01baf1e4"
+      },
+      {
+        "index": 2,
+        "file": "_inputs/dom_model/dom_model2.txt",
+        "bytes": 6272,
+        "sha256": "227abb42b51d52c3e61384fbaeb838369ba6548a6de6d15423d6352e93d92a39"
+      },
+      {
+        "index": 3,
+        "file": "_inputs/dom_model/dom_model3.txt",
+        "bytes": 6948,
+        "sha256": "d591652e060152f9875cc2f93a5e596193f0b6fcd78a9d332ebb3ecb184aefb7"
+      },
+      {
+        "index": 4,
+        "file": "_inputs/dom_model/dom_model4.txt",
+        "bytes": 4558,
+        "sha256": "f5ffd0bf234bcd6f5164f8a3b2a43ce29d96f5b04da64ea1e2cdf8b5538301dc"
+      }
+    ]
+  },
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Filter and sort pull request list correctly (open, non-draft, most recently updated)",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 8
+          },
+          {
+            "source_index": 1,
+            "score": 8
+          },
+          {
+            "source_index": 2,
+            "score": 10
+          },
+          {
+            "source_index": 3,
+            "score": 1
+          },
+          {
+            "source_index": 4,
+            "score": 1
+          }
+        ],
+        "selected_indices": [
+          2,
+          1,
+          0,
+          4,
+          3
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot shows the GitHub PR list page for `psf/requests` with the `Pull requests` tab selected. The search query box contains: `is:pr is:open sort:updated-desc`. Above the list it shows `86 Open` and `2,974 Closed`. A link says `Clear current search query, filters, and sorts`. The PR list shows items like `requests.help static typing improvements` and several PRs labeled `mass-automation-pr`.",
+            "criterion_analysis": "The visible query `is:pr is:open sort:updated-desc` confirms the list is filtered to open pull requests and sorted by most recently updated (updated-desc). However, the screenshot does not show any explicit exclusion of Draft PRs (no `draft:false` in the query, and no visible indication that drafts are filtered out). The list items shown do not display any obvious `Draft` badge in the visible rows, but absence of a badge in these few rows does not confirm a non-draft-only filter was applied.",
+            "discrepancies": "Task requires filtering to open non-draft PRs. The screenshot shows open + updated-desc but does not show any draft exclusion syntax/control. No explicit evidence the agent filtered out drafts.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the GitHub PR list page for “psf / requests” with the “Pull requests” tab selected. A search/filter box contains the text “is:pr is:open”. Above the list it shows “86 Open” and “2,974 Closed”. A “Sort by” dropdown is open and the option “Newest” has a checkmark next to it (other options visible include “Oldest”, “Most commented”, “Least commented”, “Recently updated”, “Least recently updated”, “Best match”; “Most reactions” appears greyed out). There is no visible filter/control specifically excluding “Draft” PRs, and no “draft” text is visible in the query.",
+            "criterion_analysis": "Open PRs are clearly selected/filtered (the query includes “is:open” and the page indicates “86 Open”). However, the list is not sorted by “most recently updated” in this screenshot; the sort dropdown indicates “Newest” is currently selected while “Recently updated” is merely an available option. Also, there is no visible evidence that draft PRs are excluded (no “draft:false” or similar, and no UI indication). This is at best partial progress toward the required filter/sort state.",
+            "discrepancies": "The action history implies the agent set sorting to “Recently updated,” but the screenshot shows the sort checkmark on “Newest,” not “Recently updated.” No evidence in the screenshot that non-draft filtering was applied.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the GitHub PR list for repository “psf/requests” on the “Pull requests” tab. A search filter box contains the query text “is:pr is:open”. Above the list it shows “86 Open” and “2,974 Closed”. On the right side of the list header there is a “Sort” dropdown (label visible), but the screenshot does not show the dropdown opened nor the currently-selected sort option. No “Draft” indicators are visible on the listed PR rows in this screenshot. Several PR entries are visible with green labels “mass-automation-pr”, and one entry shows a gray label “Contributor” and another shows “Approved”.",
+            "criterion_analysis": "Open PR filtering is clearly applied (query includes “is:open” and the page indicates “86 Open”). However, the screenshot does not provide evidence that Draft PRs are excluded (no explicit “draft:false” filter shown, and no visible check about draft status beyond not seeing any Draft badges in the visible rows). The screenshot also does not confirm that sorting is set to “most recently updated” because the “Sort” control is present but its selected value is not displayed. Overall: partial support for correct filtering (open PRs), but sorting and non-draft filtering are not verifiable from this screenshot alone.",
+            "discrepancies": "Action history suggests the agent clicked to set sort order to “Recently updated,” but the screenshot does not show the selected sort value or an opened sort menu confirming that setting. The screenshot also does not show any explicit non-draft filter being applied beyond the absence of visible “Draft” badges.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Filter and sort pull request list correctly (open, non-draft, most recently updated)",
+          "earned_points": 2,
+          "post_image_earned_points": 2.0,
+          "max_points": 3,
+          "justification": "The agent correctly clicked the Sort control and set ordering to “Recently updated,” satisfying the sort requirement, but did not exclude Draft PRs or mention any draft-filter limitations.",
+          "applicable_evidence": "Screenshots 1-3 relate to filtering/sorting. Latest is Screenshot 3, which shows the PR search query box set to `is:pr is:open sort:updated-desc`, confirming open PRs and sorted by most recently updated. No screenshot shows an explicit draft exclusion term (e.g., `draft:false`) or a UI control for excluding drafts; also no visible Draft badges in the shown rows.",
+          "post_image_justification": "Compared to the baseline, sorting is verifiably correct in the latest state via `sort:updated-desc`, even though an earlier screenshot showed the sort dropdown checkmark on “Newest.” However, the task required filtering to non-draft PRs; there is no evidence the agent applied a draft filter or verified draft status beyond absence of visible Draft badges. So this remains partial credit rather than full.",
+          "reality_notes": "Screenshots show the PR list with the query box used for filtering/sorting. Evidence confirms open-PR filtering via `is:pr is:open` and later `sort:updated-desc` being present in the query (which corresponds to most-recently-updated sorting). The UI also has a Sort dropdown; one screenshot shows it open with a checkmark on “Newest” (not “Recently updated”), while another shows the query explicitly setting updated-desc. No screenshot shows an explicit draft-exclusion control or query term (e.g., `draft:false`), and no visible PR rows display a “Draft” badge in the shown portion—so “non-draft” status is not directly verifiable from the provided images beyond absence of draft markers in visible rows."
+        },
+        "verifier_evidence": "Screenshots 1-3 relate to filtering/sorting. Latest is Screenshot 3, which shows the PR search query box set to `is:pr is:open sort:updated-desc`, confirming open PRs and sorted by most recently updated. No screenshot shows an explicit draft exclusion term (e.g., `draft:false`) or a UI control for excluding drafts; also no visible Draft badges in the shown rows.",
+        "verifier_justification": "Compared to the baseline, sorting is verifiably correct in the latest state via `sort:updated-desc`, even though an earlier screenshot showed the sort dropdown checkmark on “Newest.” However, the task required filtering to non-draft PRs; there is no evidence the agent applied a draft filter or verified draft status beyond absence of visible Draft badges. So this remains partial credit rather than full.",
+        "action_only_points": 2,
+        "final_points": 2.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 4
+          },
+          {
+            "source_index": 1,
+            "score": 6
+          },
+          {
+            "source_index": 2,
+            "score": 8
+          },
+          {
+            "source_index": 3,
+            "score": 0
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          2,
+          1,
+          0,
+          4,
+          3
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows URL `https://github.com/psf/requests/pulls?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc`, which encodes filters `is:pr is:open sort:updated-desc` (open PRs, sorted by most recently updated). The page also shows `86 Open` (link) and a visible `Sort` control.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM proves the agent is viewing the Open PR list sorted by updated-desc (most recently updated) via the query string. However, there is no explicit DOM evidence that Draft PRs are excluded/filtered out, nor any evidence the agent checked for drafts in the first three results. Therefore, filtering/sorting is only partially verified against the full requirement (open, non-draft, recently updated).",
+            "discrepancies": "Rubric requires excluding Draft PRs (or explicitly noting limitation/check). DOM shows open + updated-desc but does not show any draft-exclusion filter (e.g., `draft:false`) or an explicit draft check for the first three items.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (https://github.com/psf/requests/pulls). The Sort menu is open and shows sort options including “Recently updated” ([11512]). The PR list shown includes items like “#7586 opened by Jul 18, 2026”, “#7579 opened by Jul 11, 2026”, etc. The page shows “86 Open” ([373]) and “2,974 Closed” ([376]) toggles, but no explicit DOM evidence of selecting the “Open” filter nor excluding “Draft” PRs. No DOM evidence that “Recently updated” was selected (only that it is available in the open menu).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent clearly attempted to sort via the Sort control and choose “Recently updated” per action history, and the DOM confirms the Sort UI is present with “Recently updated” as an option. However, this DOM snapshot does not confirm the selection was applied (it does not show the active sort or changed ordering), nor does it confirm drafts were excluded or checked. It also does not explicitly show that the list is filtered to Open beyond the presence of the “86 Open” tab.",
+            "discrepancies": "Rubric requires open, non-draft, and sorted by most recently updated. DOM evidence does not verify: (a) the active sort is “Recently updated” (only that it exists in the menu), and (b) that Draft PRs were excluded/checked. Also, the visible list shows PRs with “opened by” dates, not “updated” timestamps, so correct ordering by updated cannot be verified from this snapshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL https://github.com/psf/requests/pulls with controls including a visible \"Sort\" button and open/closed counts. Evidence includes: \"[1001] Sort\" and links \"[373] 86 Open\" and \"[376] 2,974 Closed\". The visible PR list shows entries like \"#7586 opened by\" with dates (e.g., \"Jul 18, 2026\"). Action history (not DOM) indicates Action 1 clicked \"Sort\" and Action 2 selected \"Recently updated\".",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM snapshot confirms the agent was on the psf/requests pull request list page and that an Open PR list view and a Sort control exist (DOM_MODEL_STATE_INDEX: 0: \"86 Open\", \"2,974 Closed\", and \"Sort\"). However, the DOM evidence provided does not include a post-interaction DOM snapshot showing that sorting is actually set to \"Recently updated\" (no DOM state after Action 2), and it does not show any DOM evidence that Draft PRs were excluded or checked (no visible draft/non-draft filter state captured).",
+            "discrepancies": "- No DOM snapshot after Action 2 to verify the active sort order is \"Recently updated\".\n- No DOM evidence showing draft PRs are excluded or that the list contains only non-draft PRs (absence of any \"Draft\" indicators or filter state in provided DOM).",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Filter and sort pull request list correctly (open, non-draft, most recently updated)",
+          "earned_points": 2,
+          "post_image_earned_points": 2.5,
+          "max_points": 3,
+          "justification": "Agent correctly used the Sort control and chose “Recently updated,” and the starting URL defaults to open PRs. However, the agent did not explicitly filter out draft PRs or note any limitation regarding draft exclusion.",
+          "applicable_evidence": "Latest relevant DOM is State 2 (DOM_MODEL_STATE_INDEX: 2) showing URL query `.../pulls?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc`, which explicitly confirms `is:pr`, `is:open`, and `sort:updated-desc` (most recently updated). Earlier states show the Sort menu and Open/Closed tabs, but no explicit draft/non-draft filter is shown in any DOM state.",
+          "post_image_justification": "Upgrade from baseline 2 to 2.5 because the DOM explicitly verifies the open PR list is sorted by updated-desc via the URL query. Still not full credit because no DOM evidence shows filtering out drafts (e.g., `draft:false`) or confirms the first three results are non-draft.",
+          "reality_notes": "DOM shows an Open/Closed toggle with “86 Open” visible and a “Sort” control whose menu includes “Recently updated.” A later DOM state shows the query text encoding `is:pr is:open sort:updated-desc`, which is explicit evidence of open + updated-desc sorting being applied. However, none of the DOM states show an explicit draft/non-draft filter (e.g., `draft:false`) or any explicit draft indicator/check on the first items, so exclusion of Draft PRs is not directly evidenced."
+        },
+        "verifier_evidence": "Latest relevant DOM is State 2 (DOM_MODEL_STATE_INDEX: 2) showing URL query `.../pulls?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc`, which explicitly confirms `is:pr`, `is:open`, and `sort:updated-desc` (most recently updated). Earlier states show the Sort menu and Open/Closed tabs, but no explicit draft/non-draft filter is shown in any DOM state.",
+        "verifier_justification": "Upgrade from baseline 2 to 2.5 because the DOM explicitly verifies the open PR list is sorted by updated-desc via the URL query. Still not full credit because no DOM evidence shows filtering out drafts (e.g., `draft:false`) or confirms the first three results are non-draft.",
+        "action_only_points": 2,
+        "final_points": 2.5,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Inspect and report PR #1 details and file-change summary (as displayed by GitHub)",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 1
+          },
+          {
+            "source_index": 2,
+            "score": 3
+          },
+          {
+            "source_index": 3,
+            "score": 4
+          },
+          {
+            "source_index": 4,
+            "score": 8
+          }
+        ],
+        "selected_indices": [
+          4,
+          3,
+          2,
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "The screenshot shows a GitHub PR page in the psf/requests repo on the “Files changed” tab for PR titled “requests.help static typing improvements #7506”. Near the top, it shows “Open” and the line “jorenham wants to merge 1 commit into psf:main from jorenham:typing/help/coverage”. Tabs visible include “Conversation”, “Commits 1”, “Checks 32”, and “Files changed 1” (selected). On the right of the Files changed header area, a green/red diffstat shows “+26 −19”. In the file list, one file path is visible: “src/requests/help.py”. Above the diff, a label shows “45” (total changes). No PR “last-updated date” field is visible in this screenshot. No labels/tags section is visible in this screenshot (other than the green “Open” state).",
+            "criterion_analysis": "Partial support only. The screenshot supports the agent’s reported changed-file count (Files changed shows 1; one file “src/requests/help.py” is listed) and additions/deletions (+26/−19 visible). It also supports that the Files changed list was viewed, enabling a check for whether a test file is included; only “src/requests/help.py” is visible, which is not a typical test path. However, the criterion requires additionally reporting author, last-updated date, and labels “as displayed by GitHub.” The screenshot does show the author/actor line (“jorenham wants to merge…”) but does not show any last-updated date or any labels list, so those parts cannot be verified from this image and were not included in the agent’s predicted output.",
+            "discrepancies": "Agent predicted output states: “From the Files changed tab for PR #7506…” and reports 1 file, +26/−19, and no test file. These match what is visible (+26 −19; Files changed 1; file path “src/requests/help.py”). The agent did not report PR number/title/author/last-updated date/labels as required by the task/criterion; the screenshot shows the title and PR number (#7506) and the author name “jorenham,” but the agent output only covered file-change details.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Inspect and report PR #1 details and file-change summary (as displayed by GitHub)",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent opened PR #7506 and extracted changed-file count, additions, deletions, and test‐file presence, but failed to report the required metadata fields (title, author, last‐updated date, and labels).",
+          "applicable_evidence": "Screenshots 4-5 show PR #7506. Screenshot 4 (conversation view) shows: title `requests.help static typing improvements #7506`, author line `jorenham wants to merge...`, and sidebar `Labels: None yet`. Screenshot 5 (Files changed) shows `Files changed 1` and diffstat `+26 −19`, with only file `src/requests/help.py` listed. No screenshot shows a concrete last-updated date/time for the PR.",
+          "post_image_justification": "The agent’s predicted output only reports changed-file count, additions, deletions, and test-file presence for #7506, and omits number/title/author/labels/last-updated date. Even though screenshots would have supported some of those omitted metadata fields (number/title/author/labels), the last-updated date is not shown in the provided evidence and the agent did not report it or note it was unverified. Because multiple required fields are missing from the agent output, this remains 0 points.",
+          "reality_notes": "Only one specific PR is shown in detail: “requests.help static typing improvements #7506”. In the PR page screenshot (non-files view), the sidebar explicitly shows “Labels: None yet,” plus reviewers/assignees/projects/milestone fields. In the Files changed screenshot, GitHub shows “Files changed 1” and a diffstat of “+26 −19,” and the only listed file path is `src/requests/help.py` (no test-path file visible). None of the screenshots display a clear ‘last updated’ timestamp on the PR detail page; author identity is visible as the PR author line (“jorenham wants to merge…”), but not all required fields (especially last-updated date) are shown in these images."
+        },
+        "verifier_evidence": "Screenshots 4-5 show PR #7506. Screenshot 4 (conversation view) shows: title `requests.help static typing improvements #7506`, author line `jorenham wants to merge...`, and sidebar `Labels: None yet`. Screenshot 5 (Files changed) shows `Files changed 1` and diffstat `+26 −19`, with only file `src/requests/help.py` listed. No screenshot shows a concrete last-updated date/time for the PR.",
+        "verifier_justification": "The agent’s predicted output only reports changed-file count, additions, deletions, and test-file presence for #7506, and omits number/title/author/labels/last-updated date. Even though screenshots would have supported some of those omitted metadata fields (number/title/author/labels), the last-updated date is not shown in the provided evidence and the agent did not report it or note it was unverified. Because multiple required fields are missing from the agent output, this remains 0 points.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          },
+          {
+            "source_index": 2,
+            "score": 1
+          },
+          {
+            "source_index": 3,
+            "score": 4
+          },
+          {
+            "source_index": 4,
+            "score": 2
+          }
+        ],
+        "selected_indices": [
+          3,
+          4,
+          2,
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "Only PR-list evidence is present in DOM_MODEL_STATE_INDEX: 2, which includes an entry `#7506 opened by` with `updated Aug 12, 2026` and a link titled `requests.help static typing improvements` (link id [24227]). No DOM for the PR page (`/pull/7506`) or its `Files changed` tab is provided, so no DOM evidence for author name, labels, last-updated timestamp formatting on PR page, changed-file count, additions, deletions, or file list/test-file presence.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM snapshot does not include the PR #7506 page nor the Files changed tab content. While the action history and the agent-predicted output claim specific file-change stats (1 file, 26 additions, 19 deletions, file path), those claims are not verifiable from the supplied DOM. From DOM state 2 we can only see that #7506 exists in the open list and was updated Aug 12, 2026, plus the PR title link text.",
+            "discrepancies": "Required fields (number, title, author, last-updated date, labels, changed-file count, additions, deletions, and test-file presence verified from Files changed) are not supported by DOM evidence for PR #7506 beyond title/number and an `updated Aug 12, 2026` string on the list.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "Only DOM_MODEL_STATE_INDEX: 1 is provided and it is the PR list page, not the PR detail page or Files changed view. It includes a link to “requests.help static typing improvements” ([453]) and shows “#7506 opened by Jun 9, 2026” nearby, but does not include author name, labels, last-updated date, or file-change stats. No DOM for /pull/7506 or /pull/7506/files is included.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence provided does not include the PR #7506 page nor its “Files changed” tab, so the required fields (author, last-updated, labels, changed-file count, additions, deletions, and test-file presence) cannot be verified against GitHub display from the DOM-model state(s) supplied.",
+            "discrepancies": "Agent-predicted output claims for PR #7506 (1 changed file, 26 additions, 19 deletions, file path src/requests/help.py, and no tests) are not supported by the only DOM snapshot provided (state 1). Missing DOM evidence for PR metadata (author/labels/updated) and for Files changed stats/file list.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes a link to a PR titled \"requests.help static typing improvements\" (listed under READ-ONLY CONTROL EVIDENCE) and shows a PR entry \"#7506 opened by\" with date \"Jun 9, 2026\". No DOM snapshot is provided for DOM_MODEL_STATE_INDEX: 3 (PR page) or DOM_MODEL_STATE_INDEX: 4 (Files changed) to verify author, labels, last-updated timestamp, file counts, additions/deletions, or the file list.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM evidence does not include the PR #7506 page or its Files changed tab content, so the required fields (author, last-updated date/time, labels as shown on the PR, changed-file count, additions, deletions, and whether test files are present in the file list) cannot be verified from DOM. The only DOM-supported elements here are that a PR titled \"requests.help static typing improvements\" exists in the list and that \"#7506\" appears with an \"opened\" date of \"Jun 9, 2026\" on the list page (DOM_MODEL_STATE_INDEX: 0).",
+            "discrepancies": "- Missing DOM for PR #7506 main conversation view: cannot verify author, labels, or last-updated.\n- Missing DOM for PR #7506 Files changed view: cannot verify changed-file count, additions, deletions, or file paths (including whether any test files are included).\n- The agent-predicted file-change stats (1 file, 26 additions, 19 deletions, file path) are not supported by the provided DOM evidence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 (URL https://github.com/psf/requests/pull/7506). Visible PR header shows: “requests.help static typing improvements - # 7506” and “jorenham wants to merge 1 commit into psf:main … from jorenham:typing/help/coverage”. Sidebar shows “Labels None yet”. Conversation timeline shows “jorenham commented Jun 9, 2026” and “sigmavirus24 approved these changes Jun 25, 2026”. Pull request navigation includes “Commits 1 (1) … Files changed” but no file-change stats are visible in this state.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence supports PR #7506 number, title, author (jorenham), and that labels show “None yet”. It does not, in this provided DOM state, display the required “last-updated date” field (explicitly as last updated) nor the Files changed details (changed-file count, additions, deletions, and test-file inclusion). Although the action history indicates navigation to /files (State 4), no DOM_MODEL_STATE_INDEX evidence for State 4 is provided here, so those file-change claims cannot be verified against the DOM-model evidence.",
+            "discrepancies": "Agent-predicted output claims: Files changed count=1, additions=26, deletions=19, and only `src/requests/help.py` (no tests). However, DOM_MODEL_STATE_INDEX: 3 does not show any of these file-change stats or the file list; therefore these claims are unverified in the provided DOM evidence. Also, “last-updated date” is not explicitly shown as such in DOM_MODEL_STATE_INDEX: 3 (only comment/review dates appear).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 shows URL `https://github.com/psf/requests/pull/7506/files` and page title `requests.help static typing improvements by jorenham · Pull Request #7506 · psf/requests · GitHub`. Visible PR header includes `requests.help static typing improvements #7506` and branch info (`main`, `typing/help/coverage`). In the Files changed area it shows `Files changed 1` and the summary `45 changes: 26 additions & 19 deletions`. A file link `src/requests/help.py` is present (action id [78314]).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM proves PR #7506’s number and title, and it proves the Files changed summary: changed-file count = 1 and additions = 26, deletions = 19. It also proves the only listed file is `src/requests/help.py`, supporting that a test file is not shown in the accessible file list for this PR state. However, the DOM excerpt does not explicitly show (a) the PR author name/handle in visible content (beyond being implied by the page title string), (b) the last-updated date/time, or (c) any labels. Therefore the rubric-required PR metadata fields cannot be fully verified from this state.",
+            "discrepancies": "Missing/unsupported from DOM_MODEL_STATE_INDEX: 4: (1) explicit author field in page body (page title includes `by jorenham` but author is not otherwise evidenced as a DOM element), (2) last-updated date, (3) labels list. The agent’s predicted output asserts ‘no test file’—this is only supported insofar as the DOM shows exactly one file `src/requests/help.py`; the DOM does not explicitly state “no test files,” so this remains an inference from the displayed file list.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Inspect and report PR #1 details and file-change summary (as displayed by GitHub)",
+          "earned_points": 1,
+          "post_image_earned_points": 1.5,
+          "max_points": 4,
+          "justification": "Agent only reported file-change details (changed-file count, additions, deletions, and test-file presence) but did not report the PR title, author, last-updated date, or labels.",
+          "applicable_evidence": "Latest relevant DOM is State 4 (DOM_MODEL_STATE_INDEX: 4) on `.../pull/7506/files`, showing PR title/number in header (`requests.help static typing improvements #7506`), and file stats: `Files changed 1` and `45 changes: 26 additions & 19 deletions`, with the only listed file `src/requests/help.py`. State 3 (DOM_MODEL_STATE_INDEX: 3) shows author in body: `jorenham wants to merge...` and sidebar `Labels None yet`. List page (State 2) shows `updated Aug 12, 2026` for #7506. Agent output only reports file-change details and test-file inference; it omits number/title/author/last-updated/labels.",
+          "post_image_justification": "Keep low because the agent’s delivered answer omits most required fields (number, title, author, last-updated date, labels). However, what the agent did report (changed-file count, additions, deletions, and that no test file appears in Files changed) is supported by the latest DOM (State 4 shows exactly 1 file and its path is not a test path). Award partial credit for the correctly reported file-change summary only.",
+          "reality_notes": "PR #7506 is the only PR with detailed DOM evidence. Its title (“requests.help static typing improvements”) and number are shown on both the PR page and Files changed page. The PR page sidebar explicitly shows “Labels None yet.” The Files changed page explicitly shows “Files changed 1” and “45 changes: 26 additions & 19 deletions,” and lists `src/requests/help.py` as the (only) file. The DOM does not explicitly display a single ‘last updated’ field on the PR page; list-page text includes “updated Aug 12, 2026,” but that is list-context. Author is explicitly shown on the PR conversation page (“jorenham wants to merge…”) and implicitly in the Files changed page title string (“by jorenham”), but the file list itself does not explicitly state anything about tests; absence of test files is inferred from the displayed file list containing only `src/requests/help.py`."
+        },
+        "verifier_evidence": "Latest relevant DOM is State 4 (DOM_MODEL_STATE_INDEX: 4) on `.../pull/7506/files`, showing PR title/number in header (`requests.help static typing improvements #7506`), and file stats: `Files changed 1` and `45 changes: 26 additions & 19 deletions`, with the only listed file `src/requests/help.py`. State 3 (DOM_MODEL_STATE_INDEX: 3) shows author in body: `jorenham wants to merge...` and sidebar `Labels None yet`. List page (State 2) shows `updated Aug 12, 2026` for #7506. Agent output only reports file-change details and test-file inference; it omits number/title/author/last-updated/labels.",
+        "verifier_justification": "Keep low because the agent’s delivered answer omits most required fields (number, title, author, last-updated date, labels). However, what the agent did report (changed-file count, additions, deletions, and that no test file appears in Files changed) is supported by the latest DOM (State 4 shows exactly 1 file and its path is not a test path). Award partial credit for the correctly reported file-change summary only.",
+        "action_only_points": 1,
+        "final_points": 1.5,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL",
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Inspect and report PR #2 details and file-change summary (as displayed by GitHub)",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 1
+          },
+          {
+            "source_index": 2,
+            "score": 3
+          },
+          {
+            "source_index": 3,
+            "score": 0
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          2,
+          0,
+          1,
+          4,
+          3
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot is still on the PR list page (not inside any PR). It shows multiple PR rows, including `#7506 opened on Jun 9 by jorenham` with a small pill `Contributor`, and `updated 2 weeks ago`. It also shows other PRs such as `fix: honor ports in IPv4 no_proxy entries` (#7586) and `docs: add SSL verification troubleshooting section` (#7579), each showing `updated 2 weeks ago` and a green label `mass-automation-pr` on some rows. There is no view of any PR's `Files changed` tab, no changed-file count, no additions/deletions in this screenshot.",
+            "criterion_analysis": "Criterion asks for the *second PR* details including file-change summary (changed-file count/additions/deletions and test-file presence) verified via Files changed. The screenshot does not show the second PR being opened, nor any Files changed information. The agent's predicted output discusses PR #7506 file stats (1 file, 26 additions, 19 deletions), but none of that is visible here and it is about #7506 (which appears to be the first PR shown), not the second PR. Therefore this criterion is not satisfied based on the screenshot.",
+            "discrepancies": "Agent output focuses on PR #7506 file stats; this criterion is for PR #2. Additionally, the screenshot provides no evidence of `Files changed` stats (changed files/additions/deletions/test files) for any PR.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "This screenshot is the PR list view with the sort dropdown open. It shows several PR titles in a list (e.g., “fix: honor ports in IPv4 no_proxy entries”, “docs: add SSL verification troubleshooting section”, “Add more URLs to project metadata (Changelog, Issues, Sponsor)”, etc.) with authors and open dates (e.g., “opened on Jul 18 by PEiIe”, “opened on Jul 10 by spydix”). It does not show any single PR detail page, “Files changed” tab, changed-file count, additions, deletions, labels for an individual PR, or last-updated timestamp for a specific PR.",
+            "criterion_analysis": "The required reporting for the second PR (number, title, author, last-updated date, labels, changed-file count, additions, deletions, and whether a test file is included) cannot be verified from this screenshot because it only shows the list view and not the PR’s detail/files pages. The agent’s predicted output discusses PR #7506 file stats, but this criterion is specifically about the *second* PR; nothing in the screenshot supports that information for any second result.",
+            "discrepancies": "The agent’s predicted output provides file-change stats for PR #7506, but the screenshot does not display PR #7506’s files/metrics (or any PR’s file stats). Also, the screenshot provides no basis to identify which PR is “second” under the required sorting (“Recently updated”) since the dropdown indicates “Newest.”",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot is the PR list view, not an individual PR page. It shows multiple PR titles (e.g., “fix: honor ports in IPv4 no_proxy entries”, “docs: add SSL verification troubleshooting section”, “Add more URLs to project metadata (Changelog, Issues, Sponsor)”, etc.) with some metadata like PR numbers partially visible (e.g., “#7586”, “#7579”, “#7543”, “#7520”, “#7513”, “#7506”, “#7499”, “#7471”) and snippets like “opened on Jul 18 by …” for the top entry. It does not show the second PR’s detailed page, Files changed tab, changed-file count, additions, deletions, last-updated date, or full label set for any specific PR.",
+            "criterion_analysis": "The screenshot provides no evidence that the second PR in the sorted/filtered list was opened and inspected, nor any file-change statistics. The agent’s predicted output discusses PR #7506 file stats, which is not the “second PR” and is also not visible in this screenshot. Therefore, the requirement for PR #2 details and file-change summary is not satisfied/verified based on this screenshot.",
+            "discrepancies": "The agent’s predicted output only covers PR #7506 (and references its Files changed details), while this criterion is about the second PR. Additionally, the screenshot is not the PR #7506 Files changed view, so none of the claimed stats (changed files, additions, deletions) for any PR can be confirmed here.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "The screenshot only shows PR #7506 on GitHub (Files changed view) and does not display any pull request list or a second PR. There is no visible information about any other PR number, title, author, last-updated date, labels, changed-file counts, or additions/deletions for a second PR.",
+            "criterion_analysis": "Not satisfied / cannot be evaluated for PR #2 based on this screenshot. The agent’s predicted output does not mention a second PR at all, and the screenshot provides no evidence that PR #2 was opened or inspected.",
+            "discrepancies": "Task requires inspecting the first three PRs; agent output covers only PR #7506. No evidence in the screenshot of any navigation to or details about a second PR.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "The screenshot shows a GitHub pull request page for repository “psf/requests” with the PR header reading “requests.help static typing improvements #7506”. It shows the PR is “Open” and that “jorenham wants to merge 1 commit into psf:main from jorenham:typing/help/coverage”. Tabs visible: “Conversation”, “Commits 1”, “Checks”, and “Files changed”. On the right sidebar it shows “Reviewers: sigmavirus24”. It also shows “Assignees: No one assigned”, “Labels: None yet”, “Projects: None yet”, “Milestone: No milestone”. No list of pull requests is visible, and there is no information shown for a ‘second PR’ (PR #2 in the sorted list).",
+            "criterion_analysis": "Not satisfied. The screenshot contains details for PR #7506 only, not the second PR in the (filtered/sorted) open non-draft PR list. Therefore, the required fields for the second PR (number/title/author/last updated/labels/changed-file count/additions/deletions/test-file presence) cannot be verified from this screenshot.",
+            "discrepancies": "The agent’s predicted output discusses file-change stats for PR #7506, but Criterion 2 requires reporting the second PR’s details. This screenshot provides no evidence of navigating to or inspecting a second PR.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Inspect and report PR #2 details and file-change summary (as displayed by GitHub)",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent did not inspect or report any details for the second pull request.",
+          "applicable_evidence": "All screenshots only show the PR list and PR #7506 (Screenshots 4-5). There is no evidence of opening a second PR or viewing its Files changed tab, and no additions/deletions/changed-file counts for any PR other than #7506.",
+          "post_image_justification": "No attempt/evidence for inspecting the second PR’s page or file stats; no blocker shown that would prevent doing so. Score stays at 0.",
+          "reality_notes": "There is no screenshot evidence of opening or inspecting any second PR’s detail page or its Files changed tab. The available screenshots for list view show multiple PR titles/numbers and relative update text (e.g., “updated 2 weeks ago”), but do not show per-PR diff stats, changed-file count, additions/deletions, or file lists for any PR other than #7506. Therefore, for PR #2, required metrics (changed files/additions/deletions/test-file presence) are not present in the screenshot evidence."
+        },
+        "verifier_evidence": "All screenshots only show the PR list and PR #7506 (Screenshots 4-5). There is no evidence of opening a second PR or viewing its Files changed tab, and no additions/deletions/changed-file counts for any PR other than #7506.",
+        "verifier_justification": "No attempt/evidence for inspecting the second PR’s page or file stats; no blocker shown that would prevent doing so. Score stays at 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          },
+          {
+            "source_index": 2,
+            "score": 1
+          },
+          {
+            "source_index": 3,
+            "score": 0
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          2,
+          4,
+          3,
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows the second list item as `#7586 opened by` with `updated Aug 12, 2026` and a title link `fix: honor ports in IPv4 no_proxy entries` (link id [24261]). No DOM is provided for PR #7586 itself or its Files changed tab.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM only evidences the PR number (#7586), its title text from the list, and that it is in the open list with an `updated Aug 12, 2026` string. All other required details (author identity, labels, changed-file count, additions/deletions, and test-file presence from Files changed) are not verifiable from the provided DOM.",
+            "discrepancies": "The task requires opening and verifying Files changed stats and test-file inclusion for PR #2; there is no DOM evidence the PR was opened or that any of those fields were read.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows multiple PR entries (e.g., #7586, #7579, #7543) but does not show their full details (title+author+labels+last updated), and no PR detail page or Files changed tab is present for the second PR in the sorted list.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo DOM evidence is provided for inspecting the second PR’s page and Files changed tab, so none of the required reported fields can be verified.",
+            "discrepancies": "Task requires inspecting first three PRs and reporting full metadata and file-change stats. DOM only shows partial list items and no per-PR Files changed information for PR #2.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows multiple PR rows (e.g., \"#7586 opened by\", \"#7579 opened by\", \"#7543 opened by\", etc.), but does not show sufficient detail for the second PR after sorting by \"Recently updated\" (no confirmed sorted order state) and no PR #2 page or Files changed DOM is provided.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThere is no DOM evidence showing which PR is second in the required filtered/sorted ordering (open, non-draft, most recently updated), nor any DOM evidence from that PR’s page and Files changed tab to extract number, title, author, last-updated date, labels, changed-file count, additions, deletions, or test-file presence.",
+            "discrepancies": "- No DOM confirming the sorted order is \"Recently updated\"; cannot reliably identify PR #2.\n- No DOM snapshots for the PR #2 conversation view or Files changed tab; none of the required PR #2 metadata and file-change summary can be verified.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 only covers PR #7506 page content and contains no references to a second PR (no PR list view, no other PR number/title/author/labels).",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo DOM-model evidence is provided for navigating to or inspecting the second most recently updated open non-draft PR, nor its Files changed tab. Therefore none of the required fields for PR #2 can be verified from the DOM-model snapshot.",
+            "discrepancies": "Task requires inspecting first three PRs from the sorted list; the provided DOM evidence only shows PR #7506. No data for PR #2 (number/title/author/last-updated/labels/changed files/additions/deletions/tests) is present.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 contains only PR #7506 content (URL `.../pull/7506/files`, header `requests.help static typing improvements #7506`, and file `src/requests/help.py`). There is no DOM evidence of navigating to or displaying any second PR.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo DOM-model evidence is provided for the second most-recently-updated open non-draft PR. The only evidenced page is PR #7506’s Files changed tab, so PR #2’s number/title/author/updated date/labels and file-change summary cannot be verified.",
+            "discrepancies": "Criterion requires inspecting the second PR in the sorted list and reporting its metadata and file-change summary; DOM_MODEL_STATE_INDEX: 4 does not include any such PR or its Files changed stats.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Inspect and report PR #2 details and file-change summary (as displayed by GitHub)",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "Agent did not proceed to inspect or report any details for the second PR.",
+          "applicable_evidence": "Latest list DOM (State 2) shows #7586 title `fix: honor ports in IPv4 no_proxy entries` with `updated Aug 12, 2026`, but there is no DOM evidence of opening PR #7586 or its Files changed tab. Agent output provides nothing for PR #2.",
+          "post_image_justification": "No change from baseline: the agent did not inspect or report the second PR’s required metadata or file-change stats, and there is no DOM evidence those details were verified.",
+          "reality_notes": "For the second PR in the updated-desc list, DOM only shows the list-row level: PR #7586 with title “fix: honor ports in IPv4 no_proxy entries” and list text including “updated Aug 12, 2026.” There is no DOM evidence of opening this PR’s conversation page or Files changed tab, so author, labels, changed-file count, additions/deletions, and test-file presence are not available from the provided DOM."
+        },
+        "verifier_evidence": "Latest list DOM (State 2) shows #7586 title `fix: honor ports in IPv4 no_proxy entries` with `updated Aug 12, 2026`, but there is no DOM evidence of opening PR #7586 or its Files changed tab. Agent output provides nothing for PR #2.",
+        "verifier_justification": "No change from baseline: the agent did not inspect or report the second PR’s required metadata or file-change stats, and there is no DOM evidence those details were verified.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Inspect and report PR #3 details and file-change summary (as displayed by GitHub)",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 1
+          },
+          {
+            "source_index": 2,
+            "score": 3
+          },
+          {
+            "source_index": 3,
+            "score": 0
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          2,
+          0,
+          1,
+          4,
+          3
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot only shows the PR listing with several PR titles and metadata snippets (issue/PR numbers, opened dates, authors, and `updated 2 weeks ago`). It does not show any third PR opened, nor any `Files changed` tab or file list for any PR.",
+            "criterion_analysis": "Criterion asks for the third PR details and file-change summary verified via Files changed. The screenshot does not contain any of that information, so there is no evidence the third PR was inspected or summarized. The agent's predicted output does not include PR #3 either (it only discusses #7506).",
+            "discrepancies": "Agent has not provided PR #3 details in the predicted output, and the screenshot shows no PR detail page or Files changed information for a third PR.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "As with criterion 2, the screenshot only shows the pull request list and a “Sort by” menu with “Newest” selected. No individual PR page is open; therefore, there is no visible PR #3 detail information such as changed files, additions/deletions, labels, or whether test files are included.",
+            "criterion_analysis": "There is no evidence in the screenshot that the third PR in the required filtered/sorted list was inspected. None of the required per-PR details or file-change summaries for a third PR are visible, so this criterion is not satisfied based on the screenshot.",
+            "discrepancies": "The agent’s predicted output only references PR #7506 and does not (in the provided text) report anything about a third PR; the screenshot also does not show any third-PR inspection or file stats.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "This screenshot remains on the PR list page for psf/requests, showing a list of open PRs and their titles and some brief metadata, but not any single PR’s detailed view. There is no visible “Files changed” tab, no per-PR diff stats, and no listing of changed file paths for a third PR.",
+            "criterion_analysis": "No evidence is present that the third PR was inspected or that its number/title/author/last-updated/labels and file-change stats were collected from GitHub’s PR page. The agent’s predicted output also does not describe a third PR. Thus, this criterion is not met/verified from the screenshot.",
+            "discrepancies": "The agent’s predicted output addresses only PR #7506 and does not provide any PR #3 information. The screenshot provides no PR detail pages or file-change summaries to support PR #3 reporting.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "The screenshot contains no information about a third pull request; it is focused solely on PR #7506’s Files changed tab and the single file diff list.",
+            "criterion_analysis": "Not satisfied / cannot be evaluated for PR #3 based on this screenshot. The agent’s predicted output does not include any PR #3 details, and the screenshot offers no evidence of inspection of a third PR.",
+            "discrepancies": "Agent output does not report anything for a third PR, and the screenshot shows only PR #7506.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "The screenshot is still on the GitHub PR page titled “requests.help static typing improvements #7506” with author “jorenham” and sidebar metadata (reviewer, assignees, labels, projects, milestone). There is no display of another PR page or any ‘third PR’ from a sorted list. No “Files changed” diff list or summary stats (additions/deletions/changed files) are visible in this screenshot either—only the top-level PR view with tabs.",
+            "criterion_analysis": "Not satisfied. Criterion 3 requires inspecting the third PR in the sorted list and reporting its metadata and file-change summary. The screenshot provides no information about any third PR, so nothing can be verified for PR #3.",
+            "discrepancies": "Agent’s predicted output focuses on PR #7506’s file changes, but this criterion is about the third PR; the screenshot does not show any third PR inspection.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Inspect and report PR #3 details and file-change summary (as displayed by GitHub)",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent did not inspect or report any details for the third pull request.",
+          "applicable_evidence": "Same as criterion 2: screenshots provide no evidence of opening/inspecting a third PR or its Files changed tab; only #7506 is shown in detail.",
+          "post_image_justification": "No attempt/evidence for the third PR and no blocker preventing it. Score remains 0.",
+          "reality_notes": "Similarly, no screenshot shows a third PR being opened or its Files changed view. The PR list screenshots provide only high-level metadata (titles, numbers, authors, opened dates, relative updated times, and some labels like “mass-automation-pr” on certain rows), but no file-change summaries for a third PR. Only PR #7506 has an actual Files changed panel shown."
+        },
+        "verifier_evidence": "Same as criterion 2: screenshots provide no evidence of opening/inspecting a third PR or its Files changed tab; only #7506 is shown in detail.",
+        "verifier_justification": "No attempt/evidence for the third PR and no blocker preventing it. Score remains 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          },
+          {
+            "source_index": 2,
+            "score": 1
+          },
+          {
+            "source_index": 3,
+            "score": 0
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          2,
+          4,
+          3,
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows the third list item as `#7579 opened by` with `updated Aug 12, 2026` and a title link `mass-automation-pr` (link id [24263]). No DOM is provided for PR #7579 itself or its Files changed tab.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nAs with PR #2, the DOM only supports that #7579 appears third in the open, updated-desc list and shows its title and an `updated Aug 12, 2026` string. The required per-PR metadata and Files changed verification are not evidenced in the provided DOM.",
+            "discrepancies": "No DOM evidence for author, labels, changed-file count, additions/deletions, or test-file presence for PR #3; no evidence the PR was opened.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes the PR list with several PR numbers/titles visible, but there is no DOM snapshot of the third PR’s detail view or Files changed view.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe third PR was not inspected in the provided DOM-model evidence; therefore the required fields cannot be confirmed.",
+            "discrepancies": "No evidence of opening PR #3 or verifying its Files changed summary and test-file inclusion.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows a list of PR numbers and opened dates (e.g., \"#7586 ... Jul 18, 2026\", \"#7579 ... Jul 11, 2026\"), but does not provide DOM evidence for the third PR in the required sorted order, and no PR #3 page/Files changed DOM is provided.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM evidence provided does not establish which PR is third under the required constraints (open, non-draft, sorted by most recently updated), and it contains no PR #3 detail view or Files changed view. Therefore, none of the required PR #3 fields can be verified from DOM.",
+            "discrepancies": "- No DOM confirming the list is sorted by \"Recently updated\"; cannot identify PR #3 with confidence.\n- No DOM for PR #3 conversation view or Files changed view; cannot verify required metadata or file-change stats.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 contains only PR #7506 details; there is no content about any third PR or any PR list containing multiple results.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo DOM-model evidence is provided for the third PR or its Files changed summary. As a result, the required reporting for PR #3 cannot be verified.",
+            "discrepancies": "Missing all required PR #3 fields and file-change verification because the DOM evidence does not include any navigation to a third PR.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 contains only PR #7506 content (URL `.../pull/7506/files`). There is no DOM evidence of a third PR being opened or its Files changed tab being viewed.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo DOM-model evidence is provided for the third most-recently-updated open non-draft PR. Therefore none of the required fields for PR #3 can be verified.",
+            "discrepancies": "Criterion requires inspecting the third PR and reporting its metadata and file-change summary; DOM_MODEL_STATE_INDEX: 4 provides no information about any PR other than #7506.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Inspect and report PR #3 details and file-change summary (as displayed by GitHub)",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "Agent did not proceed to inspect or report any details for the third PR.",
+          "applicable_evidence": "Latest list DOM (State 2) shows #7579 title `mass-automation-pr` with `updated Aug 12, 2026`, but there is no DOM evidence of opening PR #7579 or its Files changed tab. Agent output provides nothing for PR #3.",
+          "post_image_justification": "No change from baseline: the agent did not inspect or report the third PR’s required metadata or file-change stats, and there is no DOM evidence those details were verified.",
+          "reality_notes": "For the third PR in the updated-desc list, DOM only shows the list-row level: PR #7579 with title “mass-automation-pr” and list text including “updated Aug 12, 2026.” No DOM shows this PR’s detail page or Files changed view, so author, labels, changed-file count, additions/deletions, and test-file presence are not evidenced."
+        },
+        "verifier_evidence": "Latest list DOM (State 2) shows #7579 title `mass-automation-pr` with `updated Aug 12, 2026`, but there is no DOM evidence of opening PR #7579 or its Files changed tab. Agent output provides nothing for PR #3.",
+        "verifier_justification": "No change from baseline: the agent did not inspect or report the third PR’s required metadata or file-change stats, and there is no DOM evidence those details were verified.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Rank the three PRs by changed-file count",
+      "max_points": 2,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          },
+          {
+            "source_index": 2,
+            "score": 1
+          },
+          {
+            "source_index": 3,
+            "score": 0
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          2,
+          4,
+          3,
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot shows a PR list but does not show any changed-file counts/additions/deletions for the PRs. There is no ranking displayed.",
+            "criterion_analysis": "Ranking the three PRs by changed-file count requires having changed-file counts for each of the three inspected PRs. The screenshot provides none, and the agent's predicted output only provides a file-change summary for one PR (#7506). Thus, ranking cannot be verified or completed.",
+            "discrepancies": "No ranking is provided in the predicted output, and the screenshot contains no data that would allow ranking by changed-file count.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot contains no changed-file counts for any PRs (it is a PR list view without file stats), and it does not show any ranking or summary output.",
+            "criterion_analysis": "Ranking three PRs by changed-file count requires having the changed-file count for each of the three PRs. This screenshot provides none of those counts, and the agent’s predicted output (as provided) only includes a single PR’s file-change details and no ranking. Therefore, there is no support for successful completion of this criterion.",
+            "discrepancies": "The task requires ranking three PRs, but the predicted output only covers PR #7506 and does not rank three PRs; the screenshot likewise contains no ranking and no changed-file counts to enable one.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows only a PR list (titles and some labels), not changed-file counts for any PR. There is no ranking information displayed and no changed-file count columns visible.",
+            "criterion_analysis": "Ranking three PRs by changed-file count is not possible from this screenshot because no changed-file counts are shown, and the agent’s predicted output only provides changed-file count for a single PR (#7506). Therefore, the criterion is not satisfied.",
+            "discrepancies": "The agent did not provide a ranking of three PRs in the predicted output, and the screenshot does not contain changed-file counts to support any ranking.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "Only one PR’s file-change information is visible (“Files changed 1” and “+26 −19” for PR #7506). There are no changed-file counts visible for two other PRs, and no ranking is shown.",
+            "criterion_analysis": "Not satisfied. Ranking three PRs by changed-file count is impossible with only one PR inspected/visible, and the agent’s predicted output does not provide any ranking.",
+            "discrepancies": "Agent did not rank PRs; screenshot also lacks data for PR #2 and #3 needed to rank.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "Only one PR is shown in the screenshot: “requests.help static typing improvements #7506”. There are no changed-file counts shown in the visible area (no diff/file list or change-summary bar is visible), and there is no information about two other PRs needed for ranking.",
+            "criterion_analysis": "Not satisfied. Ranking three PRs by changed-file count requires having changed-file counts for all three. The screenshot only shows one PR page and does not show changed-file counts for three PRs, so the ranking cannot be verified.",
+            "discrepancies": "The agent’s predicted output gives a changed-file count for #7506, but no evidence for PRs #2 and #3 exists in this screenshot, making any three-way ranking unsupported here.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Rank the three PRs by changed-file count",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "No ranking of the three pull requests was provided.",
+          "applicable_evidence": "Only one PR (#7506) has a visible changed-file count (Screenshot 5: `Files changed 1`). No changed-file counts are shown for two other PRs, and the agent output includes no ranking.",
+          "post_image_justification": "With only one PR’s changed-file count verified and no ranking provided, this criterion cannot be satisfied. Score remains 0.",
+          "reality_notes": "The screenshots contain changed-file count/additions/deletions for only one PR (#7506). The PR list view does not display changed-file counts, so there is no on-screen data to rank three PRs by changed-file count from the provided evidence."
+        },
+        "verifier_evidence": "Only one PR (#7506) has a visible changed-file count (Screenshot 5: `Files changed 1`). No changed-file counts are shown for two other PRs, and the agent output includes no ranking.",
+        "verifier_justification": "With only one PR’s changed-file count verified and no ranking provided, this criterion cannot be satisfied. Score remains 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          },
+          {
+            "source_index": 2,
+            "score": 0
+          },
+          {
+            "source_index": 3,
+            "score": 0
+          },
+          {
+            "source_index": 4,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "No DOM evidence provides changed-file counts for PRs #7586 or #7579, and no DOM is provided for #7506 Files changed either. DOM_MODEL_STATE_INDEX: 2 only shows list-level items and comment counts, not files-changed metrics.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nRanking by changed-file count cannot be verified because the DOM does not contain changed-file counts (nor additions/deletions) for any of the three PRs.",
+            "discrepancies": "Rubric expects a ranking consistent with reported changed-file counts; counts are not available in the provided DOM, so any ranking would be unsupported.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "Only PR #7506 is partially identifiable in DOM_MODEL_STATE_INDEX: 1 (via title link [453] and nearby “#7506 opened by Jun 9, 2026”), but there are no DOM-verified changed-file counts for any of the three PRs (and not even confirmation of which three were first after sorting).",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nRanking by changed-file count is not possible from the provided DOM evidence because changed-file counts for the three PRs are not shown/verified.",
+            "discrepancies": "Rubric requires ranking after inspecting all three. Evidence does not support having verified changed-file counts for three PRs.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "Only DOM_MODEL_STATE_INDEX: 0 is provided. It does not include changed-file counts/additions/deletions for three PRs, and it does not include Files changed tab evidence for any PR. No DOM evidence exists to support a ranking by changed-file count.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nRanking the three PRs by changed-file count requires verified changed-file counts for each PR from GitHub’s displayed Files changed summaries. The provided DOM evidence includes none of those values for three PRs, so a ranking cannot be validated from DOM.",
+            "discrepancies": "- No DOM evidence of changed-file counts for the three PRs; ranking cannot be derived or checked.\n- Only a single PR (#7506) was navigated to per action history, and even that PR’s file-change stats are not present in the provided DOM.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 does not contain changed-file counts for three PRs; it only shows a PR navigation bar with “Commits 1 (1) … Files changed” but not the Files changed count or any cross-PR comparison data.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nRanking three PRs by changed-file count is not verifiable from the provided DOM-model evidence because only one PR page is shown and its changed-file count is not displayed in this DOM snapshot; additionally PR #2 and PR #3 are not present at all.",
+            "discrepancies": "No ranking can be substantiated: the DOM evidence lacks changed-file counts for any set of three PRs.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 provides changed-file count only for PR #7506 (`Files changed 1`). No changed-file counts for two other PRs are present in the DOM evidence.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nRanking the three PRs by changed-file count is not possible from the provided DOM because only one PR’s changed-file count is evidenced.",
+            "discrepancies": "Criterion requires ranking all three PRs by changed-file count; DOM_MODEL_STATE_INDEX: 4 only supports a single data point (PR #7506 has 1 changed file).",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Rank the three PRs by changed-file count",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 2,
+          "justification": "Agent did not provide any ranking of the three pull requests by changed-file count.",
+          "applicable_evidence": "Only PR #7506 has a DOM-verified changed-file count (`Files changed 1` in State 4). No changed-file counts are evidenced for #7586 or #7579, and the agent did not provide a ranking.",
+          "post_image_justification": "No change from baseline: a 3-way ranking by changed-file count was neither produced by the agent nor supported by DOM evidence for the other two PRs.",
+          "reality_notes": "Only one changed-file count is explicitly evidenced in DOM (PR #7506 has “Files changed 1”). No changed-file counts are shown/evidenced for the other two PRs (#7586, #7579), so a three-way ranking by changed-file count cannot be grounded in the provided DOM evidence."
+        },
+        "verifier_evidence": "Only PR #7506 has a DOM-verified changed-file count (`Files changed 1` in State 4). No changed-file counts are evidenced for #7586 or #7579, and the agent did not provide a ranking.",
+        "verifier_justification": "No change from baseline: a 3-way ranking by changed-file count was neither produced by the agent nor supported by DOM evidence for the other two PRs.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 2,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Respect constraints and stopping condition (no sign-in, no PR actions; stop after verifying three summaries)",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 6
+          },
+          {
+            "source_index": 1,
+            "score": 3
+          },
+          {
+            "source_index": 2,
+            "score": 6
+          },
+          {
+            "source_index": 3,
+            "score": 3
+          },
+          {
+            "source_index": 4,
+            "score": 6
+          }
+        ],
+        "selected_indices": [
+          4,
+          2,
+          0,
+          3,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "Top-right of the GitHub page shows `Sign in` and `Sign up`, indicating the user is not signed in. There is no visible evidence of actions like commenting, reviewing, merging, or reacting. This is just the PR list page.",
+            "criterion_analysis": "The screenshot supports that the agent is not signed in and is not performing prohibited actions. However, the stopping condition (stop after verifying three PRs and their file-change summaries) is not met in the predicted output (only one PR summary is mentioned), and the screenshot shows no verification of three PRs’ file-change summaries.",
+            "discrepancies": "Predicted output only addresses PR #7506, not three PRs. Screenshot shows no PR detail interactions; thus the stopping condition is not satisfied yet (though no constraint violations are visible).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The top-right of the GitHub page shows “Sign in” and “Sign up”, indicating the user is not signed in. The screenshot shows the PR list page only; there are no visible actions like commenting, merging, closing, or reacting. No review UI is shown in this screenshot.",
+            "criterion_analysis": "The screenshot supports that the agent is not signed in and is not performing prohibited PR actions in this view. However, the stopping condition (stop after verifying three PR summaries) cannot be met here because only list browsing is shown and the agent’s predicted output indicates only one PR file-change summary was verified. So constraints are respected, but stopping condition completion is not achieved.",
+            "discrepancies": "No direct discrepancy regarding sign-in or prohibited actions—none are visible. The larger mismatch is that the task requires three verified PR summaries, but the predicted output only claims completion for one PR (#7506).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "screenshot_evidence": "The screenshot shows GitHub UI with “Sign in” and “Sign up” buttons at top right, indicating the agent is not signed in. No UI elements indicating the agent reviewed/commented/merged/closed are visible. The page is simply viewing PR #7506 (Files changed). No CAPTCHA, error, or forced login wall is visible.",
+            "criterion_analysis": "Constraints appear respected (no sign-in, no PR-modifying actions visible). However, the stopping condition (stop after verifying three PRs) is not met because only one PR (#7506) is shown/covered; the agent’s predicted output also indicates only the first PR was handled and suggests proceeding to the second.",
+            "discrepancies": "Agent output says “next step can proceed to the second PR,” implying they have not finished three PRs, which aligns with the screenshot showing only PR #7506. No prohibited actions are evidenced.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Respect constraints and stopping condition (no sign-in, no PR actions; stop after verifying three summaries)",
+          "earned_points": 2,
+          "post_image_earned_points": 2.0,
+          "max_points": 3,
+          "justification": "The agent respected constraints by not signing in or modifying pull requests, but stopped after inspecting only the first PR instead of verifying three as required.",
+          "applicable_evidence": "Screenshots 1, 3, and 5 show the unauthenticated state (`Sign in`/`Sign up` visible). Action history and screenshots show only navigation/viewing (PR list, PR page, Files changed) and no prohibited actions (no comments/reviews/merges/reactions). However, only one PR’s file-change summary was verified (PR #7506). No screenshot shows an external blocker (CAPTCHA/login wall) preventing inspection of additional PRs.",
+          "post_image_justification": "Constraints (no sign-in, no modifying PRs) were respected, matching the baseline. But the agent did not meet the stopping condition (three PRs verified) and stopped early without a blocker. Partial credit is appropriate; keep the baseline score.",
+          "reality_notes": "Across the shown pages, GitHub displays “Sign in” / “Sign up” in the top-right, indicating the browsing state is unauthenticated. No screenshots show any prohibited actions (commenting, reviewing, reacting, merging, closing) being performed—only list browsing and viewing a PR page/Files changed. The screenshots do not show completion of the stopping condition (three PR file-change summaries verified); only one PR’s Files changed is evidenced, and there is no visible blocker (e.g., forced login wall or error) in the provided images."
+        },
+        "verifier_evidence": "Screenshots 1, 3, and 5 show the unauthenticated state (`Sign in`/`Sign up` visible). Action history and screenshots show only navigation/viewing (PR list, PR page, Files changed) and no prohibited actions (no comments/reviews/merges/reactions). However, only one PR’s file-change summary was verified (PR #7506). No screenshot shows an external blocker (CAPTCHA/login wall) preventing inspection of additional PRs.",
+        "verifier_justification": "Constraints (no sign-in, no modifying PRs) were respected, matching the baseline. But the agent did not meet the stopping condition (three PRs verified) and stopped early without a blocker. Partial credit is appropriate; keep the baseline score.",
+        "action_only_points": 2,
+        "final_points": 2.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 4
+          },
+          {
+            "source_index": 2,
+            "score": 6
+          },
+          {
+            "source_index": 3,
+            "score": 6
+          },
+          {
+            "source_index": 4,
+            "score": 6
+          }
+        ],
+        "selected_indices": [
+          4,
+          3,
+          2,
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 includes a `Sign in` link, indicating the agent is not signed in. The action history shows only navigation/clicks: sorting and opening PR #7506 and its Files changed tab. No evidence of commenting/reviewing/merging actions is present in the provided DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe available evidence supports that the agent did not sign in (Sign in link present) and only performed navigational clicks. However, the stopping condition (stop after verifying three PRs and their file-change summaries) is not met in the evidence: only PR #7506 was opened per action history, and DOM does not show completion for PRs #2 and #3.",
+            "discrepancies": "Task requires inspecting first three PRs and verifying each file-change summary, then stopping. Evidence shows navigation to only PR #7506; no evidence of inspecting #7586/#7579 or completing all three summaries.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the user is not signed in (links “Sign in” [295] and “Sign up” [7]). No DOM evidence of any prohibited PR actions (comment/review/merge/etc.). However, only one PR seems to have been opened per action history, and only one Files changed view is claimed, but the DOM snapshots for those states are not provided here.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraint compliance (no sign-in) is supported by the presence of the “Sign in” link. There is no evidence of prohibited PR modifications in the provided DOM snapshot. However, the stopping condition (“stop after all three pull requests and their file-change summaries have been verified”) is not satisfied/verified in the available DOM evidence because only one PR’s inspection is implied and the other two are not evidenced.",
+            "discrepancies": "Cannot verify that the agent stopped after verifying three PRs; evidence indicates at most list navigation and (per action history) one PR opened, but DOM snapshots do not substantiate completion of three PR inspections.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the user is not signed in (presence of “Sign in” link; also “You must be signed in…” notices). No evidence in this state indicates any prohibited actions (no comments/reviews/merge/close interactions are shown being performed). Action history shows clicks on Sort, Recently updated, opening PR link, and clicking “Files changed (1)”.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about not signing in appear respected in the shown DOM (unauthenticated). No prohibited PR-modifying actions are evidenced. However, the stopping condition (“stop after all three pull requests and their file-change summaries have been verified”) is not met in the provided evidence because only PR #1 was opened and its file-change summary is not DOM-verified here; PRs #2 and #3 were not inspected in the provided DOM evidence.",
+            "discrepancies": "Stopping condition not satisfied based on available evidence: there is no DOM evidence of verifying three PRs’ file-change summaries (only PR #7506 page is shown).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 4,
+            "dom_model_state_idx": 4,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 shows an unauthenticated context with a visible `Sign in` link ([77730]) and notices like `You must be signed in to star a repository`, supporting that no sign-in occurred in this state. The page is a read-only PR Files changed view; no evidence of review/comment/merge/close actions being taken is present in the action history provided (only clicks: Sort -> Recently updated -> open PR -> Files changed).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about not signing in and not modifying PRs appear respected based on the evidenced actions and the unauthenticated UI cues. However, the stopping condition (“stop after all three pull requests and their file-change summaries have been verified”) is not met in the DOM evidence, because only PR #7506’s Files changed summary is evidenced and verified; PR #2 and PR #3 were not evidenced as visited/verified.",
+            "discrepancies": "Stopping condition unmet: only one PR is inspected/verified in the evidenced DOM trail. No explicit environment/UI blocker (rate-limit, load failure) is evidenced that would justify stopping early.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Respect constraints and stopping condition (no sign-in, no PR actions; stop after verifying three summaries)",
+          "earned_points": 1,
+          "post_image_earned_points": 1.0,
+          "max_points": 3,
+          "justification": "Agent respected constraints (no prohibited actions) but stopped after only the first PR without completing the required three PR inspections.",
+          "applicable_evidence": "Across states, DOM shows an unauthenticated UI with a visible `Sign in` link, and no evidence of prohibited actions (comment/review/merge/close). However, only PR #7506’s Files changed was actually visited/verified (State 4); there is no evidence the agent verified file-change summaries for PRs #2 and #3.",
+          "post_image_justification": "Keep partial credit: constraints were respected (no sign-in, no modifying actions), but the stopping condition was not met because the agent stopped after only one PR’s file summary rather than three.",
+          "reality_notes": "Multiple DOM states show an unauthenticated UI with a visible “Sign in” link and read-only PR pages; no DOM evidence shows any prohibited actions (comment/review/merge/close) being executed. However, the stopping condition requiring verification of three PRs’ file-change summaries is not supported by the DOM evidence: only PR #7506’s Files changed summary is actually displayed/verified; PRs #7586 and #7579 are not shown as opened or verified in Files changed."
+        },
+        "verifier_evidence": "Across states, DOM shows an unauthenticated UI with a visible `Sign in` link, and no evidence of prohibited actions (comment/review/merge/close). However, only PR #7506’s Files changed was actually visited/verified (State 4); there is no evidence the agent verified file-change summaries for PRs #2 and #3.",
+        "verifier_justification": "Keep partial credit: constraints were respected (no sign-in, no modifying actions), but the stopping condition was not met because the agent stopped after only one PR’s file summary rather than three.",
+        "action_only_points": 1,
+        "final_points": 1.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    }
+  ]
+}

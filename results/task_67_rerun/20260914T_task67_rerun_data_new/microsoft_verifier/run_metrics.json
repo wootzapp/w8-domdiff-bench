@@ -1,0 +1,115 @@
+{
+  "task_id": "browser_task_067-chemical-reference-data-20260914T085132Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/tmp/evidence-reruns-61-70.6Gq7A3/data-ss/task_67_rerun",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "1cf91356f00e3863c1d3520912f1db9c10bd6dbb0ff4e94e142d2f02e4d2392e",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 1,
+    "screenshots": 2
+  },
+  "result": {
+    "process_score": 0.5333333333333333,
+    "total_earned_points": 8.0,
+    "total_max_points": 15.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 107.379
+  },
+  "criteria": [
+    {
+      "criterion": "Access the specified NIST Chemistry WebBook record for water (ID=C7732185)",
+      "action_only_points": 0.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Baseline said there was no evidence the specific water record was loaded. Screenshot 1 directly contradicts that: it shows the Water record and the correct CAS. Even though the URL/ID string is not visible, the on-page identity (Water + CAS 7732-18-5) is sufficient to confirm the correct record was accessed.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report identity fields from the record: formula, molecular weight, IUPAC InChIKey, and CAS Registry Number",
+      "action_only_points": 2.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent’s predicted output lists the same four values, matching the screenshot exactly. With Screenshot 1 confirming provenance and exact values, this should receive full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report CODATA experimental gas-phase standard enthalpy of formation (with unit and reference)",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 6.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Because the enthalpy value/unit/reference are not visible anywhere in the screenshots and the action history shows only a scroll (no click into the gas-phase thermochemistry section), the agent’s specific enthalpy value and reference text are unsupported by evidence and appear fabricated for scoring purposes. No uncontrollable blocker is shown that would prevent accessing that section. Therefore, this criterion should be scored at 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Preserve exact transcription as feasible and stop after required fields",
+      "action_only_points": 1.0,
+      "final_points": 1.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Even ignoring the unverifiable enthalpy transcription, the stopping condition was not followed: the response continued beyond the required five fields by adding extra fields and narrative. This is a controllable failure against the criterion’s ‘stop after required fields’ requirement, so only partial credit is appropriate.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 9,
+    "o4-mini": 3,
+    "total": 12,
+    "api_attempts": 12,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 53658,
+      "completion_tokens": 4717,
+      "reasoning_tokens": 0,
+      "total_tokens": 58375
+    },
+    "o4-mini": {
+      "prompt_tokens": 15044,
+      "completion_tokens": 3818,
+      "reasoning_tokens": 2688,
+      "total_tokens": 18862
+    },
+    "combined": {
+      "prompt_tokens": 68702,
+      "completion_tokens": 8535,
+      "reasoning_tokens": 2688,
+      "total_tokens": 77237
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/task_67_rerun/20260914T_task67_rerun_data_new/microsoft_verifier/run.log"
+}

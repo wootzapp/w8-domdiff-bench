@@ -1,0 +1,514 @@
+{
+  "task_id": "browser_task_095-electricity-generation-mix-20260909T092120Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_095-electricity-generation-mix-20260909T092120Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "7d5a5a273e604a77efabed606d75705b44c94f7111244a300e7c2a6f2108eb8c",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_095-electricity-generation-mix-20260909T092120Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_095-electricity-generation-mix-20260909T092120Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "The JSON is truncated in the visible snapshot; scrolling may reveal the full generationmix array for the 12:00–12:30 record so I can list all fuels and percentages and compute the sum."
+          },
+          "observed_after_url": "https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "f51dfddbcc2bbf9663318e53ee5f1806689b116adc738c73d25ad03badd75869",
+          "after_sha256": "f51dfddbcc2bbf9663318e53ee5f1806689b116adc738c73d25ad03badd75869",
+          "before_url": "https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z",
+          "after_url": "https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "missing_title",
+          "message": "dom_model1: missing_title",
+          "action_ordinal": null,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "7d5a5a273e604a77efabed606d75705b44c94f7111244a300e7c2a6f2108eb8c",
+    "criterion_order": [
+      "Select the exact requested data record (from 2025-01-01T12:00Z to 2025-01-01T12:30Z)",
+      "Report every generationmix fuel-perc pair in returned order with exact precision",
+      "Identify all fuels with perc equal to zero (explicit zeros only)",
+      "Calculate the sum of all returned perc values for the selected record"
+    ],
+    "maximum_points": [
+      4.0,
+      4.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 12.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "result": {
+    "process_score": 0.5416666666666666,
+    "total_earned_points": 6.5,
+    "total_max_points": 12.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 132.785
+  },
+  "criteria": [
+    {
+      "criterion": "Select the exact requested data record (from 2025-01-01T12:00Z to 2025-01-01T12:30Z)",
+      "action_only_points": 4.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent selected the exact requested record boundaries and did not mix in the adjacent interval. DOM evidence supports that this exact bounded record is present and identifiable. No adjustment needed.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report every generationmix fuel-perc pair in returned order with exact precision",
+      "action_only_points": 4.0,
+      "final_points": 1.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "This criterion requires reporting *every* generationmix fuel/perc pair for the selected record in returned order. The DOM shows the array continues past the agent’s three listed entries, so the agent’s list is incomplete and the claim that no additional entries are observable is contradicted by the visible start of the next item. Because the agent captured some pairs correctly (biomass/coal/imports with correct precision and order) but missed at least the next entry and any subsequent ones, award partial credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Identify all fuels with perc equal to zero (explicit zeros only)",
+      "action_only_points": 2.0,
+      "final_points": 1.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent correctly identified coal as an explicitly shown zero-percentage fuel. However, because the DOM indicates more fuels exist beyond the truncated point, the agent cannot justify that coal is the only zero-percentage fuel in the full returned record; additional explicit zeros could appear later. Given the task requirement to identify *every* zero-percentage fuel, this is only partially satisfied.",
+      "penalty": false
+    },
+    {
+      "criterion": "Calculate the sum of all returned perc values for the selected record",
+      "action_only_points": 2.0,
+      "final_points": 0.5,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent computed 18.1, which is the correct sum of the visible subset (3.4 + 0 + 14.7), but the criterion requires the sum of *all returned* perc values for that record. Since the DOM shows additional generationmix entries exist and the agent did not include them, the provided total is incomplete for the requested record. Minimal partial credit for correct arithmetic on the reported subset.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 19,
+    "o4-mini": 3,
+    "total": 22,
+    "api_attempts": 22,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 74728,
+      "completion_tokens": 12384,
+      "reasoning_tokens": 0,
+      "total_tokens": 87112
+    },
+    "o4-mini": {
+      "prompt_tokens": 16630,
+      "completion_tokens": 2965,
+      "reasoning_tokens": 1664,
+      "total_tokens": 19595
+    },
+    "combined": {
+      "prompt_tokens": 91358,
+      "completion_tokens": 15349,
+      "reasoning_tokens": 1664,
+      "total_tokens": 106707
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "f51dfddbcc2bbf9663318e53ee5f1806689b116adc738c73d25ad03badd75869",
+        "byte_count": 761,
+        "line_count": 7,
+        "estimated_tokens": 191,
+        "url": "https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 7
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m0:L1-L7"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "f51dfddbcc2bbf9663318e53ee5f1806689b116adc738c73d25ad03badd75869",
+        "byte_count": 761,
+        "line_count": 7,
+        "estimated_tokens": 191,
+        "url": "https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 7
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m1:L1-L7"
+      }
+    ],
+    "estimated_evidence_tokens": 382,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [
+      {
+        "state_index": 0,
+        "warning": "missing_title"
+      },
+      {
+        "state_index": 1,
+        "warning": "missing_title"
+      }
+    ],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 7,
+        "2": 7,
+        "3": 7
+      },
+      "1": {
+        "0": 9,
+        "1": 6,
+        "2": 3,
+        "3": 2
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ]
+    },
+    "validation_retries": 7,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 6646,
+        "estimated_input_tokens": 1662,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 6643,
+        "estimated_input_tokens": 1661,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 9052,
+        "estimated_input_tokens": 2263,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1
+        ],
+        "char_count": 7646,
+        "estimated_input_tokens": 1912,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1
+        ],
+        "char_count": 8080,
+        "estimated_input_tokens": 2020,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 9584,
+        "estimated_input_tokens": 2396,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1
+        ],
+        "char_count": 8397,
+        "estimated_input_tokens": 2100,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 10039,
+        "estimated_input_tokens": 2510,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 10430,
+        "estimated_input_tokens": 2608,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "char_count": 10879,
+        "estimated_input_tokens": 2720,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 6536,
+        "estimated_input_tokens": 1634,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 6471,
+        "estimated_input_tokens": 1618,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 6183,
+        "estimated_input_tokens": 1546,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 6300,
+        "estimated_input_tokens": 1575,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_095-electricity-generation-mix-20260909T092120Z/20260913T_task095_data_new/dom_model/run.log"
+}

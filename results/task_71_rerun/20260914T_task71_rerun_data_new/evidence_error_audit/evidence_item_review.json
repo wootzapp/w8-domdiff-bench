@@ -1,0 +1,422 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_071-satellite-catalog-inspection-20260914T085508Z",
+  "run_id": "20260914T_task71_rerun_data_new",
+  "rubric_sha256": "549ae13c1406f1148bdbc102555365301e39694363e504bdd26ea03262b5520b",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access the CelesTrak SATCAT record for CATNR=25544 (or clearly report access failure)",
+      "description": "Navigate to and use the displayed CelesTrak SATCAT record corresponding to catalog number 25544. Full credit if the agent accesses the record and bases the answer on it, OR if the agent makes a reasonable attempt but is blocked (captcha), the site is down, or the record cannot be displayed, and the agent clearly reports this limitation. No credit if the agent proceeds to provide specific field values without having access and without stating the access issue (hallucination).",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 both show the CelesTrak SATCAT page with a single JSON-like record displayed; the record visibly contains \"NORAD_CAT_ID\":\"25544\". Screenshot 2 is the latest and confirms the record is displayed without errors/captcha.",
+        "verifier_justification": "The visual evidence confirms the SATCAT record for CATNR/NORAD 25544 was successfully accessed and displayed. Therefore, the baseline 0 should be raised to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a page with a small label “Pretty-print” next to an unchecked checkbox at the top. Below it, a single JSON-like array record is displayed. In that record, the field \"NORAD_CAT_ID\":\"25544\" is visible along with other fields (e.g., \"OBJECT_NAME\":\"ISS (ZARYA)\"). There is no visible error/captcha/login prompt.",
+            "criterion_analysis": "Meets the criterion: the screenshot clearly displays a SATCAT record containing NORAD_CAT_ID 25544, indicating the record for CATNR=25544 is being accessed and used. The agent’s predicted output references fields that are visibly present in this displayed record.",
+            "discrepancies": "No meaningful discrepancy: the agent claims to use the SATCAT record for 25544, and the screenshot shows a record with NORAD_CAT_ID 25544.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a webpage with a small label “Pretty-print” and a checkbox near the top. Below it, a JSON-like SATCAT record is visible in plain text. Within that record, the field \"NORAD_CAT_ID\":\"25544\" appears, along with other fields such as \"OBJECT_NAME\":\"ISS (ZARYA)\" and \"OBJECT_ID\":\"1998-067A\".",
+            "criterion_analysis": "The visible record explicitly contains NORAD_CAT_ID 25544, indicating the page is showing the CelesTrak SATCAT record for catalog number 25544. This supports that the agent accessed the correct record and could extract values from it.",
+            "discrepancies": "No discrepancy evident: the screenshot shows a record containing NORAD_CAT_ID 25544, consistent with the agent using CATNR=25544.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows URL https://celestrak.org/satcat/records.php?CATNR=25544 and visible JSON-like SATCAT record including \"NORAD_CAT_ID\":25544, with no error/captcha indicators. (State 0 shows the same, but state 1 is latest.)",
+        "verifier_justification": "The DOM explicitly confirms the agent had access to the correct SATCAT record for CATNR/NORAD 25544 (no access failure). Baseline assumed no evidence of access; this is corrected by DOM support.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL \"https://celestrak.org/satcat/records.php?CATNR=25544\" and VISIBLE CONTENT includes a single JSON-like record with \"NORAD_CAT_ID\":25544.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe displayed page is the CelesTrak SATCAT records endpoint with the CATNR query set to 25544, and the visible record includes NORAD_CAT_ID 25544, supporting that the SATCAT record for catalog number 25544 is displayed.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL https://celestrak.org/satcat/records.php?CATNR=25544 and VISIBLE CONTENT contains a single JSON record including \"NORAD_CAT_ID\":25544.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snapshot is at the CATNR=25544 URL and explicitly displays a SATCAT record whose NORAD catalog number is 25544, evidencing access to the correct record (not an access failure).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Use the CelesTrak SATCAT record only (no switching objects/sources; no expanding codes)",
+      "description": "Information must be sourced exclusively from the displayed SATCAT record for CATNR=25544. Full credit if the agent does not switch to a different catalog object and does not introduce values or code expansions from other sources. If any requested field is missing/blank in the displayed record, full credit is still possible if the agent explicitly states it is not present in the record rather than inferring it.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 show only a single-entry JSON array (one object) and include raw coded fields like \"OPS_STATUS_CODE\":\"+\", \"OWNER\":\"ISS\", and \"LAUNCH_SITE\":\"TYMSC\". Screenshot 2 (latest) shows no navigation to other objects and no code expansions on-page.",
+        "verifier_justification": "Agent’s reported values match fields shown in the single displayed SATCAT record and the agent preserves raw codes rather than expanding them. No evidence of switching records/sources. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Only one object record is visible, presented as JSON. It contains raw code fields such as \"OPS_STATUS_CODE\":\"+\", \"OWNER\":\"ISS\", and \"LAUNCH_SITE\":\"TYMSC\". No other sources, explanations, or expanded meanings are shown on-screen.",
+            "criterion_analysis": "Meets the criterion: the agent’s predicted output uses only fields present in the displayed JSON record and preserves raw codes for OPS_STATUS_CODE, OWNER, and LAUNCH_SITE rather than expanding them. Also, the agent does not switch to another catalog object (only NORAD_CAT_ID 25544 is shown).",
+            "discrepancies": "None apparent. The agent did not introduce expanded code meanings, and all reported fields appear to come directly from the visible record.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Only one SATCAT JSON record is visible (an array with a single object). It contains raw coded fields like \"OPS_STATUS_CODE\":\"+\", \"OWNER\":\"ISS\", and \"LAUNCH_SITE\":\"TYMSC\" along with numeric orbital fields. No other objects/records are visible in the screenshot.",
+            "criterion_analysis": "The agent’s predicted output uses only fields shown in this single displayed record and preserves raw codes (it does not expand '+' or 'TYMSC' into meanings). There is no evidence of switching to another object or using another source.",
+            "discrepancies": "None observed: all reported items correspond to keys/values visible in the screenshot record; no extra expanded interpretations are included.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows exactly one record entry for NORAD_CAT_ID 25544, with requested fields present as raw codes/values (e.g., \"OPS_STATUS_CODE\":\"+\", \"OWNER\":\"ISS\", \"LAUNCH_SITE\":\"TYMSC\").",
+        "verifier_justification": "The agent’s output uses the raw codes exactly as displayed and does not expand them; DOM shows a single record so there is no evidence of switching objects/sources. This supports full compliance with the 'use SATCAT record only / no expansion' constraint.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT includes only one record array item with fields such as OBJECT_NAME, OBJECT_ID, NORAD_CAT_ID, OBJECT_TYPE, OPS_STATUS_CODE, OWNER, LAUNCH_DATE, LAUNCH_SITE, PERIOD, INCLINATION, APOGEE, PERIGEE.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe evidence contains a single SATCAT record entry for NORAD_CAT_ID 25544 and includes the requested fields directly as raw values/codes (e.g., OPS_STATUS_CODE \"+\", OWNER \"ISS\", LAUNCH_SITE \"TYMSC\"). There is no DOM evidence of switching to another object or expanding codes beyond what is displayed.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT shows exactly one record with fields: OBJECT_NAME, OBJECT_ID, NORAD_CAT_ID, OBJECT_TYPE, OPS_STATUS_CODE, OWNER, LAUNCH_DATE, LAUNCH_SITE, PERIOD, INCLINATION, APOGEE, PERIGEE (and other non-requested fields).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe evidence contains one SATCAT record for NORAD_CAT_ID 25544 and includes the raw codes (OPS_STATUS_CODE, OWNER, LAUNCH_SITE) as displayed; nothing in the DOM evidence indicates switching objects or requiring any external code expansion.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report identity fields (name, international designator, NORAD catalog number, object type)",
+      "description": "Report the object name, international designator, NORAD catalog number, and object type exactly as shown in the displayed SATCAT record for CATNR=25544. Partial credit if one field is missing or has a minor transcription error. Full credit is allowed if a field is not present/blank in the record and the agent explicitly notes that.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows identity fields in the record: \"OBJECT_NAME\":\"ISS (ZARYA)\", \"OBJECT_ID\":\"1998-067A\", \"NORAD_CAT_ID\":\"25544\", and \"OBJECT_TYPE\":\"PAY\".",
+        "verifier_justification": "The agent output reproduces these identity fields exactly as displayed in the record. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The record visibly includes identity fields: \"OBJECT_NAME\":\"ISS (ZARYA)\", \"OBJECT_ID\":\"1998-067A\", \"NORAD_CAT_ID\":25544, and \"OBJECT_TYPE\":\"PAY\".",
+            "criterion_analysis": "Full satisfaction: the agent’s predicted output lists OBJECT_NAME as “ISS (ZARYA)”, OBJECT_ID as “1998-067A”, NORAD_CAT_ID as “25544”, and OBJECT_TYPE as “PAY”, matching what is visible in the screenshot.",
+            "discrepancies": "None; the predicted values match the screenshot text.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The visible JSON shows identity fields: \"OBJECT_NAME\":\"ISS (ZARYA)\", \"OBJECT_ID\":\"1998-067A\", \"NORAD_CAT_ID\":25544, and \"OBJECT_TYPE\":\"PAY\".",
+            "criterion_analysis": "The agent’s output matches these fields exactly as displayed: object name “ISS (ZARYA)”, international designator “1998-067A”, NORAD catalog number “25544”, and object type “PAY”.",
+            "discrepancies": "None: the predicted output’s identity fields match the screenshot text.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 record includes \"OBJECT_NAME\":\"ISS (ZARYA)\", \"OBJECT_ID\":\"1998-067A\", \"NORAD_CAT_ID\":25544, \"OBJECT_TYPE\":\"PAY\".",
+        "verifier_justification": "Agent output matches the identity fields exactly as shown in the displayed record. Baseline deduction was due to lack of demonstrated access, but DOM now supports correctness.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT record shows: \"OBJECT_NAME\":\"ISS (ZARYA)\", \"OBJECT_ID\":\"1998-067A\", \"NORAD_CAT_ID\":25544, \"OBJECT_TYPE\":\"PAY\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll requested identity fields (name, international designator, NORAD catalog number, object type) are explicitly present in the displayed record.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"OBJECT_NAME\":\"ISS (ZARYA)\", \"OBJECT_ID\":\"1998-067A\", \"NORAD_CAT_ID\":25544, \"OBJECT_TYPE\":\"PAY\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll requested identity fields (name, international designator, NORAD catalog number, object type) are explicitly present in the displayed record.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report status/ownership fields using raw codes (operational status code, owner code)",
+      "description": "Report the raw operational-status code and raw owner code exactly as displayed (no expansion/interpretation). Partial credit if one code is missing or expanded. Full credit is allowed if a code is not present/blank in the record and the agent explicitly notes that.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows \"OPS_STATUS_CODE\":\"+\" and \"OWNER\":\"ISS\" in the displayed JSON record.",
+        "verifier_justification": "Agent reports the raw operational-status code '+' and owner code 'ISS' exactly, with no expansion. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The record shows \"OPS_STATUS_CODE\":\"+\" and \"OWNER\":\"ISS\" as raw codes in the JSON.",
+            "criterion_analysis": "Full satisfaction: the agent reported OPS_STATUS_CODE “+” and OWNER “ISS” exactly as shown, with no expansion.",
+            "discrepancies": "None; the codes in the predicted output match the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The record includes \"OPS_STATUS_CODE\":\"+\" and \"OWNER\":\"ISS\" as raw codes.",
+            "criterion_analysis": "The agent reported OPS_STATUS_CODE as “+” and OWNER as “ISS” without expanding them, matching the screenshot.",
+            "discrepancies": "None: codes and formatting align with what is visible.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 record includes \"OPS_STATUS_CODE\":\"+\" and \"OWNER\":\"ISS\".",
+        "verifier_justification": "Agent reported the raw operational-status code and owner code exactly as displayed, with no expansion. DOM support warrants full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT record shows: \"OPS_STATUS_CODE\":\"+\", \"OWNER\":\"ISS\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe operational-status code and owner code are explicitly present as raw codes/values in the displayed record.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"OPS_STATUS_CODE\":\"+\", \"OWNER\":\"ISS\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe raw operational-status code and owner code are explicitly displayed in the record as \"+\" and \"ISS\" respectively, with no need to expand them.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report launch fields (launch date and launch-site code) using raw code",
+      "description": "Report the launch date and the raw launch-site code exactly as displayed in the record (no expansion). Partial credit if one is missing or has a transcription/format error. Full credit is allowed if a field is not present/blank in the record and the agent explicitly notes that.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows launch fields: \"LAUNCH_DATE\":\"1998-11-20\" and \"LAUNCH_SITE\":\"TYMSC\".",
+        "verifier_justification": "Agent output matches launch date and raw launch-site code exactly as displayed, without expansion. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON record shows launch fields: \"LAUNCH_DATE\":\"1998-11-20\" and \"LAUNCH_SITE\":\"TYMSC\".",
+            "criterion_analysis": "Full satisfaction: the agent reported LAUNCH_DATE “1998-11-20” and LAUNCH_SITE code “TYMSC” exactly as displayed, without expanding the site code.",
+            "discrepancies": "None; values match the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The record shows \"LAUNCH_DATE\":\"1998-11-20\" and \"LAUNCH_SITE\":\"TYMSC\".",
+            "criterion_analysis": "The agent’s output reports launch date “1998-11-20” and launch-site code “TYMSC” exactly as displayed, with no expansion.",
+            "discrepancies": "None: values match the visible JSON fields.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 record includes \"LAUNCH_DATE\":\"1998-11-20\" and \"LAUNCH_SITE\":\"TYMSC\".",
+        "verifier_justification": "Agent output matches launch date and raw launch-site code exactly as displayed; no expansion. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT record shows: \"LAUNCH_DATE\":\"1998-11-20\", \"LAUNCH_SITE\":\"TYMSC\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe launch date and launch-site code are explicitly present in the displayed record, with the launch-site given as the raw code \"TYMSC\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"LAUNCH_DATE\":\"1998-11-20\", \"LAUNCH_SITE\":\"TYMSC\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe launch date and raw launch-site code are explicitly present in the displayed record.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Report orbital parameters (period, inclination, apogee, perigee) with exact numbers/units",
+      "description": "Report orbital period, inclination, apogee, and perigee exactly as displayed, preserving numbers and any shown units. Partial credit if one value is missing or has minor transcription/unit issues. Full credit is allowed if a parameter is not present/blank in the record and the agent explicitly notes that.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows orbital parameters: \"PERIOD\":92.96, \"INCLINATION\":51.63, \"APOGEE\":423, \"PERIGEE\":416 (displayed as plain numbers in the JSON).",
+        "verifier_justification": "Agent output matches all four orbital parameters exactly as shown and does not add units not present in the display. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The record includes orbital parameters: \"PERIOD\":92.96, \"INCLINATION\":51.63, \"APOGEE\":423, \"PERIGEE\":416. (No units are explicitly shown next to these numbers in the visible JSON; they are displayed as plain numeric values.)",
+            "criterion_analysis": "Full satisfaction: the agent’s predicted output reports PERIOD 92.96, INCLINATION 51.63, APOGEE 423, and PERIGEE 416 exactly as shown in the screenshot.",
+            "discrepancies": "None; the numeric values match the displayed record.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Orbital parameters visible in the JSON include \"PERIOD\":92.96, \"INCLINATION\":51.63, \"APOGEE\":423, and \"PERIGEE\":416.",
+            "criterion_analysis": "The agent’s output lists PERIOD 92.96, INCLINATION 51.63, APOGEE 423, and PERIGEE 416, matching the screenshot values exactly (no extra units are shown in the screenshot, and none were added).",
+            "discrepancies": "None: the numeric values match the displayed record.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 record includes numeric fields \"PERIOD\":92.96, \"INCLINATION\":51.63, \"APOGEE\":423, \"PERIGEE\":416 (no units shown alongside these numbers in the JSON-like display).",
+        "verifier_justification": "Agent output matches the displayed orbital parameter numbers exactly and does not add unsupported units. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 VISIBLE CONTENT record shows: \"PERIOD\":92.96, \"INCLINATION\":51.63, \"APOGEE\":423, \"PERIGEE\":416.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll requested orbital parameters (period, inclination, apogee, perigee) are explicitly present in the displayed record with the shown numeric values.",
+            "discrepancies": "Units are not shown in the DOM snapshot; only numeric values are evidenced.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes: \"PERIOD\":92.96, \"INCLINATION\":51.63, \"APOGEE\":423, \"PERIGEE\":416.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll requested orbital parameters are explicitly present as numeric values in the displayed record; no additional units are shown in the DOM snapshot to preserve beyond the numbers provided.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Honor stopping condition (stop after recording all requested fields from the displayed record)",
+      "description": "Stop once every requested identity, launch, status, and orbital field has been recorded (or explicitly marked as not present in the displayed record). Partial credit if minor extra non-conflicting info is included. No credit if the agent continues with additional records, cross-record comparisons, or unrelated data beyond what was requested.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "The agent’s final answer lists only the requested fields (identity, status/owner, launch, and orbital parameters) and does not include additional unrelated SATCAT fields. Screenshots show many other fields exist, but none are required.",
+        "verifier_justification": "Stopping condition is satisfied: the agent stops after recording all requested fields and does not add extraneous information. Full credit (baseline already correct).",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a single SATCAT JSON record containing the requested identity, status/ownership, launch, and orbital fields. No additional records or extra contextual sections are visible beyond the single displayed record and the “Pretty-print” checkbox.",
+            "criterion_analysis": "Meets the stopping condition: the agent’s predicted output lists exactly the requested fields and stops, without adding unrelated extra analysis, other records, or comparisons.",
+            "discrepancies": "No discrepancy; the output is limited to the requested fields, consistent with what’s shown.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows only the single record and does not show any additional extracted commentary. The agent’s predicted output lists exactly the requested fields (identity, status/owner, launch, and orbital parameters) and then stops.",
+            "criterion_analysis": "The agent’s response appears to stop after recording all requested fields and does not add cross-record comparisons or unrelated details, satisfying the stopping condition.",
+            "discrepancies": "No issues: no additional extraneous fields beyond what was requested are included in the predicted output.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 1 indicates the record contains all requested fields; the agent output lists only the requested fields and then stops (no extra unrelated fields/records).",
+        "verifier_justification": "Stopping condition is satisfied: the response records all requested identity/status/launch/orbital fields and does not continue beyond them. Baseline already gave full credit; no change needed.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 contains exactly the requested set of fields within the single displayed record (identity, status/ownership, launch, and orbital parameters).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent output (as provided in the task context) reports the requested identity, status, launch, and orbital fields and does not introduce additional unrelated fields or additional objects, satisfying the stopping condition.",
+            "discrepancies": "Minor extra heading text (\"From the CelesTrak SATCAT record...\") is present but does not add extra data beyond the requested fields.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the record contains all requested fields (OBJECT_NAME, OBJECT_ID, NORAD_CAT_ID, OBJECT_TYPE, OPS_STATUS_CODE, OWNER, LAUNCH_DATE, LAUNCH_SITE, PERIOD, INCLINATION, APOGEE, PERIGEE). The agent predicted output lists exactly these requested fields and does not proceed to other records.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe provided output records all requested identity, status, launch, and orbital fields for CATNR/NORAD 25544 and stops without adding unrelated or cross-record information.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

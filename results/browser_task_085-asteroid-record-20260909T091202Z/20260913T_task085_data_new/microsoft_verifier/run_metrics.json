@@ -1,0 +1,159 @@
+{
+  "task_id": "browser_task_085-asteroid-record-20260909T091202Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_085-asteroid-record-20260909T091202Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "30a92a02be1e3cbe99d28189166d1f6ad37b51219014af78d6ca5d00a9d40407",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 5,
+    "screenshots": 6
+  },
+  "result": {
+    "process_score": 0.2,
+    "total_earned_points": 4.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 96.793
+  },
+  "criteria": [
+    {
+      "criterion": "Use only the supplied NASA/JPL SBDB response (99942 Apophis, phys-par=1)",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did not fabricate any values and explicitly refused to extract fields it claimed were not visible. This satisfies the 'use only supplied response' constraint in the sense of not using outside info, but the agent’s claim that the response was truncated is contradicted by screenshots showing the required fields are in fact present in the supplied response view. Still, criterion 0 is primarily about source integrity (no external/hallucinated data), which the agent maintained.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report object.fullname exactly",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent output did not report object.fullname at all, and incorrectly claimed it could not be accessed despite it being visible in the supplied response (Screenshot 1). This is a controllable failure/omission, not an uncontrollable blocker.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report orbit class name and code from object.orbit_class",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent output did not provide orbit_class name/code and claimed it was not visible, contradicting Screenshot 1 where it is visible. Controllable failure.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report orbit.epoch exactly",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent did not report orbit.epoch and claimed it was not accessible, contradicted by screenshots where orbit.epoch is visible. Controllable failure.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report absolute magnitude (H) value and uncertainty from phys_par",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent did not report H value/uncertainty and claimed phys_par was not visible. Screenshots show it is visible. Controllable omission; no credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report diameter value, uncertainty, and unit from phys_par",
+      "action_only_points": 4.0,
+      "final_points": 0.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent did not report diameter value/uncertainty/unit and claimed it was not visible, contradicted by screenshots. Controllable failure.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report potentially hazardous asteroid flag from object.pha",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent did not report object.pha and claimed it could not be read, contradicted by Screenshot 1 where pha is visible. Controllable omission.",
+      "penalty": false
+    },
+    {
+      "criterion": "Output scope: only requested fields; no extra SBDB fields",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "On the narrow criterion 'no extra unrelated SBDB fields,' the agent output does not add any unrequested fields. While the overall task is incomplete, this specific scope criterion is satisfied.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 16,
+    "o4-mini": 3,
+    "total": 19,
+    "api_attempts": 19,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 90886,
+      "completion_tokens": 8217,
+      "reasoning_tokens": 0,
+      "total_tokens": 99103
+    },
+    "o4-mini": {
+      "prompt_tokens": 18688,
+      "completion_tokens": 3548,
+      "reasoning_tokens": 2112,
+      "total_tokens": 22236
+    },
+    "combined": {
+      "prompt_tokens": 109574,
+      "completion_tokens": 11765,
+      "reasoning_tokens": 2112,
+      "total_tokens": 121339
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/microsoft_verifier/run.log"
+}

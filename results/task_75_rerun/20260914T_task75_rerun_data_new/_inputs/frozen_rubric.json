@@ -1,0 +1,49 @@
+{
+  "task_id": "browser_task_075-collectible-card-rules-20260914T090059Z",
+  "precomputed_rubric": {
+    "items": [
+      {
+        "criterion": "Use only the exact-card Scryfall API response at the provided URL",
+        "description": "Evaluate whether the agent relied exclusively on the JSON returned by the exact-card endpoint (https://api.scryfall.com/cards/named?exact=Black%20Lotus) and did not use other sources, other Scryfall endpoints, or inferred/guessed values. Full credit if all reported fields are clearly attributable to that single response OR if the agent attempts to access the URL and clearly reports an access/blocker (e.g., network error, rate limit, downtime) or that the endpoint returned an error object that prevents extraction. Partial credit if the agent appears to use the right card but also mixes in external knowledge or other endpoints. No credit if the agent uses a different card response or clearly fabricates fields while claiming they came from the URL.",
+        "max_points": 3,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Record card identity fields: name, mana_cost, type_line",
+        "description": "Report the card's name, mana_cost, and type_line exactly as returned in the response (including braces/mana symbols and punctuation). Full credit if all three are present and exact OR if the agent cannot retrieve/read the response from the provided URL (or it returns an error object) and explicitly states that these fields cannot be extracted under the constraints. Partial credit if 1–2 fields are missing or have minor transcription differences despite successful access to the response. No credit if the fields correspond to a different card or are materially incorrect/fabricated.",
+        "max_points": 3,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Record complete oracle_text",
+        "description": "Report the complete oracle_text exactly as returned, preserving line breaks and mana symbols. Full credit if the entire oracle_text is included with exact wording/symbols OR if the agent cannot retrieve/read the response from the provided URL (or it returns an error object / lacks oracle_text) and explicitly states that oracle_text cannot be extracted under the constraints. Partial credit if oracle_text is present but truncated, paraphrased, or has minor symbol/text errors when the response was accessible. No credit if oracle_text is missing without explanation despite accessible response, or clearly not from the response.",
+        "max_points": 3,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Record reserved flag",
+        "description": "Report the boolean reserved flag exactly as returned (true/false). Full credit if correct and exact boolean string OR if the agent cannot retrieve/read the response from the provided URL (or it returns an error object / lacks the field) and explicitly states the reserved flag cannot be extracted under the constraints. Partial credit if reserved is reported but not as a boolean (e.g., 'Yes') when the response was accessible. No credit if missing without explanation despite accessible response, or wrong/fabricated value.",
+        "max_points": 2,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Record format legalities: Vintage, Legacy, Commander",
+        "description": "Report legality values only from legalities.vintage, legalities.legacy, and legalities.commander, preserving legality strings exactly as returned (e.g., 'legal', 'restricted', 'banned', 'not_legal'). Full credit if all three are provided and match exactly OR if the agent cannot retrieve/read the response from the provided URL (or it returns an error object / lacks legalities) and explicitly states these legality fields cannot be extracted under the constraints. Partial credit if one is missing or minor string mismatches occur when the response was accessible. No credit if two or more are missing without explanation despite accessible response, or values are clearly incorrect/fabricated, or sourced from elsewhere.",
+        "max_points": 4,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Respect task constraints (no pricing/links; stop after requested fields)",
+        "description": "Do not use pricing fields or follow purchase links, and stop once all requested identity, oracle text, reserved flag, and specified legality fields have been recorded. Full credit if the agent reports only the requested fields (or, if blocked, reports the blocker and stops) and avoids price/purchase-link content. Partial credit if extra unrelated fields are included but constraints are otherwise respected. No credit if pricing fields/purchase links are used or emphasized contrary to constraints, or if the agent continues beyond what is needed.",
+        "max_points": 2,
+        "justification": "",
+        "earned_points": ""
+      }
+    ]
+  }
+}

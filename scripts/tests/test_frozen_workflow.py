@@ -21,6 +21,14 @@ def test_screenshot_click_with_ref_does_not_require_coordinates(tmp_path):
     assert actions[0]["ref"] == "e107"
 
 
+def test_empty_action_log_represents_a_valid_zero_action_trajectory(tmp_path):
+    log = tmp_path / "empty.log"
+    log.write_text("", encoding="utf-8")
+
+    assert parse_actions(log, mode="screenshot") == []
+    assert parse_actions(log, mode="dom_model") == []
+
+
 def test_key_action_is_preserved_and_compared(tmp_path):
     screenshot_log = tmp_path / "screenshot.log"
     dom_log = tmp_path / "dom.log"

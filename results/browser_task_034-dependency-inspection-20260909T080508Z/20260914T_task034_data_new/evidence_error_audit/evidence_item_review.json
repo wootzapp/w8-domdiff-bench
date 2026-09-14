@@ -1,0 +1,463 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_034-dependency-inspection-20260909T080508Z",
+  "run_id": "20260914T_task034_data_new",
+  "rubric_sha256": "bff329749131a4a0d59fe780a228d6d7277fea87b8202c6904f5168b64267bf6",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access RubyGems rails gem page (without sign-in)",
+      "description": "Attempt to use RubyGems as the source by navigating to the rails gem page (e.g., https://rubygems.org/gems/rails). Full credit if the agent attempts RubyGems but is blocked by an uncontrollable issue (CAPTCHA, outage, region block) and clearly reports this. Partial credit if another source is used despite RubyGems being accessible.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 both show RubyGems UI on the rails gem pages, with breadcrumb “rails > 8.1.3.1 (latest)” and no sign-in required. Latest evidence: Screenshot 2 shows “rails > 8.1.3.1 (latest) > Dependencies”.",
+        "verifier_justification": "Evidence confirms the agent accessed the RubyGems rails gem page (via the version dependencies page) without sign-in. Baseline already correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the RubyGems site (RubyGems logo top-left) with breadcrumb navigation reading “rails > 8.1.3.1 (latest) > Dependencies”. The page is clearly a Rails gem version page on RubyGems, and a “Sign in” / “Sign up” button is visible at top-right (not engaged).",
+            "criterion_analysis": "Meets the criterion: the screenshot evidences access to RubyGems and specifically the rails gem version dependencies page, without any indication that sign-in was required or used.",
+            "discrepancies": "No discrepancy with using RubyGems. The screenshot supports that the agent is on RubyGems rails dependencies page.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the RubyGems site header with the RubyGems logo and navigation (“blog”, “stats”, “docs”, “about”), plus a “Search Gems…” box. Breadcrumb near the top shows “rails > 8.1.3.1 (latest)”. The page title area shows the gem name “rails”. There are “Sign in” and “Sign up” buttons visible (not clicked).",
+            "criterion_analysis": "This is clear evidence the agent accessed the RubyGems rails gem page for a specific version (8.1.3.1) without needing to sign in. Criterion 0 is satisfied.",
+            "discrepancies": "No discrepancy: the screenshot is on RubyGems and clearly within the rails gem pages.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 0 shows RubyGems rails gem page accessible at https://rubygems.org/gems/rails with content visible (incl. “8.1.3.1 (latest)”). DOM_MODEL_STATE_INDEX 1 shows RubyGems dependencies page at https://rubygems.org/gems/rails/versions/8.1.3.1/dependencies, also accessible without sign-in.",
+        "verifier_justification": "Evidence confirms the agent accessed RubyGems pages for rails without needing authentication or alternative sources. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL \"https://rubygems.org/gems/rails/versions/8.1.3.1/dependencies\" with Title \"rails | RubyGems.org | your community gem host\" and page content headed \"rails 8.1.3.1\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows the agent is on RubyGems (rubygems.org) for the rails gem (a rails version dependencies page), which constitutes accessing RubyGems as the source without requiring sign-in.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the agent is on RubyGems for the rails gem without signing in: URL is explicitly `https://rubygems.org/gems/rails` with title `rails | RubyGems.org | your community gem host`. The page also shows a visible `Sign in` link, indicating the agent is not required to authenticate to access the page content. The visible breadcrumb includes `8.1.3.1 (latest)` and the details section shows `rails 8.1.3.1 July 29, 2026`, further confirming access to the rails gem page on RubyGems.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 0 asks whether the agent attempted to use RubyGems by navigating to the rails gem page (e.g., https://rubygems.org/gems/rails) without sign-in. The DOM explicitly confirms this: DOM_MODEL_STATE_INDEX: 0 lists the URL as `https://rubygems.org/gems/rails` and shows the rails gem page content (e.g., `rails 8.1.3.1 July 29, 2026`). No CAPTCHA/outage/blocking dialogs are present in the DOM evidence, and a `Sign in` link is present but not necessary for access.",
+            "discrepancies": "The action history references state 1 as `https://rubygems.org/gems/rails/versions/8.1.3.1/dependencies`, but the provided DOM evidence is only for DOM_MODEL_STATE_INDEX: 0 (`https://rubygems.org/gems/rails`). Thus, while Criterion 0 is supported (RubyGems rails gem page accessed), there is no DOM snapshot provided for the dependencies URL mentioned in the action history.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Respect constraints: no sign-in, no download/install",
+      "description": "Do not sign in and do not download or install the gem. Full credit if the agent stays within these constraints; no credit if it signs in or claims to download/install.",
+      "max_points": 1,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshots 1 and 2 show “Sign in / Sign up” buttons (indicating not authenticated) and only informational pages (gem info and dependencies). No UI indicating download/install actions taken. Latest evidence: Screenshot 2.",
+        "verifier_justification": "No evidence of signing in or downloading/installing. Constraints respected; baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Top-right shows “Sign in” and “Sign up” buttons, indicating the user is not signed in. No download/install actions are shown; the page displayed is informational (dependencies list).",
+            "criterion_analysis": "Satisfied: there is no visual evidence of signing in or downloading/installing anything. The presence of sign-in buttons suggests the session is not authenticated.",
+            "discrepancies": "None apparent—agent’s predicted behavior (not signing in / not downloading) is not contradicted by the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Top-right shows “Sign in” and “Sign up” buttons, indicating the user is not signed in from what’s visible. The page shows install instructions as text fields (e.g., “gem install rails”) but there is no indication of any download/install action being performed; it’s just displayed content.",
+            "criterion_analysis": "Nothing in the screenshot indicates the agent signed in or downloaded/installed the gem. Displaying the install command is not the same as executing it. Criterion 1 appears respected based on visible evidence.",
+            "discrepancies": "None visible. The agent’s predicted output does not claim signing in or installing.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 0 and 1 both show a “Sign in” link but no indication of being signed in. Action history only shows a click to “Dependencies”. No DOM evidence of downloading/installing.",
+        "verifier_justification": "Nothing indicates sign-in or download/install actions occurred; constraints were respected. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes a \"Sign in\" link [968] but no evidence of an authenticated session, sign-in flow, download/install actions, or prompts. The task actions show only a click on \"Dependencies\" (Action 1).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nNo DOM or action-history evidence indicates signing in or downloading/installing the gem; the only recorded interaction is navigating to the Dependencies page.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the RubyGems page for rails at URL https://rubygems.org/gems/rails. The visible content includes metadata for the latest version and navigation links. It explicitly shows:\n- \"8.1.3.1 (latest)\" in the breadcrumb area.\n- Version line: \"rails 8.1.3.1 July 29, 2026\".\n- \"Required Ruby Version >= 3.2.0\".\n- \"License: MIT\" in Additional details.\nIt also shows a \"Sign in\" link ([63] link \"Sign in\") and a \"Download\" link text within \"Helpful Links ... Download ...\", but there is no DOM evidence of any interaction with these links, no login form submission, and no download action/dialog.\nAction history shows only one interaction: Action 1 is a left_click on the link named \"Dependencies\" (role=link), which is navigation, not sign-in or download/install.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe constraints rubric criterion is respected (no sign-in, no download/install). DOM_MODEL_STATE_INDEX: 0 provides a \"Sign in\" link ([63] link \"Sign in\"), but there is no evidence in the DOM record or action history of clicking it or submitting credentials. The only recorded action is Action 1: left_click on \"Dependencies\". There is also no evidence of any download or installation: although \"Download\" appears in the Helpful Links text, no action targets it, and no download dialogs/errors are shown. Thus, within the available DOM/action evidence, the agent stayed within the constraint boundaries.",
+            "discrepancies": "None for this criterion. The DOM/action history includes no sign-in, download, or install actions; only a navigation click to \"Dependencies\" is recorded.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Identify the latest displayed Rails version",
+      "description": "Correctly determine the latest Rails version number as displayed on RubyGems. Full credit if the version corresponds to the latest displayed release. Partial credit if the agent reports a near-latest version and explains that the latest version could not be confirmed due to an uncontrollable display/loading issue on RubyGems. Full credit if RubyGems is inaccessible and the agent explicitly states it cannot verify the latest displayed version.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots 1 and 2 both label version “8.1.3.1” as “(latest)” in the breadcrumb; Screenshot 2 is latest and confirms “rails 8.1.3.1” on the Dependencies page.",
+        "verifier_justification": "Latest displayed Rails version is clearly 8.1.3.1. Baseline correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The page header on the left shows “rails 8.1.3.1” with a date next to it: “July 29, 2026”. In the breadcrumb it also says “8.1.3.1 (latest)”.",
+            "criterion_analysis": "Fully supported by the screenshot: the latest displayed Rails version is shown as 8.1.3.1, explicitly labeled “(latest)”.",
+            "discrepancies": "None regarding the version number; the screenshot clearly shows 8.1.3.1 as latest.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the breadcrumb line it explicitly says “8.1.3.1 (latest)”. The gem header area also shows “rails 8.1.3.1” with a date next to it.",
+            "criterion_analysis": "The screenshot directly labels 8.1.3.1 as “(latest)”, confirming the latest displayed Rails version. This supports the agent’s predicted output that the latest version is 8.1.3.1.",
+            "discrepancies": "No discrepancy: agent reported version 8.1.3.1, which matches the “(latest)” label shown.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest state confirming latest version: DOM_MODEL_STATE_INDEX 1 shows “8.1.3.1 (latest)” and header “rails 8.1.3.1 July 29, 2026”. DOM_MODEL_STATE_INDEX 0 also shows “8.1.3.1 (latest)”.",
+        "verifier_justification": "The agent’s reported latest displayed version (8.1.3.1) matches the DOM label “(latest)”. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows read-only control text \"8.1.3.1 (latest)\" and visible header text \"rails 8.1.3.1 July 29, 2026\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly labels version 8.1.3.1 as \"(latest)\", supporting that it is the latest displayed Rails version on RubyGems in this state.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the Rails gem page at URL https://rubygems.org/gems/rails. In the visible Breadcrumb context it explicitly lists: \"8.1.3.1 (latest)\" with control_state=current=page. The Details context also shows \"rails 8.1.3.1 July 29, 2026\", reinforcing that 8.1.3.1 is the currently shown (latest) version.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 2 (Identify the latest displayed Rails version): The DOM explicitly labels the latest version as \"8.1.3.1 (latest)\" on the Rails gem page (DOM_MODEL_STATE_INDEX: 0, Breadcrumb). This directly supports the agent’s reported latest version number (8.1.3.1).",
+            "discrepancies": "No discrepancy for Criterion 2: the agent’s claimed latest version (8.1.3.1) matches the DOM text \"8.1.3.1 (latest)\" (DOM_MODEL_STATE_INDEX: 0).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record latest version metadata (version, release date, required Ruby, license)",
+      "description": "Report the latest displayed version’s metadata from RubyGems: (1) version, (2) release date, (3) required Ruby version, and (4) license. Full credit if all four fields are accurately captured from RubyGems. Partial credit if one field is missing/unclear but the agent states it was not visible due to an uncontrollable page issue. Full credit if RubyGems is inaccessible and the agent clearly reports it cannot retrieve these metadata fields.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 1 shows version 8.1.3.1, release date “July 29, 2026”, and “Required Ruby Version >= 3.2.0”. Screenshot 2 also shows “rails 8.1.3.1” and date “July 29, 2026”. Neither screenshot shows a License field/value. Latest evidence: Screenshot 2 (still no license shown).",
+        "verifier_justification": "Three metadata elements (version, release date, required Ruby) are visually supported. The claimed license (MIT) is not supported by the provided screenshots (no license visible), so cannot award full credit. Award partial credit for the supported fields.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Visible metadata includes: version “8.1.3.1” and release date “July 29, 2026” shown near the version header. It also shows “Required Ruby Version >= 3.2.0” and “Required Rubygems Version >= 1.8.11”. The screenshot does NOT show any “License” field/value anywhere in the visible area. Tabs show “Gem info” selected and a “Dependencies” tab exists, but dependency list is not shown on this screenshot.",
+            "criterion_analysis": "The screenshot supports three of the four requested metadata fields: version (8.1.3.1), release date (July 29, 2026), and required Ruby version (>= 3.2.0). It does not provide visible evidence for the license value. Therefore, the agent’s predicted output claim “License: MIT” is not verifiable from this screenshot and may be hallucinated relative to the provided evidence. Partial support only.",
+            "discrepancies": "Agent’s predicted output includes “License: MIT,” but the screenshot does not show a license field/value. Also, the screenshot does not show the Dependencies page list, so the runtime dependencies the agent listed are not supported by this image (though dependency checking is not part of this criterion).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 0 explicitly shows all requested metadata: version “8.1.3.1 (latest)”, release date “July 29, 2026”, Required Ruby Version “>= 3.2.0”, and License “MIT”. (DOM_MODEL_STATE_INDEX 1 shows version/date and license, but not required Ruby version.)",
+        "verifier_justification": "Contrary to the baseline’s concern, DOM evidence directly supports all four metadata fields exactly as the agent reported them. Score should be raised to full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows: \"rails 8.1.3.1 July 29, 2026\" and in Additional details: \"License: MIT\". It does not show any field for \"Required Ruby version\" on this dependencies page.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nVersion (8.1.3.1), release date (July 29, 2026), and license (MIT) are present in the DOM. The required Ruby version is not evidenced in this DOM state, so that part cannot be confirmed from the provided DOM snapshot.",
+            "discrepancies": "Agent predicted output claims \"Required Ruby version: >= 3.2.0\" but DOM_MODEL_STATE_INDEX: 1 does not display a required Ruby version field/value.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the Rails gem main page at URL https://rubygems.org/gems/rails with the latest version metadata visible in text. Evidence includes:\n- Latest version label: Breadcrumb shows “8.1.3.1 (latest)”.\n- Version + date line: “rails 8.1.3.1 July 29, 2026 …”.\n- Required Ruby Version field: “Required Ruby Version” followed by “>= 3.2.0”.\n- License field: In “Additional details” section: “License: MIT”.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 3 asks for latest displayed version metadata (version, release date, required Ruby version, license). All four are explicitly present in DOM_MODEL_STATE_INDEX: 0: version “8.1.3.1 (latest)”, release date “July 29, 2026”, required Ruby “>= 3.2.0”, and license “MIT” (shown as “License: MIT”).",
+            "discrepancies": "No discrepancies for this criterion: the agent’s reported metadata (version 8.1.3.1, release date July 29, 2026, required Ruby >= 3.2.0, license MIT) matches the DOM text in DOM_MODEL_STATE_INDEX: 0.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Runtime dependency #1 in displayed order (name + requirement)",
+      "description": "Provide the first runtime dependency exactly as displayed on RubyGems’ dependencies section/page for the latest version, including its version requirement, preserving order. Full credit if correct. Partial credit if correct gem name but incorrect/missing requirement or order. Full credit if the agent makes a reasonable attempt to view runtime dependencies but RubyGems fails to display them (and the agent clearly reports this). No credit if a development dependency is used when runtime dependencies are visible.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows “13 Runtime Dependencies” table; first row is “actioncable” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Matches the agent output exactly (name, requirement, order). Baseline correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the “Dependencies” tab, the section title reads “13 Runtime Dependencies”. The first row in the table shows gem “actioncable 8.1.3.1” and the required version pill shows “= 8.1.3.1”.",
+            "criterion_analysis": "Supported: the agent’s first runtime dependency (#1) matches what is visible—actioncable with requirement “= 8.1.3.1”, and it is first in the displayed order.",
+            "discrepancies": "No discrepancy for dependency #1.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 1 Runtime Dependencies table first row shows “actioncable” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Agent’s dependency #1 matches the first runtime dependency and requirement in the DOM. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 Table 1 (Runtime Dependencies) first row after header: \"actioncable 8.1.3.1 | = 8.1.3.1\". Visible content also lists \"actioncable 8.1.3.1 = 8.1.3.1\" first under runtime dependencies.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe first runtime dependency in displayed order is actioncable with requirement \"= 8.1.3.1\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Runtime dependency #2 in displayed order (name + requirement)",
+      "description": "Provide the second runtime dependency exactly as displayed on RubyGems for the latest version, including its version requirement, preserving order. Full credit if correct. Partial credit if correct gem name but incorrect/missing requirement or order. Full credit if runtime dependencies cannot be accessed due to an uncontrollable RubyGems issue after a reasonable attempt and the agent states this.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows second runtime dependency row: “actionmailbox” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Matches the agent output exactly (name, requirement, order). Baseline correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The second row under “13 Runtime Dependencies” shows “actionmailbox 8.1.3.1” with required version “= 8.1.3.1”.",
+            "criterion_analysis": "Supported: dependency #2 in the agent output (actionmailbox (= 8.1.3.1)) matches the screenshot and order.",
+            "discrepancies": "No discrepancy for dependency #2.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 1 Runtime Dependencies table second row shows “actionmailbox” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Agent’s dependency #2 matches the second runtime dependency and requirement in the DOM. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 Table 1 second runtime dependency row: \"actionmailbox 8.1.3.1 | = 8.1.3.1\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe second runtime dependency in displayed order is actionmailbox with requirement \"= 8.1.3.1\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Runtime dependency #3 in displayed order (name + requirement)",
+      "description": "Provide the third runtime dependency exactly as displayed on RubyGems for the latest version, including its version requirement, preserving order. Full credit if correct. Partial credit if correct gem name but incorrect/missing requirement or order. Full credit if runtime dependencies cannot be accessed due to an uncontrollable RubyGems issue after a reasonable attempt and the agent states this.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows third runtime dependency row: “actionmailer” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Matches the agent output exactly (name, requirement, order). Baseline correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The third row shows “actionmailer 8.1.3.1” with required version “= 8.1.3.1”.",
+            "criterion_analysis": "Supported: dependency #3 (actionmailer (= 8.1.3.1)) matches what is visible and is in the correct order.",
+            "discrepancies": "No discrepancy for dependency #3.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 1 Runtime Dependencies table third row shows “actionmailer” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Agent’s dependency #3 matches the third runtime dependency and requirement in the DOM. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 Table 1 third runtime dependency row: \"actionmailer 8.1.3.1 | = 8.1.3.1\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe third runtime dependency in displayed order is actionmailer with requirement \"= 8.1.3.1\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Runtime dependency #4 in displayed order (name + requirement)",
+      "description": "Provide the fourth runtime dependency exactly as displayed on RubyGems for the latest version, including its version requirement, preserving order. Full credit if correct. Partial credit if correct gem name but incorrect/missing requirement or order. Full credit if runtime dependencies cannot be accessed due to an uncontrollable RubyGems issue after a reasonable attempt and the agent states this.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows fourth runtime dependency row: “actionpack” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Matches the agent output exactly (name, requirement, order). Baseline correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The fourth row shows “actionpack 8.1.3.1” with required version “= 8.1.3.1”.",
+            "criterion_analysis": "Supported: dependency #4 (actionpack (= 8.1.3.1)) matches the screenshot and order.",
+            "discrepancies": "No discrepancy for dependency #4.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 1 Runtime Dependencies table fourth row shows “actionpack” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Agent’s dependency #4 matches the fourth runtime dependency and requirement in the DOM. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 Table 1 fourth runtime dependency row: \"actionpack 8.1.3.1 | = 8.1.3.1\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe fourth runtime dependency in displayed order is actionpack with requirement \"= 8.1.3.1\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 8,
+      "criterion": "Runtime dependency #5 in displayed order (name + requirement)",
+      "description": "Provide the fifth runtime dependency exactly as displayed on RubyGems for the latest version, including its version requirement, preserving order. Full credit if correct. Partial credit if correct gem name but incorrect/missing requirement or order. Full credit if runtime dependencies cannot be accessed due to an uncontrollable RubyGems issue after a reasonable attempt and the agent states this.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 2 (latest) shows fifth runtime dependency row: “actiontext” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Matches the agent output exactly (name, requirement, order). Baseline correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The fifth row shows “actiontext 8.1.3.1” with required version “= 8.1.3.1”.",
+            "criterion_analysis": "Supported: dependency #5 (actiontext (= 8.1.3.1)) matches the screenshot and order.",
+            "discrepancies": "No discrepancy for dependency #5.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM_MODEL_STATE_INDEX 1 Runtime Dependencies table fifth row shows “actiontext” with requirement “= 8.1.3.1”.",
+        "verifier_justification": "Agent’s dependency #5 matches the fifth runtime dependency and requirement in the DOM. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 Table 1 fifth runtime dependency row: \"actiontext 8.1.3.1 | = 8.1.3.1\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe fifth runtime dependency in displayed order is actiontext with requirement \"= 8.1.3.1\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

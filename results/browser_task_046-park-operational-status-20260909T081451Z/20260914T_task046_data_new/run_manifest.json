@@ -1,0 +1,261 @@
+{
+  "status": "complete",
+  "phase": "B",
+  "paid_calls_authorized": true,
+  "writes_performed": true,
+  "preflight": {
+    "task_id": "browser_task_046-park-operational-status-20260909T081451Z",
+    "task_alias": "browser_task_046-park-operational-status-20260909T081451Z",
+    "actions": 2,
+    "screenshots": 3,
+    "dom_model_states": 3,
+    "alignment": {
+      "task_id": "browser_task_046-park-operational-status-20260909T081451Z",
+      "action_count": 2,
+      "state_count": 3,
+      "initial_state": 0,
+      "final_state": 2,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e30",
+            "target": {
+              "ref": "e30",
+              "role": "link",
+              "name": "Alerts"
+            },
+            "thoughts": "Open the dedicated Alerts section to see the list of active park alerts and identify their count and titles from the NPS alerts system rather than general notices."
+          },
+          "observed_after_url": "https://www.nps.gov/yose/planyourvisit/conditions.htm"
+        },
+        {
+          "ordinal": 2,
+          "name": "visit_url",
+          "arguments": {
+            "action": "visit_url",
+            "url": "https://www.nps.gov/yose/planyourvisit/alerts.htm",
+            "thoughts": "Use the dedicated Yosemite alerts page to count active park alerts and capture their titles, since the Current Conditions page only shows a traffic notice table."
+          },
+          "observed_after_url": "https://www.nps.gov/yose/planyourvisit/alerts.htm"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "2df868166d67920891637664010977b0c4d4770a724187cade15b79a4e858f5e",
+          "after_sha256": "71437b2614cf51a16b9a0a4ab52457bbb7b6a77c2f003add92dc964c10d943bd",
+          "before_url": "https://www.nps.gov/yose/planyourvisit/conditions.htm",
+          "after_url": "https://www.nps.gov/yose/planyourvisit/conditions.htm"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "71437b2614cf51a16b9a0a4ab52457bbb7b6a77c2f003add92dc964c10d943bd",
+          "after_sha256": "7142832843b57bc718f6fed6797b53cd0375b22e2e427a352ded86482e06fbed",
+          "before_url": "https://www.nps.gov/yose/planyourvisit/conditions.htm",
+          "after_url": "https://www.nps.gov/yose/planyourvisit/alerts.htm"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e30' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        }
+      ]
+    },
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_046-park-operational-status-20260909T081451Z.json",
+    "frozen_rubric_sha256": "e24fd31de542dbb9ecf85ffa9e52387f76f4eba36181c54daaeb2de5917686b9",
+    "criterion_order": [
+      "Access Yosemite Current Conditions page (NPS) and locate the Active Alerts module",
+      "Active park-alert count on Yosemite Current Conditions page",
+      "Report the first two active park-alert titles (or all if fewer than two)",
+      "Report displayed Tioga Road status",
+      "Access Yosemite Entrance Reservations page (NPS)",
+      "Determine 2026 entrance timed-reservation requirement from Entrance Reservations page",
+      "Follow constraints and stopping condition"
+    ],
+    "criterion_descriptions": [
+      "Navigate to Yosemite National Park’s official NPS Current Conditions page and attempt to view the NPS Active Alerts/park alerts module. Full credit if the agent makes a reasonable attempt but is blocked (e.g., outage, CAPTCHA, geoblock) and clearly reports the blocker and what was attempted.",
+      "From the Current Conditions page, determine the number of active park alerts shown in the official NPS Active Alerts module (not general notices or other page content). Full credit for correctly counting the displayed NPS active alerts. Partial credit if the agent counts alerts but includes non-alert notices or misses an alert due to minor page-structure confusion. If the page/module cannot be accessed despite reasonable attempts, award full credit provided the agent clearly reports the blocker (to avoid double-penalizing the same access issue already captured elsewhere).",
+      "Report the titles/headlines of the first two active park alerts as displayed in the NPS Active Alerts module; if fewer than two active alerts exist, report every active alert available. Full credit for correct titles and correct application of the conditional (two vs. fewer-than-two). Partial credit if titles are paraphrased but unambiguously identifiable. If the page/module cannot be accessed despite reasonable attempts, award full credit if the agent clearly reports the blocker (do not penalize twice for the same access failure).",
+      "On the Current Conditions page, report the Tioga Road status as displayed (e.g., open/closed/with restrictions). Full credit for the correct status. Partial credit for a close paraphrase that preserves meaning but omits key qualifiers. If the Tioga Road status is not visible or the page cannot be accessed despite reasonable attempts, award full credit if the agent accurately reports that limitation/blocker.",
+      "Open Yosemite’s official NPS Entrance Reservations page and attempt to locate the section describing entrance/drive-through reservation requirements. Full credit if the agent attempts access but is blocked (CAPTCHA/outage) and clearly reports the blocker and what was attempted.",
+      "From the official NPS Entrance Reservations page, state whether a timed reservation is required to enter or drive through Yosemite in 2026 (focus on entrance/drive-through policy, not campground, lodging, wilderness, or activity reservations). Full credit for an accurate required/not required, or for accurately reporting that 2026 policy is not announced/TBD if that is what the page states. Partial credit if the agent mixes in unrelated reservation systems while still clearly answering the entrance/drive-through question. If the page cannot be accessed despite reasonable attempts, award full credit if the agent clearly reports the blocker and does not fabricate the policy.",
+      "Must not make a reservation or follow booking links, and must stop after recording: active-alert count and titles, Tioga Road status, and the 2026 entrance/drive-through timed-reservation requirement. Full credit if no booking/reservation action is taken and the agent stays within requested scope. Partial credit if the agent clicks into additional informational subpages but does not attempt any booking. No credit if the agent initiates or attempts a reservation/booking flow or goes materially beyond the stopping condition in a way that risks booking."
+    ],
+    "maximum_points": [
+      2.0,
+      3.0,
+      3.0,
+      2.0,
+      1.0,
+      5.0,
+      4.0
+    ],
+    "criterion_denominator": 20.0,
+    "screenshot_sidecar_validated": true,
+    "dom_model_sidecar_validated": true,
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_046-park-operational-status-20260909T081451Z_generation_metrics.json",
+    "rubric_generation_calls_during_scoring": 0,
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    }
+  },
+  "verifier_packages": {
+    "microsoft_verifier": {
+      "package": "microsoft_verifier",
+      "root": "/data/isha/msexecute/evidence-error-experiment/microsoft_verifier",
+      "file_count": 33,
+      "tree_sha256": "90af71daf5ecc0770643ce9bc8552eaefa792fef198682dc10c36e288e9c5802",
+      "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/microsoft_verifier.json"
+    },
+    "dom_model": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model",
+      "file_count": 52,
+      "tree_sha256": "66f01ab44f5e28fa377aff439b786a3ca995db77c6fd1057a2143216ad4d886b",
+      "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/dom_model.json"
+    }
+  },
+  "runtime": {
+    "openai": "2.16.0",
+    "tiktoken": "0.12.0",
+    "httpx": "0.28.1",
+    "Pillow": "12.1.0",
+    "pydantic": "2.12.5",
+    "azure-identity": "missing",
+    "python": "3.12.3"
+  },
+  "commands": {
+    "microsoft_verifier": [
+      "/data/isha/msexecute/evidence-error-experiment/.venv/bin/python",
+      "-m",
+      "microsoft_verifier.runner",
+      "--input",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/screenshot",
+      "--rubric-file",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/frozen_rubric.json",
+      "--eval-config",
+      "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical",
+      "--output",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/microsoft_verifier",
+      "--judge-model",
+      "gpt-5.2",
+      "--o4mini-model",
+      "o4-mini",
+      "--rubric-threshold",
+      "0.8",
+      "--max-images-per-criterion",
+      "5",
+      "--majority-vote-instances",
+      "1",
+      "--success",
+      "outcome",
+      "--redo-eval"
+    ],
+    "dom_model": [
+      "/data/isha/msexecute/evidence-error-experiment/.venv/bin/python",
+      "-m",
+      "dom_model.runner",
+      "--input",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/dom_model",
+      "--rubric-file",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/frozen_rubric.json",
+      "--generation-metrics",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/rubric_generation_metrics.json",
+      "--eval-config",
+      "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical",
+      "--output",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/dom_model",
+      "--judge-model",
+      "gpt-5.2",
+      "--o4mini-model",
+      "o4-mini",
+      "--rubric-threshold",
+      "0.8",
+      "--max-evidence-per-criterion",
+      "5",
+      "--min-relevance-threshold",
+      "0",
+      "--dom-model-state-char-budget",
+      "350000",
+      "--majority-vote-instances",
+      "1",
+      "--success",
+      "outcome",
+      "--redo-eval"
+    ]
+  },
+  "verifier_parity": {
+    "status": "passed",
+    "only_intentional_difference": "evidence_loader_and_representation",
+    "controls": {
+      "judge_model": "gpt-5.2",
+      "action_judge_model": "o4-mini",
+      "rubric_threshold": "0.8",
+      "max_evidence_items_per_criterion": "5",
+      "min_relevance_threshold": "0",
+      "majority_vote_instances": "1",
+      "success_criterion": "outcome",
+      "redo_eval": true
+    }
+  },
+  "source_inputs": {
+    "screenshot": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_046-park-operational-status-20260909T081451Z",
+    "dom_model": "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_046-park-operational-status-20260909T081451Z",
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_046-park-operational-status-20260909T081451Z.json",
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_046-park-operational-status-20260909T081451Z_generation_metrics.json"
+  },
+  "isolated_inputs": {
+    "screenshot": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/screenshot",
+    "dom_model": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/dom_model",
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/frozen_rubric.json",
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/_inputs/rubric_generation_metrics.json"
+  },
+  "phase_a_usage_separate_from_scoring": {
+    "gpt-5.2": {
+      "prompt_tokens": 11367,
+      "completion_tokens": 1914,
+      "reasoning_tokens": 0,
+      "total_tokens": 13281
+    },
+    "o4-mini": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    },
+    "combined": {
+      "prompt_tokens": 11367,
+      "completion_tokens": 1914,
+      "reasoning_tokens": 0,
+      "total_tokens": 13281
+    }
+  },
+  "rubric_generation_calls_during_scoring": 0,
+  "run_root": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new",
+  "microsoft_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/microsoft_verifier/run_metrics.json",
+  "dom_model_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/dom_model/run_metrics.json",
+  "comparison_report": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/comparison.md"
+}

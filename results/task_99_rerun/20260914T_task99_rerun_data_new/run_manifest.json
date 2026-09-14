@@ -1,0 +1,251 @@
+{
+  "status": "complete",
+  "phase": "B",
+  "paid_calls_authorized": true,
+  "writes_performed": true,
+  "preflight": {
+    "task_id": "browser_task_099-consumer-product-recall-inspection-20260914T093848Z",
+    "task_alias": "task_99_rerun",
+    "actions": 1,
+    "screenshots": 2,
+    "dom_model_states": 2,
+    "alignment": {
+      "task_id": "browser_task_099-consumer-product-recall-inspection-20260914T093848Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e1",
+            "target": {
+              "ref": "e1",
+              "role": "checkbox",
+              "name": "Pretty-print"
+            },
+            "thoughts": "I need to perform at least one confirmed browser action; toggling the Pretty-print checkbox is a simple action that keeps the recall JSON visible for verification."
+          },
+          "observed_after_url": "https://www.saferproducts.gov/RestWebServices/Recall?RecallID=10000&format=json"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "5350518df2b752efe730bb88727fcf0c726c55da10bf8a642609dd4c44dc2538",
+          "after_sha256": "33e54314cbe317be1592106520530c5fd69ced8ffac78b2fcb638444229ebded",
+          "before_url": "https://www.saferproducts.gov/RestWebServices/Recall?RecallID=10000&format=json",
+          "after_url": "https://www.saferproducts.gov/RestWebServices/Recall?RecallID=10000&format=json"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "missing_title",
+          "message": "dom_model1: missing_title",
+          "action_ordinal": null,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/reruns/task_99_rerun.json",
+    "frozen_rubric_sha256": "f525c5189c79ff820071b6074d55eef71ded39a4ffa09746ef1f5c23d9f8a218",
+    "criterion_order": [
+      "Retrieve the recall object from the specified CPSC endpoint (RecallID=10000)",
+      "Report recall identifiers and core fields (RecallID, RecallNumber, RecallDate, Title)",
+      "Report all Products entries (Name and NumberOfUnits for each product)",
+      "Report all Injuries entries (Name for each)",
+      "Report all Retailers entries (Name for each)",
+      "Report all ManufacturerCountries entries (Country for each)",
+      "Report all Hazards, Remedies, and RemedyOptions entries (Name/Option for each)",
+      "Adhere to extraction constraints (no substitution; exact transcription; no fabrication)"
+    ],
+    "criterion_descriptions": [
+      "Use only the recall object returned by https://www.saferproducts.gov/RestWebServices/Recall?RecallID=10000&format=json (or the equivalent supplied endpoint for RecallID=10000). Full credit if the agent clearly bases the response on that returned object OR clearly reports that the endpoint could not be accessed/returned no data (e.g., network error, non-JSON/empty response) without fabricating fields. Partial credit if the agent’s sourcing is unclear but content appears consistent with the endpoint. No credit if the agent primarily uses other sources/other recall IDs or fabricates content.",
+      "Report RecallID, RecallNumber, RecallDate, and Title exactly as returned in the recall object. Full credit if all four are present and exact OR if the agent explicitly states which of these fields are missing/not present in the returned object (or that the object could not be retrieved) and does not invent values. Partial credit if one field is missing or has minor transcription errors when the fields are present. No credit if multiple are incorrect/fabricated.",
+      "From the explicitly named Products array in the returned recall object, report every product's Name and NumberOfUnits. Full credit if all product objects are included with both fields exact OR if Products is empty/missing in the returned object and the agent explicitly reports that (without substituting from other text fields). Partial credit if some but not all products are included (when multiple exist) or one of the two fields per product is missing. No credit if products are substituted from Description/other fields or fabricated.",
+      "From the explicitly named Injuries array, report every Injuries Name exactly as returned. Full credit if all entries are captured OR if Injuries is empty/missing and the agent explicitly reports that (without substituting from Description/ConsumerContact). Partial credit if some entries are omitted when multiple exist or minor transcription errors occur. No credit if injuries are invented or substituted from disallowed fields.",
+      "From the explicitly named Retailers array, report every Retailers Name exactly as returned. Full credit if all entries are captured OR if Retailers is empty/missing and the agent explicitly reports that. Partial credit if some entries are omitted when multiple exist or minor transcription errors occur. No credit if retailer names are invented or substituted from disallowed fields.",
+      "From the explicitly named ManufacturerCountries array, report every Country value exactly as returned. Full credit if all countries are listed OR if the array is empty/missing and the agent explicitly reports that. Partial credit if one country is missing/altered when multiple exist. No credit if countries are fabricated or sourced from non-array text.",
+      "From the explicitly named Hazards array, report every Hazards Name; from the Remedies array, report every Remedies Name; and from the RemedyOptions array, report every RemedyOptions Option, exactly as returned. Full credit if all entries across all three arrays are included OR if any of these arrays are empty/missing and the agent explicitly reports that for each relevant array (without substituting from Description/ConsumerContact). Partial credit if one of the arrays is incomplete/missing from the response despite being present in the object, or if some entries are omitted when multiple exist. No credit if values are fabricated or substituted from disallowed fields.",
+      "Preserve dates, quantities, punctuation, and wording exactly as returned for the fields that are present, and read values only from the explicitly named arrays/fields requested (do not substitute from Description or ConsumerContact). Full credit if the agent maintains exactness for reported fields and does not fabricate; if data is unavailable/empty/missing, the agent should say so rather than guess. Partial credit for minor formatting/transcription deviations that do not change meaning. No credit for clear fabrication or systematic substitution from disallowed fields."
+    ],
+    "maximum_points": [
+      2.0,
+      3.0,
+      3.0,
+      2.0,
+      1.0,
+      2.0,
+      4.0,
+      3.0
+    ],
+    "criterion_denominator": 20.0,
+    "screenshot_sidecar_validated": true,
+    "dom_model_sidecar_validated": true,
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/reruns/task_99_rerun_generation_metrics.json",
+    "rubric_generation_calls_during_scoring": 0,
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    }
+  },
+  "verifier_packages": {
+    "microsoft_verifier": {
+      "package": "microsoft_verifier",
+      "root": "/data/isha/msexecute/evidence-error-experiment/microsoft_verifier",
+      "file_count": 33,
+      "tree_sha256": "90af71daf5ecc0770643ce9bc8552eaefa792fef198682dc10c36e288e9c5802",
+      "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/microsoft_verifier.json"
+    },
+    "dom_model": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model",
+      "file_count": 52,
+      "tree_sha256": "66f01ab44f5e28fa377aff439b786a3ca995db77c6fd1057a2143216ad4d886b",
+      "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/dom_model.json"
+    }
+  },
+  "runtime": {
+    "openai": "2.16.0",
+    "tiktoken": "0.12.0",
+    "httpx": "0.28.1",
+    "Pillow": "12.1.0",
+    "pydantic": "2.12.5",
+    "azure-identity": "missing",
+    "python": "3.12.3"
+  },
+  "commands": {
+    "microsoft_verifier": [
+      "/data/isha/msexecute/evidence-error-experiment/.venv/bin/python",
+      "-m",
+      "microsoft_verifier.runner",
+      "--input",
+      "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/screenshot",
+      "--rubric-file",
+      "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/frozen_rubric.json",
+      "--eval-config",
+      "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical",
+      "--output",
+      "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/microsoft_verifier",
+      "--judge-model",
+      "gpt-5.2",
+      "--o4mini-model",
+      "o4-mini",
+      "--rubric-threshold",
+      "0.8",
+      "--max-images-per-criterion",
+      "5",
+      "--majority-vote-instances",
+      "1",
+      "--success",
+      "outcome",
+      "--redo-eval"
+    ],
+    "dom_model": [
+      "/data/isha/msexecute/evidence-error-experiment/.venv/bin/python",
+      "-m",
+      "dom_model.runner",
+      "--input",
+      "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/dom_model",
+      "--rubric-file",
+      "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/frozen_rubric.json",
+      "--generation-metrics",
+      "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/rubric_generation_metrics.json",
+      "--eval-config",
+      "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical",
+      "--output",
+      "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/dom_model",
+      "--judge-model",
+      "gpt-5.2",
+      "--o4mini-model",
+      "o4-mini",
+      "--rubric-threshold",
+      "0.8",
+      "--max-evidence-per-criterion",
+      "5",
+      "--min-relevance-threshold",
+      "0",
+      "--dom-model-state-char-budget",
+      "350000",
+      "--majority-vote-instances",
+      "1",
+      "--success",
+      "outcome",
+      "--redo-eval"
+    ]
+  },
+  "verifier_parity": {
+    "status": "passed",
+    "only_intentional_difference": "evidence_loader_and_representation",
+    "controls": {
+      "judge_model": "gpt-5.2",
+      "action_judge_model": "o4-mini",
+      "rubric_threshold": "0.8",
+      "max_evidence_items_per_criterion": "5",
+      "min_relevance_threshold": "0",
+      "majority_vote_instances": "1",
+      "success_criterion": "outcome",
+      "redo_eval": true
+    }
+  },
+  "source_inputs": {
+    "screenshot": "/tmp/evidence-reruns-91-100.VAbX5a/data-ss/task_99_rerun",
+    "dom_model": "/tmp/evidence-reruns-91-100.VAbX5a/data-dom/task_99_rerun",
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/reruns/task_99_rerun.json",
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/reruns/task_99_rerun_generation_metrics.json"
+  },
+  "isolated_inputs": {
+    "screenshot": "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/screenshot",
+    "dom_model": "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/dom_model",
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/frozen_rubric.json",
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/_inputs/rubric_generation_metrics.json"
+  },
+  "phase_a_usage_separate_from_scoring": {
+    "gpt-5.2": {
+      "prompt_tokens": 11504,
+      "completion_tokens": 2357,
+      "reasoning_tokens": 0,
+      "total_tokens": 13861
+    },
+    "o4-mini": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    },
+    "combined": {
+      "prompt_tokens": 11504,
+      "completion_tokens": 2357,
+      "reasoning_tokens": 0,
+      "total_tokens": 13861
+    }
+  },
+  "rubric_generation_calls_during_scoring": 0,
+  "run_root": "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new",
+  "microsoft_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/microsoft_verifier/run_metrics.json",
+  "dom_model_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/dom_model/run_metrics.json",
+  "comparison_report": "/data/isha/msexecute/evidence-error-experiment/results/task_99_rerun/20260914T_task99_rerun_data_new/comparison.md"
+}

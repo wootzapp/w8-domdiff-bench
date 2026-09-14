@@ -1,0 +1,485 @@
+{
+  "task_id": "browser_task_082-chess-game-result-inspection-20260909T091031Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_082-chess-game-result-inspection-20260909T091031Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "2080808bbccbe3444a4d2234275a959221a249014904721553df11db85c833d6",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_082-chess-game-result-inspection-20260909T091031Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_082-chess-game-result-inspection-20260909T091031Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Scroll once to confirm and expose the visible game summary elements before reporting them and terminating in the next step."
+          },
+          "observed_after_url": "https://lichess.org/Z01xx8LK"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "e82cd369d3be05261e01c5abbaa71ccc0614664d4f709a65749e1f191a2cf819",
+          "after_sha256": "ebc1bba92495069d3d5fd23dd3c982215497069590c33fa63a9169dc1c52b325",
+          "before_url": "https://lichess.org/Z01xx8LK",
+          "after_url": "https://lichess.org/Z01xx8LK"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "2080808bbccbe3444a4d2234275a959221a249014904721553df11db85c833d6",
+    "criterion_order": [
+      "Access the specified public Lichess game page (Z01xx8LK) only",
+      "Record time control, rated/casual status, and speed category as displayed",
+      "Record both players' names, ratings, and rating changes (correct association)",
+      "Record termination/victory statement, winner, and number of moves",
+      "Respect constraints and stopping condition"
+    ],
+    "maximum_points": [
+      3.0,
+      3.0,
+      5.0,
+      4.0,
+      5.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "result": {
+    "process_score": 0.95,
+    "total_earned_points": 19.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": true,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 81.072
+  },
+  "criteria": [
+    {
+      "criterion": "Access the specified public Lichess game page (Z01xx8LK) only",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Meets the requirement to access the specified public Lichess game page and rely on it. No blockers or alternate sources are evidenced.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record time control, rated/casual status, and speed category as displayed",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent output matches the on-page displayed time control, rated status, and speed category exactly as shown in the DOM.",
+      "penalty": false
+    },
+    {
+      "criterion": "Record both players' names, ratings, and rating changes (correct association)",
+      "action_only_points": 5.0,
+      "final_points": 4.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent correctly reported both player names, ratings, and rating changes with correct association to each player. But the agent additionally asserted a White/Black color mapping (Reini as White, IloveAnya as Black) that is not explicitly supported in the provided DOM snapshots, so a small deduction is warranted for the unproven color association portion while preserving credit for the core requested fields (names/ratings/changes).",
+      "penalty": false
+    },
+    {
+      "criterion": "Record termination/victory statement, winner, and number of moves",
+      "action_only_points": 4.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent output matches the displayed termination (Checkmate), victory statement (White is victorious), winner by name (Reini), and move count (28). Even though White-to-player mapping isn’t proven, winner-by-name is explicitly stated, satisfying this criterion.",
+      "penalty": false
+    },
+    {
+      "criterion": "Respect constraints and stopping condition",
+      "action_only_points": 5.0,
+      "final_points": 5.0,
+      "max_points": 5.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "All constraints appear respected (no prohibited actions; only the public game page used), and the stopping condition is satisfied because the agent’s output includes all requested summary/player fields without unnecessary additional navigation.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 11,
+    "o4-mini": 3,
+    "total": 14,
+    "api_attempts": 14,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 51594,
+      "completion_tokens": 5770,
+      "reasoning_tokens": 0,
+      "total_tokens": 57364
+    },
+    "o4-mini": {
+      "prompt_tokens": 14751,
+      "completion_tokens": 2515,
+      "reasoning_tokens": 1344,
+      "total_tokens": 17266
+    },
+    "combined": {
+      "prompt_tokens": 66345,
+      "completion_tokens": 8285,
+      "reasoning_tokens": 1344,
+      "total_tokens": 74630
+    }
+  },
+  "evidence_metrics": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "e82cd369d3be05261e01c5abbaa71ccc0614664d4f709a65749e1f191a2cf819",
+        "byte_count": 1196,
+        "line_count": 39,
+        "estimated_tokens": 295,
+        "url": "https://lichess.org/Z01xx8LK",
+        "title": "Reini (1894) - IloveAnya (2010) • lichess.org",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 17
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 18,
+            "end_line": 23
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 24,
+            "end_line": 33
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 34,
+            "end_line": 36
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 37,
+            "end_line": 39
+          }
+        ],
+        "control_refs": [
+          "76",
+          "21",
+          "71",
+          "78",
+          "other",
+          "73",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L39"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "ebc1bba92495069d3d5fd23dd3c982215497069590c33fa63a9169dc1c52b325",
+        "byte_count": 1204,
+        "line_count": 39,
+        "estimated_tokens": 297,
+        "url": "https://lichess.org/Z01xx8LK",
+        "title": "Reini (1894) - IloveAnya (2010) • lichess.org",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 17
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 18,
+            "end_line": 23
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 24,
+            "end_line": 33
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 34,
+            "end_line": 36
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 37,
+            "end_line": 39
+          }
+        ],
+        "control_refs": [
+          "76",
+          "21",
+          "71",
+          "78",
+          "other",
+          "73",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L39"
+      }
+    ],
+    "estimated_evidence_tokens": 592,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 9,
+        "3": 10,
+        "4": 10
+      },
+      "1": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 2,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 6255,
+        "estimated_input_tokens": 1564,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 6260,
+        "estimated_input_tokens": 1565,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 7778,
+        "estimated_input_tokens": 1945,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 7773,
+        "estimated_input_tokens": 1944,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 8088,
+        "estimated_input_tokens": 2022,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 8124,
+        "estimated_input_tokens": 2031,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/dom_model/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/dom_model/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/dom_model/run.log"
+}

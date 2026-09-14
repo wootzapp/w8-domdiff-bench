@@ -1,0 +1,245 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_095-electricity-generation-mix-20260914T093058Z",
+  "run_id": "20260914T_task95_rerun_data_new",
+  "rubric_sha256": "7d5a5a273e604a77efabed606d75705b44c94f7111244a300e7c2a6f2108eb8c",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Select the exact requested data record (from 2025-01-01T12:00Z to 2025-01-01T12:30Z)",
+      "description": "Use only the single data record whose 'from' value is exactly 2025-01-01T12:00Z and whose 'to' value is exactly 2025-01-01T12:30Z, even if the API response includes adjacent intervals. Full credit if the correct bounded record is selected and no data from other intervals is mixed in. Full credit also if the agent makes a reasonable attempt to query the API but the exact record is not returned due to external factors (API down/error/rate limit/no data) and the agent clearly reports that the exact bounded record is unavailable. Partial credit if the agent selects an adjacent/overlapping interval while clearly stating the boundary mismatch and that the exact interval was not available in the response. No credit if the agent uses the wrong interval without acknowledging the mismatch or combines multiple records as if they were the requested one.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshots 1 and 2 (latest is Screenshot 2) both show a top-level `data` array containing multiple interval records, including the exact record with `from\":\"2025-01-01T12:00Z\"` and `to\":\"2025-01-01T12:30Z\"` as a distinct object (alongside an adjacent 11:30Z–12:00Z record).",
+        "verifier_justification": "Agent’s predicted output explicitly uses only the 12:00Z–12:30Z bounded record and does not mix adjacent-interval data. This is supported by the screenshots showing that exact record is present and separable.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a raw JSON response beginning with `{ \"data\": [ ... ] }`. Within the visible text, one record clearly shows `\"from\":\"2025-01-01T12:00Z\"` and `\"to\":\"2025-01-01T12:30Z\"` followed by a `\"generationmix\"` array. Another adjacent record is also visible: `\"from\":\"2025-01-01T11:30Z\"` to `\"to\":\"2025-01-01T12:00Z\"`.",
+            "criterion_analysis": "The screenshot contains the exact requested bounded record (12:00Z–12:30Z) as a distinct entry, so selecting that record is possible and supported. The agent’s predicted output states it used only the 12:00Z–12:30Z record, which matches what is visible.",
+            "discrepancies": "No discrepancy: the screenshot visibly includes both the requested interval and an adjacent interval, and the agent claims to use the requested one only.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a JSON response with a top-level object containing \"data\": [ ... ]. Inside are at least two records. One record clearly shows \"from\":\"2025-01-01T11:30Z\",\"to\":\"2025-01-01T12:00Z\". A second record clearly shows \"from\":\"2025-01-01T12:00Z\",\"to\":\"2025-01-01T12:30Z\" followed by its \"generationmix\" array.",
+            "criterion_analysis": "The screenshot contains the exact requested bounded record (from 2025-01-01T12:00Z to 2025-01-01T12:30Z). The agent’s predicted output states it used only that record, which is consistent with the visible JSON. No evidence in the predicted output indicates mixing intervals.",
+            "discrepancies": "No discrepancy: the requested interval record is visible in the screenshot and matches what the agent selected in the predicted output.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows the API JSON response includes two interval records under \"data\", with the second record exactly bounded by \"from\":\"2025-01-01T12:00Z\" and \"to\":\"2025-01-01T12:30Z\". The agent output explicitly states it used only that exact record and does not mix adjacent interval values.",
+        "verifier_justification": "The exact requested record is explicitly present in the latest DOM-model, and the agent selected that exact interval without incorporating adjacent-interval data. No adjustment from baseline is warranted.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL https://api.carbonintensity.org.uk/generation/2025-01-01T12:00Z/2025-01-01T12:30Z and JSON containing two records under \"data\": one with \"from\":\"2025-01-01T11:30Z\",\"to\":\"2025-01-01T12:00Z\" and another with \"from\":\"2025-01-01T12:00Z\",\"to\":\"2025-01-01T12:30Z\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly includes the exact requested bounded record (\"from\":\"2025-01-01T12:00Z\" and \"to\":\"2025-01-01T12:30Z\"). The agent’s predicted output states it is using only the record with from 2025-01-01T12:00Z and to 2025-01-01T12:30Z, satisfying the requirement to select that exact interval and not the adjacent one.",
+            "discrepancies": "No discrepancy between the requested interval and the interval present in the DOM; the DOM also includes an adjacent interval, but the agent indicates it is not using it.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the API JSON with two records under \"data\": (1) {\"from\":\"2025-01-01T11:30Z\",\"to\":\"2025-01-01T12:00Z\",...} and (2) {\"from\":\"2025-01-01T12:00Z\",\"to\":\"2025-01-01T12:30Z\",\"generationmix\":[{\"fuel\":\"biomass\",\"perc\":3.4},{\"fuel\":\"coal\",\"perc\":0},{\"fuel\":\"imports\",\"perc\":14.7},{\"fuel\":\"gas\",\"perc\":7},{\"fuel\":\"nuclear\",\"perc\":15.1},{\"fuel\":\"other\",\"perc\":0},{\"fuel\":\"hydro\",\"perc\":0.3},{\"fuel\":\"solar\",\"perc\":1.9},{\"fuel\":\"wind\",\"perc\":57.6}]}",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the exact requested bounded record (from 2025-01-01T12:00Z to 2025-01-01T12:30Z) as the second object in the \"data\" array. The agent’s predicted output states it is using only that exact record and does not reference values from the adjacent 11:30Z–12:00Z interval.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report every generationmix fuel-perc pair in returned order with exact precision",
+      "description": "For the selected record (only), list every (fuel, perc) pair from its generationmix array, preserving the exact returned order and the exact decimal precision as provided. Full credit if all pairs are included once, in order, with unchanged numeric formatting. If the exact requested record is unavailable due to external API limitations and the agent clearly reports that unavailability (per criterion 1), award full credit for not fabricating values; otherwise, if an adjacent interval is explicitly used (with mismatch disclosed), grade based on correctness for that disclosed interval. Partial credit if all fuels are correct but order is changed or minor formatting/precision changes occur. No credit if fuels/perc values are missing, added, or materially altered for the claimed record.",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshots 1 and 2 (latest is Screenshot 2) show the 12:00Z–12:30Z record’s `generationmix` array with 9 entries in this exact order and formatting: biomass 3.4; coal 0; imports 14.7; gas 7; nuclear 15.1; other 0; hydro 0.3; solar 1.9; wind 57.6.",
+        "verifier_justification": "Agent lists all nine fuel–perc pairs, in the same returned order, and preserves the displayed numeric precision (including integer `7` and explicit `0`s). No omissions or reordering are evident.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the 12:00Z–12:30Z record, the `generationmix` array is visible in this order with these perc values: `{\"fuel\":\"biomass\",\"perc\":3.4}`, `{\"fuel\":\"coal\",\"perc\":0}`, `{\"fuel\":\"imports\",\"perc\":14.7}`, `{\"fuel\":\"gas\",\"perc\":7}`, `{\"fuel\":\"nuclear\",\"perc\":15.1}`, `{\"fuel\":\"other\",\"perc\":0}`, `{\"fuel\":\"hydro\",\"perc\":0.3}`, `{\"fuel\":\"solar\",\"perc\":1.9}`, `{\"fuel\":\"wind\",\"perc\":57.6}`.",
+            "criterion_analysis": "The agent’s predicted output lists all nine fuel–perc pairs, in the same order, and preserves the same decimal precision as displayed (e.g., 3.4, 14.7, 0.3, 57.6; integer 7; zeros as 0). This matches the screenshot exactly.",
+            "discrepancies": "None: the listed fuels, order, and numeric formatting align with the visible JSON for the 12:00Z–12:30Z record.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "For the record with \"from\":\"2025-01-01T12:00Z\",\"to\":\"2025-01-01T12:30Z\", the screenshot shows \"generationmix\":[{\"fuel\":\"biomass\",\"perc\":3.4},{\"fuel\":\"coal\",\"perc\":0},{\"fuel\":\"imports\",\"perc\":14.7},{\"fuel\":\"gas\",\"perc\":7},{\"fuel\":\"nuclear\",\"perc\":15.1},{\"fuel\":\"other\",\"perc\":0},{\"fuel\":\"hydro\",\"perc\":0.3},{\"fuel\":\"solar\",\"perc\":1.9},{\"fuel\":\"wind\",\"perc\":57.6}]. The order and decimal formatting are as shown (e.g., 0.3, 57.6).",
+            "criterion_analysis": "The agent’s listed fuel–perc pairs exactly match the screenshot for the 12:00Z–12:30Z record, in the same order, and with the same visible precision (e.g., hydro 0.3, wind 57.6). Full set of 9 entries is included.",
+            "discrepancies": "None: the predicted output aligns with the generationmix array content, order, and numeric formatting shown in the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows, for the 2025-01-01T12:00Z→12:30Z record, generationmix returned in this order with these perc values: biomass 3.4; coal 0; imports 14.7; gas 7; nuclear 15.1; other 0; hydro 0.3; solar 1.9; wind 57.6. The agent output lists all nine pairs in the same order and preserves the numeric formatting (decimals vs integers) as shown.",
+        "verifier_justification": "All fuel–perc pairs are present exactly once, in the returned order, and with matching precision/formatting per the latest DOM-model. Baseline stands.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1, for the record \"from\":\"2025-01-01T12:00Z\",\"to\":\"2025-01-01T12:30Z\", the generationmix array is returned in this order with these exact perc values: biomass 3.4; coal 0; imports 14.7; gas 7; nuclear 15.1; other 0; hydro 0.3; solar 1.9; wind 57.6.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent lists every (fuel, perc) pair for the 12:00Z–12:30Z record, preserves the returned order, and matches the DOM-provided decimal precision/formatting as shown (including integer 0 and integer 7). No fuels are missing or added relative to the DOM’s generationmix array for that record.",
+            "discrepancies": "Minor formatting risk: the agent labels the list with numbering and text \"fuel:\"/\"perc:\", but the underlying fuel names and numeric strings match the DOM values exactly.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0, second record’s generationmix array is explicitly: [{\"fuel\":\"biomass\",\"perc\":3.4},{\"fuel\":\"coal\",\"perc\":0},{\"fuel\":\"imports\",\"perc\":14.7},{\"fuel\":\"gas\",\"perc\":7},{\"fuel\":\"nuclear\",\"perc\":15.1},{\"fuel\":\"other\",\"perc\":0},{\"fuel\":\"hydro\",\"perc\":0.3},{\"fuel\":\"solar\",\"perc\":1.9},{\"fuel\":\"wind\",\"perc\":57.6}]. Agent output lists (in this same order): biomass 3.4; coal 0; imports 14.7; gas 7; nuclear 15.1; other 0; hydro 0.3; solar 1.9; wind 57.6.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll (fuel, perc) pairs from the selected record’s generationmix array are reported once, in the same returned order, with the same decimal precision/formatting as shown in the DOM (including integer-form perc values like 0 and 7).",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Identify all fuels with perc equal to zero (explicit zeros only)",
+      "description": "Explicitly name every fuel in the selected record whose perc value is exactly 0 (as returned), and do not treat omitted fuels as zero. Full credit if all and only explicitly-zero fuels are identified. If the exact requested record is unavailable and the agent clearly reports that unavailability without inventing data, award full credit. Partial credit if some zero fuels are missed or a non-zero fuel is incorrectly flagged as zero. No credit if the agent infers zeros for fuels not present in the generationmix array.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 (latest is Screenshot 2) show explicit `perc:0` only for fuels `coal` and `other` in the 12:00Z–12:30Z record; all other listed fuels have nonzero perc values.",
+        "verifier_justification": "Agent identifies exactly the explicit zero-percentage fuels (coal, other) and does not infer zeros for any omitted fuels (none are omitted in this record anyway).",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Within the visible 12:00Z–12:30Z `generationmix` array, the fuels with explicit `\"perc\":0` are `coal` and `other`. No other entries show `perc` as 0 in that record.",
+            "criterion_analysis": "The agent’s predicted output identifies exactly `coal` and `other` as zero-percentage fuels, matching the screenshot and not inferring any additional zeros.",
+            "discrepancies": "None: the zero-percentage fuels stated by the agent match the explicit zeros visible in the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the 12:00Z–12:30Z generationmix array shown, the fuels with \"perc\":0 are explicitly \"coal\" and \"other\". All other fuels have nonzero values (biomass 3.4, imports 14.7, gas 7, nuclear 15.1, hydro 0.3, solar 1.9, wind 57.6).",
+            "criterion_analysis": "The agent identifies exactly the explicit zero-percentage fuels (coal, other) and does not mark any additional fuels as zero. This matches the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 shows explicit perc=0 entries only for fuels coal and other in the selected record. The agent’s zero list contains exactly coal and other.",
+        "verifier_justification": "The agent correctly identified all and only the explicitly zero-percentage fuels for the requested record, with no inferred zeros. No score change.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1, in the 12:00Z–12:30Z generationmix array, explicit zeros appear at: {\"fuel\":\"coal\",\"perc\":0} and {\"fuel\":\"other\",\"perc\":0}. No other fuels in that record have perc 0.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent identifies exactly the explicitly zero-percentage fuels for the selected record: coal and other. It does not infer zeros for any omitted fuels (and none are omitted in this array).",
+            "discrepancies": "No discrepancies; all and only explicit zero-perc fuels are listed.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0, for the 12:00Z–12:30Z record, explicit zero perc entries are {\"fuel\":\"coal\",\"perc\":0} and {\"fuel\":\"other\",\"perc\":0}. Agent output’s zero list is: coal; other.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent identifies all and only fuels with explicit perc equal to 0 in the selected record (coal and other). No omitted fuels are treated as zero.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Calculate the sum of all returned perc values for the selected record",
+      "description": "Compute the total by summing only the perc values present in the selected record's generationmix array (no inference from generation quantities). Full credit if the sum is correct for that record. If the exact requested record is unavailable due to external API limitations and the agent clearly reports that and does not fabricate a total, award full credit. Partial credit if arithmetic is slightly off but clearly based on the correct list of perc values for the record actually reported. No credit if the sum uses the wrong interval without disclosure, includes inferred/omitted fuels, or is not provided when data is available.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 (latest is Screenshot 2) provide the perc values for the 12:00Z–12:30Z record: 3.4, 0, 14.7, 7, 15.1, 0, 0.3, 1.9, 57.6.",
+        "verifier_justification": "Agent sums only the returned perc values for the correct record and gets 100.0, which matches the arithmetic from the screenshot values. No inferred fuels or quantities are used.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot provides the perc values for the 12:00Z–12:30Z record: 3.4, 0, 14.7, 7, 15.1, 0, 0.3, 1.9, 57.6. The screenshot itself does not display a computed total—only the raw values.",
+            "criterion_analysis": "Summing the visible perc values for that record yields 3.4 + 0 + 14.7 + 7 + 15.1 + 0 + 0.3 + 1.9 + 57.6 = 100.0. The agent’s predicted output reports 100.0, which is consistent with the values shown in the screenshot.",
+            "discrepancies": "None: the agent’s total is supported by and consistent with the perc values visible for the requested record.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot provides the perc values for the 12:00Z–12:30Z record: 3.4, 0, 14.7, 7, 15.1, 0, 0.3, 1.9, 57.6.",
+            "criterion_analysis": "Summing the visible values yields 3.4+0+14.7+7+15.1+0+0.3+1.9+57.6 = 100.0, which matches the agent’s reported total. The calculation uses only the returned perc values for that record.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest DOM-model evidence: DOM_MODEL_STATE_INDEX 1 provides perc values for the selected record: 3.4, 0, 14.7, 7, 15.1, 0, 0.3, 1.9, 57.6. The agent sums these to 100.0.",
+        "verifier_justification": "The arithmetic matches the sum of the returned perc values for the exact requested interval and uses only values from that record. Baseline remains correct.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1, the perc values for 12:00Z–12:30Z are 3.4, 0, 14.7, 7, 15.1, 0, 0.3, 1.9, 57.6. The agent sums these as \"= 100.0\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nSumming the DOM-listed perc values for the selected record gives 3.4 + 0 + 14.7 + 7 + 15.1 + 0 + 0.3 + 1.9 + 57.6 = 100.0, which matches the agent’s reported total. The total is computed only from the returned perc values for that record.",
+            "discrepancies": "No discrepancies; arithmetic matches the perc list for the correct interval.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 provides perc values for the selected record: 3.4, 0, 14.7, 7, 15.1, 0, 0.3, 1.9, 57.6. Agent computes: 3.4 + 0 + 14.7 + 7 + 15.1 + 0 + 0.3 + 1.9 + 57.6 = 100.0.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nSumming the DOM-listed perc values for the selected record yields 100.0 (3.4+14.7=18.1; +7=25.1; +15.1=40.2; +0.3=40.5; +1.9=42.4; +57.6=100.0; zeros do not change the total). The agent’s reported total matches this.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

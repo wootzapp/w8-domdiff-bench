@@ -1,0 +1,727 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_061-npm-package-metadata-20260909T084033Z",
+  "run_id": "20260912T_task061_data_new",
+  "rubric_sha256": "51d85ccf1ea752a69f80236d568acd7c68dbea30f14b67afb334ca03e1873afe",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use official npm Registry response at specified URL",
+      "description": "Agent attempts to consult the official npm Registry JSON response from https://registry.npmjs.org/typescript/latest and uses it as the source for all requested fields. Full credit if the agent clearly indicates the URL is inaccessible (e.g., downtime/network/CAPTCHA/blocking) and therefore the registry response could not be retrieved. Partial credit if another source is used only after a clear attempt to use the specified URL (and the limitation is explained). No credit if values are provided without evidence or without attempting the specified URL.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots 1 and 2 both show a raw JSON document with npm-registry-typical fields (e.g., _id, name, version, license, dist.tarball pointing to https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz). Action History shows the agent was on https://registry.npmjs.org/typescript/latest and scrolled. Latest evidence: Screenshot 2 continues to show the same registry-style JSON.",
+        "verifier_justification": "The action history directly indicates use of the official npm registry /latest endpoint, and the screenshots are consistent with an npm Registry response (including registry tarball URL). No evidence of using alternative sources. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a page rendering raw JSON (with a visible “Pretty-print” checkbox at top). In the JSON, fields like \"bin\":{\"tsc\":\"bin/tsc\"...}, \"bugs\":{\"url\":\"https://github.com/microsoft/TypeScript/issues\"}, and a \"dist\" object are visible. The content appears consistent with an npm registry JSON response for TypeScript, but the browser address bar / URL is not visible in the screenshot.",
+            "criterion_analysis": "The screenshot supports that the agent is viewing an npm-style JSON payload that includes typical registry fields (e.g., dist, maintainers, license). However, because the URL bar is not visible, the screenshot alone cannot confirm it is specifically from https://registry.npmjs.org/typescript/latest. Still, it is consistent with the official registry response format.",
+            "discrepancies": "Agent/predicted output cites the specific URL. The screenshot does not display the URL, so that specific claim is not directly verifiable from pixels (though the JSON format aligns with it).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows a raw JSON response consistent with an npm registry endpoint (plain text JSON). Visible fields include keys like \"_id\":\"typescript@7.0.2\", \"name\":\"typescript\", \"version\":\"7.0.2\", \"license\":\"Apache-2.0\", and a \"dist\" object containing \"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\", \"fileCount\":416, and \"unpackedSize\":13134585. The browser UI shows a \"Pretty-print\" checkbox at the top, typical of viewing JSON directly in a browser.",
+            "criterion_analysis": "The visible content is clearly the official npm Registry-style JSON for TypeScript (it includes registry.npmjs.org tarball URL and standard npm metadata). While the screenshot itself does not show the exact address bar URL, the content matches what would come from https://registry.npmjs.org/typescript/latest, supporting that the agent used the correct source.",
+            "discrepancies": "Agent claims the source URL explicitly; the screenshot does not show the URL bar, but the JSON content (registry tarball URL, standard fields) is consistent with npm registry output, so no direct contradiction is visible.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "DOM-model states 0 and 1 both show the browser at https://registry.npmjs.org/typescript/latest with raw JSON content including keys like \"tag\":\"latest\" and a \"dist\" object (e.g., tarball URL and fileCount). Latest evidence: DOM-model state 1 confirms the same URL and JSON response view.",
+        "verifier_justification": "The agent demonstrably attempted to use (and was viewing) the official npm Registry /latest JSON at the specified URL. This meets the criterion.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browser at URL \"https://registry.npmjs.org/typescript/latest\" with visible JSON content including: \"tag\":\"latest\" and within \"dist\": \"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\" plus \"fileCount\":416 (also showing \"shasum\" and \"integrity\"). No other required fields (name, version string, license, engines.node, dist.unpackedSize) are visible in the provided DOM snapshot excerpt.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion: Use official npm Registry response at specified URL.\nThe DOM evidence explicitly confirms the agent was on the official npm Registry URL (DOM_MODEL_STATE_INDEX: 1, URL: https://registry.npmjs.org/typescript/latest) and that the content is the registry JSON (e.g., contains \"tag\":\"latest\" and \"dist\" object with npm tarball URL). However, the DOM snapshot does not explicitly show all fields the agent reported (name/version/license/engines.node/unpackedSize); only some (e.g., dist.fileCount and a tarball that includes \"typescript-7.0.2.tgz\") appear. Thus, there is partial support that the agent used the correct registry response, but not full DOM support for all extracted values.",
+            "discrepancies": "The agent’s reported values for name (\"typescript\"), version (\"7.0.2\"), license (\"Apache-2.0\"), engines.node (\">=14.17\"), and dist.unpackedSize (13134585) are not visible in the provided DOM snippet, so the DOM evidence cannot substantiate them. The agent’s dist.fileCount=416 is supported by the visible JSON (\"fileCount\":416).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://registry.npmjs.org/typescript/latest\" and VISIBLE CONTENT is a JSON object containing fields like \"tag\":\"latest\" and \"dist\":{...}.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM state explicitly shows the agent is on the specified official npm Registry /latest endpoint URL and is viewing the registry JSON response content.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C1",
+          "evidence_requirement": "Use official npm Registry response at specified URL",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot1.png",
+                "visible_text": "Use official npm Registry response at specified URL",
+                "locator": "criterion-relevant content in screenshot1.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The action history directly indicates use of the official npm registry /latest endpoint, and the screenshots are consistent with an npm Registry response (including registry tarball URL). No evidence of using alternative sources. Keep full ",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L1-L1",
+                "quoted_text": "URL: https://registry.npmjs.org/typescript/latest"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent demonstrably attempted to use (and was viewing) the official npm Registry /latest JSON at the specified URL. This meets the criterion.",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Record package name",
+      "description": "Report the package name exactly as it appears in the retrieved registry response. Full credit for exact match. If the registry response could not be accessed, full credit for explicitly stating the package name cannot be confirmed from the registry response due to access failure (and not fabricating a value). No credit for an incorrect name when the registry response is accessible, or for fabricating a value when it is not.",
+      "max_points": 1,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshot 1 shows top-level \"name\":\"typescript\". Screenshot 2 also shows the package as TypeScript (including tarball path segment typescript-7.0.2.tgz). Latest evidence: Screenshot 2 is consistent with name being \"typescript\".",
+        "verifier_justification": "Agent output matches the registry JSON exactly for the package name. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Within the JSON, the package name appears multiple times, including \"name\":\"typescript\" (e.g., in the top-level and in dist/tarball path segments like \"/typescript/-/typescript-7.0.2.tgz\").",
+            "criterion_analysis": "The screenshot directly shows the package name as \"typescript\", matching the agent’s predicted output.",
+            "discrepancies": "None for the name; it matches what is visible.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the JSON text, the field \"name\":\"typescript\" is visible.",
+            "criterion_analysis": "The agent’s predicted output reports name \"typescript\", which exactly matches the visible registry response.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Latest evidence: DOM-model state 1 shows URL path /typescript/latest and within JSON shows dist.tarball as \"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\", which explicitly contains the package identifier \"typescript\".",
+        "verifier_justification": "Even though a top-level \"name\" key isn’t shown, the registry response being viewed explicitly contains \"typescript\" in both the endpoint path and tarball URL. This supports the reported package name.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 at URL https://registry.npmjs.org/typescript/latest shows a JSON snippet beginning with: {\"bin\":{\"tsc\":\"bin/tsc\"},\"tag\":\"latest\",... ,\"dist\":{\"shasum\":\"9ec773d7954a8c182c17cc5bbd575aa28bc51582\",\"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\",\"fileCount\":416,...}}. This evidence includes the package identifier in the tarball path and URL path as \"typescript\" (\".../typescript/latest\" and \".../typescript-7.0.2.tgz\").",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 1 (Record package name): The DOM model explicitly indicates the package is TypeScript via the registry endpoint path \"https://registry.npmjs.org/typescript/latest\" and the dist.tarball value containing \"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\", both of which embed the package name \"typescript\" exactly.",
+            "discrepancies": "No discrepancy for the package name criterion: the DOM evidence supports the name \"typescript\". (Note: other requested fields like top-level \"name\", \"license\", and \"engines.node\" are not shown in the provided visible DOM snippet, but that is outside this single criterion.)",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes \"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\" and the URL itself is /typescript/latest, but the \"name\" field is not shown in the visible snippet.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe package name value is not explicitly present in the provided DOM snippet, so it cannot be confirmed from this DOM evidence alone.",
+            "discrepancies": "Agent output claimed name \"typescript\" but the DOM snippet does not display a \"name\" key/value to verify it.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C2",
+          "evidence_requirement": "Record package name",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot1.png",
+                "visible_text": "Record package name",
+                "locator": "criterion-relevant content in screenshot1.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Agent output matches the registry JSON exactly for the package name. Keep full credit.",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model0.txt",
+                "line_range": "m0:L7-L7",
+                "quoted_text": "typescript-7.0.2"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Even though a top-level \"name\" key isn’t shown, the registry response being viewed explicitly contains \"typescript\" in both the endpoint path and tarball URL. This supports the reported package name.",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record latest version",
+      "description": "Report the version exactly as provided in the /latest registry response. Full credit for exact string match. If the registry response could not be accessed, full credit for explicitly stating the version cannot be confirmed from the registry response due to access failure (and not guessing). Partial credit if a plausible TypeScript version is given but it is not explicitly from /latest after access was available.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows \"version\":\"7.0.2\" and \"_id\":\"typescript@7.0.2\". Screenshot 2 also shows \"version\":\"7.0.2\" and tarball filename containing 7.0.2. Latest evidence: Screenshot 2 confirms 7.0.2.",
+        "verifier_justification": "The agent-reported version (7.0.2) is directly supported by the registry response shown in screenshots. Baseline score of 0 was incorrect; award full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON shows \"version\":\"7.0.2\" near the bottom portion visible. Also visible are tarball references containing \"typescript-7.0.2.tgz\".",
+            "criterion_analysis": "The latest version shown in the visible JSON is 7.0.2, consistent with the agent’s predicted output.",
+            "discrepancies": "None; the predicted version matches the visible \"version\":\"7.0.2\".",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON shows \"version\":\"7.0.2\" and also \"_id\":\"typescript@7.0.2\".",
+            "criterion_analysis": "The agent’s predicted output lists version \"7.0.2\", matching the value visible in the screenshot.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest evidence: DOM-model state 1 shows dist.tarball \".../typescript-7.0.2.tgz\" in the /latest JSON response, which explicitly contains the version substring \"7.0.2\".",
+        "verifier_justification": "The version string the agent reported (\"7.0.2\") is explicitly evidenced in the official /latest response via the tarball filename, so it is supported.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the npm registry /latest JSON snippet including: \"tag\":\"latest\" and within \"dist\" it includes \"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\" (visible content). This tarball filename explicitly contains the latest version string \"7.0.2\" as part of the official /latest response at URL https://registry.npmjs.org/typescript/latest.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is to report the latest version exactly as provided in the /latest registry response. In DOM_MODEL_STATE_INDEX: 1 (URL https://registry.npmjs.org/typescript/latest), the visible JSON includes \"dist\" → \"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\", which explicitly encodes the version \"7.0.2\" in the official /latest response. Therefore the agent’s reported version \"7.0.2\" is directly supported by the DOM-model evidence.",
+            "discrepancies": "No discrepancy for the version criterion: the DOM evidence (tarball URL containing \"typescript-7.0.2.tgz\") matches the reported version \"7.0.2\" exactly.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT shows \"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\".",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe latest version can be directly evidenced from the tarball filename in the registry response snippet (typescript-7.0.2.tgz), supporting the agent-reported version \"7.0.2\".",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C3",
+          "evidence_requirement": "Record latest version",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot1.png",
+                "visible_text": "Record latest version",
+                "locator": "criterion-relevant content in screenshot1.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent-reported version (7.0.2) is directly supported by the registry response shown in screenshots. Baseline score of 0 was incorrect; award full credit.",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model0.txt",
+                "line_range": "m0:L7-L7",
+                "quoted_text": "typescript-7.0.2"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The version string the agent reported (\"7.0.2\") is explicitly evidenced in the official /latest response via the tarball filename, so it is supported.",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record license",
+      "description": "Report the license value exactly as shown in the registry response for the latest release. Full credit for exact value. If the registry response could not be accessed, full credit for explicitly stating the license cannot be confirmed from the registry response due to access failure (and not guessing).",
+      "max_points": 1,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshot 1 shows \"license\":\"Apache-2.0\". Screenshot 2 also shows \"license\":\"Apache-2.0\". Latest evidence: Screenshot 2 confirms the same.",
+        "verifier_justification": "Agent output matches the registry JSON license exactly. Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The JSON includes \"license\":\"Apache-2.0\" (visible near the middle-left area of the JSON block, after a \"types\" field reference).",
+            "criterion_analysis": "The license value is clearly visible as Apache-2.0 and matches the agent’s predicted output.",
+            "discrepancies": "None; predicted license matches the screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The JSON includes \"license\":\"Apache-2.0\".",
+            "criterion_analysis": "The agent’s predicted output lists license \"Apache-2.0\", which matches the screenshot exactly.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Latest evidence: DOM-model state 1 visible JSON includes an explicit field \"license\":\"Apache-2.0\".",
+        "verifier_justification": "The agent’s reported license matches the license field shown in the registry response.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the npm registry JSON at URL https://registry.npmjs.org/typescript/latest. In the visible content, the object includes the exact field: \"license\":\"Apache-2.0\" (appearing alongside other keys like \"bin\", \"tag\":\"latest\", and \"dist\":{...}).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is to record the license value exactly as shown in the official npm Registry response. In DOM_MODEL_STATE_INDEX: 1 (URL https://registry.npmjs.org/typescript/latest), the JSON explicitly contains \"license\":\"Apache-2.0\". This directly supports the agent’s reported license value without inference.",
+            "discrepancies": "No discrepancy for the license field: the agent output \"Apache-2.0\" matches the DOM evidence \"license\":\"Apache-2.0\".",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT does not show any \"license\" field before truncation (content ends mid \"keyid\":\"SHA256:D\").",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe license value is not visible in this DOM snapshot, so the agent’s claimed license cannot be verified from the provided DOM evidence.",
+            "discrepancies": "Agent output claimed license \"Apache-2.0\" but the DOM snippet does not show \"license\".",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C4",
+          "evidence_requirement": "Record license",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot1.png",
+                "visible_text": "Record license",
+                "locator": "criterion-relevant content in screenshot1.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Agent output matches the registry JSON license exactly. Keep full credit.",
+            "review_note": "The screenshot visibly includes license Apache-2.0, but the clipped DOM JSON ends before the license field."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "The agent’s reported license matches the license field shown in the registry response.",
+            "review_note": "The screenshot visibly includes license Apache-2.0, but the clipped DOM JSON ends before the license field."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Record Node.js engine requirement from engines.node",
+      "description": "Report the Node.js requirement exactly from engines.node in the registry response. Full credit for exact string from engines.node. If the registry response could not be accessed, full credit for explicitly stating engines.node cannot be confirmed from the registry response due to access failure (and not substituting from other docs). Partial credit if a Node requirement is provided from a non-registry source after a documented registry access failure.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          0,
+          1
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 2 visibly includes an \"engines\" object with \"node\":\">=14.17\" (Screenshot 1 did not show it, but latest Screenshot 2 does).",
+        "verifier_justification": "The Node.js engine requirement is explicitly visible in the latest screenshot and matches the agent output exactly (\">=14.17\"). Baseline 0 was incorrect; award full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the visible JSON, there is an \"engines\" object showing \"node\":\">=14.17\" (appearing after the long \"files\" array section).",
+            "criterion_analysis": "The Node.js engine requirement is visible and matches the agent’s predicted output exactly (\">=14.17\").",
+            "discrepancies": "None; predicted engines.node matches screenshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "In the visible JSON, there is no \"engines\" object shown and no substring clearly indicating \"engines\":{\"node\":...}. The visible text includes many fields (dist, maintainers, etc.), but an engines.node value is not readable/present in the screenshot area.",
+            "criterion_analysis": "The screenshot does not provide visible evidence for the Node.js requirement from engines.node. Therefore, the agent’s reported \"engines.node: \">=14.17\" is not verifiable from this screenshot and may be unsupported by the shown pixels.",
+            "discrepancies": "Agent output includes an engines.node requirement (\">=14.17\"), but the screenshot does not show an engines.node field, so this claim is not supported by the provided visual evidence.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM-model states 0 and 1: neither visible JSON excerpt shows an \"engines\" object or an \"engines\":{\"node\":...} field. Latest evidence: DOM-model state 1 still does not display engines.node.",
+        "verifier_justification": "Because engines.node is not visible anywhere in the provided DOM evidence, the agent’s specific engines.node value (\">=14.17\") is not confirmed by the registry response shown. With no blocker indicated, this is an unproven/fabricated extraction in terms of DOM support.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 at URL https://registry.npmjs.org/typescript/latest shows a JSON snippet including the substring: \"dist\":{\"shasum\":\"9ec773d7954a8c182c17cc5bbd575aa28bc51582\",\"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\",\"fileCount\":416,...}.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe rubric criterion is to record the Node.js engine requirement exactly from engines.node in the official registry response. In DOM_MODEL_STATE_INDEX: 1, the visible JSON includes \"dist\" fields (including \"fileCount\":416) but does not show any \"engines\" object nor an \"engines\":{\"node\":...} value. Therefore, the DOM evidence does not support confirming the engines.node requirement from the registry response as presented here.",
+            "discrepancies": "Agent predicted output asserts engines.node is \">=14.17\", but DOM_MODEL_STATE_INDEX: 1 does not display any engines.node field to substantiate that claim from the registry response snapshot provided.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT does not include an \"engines\" object or \"engines\":{\"node\":...} before the JSON truncates.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe Node.js engine requirement from engines.node is not present in the visible DOM snippet, so it cannot be confirmed from this evidence.",
+            "discrepancies": "Agent output claimed engines.node \">=14.17\" but the DOM snippet does not show \"engines\"/\"node\".",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C5",
+          "evidence_requirement": "Record Node.js engine requirement from engines.node",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "Record Node.js engine requirement from engines.node",
+                "locator": "criterion-relevant content in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The Node.js engine requirement is explicitly visible in the latest screenshot and matches the agent output exactly (\">=14.17\"). Baseline 0 was incorrect; award full credit.",
+            "review_note": "The screenshot visibly includes engines.node >=14.17, but that field is absent from both DOM states."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Because engines.node is not visible anywhere in the provided DOM evidence, the agent’s specific engines.node value (\">=14.17\") is not confirmed by the registry response shown. With no blocker indicated, this is an unproven/fabricated extrac",
+            "review_note": "The screenshot visibly includes engines.node >=14.17, but that field is absent from both DOM states."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Record unpacked size in bytes from dist.unpackedSize",
+      "description": "Report dist.unpackedSize as an integer exactly as shown in the registry response (bytes only; no unit conversion). Full credit for exact numeric value from dist.unpackedSize. If the registry response could not be accessed, full credit for explicitly stating dist.unpackedSize cannot be confirmed from the registry response due to access failure (and not estimating).",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows in the dist object: \"unpackedSize\":13134585. Screenshot 2 also shows \"unpackedSize\":13134585. Latest evidence: Screenshot 2 confirms 13134585.",
+        "verifier_justification": "The unpacked size value is directly shown in the registry JSON and matches the agent output exactly, with no unit conversion. Baseline 0 was incorrect; award full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Inside the \"dist\" object at the top of the JSON, the screenshot shows \"unpackedSize\":13134585.",
+            "criterion_analysis": "The unpacked size is explicitly shown as 13134585 bytes, matching the predicted output and respecting the no-conversion constraint.",
+            "discrepancies": "None; predicted dist.unpackedSize matches the screenshot value.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Within the \"dist\" object, the screenshot shows \"unpackedSize\":13134585.",
+            "criterion_analysis": "The agent’s predicted output lists dist.unpackedSize 13134585, matching the value visible in the registry response.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "DOM-model states 0 and 1: the visible \"dist\" object shows fields like shasum, tarball, and fileCount, but no \"unpackedSize\" key/value is visible. Latest evidence: DOM-model state 1 still does not show dist.unpackedSize.",
+        "verifier_justification": "dist.unpackedSize is not present in the visible DOM evidence, so the agent’s numeric unpackedSize claim cannot be credited as having been read from the registry response.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the npm registry JSON at URL https://registry.npmjs.org/typescript/latest. In the visible content, the \"dist\" object explicitly includes: \"fileCount\":416 (snippet: ...\"dist\":{...\"fileCount\":416,...}). No \"unpackedSize\" field is visible in the provided DOM snapshot text.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe rubric criterion requires recording the unpacked size in bytes from dist.unpackedSize exactly as shown in the registry response. In DOM_MODEL_STATE_INDEX 1, the response text includes a dist object and shows \"fileCount\":416, plus other dist fields (e.g., \"tarball\", \"shasum\", \"integrity\"), but it does not display any \"unpackedSize\" key/value. Therefore the DOM evidence does not support the claimed dist.unpackedSize value (13134585) from the agent’s predicted output, though it does confirm we are viewing the correct endpoint and that dist fields exist.",
+            "discrepancies": "Predicted output asserts dist.unpackedSize = 13134585, but DOM_MODEL_STATE_INDEX 1 does not show any dist.unpackedSize value; only dist.fileCount (416) is visible. Thus the unpackedSize number is not evidenced by the provided DOM snapshot.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT shows \"dist\":{...,\"fileCount\":416,...} but does not show \"unpackedSize\" before truncation.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\ndist.unpackedSize is not visible in the provided DOM snippet, so the agent’s unpacked size value cannot be verified from this evidence.",
+            "discrepancies": "Agent output claimed dist.unpackedSize 13134585 but the DOM snippet does not show \"unpackedSize\".",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C6",
+          "evidence_requirement": "Record unpacked size in bytes from dist.unpackedSize",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot1.png",
+                "visible_text": "Record unpacked size in bytes from dist.unpackedSize",
+                "locator": "criterion-relevant content in screenshot1.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The unpacked size value is directly shown in the registry JSON and matches the agent output exactly, with no unit conversion. Baseline 0 was incorrect; award full credit.",
+            "review_note": "The screenshot visibly includes dist.unpackedSize 13134585, but that field is absent from both DOM states."
+          },
+          "dom_model": {
+            "source_present": false,
+            "source_citations": [],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "dist.unpackedSize is not present in the visible DOM evidence, so the agent’s numeric unpackedSize claim cannot be credited as having been read from the registry response.",
+            "review_note": "The screenshot visibly includes dist.unpackedSize 13134585, but that field is absent from both DOM states."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 6,
+      "criterion": "Record file count from dist.fileCount",
+      "description": "Report dist.fileCount exactly as shown in the registry response. Full credit for exact integer from dist.fileCount. If the registry response could not be accessed, full credit for explicitly stating dist.fileCount cannot be confirmed from the registry response due to access failure (and not estimating).",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 1 shows in the dist object: \"fileCount\":416. Screenshot 2 also shows \"fileCount\":416. Latest evidence: Screenshot 2 confirms 416.",
+        "verifier_justification": "The fileCount value is directly shown in the registry JSON and matches the agent output exactly. Baseline 0 was incorrect; award full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "In the \"dist\" object near the top of the JSON, the screenshot shows \"fileCount\":416.",
+            "criterion_analysis": "The file count is explicitly visible as 416, matching the agent’s predicted output.",
+            "discrepancies": "None; predicted dist.fileCount matches the screenshot value.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Within the \"dist\" object, the screenshot shows \"fileCount\":416.",
+            "criterion_analysis": "The agent’s predicted output lists dist.fileCount 416, which matches the screenshot exactly.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest evidence: DOM-model state 1 shows within \"dist\" the explicit field \"fileCount\":416.",
+        "verifier_justification": "The agent’s reported dist.fileCount value (416) exactly matches the registry response shown in the DOM evidence.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 at https://registry.npmjs.org/typescript/latest shows in the visible JSON snippet: \"dist\":{\"shasum\":\"9ec773d7954a8c182c17cc5bbd575aa28bc51582\",\"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\",\"fileCount\":416,...}. This explicitly contains the field dist.fileCount with value 416.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is to record file count from dist.fileCount exactly as shown in the registry response. In DOM_MODEL_STATE_INDEX 1, the registry JSON explicitly includes \"fileCount\":416 under \"dist\" (\"dist\":{...\"fileCount\":416,...}), so the claimed file count of 416 is directly supported by the DOM-model evidence.",
+            "discrepancies": "No discrepancy for this criterion: the agent-reported dist.fileCount (416) matches the DOM-model text \"fileCount\":416.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes within \"dist\": \"fileCount\":416.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snippet explicitly shows dist.fileCount as 416, matching the agent-reported file count.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C7",
+          "evidence_requirement": "Record file count from dist.fileCount",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot1.png",
+                "visible_text": "Record file count from dist.fileCount",
+                "locator": "criterion-relevant content in screenshot1.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The fileCount value is directly shown in the registry JSON and matches the agent output exactly. Baseline 0 was incorrect; award full credit.",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model0.txt",
+                "line_range": "m0:L7-L7",
+                "quoted_text": "\"fileCount\":416"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "The agent’s reported dist.fileCount value (416) exactly matches the registry response shown in the DOM evidence.",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          }
+        }
+      ]
+    },
+    {
+      "criterion_index": 7,
+      "criterion": "Respect constraints and stopping condition",
+      "description": "Agent does not download/install the package and stops after recording all six requested fields (name, version, license, engines.node requirement, dist.unpackedSize, dist.fileCount). Full credit if the agent either (a) provides exactly the requested fields when the registry response is accessible, or (b) if the registry response is inaccessible, clearly states it cannot retrieve the fields and stops without adding unrelated content or fabricated values. Partial credit if minor extra, non-misleading info is included but constraints are otherwise followed. No credit if the agent downloads/installs the package or fabricates values as if confirmed.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshots show only viewing a JSON response (no install/download actions). The agent output lists exactly the six requested fields and stops. Latest evidence: Screenshot 2 continues to show JSON viewing only.",
+        "verifier_justification": "Constraints are respected (no download/install), and the stopping condition is met (exactly the six requested fields). Keep full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows only a JSON response page with a \"Pretty-print\" checkbox and the registry-like JSON content. There is no indication of any package download/install action or other pages. The JSON includes the six requested fields (name, version, license, engines.node, dist.unpackedSize, dist.fileCount) visible in the rendered text.",
+            "criterion_analysis": "No evidence of downloading/installing is shown. The predicted output lists exactly the six requested fields and stops there (with a brief intro line). This aligns with constraints and stopping condition.",
+            "discrepancies": "No contradiction with the screenshot. Minor extra text (“From the official npm Registry…”) is present but not misleading; the only unverifiable part from the screenshot is the exact URL because the address bar is not shown.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows only a JSON page view with a \"Pretty-print\" checkbox; there is no indication of downloading or installing. The agent’s predicted output includes exactly six bullet points (name, version, license, engines.node, dist.unpackedSize, dist.fileCount).",
+            "criterion_analysis": "The agent appears to respect the stopping condition by providing only the six requested fields, with no extra unrelated content and no sign of download/install actions. However, one of the six fields (engines.node) is not supported by visible screenshot evidence, though the format and stopping condition itself is followed.",
+            "discrepancies": "No discrepancy about stopping after six fields; the only mismatch is that engines.node is asserted without being visible in the screenshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          1,
+          0
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "DOM-model state 1 confirms the agent was viewing the registry JSON and there is no evidence of downloading/installing. However, DOM-model state 1 does not show engines.node or dist.unpackedSize, so the DOM evidence does not support that all six requested fields were actually recorded from the response as required.",
+        "verifier_justification": "While the agent did not download/install and output exactly six fields, two required fields (engines.node and dist.unpackedSize) are not evidenced in the DOM, and the agent still asserted exact values for them. That violates the task’s evidence-based extraction requirement, so full credit is not warranted; partial credit is appropriate for otherwise respecting the workflow and stopping condition.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the npm registry URL `https://registry.npmjs.org/typescript/latest` and includes a JSON snippet under VISIBLE CONTENT. Within that snippet, the `dist` object explicitly contains: `\"tarball\":\"https://registry.npmjs.org/typescript/-/typescript-7.0.2.tgz\"` and `\"fileCount\":416` (and other dist fields). No `name`, `version`, `license`, `engines`, or `dist.unpackedSize` fields are visible in the provided DOM excerpt; the displayed JSON is truncated mid-value (ends after `\"keyid\":\"SHA256:D`).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe criterion (Respect constraints and stopping condition) is only partially supported by DOM evidence. Supported: The DOM shows use of the official npm Registry response at the required URL (DOM_MODEL_STATE_INDEX: 1, URL `https://registry.npmjs.org/typescript/latest`). It also shows `dist.fileCount` as `416`, consistent with the agent’s reported value, and implies the agent read registry JSON rather than downloading/installing.\nNot fully supported: The DOM excerpt does not display the other required fields the agent reported (package `name`, `version`, `license`, `engines.node`, `dist.unpackedSize`), so the DOM cannot substantiate that the agent actually recorded all six fields from the registry response before stopping. Because the snapshot is truncated and lacks those keys, we cannot confirm from DOM evidence that the agent’s remaining reported values come from the registry response (vs. being assumed).",
+            "discrepancies": "The agent’s final reported fields include `name: \"typescript\"`, `version: \"7.0.2\"`, `license: \"Apache-2.0\"`, `engines.node: \">=14.17\"`, and `dist.unpackedSize: 13134585`, but none of these are visible in DOM_MODEL_STATE_INDEX: 1’s captured VISIBLE CONTENT. Only `dist.fileCount: 416` is explicitly shown. Therefore, DOM evidence cannot verify that the stopping condition (recording all six requested fields from the registry response) was met based on the provided excerpt.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 provides only a partial JSON snippet (ends mid-string at \"keyid\":\"SHA256:D\"), and does not show several required fields (name, license, engines.node, dist.unpackedSize).",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent did not download/install anything per the record, and it did provide the six requested fields in its answer. However, this DOM evidence does not support that all six fields were obtained from the registry response because multiple required fields are not visible in the captured DOM snippet.",
+            "discrepancies": "Answer includes additional rubric text beyond the six requested fields, and several claimed fields (name, license, engines.node, dist.unpackedSize) are not evidenced in this DOM snapshot.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": [
+        {
+          "evidence_id": "C8",
+          "evidence_requirement": "Respect constraints and stopping condition",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot1.png",
+                "visible_text": "Respect constraints and stopping condition",
+                "locator": "criterion-relevant content in screenshot1.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Constraints are respected (no download/install), and the stopping condition is met (exactly the six requested fields). Keep full credit.",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L1-L1",
+                "quoted_text": "URL: https://registry.npmjs.org/typescript/latest"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "While the agent did not download/install and output exactly six fields, two required fields (engines.node and dist.unpackedSize) are not evidenced in the DOM, and the agent still asserted exact values for them. That violates the task’s evid",
+            "review_note": "The source state and existing verifier analysis were consistent for this criterion."
+          }
+        }
+      ]
+    }
+  ]
+}

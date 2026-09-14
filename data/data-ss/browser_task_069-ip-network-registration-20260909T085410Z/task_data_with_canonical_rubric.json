@@ -1,0 +1,75 @@
+[
+  {
+    "task_id": "browser_task_069-ip-network-registration-20260909T085410Z",
+    "confirmed_task": "Using the ARIN RDAP response for 8.8.8.8, report the top-level network handle, name, startAddress, endAddress, type, every status value, parentHandle, and the registrant entity's fn value.\n\nStopping condition: Stop after all requested top-level network fields and the registrant fn value have been recorded.\n\nConstraints:\n- Use only the supplied ARIN RDAP response.\n- Read network fields from the top-level object.\n- For the registrant name, use the fn property in the registrant entity's vCard rather than inferring it from another field.\n- Preserve handles, addresses, type, and status values exactly as returned.",
+    "website": "https://rdap.arin.net/registry/ip/8.8.8.8",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Extract top-level network handle",
+          "description": "Report the network object's top-level \"handle\" value exactly as shown in the supplied ARIN RDAP response for 8.8.8.8. Full credit if the handle is taken from the top-level network object (not from nested/child networks). Partial credit if a handle is provided but is from a non-top-level object. No credit if missing or altered.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Extract top-level network name",
+          "description": "Report the top-level network \"name\" exactly as returned in the supplied RDAP response. Full credit for exact match from the top-level network object. Partial credit if name is from a nested object. No credit if missing or inferred from other fields.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Extract top-level startAddress",
+          "description": "Report the top-level network \"startAddress\" exactly as returned. Full credit if exact and sourced from the top-level network object. Partial credit if correct value but sourced from elsewhere in the response. No credit if incorrect/missing/modified.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Extract top-level endAddress",
+          "description": "Report the top-level network \"endAddress\" exactly as returned. Full credit if exact and sourced from the top-level network object. Partial credit if correct value but sourced from elsewhere in the response. No credit if incorrect/missing/modified.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Extract top-level network type",
+          "description": "Report the top-level network \"type\" exactly as returned in the RDAP response. Full credit if exact and from the top-level network object. Partial credit if type reported but not from the top-level object. No credit if missing or altered.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Extract every top-level network status value",
+          "description": "List every value in the top-level network object's \"status\" array exactly as returned (preserving capitalization/spelling and including all statuses). Full credit if all and only the top-level status values are included. Partial credit if some statuses are missing/extra or if statuses are taken from a nested object. No credit if no status values are provided.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Extract top-level parentHandle",
+          "description": "Report the top-level network \"parentHandle\" exactly as returned. Full credit if exact and taken from the top-level network object. Partial credit if a parent handle is given but sourced from a different object. No credit if missing or incorrect.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Extract registrant entity fn from vCard",
+          "description": "Identify the registrant entity in the supplied ARIN RDAP response and report the \"fn\" value from that entity's vCard (vcardArray) exactly as shown. Full credit if the fn value is correctly extracted from the registrant entity's vCard (not inferred from other fields like handle or org name). Partial credit if the correct organization/person is identified but the name is inferred from non-vCard fields. No credit if the registrant fn is missing or incorrect.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Use only supplied ARIN RDAP response and stop after recording requested fields",
+          "description": "All reported values must be derived solely from the provided ARIN RDAP response for 8.8.8.8 (no external sources or invented values). Full credit if the answer contains only requested fields (top-level network handle, name, startAddress, endAddress, type, all top-level status values, parentHandle, and registrant fn) with no additional unrelated fields; minor formatting differences are acceptable. This criterion should not deduct points for incorrect extraction choices that are already penalized by criteria 1–8; it is only for detecting external/hallucinated content or substantial inclusion of unrequested RDAP fields beyond the stopping condition.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,233 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_082-chess-game-result-inspection-20260909T091031Z",
+  "run_id": "20260913T_task082_data_new",
+  "rubric_sha256": "2080808bbccbe3444a4d2234275a959221a249014904721553df11db85c833d6",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Access the specified public Lichess game page (Z01xx8LK) only",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 3.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C1",
+          "evidence_requirement": "Access the specified public Lichess game page (Z01xx8LK) only",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "Rapid Chess · Reini vs IloveAnya",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Action history shows the agent was on https://lichess.org/Z01xx8LK. Screenshots (latest is Screenshot 2) show a standard public lichess.org game page UI (board + left summary card) with no signs of external sources (no PGN/API pages visible).",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L1-L1",
+                "quoted_text": "URL: https://lichess.org/Z01xx8LK"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "DOM-model states 0 and 1 both show the URL as https://lichess.org/Z01xx8LK with title “Reini (1894) - IloveAnya (2010) • lichess.org,” confirming access to the specified public game page. Latest is state 1 and still on the same URL. Action history shows only a scroll on that page; no evidence of PGN/API/other-site use.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Record time control, rated/casual status, and speed category as displayed",
+      "max_points": 3,
+      "screenshot_final_points": 3.0,
+      "dom_model_final_points": 3.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C2",
+          "evidence_requirement": "Record time control, rated/casual status, and speed category as displayed",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "10+0 • Rated • Rapid",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) left summary line explicitly reads: “10+0 • Rated • Rapid”. Screenshot 1 shows the same.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L7-L7",
+                "quoted_text": "- 10+0 • Rated • Rapid"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest DOM-model state 1 explicitly displays “10+0 • Rated • Rapid” in the game header line. State 0 shows the same.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record both players' names, ratings, and rating changes (correct association)",
+      "max_points": 5,
+      "screenshot_final_points": 5.0,
+      "dom_model_final_points": 4.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C3",
+          "evidence_requirement": "Record both players' names, ratings, and rating changes (correct association)",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "Reini (1894) +8; IloveAnya (2010) −31",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) shows player lines: “Reini (1894) +8” (white marker) and “IloveAnya (2010) -31” (black marker). Screenshot 1 shows the same.",
+            "review_note": "Both sources preserve both player records, White victory, and the explicit statement that Reini won. The DOM verifier did not combine those explicit facts to recover the White/Black association."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L14-L14",
+                "quoted_text": "- Checkmate • White is victorious"
+              },
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L16-L16",
+                "quoted_text": "- Reini (1894) played IloveAnya (2010) in a rated Rapid (10+0) game of chess. Reini won by checkmate after 28 moves. Click to replay, analyse, and discuss the game!"
+              }
+            ],
+            "verifier_caught": false,
+            "verifier_evidence_excerpt": "Latest DOM-model state 1 shows player lines with names/ratings/changes: “Reini (1894) +8” and “IloveAnya (2010) −31.” However, the provided DOM evidence does not explicitly label which is White vs Black; it only supports the name↔rating↔rating-change pairings. (State 0 consistent.)",
+            "review_note": "Both sources preserve both player records, White victory, and the explicit statement that Reini won. The DOM verifier did not combine those explicit facts to recover the White/Black association."
+          },
+          "classification": "DOM_MISSED_SCREENSHOT_CAUGHT",
+          "advantage": "SCREENSHOT"
+        }
+      ]
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record termination/victory statement, winner, and number of moves",
+      "max_points": 4,
+      "screenshot_final_points": 4.0,
+      "dom_model_final_points": 4.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C4",
+          "evidence_requirement": "Record termination/victory statement, winner, and number of moves",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "Checkmate • White is victorious; Reini won by checkmate after 28 moves",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) shows: “Checkmate • White is victorious” and narrative text: “Reini won by checkmate after 28 moves.” Screenshot 1 shows the same outcome line and move count.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L14-L14",
+                "quoted_text": "- Checkmate • White is victorious"
+              },
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L16-L16",
+                "quoted_text": "- Reini (1894) played IloveAnya (2010) in a rated Rapid (10+0) game of chess. Reini won by checkmate after 28 moves. Click to replay, analyse, and discuss the game!"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Latest DOM-model state 1 shows “Checkmate • White is victorious” and also the sentence “Reini won by checkmate after 28 moves.” (State 0 shows the same.)",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Respect constraints and stopping condition",
+      "max_points": 5,
+      "screenshot_final_points": 5.0,
+      "dom_model_final_points": 5.0,
+      "evidence_items": [
+        {
+          "evidence_id": "C5",
+          "evidence_requirement": "Respect constraints and stopping condition",
+          "expected_value": "Criterion-relevant evidence sufficient to evaluate the agent response",
+          "review_status": "confirmed",
+          "screenshot": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "screenshot0.png",
+                "visible_text": "SIGN IN; REGISTER",
+                "locator": "criterion-relevant content manually inspected in screenshot0.png"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Screenshot 2 (latest) shows the user is not signed in (SIGN IN/REGISTER visible). Action history shows only a scroll action on the game page. No evidence of challenges, posting, or PGN/API usage is visible.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "dom_model": {
+            "source_present": true,
+            "source_citations": [
+              {
+                "file": "dom_model1.txt",
+                "line_range": "m1:L1-L1",
+                "quoted_text": "URL: https://lichess.org/Z01xx8LK"
+              }
+            ],
+            "verifier_caught": true,
+            "verifier_evidence_excerpt": "Action history shows only a scroll; DOM-model states show only passive viewing of the game page with standard navigation links (e.g., Sign in/Register) not used. No evidence of posting, challenging, signing in, or PGN/API usage. The requested fields are visible on-page in the shown states.",
+            "review_note": "Both source representations contain criterion-relevant evidence and both verifier analyses identify and use the available evidence correctly. Any point difference is a scoring judgment, not an evidence miss."
+          },
+          "classification": "BOTH_CAUGHT",
+          "advantage": "TIE"
+        }
+      ]
+    }
+  ]
+}

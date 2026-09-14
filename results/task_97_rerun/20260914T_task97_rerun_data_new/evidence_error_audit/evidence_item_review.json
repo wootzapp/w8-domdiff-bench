@@ -1,0 +1,529 @@
+{
+  "schema_version": "existing-output-evidence-item-audit/v1",
+  "task_id": "browser_task_097-dns-record-resolution-20260914T093312Z",
+  "run_id": "20260914T_task97_rerun_data_new",
+  "rubric_sha256": "654d46cb9a7cf409c8356499671fa0c4612b4a5d7216ce8501de2bd35f6df7fc",
+  "instructions": "Add one confirmed row per concrete evidence item. Cite canonical source files, copy verifier excerpts verbatim, and judge source presence separately from recovery.",
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Use Google Public DNS web form and perform MX lookup for example.com",
+      "description": "Attempt the lookup via the Google Public DNS interface (dns.google) for name example.com and switch RR Type to MX (not the default A result), then resolve. Full credit if the agent clearly indicates it attempted dns.google and performed (or attempted to perform) an MX lookup for example.com, even if dns.google is blocked by CAPTCHA, unavailable, or errors prevent completing the resolve, provided the agent reports the blocker/error. Partial credit if the agent uses a different DNS tool without first attempting dns.google but still clearly performs an MX lookup for example.com. No credit if the agent only reports the A lookup or uses a different domain.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          17,
+          11,
+          16,
+          1,
+          15
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshots show the agent on dns.google with example.com entered (e.g., Screenshot 2). Attempts to change RR type show invalid \"AMX\" and resulting error (Screenshots 12, 17, 18). Latest relevant evidence indicates the successful MX query was obtained via the resolve endpoint with type=MX (Screenshot 19 shows a response with Question type 15 and an Answer type 15).",
+        "verifier_justification": "The constraint says to perform the lookup through the supplied Google Public DNS form and use MX results. While the UI interactions to select MX were error-prone (AMX), the agent ultimately did obtain an MX response from Google Public DNS (dns.google) as evidenced by the resolve output with type=15 (MX). This satisfies the core intent (use dns.google and perform MX lookup), though it’s not a clean demonstration of selecting MX solely via the dropdown. Keep full credit consistent with baseline.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 17,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS page with a “DNS Name” input containing “example.com” and a “Resolve” button. The “RR Type” field shows “AMX” (not MX). Below, the page title reads: “Result for example.com/AMX with DNSSEC validation and without DNSSEC detail:”. An error banner displays: “SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON”. A link is shown: “https://dns.google/resolve?name=example.com&type=AMX”.",
+            "criterion_analysis": "The screenshot confirms the agent is using dns.google and attempting to resolve example.com, but it also shows the RR Type is set to an invalid value “AMX” rather than “MX”, resulting in an error. Therefore, the MX lookup for example.com was not successfully performed in the visible UI state.",
+            "discrepancies": "Agent’s predicted output claims a successful MX lookup (type=MX) with a NOERROR JSON response and an MX Answer. The screenshot contradicts this: it clearly shows a query for example.com/AMX and a JSON parse error, plus a resolve link with type=AMX.",
+            "environment_issues_confirmed": true
+          },
+          {
+            "screenshot_idx": 11,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS interface (Google logo + “Public DNS”). The DNS Name field contains “example.com” and the RR Type field shows “AMX” (not MX). A “Resolve” button is visible. The results area header reads: “Result for example.com/AMX with DNSSEC validation and without DNSSEC detail:”. Below it, an error message reads: “SyntaxError: Unexpected token ‘<’, \"<!DOCTYPE \"... is not valid JSON”. A link is shown: “https://dns.google/resolve?name=example.com&type=AMX”.",
+            "criterion_analysis": "This confirms the agent used the dns.google web form and entered example.com, but it does not show a successful MX lookup. The RR Type is visibly set to AMX, producing an error, so the required MX resolve is not demonstrated in this screenshot.",
+            "discrepancies": "Agent’s predicted output claims a successful MX response (Status 0 with an MX answer). The screenshot instead shows RR Type “AMX” and a JSON parsing error, plus a resolve link with type=AMX. No MX results or MX answer records are visible.",
+            "environment_issues_confirmed": true
+          },
+          {
+            "screenshot_idx": 16,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS web UI header “Google Public DNS”. The “DNS Name” input contains the text “example.com”, and a blue “Resolve” button is visible to the right. A dropdown labeled “RR Type” is visible and currently displays “AMX” (with a red squiggly underline). Toggles for “Disable DNSSEC validation” and “Show DNSSEC detail” are visible (both appear off). No results/output panel is shown in this screenshot—only the form area.",
+            "criterion_analysis": "The screenshot confirms the agent is using the Google Public DNS web form and has entered example.com. However, it does not show that the RR Type was successfully set to MX; instead, the RR Type field shows “AMX”, which is not MX. Also, there is no visible evidence of a completed resolve or an MX results page in this screenshot. Therefore, based on the screenshot alone, the MX lookup requirement is not satisfied/confirmed.",
+            "discrepancies": "Agent’s predicted output claims a successful MX resolve (type=MX) with a JSON response and an MX Answer. The screenshot does not show any results/JSON at all, and the RR Type shown is “AMX”, not “MX”, contradicting the claim that the UI is set to MX in this moment.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS homepage interface (not a results page). Visible elements include the large “Google” logo with the text “Public DNS” to the right. There is a labeled input field “DNS Name” containing the text “example.com”. To the right of the input is a blue button labeled “Resolve”. Beneath the input, helper text reads: “Enter a domain (like example.com) or IP address (like 8.8.8.8 or 2001:4860:4860::8844) here.” At the bottom left are links “Help” and “Cache Flush”. Bottom right text reads “Get Started with Google Public DNS”. No RR Type selector/dropdown is visible in this screenshot, and no DNS query results, status, flags, question section, or answer records are shown.",
+            "criterion_analysis": "This screenshot provides evidence that the agent is using the Google Public DNS web form and has entered “example.com” in the DNS Name field, which supports the first part of the criterion (attempting lookup via dns.google). However, it does not show that the query was resolved, does not show any results, and does not show switching RR Type to MX or performing an MX resolve. Therefore, the screenshot alone only supports partial progress toward the criterion, not completion of the MX lookup.",
+            "discrepancies": "The agent’s predicted output describes an MX resolve result (status/flags/question/answers), but the screenshot does not display any results page or MX-related configuration. The screenshot only shows the initial form with “example.com” entered and a “Resolve” button; there is no visible evidence of changing RR Type to MX or viewing MX answer records.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 15,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS web UI header with the text/logo “Google Public DNS”. There is a “DNS Name” input field containing the text “example.com” and a blue “Resolve” button. Below that is an “RR Type” dropdown showing “A” (not MX). To the right are controls labeled “EDNS Client Subnet”, and toggle options labeled “Disable DNSSEC validation” and “Show DNSSEC detail” (both appear off). The rest of the page is blank; no results/answer section is visible.",
+            "criterion_analysis": "The screenshot confirms the agent is using the Google Public DNS web form and has entered example.com. However, it does not show that the RR Type was changed to MX or that an MX lookup result page is displayed; RR Type is visibly set to “A” and no resolved output is shown. Therefore, based on this screenshot alone, the MX lookup completion is not demonstrated.",
+            "discrepancies": "Agent’s predicted output claims an MX resolve response (Status/flags/Question/Answer with type 15 MX). The screenshot does not show any results output at all, and the RR Type control visibly shows “A”, contradicting the claim that MX was selected/resolved (at least at the moment captured).",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          18,
+          0,
+          13,
+          11,
+          3
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 18 showing URL https://dns.google/resolve?name=example.com&type=MX with a successful DNS JSON response including Question type 15. Earlier DOM states (e.g., 0, 13) show the Google Public DNS form, and DOM_MODEL_STATE_INDEX: 11/17 show an erroneous AMX attempt. Action history shows attempts to use the form and then direct navigation to /resolve?name=example.com&type=MX.",
+        "verifier_justification": "The task requires using the supplied Google Public DNS form and switching RR Type to MX on the results page, then resolving. DOM confirms the agent did obtain an MX response from dns.google (state 18), but it is via the /resolve endpoint, and DOM does not confirm the RR Type was successfully changed to MX and resolved via the form/results-page workflow (several attempts produced AMX). This is a controllable method deviation, so reduce from full credit but not to zero because the MX lookup for example.com was actually performed on dns.google.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 18,
+            "dom_model_state_idx": 18,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 18 shows URL `https://dns.google/resolve?name=example.com&type=MX` and visible JSON response containing `\"Question\":[{\"name\":\"example.com.\",\"type\":15}]`, which indicates an MX (type 15) query for `example.com.` was executed on dns.google. Action history shows attempts to use the form (States 1–3, 14–17) but the only DOM-evidenced successful MX result is State 18 `/resolve?...type=MX`.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence supports that an MX lookup for `example.com` was performed on dns.google (State 18 URL explicitly includes `type=MX` and the response includes `Question` type 15). However, the constraint requires performing the lookup through the supplied Google Public DNS form and changing RR Type to MX on the results page; the final, evidenced successful MX result is obtained via direct navigation to `/resolve?name=example.com&type=MX`, not demonstrably via the form/UI selection in the DOM evidence.",
+            "discrepancies": "Final successful MX response is evidenced from the `/resolve` endpoint rather than being evidenced as produced by using the web form UI workflow (change RR Type to MX on results page and resolve).",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the agent started on Google Public DNS at URL https://dns.google/ (Title: \"Google Public DNS\"). The visible content includes the label \"DNS Name\" and helper text \"Enter a domain (like example.com) or IP address...\". The page exposes a text-input control \"name\" (id [4]) and a \"Resolve\" control (shown under READ-ONLY CONTROL EVIDENCE as \"Resolve\"). This supports that the lookup was initiated via the Google Public DNS web form (dns.google) rather than another tool. No DOM state is provided for later pages (e.g., /query or /resolve) to verify that RR Type was switched to MX or that MX results were displayed.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence confirms use of the Google Public DNS web form environment: DOM_MODEL_STATE_INDEX: 0 explicitly shows https://dns.google/ with a \"DNS Name\" input and a \"Resolve\" control. However, the DOM model does not include any captured state from the results page where RR Type could be changed to \"MX\", nor any state showing an MX query being resolved for example.com. Therefore, the criterion is only partially supported: the starting point on dns.google is evidenced, but the required switch to MX (not default A) and successful MX resolve is not evidenced in the provided DOM snapshot.",
+            "discrepancies": "Criterion expects evidence of switching RR Type to MX and resolving on the results page. Provided DOM only covers the initial https://dns.google/ page and does not show the RR Type control, the query for example.com, or any MX results. Thus, the agent’s later claimed MX resolution cannot be verified from DOM_MODEL_STATE_INDEX: 0 alone.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 13,
+            "dom_model_state_idx": 13,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13 shows the agent on Google Public DNS at URL https://dns.google/query (Title: \"Google Public DNS\"). The page contains the Google Public DNS form controls: text-input \"DNS Name\" [775], text-input \"RR Type\" [777], and a read-only control labeled \"Resolve\". This evidences use of the dns.google web form interface, but does not show an executed MX result page or resolved output.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence supports that the lookup was performed/attempted through the supplied Google Public DNS web form (criterion 0) because the captured state explicitly shows the Public DNS query form at https://dns.google/query with the relevant inputs \"DNS Name\" and \"RR Type\" and a \"Resolve\" control (DOM_MODEL_STATE_INDEX: 13, controls [775], [777], and read-only evidence \"Resolve\").\nHowever, this DOM snapshot does not show that RR Type was switched to MX and resolved (no DOM evidence of an MX selection/value, and no results page/output is present in this state). Therefore, the DOM-model state supports only the \"attempted via dns.google form\" portion, not the completed MX resolve portion.",
+            "discrepancies": "The agent’s later narrative/output claims an MX resolve was obtained via https://dns.google/resolve?name=example.com&type=MX and provides JSON fields/answers, but DOM_MODEL_STATE_INDEX: 13 contains no evidence of that resolve endpoint page, no displayed MX results, and no confirmation that RR Type was set to MX and resolved from the form. Thus, the MX-result accomplishment is not DOM-supported by the provided state.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 11,
+            "dom_model_state_idx": 11,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 11 shows URL `https://dns.google/query?name=example.com&rr_type=AMX&ecs=` and visible text `Result for example.com/AMX with DNSSEC validation and without DNSSEC detail:` followed by `SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON` and a link `You may also resolve directly at: https://dns.google/resolve?name=example.com&type=AMX`. Page includes inputs `DNS Name` and `RR Type` consistent with the Google Public DNS web form.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence supports that the agent used Google Public DNS (dns.google) and performed a lookup attempt for `example.com` while changing RR Type away from the default (the evidenced URL and on-page result header show `rr_type=AMX` / `example.com/AMX`). However, the only evidenced resolved result is an invalid `AMX` query producing an error (SyntaxError) rather than a successful MX lookup or MX results page. Therefore the requirement to use the MX result (type 15) is not met in the provided DOM evidence.",
+            "discrepancies": "Task requires switching RR Type to MX and resolving; DOM shows `AMX` instead (`Result for example.com/AMX` and resolve link with `type=AMX`). No DOM evidence of an actual MX (`type=MX` / `type=15`) response view.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows URL https://dns.google/query?name=example.com and heading text \"Result for example.com/A with DNSSEC validation and without DNSSEC detail:\" along with the JSON for an A query (Question type 1 /* A */) and a direct-resolve link \"https://dns.google/resolve?name=example.com&type=A\". Action history shows attempts to change RR Type by typing \"MX\" into the RR Type control and later navigating to https://dns.google/resolve?name=example.com&type=MX (Action 18), but no DOM snapshot is provided for an MX results view.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence confirms the agent used Google Public DNS (dns.google) and performed a lookup for example.com, but the only captured DOM state is explicitly the A-result page (example.com/A). The action history indicates an attempt to switch RR Type to MX and later to load the /resolve endpoint with type=MX, yet there is no DOM-model evidence showing a successful MX lookup result page/response view. Therefore, the requirement to \"switch RR Type to MX (not the default A result), then resolve\" is only partially supported by evidence.",
+            "discrepancies": "DOM snapshot supports only example.com/A results (type 1). No DOM evidence confirms the MX lookup results were actually retrieved/shown via the form or that RR Type was successfully set to MX on the results page.",
+            "environment_issues_confirmed": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Report complete MX result-configuration heading",
+      "description": "Report the full result-configuration heading shown on the MX results view (as presented by Google Public DNS) for the MX lookup. Full credit if complete and specific to the MX lookup; partial credit if present but truncated/incomplete due to UI constraints while the agent still conveys the available heading text; no credit if it corresponds to the initial A lookup or is unrelated.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          17,
+          11,
+          10,
+          8,
+          7
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "N/A — condition not met, criterion skipped.",
+        "verifier_justification": "Condition not met; criterion does not apply and was not rescored.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 17,
+            "screenshot_evidence": "A visible heading on the page states: “Result for example.com/AMX with DNSSEC validation and without DNSSEC detail:”. No MX heading is shown; the RR Type displayed is “AMX”.",
+            "criterion_analysis": "The criterion asks for the complete MX result-configuration heading. The only visible heading is for AMX (an invalid RR type), not MX. Since an MX results heading is not visible/obtained in this screenshot, the agent’s reported MX JSON heading is unsupported and appears inconsistent with the page shown.",
+            "discrepancies": "Agent predicted an MX JSON summary heading (with Status/flags/Question/Answer) as if a valid MX response was returned. The screenshot instead shows an AMX heading and an error message, not an MX response heading.",
+            "environment_issues_confirmed": true,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 11,
+            "screenshot_evidence": "The only visible heading is: “Result for example.com/AMX with DNSSEC validation and without DNSSEC detail:”. There is no visible heading for an MX lookup (no “example.com/MX” heading shown).",
+            "criterion_analysis": "The screenshot does not show an MX results view/response heading; it shows an AMX (invalid) heading with an error. Therefore the agent did not (in this screenshot) retrieve an MX results page with a visible heading, and the agent’s reported JSON-style configuration heading for MX is not supported by what’s shown.",
+            "discrepancies": "Agent reported an MX result-configuration heading (a JSON summary with Status/flags/Question/Answer). The screenshot shows an AMX result heading and an error (“…is not valid JSON”), with no MX configuration heading visible.",
+            "environment_issues_confirmed": true,
+            "condition_verification": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          17,
+          11,
+          9,
+          3,
+          2
+        ],
+        "final_points": 0.0,
+        "verifier_evidence": "N/A — condition not met, criterion skipped.",
+        "verifier_justification": "Condition not met; criterion does not apply and was not rescored.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 11,
+            "dom_model_state_idx": 11,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 11 visible content includes `Result for example.com/AMX with DNSSEC validation and without DNSSEC detail:` and error text `SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON`. No heading for an MX result is shown in this snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThis criterion requires the complete result-configuration heading from the MX results view. The only evidenced heading is for `example.com/AMX` and is accompanied by an error, not an MX lookup. The agent’s reported MX JSON heading (with `Status`, flags, `Question` type 15, and an MX `Answer`) is not supported by the provided DOM snapshot and conflicts with the on-page heading indicating `AMX` instead of `MX`.",
+            "discrepancies": "Agent output claims an MX JSON heading (e.g., `{\"Status\":0,...\"Question\":[{\"name\":\"example.com.\",\"type\":15}]...}`) but DOM shows an AMX result header and a SyntaxError, with a direct resolve link using `type=AMX`, not `type=MX`.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 3,
+            "dom_model_state_idx": 3,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 includes the complete heading for the A lookup: \"Result for example.com/A with DNSSEC validation and without DNSSEC detail:\" followed by the full JSON block for type 1 /* A */. There is no DOM-model capture of an MX lookup heading (e.g., \"Result for example.com/MX ...\"). The agent's predicted output provides an MX JSON summary, but that text is not present in the provided DOM evidence.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nCriterion requires the complete result-configuration heading for the MX lookup. The only available DOM evidence shows the heading and JSON for an A lookup (example.com/A), not MX. Since an MX results heading is neither visible nor captured in the DOM model, and no environment/UI limitation is evidenced in the DOM snapshot preventing access to the MX heading, the reported MX heading cannot be validated and the criterion is not met.",
+            "discrepancies": "The DOM shows an A-result heading and A JSON (Question type 1 /* A */). The agent-reported MX heading/JSON is not evidenced in the DOM provided, and thus conflicts with the only observable heading being for A, not MX.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 17,
+            "dom_model_state_idx": 17,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 17 shows the page URL and visible heading for a non-MX query:\n- URL: https://dns.google/query?name=example.com&rr_type=AMX&ecs=\n- Visible heading text: \"Result for example.com/AMX with DNSSEC validation and without DNSSEC detail:\" (also: \"You may also resolve directly at: https://dns.google/resolve?name=example.com&type=AMX\").\nNo DOM text is shown for an MX result heading, nor any JSON/response heading content for type=MX.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nCriterion requires reporting the complete result-configuration heading from the MX results view. The only available DOM-model heading is explicitly for AMX (\"Result for example.com/AMX...\") at DOM_MODEL_STATE_INDEX: 17, and the URL likewise indicates rr_type=AMX, not MX. There is no DOM evidence of an MX results page/response view with a visible heading, so the agent’s claimed MX heading (a JSON summary for type=MX) is not supported by the provided DOM state and is in conflict with the evidenced AMX page.",
+            "discrepancies": "- DOM shows AMX, not MX: URL includes rr_type=AMX and heading says \"Result for example.com/AMX...\" (DOM_MODEL_STATE_INDEX: 17), contradicting the requirement to use MX.\n- The purported \"result-configuration heading (JSON summary)\" for MX is not present/visible in the DOM evidence; no MX heading text is captured.\n- Condition for scoring (MX results page/response view with visible heading, or explicit statement that heading not accessible) is not met in the DOM: only AMX page is evidenced and no statement of inaccessibility is evidenced.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 9,
+            "dom_model_state_idx": 9,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 9 shows the Google Public DNS *A* results page, not MX.\n- URL: https://dns.google/query?name=example.com&rr_type=A&ecs=\n- Visible heading text: \"Result for example.com/A with DNSSEC validation and without DNSSEC detail:\"\n- Visible JSON heading includes A-type question/answers: \"\\\"Question\\\": [ { \\\"name\\\": \\\"example.com.\\\", \\\"type\\\": 1 /* A */ } ]\" and \"\\\"Answer\\\": [ { \\\"name\\\": \\\"example.com.\\\", \\\"type\\\": 1 /* A */ ... } ... ]\".\nNo DOM evidence in this snapshot shows an MX result heading (e.g., \"Result for example.com/MX\" or type 15 in the heading).",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe rubric criterion requires the *complete MX result-configuration heading* from the MX lookup. The only provided DOM snapshot (State 9) explicitly displays the A lookup heading and JSON, not MX: it says \"Result for example.com/A...\" and shows \"type\": 1 /* A */ in the Question and Answer sections. Therefore, the DOM evidence contradicts that an MX result-configuration heading was visible/recorded from the MX results view.",
+            "discrepancies": "- Agent-reported heading corresponds to an MX JSON summary (type 15), but DOM_MODEL_STATE_INDEX 9 displays an A-result heading and JSON (type 1).\n- No DOM snapshot is provided for https://dns.google/resolve?name=example.com&type=MX or any page showing \"Result for example.com/MX\" / type 15 in the visible heading, so the claimed MX heading is not supported by the DOM evidence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 2,
+            "dom_model_state_idx": 2,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 (URL: https://dns.google/query?name=example.com, Title: \"Query: example.com - Google Public DNS\"). Visible heading text on the page is: \"Result for example.com/A with DNSSEC validation and without DNSSEC detail:\" followed by a JSON-like heading: \"{ \\\"Status\\\": 0 /* NOERROR */, \\\"TC\\\": false, \\\"RD\\\": true, \\\"RA\\\": true, \\\"AD\\\": true, \\\"CD\\\": false, \\\"Question\\\": [ { \\\"name\\\": \\\"example.com.\\\", \\\"type\\\": 1 /* A */ } ], \\\"Answer\\\": [ { \\\"name\\\": \\\"example.com.\\\", \\\"type\\\": 1 /* A */, \\\"TTL\\\": 300, \\\"data\\\": \\\"104.20.23.154\\\" }, { \\\"name\\\": \\\"example.com.\\\", \\\"type\\\": 1 /* A */, \\\"TTL\\\": 300, \\\"data\\\": \\\"172.66.147.243\\\" } ], \\\"Comment\\\": \\\"Response from 108.162.192.162.\\\" }\". There is also text: \"You may also resolve directly at: https://dns.google/resolve?name=example.com&type=A\". No MX heading text (e.g., \"Result for example.com/MX\") is present in this DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nCriterion 1 requires the complete result-configuration heading shown on the MX results view (for the MX lookup). The only provided DOM evidence (DOM_MODEL_STATE_INDEX: 2) explicitly shows the A lookup heading: \"Result for example.com/A with DNSSEC validation and without DNSSEC detail:\" and the embedded JSON heading includes \"Question\" type \"1 /* A */\" and \"Answer\" records of type \"1 /* A */\". Since no MX results heading/JSON (type 15 /* MX */) appears anywhere in the provided DOM snapshot, the claimed MX heading is not supported; moreover, the available evidence conflicts by showing an A heading instead.",
+            "discrepancies": "1) Expected for this criterion: a visible MX result-configuration heading (e.g., \"Result for example.com/MX ...\" plus the JSON summary for the MX query). Observed in DOM_MODEL_STATE_INDEX: 2: only an A result heading and JSON (Question type 1 /* A */).\n2) Expected: DOM evidence that the page/view corresponds to an MX lookup (type 15). Observed: link to resolve endpoint explicitly uses type=A (\"https://dns.google/resolve?name=example.com&type=A\").\n3) Therefore, the agent’s reported MX JSON heading (with Question type 15 /* MX */ and Answer type 15 /* MX */) cannot be verified from the DOM provided and is inconsistent with the shown A result page.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Report Status code (number and mnemonic) for MX result",
+      "description": "Provide the DNS response Status as both numeric value and mnemonic (e.g., \"0 NOERROR\") for the MX result. Full credit if both are provided and tied to the MX response; partial credit if only one (number or mnemonic) is provided but clearly tied to the MX response; no credit if wrong or taken from the A lookup.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          6,
+          3,
+          2,
+          18,
+          10
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Screenshot 19 (latest, and the only one showing the MX response) visibly includes \"Status\":0 but does not display the mnemonic comment (e.g., /* NOERROR */). Earlier screenshots (3/4/7) show “Status: 0 /* NOERROR */” but for the A lookup, not MX.",
+        "verifier_justification": "For the MX result, the numeric status (0) is supported by Screenshot 19. However, the mnemonic “NOERROR” is not shown for the MX response in the evidence (it appears only on the A-result UI). The agent reported both number and mnemonic; the mnemonic portion is not evidenced for MX. Award partial credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 6,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS web UI with the heading text: “Result for example.com/A with DNSSEC validation and without DNSSEC detail:”. In the JSON below it, the visible line reads: “\\\"Status\\\": 0 /* NOERROR */,” indicating status code 0 with mnemonic NOERROR. The RR Type control on the left visibly shows “A”, not “MX”.",
+            "criterion_analysis": "A DNS response status is visible (0 NOERROR), but it is clearly for the A lookup (as stated in the heading and RR Type). This screenshot does not show the MX result status. Therefore, the agent’s predicted MX status (0 NOERROR) is not supported by this screenshot for the MX result.",
+            "discrepancies": "Agent’s predicted output reports MX status “0 NOERROR”. The screenshot only shows an A-result page (“example.com/A”) with Status 0 NOERROR; no MX response is visible here.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS results page with the heading: “Result for example.com/A with DNSSEC validation and without DNSSEC detail:”. In the JSON shown underneath, it includes the line: \"Status\": 0 /* NOERROR */. The RR Type control at left shows “A”, indicating this is an A-record result, not MX.",
+            "criterion_analysis": "A DNS Status code is visible (0 /* NOERROR */), but it is clearly tied to the A lookup (example.com/A) rather than an MX result. Since the criterion requires the Status for the MX result, the screenshot does not provide the needed MX-status evidence. The agent’s predicted output claims MX status 0 NOERROR, but this screenshot only confirms A status 0 NOERROR.",
+            "discrepancies": "Agent predicted output is for an MX query (type 15), but the screenshot heading and RR Type show an A query/result (example.com/A). Therefore the agent’s reported MX status is not supported by this screenshot and may be based on a different page/state than what is shown.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS web UI with DNS Name set to \"example.com\" and RR Type showing \"A\" (not MX). The heading reads: \"Result for example.com/A with DNSSEC validation and without DNSSEC detail:\". In the JSON, the line \"\\\"Status\\\": 0 /* NOERROR */,\" is visible.",
+            "criterion_analysis": "A DNS Status is visible/obtainable in the screenshot (0 /* NOERROR */), but it is clearly for the A lookup (as indicated by the heading \"example.com/A\" and RR Type = A). Therefore it does not support the agent’s claimed MX status; the agent reported an MX status but the screenshot evidence is from the A result.",
+            "discrepancies": "Agent’s predicted output claims an MX result with \"Status\": 0 (NOERROR). The screenshot only shows an A result (\"Result for example.com/A\"), so the status shown cannot be verified as belonging to the MX response.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 18,
+            "screenshot_evidence": "The screenshot shows a Google Public DNS JSON response line containing: {\"Status\":0,\"TC\":false,\"RD\":true,\"RA\":true,\"AD\":true,\"CD\":false,\"Question\":[{\"name\":\"example.com.\",\"type\":15}],\"Answer\":[{\"name\":\"example.com.\",\"type\":15,\"TTL\":296,\"data\":\"0 .\"}]} . The visible content includes the numeric Status value (0) but no mnemonic text such as \"NOERROR\" appears anywhere in the screenshot.",
+            "criterion_analysis": "From the screenshot, the MX response status number (0) is visible and can be reported, but the mnemonic is not displayed. Therefore the agent’s reported \"0 NOERROR\" is only partially supported by the screenshot: the \"0\" is supported; \"NOERROR\" is not visible/obtainable from this screenshot alone.",
+            "discrepancies": "Agent predicted output includes the mnemonic \"NOERROR\". The screenshot only shows \"Status\":0 and does not show the mnemonic, so the mnemonic portion is not grounded in the screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          18,
+          7,
+          9,
+          3,
+          2
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 18 showing \"Status\":0 for the MX query. No DOM evidence in state 18 shows the mnemonic (e.g., NOERROR) alongside the status.",
+        "verifier_justification": "Numeric status 0 is supported for the MX result. The agent also reported mnemonic NOERROR, but that mnemonic is not explicitly shown in the MX DOM state (it appears for the A result in earlier states, but that does not prove it was shown/confirmed for MX per the DOM rule). Award partial credit for the numeric status only.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 18,
+            "dom_model_state_idx": 18,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 18 visible JSON includes `\"Status\":0` (top-level).",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nStatus number for the MX response is directly visible as `Status: 0` in State 18. The DOM does not display the mnemonic string (e.g., NOERROR); that mnemonic is not present in the DOM evidence.",
+            "discrepancies": "Mnemonic (e.g., \"NOERROR\") is not shown in the DOM snapshot; only numeric status `0` is evidenced.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 7,
+            "dom_model_state_idx": 7,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7 shows URL https://dns.google/query?name=example.com&rr_type=A&ecs= and heading/text: \"Result for example.com/A...\" with JSON snippet containing \"Status\": 0 /* NOERROR */ and \"Question\": [ { \"name\": \"example.com.\", \"type\": 1 /* A */ } ]. No MX (type 15) response content is present in this DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe only DNS response status visible/obtainable in the provided DOM-model evidence is for the A lookup (type 1). There is no DOM-model evidence of an MX (type 15) response status, so the agent’s reported MX status \"0 NOERROR\" cannot be validated from the supplied DOM snapshot.",
+            "discrepancies": "Task requires Status for the MX result, but the DOM snapshot only contains an A-result JSON block (type 1 /* A */). The agent’s answer claims an MX status (0 NOERROR) without DOM support for an MX lookup in the provided evidence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Report required DNS flags (TC, RD, RA, AD, CD) for MX result",
+      "description": "Report the values/states of the five specified flags from the MX response: TC, RD, RA, AD, CD. Full credit if all five are correctly captured for the MX result; partial credit if 3–4 flags are captured or if some are missing but the agent reports what is visible; no credit if fewer than 3 flags are provided when more are visible or if not tied to the MX response.",
+      "max_points": 3,
+      "screenshot_context": {
+        "selected_indices": [
+          18,
+          6,
+          3,
+          2,
+          10
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Screenshot 19 shows the MX response JSON including all five flags: TC:false, RD:true, RA:true, AD:true, CD:false.",
+        "verifier_justification": "All required flags for the MX response are directly visible in Screenshot 19 and match the agent’s output. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 6,
+            "screenshot_evidence": "In the same visible JSON for “example.com/A”, the flags shown are: “\\\"TC\\\": false,” “\\\"RD\\\": true,” “\\\"RA\\\": true,” “\\\"AD\\\": true,” and “\\\"CD\\\": false,”. The heading and RR Type indicate this is an A query (“Result for example.com/A…” and RR Type shows “A”).",
+            "criterion_analysis": "All five required flags are visible, but only for the A result, not an MX result. The screenshot provides no evidence of the MX flags. Thus, the agent’s predicted MX flag set cannot be verified as tied to an MX response from this screenshot.",
+            "discrepancies": "Agent claims these flags for an MX result. Screenshot shows those flags for an A result page; MX-specific flags are not displayed.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 3,
+            "screenshot_evidence": "In the same A-result JSON, the following flags are visible: \"TC\": false, \"RD\": true, \"RA\": true, \"AD\": true, \"CD\": false. The heading still reads “Result for example.com/A…”, and RR Type shows “A”, so these flags correspond to the A response shown on screen.",
+            "criterion_analysis": "All five required flags (TC, RD, RA, AD, CD) are visible in the screenshot, but they are for the A result, not the MX result requested by the criterion. The agent’s predicted output lists the same flag values for MX, but the screenshot does not confirm they come from an MX response; it only confirms them for the A response shown.",
+            "discrepancies": "Agent claims MX lookup and reports flags for MX; screenshot shows only A lookup/result (example.com/A). Thus the agent’s MX-flag reporting is not verifiable from this screenshot and conflicts with the visible RR Type/result context.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "In the visible JSON for the A result, the following flags are shown: \"TC\": false, \"RD\": true, \"RA\": true, \"AD\": true, \"CD\": false. The heading again indicates this is \"example.com/A\".",
+            "criterion_analysis": "All five required flags (TC, RD, RA, AD, CD) are visible, but they are for the A lookup, not MX. Thus the screenshot does not confirm the agent’s MX-flag reporting; it only confirms what the A-result flags are.",
+            "discrepancies": "Agent’s predicted output reports these flags for an MX response. The screenshot shows these flags under an A response (\"Result for example.com/A\"), so the agent’s tying of these values to MX is unsupported by the screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 18,
+            "screenshot_evidence": "In the same JSON response shown, the flags are explicitly visible: \"TC\":false, \"RD\":true, \"RA\":true, \"AD\":true, \"CD\":false.",
+            "criterion_analysis": "All five required flags (TC, RD, RA, AD, CD) are visible in the screenshot and match the agent’s predicted output values exactly. This satisfies the criterion for the MX result flags.",
+            "discrepancies": "No discrepancies: the agent’s listed flag values match what is visible in the screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          18,
+          7,
+          9,
+          3,
+          2
+        ],
+        "final_points": 3.0,
+        "verifier_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 18 showing the five flags for the MX query: \"TC\":false, \"RD\":true, \"RA\":true, \"AD\":true, \"CD\":false.",
+        "verifier_justification": "All five requested flags are explicitly present in the MX JSON and match the agent’s output. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 18,
+            "dom_model_state_idx": 18,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 18 visible JSON includes flags: `\"TC\":false,\"RD\":true,\"RA\":true,\"AD\":true,\"CD\":false`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll five required flags (TC, RD, RA, AD, CD) for the MX response are explicitly present with boolean values in the State 18 JSON.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 7,
+            "dom_model_state_idx": 7,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7 shows the A-result JSON snippet including flags: \"TC\": false, \"RD\": true, \"RA\": true, \"AD\": true, \"CD\": false, alongside \"Question\" type 1 /* A */. No MX (type 15) response is shown in this DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nWhile the five required flags (TC, RD, RA, AD, CD) are visible in the DOM evidence, they are explicitly part of the A lookup response (type 1 /* A */). The DOM-model evidence does not show the MX response, so the agent’s reported MX-flag values cannot be confirmed as belonging to the MX result.",
+            "discrepancies": "Task requires flags from the MX result; the only evidenced flags are tied to \"Result for example.com/A\" and \"Question\" type 1 /* A */. The agent reports MX flags without MX DOM evidence.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Report Question name and Question type (numeric and mnemonic) for MX result",
+      "description": "Record the Question section details from the MX lookup: the QNAME (example.com) and QTYPE as both numeric and mnemonic (MX / 15). Full credit if both name and numeric/mnemonic type are correctly provided and tied to the MX response; partial credit if name is correct but type lacks numeric or mnemonic (or vice versa); no credit if it corresponds to the A lookup or wrong name/type.",
+      "max_points": 2,
+      "screenshot_context": {
+        "selected_indices": [
+          6,
+          2,
+          10,
+          7,
+          3
+        ],
+        "final_points": 2.0,
+        "verifier_evidence": "Screenshot 19 shows the Question array with {\"name\":\"example.com.\",\"type\":15}. No mnemonic is shown in the screenshot, but type 15 corresponds to MX.",
+        "verifier_justification": "The MX Question name and numeric type are evidenced in Screenshot 19. The mnemonic “MX” is a standard mapping from type 15 and is not contradicted by evidence; minor nitpick that it wasn’t visually labeled as MX. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 6,
+            "screenshot_evidence": "The JSON “Question” section visible on the screen shows: “\\\"name\\\": \\\"example.com.\\\",\" and “\\\"type\\\": 1 /* A */”. The page heading also says “Result for example.com/A…”, confirming this is the A lookup question, not MX.",
+            "criterion_analysis": "The screenshot shows the Question name example.com. and type 1 (A). It does not show the MX question type 15 (MX). Therefore the agent’s predicted output (Question type 15/MX) is not supported by this screenshot.",
+            "discrepancies": "Agent reports Question type as 15/MX. Screenshot shows Question type as 1/A for example.com.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 2,
+            "screenshot_evidence": "The JSON shows a \"Question\" section with: \"name\": \"example.com.\", and \"type\": 1 /* A */. The page heading also states \"Result for example.com/A...\" indicating the Question type is A, not MX.",
+            "criterion_analysis": "The screenshot provides the Question name and type (numeric and mnemonic) but for the A result (type 1 /* A */). It does not show the MX Question (type 15 /* MX */). Therefore the agent’s predicted output (Question type 15 MX) is not supported by this screenshot.",
+            "discrepancies": "Agent claimed the MX question was \"type\": 15 (MX). The screenshot shows \"type\": 1 /* A */ in the Question section, contradicting the agent’s MX claim for what is visible here.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          18,
+          7,
+          9,
+          2,
+          10
+        ],
+        "final_points": 1.0,
+        "verifier_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 18 showing Question array: {\"name\":\"example.com.\",\"type\":15}. The mnemonic “MX” is not displayed in that DOM state.",
+        "verifier_justification": "Question name and numeric type (15) are supported. The agent’s inclusion of the mnemonic “MX” is not explicitly confirmed by the MX DOM (it’s an inference). Award partial credit for the supported portion (name + numeric type).",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 18,
+            "dom_model_state_idx": 18,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 18 visible JSON `\"Question\":[{\"name\":\"example.com.\",\"type\":15}]` provides QNAME and numeric QTYPE.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe Question name (`example.com.`) and numeric type (`15`) are directly evidenced in State 18. The mnemonic QTYPE label (\"MX\") is not present in the DOM evidence; it is inferable from type 15 but not explicitly shown in the provided DOM snapshot.",
+            "discrepancies": "Question type mnemonic (MX) is not explicitly displayed in the DOM; only numeric type 15 is shown.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Report every type-15 MX Answer record (name, type numeric/mnemonic, data) and exclude non-MX like RRSIG",
+      "description": "List every Answer record of RR type 15 (MX) returned for example.com from the MX lookup, and for each include: record name, type as numeric and mnemonic, and full data (including preference and mail exchanger). Must not include TTLs and must not treat any RRSIG (or other non-MX records) as MX answers even if DNSSEC details are shown. Full credit if all MX answers visible are included with required fields and no extras; partial credit if one MX record is missing or fields incomplete due to visibility/UI constraints while the agent captures the rest; no credit if answers are primarily incorrect (wrong type, includes TTL despite constraint, or includes RRSIG as MX).",
+      "max_points": 4,
+      "screenshot_context": {
+        "selected_indices": [
+          18,
+          17,
+          16,
+          15,
+          14
+        ],
+        "final_points": 4.0,
+        "verifier_evidence": "Screenshot 19 shows exactly one Answer record with type 15: {\"name\":\"example.com.\",\"type\":15,\"TTL\":296,\"data\":\"0 .\"}. No other MX answers or RRSIG records are visible.",
+        "verifier_justification": "The agent listed the single visible type-15 MX answer with name/type/data and omitted TTL as required; no RRSIG was incorrectly treated as MX. Full credit.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 17,
+            "screenshot_evidence": "The screenshot shows no “Answer” section or any DNS records. Instead, it displays an error: “SyntaxError: Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON” and a link to resolve directly with type=AMX. There are no visible MX (type 15) answer records listed.",
+            "criterion_analysis": "Because the screenshot shows an AMX error state and no obtainable/visible Answer section for an MX query, there is no visual evidence of any type-15 MX Answer records. The agent’s predicted output includes one MX Answer (“0 .”), which is not supported by what is visible and is inconsistent with the error state shown.",
+            "discrepancies": "Agent claims an MX answer record exists and provides its details. The screenshot shows no answers at all and indicates an invalid JSON/error for AMX, so the provided MX answers appear hallucinated relative to this screenshot.",
+            "environment_issues_confirmed": true,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 16,
+            "screenshot_evidence": "The screenshot contains only the query form (DNS Name: “example.com”; RR Type: “AMX”; Resolve button; DNSSEC toggles). There is no visible “Answer” section, no table of records, and no MX (type 15) records displayed anywhere on screen.",
+            "criterion_analysis": "Because the screenshot does not show any MX response/Answer section, it provides no visual basis to verify that the agent reported every type-15 MX answer record correctly. The agent’s predicted output includes one MX answer (“0 .”), but this cannot be confirmed from the screenshot, and the UI shown is not even set to MX (it shows AMX). Thus, the agent’s answer list is unsupported by the screenshot evidence.",
+            "discrepancies": "Agent’s predicted output asserts specific MX response fields (Status/flags/Question/Answer) and a type-15 MX answer. The screenshot shows no response fields or answers at all, and shows RR Type as “AMX”, not MX—so the reported MX answers are not corroborated and are inconsistent with what’s visible.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 15,
+            "screenshot_evidence": "No DNS response/results area is visible in the screenshot—there is no “Status”, no “Question” section, and no “Answer” section listing MX records. Only the input controls are shown, with RR Type set to “A” and DNS Name set to “example.com”.",
+            "criterion_analysis": "Because the screenshot does not display the MX response (or any response), it provides no visual basis to verify the agent’s listed type-15 MX Answer records (or whether non-MX records like RRSIG were excluded). The agent’s predicted output includes one MX answer (“0 .”), but this cannot be confirmed from the screenshot.",
+            "discrepancies": "Agent’s predicted output asserts a complete MX answer set and specific flags/status. The screenshot contains none of those fields and does not show any MX answers. Also, RR Type is shown as “A” in the screenshot, which is inconsistent with having performed/being on an MX result view.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 18,
+            "screenshot_evidence": "The JSON response includes an Answer array with one record visible: {\"name\":\"example.com.\",\"type\":15,\"TTL\":296,\"data\":\"0 .\"}. No other Answer records are visible in the screenshot, and no RRSIG records are shown.",
+            "criterion_analysis": "The screenshot shows exactly one type-15 (MX) Answer record for example.com., with name example.com., type 15, and data \"0 .\". The agent reports one MX answer with name example.com., type number 15 / mnemonic MX, and data \"0 .\", and does not include any RRSIG as MX. Although TTL appears in the screenshot, the agent correctly omits TTL per constraints. This meets the criterion based on what is visible.",
+            "discrepancies": "No discrepancy regarding MX answers: the agent lists the single MX answer shown and excludes TTL. The mnemonic \"MX\" is not shown in the screenshot (only numeric type 15 is), but it is a standard mapping rather than contradicted by the screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          },
+          {
+            "screenshot_idx": 14,
+            "screenshot_evidence": "The screenshot shows the Google Public DNS landing/query form UI, not a results page. Visible elements include: the header text “Google Public DNS”; a “DNS Name” input field containing the text “example.com”; a blue “Resolve” button to the right; an “RR Type” control showing “A”; an “EDNS Client Subnet” field; and two toggles labeled “Disable DNSSEC validation” and “Show DNSSEC detail” (both appear in the off position). The remainder of the page is blank/empty—no JSON output, no “Answer” section, and no MX records are visible anywhere in this screenshot.",
+            "criterion_analysis": "Criterion 5 requires listing every type-15 (MX) answer record from the MX lookup. This screenshot contains no MX lookup results and no “Answer” records at all; it only shows the pre-query UI with RR Type set to A. Therefore, the screenshot provides no visual evidence to confirm any MX Answer records (names/types/data) and cannot validate that the agent captured all type-15 MX answers or excluded non-MX records.",
+            "discrepancies": "Agent’s predicted output asserts an MX resolve result with an Answer section including a type 15 MX record with data “0 .” and flags/status details. The screenshot does not show any resolve output, status/flags, question section, or answer records; it also shows RR Type set to “A” (not “MX”). Thus, the predicted MX answer content is unsupported by what is visible in this screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ]
+      },
+      "dom_model_context": {
+        "selected_indices": [
+          18,
+          17,
+          16,
+          15,
+          14
+        ],
+        "final_points": 3.5,
+        "verifier_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 18 showing Answer array with a single MX record: {\"name\":\"example.com.\",\"type\":15,\"TTL\":296,\"data\":\"0 .\"}. No other Answer records are shown in the displayed JSON.",
+        "verifier_justification": "The agent listed the one type-15 answer record with correct name, numeric type 15, and data, and did not report TTL. However, the mnemonic “MX” for the answer type is not explicitly displayed in the DOM (only numeric 15), so that portion is not DOM-supported. Otherwise the answer set matches what is shown. Award mostly full credit with a small deduction for the unconfirmed mnemonic label.",
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 18,
+            "dom_model_state_idx": 18,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 18 visible JSON `\"Answer\":[{\"name\":\"example.com.\",\"type\":15,\"TTL\":296,\"data\":\"0 .\"}]` shows one type-15 answer record with name and data.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence shows an Answer array containing exactly one record with `type: 15` and provides its `name` and `data` fields, which satisfies the requirement to capture type-15 MX answer content (excluding TTL). However, the mnemonic type label (MX) is not explicitly present in the DOM, only the numeric type 15. Also, while the snapshot shows only one MX answer, the DOM evidence alone cannot prove whether additional MX answers were absent beyond what is shown (though the JSON displayed contains a single-element `Answer` array).",
+            "discrepancies": "Type mnemonic (MX) is not explicitly shown in DOM for the Answer record (only numeric `type:15`). TTL is present in the DOM JSON but per instructions should be excluded from reporting; inclusion in the page is not a reporting violation by itself, but it must be omitted in the final report.",
+            "environment_issues_confirmed": false,
+            "condition_verification": true
+          }
+        ]
+      },
+      "evidence_items": []
+    }
+  ]
+}

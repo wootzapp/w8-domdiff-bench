@@ -1,0 +1,1725 @@
+{
+  "task_id": "browser_task_087-river-monitoring-20260914T091633Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.6538461538461539,
+  "rubric_total_max_points": 13.0,
+  "rubric_total_earned_points": 8.5,
+  "rubric_is_success": false,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: The discharge timestamp formatting difference (agent used an ISO-like date order vs the page’s \"Sep 14, 2026\" style) is minor by itself if the timestamp content is otherwise identical. Also, including both the spelled-out unit name and the symbol is fine.\n\nCritical issues: The agent’s Gage height observation is wrong. DOM evidence for gage height Continuous Data (states 3/5) shows the latest value is 2.75 ft at 2026-09-14 04:50:00 AM EDT with Approval \"Provisional\". The agent reported 2.58 feet at 2026-09-14 04:45:00 AM EDT, which is contradicted by the latest displayed Continuous Data row/summary. Additionally, the agent claimed \"Provisional\" for the discharge observation, but the discharge readout shown in DOM state 6 does not display a provisional/approval label; that qualifier appears for gage height in the tabular view, not for discharge in the evidenced readout.\n\nWhat was done correctly: The station name matches DOM (state 0/6) and the discharge latest readout in Continuous Data is supported by DOM state 6 as 1680 ft^3/s at Sep 14, 2026 04:50:00 AM EDT.\n\nOutcome assessment: Because the task’s core deliverable requires the latest displayed Continuous Data observations for BOTH discharge and gage height (value, unit, timestamp), and the gage height value/timestamp are materially incorrect (not a minor formatting issue), the agent did not successfully complete the task as the user intended.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Extract, from the USGS monitoring-location page for site USGS-01646500 (Continuous Data), the station name plus the latest displayed observations for (1) Discharge (cfs) and (2) Gage height (ft), including each observation’s value, unit, and timestamp exactly as displayed (including any provisional labels). A reasonable user would be flexible about minor formatting (e.g., line breaks) but not flexible about wrong values/timestamps, wrong series, or invented qualifiers."
+  },
+  "preflight": {
+    "task_id": "browser_task_087-river-monitoring-20260914T091633Z",
+    "actions": 6,
+    "dom_model_states": 7,
+    "initial_state": 0,
+    "final_state": 6,
+    "alignment": {
+      "task_id": "browser_task_087-river-monitoring-20260914T091633Z",
+      "action_count": 6,
+      "state_count": 7,
+      "initial_state": 0,
+      "final_state": 6,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e142",
+            "target": {
+              "ref": "e142",
+              "role": "radio",
+              "name": "Graph Discharge, cubic feet per second "
+            },
+            "thoughts": "Discharge is not currently graphed, so I’ll click the radio control for 'Graph Discharge, cubic feet per second' to display this series in Continuous Data."
+          },
+          "observed_after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e139",
+            "target": {
+              "ref": "e139",
+              "role": "radio",
+              "name": "Graph Gage height, feet "
+            },
+            "thoughts": "Need to graph Gage height, feet alongside Discharge using the Continuous data controls; clicking the radio for Graph Gage height, feet should add that series and expose its latest observation details."
+          },
+          "observed_after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e54",
+            "target": {
+              "ref": "e54",
+              "role": "button",
+              "name": "View tabular data"
+            },
+            "thoughts": "Need exact latest values and timestamps for Gage height and Discharge; opening 'View tabular data' should expose the numeric observations and times."
+          },
+          "observed_after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e54",
+            "target": {
+              "ref": "e54",
+              "role": "button",
+              "name": "Download data"
+            },
+            "thoughts": "Need latest Discharge, cubic feet per second table; clicking its nearby 'Download data' previously toggled to Gage height table, so now I’ll use the same View tabular data control on the Discharge graph view to reveal the discharge table."
+          },
+          "observed_after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "ordinal": 5,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e55",
+            "target": {
+              "ref": "e55",
+              "role": "button",
+              "name": "View tabular data"
+            },
+            "thoughts": "Need the latest Discharge continuous observation; opening the View tabular data control should reveal the table with latest values and timestamps for the currently graphed series."
+          },
+          "observed_after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "ordinal": 6,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e203",
+            "target": {
+              "ref": "e203",
+              "role": "radio",
+              "name": "Graph Discharge, cubic feet per second "
+            },
+            "thoughts": "Need to switch the graphed continuous data type from Gage height to Discharge so that the tabular view will show the latest Discharge, cubic feet per second observation."
+          },
+          "observed_after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "58969122546dfc313747299280168649df0e75f69e671ee9a668e409228fe670",
+          "after_sha256": "fb4fb2eb04baa73af4ade5f5e36a5b4b9dea118921edd25e581a797f628583f7",
+          "before_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+          "after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "fb4fb2eb04baa73af4ade5f5e36a5b4b9dea118921edd25e581a797f628583f7",
+          "after_sha256": "e3fff286043a330f6c709931fe5139513a462b1636cf4549e6e58913a699b9ed",
+          "before_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true",
+          "after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "e3fff286043a330f6c709931fe5139513a462b1636cf4549e6e58913a699b9ed",
+          "after_sha256": "8b1cf04d3ac716d2eb91e9f0c469620f2faa1c79249c56fac58541b1418735c9",
+          "before_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+          "after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "8b1cf04d3ac716d2eb91e9f0c469620f2faa1c79249c56fac58541b1418735c9",
+          "after_sha256": "a63131b401550700b12f5ae135a3a9bda81c4e6be2f0ec77e43ad1903a418f0a",
+          "before_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+          "after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "a63131b401550700b12f5ae135a3a9bda81c4e6be2f0ec77e43ad1903a418f0a",
+          "after_sha256": "8b1cf04d3ac716d2eb91e9f0c469620f2faa1c79249c56fac58541b1418735c9",
+          "before_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+          "after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "8b1cf04d3ac716d2eb91e9f0c469620f2faa1c79249c56fac58541b1418735c9",
+          "after_sha256": "7d10c073bd76eee8a8e7f15e166a178e8aef7d52382bd10d3814c7bdb8e59946",
+          "before_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+          "after_url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e142' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e139' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e54' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e54' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e55' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e203' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "d6936e2ce99610f826aa5b76541407e58617a7aeee59041b81839605a3a8d94d",
+    "criterion_order": [
+      "Use the correct USGS monitoring location (USGS-01646500) and Continuous Data section",
+      "Report station name",
+      "Latest Continuous Data observation: Discharge (cubic feet per second)",
+      "Latest Continuous Data observation: Gage height (feet)",
+      "Display both series if not initially shown; preserve provisional labels and stop after required reporting"
+    ],
+    "maximum_points": [
+      3.0,
+      2.0,
+      3.0,
+      3.0,
+      2.0
+    ],
+    "criterion_denominator": 13.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/frozen_rubric.json",
+  "rubric_sha256": "d6936e2ce99610f826aa5b76541407e58617a7aeee59041b81839605a3a8d94d",
+  "criterion_denominator": 13,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 127747,
+      "completion_tokens": 14367,
+      "reasoning_tokens": 0,
+      "total_tokens": 142114
+    },
+    "action_judge": {
+      "prompt_tokens": 20239,
+      "completion_tokens": 3880,
+      "reasoning_tokens": 2432,
+      "total_tokens": 24119
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 25,
+      "api_attempts": 25,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 7,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 7,
+        "1": 10,
+        "2": 2,
+        "3": 4,
+        "4": 5,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 9,
+        "1": 9,
+        "2": 4,
+        "3": 4,
+        "4": 6,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 9,
+        "1": 8,
+        "2": 4,
+        "3": 4,
+        "4": 6,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 9,
+        "1": 8,
+        "2": 1,
+        "3": 10,
+        "4": 6,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 9,
+        "1": 8,
+        "2": 1,
+        "3": 10,
+        "4": 6,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 9,
+        "1": 8,
+        "2": 0,
+        "3": 10,
+        "4": 6,
+        "screenshot_idx": 5
+      },
+      "screenshot_6": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 4,
+        "4": 6,
+        "screenshot_idx": 6
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        6,
+        5,
+        4,
+        3,
+        2
+      ],
+      "1": [
+        6,
+        0,
+        1,
+        5,
+        4
+      ],
+      "2": [
+        6,
+        2,
+        1,
+        0,
+        4
+      ],
+      "3": [
+        5,
+        4,
+        3,
+        6,
+        2
+      ],
+      "4": [
+        6,
+        5,
+        4,
+        3,
+        2
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+          "discrepancies": "None. The DOM directly supports that the correct monitoring location (USGS-01646500) is open and that the Continuous data section is the basis for the displayed observation.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 shows URL `https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true` and page title `Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation`. The visible content includes the section label `Continuous data` followed by `Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500` and a current readout line `Discharge, cubic feet per second 1680 ft^3/s - Sep 14, 2026 04:50:00 AM EDT`.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence confirms the correct monitoring-location page for USGS-01646500 and that a Continuous Data tabular view is being used (explicit \"-- continuous data\" label and the time-stamped rows). However, within the provided DOM snapshot (state 5), only the gage-height continuous-data table is evidenced; there is no DOM evidence of a discharge (cfs) continuous-data table/value being displayed or accessed.",
+          "discrepancies": "Agent output claims both Discharge and Gage height latest observations. DOM state 5 only evidences Gage height continuous data (no discharge series/value/table shown).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 shows URL https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true and Title: \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation\". The visible/table content is explicitly labeled \"Gage height, feet -- continuous data\" with a tabular listing of Time/Result/Approval (Table 1).",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL",
+          "discrepancies": "The DOM evidence definitively supports the correct monitoring-location page (USGS-01646500) and that a Continuous Data view is being displayed for `continuous-00065-0` (gage height). However, this DOM snapshot does not explicitly show the Discharge (00060) Continuous Data section or any Discharge tabular values; therefore it cannot fully support that both required observations were taken from Continuous Data in the provided DOM evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 shows URL `https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true` and Title `Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation`. Visible Continuous Data graph scaffolding includes time-axis labels `Sep 08` ... `Sep 14`, plus controls text `Change time span ... Download data View tabular data` and `Water data for this data type is available from 10/01/2007 to 09/14/2026.`",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly confirms the correct monitoring-location page for USGS-01646500 and that the displayed data are from the Continuous Data tabular presentation (explicitly labeled `-- continuous data`).",
+          "discrepancies": "No discrepancies for station/site and Continuous Data basis are evident in this DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows URL `https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true` and page Title `Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation`. The tabular section text includes `Gage height, feet -- continuous data` and the table columns `Time | Result | Approval | Mask | Qualifiers`, indicating the Continuous Data tabular view is open.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence clearly supports that the agent is on the correct monitoring-location page for USGS-01646500 and is viewing the Continuous data section with the relevant graph controls. However, the DOM evidence provided does not include the tabular observations (latest discharge/gage height values and timestamps), so it cannot fully support that the reported numbers/timestamps were derived from Continuous Data as required (even though the page context is correct).",
+          "discrepancies": "Missing DOM evidence for the actual latest displayed Continuous Data observations (values, units, timestamps) and any tabular view content; only the Continuous Data section and control labels are evidenced.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows URL `https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true` and page title `Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation`. The visible content includes the `Continuous data` section and controls like `Graph Gage height, feet` and `Graph Discharge, cubic feet per second`, plus text `Continuous data are collected via automated sensors installed at a monitoring location.`",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+          "discrepancies": "Agent’s reported station name includes `- USGS-01646500` appended. The station name as displayed in the title is `Potomac River Near Wash, DC Little Falls Pump Sta` (site number shown separately/in-line elsewhere).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 page title is `Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation`. In the Continuous data section it also shows `Continuous data Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500`.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe station name reported by the agent matches the page title in the DOM evidence for USGS-01646500 (\"Potomac River Near Wash, DC Little Falls Pump Sta\").",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 Title explicitly contains the station name: \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation\".",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+          "discrepancies": "No discrepancy between the station name in the agent output (`Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500`) and the DOM title text, aside from the agent appending the site number suffix in their own formatting (the page title itself shows the name without the appended `- USGS-01646500` in the title line).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 Title is `Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation`.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 1 asks whether the agent recorded the station name exactly as shown on the USGS-01646500 monitoring-location page.\n\nIn DOM_MODEL_STATE_INDEX 0, the station name is explicitly present in the visible content as \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500\" (appearing at least twice, including under \"Monitoring location\"). The agent’s reported station name is \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500\", which matches the DOM text exactly. Therefore, the DOM model supports the station-name claim for this criterion.",
+          "discrepancies": "None for Criterion 1. The station name in the agent output matches the station name text shown in DOM_MODEL_STATE_INDEX 0.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 (initial browser state)\nURL: https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true\nTitle: \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation\"\nVisible content includes the station header text:\n- \"Monitoring location Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500\"\n- \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500\" (also shown in primary navigation / page content)",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 1 (Report station name): The DOM explicitly supports the station name text as \"Potomac River Near Wash, DC Little Falls Pump Sta\" and indicates the site number as \"USGS-016465\" in the on-page header, while the document title shows \"... - USGS-01646500\". This partially supports the agent’s reported station name \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500\" because the DOM-provided station name matches, and the full 8-digit identifier appears in the title, but the on-page header as captured is truncated to \"USGS-016465\" rather than explicitly showing \"USGS-01646500\" in that same header string.",
+          "discrepancies": "On-page header in DOM state 1 shows \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS-016465\" (missing the final \"00\"), whereas the agent answer includes \"... - USGS-01646500\". The title does include \"USGS-01646500\".",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the monitoring location header text including the station name: \"Monitoring location Potomac River Near Wash, DC Little Falls Pump Sta - USGS-016465\" (visible content). The page title also contains the full station name with the full site number: \"Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500 - USGS Water Data for the Nation\" at URL https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
+          "discrepancies": "Agent output listed unit as `cubic feet per second (ft^3/s)` and timestamp as `2026-09-14 04:50:00 AM EDT`. DOM shows unit as `ft^3/s` and timestamp formatted as `Sep 14, 2026 04:50:00 AM EDT` (same meaning but not exactly the same formatting). Also, DOM evidence does not show an Approval/Provisional column/value for this readout.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 Continuous data readout shows: `Discharge, cubic feet per second 1680 ft^3/s - Sep 14, 2026 04:50:00 AM EDT`.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the latest gage-height continuous observation timestamp (2026-09-14 04:50:00 AM EDT) and the latest value (2.75) with \"Provisional\" approval. However, the agent’s reported gage height value (2.58 feet) and timestamp (04:45:00 AM EDT) do not match the DOM’s latest row (2.75 at 04:50:00 AM EDT). Also, while the UI shows \"2.75 ft\" (unit as displayed), the table itself does not repeat the unit in the Result cell, so unit support relies on the visible \"2.75 ft\" summary text.",
+          "discrepancies": "Agent output: Gage height 2.58 feet at 2026-09-14 04:45:00 AM EDT. DOM shows latest as 2.75 ft at 2026-09-14 04:50:00 AM EDT (Provisional).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 shows in Table 1 (continuous data table): row \"2026-09-14 04:50:00 AM EDT | 2.75 | Provisional\" and visible summary \"Latest value 2.75 ft\" with date \"Sep 14, 2026\" and time \"04:50:00 AM EDT\". The table header indicates \"Gage height, feet -- continuous data\".",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED",
+          "discrepancies": "Agent reported Gage height latest observation as `2.58 feet` at `2026-09-14 04:45:00 AM EDT` with `Provisional`. The DOM snapshot instead shows latest value `2.75 ft` at `Sep 14, 2026 04:50:00 AM EDT`. The value and timestamp do not match the DOM-provided latest value/timestamp. The DOM also does not explicitly show the agent’s claimed `2.58` or `04:45:00 AM EDT` for gage height in this state.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 Visible content includes a Latest value block showing `Latest value` then `2.75 ft` and timestamp lines `Sep 14, 2026` and `04:50:00 AM EDT`. Also shows text `Day of year statistics are not available at this monitoring location for the data type: Gage height, feet` and a graph label `Gage height, feet ...` in secondary/debug actions.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the latest Continuous Data timestamp (2026-09-14 04:50:00 AM EDT), value (2.75), and the presence of a `Provisional` approval label for gage height. However, the agent’s reported gage height value (2.58 feet) and timestamp (04:45:00 AM EDT) conflict with the DOM table’s latest row (2.75 at 04:50). Also, while the visible UI shows `2.75 ft`, the table itself does not explicitly include the unit in a unit column; unit is only supported via the separate `Latest value 2.75 ft` display and the parameter name `Gage height, feet`.",
+          "discrepancies": "Agent output for gage height does not match DOM: agent reported `2.58` at `2026-09-14 04:45:00 AM EDT`, but DOM shows latest row `2.75` at `2026-09-14 04:50:00 AM EDT` (Provisional).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 Table 1 shows the most recent row: `2026-09-14 04:50:00 AM EDT | 2.75 | Provisional |  |`. The visible content also shows `Latest value 2.75 ft` with date `Sep 14, 2026` and time `04:50:00 AM EDT`. The section header reads `Gage height, feet -- continuous data`.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL",
+          "discrepancies": "The DOM confirms availability of the controls for both series and confirms the latest Discharge readout, but does not confirm that Gage height was displayed concurrently/alternately with its latest value+timestamp, and does not confirm any `Provisional` label. Therefore the requirement to record both latest Continuous Data observations (and preserve provisional labels if shown) is not fully supported by the provided DOM evidence.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 shows both controls `Graph Gage height, feet` and `Graph Discharge, cubic feet per second`, and shows a discharge latest-value readout. However, there is no DOM text in state 6 displaying a latest-value readout for `Gage height, feet`, nor any tabular-data view content, nor any visible `Provisional` label associated with either observation in the provided DOM snapshot.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "condition_verification": false,
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM confirms that \"Provisional\" labels are present for the displayed continuous-data rows and that the agent is within Continuous Data tabular view for gage height. But the DOM snapshot does not evidence that both series (Discharge and Gage height) were displayed/captured; discharge is not shown here, and the agent’s discharge value/timestamp cannot be validated. Therefore, only the preservation of the provisional label for the evidenced series can be confirmed, not the requirement to display/capture both series.",
+          "discrepancies": "Agent output includes a discharge observation (1680 ft^3/s at 04:50 AM EDT) and a different gage-height observation (2.58 at 04:45 AM EDT). DOM state 5 provides no discharge evidence and contradicts the gage-height value/time (shows 2.75 at 04:50 AM EDT).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 shows controls for gage height context (e.g., clickable label \"Gage height, feet\" and read-only text \"Gage height, feet -- continuous data\"). There is no DOM evidence in state 5 of the discharge series being displayed/tabulated. The table includes an Approval column with entries \"Provisional\" (e.g., at 2026-09-14 04:50:00 AM EDT).",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL",
+          "discrepancies": "The agent output preserves a `Provisional` qualifier, and the DOM contains a `provisional` link, but the DOM snapshot does not show the Discharge series being displayed nor any Discharge latest value/timestamp, so it is not possible from this DOM evidence alone to verify that the agent successfully displayed both series via Continuous Data controls and captured the latest observation for each. Also, the gage-height latest value/timestamp the agent reported does not match the DOM latest value/timestamp shown in this state.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 includes Continuous Data controls text `Download data View tabular data` and shows a `link \"provisional\"` in secondary/debug actions ([158] link `provisional` marked not-hit-testable). The URL fragment indicates gage height (`continuous-00065-0`), but no Discharge (00060) latest-value block is visible in this DOM snapshot.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "condition_verification": true,
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe action history demonstrates the agent attempted to display both series via Continuous Data controls and opened tabular data. The DOM confirms that `Provisional` is displayed (for gage height) and was preserved in the agent’s narrative. However, the stopping-condition requirement (record station name plus both latest Continuous Data observations) is not supported by DOM evidence here for discharge: this DOM snapshot only shows the gage-height continuous-data table and latest value. Additionally, the agent’s gage-height value/timestamp in the final output do not match the DOM’s latest row, which also undermines correct recording before stopping.",
+          "discrepancies": "(1) Missing DOM support for discharge latest observation (value/unit/timestamp) in the provided DOM state. (2) Agent’s gage-height numbers differ from DOM (agent: 2.58 @ 04:45; DOM: 2.75 @ 04:50).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "Actions show attempts to use Continuous Data controls: Action 1 clicked `Graph Discharge, cubic feet per second`; Action 2 clicked `Graph Gage height, feet`; Action 3 clicked `View tabular data`. In DOM_MODEL_STATE_INDEX: 3, the open tabular view is for `Gage height, feet -- continuous data` and the Approval column includes `Provisional` on the latest rows. There is no DOM evidence in this snapshot showing the discharge tabular view or discharge latest value/timestamp.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "condition_verification": true,
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that the agent had access to Continuous Data controls to display both `Gage height, feet` and `Discharge, cubic feet per second`, and that gage height was graphed at this point. But the DOM does not show that both series were actually displayed and captured, nor does it show any tabular/latest-observation rows, so it cannot substantiate the reported latest values/timestamps or confirm the presence/retention of `Provisional` labels. The stopping behavior (only station name + two observations) is reflected in the agent’s predicted output, but DOM evidence cannot verify the underlying observations.",
+          "discrepancies": "No DOM evidence of: (1) both series being displayed/selected at the time of capture, (2) the latest discharge and gage-height observation rows, (3) the exact `Provisional` label text/column, (4) the displayed timestamps/units for each observation.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows both series controls are available: `Graph Gage height, feet` and `Graph Discharge, cubic feet per second`. It also shows `Graphed` with `control_state=checked=true` in the context of `Graph Gage height, feet`, indicating at least gage height is currently graphed. No DOM evidence in the provided snapshot shows the tabular data contents, any `Provisional` labels, or timestamps/values for either series.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "The page content shown in multiple DOM states includes a clearly labeled “Continuous data” section with graph/toggle controls and (in some states) a tabular view explicitly labeled “-- continuous data.” DOM state 3/5 evidences Continuous Data in tabular form for gage height; DOM state 6 evidences Continuous Data for discharge via a current readout line. Some DOM states show only one parameter context at a time (e.g., only gage height or only discharge), so verifying both observations requires evidence from separate parameter views.",
+      "1": "The station name text is visible on the page as “Potomac River Near Wash, DC Little Falls Pump Sta,” and the site identifier “USGS-01646500” appears with the name in at least one on-page header (e.g., in the Continuous data section) and/or in the page title. One DOM snapshot shows an on-page header instance where the site number appears truncated (“USGS-016465”), while other DOM evidence shows the full “USGS-01646500,” so scorers should treat the exact displayed string as potentially varying by page region/state.",
+      "2": "DOM state 6 contains a single-line latest-value style readout for discharge that includes the parameter name, numeric value, unit as “ft^3/s,” and a timestamp formatted like “Sep 14, 2026 04:50:00 AM EDT.” This discharge readout is not shown in the gage-height tabular DOM states, and the timestamp formatting in the DOM is month-name style (not ISO), which matters if scoring requires exact transcription.",
+      "3": "For gage height, DOM states 3 and 5 show a “Latest value 2.75 ft” summary plus a tabular row at “2026-09-14 04:50:00 AM EDT | 2.75 | Provisional,” under the header “Gage height, feet -- continuous data.” The unit “ft” is visible in the latest-value summary, while the table’s Result cell shows the numeric value without repeating the unit; the “Provisional” label is visible in the Approval column for the latest row.",
+      "4": "The Continuous Data interface provides controls to switch/graph both “Gage height, feet” and “Discharge, cubic feet per second,” as shown in DOM state 2 and state 6, and actions indicate the agent clicked these controls and opened “View tabular data.” However, the DOM evidence shows parameter-specific views: gage height evidence (with “Provisional”) appears in the tabular view, while discharge evidence appears as a latest readout in a separate state; the discharge view shown does not visibly display a “Provisional” label in the provided DOM, and the gage-height latest readout is not simultaneously shown in the discharge DOM state."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Use the correct USGS monitoring location (USGS-01646500) and Continuous Data section",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent clearly navigated to USGS-01646500 and used the Continuous Data radio controls to graph Discharge and Gage height and opened the tabular views, demonstrating correct use of the Continuous Data section.",
+        "applicable_evidence": "DOM state 6 (latest) shows URL fragment `#dataTypeId=continuous-00060-0...` and Continuous data section for `Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500`, plus a discharge continuous readout. DOM states 3/5 show `Gage height, feet -- continuous data` tabular view on the same monitoring-location page. These explicitly confirm use of USGS-01646500 and Continuous Data (not daily stats).",
+        "post_image_justification": "Baseline 3/3 is confirmed: the agent is on the correct monitoring location and the evidence explicitly shows Continuous Data displays (both discharge and gage height contexts).",
+        "reality_notes": "The page content shown in multiple DOM states includes a clearly labeled “Continuous data” section with graph/toggle controls and (in some states) a tabular view explicitly labeled “-- continuous data.” DOM state 3/5 evidences Continuous Data in tabular form for gage height; DOM state 6 evidences Continuous Data for discharge via a current readout line. Some DOM states show only one parameter context at a time (e.g., only gage height or only discharge), so verifying both observations requires evidence from separate parameter views."
+      },
+      {
+        "criterion": "Report station name",
+        "earned_points": 1,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent provided the station name but made minor transcription errors (abbreviating 'Washington' as 'Wash' and 'Station' as 'Sta'), deviating slightly from the exact page text.",
+        "applicable_evidence": "DOM state 6 (latest) shows `Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500` in the Continuous data header. DOM state 0 analysis also shows `Monitoring location Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500`. Title across states includes `Potomac River Near Wash, DC Little Falls Pump Sta`.",
+        "post_image_justification": "The agent’s station name exactly matches the DOM text as shown (including the `Near Wash` abbreviation and `Pump Sta`). The earlier baseline deduction for abbreviations is not warranted because the page itself uses those abbreviations. Upgrade to full credit.",
+        "reality_notes": "The station name text is visible on the page as “Potomac River Near Wash, DC Little Falls Pump Sta,” and the site identifier “USGS-01646500” appears with the name in at least one on-page header (e.g., in the Continuous data section) and/or in the page title. One DOM snapshot shows an on-page header instance where the site number appears truncated (“USGS-016465”), while other DOM evidence shows the full “USGS-01646500,” so scorers should treat the exact displayed string as potentially varying by page region/state."
+      },
+      {
+        "criterion": "Latest Continuous Data observation: Discharge (cubic feet per second)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.5,
+        "max_points": 3,
+        "justification": "No specific discharge value, timestamp, or unit was captured in the Action History; the output values are not supported by any evidence of data retrieval and appear to be hallucinated.",
+        "applicable_evidence": "DOM state 6 (latest) explicitly shows: `Discharge, cubic feet per second 1680 ft^3/s - Sep 14, 2026 04:50:00 AM EDT`.",
+        "post_image_justification": "Value (1680) and unit (`ft^3/s`) and timestamp are supported by DOM. However, the agent’s reported timestamp format (`2026-09-14 04:50:00 AM EDT`) does not match the displayed format (`Sep 14, 2026 04:50:00 AM EDT`), and the agent additionally claims `Provisional` for discharge without DOM support in state 6. Award near-full credit with a small deduction for not preserving the timestamp as displayed and adding an unsupported qualifier.",
+        "reality_notes": "DOM state 6 contains a single-line latest-value style readout for discharge that includes the parameter name, numeric value, unit as “ft^3/s,” and a timestamp formatted like “Sep 14, 2026 04:50:00 AM EDT.” This discharge readout is not shown in the gage-height tabular DOM states, and the timestamp formatting in the DOM is month-name style (not ISO), which matters if scoring requires exact transcription."
+      },
+      {
+        "criterion": "Latest Continuous Data observation: Gage height (feet)",
+        "earned_points": 0,
+        "post_image_earned_points": 0.0,
+        "max_points": 3,
+        "justification": "No gage-height observation details were actually extracted in the Action History; the values in the output are unsupported by any captured table or DOM evidence and thus appear to be hallucinated.",
+        "applicable_evidence": "DOM state 5 (latest gage-height table view) shows `Gage height, feet -- continuous data` with latest row `2026-09-14 04:50:00 AM EDT | 2.75 | Provisional` and summary `Latest value 2.75 ft` at `Sep 14, 2026 04:50:00 AM EDT`.",
+        "post_image_justification": "Agent output for gage height (2.58 at 04:45 AM) is contradicted by DOM, which shows latest as 2.75 ft at 04:50 AM (Provisional). This is a substantive wrong value and wrong timestamp for the “latest displayed” observation, so no credit.",
+        "reality_notes": "For gage height, DOM states 3 and 5 show a “Latest value 2.75 ft” summary plus a tabular row at “2026-09-14 04:50:00 AM EDT | 2.75 | Provisional,” under the header “Gage height, feet -- continuous data.” The unit “ft” is visible in the latest-value summary, while the table’s Result cell shows the numeric value without repeating the unit; the “Provisional” label is visible in the Approval column for the latest row."
+      },
+      {
+        "criterion": "Display both series if not initially shown; preserve provisional labels and stop after required reporting",
+        "earned_points": 2,
+        "post_image_earned_points": 1.0,
+        "max_points": 2,
+        "justification": "The agent correctly toggled both Discharge and Gage height series, preserved 'Provisional' qualifiers, and stopped immediately after reporting the required station name and observations without extraneous information.",
+        "applicable_evidence": "Action history shows the agent used Continuous Data controls to switch between `Graph Discharge` and `Graph Gage height` and attempted `View tabular data`. DOM state 6 confirms discharge latest readout; DOM state 5 confirms gage-height tabular view with `Provisional`. However, the agent did not correctly record the gage-height latest observation, and for discharge the agent added an unsupported `Provisional` label and changed timestamp formatting.",
+        "post_image_justification": "The agent did use controls to access both series (supported by actions and the existence of both series controls in DOM). But they failed the core constraint of accurately recording both latest observations, and did not reliably preserve displayed labels/formatting (unsupported Provisional for discharge; timestamp format changes). Give partial credit for successfully toggling/attempting both series and otherwise stopping after required items.",
+        "reality_notes": "The Continuous Data interface provides controls to switch/graph both “Gage height, feet” and “Discharge, cubic feet per second,” as shown in DOM state 2 and state 6, and actions indicate the agent clicked these controls and opened “View tabular data.” However, the DOM evidence shows parameter-specific views: gage height evidence (with “Provisional”) appears in the tabular view, while discharge evidence appears as a latest readout in a separate state; the discharge view shown does not visibly display a “Provisional” label in the provided DOM, and the gage-height latest readout is not simultaneously shown in the discharge DOM state."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "Reviewing the action history, the agent only clicked within the USGS monitoring-location page to toggle between Continuous Data series (Discharge vs Gage height) and to open tabular/download views. These are exploratory UI interactions directly in service of the requested task (extract latest Continuous Data observations and station name). There is no evidence of any lasting, material side effect such as submitting forms, signing up, downloading files that cause an external effect, or altering account/settings (none exist here), nor adding any unrequested items/services. The main problems were incorrect/unsupported reporting (wrong gage-height value/time; unsupported provisional label and timestamp formatting), but those are already penalized under existing rubric criteria (Criteria 2, 3, and 4). Therefore there are no additional extraneous or unsolicited actions with material side effects that went unpenalized.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.6538461538461539
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.6538461538461539,
+          "total_earned_points": 8.5,
+          "total_max_points": 13.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Use the correct USGS monitoring location (USGS-01646500) and Continuous Data section",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent clearly navigated to USGS-01646500 and used the Continuous Data radio controls to graph Discharge and Gage height and opened the tabular views, demonstrating correct use of the Continuous Data section.",
+              "applicable_evidence": "DOM state 6 (latest) shows URL fragment `#dataTypeId=continuous-00060-0...` and Continuous data section for `Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500`, plus a discharge continuous readout. DOM states 3/5 show `Gage height, feet -- continuous data` tabular view on the same monitoring-location page. These explicitly confirm use of USGS-01646500 and Continuous Data (not daily stats).",
+              "post_image_justification": "Baseline 3/3 is confirmed: the agent is on the correct monitoring location and the evidence explicitly shows Continuous Data displays (both discharge and gage height contexts).",
+              "reality_notes": "The page content shown in multiple DOM states includes a clearly labeled “Continuous data” section with graph/toggle controls and (in some states) a tabular view explicitly labeled “-- continuous data.” DOM state 3/5 evidences Continuous Data in tabular form for gage height; DOM state 6 evidences Continuous Data for discharge via a current readout line. Some DOM states show only one parameter context at a time (e.g., only gage height or only discharge), so verifying both observations requires evidence from separate parameter views."
+            },
+            {
+              "criterion": "Report station name",
+              "earned_points": 1,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent provided the station name but made minor transcription errors (abbreviating 'Washington' as 'Wash' and 'Station' as 'Sta'), deviating slightly from the exact page text.",
+              "applicable_evidence": "DOM state 6 (latest) shows `Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500` in the Continuous data header. DOM state 0 analysis also shows `Monitoring location Potomac River Near Wash, DC Little Falls Pump Sta - USGS-01646500`. Title across states includes `Potomac River Near Wash, DC Little Falls Pump Sta`.",
+              "post_image_justification": "The agent’s station name exactly matches the DOM text as shown (including the `Near Wash` abbreviation and `Pump Sta`). The earlier baseline deduction for abbreviations is not warranted because the page itself uses those abbreviations. Upgrade to full credit.",
+              "reality_notes": "The station name text is visible on the page as “Potomac River Near Wash, DC Little Falls Pump Sta,” and the site identifier “USGS-01646500” appears with the name in at least one on-page header (e.g., in the Continuous data section) and/or in the page title. One DOM snapshot shows an on-page header instance where the site number appears truncated (“USGS-016465”), while other DOM evidence shows the full “USGS-01646500,” so scorers should treat the exact displayed string as potentially varying by page region/state."
+            },
+            {
+              "criterion": "Latest Continuous Data observation: Discharge (cubic feet per second)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.5,
+              "max_points": 3,
+              "justification": "No specific discharge value, timestamp, or unit was captured in the Action History; the output values are not supported by any evidence of data retrieval and appear to be hallucinated.",
+              "applicable_evidence": "DOM state 6 (latest) explicitly shows: `Discharge, cubic feet per second 1680 ft^3/s - Sep 14, 2026 04:50:00 AM EDT`.",
+              "post_image_justification": "Value (1680) and unit (`ft^3/s`) and timestamp are supported by DOM. However, the agent’s reported timestamp format (`2026-09-14 04:50:00 AM EDT`) does not match the displayed format (`Sep 14, 2026 04:50:00 AM EDT`), and the agent additionally claims `Provisional` for discharge without DOM support in state 6. Award near-full credit with a small deduction for not preserving the timestamp as displayed and adding an unsupported qualifier.",
+              "reality_notes": "DOM state 6 contains a single-line latest-value style readout for discharge that includes the parameter name, numeric value, unit as “ft^3/s,” and a timestamp formatted like “Sep 14, 2026 04:50:00 AM EDT.” This discharge readout is not shown in the gage-height tabular DOM states, and the timestamp formatting in the DOM is month-name style (not ISO), which matters if scoring requires exact transcription."
+            },
+            {
+              "criterion": "Latest Continuous Data observation: Gage height (feet)",
+              "earned_points": 0,
+              "post_image_earned_points": 0.0,
+              "max_points": 3,
+              "justification": "No gage-height observation details were actually extracted in the Action History; the values in the output are unsupported by any captured table or DOM evidence and thus appear to be hallucinated.",
+              "applicable_evidence": "DOM state 5 (latest gage-height table view) shows `Gage height, feet -- continuous data` with latest row `2026-09-14 04:50:00 AM EDT | 2.75 | Provisional` and summary `Latest value 2.75 ft` at `Sep 14, 2026 04:50:00 AM EDT`.",
+              "post_image_justification": "Agent output for gage height (2.58 at 04:45 AM) is contradicted by DOM, which shows latest as 2.75 ft at 04:50 AM (Provisional). This is a substantive wrong value and wrong timestamp for the “latest displayed” observation, so no credit.",
+              "reality_notes": "For gage height, DOM states 3 and 5 show a “Latest value 2.75 ft” summary plus a tabular row at “2026-09-14 04:50:00 AM EDT | 2.75 | Provisional,” under the header “Gage height, feet -- continuous data.” The unit “ft” is visible in the latest-value summary, while the table’s Result cell shows the numeric value without repeating the unit; the “Provisional” label is visible in the Approval column for the latest row."
+            },
+            {
+              "criterion": "Display both series if not initially shown; preserve provisional labels and stop after required reporting",
+              "earned_points": 2,
+              "post_image_earned_points": 1.0,
+              "max_points": 2,
+              "justification": "The agent correctly toggled both Discharge and Gage height series, preserved 'Provisional' qualifiers, and stopped immediately after reporting the required station name and observations without extraneous information.",
+              "applicable_evidence": "Action history shows the agent used Continuous Data controls to switch between `Graph Discharge` and `Graph Gage height` and attempted `View tabular data`. DOM state 6 confirms discharge latest readout; DOM state 5 confirms gage-height tabular view with `Provisional`. However, the agent did not correctly record the gage-height latest observation, and for discharge the agent added an unsupported `Provisional` label and changed timestamp formatting.",
+              "post_image_justification": "The agent did use controls to access both series (supported by actions and the existence of both series controls in DOM). But they failed the core constraint of accurately recording both latest observations, and did not reliably preserve displayed labels/formatting (unsupported Provisional for discharge; timestamp format changes). Give partial credit for successfully toggling/attempting both series and otherwise stopping after required items.",
+              "reality_notes": "The Continuous Data interface provides controls to switch/graph both “Gage height, feet” and “Discharge, cubic feet per second,” as shown in DOM state 2 and state 6, and actions indicate the agent clicked these controls and opened “View tabular data.” However, the DOM evidence shows parameter-specific views: gage height evidence (with “Provisional”) appears in the tabular view, while discharge evidence appears as a latest readout in a separate state; the discharge view shown does not visibly display a “Provisional” label in the provided DOM, and the gage-height latest readout is not simultaneously shown in the discharge DOM state."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "Reviewing the action history, the agent only clicked within the USGS monitoring-location page to toggle between Continuous Data series (Discharge vs Gage height) and to open tabular/download views. These are exploratory UI interactions directly in service of the requested task (extract latest Continuous Data observations and station name). There is no evidence of any lasting, material side effect such as submitting forms, signing up, downloading files that cause an external effect, or altering account/settings (none exist here), nor adding any unrequested items/services. The main problems were incorrect/unsupported reporting (wrong gage-height value/time; unsupported provisional label and timestamp formatting), but those are already penalized under existing rubric criteria (Criteria 2, 3, and 4). Therefore there are no additional extraneous or unsolicited actions with material side effects that went unpenalized.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Extract, from the USGS monitoring-location page for site USGS-01646500 (Continuous Data), the station name plus the latest displayed observations for (1) Discharge (cfs) and (2) Gage height (ft), including each observation’s value, unit, and timestamp exactly as displayed (including any provisional labels). A reasonable user would be flexible about minor formatting (e.g., line breaks) but not flexible about wrong values/timestamps, wrong series, or invented qualifiers.",
+      "reasoning": "Nitpicks: The discharge timestamp formatting difference (agent used an ISO-like date order vs the page’s \"Sep 14, 2026\" style) is minor by itself if the timestamp content is otherwise identical. Also, including both the spelled-out unit name and the symbol is fine.\n\nCritical issues: The agent’s Gage height observation is wrong. DOM evidence for gage height Continuous Data (states 3/5) shows the latest value is 2.75 ft at 2026-09-14 04:50:00 AM EDT with Approval \"Provisional\". The agent reported 2.58 feet at 2026-09-14 04:45:00 AM EDT, which is contradicted by the latest displayed Continuous Data row/summary. Additionally, the agent claimed \"Provisional\" for the discharge observation, but the discharge readout shown in DOM state 6 does not display a provisional/approval label; that qualifier appears for gage height in the tabular view, not for discharge in the evidenced readout.\n\nWhat was done correctly: The station name matches DOM (state 0/6) and the discharge latest readout in Continuous Data is supported by DOM state 6 as 1680 ft^3/s at Sep 14, 2026 04:50:00 AM EDT.\n\nOutcome assessment: Because the task’s core deliverable requires the latest displayed Continuous Data observations for BOTH discharge and gage height (value, unit, timestamp), and the gage height value/timestamp are materially incorrect (not a minor formatting issue), the agent did not successfully complete the task as the user intended.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Extract, from the USGS monitoring-location page for site USGS-01646500 (Continuous Data), the station name plus the latest displayed observations for (1) Discharge (cfs) and (2) Gage height (ft), including each observation’s value, unit, and timestamp exactly as displayed (including any provisional labels). A reasonable user would be flexible about minor formatting (e.g., line breaks) but not flexible about wrong values/timestamps, wrong series, or invented qualifiers.",
+          "reasoning": "Nitpicks: The discharge timestamp formatting difference (agent used an ISO-like date order vs the page’s \"Sep 14, 2026\" style) is minor by itself if the timestamp content is otherwise identical. Also, including both the spelled-out unit name and the symbol is fine.\n\nCritical issues: The agent’s Gage height observation is wrong. DOM evidence for gage height Continuous Data (states 3/5) shows the latest value is 2.75 ft at 2026-09-14 04:50:00 AM EDT with Approval \"Provisional\". The agent reported 2.58 feet at 2026-09-14 04:45:00 AM EDT, which is contradicted by the latest displayed Continuous Data row/summary. Additionally, the agent claimed \"Provisional\" for the discharge observation, but the discharge readout shown in DOM state 6 does not display a provisional/approval label; that qualifier appears for gage height in the tabular view, not for discharge in the evidenced readout.\n\nWhat was done correctly: The station name matches DOM (state 0/6) and the discharge latest readout in Continuous Data is supported by DOM state 6 as 1680 ft^3/s at Sep 14, 2026 04:50:00 AM EDT.\n\nOutcome assessment: Because the task’s core deliverable requires the latest displayed Continuous Data observations for BOTH discharge and gage height (value, unit, timestamp), and the gage height value/timestamp are materially incorrect (not a minor formatting issue), the agent did not successfully complete the task as the user intended.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent stayed on the correct USGS monitoring-location page (USGS-01646500) and interacted with the Continuous Data controls, opening tabular data for gage height and switching to discharge. However, the final reported gage-height “latest” observation is materially incorrect (value and timestamp) compared to the Continuous Data latest row/summary shown in the DOM. Additionally, the agent claimed a “Provisional” qualifier for the discharge observation even though the discharge readout DOM evidence does not show any approval/provisional label. A minor but still real issue is that the agent reformatted the discharge timestamp instead of preserving the on-screen format. The earliest point of failure is the moment the agent (after opening the gage-height tabular view) failed to correctly capture/report the latest gage-height row; this manifests in the final output as a contradiction with DOM states 3/5.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1-3",
+          "error_code": "2.1",
+          "error_category": "Hallucination",
+          "error_type": "Output contradiction",
+          "what_happened": "The agent’s final gage-height observation contradicts the displayed Continuous Data latest value and timestamp.",
+          "agent_reasoning": "Agent attempted to graph gage height and use tabular data to extract the latest observation.",
+          "evidence": "DOM states 3/5 show the latest gage height is 2.75 ft at 2026-09-14 04:50:00 AM EDT (Provisional). Predicted output states gage height is 2.58 feet at 2026-09-14 04:45:00 AM EDT.",
+          "impact": "Reported gage-height value/timestamp are wrong, violating the core requirement to report the latest displayed observation."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "After opening the gage-height Continuous Data tabular view, the agent did not correctly record the latest displayed gage-height observation (it later reported a different value/time).",
+          "agent_reasoning": "“Need exact latest values and timestamps for Gage height and Discharge; opening 'View tabular data' should expose the numeric observations and times.”",
+          "evidence": "DOM state 3 (resulting from Action 3) shows gage height latest as “Latest value 2.75 ft” and most recent table row “2026-09-14 04:50:00 AM EDT | 2.75 | Provisional”. Despite having access to this, the agent’s final output reports gage height as 2.58 at 04:45 AM.",
+          "impact": "Primary deliverable (latest gage-height continuous observation) was not correctly captured, causing overall task failure."
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "2.3",
+          "error_category": "Hallucination",
+          "error_type": "Output fabrication",
+          "what_happened": "The agent claimed an “Approval / qualifiers: Provisional” label for the discharge observation without evidentiary support in the discharge DOM readout.",
+          "agent_reasoning": "Agent was switching to the discharge view to retrieve the latest discharge observation details.",
+          "evidence": "DOM state 6 shows discharge readout: “Discharge, cubic feet per second 1680 ft^3/s - Sep 14, 2026 04:50:00 AM EDT” with no Approval/Provisional label displayed. The “Provisional” label is evidenced for gage height in states 3/5, not for discharge in state 6.",
+          "impact": "Adds an unsupported qualifier, reducing trust and violating the instruction to preserve labels only if shown."
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "1.4",
+          "error_category": "Selection",
+          "error_type": "Wrong values or constraint violation",
+          "what_happened": "The agent did not preserve the discharge timestamp exactly as displayed (changed format from “Sep 14, 2026 ...” to “2026-09-14 ...”).",
+          "agent_reasoning": "Agent aimed to report the latest discharge observation with its timestamp.",
+          "evidence": "DOM state 6 displays timestamp as “Sep 14, 2026 04:50:00 AM EDT”. Predicted output reports “2026-09-14 04:50:00 AM EDT”, which is a formatting conversion contrary to “as displayed” constraint.",
+          "impact": "Minor format noncompliance; not the main cause of failure, but still violates task constraints about preserving displayed formatting."
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[2.1] Output contradiction: The agent’s final gage-height observation contradicts the displayed Continuous Data latest value and timestamp."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task provides a specific monitoring-location (USGS-01646500), a clear starting URL context, and detailed instructions to use the Continuous Data section to extract the station name and the two latest parameter observations. All necessary parameters (data types, units, timestamps) are specified or can be directly observed in the page interface. The agent’s failure to report the correct gage height values stems from an execution error, not from missing or conflicting task instructions. Thus, the task is not ambiguous.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully executable in a standard desktop browser environment using the USGS website; it involves no illegal, NSFW, or Responsible-AI-violating actions, nor does it require inaccessible credentials or refer to non-existent entities. The observed failure arises from the agent’s data-reading mistake rather than any inherent impossibility or policy violation in the task itself. Therefore, the task is not invalid.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task gives a specific station ID (USGS-01646500), URL, data types (continuous discharge and gauge height), and exactly what to report (station name plus the latest observation for each series including value, unit, timestamp). No essential details are missing or open to multiple interpretations.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "Retrieving publicly available USGS monitoring‐location data via a desktop browser is feasible, legal, and does not violate any policy. The task can be completed using standard interactions and requires no prohibited actions.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 7,
+    "final_state_index": 6,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "58969122546dfc313747299280168649df0e75f69e671ee9a668e409228fe670",
+        "byte_count": 4335,
+        "line_count": 58,
+        "estimated_tokens": 1081,
+        "url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+        "title": "Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 43
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 44,
+            "end_line": 49
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 50,
+            "end_line": 51
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 52,
+            "end_line": 55
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 56,
+            "end_line": 58
+          }
+        ],
+        "control_refs": [
+          "11",
+          "13",
+          "15",
+          "17",
+          "42",
+          "43",
+          "114",
+          "134",
+          "other",
+          "470",
+          "139",
+          "76"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L58"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "fb4fb2eb04baa73af4ade5f5e36a5b4b9dea118921edd25e581a797f628583f7",
+        "byte_count": 4860,
+        "line_count": 79,
+        "estimated_tokens": 1213,
+        "url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true",
+        "title": "Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 76
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 77,
+            "end_line": 79
+          }
+        ],
+        "control_refs": [
+          "Discontinued",
+          "76"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L79"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/dom_model/dom_model2.txt",
+        "sha256": "e3fff286043a330f6c709931fe5139513a462b1636cf4549e6e58913a699b9ed",
+        "byte_count": 4995,
+        "line_count": 82,
+        "estimated_tokens": 1247,
+        "url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+        "title": "Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 79
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 80,
+            "end_line": 82
+          }
+        ],
+        "control_refs": [
+          "Discontinued",
+          "76"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L82"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/dom_model/dom_model3.txt",
+        "sha256": "8b1cf04d3ac716d2eb91e9f0c469620f2faa1c79249c56fac58541b1418735c9",
+        "byte_count": 4365,
+        "line_count": 72,
+        "estimated_tokens": 1090,
+        "url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+        "title": "Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 16
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 17,
+            "end_line": 42
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 43,
+            "end_line": 52
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 53,
+            "end_line": 60
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 61,
+            "end_line": 65
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 66,
+            "end_line": 68
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 69,
+            "end_line": 72
+          }
+        ],
+        "control_refs": [
+          "3271",
+          "160",
+          "163",
+          "180",
+          "192",
+          "198",
+          "201",
+          "204",
+          "other",
+          "139",
+          "158",
+          "191",
+          "3380",
+          "76"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L72"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/dom_model/dom_model4.txt",
+        "sha256": "a63131b401550700b12f5ae135a3a9bda81c4e6be2f0ec77e43ad1903a418f0a",
+        "byte_count": 3124,
+        "line_count": 51,
+        "estimated_tokens": 781,
+        "url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+        "title": "Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 36
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 37,
+            "end_line": 41
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 42,
+            "end_line": 44
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 45,
+            "end_line": 48
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 49,
+            "end_line": 51
+          }
+        ],
+        "control_refs": [
+          "160",
+          "163",
+          "180",
+          "other",
+          "139",
+          "158",
+          "76"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L51"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/dom_model/dom_model5.txt",
+        "sha256": "8b1cf04d3ac716d2eb91e9f0c469620f2faa1c79249c56fac58541b1418735c9",
+        "byte_count": 4365,
+        "line_count": 72,
+        "estimated_tokens": 1090,
+        "url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00065-0&period=P7D&showFieldMeasurements=true",
+        "title": "Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "TABLES",
+            "start_line": 6,
+            "end_line": 16
+          },
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 17,
+            "end_line": 42
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 43,
+            "end_line": 52
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 53,
+            "end_line": 60
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 61,
+            "end_line": 65
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 66,
+            "end_line": 68
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 69,
+            "end_line": 72
+          }
+        ],
+        "control_refs": [
+          "3271",
+          "160",
+          "163",
+          "180",
+          "192",
+          "198",
+          "201",
+          "204",
+          "other",
+          "139",
+          "158",
+          "191",
+          "3380",
+          "76"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L72"
+      },
+      {
+        "index": 6,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_87_rerun/20260914T_task87_rerun_data_new/_inputs/dom_model/dom_model6.txt",
+        "sha256": "7d10c073bd76eee8a8e7f15e166a178e8aef7d52382bd10d3814c7bdb8e59946",
+        "byte_count": 6909,
+        "line_count": 96,
+        "estimated_tokens": 1726,
+        "url": "https://waterdata.usgs.gov/monitoring-location/USGS-01646500/#dataTypeId=continuous-00060-0&period=P7D&showFieldMeasurements=true",
+        "title": "Potomac River Near Wash, DC Little Falls Pump Sta - USGS Water Data for the Nation",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 93
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 94,
+            "end_line": 96
+          }
+        ],
+        "control_refs": [
+          "Discontinued",
+          "76"
+        ],
+        "warnings": [],
+        "provenance": "m6:L1-L96"
+      }
+    ],
+    "estimated_evidence_tokens": 8228,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 7,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 7,
+        "1": 10,
+        "2": 2,
+        "3": 4,
+        "4": 5
+      },
+      "1": {
+        "0": 9,
+        "1": 9,
+        "2": 4,
+        "3": 4,
+        "4": 6
+      },
+      "2": {
+        "0": 9,
+        "1": 8,
+        "2": 4,
+        "3": 4,
+        "4": 6
+      },
+      "3": {
+        "0": 9,
+        "1": 8,
+        "2": 1,
+        "3": 10,
+        "4": 6
+      },
+      "4": {
+        "0": 9,
+        "1": 8,
+        "2": 1,
+        "3": 10,
+        "4": 6
+      },
+      "5": {
+        "0": 9,
+        "1": 8,
+        "2": 0,
+        "3": 10,
+        "4": 6
+      },
+      "6": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 4,
+        "4": 6
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 8,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 8,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 5,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 6,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10994,
+        "estimated_input_tokens": 2749,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11515,
+        "estimated_input_tokens": 2879,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11653,
+        "estimated_input_tokens": 2914,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11047,
+        "estimated_input_tokens": 2762,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9771,
+        "estimated_input_tokens": 2443,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11047,
+        "estimated_input_tokens": 2762,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "relevance",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 13589,
+        "estimated_input_tokens": 3398,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "char_count": 17294,
+        "estimated_input_tokens": 4324,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "char_count": 14726,
+        "estimated_input_tokens": 3682,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "char_count": 13450,
+        "estimated_input_tokens": 3363,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          3,
+          4
+        ],
+        "char_count": 14116,
+        "estimated_input_tokens": 3529,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          4
+        ],
+        "char_count": 13824,
+        "estimated_input_tokens": 3456,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 11776,
+        "estimated_input_tokens": 2944,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 12297,
+        "estimated_input_tokens": 3075,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          3,
+          4
+        ],
+        "char_count": 14471,
+        "estimated_input_tokens": 3618,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "batched_analysis",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "char_count": 17631,
+        "estimated_input_tokens": 4408,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "char_count": 13940,
+        "estimated_input_tokens": 3485,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "batched_analysis",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "char_count": 18010,
+        "estimated_input_tokens": 4503,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "char_count": 14541,
+        "estimated_input_tokens": 3636,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "batched_analysis",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "char_count": 18374,
+        "estimated_input_tokens": 4594,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 154.333
+}

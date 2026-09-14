@@ -1,0 +1,40 @@
+[
+  {
+    "task_id": "browser_task_089-postcode-civic-geography-20260914T092026Z",
+    "confirmed_task": "From the postcodes.io response for SW1A2AA, report the normalized postcode, country, region, admin_district, admin_ward, parliamentary_constituency, latitude, longitude, incode, outcode, and codes.admin_district.\n\nStopping condition: Stop after all eleven requested result fields have been recorded.\n\nConstraints:\n- Use only the result object in the supplied postcode response.\n- Keep admin_district, admin_ward, parliamentary_constituency, and their requested code distinct.\n- Preserve capitalization, spaces, signs, and coordinate precision exactly as returned.\n- Do not substitute similarly named fields from the codes object except codes.admin_district.",
+    "website": "https://api.postcodes.io/postcodes/SW1A2AA",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Report 11 specific fields from the result object for SW1A2AA",
+          "description": "Extract and report exactly the eleven requested fields from the supplied postcodes.io response’s result object: postcode, country, region, admin_district, admin_ward, parliamentary_constituency, latitude, longitude, incode, outcode, and codes.admin_district. Full credit if all 11 are present and match the corresponding result fields. Partial credit if some are correct but one or more are missing/incorrect. Full credit if the agent clearly states that the supplied response/result object is unavailable (e.g., not provided in context, API inaccessible) and therefore the fields cannot be extracted without guessing.",
+          "max_points": 6,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Use only result object fields (with sole exception of codes.admin_district) and keep fields distinct",
+          "description": "All reported values must come only from the response’s result object; the only allowed codes-object field is result.codes.admin_district. Keep admin_district, admin_ward, parliamentary_constituency, and codes.admin_district distinct (no swapping or substitution with similarly named codes fields). Full credit if sourcing and distinctions are correct. Partial credit if exactly one substitution/mix-up occurs. Full credit if the agent cannot verify sourcing because the supplied result object is unavailable and it explicitly refrains from guessing.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Preserve exact formatting/precision as returned",
+          "description": "Preserve capitalization, spaces, signs, and coordinate precision exactly as returned by the API for each requested field. Full credit if exact. Partial credit for minor deviations in one or two fields that do not change the underlying value. Full credit if the agent explains the response is unavailable and does not fabricate values/precision.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Stopping condition: stop after recording all 11 requested fields",
+          "description": "Stop after reporting the eleven requested fields, without adding extra unrelated fields. Full credit if only the requested fields (and minimal labels/structure needed to associate values) are included. Partial credit if minimal extra preamble or formatting appears but the output is clearly limited to the 11 fields. Full credit if the agent stops after clearly stating the needed response data is unavailable and no extraction can be performed.",
+          "max_points": 1,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

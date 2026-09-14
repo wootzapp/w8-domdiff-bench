@@ -1,0 +1,829 @@
+{
+  "schema_version": "existing-output-evidence-audit/v1",
+  "task_id": "browser_task_048-corporate-filing-filtering-20260909T081902Z",
+  "run_id": "20260914T_task048_data_new",
+  "run_dir": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new",
+  "rubric_sha256": "c8197d17535a38a70b94467043e3b15de71f9f6afc6ce6cacf16ebc253dfbecb",
+  "source_artifacts": {
+    "screenshot_result": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/microsoft_verifier/result.json",
+    "dom_model_result": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/dom_model/result.json"
+  },
+  "source_inventory": {
+    "screenshot": [
+      {
+        "index": 0,
+        "file": "_inputs/screenshot/screenshot0.png",
+        "bytes": 77735,
+        "sha256": "455966aff5deae463215bc71c645dd5db66ca40d23b7822edc13802d04c66896"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/screenshot/screenshot1.png",
+        "bytes": 77775,
+        "sha256": "5c2c69cf18ee5d8a468992769a38ba742b4fb6cbb396da3a543240e541c54b03"
+      }
+    ],
+    "dom_model": [
+      {
+        "index": 0,
+        "file": "_inputs/dom_model/dom_model0.txt",
+        "bytes": 1936,
+        "sha256": "b812e46f01ed2caf8323846ec9132c8355e76091dda8878489d71d7a90fd8eb7"
+      },
+      {
+        "index": 1,
+        "file": "_inputs/dom_model/dom_model1.txt",
+        "bytes": 1992,
+        "sha256": "9c854df7a098cb71d82f3b783ac8ce97250e348588e9f958b926493a125e6b11"
+      }
+    ]
+  },
+  "criteria": [
+    {
+      "criterion_index": 0,
+      "criterion": "Navigate to Tesco PLC Companies House filing history (correct company/page)",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 6
+          },
+          {
+            "source_index": 1,
+            "score": 6
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows a GOV.UK Companies House page header and cookie banner (“Cookies on Companies House services”). Below, it shows “Find and update company information” and a company page section with the large title “TESCO PLC” and “Company number 00445790”. There is a search bar (“Search for a company or officer”). Buttons “Follow this company” and “File for this company” are visible. No “Filing history” heading or filing history list is visible in this screenshot.",
+            "criterion_analysis": "The screenshot confirms the correct company (TESCO PLC, company number 00445790) on Companies House, but it does not show the filing history page/list. So it only partially satisfies reaching the correct company/page; it does not confirm the filing history list is reached.",
+            "discrepancies": "Agent context/predicted output implies being on the filing history and applying an Accounts filter. The screenshot only shows the general company page header area with company name/number and does not show any filing history section.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot shows the GOV.UK Companies House service header (“GOV.UK” and “Find and update company information”). Below, it shows the company name “TESCO PLC” and “Company number 00445790”. There is no visible “Filing history” tab/page content; only the company heading area and buttons like “Follow this company” and “File for this company” are visible.",
+            "criterion_analysis": "Partial. The screenshot confirms the correct company (Tesco PLC, company number 00445790) on Companies House, but it does not show the filing history list/page itself. Therefore, the criterion of reaching the filing history list is not confirmed by this screenshot.",
+            "discrepancies": "The task context/action history indicates the agent is on the filing history URL, but the screenshot only shows the company header area and not an actual filing history list. No visible evidence of “filing history” results on-screen.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Navigate to Tesco PLC Companies House filing history (correct company/page)",
+          "earned_points": 3,
+          "post_image_earned_points": 3.0,
+          "max_points": 3,
+          "justification": "The agent started on and successfully accessed the correct filing history URL for Tesco PLC (company number 00445790), satisfying the navigation requirement.",
+          "applicable_evidence": "Action History shows State 1 URL is https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history (Tesco PLC filing history). Screenshots (latest: Screenshot 2) show the company header 'TESCO PLC' and 'Company number 00445790' but do not show the filing history list in the viewport.",
+          "post_image_justification": "Per instructions, Action History is authoritative for URL/navigation. The agent did reach the correct filing-history URL for Tesco PLC. Lack of visible filing list in screenshots suggests the page was at/near the top, but does not negate that the correct page was opened.",
+          "reality_notes": "Screenshots show the GOV.UK Companies House service page with the company identity section for “TESCO PLC” and “Company number 00445790” clearly visible. However, neither screenshot shows the filing history list/table itself nor any “Filing history” content in the viewport—only the header area (search bar, cookie banner, and action buttons like Follow/File). Scoring should distinguish between being on the correct company profile header vs. actually displaying the filing history entries."
+        },
+        "verifier_evidence": "Action History shows State 1 URL is https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history (Tesco PLC filing history). Screenshots (latest: Screenshot 2) show the company header 'TESCO PLC' and 'Company number 00445790' but do not show the filing history list in the viewport.",
+        "verifier_justification": "Per instructions, Action History is authoritative for URL/navigation. The agent did reach the correct filing-history URL for Tesco PLC. Lack of visible filing list in screenshots suggests the page was at/near the top, but does not negate that the correct page was opened.",
+        "action_only_points": 3,
+        "final_points": 3.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 10
+          },
+          {
+            "source_index": 1,
+            "score": 9
+          }
+        ],
+        "selected_indices": [
+          0,
+          1
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX:0 shows URL `https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history`, page title `TESCO PLC filing history - Find and update company information - GOV.UK`, and visible text `TESCO PLC` plus `Company number 00445790` and `Filing history for TESCO PLC (00445790)`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly indicates the browser is on Tesco PLC’s Companies House filing history page for company number 00445790.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL `https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history`, Title `TESCO PLC filing history - Find and update company information - GOV.UK`, and visible text `TESCO PLC`, `Company number 00445790`, and `Filing history for TESCO PLC (00445790)`.",
+            "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly evidences that the browser is on Tesco PLC’s Companies House filing history page for company number 00445790.",
+            "discrepancies": "None.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Navigate to Tesco PLC Companies House filing history (correct company/page)",
+          "earned_points": 3,
+          "post_image_earned_points": 3.0,
+          "max_points": 3,
+          "justification": "Agent began at the correct Companies House filing history URL for Tesco PLC (company number 00445790) and did not encounter or report any blocker.",
+          "applicable_evidence": "DOM-model states 0 and 1 (latest = state 1) both show the URL https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history and page text/header indicating “Filing history for TESCO PLC (00445790)”. This explicitly confirms the correct company and correct filing-history page.",
+          "post_image_justification": "No adjustment needed: DOM evidence directly supports that the agent was on Tesco PLC’s Companies House filing history page for company number 00445790.",
+          "reality_notes": "DOM-model states 0 and 1 explicitly show the filing history page header for “TESCO PLC” with “Company number 00445790” and the heading “Filing history for TESCO PLC (00445790)”. This is direct on-page evidence of being on the intended company’s filing history list."
+        },
+        "verifier_evidence": "DOM-model states 0 and 1 (latest = state 1) both show the URL https://find-and-update.company-information.service.gov.uk/company/00445790/filing-history and page text/header indicating “Filing history for TESCO PLC (00445790)”. This explicitly confirms the correct company and correct filing-history page.",
+        "verifier_justification": "No adjustment needed: DOM evidence directly supports that the agent was on Tesco PLC’s Companies House filing history page for company number 00445790.",
+        "action_only_points": 3,
+        "final_points": 3.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "SUPPORTED"
+          ],
+          "contains_missing_or_unknown_language": false
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "evidence_missing_language_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 1,
+      "criterion": "Apply the 'Accounts' category filter via the page interface",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No category filters or checkboxes are visible. The visible elements are the cookie banner with “Accept analytics cookies” and “Reject analytics cookies”, the GOV.UK header, the search box, and the company title “TESCO PLC” with company number. There is no visible “Accounts” checkbox or a filtered results list.",
+            "criterion_analysis": "There is no evidence in the screenshot that an “Accounts” category filter exists on-screen or that it has been applied. Therefore the criterion is not satisfied based on the provided screenshot.",
+            "discrepancies": "Predicted output claims the “Accounts” checkbox is visibly checked and the filing list shows only accounts-related filings. The screenshot contains neither a checked “Accounts” checkbox nor any filing list.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No category filters or checkboxes are visible in the screenshot. There is no visible “Accounts” label/checkbox, and no filtered filing list is shown. The page area visible includes cookie banner buttons (“Accept analytics cookies”, “Reject analytics cookies”), a search bar (“Search for a company or officer”), and the “TESCO PLC” header with buttons.",
+            "criterion_analysis": "Not satisfied based on the screenshot. There is no visual confirmation that an “Accounts” filter exists on-screen or that it has been selected/applied via the interface. The agent’s predicted output claiming the Accounts checkbox is visibly checked is unsupported by the screenshot.",
+            "discrepancies": "Agent claimed: “The ‘Accounts’ checkbox is visibly checked (ref=e37), and the filing list now shows only accounts-related filings.” The screenshot does not show any checkbox, any “Accounts” filter, or any filing list.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Apply the 'Accounts' category filter via the page interface",
+          "earned_points": 4,
+          "post_image_earned_points": 0.0,
+          "max_points": 4,
+          "justification": "The agent performed a click on the on-page 'Accounts' checkbox (ref=e37) and confirmed in the output that it is visibly checked and the list is filtered, demonstrating correct interface usage.",
+          "applicable_evidence": "Screenshots (latest: Screenshot 2) do not display any category filters/checkboxes and do not show an 'Accounts' checkbox or any indication of an applied filter. Action History only shows a single left_click on ref=e37, but the screenshots provide no visual confirmation that ref=e37 corresponds to the Accounts filter or that it became checked.",
+          "post_image_justification": "The task requires the Accounts checkbox to be applied via the interface and to be visibly applied. The provided screenshots do not confirm the checkbox exists in view or is checked, nor that results are filtered. Therefore the claim that the filter is 'visibly checked' is unsupported by evidence; this is a controllable failure/unsupported claim, not an uncontrollable blocker.",
+          "reality_notes": "No filter sidebar/controls are visible in either screenshot—there are no category checkboxes, no “Accounts” label, and no indication of any filter state (e.g., checked box, active filter tag, or filtered results count). The visible area appears to be above where filing history filters/results would normally appear (cookie banner + company header). Any claim that the Accounts checkbox was selected or that results are filtered cannot be validated from these images."
+        },
+        "verifier_evidence": "Screenshots (latest: Screenshot 2) do not display any category filters/checkboxes and do not show an 'Accounts' checkbox or any indication of an applied filter. Action History only shows a single left_click on ref=e37, but the screenshots provide no visual confirmation that ref=e37 corresponds to the Accounts filter or that it became checked.",
+        "verifier_justification": "The task requires the Accounts checkbox to be applied via the interface and to be visibly applied. The provided screenshots do not confirm the checkbox exists in view or is checked, nor that results are filtered. Therefore the claim that the filter is 'visibly checked' is unsupported by evidence; this is a controllable failure/unsupported claim, not an uncontrollable blocker.",
+        "action_only_points": 4,
+        "final_points": 0.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 1
+          },
+          {
+            "source_index": 1,
+            "score": 1
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX:0 contains no visible filter panel or `Accounts` checkbox element. The only shown actionable elements are general navigation/search/cookie controls (e.g., `Sign in / Register`, `Follow this company`, `File for this company`, search input/button). Action history notes a click on an `Accounts` checkbox (ref `e37`), but that element and any post-click filtered results are not present in the provided DOM snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nWith only the initial DOM snapshot (pre-action) provided, there is no DOM evidence that the on-page `Accounts` checkbox exists in-view, was clicked, or is visibly checked, nor that the results list is filtered to Accounts. Therefore the filter being applied via the page interface cannot be verified from DOM evidence.",
+            "discrepancies": "Agent-claimed `Accounts` checkbox (ref=e37) and its checked state are not evidenced in DOM_MODEL_STATE_INDEX:0; no post-action DOM snapshot is provided to confirm filter application.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible content includes header/navigation and cookie banner text, but does not include any filter panel content, any checkbox labeled `Accounts`, nor any filing list entries. Only generic links like `Sign in / Register`, `Follow this company`, and `File for this company` are present in the visible snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM snapshot does not contain the category filter UI or any indication that the `Accounts` checkbox is present, checked, or that results are filtered. Therefore visible application of the Accounts filter cannot be verified from this DOM evidence.",
+            "discrepancies": "Agent claims: “Accounts checkbox is visibly checked … and the filing list now shows only accounts-related filings.” The DOM evidence does not show the checkbox state, the filter section, or any filtered results list to substantiate this.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Apply the 'Accounts' category filter via the page interface",
+          "earned_points": 4,
+          "post_image_earned_points": 1.0,
+          "max_points": 4,
+          "justification": "Agent performed a left-click on the on-page 'Accounts' checkbox and confirmed it was visibly checked, indicating the filter was applied through the interface.",
+          "applicable_evidence": "DOM-model state 1 (latest) does not show the category filter panel or any checkbox labeled “Accounts,” nor any visual indicator that a filter is applied (no checked state, no filter tag/chip, no filtered list). The action history reports a click on an “Accounts” checkbox (ref e37), but that element is not present in either DOM state.",
+          "post_image_justification": "Baseline assumed visible application of the Accounts filter, but the DOM provides no confirmation that the Accounts checkbox exists in-view, is checked, or that results are filtered. This is a controllable verification failure (insufficient evidence), not an uncontrollable blocker. Score reduced substantially.",
+          "reality_notes": "In DOM-model states 0 and 1, the category filter area (including any checkbox labeled “Accounts”) is not visible, and there is no visible indicator of an applied filter (e.g., checked checkbox state, filter chips/tags, or filtered results). Therefore, the DOM evidence does not allow verification that the Accounts filter UI was present, interacted with, or visibly applied."
+        },
+        "verifier_evidence": "DOM-model state 1 (latest) does not show the category filter panel or any checkbox labeled “Accounts,” nor any visual indicator that a filter is applied (no checked state, no filter tag/chip, no filtered list). The action history reports a click on an “Accounts” checkbox (ref e37), but that element is not present in either DOM state.",
+        "verifier_justification": "Baseline assumed visible application of the Accounts filter, but the DOM provides no confirmation that the Accounts checkbox exists in-view, is checked, or that results are filtered. This is a controllable verification failure (insufficient evidence), not an uncontrollable blocker. Score reduced substantially.",
+        "action_only_points": 4,
+        "final_points": 1.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": true,
+      "disagreement_reasons": [
+        "final_criterion_score_mismatch"
+      ],
+      "manual_review_required": true,
+      "manual_review_status": "pending",
+      "classification": null
+    },
+    {
+      "criterion_index": 2,
+      "criterion": "Record newest (most recent) account filing #1 details",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No filing history entries are visible—no dates, filing types, or descriptions are shown anywhere on the page in this screenshot.",
+            "criterion_analysis": "Because the screenshot does not show the filing history list and does not show the Accounts filter applied, the newest accounts filing (#1) cannot be verified from this image. The agent’s predicted filing details are unsupported by the screenshot evidence.",
+            "discrepancies": "Predicted output lists a newest accounts filing dated “25 Jul 2026” with a specific description and period. None of those details appear in the screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "The screenshot does not display any filing history entries, dates, filing types, or descriptions. Only the Tesco PLC heading and company number are visible.",
+            "criterion_analysis": "Cannot be verified / not satisfied from this screenshot. Since the Accounts filter is not visibly applied and no filing list is shown, there is no evidence supporting the newest account filing details provided in the agent’s predicted output.",
+            "discrepancies": "Agent listed a newest filing dated “25 Jul 2026” with description “Group of companies' accounts made up to 28 February 2026.” None of these details appear anywhere in the screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Record newest (most recent) account filing #1 details",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "The agent’s output provides filing details without any supporting evidence or Action History to verify the accuracy of the listed dates and descriptions; the claim of a 2026 filing date is implausible and appears hallucinated.",
+          "applicable_evidence": "No screenshots show any filing history entries (dates/types/descriptions). The agent output lists a newest accounts filing (25 Jul 2026, etc.), but there is no on-screen evidence supporting any of these details.",
+          "post_image_justification": "Because the Accounts filter application is not evidenced and the filing list is not visible, the newest Accounts filing cannot be verified. The agent’s specific filing details appear fabricated/unsupported (and include an implausible future year). With no supporting evidence in screenshots or action history, award 0.",
+          "reality_notes": "Neither screenshot displays any filing history entries (no list rows with dates, filing types, or descriptions). Therefore, the newest Accounts-filtered filing cannot be read or verified from the provided evidence, and there is also no on-screen confirmation that the Accounts filter was applied."
+        },
+        "verifier_evidence": "No screenshots show any filing history entries (dates/types/descriptions). The agent output lists a newest accounts filing (25 Jul 2026, etc.), but there is no on-screen evidence supporting any of these details.",
+        "verifier_justification": "Because the Accounts filter application is not evidenced and the filing list is not visible, the newest Accounts filing cannot be verified. The agent’s specific filing details appear fabricated/unsupported (and include an implausible future year). With no supporting evidence in screenshots or action history, award 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX:0 shows page header/navigation only; it does not include any filing-history list entries, dates, filing types, or descriptions. There is also no evidence that the Accounts filter is applied (condition not verified).",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nBecause the Accounts filter application is not verifiable from the DOM provided and the filing list content is not present in the snapshot, the newest Accounts filing details cannot be confirmed from DOM evidence.",
+            "discrepancies": "Agent provided a newest filing dated `25 Jul 2026` with description `Group of companies' accounts made up to 28 February 2026`, but no corresponding DOM text is available to substantiate these exact fields.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 does not show any filing-history list items, dates, filing types, or descriptions. No text such as `Group of companies' accounts made up to ...` appears in the snapshot.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nBecause the DOM does not evidence that the Accounts filter is applied (condition not verified) and does not include any filing entries, the newest Accounts-filtered filing (#1) details cannot be validated against the DOM.",
+            "discrepancies": "Agent reported a newest filing dated `25 Jul 2026` with description `Group of companies' accounts made up to 28 February 2026`. None of these details appear in the DOM snapshot, so they are unsubstantiated here.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Record newest (most recent) account filing #1 details",
+          "earned_points": 3,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "Agent listed the newest accounts filing with all required fields—filing date, filing type, full description, and covered date—verbatim as displayed.",
+          "applicable_evidence": "DOM-model state 1 (latest) contains no filing-history list rows: no filing dates, no filing types, and no descriptions are visible. There is also no DOM confirmation that the Accounts filter is applied.",
+          "post_image_justification": "The agent provided specific filing details (date/type/description/period) but there is no DOM support for any of those strings or even the presence of the filings list. Because the prerequisite (Accounts filter visibly applied) is also unverified, these details are effectively ungrounded relative to the provided evidence. Score reduced to 0.",
+          "reality_notes": "Neither DOM-model state shows any filing-history list rows (no filing date, filing type, or description text). Because the list content is absent and filter application is not evidenced, the ‘newest’ Accounts filing details cannot be cross-checked or confirmed from the DOM snapshots provided."
+        },
+        "verifier_evidence": "DOM-model state 1 (latest) contains no filing-history list rows: no filing dates, no filing types, and no descriptions are visible. There is also no DOM confirmation that the Accounts filter is applied.",
+        "verifier_justification": "The agent provided specific filing details (date/type/description/period) but there is no DOM support for any of those strings or even the presence of the filings list. Because the prerequisite (Accounts filter visibly applied) is also unverified, these details are effectively ungrounded relative to the provided evidence. Score reduced to 0.",
+        "action_only_points": 3,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 3,
+      "criterion": "Record newest account filing #2 details",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "The screenshot shows no filing list at all; there are no entries that could be the second-newest account filing.",
+            "criterion_analysis": "No basis in the screenshot to confirm the second-newest account filing details. The agent’s claimed data cannot be validated and is not evidenced here.",
+            "discrepancies": "Predicted output lists a second filing dated “15 Jul 2025” with description and period; the screenshot shows none of this.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No filing history list is visible; no second entry or any account filings are shown.",
+            "criterion_analysis": "Cannot be verified / not satisfied from this screenshot due to lack of visible filtered filing results.",
+            "discrepancies": "Agent listed a second-newest filing dated “15 Jul 2025” with a specific accounts description and made-up-to date; this content is not visible in the screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Record newest account filing #2 details",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "The output’s second entry, like the first, lacks any evidence in the Action History and is likely a hallucination of future dates; no verification of correct fields is possible.",
+          "applicable_evidence": "No screenshots show the filtered filing list or any second-most-recent accounts entry. The output’s second filing (15 Jul 2025...) is not evidenced anywhere.",
+          "post_image_justification": "Same as criterion 2: no verifiable basis for the reported second-newest account filing; appears unsupported/hallucinated. Score 0.",
+          "reality_notes": "There is no visible filing history list in the screenshots, so there is no way to identify or transcribe the second-newest Accounts entry (or any entry). The screenshots provide no dates, filing types, or description text to support this criterion."
+        },
+        "verifier_evidence": "No screenshots show the filtered filing list or any second-most-recent accounts entry. The output’s second filing (15 Jul 2025...) is not evidenced anywhere.",
+        "verifier_justification": "Same as criterion 2: no verifiable basis for the reported second-newest account filing; appears unsupported/hallucinated. Score 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX:0 does not contain filing entries or an accounts-filtered results list; no second-newest filing information is present in the DOM evidence.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe second-newest Accounts filing cannot be verified because neither the Accounts-filtered list nor any filing entry text is present in the provided DOM snapshot.",
+            "discrepancies": "Agent provided a second entry dated `15 Jul 2025` with description `Group of companies' accounts made up to 26 February 2025`, but the DOM evidence supplied contains none of this text.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 contains no second filing entry content (no filing dates, types, or descriptions are visible).",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot does not contain the filing list; additionally the Accounts filter condition is not verified. Therefore the second-newest Accounts filing (#2) details cannot be confirmed.",
+            "discrepancies": "Agent reported a second-newest filing dated `15 Jul 2025` with description `Group of companies' accounts made up to 26 February 2025`. This content is not present in the DOM evidence provided.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Record newest account filing #2 details",
+          "earned_points": 3,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "Agent captured the second-newest accounts filing with the exact filing date, type, full description, and period covered, matching the filtered list.",
+          "applicable_evidence": "Same as above: DOM-model state 1 (latest) shows no filing list entries and no Accounts filter state; thus there is no evidence for any second-newest filing fields.",
+          "post_image_justification": "No DOM support for the claimed second-newest accounts filing fields; with no evidenced filtered list, correctness cannot be validated and the provided specifics are unsupported. Score reduced to 0.",
+          "reality_notes": "The DOM snapshots do not display any filing entries at all; there is no evidence of a second item in an Accounts-filtered list, nor any dates/types/descriptions to extract. As a result, the second-newest Accounts filing cannot be validated against the provided DOM."
+        },
+        "verifier_evidence": "Same as above: DOM-model state 1 (latest) shows no filing list entries and no Accounts filter state; thus there is no evidence for any second-newest filing fields.",
+        "verifier_justification": "No DOM support for the claimed second-newest accounts filing fields; with no evidenced filtered list, correctness cannot be validated and the provided specifics are unsupported. Score reduced to 0.",
+        "action_only_points": 3,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 4,
+      "criterion": "Record newest account filing #3 details",
+      "max_points": 3,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "No filing history items are visible, so no third-newest account filing can be read from the screenshot.",
+            "criterion_analysis": "The screenshot provides no evidence for the third-newest account filing details; the agent’s output is unsupported by what is shown.",
+            "discrepancies": "Predicted output lists a third filing dated “02 Jul 2024” with description and period; the screenshot does not display any such entries.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "No filing history entries are visible; no third entry details can be seen.",
+            "criterion_analysis": "Cannot be verified / not satisfied from this screenshot because the Accounts filter application and resulting list are not shown.",
+            "discrepancies": "Agent listed a third-newest filing dated “02 Jul 2024” with a specific accounts description and date; none of it is visible in the screenshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Record newest account filing #3 details",
+          "earned_points": 0,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "As with the first two entries, the third listing is unsupported by any page evidence in the Action History and appears fabricated, so its details cannot be trusted.",
+          "applicable_evidence": "No screenshots show any third-most-recent accounts entry; no filing rows are visible. The output’s third filing (02 Jul 2024...) is not evidenced.",
+          "post_image_justification": "No evidence for the third-newest account filing details; unsupported/hallucinated. Score 0.",
+          "reality_notes": "As with the prior criteria, the screenshots do not show any filing history results; thus the third-newest Accounts filing details (date/type/description/period) are not present for verification. Nothing in the images indicates pagination or an entry order either."
+        },
+        "verifier_evidence": "No screenshots show any third-most-recent accounts entry; no filing rows are visible. The output’s third filing (02 Jul 2024...) is not evidenced.",
+        "verifier_justification": "No evidence for the third-newest account filing details; unsupported/hallucinated. Score 0.",
+        "action_only_points": 0,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 0
+          },
+          {
+            "source_index": 1,
+            "score": 0
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX:0 does not show any filing history rows, dates, types, or descriptions, and does not show the Accounts filter state.",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe third-newest Accounts filing cannot be verified from the provided DOM evidence because the relevant list entries are absent and the prerequisite filter application is unverified.",
+            "discrepancies": "Agent provided a third entry dated `02 Jul 2024` with description `Group of companies' accounts made up to 24 February 2024`, but the DOM snapshot contains no filing list to support this.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 contains no third filing entry content (no filing dates, types, or descriptions are visible).",
+            "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nWith no filing entries shown and no verified Accounts filter application, the third-newest Accounts filing (#3) details cannot be verified from the DOM.",
+            "discrepancies": "Agent reported a third-newest filing dated `02 Jul 2024` with description `Group of companies' accounts made up to 24 February 2024`. This is not evidenced in the DOM snapshot.",
+            "environment_issues_confirmed": false,
+            "condition_verification": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Record newest account filing #3 details",
+          "earned_points": 3,
+          "post_image_earned_points": 0.0,
+          "max_points": 3,
+          "justification": "Agent recorded the third-newest accounts filing with all required fields accurately copied from the filtered results.",
+          "applicable_evidence": "DOM-model state 1 (latest) does not display any filing entries or the Accounts filter UI/state, so there is no evidence for a third-newest filing.",
+          "post_image_justification": "The claimed third-newest filing details are not supported by DOM evidence and cannot be validated; this is not an uncontrollable blocker shown in the DOM. Score reduced to 0.",
+          "reality_notes": "As with the prior criteria, the filing list is not visible in the DOM evidence, so there is no on-page text supporting a third-newest Accounts filing (or its date/type/description/period). The prerequisite ‘Accounts filter visibly applied’ is also not evidenced in these snapshots."
+        },
+        "verifier_evidence": "DOM-model state 1 (latest) does not display any filing entries or the Accounts filter UI/state, so there is no evidence for a third-newest filing.",
+        "verifier_justification": "The claimed third-newest filing details are not supported by DOM evidence and cannot be validated; this is not an uncontrollable blocker shown in the DOM. Score reduced to 0.",
+        "action_only_points": 3,
+        "final_points": 0.0,
+        "max_points": 3,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "UNKNOWN"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    },
+    {
+      "criterion_index": 5,
+      "criterion": "Respect constraints and stopping condition",
+      "max_points": 4,
+      "screenshot": {
+        "mode": "screenshot",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 3
+          },
+          {
+            "source_index": 1,
+            "score": 3
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 1,
+            "screenshot_evidence": "Visible buttons include “Follow this company” and “File for this company,” but there is no indication they were clicked in this screenshot. Also visible are cookie choice buttons. No PDFs, filing documents, or sign-in actions are shown. No Accounts filter UI is visible/applied in the screenshot.",
+            "criterion_analysis": "The screenshot does not show any prohibited actions (sign-in, follow, file, PDF download). However, it also does not show the Accounts checkbox being applied via the interface nor the stopping condition (Accounts-filtered list + three recorded filings) being met on-screen. Thus, constraints appear respected, but the stopping condition/application is not evidenced in this screenshot.",
+            "discrepancies": "Agent claims to have applied the Accounts filter and recorded three newest filings; the screenshot shows neither the filter nor any filings list.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 0,
+            "screenshot_evidence": "Visible buttons include “Sign in / Register”, “Follow this company”, and “File for this company” but none appear clicked. No PDFs are shown opened/downloaded. The screenshot does not show the Accounts checkbox being applied nor the three filings recorded on-page (no filing list visible).",
+            "criterion_analysis": "Constraints about not signing in/following/filing and not opening PDFs appear respected in this screenshot (no evidence of those actions). However, the stopping condition (stop after Accounts filter visibly applied and three newest filings recorded) is not met/confirmed on-screen because the Accounts filter and filings are not visible. Overall: partial compliance—no prohibited actions evident, but completion of required steps not evidenced.",
+            "discrepancies": "Agent’s predicted output asserts the Accounts filter is applied and three newest filings are recorded; the screenshot does not show any filter or filings, so the claimed completion is not supported.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Respect constraints and stopping condition",
+          "earned_points": 4,
+          "post_image_earned_points": 2.0,
+          "max_points": 4,
+          "justification": "The agent did not sign in or download any PDFs, used the interface filter correctly, and stopped after listing three entries, adhering to all constraints and the stopping condition.",
+          "applicable_evidence": "Screenshots show 'Follow this company' and 'File for this company' buttons, and cookie banner options; no evidence they were clicked. No PDFs are shown opened/downloaded. However, screenshots also do not show Accounts filter applied nor three recorded filtered filings in the UI.",
+          "post_image_justification": "The agent appears to have respected the negative constraints (no sign-in/follow/file actions evidenced; no PDF opened). But the stopping condition was not actually met/verified because Accounts filter application and the three newest matching filings were not evidenced. Award partial credit for respecting constraints but not satisfying the task completion condition.",
+          "reality_notes": "Screenshots show action buttons like “Sign in / Register,” “Follow this company,” and “File for this company,” but there is no visual evidence of them being clicked, and no PDFs or document viewers are shown. The cookie banner is present with accept/reject options. However, the stopping condition (Accounts filter visibly applied + three newest matching filings recorded) is not evidenced because neither the filter UI nor any filing entries are visible in the screenshots."
+        },
+        "verifier_evidence": "Screenshots show 'Follow this company' and 'File for this company' buttons, and cookie banner options; no evidence they were clicked. No PDFs are shown opened/downloaded. However, screenshots also do not show Accounts filter applied nor three recorded filtered filings in the UI.",
+        "verifier_justification": "The agent appears to have respected the negative constraints (no sign-in/follow/file actions evidenced; no PDF opened). But the stopping condition was not actually met/verified because Accounts filter application and the three newest matching filings were not evidenced. Award partial credit for respecting constraints but not satisfying the task completion condition.",
+        "action_only_points": 4,
+        "final_points": 2.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "dom_model": {
+        "mode": "dom_model",
+        "relevance_scores": [
+          {
+            "source_index": 0,
+            "score": 2
+          },
+          {
+            "source_index": 1,
+            "score": 3
+          }
+        ],
+        "selected_indices": [
+          1,
+          0
+        ],
+        "evidence_analyses": [
+          {
+            "screenshot_idx": 0,
+            "dom_model_state_idx": 0,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX:0 shows links `Sign in / Register` and `Follow this company` and `File for this company`, but there is no DOM evidence they were clicked. The provided evidence also does not show any PDF opening/downloading behavior. However, the provided DOM does not include a post-action state confirming the Accounts filter was applied and three filings were recorded from the UI.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nFrom the available DOM snapshot, there is no evidence of prohibited actions (sign-in/follow/file/download). However, the stopping condition and key constraint (Accounts checkbox applied via UI and then three newest matching filings recorded) cannot be verified because the evidence lacks the post-filter DOM state and any filing entries.",
+            "discrepancies": "Agent asserts the Accounts filter was applied and three newest filings were captured, but the only DOM evidence provided is the initial pre-action snapshot without filter/list confirmation.",
+            "environment_issues_confirmed": false
+          },
+          {
+            "screenshot_idx": 1,
+            "dom_model_state_idx": 1,
+            "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows links `Sign in / Register`, `Follow this company`, and `File for this company`, but there is no DOM evidence of clicking them, opening PDFs, or downloading documents. Action history shows only Action 1: left_click on a checkbox named `Accounts` (ref `e37`), but ref `e37` is not present in the provided DOM snapshot, so the click target cannot be corroborated by this DOM state.",
+            "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about not signing in/following/filing and not opening/downloading PDFs are not contradicted by the DOM evidence, but the stopping condition and the key constraint “apply Accounts via the page interface with visible confirmation” cannot be verified because the DOM snapshot does not show the Accounts checkbox state nor the filtered results and does not include the referenced element id `e37`.",
+            "discrepancies": "Agent asserts the Accounts filter was visibly applied and that three newest matching filings were recorded. The DOM snapshot does not show the filter or any filings; thus compliance with the stopping condition cannot be validated from the provided evidence.",
+            "environment_issues_confirmed": false
+          }
+        ],
+        "scoring": {
+          "criterion": "Respect constraints and stopping condition",
+          "earned_points": 4,
+          "post_image_earned_points": 2.0,
+          "max_points": 4,
+          "justification": "Agent did not sign in, did not open or download any PDFs, applied the Accounts filter via the UI, and stopped after listing the three newest account filings as required.",
+          "applicable_evidence": "DOM-model states 0 and 1 show links/buttons for “Sign in / Register,” “Follow this company,” and “File for this company,” with no DOM indication they were clicked. There is also no DOM evidence of PDFs being opened/downloaded. However, DOM-model state 1 (latest) still does not show the Accounts filter as applied nor the three recorded filings, so the stopping condition cannot be verified from DOM evidence.",
+          "post_image_justification": "Constraints about not signing in/following/filing and not opening/downloading PDFs are not contradicted, so partial credit is warranted. But the key requirements tied to stopping (Accounts filter visibly applied via UI + three newest matching filings recorded) are not evidenced, so full credit is not justified.",
+          "reality_notes": "The DOM states show links/buttons for “Sign in / Register”, “Follow this company”, and “File for this company”, but there is no DOM evidence of those being activated, nor any evidence of PDFs being opened/downloaded. However, because the filter UI state and filing list content are not shown, the DOM evidence cannot substantiate that the stopping condition was met (Accounts filter visibly applied and three newest matching filings recorded) or that the Accounts checkbox was applied via a visible on-page interface."
+        },
+        "verifier_evidence": "DOM-model states 0 and 1 show links/buttons for “Sign in / Register,” “Follow this company,” and “File for this company,” with no DOM indication they were clicked. There is also no DOM evidence of PDFs being opened/downloaded. However, DOM-model state 1 (latest) still does not show the Accounts filter as applied nor the three recorded filings, so the stopping condition cannot be verified from DOM evidence.",
+        "verifier_justification": "Constraints about not signing in/following/filing and not opening/downloading PDFs are not contradicted, so partial credit is warranted. But the key requirements tied to stopping (Accounts filter visibly applied via UI + three newest matching filings recorded) are not evidenced, so full credit is not justified.",
+        "action_only_points": 4,
+        "final_points": 2.0,
+        "max_points": 4,
+        "evidence_signals": {
+          "explicit_statuses": [
+            "PARTIAL"
+          ],
+          "contains_missing_or_unknown_language": true
+        },
+        "manual_review": {
+          "evidence_available": null,
+          "caught_correctly": null,
+          "review_note": ""
+        }
+      },
+      "disagreement_flag": false,
+      "disagreement_reasons": [],
+      "manual_review_required": false,
+      "manual_review_status": "not_required",
+      "classification": null
+    }
+  ]
+}

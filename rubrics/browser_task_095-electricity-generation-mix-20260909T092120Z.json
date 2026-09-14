@@ -1,0 +1,35 @@
+{
+  "task_id": "browser_task_095-electricity-generation-mix-20260909T092120Z",
+  "precomputed_rubric": {
+    "items": [
+      {
+        "criterion": "Select the exact requested data record (from 2025-01-01T12:00Z to 2025-01-01T12:30Z)",
+        "description": "Use only the single data record whose 'from' value is exactly 2025-01-01T12:00Z and whose 'to' value is exactly 2025-01-01T12:30Z, even if the API response includes adjacent intervals. Full credit if the correct bounded record is selected and no data from other intervals is mixed in. Full credit also if the agent makes a reasonable attempt to query the API but the exact record is not returned due to external factors (API down/error/rate limit/no data) and the agent clearly reports that the exact bounded record is unavailable. Partial credit if the agent selects an adjacent/overlapping interval while clearly stating the boundary mismatch and that the exact interval was not available in the response. No credit if the agent uses the wrong interval without acknowledging the mismatch or combines multiple records as if they were the requested one.",
+        "max_points": 4,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Report every generationmix fuel-perc pair in returned order with exact precision",
+        "description": "For the selected record (only), list every (fuel, perc) pair from its generationmix array, preserving the exact returned order and the exact decimal precision as provided. Full credit if all pairs are included once, in order, with unchanged numeric formatting. If the exact requested record is unavailable due to external API limitations and the agent clearly reports that unavailability (per criterion 1), award full credit for not fabricating values; otherwise, if an adjacent interval is explicitly used (with mismatch disclosed), grade based on correctness for that disclosed interval. Partial credit if all fuels are correct but order is changed or minor formatting/precision changes occur. No credit if fuels/perc values are missing, added, or materially altered for the claimed record.",
+        "max_points": 4,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Identify all fuels with perc equal to zero (explicit zeros only)",
+        "description": "Explicitly name every fuel in the selected record whose perc value is exactly 0 (as returned), and do not treat omitted fuels as zero. Full credit if all and only explicitly-zero fuels are identified. If the exact requested record is unavailable and the agent clearly reports that unavailability without inventing data, award full credit. Partial credit if some zero fuels are missed or a non-zero fuel is incorrectly flagged as zero. No credit if the agent infers zeros for fuels not present in the generationmix array.",
+        "max_points": 2,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Calculate the sum of all returned perc values for the selected record",
+        "description": "Compute the total by summing only the perc values present in the selected record's generationmix array (no inference from generation quantities). Full credit if the sum is correct for that record. If the exact requested record is unavailable due to external API limitations and the agent clearly reports that and does not fabricate a total, award full credit. Partial credit if arithmetic is slightly off but clearly based on the correct list of perc values for the record actually reported. No credit if the sum uses the wrong interval without disclosure, includes inferred/omitted fuels, or is not provided when data is available.",
+        "max_points": 2,
+        "justification": "",
+        "earned_points": ""
+      }
+    ]
+  }
+}

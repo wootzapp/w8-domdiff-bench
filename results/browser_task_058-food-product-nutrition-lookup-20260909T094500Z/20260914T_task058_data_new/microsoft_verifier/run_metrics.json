@@ -1,0 +1,159 @@
+{
+  "task_id": "browser_task_058-food-product-nutrition-lookup-20260909T094500Z",
+  "evidence_mode": "screenshot",
+  "input_task": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_058-food-product-nutrition-lookup-20260909T094500Z",
+  "frozen_rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_058-food-product-nutrition-lookup-20260909T094500Z/20260914T_task058_data_new/_inputs/frozen_rubric.json",
+  "frozen_rubric_sha256": "ae2b0f4ffaaeffc8722627003c7d60317a3aa3d5479d92f2c544b84e631281ac",
+  "phase_a_generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_058-food-product-nutrition-lookup-20260909T094500Z/20260914T_task058_data_new/_inputs/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "actions": 1,
+    "screenshots": 2
+  },
+  "result": {
+    "process_score": 0.35,
+    "total_earned_points": 7.0,
+    "total_max_points": 20.0,
+    "rubric_is_success": false,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 110.314
+  },
+  "criteria": [
+    {
+      "criterion": "Access the exact Open Food Facts product record for barcode 3017620422003",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did access the correct record URL (strong evidence of correct record), but the agent additionally claimed on-page visible confirmation of the barcode, which is not supported by the screenshots. Still, criterion 0 is about accessing the correct record; the URL in action history is authoritative for that. Keep full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report product name and barcode",
+      "action_only_points": 2.0,
+      "final_points": 1.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Product name is supported by Screenshot 1. Barcode value (3017620422003) is not visually confirmed in screenshots, though it is implied by the accessed URL in action history. Because this criterion requires reporting both name and barcode as displayed on the record, and the agent claimed the barcode was visible when screenshots don’t show it, reduce to partial credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report displayed Nutri-Score",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent’s reported displayed Nutri-Score (“Nutri-Score E”) matches what is visible in Screenshot 2. Full credit.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report NOVA processing card classification and marker count (visible wording)",
+      "action_only_points": 3.0,
+      "final_points": 1.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent reported both classification and a specific marker count (“2 ultra-processing markers”). Screenshots support the classification wording but do not support any marker count number. This is a substantive unsupported detail, so award partial credit for capturing the visible classification only.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report energy per 100 g (preserving displayed units)",
+      "action_only_points": 3.0,
+      "final_points": 0.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent provided a specific energy per 100 g value (“2252 kJ (539 kcal)”), but there is no screenshot evidence of any energy figure. This is effectively unverified/fabricated relative to evidence. Score 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report sugars per 100 g (exact value)",
+      "action_only_points": 2.0,
+      "final_points": 0.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent provided a specific sugars per 100 g value (“56.3 g”) with no supporting visual evidence. Score 0.",
+      "penalty": false
+    },
+    {
+      "criterion": "Report complete displayed English ingredients text",
+      "action_only_points": 0.0,
+      "final_points": 0.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Agent did not provide the complete displayed English ingredients text and stated it was not visible. Screenshots corroborate that ingredients are not shown in the captured viewports, but this appears to be a controllable omission (insufficient scrolling/expanding) rather than an uncontrollable blocker (no CAPTCHA/login/down). Thus the criterion remains not met.",
+      "penalty": false
+    },
+    {
+      "criterion": "Respect constraints and stopping condition",
+      "action_only_points": 1.0,
+      "final_points": 0.0,
+      "max_points": 1.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The agent did not edit/upload and used the correct product URL, but they reported several unsupported specific values, which violates the constraint to report visible NOVA-card wording/marker count and to use per-100-g nutrition as displayed. This is a significant constraints/accuracy issue, so no credit.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 9,
+    "o4-mini": 3,
+    "total": 12,
+    "api_attempts": 12,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 63940,
+      "completion_tokens": 6083,
+      "reasoning_tokens": 0,
+      "total_tokens": 70023
+    },
+    "o4-mini": {
+      "prompt_tokens": 17539,
+      "completion_tokens": 3900,
+      "reasoning_tokens": 2112,
+      "total_tokens": 21439
+    },
+    "combined": {
+      "prompt_tokens": 81479,
+      "completion_tokens": 9983,
+      "reasoning_tokens": 2112,
+      "total_tokens": 91462
+    }
+  },
+  "evidence_metrics": {},
+  "score_artifact": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_058-food-product-nutrition-lookup-20260909T094500Z/20260914T_task058_data_new/microsoft_verifier/result.json",
+  "raw_instrumentation": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_058-food-product-nutrition-lookup-20260909T094500Z/20260914T_task058_data_new/microsoft_verifier/result.json",
+  "run_log": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_058-food-product-nutrition-lookup-20260909T094500Z/20260914T_task058_data_new/microsoft_verifier/run.log"
+}

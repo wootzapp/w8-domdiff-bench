@@ -1,0 +1,240 @@
+{
+  "status": "complete",
+  "phase": "B",
+  "paid_calls_authorized": true,
+  "writes_performed": true,
+  "preflight": {
+    "task_id": "browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z",
+    "task_alias": "browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z",
+    "actions": 1,
+    "screenshots": 2,
+    "dom_model_states": 2,
+    "alignment": {
+      "task_id": "browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "visit_url",
+          "arguments": {
+            "action": "visit_url",
+            "url": "https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054",
+            "thoughts": "Use the returned block hash to construct the required /api/block/{hash} URL and navigate to retrieve the block details."
+          },
+          "observed_after_url": "https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "1847830d13cdde79ccee761e60f2afaec357e1caea3448a6e150ed894059a556",
+          "after_sha256": "0a638cfd324e34e9437fcb1451895c6a12e0124145a42287e2bf29adcf714f4e",
+          "before_url": "https://blockstream.info/api/block-height/800000",
+          "after_url": "https://blockstream.info/api/block/00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "missing_title",
+          "message": "dom_model1: missing_title",
+          "action_ordinal": null,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z.json",
+    "frozen_rubric_sha256": "c594cfe6a041f7fc5690e1f8f8f8fc13f658d4743fcc53b14c72a5bb8e16ba8f",
+    "criterion_order": [
+      "Resolve block hash using Blockstream block-height endpoint",
+      "Construct only the documented /api/block/{hash} follow-up URL from the resolved hash",
+      "Retrieve the exact block record via /api/block/{hash} (external dependency-aware)",
+      "Report required fields from the exact block response",
+      "Preserve exact returned values and distinctions (hashes, timestamp, size vs weight)",
+      "Stop after reporting the resolved hash and the requested block fields"
+    ],
+    "criterion_descriptions": [
+      "Use the documented Blockstream endpoint /api/block-height/800000 to obtain the block hash for height 800000. Full credit if the agent clearly uses (or reports results from) that exact endpoint and obtains a single hash for height 800000. Full credit (external dependency) if the agent attempts this exact endpoint but cannot retrieve a result due to an uncontrollable issue (e.g., API down, blocked, network error) and clearly reports the blocker. No credit if the agent uses a different source/endpoint or a different height, or substitutes a different block instead of the endpoint result.",
+      "Append the returned hash from the block-height endpoint to https://blockstream.info/api/block/ to form the follow-up URL of the documented form /api/block/{hash}. Full credit if the constructed URL is correct and uses the resolved hash with no substitutions, even if the subsequent fetch fails due to external issues. Partial credit if the intent is clear but formatting errors occur. No credit if a different endpoint (including undocumented ones) or a different hash is used.",
+      "Use the constructed https://blockstream.info/api/block/{hash} URL to retrieve that exact block record. Full credit if the agent retrieves the record successfully. Full credit (external dependency) if the agent attempts this exact URL but cannot retrieve the response due to uncontrollable issues (API down, blocked, network error) and clearly reports the failure. No credit if the agent queries a different endpoint or uses a different hash/block to work around the failure.",
+      "From the /api/block/{hash} JSON response (if available), report all requested fields: id, height, timestamp, tx_count, size, weight, merkle_root, and previousblockhash. Full credit if all fields are included and match the response for that exact block. Partial credit if one or more fields are missing but the others are correct. If the block response could not be retrieved due to an external issue that the agent clearly reports, do not award points for missing fields (no penalty beyond the retrieval criterion). No credit if values are fabricated or taken from a different block record.",
+      "Ensure hashes and the Unix timestamp are reproduced exactly as returned (no conversion, rounding, abbreviation) and keep size and weight distinct (do not conflate or infer units). Full credit if values are copied verbatim and size/weight are clearly separate. Partial credit if minor transcription errors occur in a non-hash field or size/weight are unclear. No credit if the agent converts the timestamp, abbreviates hashes, or mixes up size and weight.",
+      "Comply with the stopping condition by ending once the resolved hash and all requested fields from that exact block record are reported. Full credit if the response contains only the required outputs without extra unrelated exploration. Partial credit if small extra commentary is included but does not introduce additional lookups or blocks. No credit if the agent continues beyond the task (e.g., queries other blocks, adds unrelated fields, or performs further analysis after the requested output is complete)."
+    ],
+    "maximum_points": [
+      3.0,
+      2.0,
+      2.0,
+      8.0,
+      3.0,
+      3.0
+    ],
+    "criterion_denominator": 21.0,
+    "screenshot_sidecar_validated": true,
+    "dom_model_sidecar_validated": true,
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z_generation_metrics.json",
+    "rubric_generation_calls_during_scoring": 0,
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    }
+  },
+  "verifier_packages": {
+    "microsoft_verifier": {
+      "package": "microsoft_verifier",
+      "root": "/data/isha/msexecute/evidence-error-experiment/microsoft_verifier",
+      "file_count": 33,
+      "tree_sha256": "90af71daf5ecc0770643ce9bc8552eaefa792fef198682dc10c36e288e9c5802",
+      "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/microsoft_verifier.json"
+    },
+    "dom_model": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model",
+      "file_count": 52,
+      "tree_sha256": "66f01ab44f5e28fa377aff439b786a3ca995db77c6fd1057a2143216ad4d886b",
+      "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/dom_model.json"
+    }
+  },
+  "runtime": {
+    "openai": "2.16.0",
+    "tiktoken": "0.12.0",
+    "httpx": "0.28.1",
+    "Pillow": "12.1.0",
+    "pydantic": "2.12.5",
+    "azure-identity": "missing",
+    "python": "3.12.3"
+  },
+  "commands": {
+    "microsoft_verifier": [
+      "/data/isha/msexecute/evidence-error-experiment/.venv/bin/python",
+      "-m",
+      "microsoft_verifier.runner",
+      "--input",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/screenshot",
+      "--rubric-file",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/frozen_rubric.json",
+      "--eval-config",
+      "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical",
+      "--output",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/microsoft_verifier",
+      "--judge-model",
+      "gpt-5.2",
+      "--o4mini-model",
+      "o4-mini",
+      "--rubric-threshold",
+      "0.8",
+      "--max-images-per-criterion",
+      "5",
+      "--majority-vote-instances",
+      "1",
+      "--success",
+      "outcome",
+      "--redo-eval"
+    ],
+    "dom_model": [
+      "/data/isha/msexecute/evidence-error-experiment/.venv/bin/python",
+      "-m",
+      "dom_model.runner",
+      "--input",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/dom_model",
+      "--rubric-file",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/frozen_rubric.json",
+      "--generation-metrics",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/rubric_generation_metrics.json",
+      "--eval-config",
+      "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical",
+      "--output",
+      "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/dom_model",
+      "--judge-model",
+      "gpt-5.2",
+      "--o4mini-model",
+      "o4-mini",
+      "--rubric-threshold",
+      "0.8",
+      "--max-evidence-per-criterion",
+      "5",
+      "--min-relevance-threshold",
+      "0",
+      "--dom-model-state-char-budget",
+      "350000",
+      "--majority-vote-instances",
+      "1",
+      "--success",
+      "outcome",
+      "--redo-eval"
+    ]
+  },
+  "verifier_parity": {
+    "status": "passed",
+    "only_intentional_difference": "evidence_loader_and_representation",
+    "controls": {
+      "judge_model": "gpt-5.2",
+      "action_judge_model": "o4-mini",
+      "rubric_threshold": "0.8",
+      "max_evidence_items_per_criterion": "5",
+      "min_relevance_threshold": "0",
+      "majority_vote_instances": "1",
+      "success_criterion": "outcome",
+      "redo_eval": true
+    }
+  },
+  "source_inputs": {
+    "screenshot": "/data/isha/msexecute/evidence-error-experiment/data-new/data-ss/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z",
+    "dom_model": "/data/isha/msexecute/evidence-error-experiment/data-new/data-dom/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z",
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z.json",
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z_generation_metrics.json"
+  },
+  "isolated_inputs": {
+    "screenshot": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/screenshot",
+    "dom_model": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/dom_model",
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/frozen_rubric.json",
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/_inputs/rubric_generation_metrics.json"
+  },
+  "phase_a_usage_separate_from_scoring": {
+    "gpt-5.2": {
+      "prompt_tokens": 11270,
+      "completion_tokens": 1847,
+      "reasoning_tokens": 0,
+      "total_tokens": 13117
+    },
+    "o4-mini": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    },
+    "combined": {
+      "prompt_tokens": 11270,
+      "completion_tokens": 1847,
+      "reasoning_tokens": 0,
+      "total_tokens": 13117
+    }
+  },
+  "rubric_generation_calls_during_scoring": 0,
+  "run_root": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new",
+  "microsoft_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/microsoft_verifier/run_metrics.json",
+  "dom_model_metrics": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/dom_model/run_metrics.json",
+  "comparison_report": "/data/isha/msexecute/evidence-error-experiment/results/browser_task_091-cross-endpoint-blockchain-record-20260909T091909Z/20260913T_task091_data_new/comparison.md"
+}
