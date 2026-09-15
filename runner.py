@@ -2,8 +2,7 @@
 """Generic model-driven runner for a ChromiumRL desktop browser.
 
 DOM evidence comes directly from ChromiumRL.captureStructuredSnapshot.
-Per-action DOM changes are computed inside ChromiumRL while it captures the
-after structured snapshot. The host only persists the returned evidence.
+Each observed state is stored once and actions refer to the state from which they execute.
 """
 
 from __future__ import annotations
@@ -32,7 +31,9 @@ import aiohttp
 from recorder_support import (
     RunnerError,
     append_json_line,
+    clean_dom_text,
     normalized_http_url,
+    same_document_except_fragment,
     utc_now,
     write_json,
     write_json_lines,
@@ -40,7 +41,7 @@ from recorder_support import (
 )
 from capture import (
     FULL_RENDERER,
-    MODEL_RENDERER,
+    MODEL_DOM_TEXT_RENDERER,
     ROOT,
     CDPClient,
     CDPError,
@@ -54,16 +55,13 @@ from capture import (
     attach_agent_browser_observation,
     attach_agent_browser_observation_error,
     capture_after_action_bundle,
-    capture_after_action_diff_bundle,
     capture_bundle,
     capture_call,
     capture_structured_snapshot,
     chromiumrl_action_coordinate,
     comparable_page_url,
-    copy_bundle,
     english_locale_path_url,
     ensure_english_page,
-    file_version,
     is_cdp_transport_error,
     is_english_language,
     is_recoverable_action_error,
@@ -71,24 +69,12 @@ from capture import (
     normalized_observation_text,
     page_language_state,
     recorded_action_coordinate,
-    render_stored_snapshot,
     renderer_versions,
     rewrite_ws_url,
-    run_renderer,
     structured_snapshot_action_coordinate,
     synchronize_recorder_target,
     verify_agent_browser_action,
 )
-from dom_diff import (
-    MAX_DOM_DIFF_JSON_BYTES,
-    MAX_TERMINATION_REVIEW_DIFF_ENTRIES_PER_STEP,
-    bounded_dom_diff_for_model,
-    bounded_dom_diff_history_for_review,
-    clean_dom_text,
-    dom_diff_text,
-    same_document_except_fragment,
-)
-
 # Local adapter: supplies the browser-facing observation and action interface.
 # ChromiumRL capture and recorder artifacts remain owned by this module.
 from agent_browser import (
@@ -100,7 +86,7 @@ from agent_browser import (
     agent_browser_session_name,
 )
 # Local prompt module: keeps model policy text separate from orchestration code.
-from prompts import SYSTEM_PROMPT, TERMINATION_REVIEW_PROMPT
+from prompts import SYSTEM_PROMPT
 # Recorder-local exception; standalone adapter errors are caught separately.
 from trajectory import (
     TRAJECTORY_SCHEMA_VERSION,
@@ -153,131 +139,145 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
     return value
 
 
-def apply_diff_metadata(
-    manifest: dict[str, Any],
-    *,
-    diff_engine: dict[str, Any],
-) -> None:
-    """Record the live browser snapshot-diff contract in a run manifest."""
-    manifest["dom_diff_engine"] = dict(diff_engine)
-    manifest["dom_diff_source"] = "runner_snapshot_diff"
-    manifest["dom_diff_format"] = "snapshot_path_diff_v2"
-    manifest["dom_diff_identity"] = (
-        "tag plus normalized own directText or semantic-node accessibility anchor with occurrence index; "
-        "tag sibling-position fallback for broad nodes and nodes without own content anchors"
-    )
-    manifest["dom_diff_compared_fields"] = [
-        "tag",
-        "role",
-        "accessibleName",
-        "directText",
-        "selectedAttributes",
-        "states",
-        "actionTypes",
-        "semanticBoundary",
-    ]
-    manifest["dom_diff_geometry_excluded"] = True
-    manifest["dom_diff_covers_live_control_state"] = False
-    manifest["dom_diff_max_json_bytes"] = MAX_DOM_DIFF_JSON_BYTES
-    manifest.pop("dom_diff_max_json_lines", None)
-    manifest["dom_diff_excluded_fields"] = [
-        "bounds",
-        "clippedBounds",
-        "sourceOrder",
-        "index",
-        "confidence",
-        "ref",
-        "nodeId",
-        "backendNodeId",
-    ]
-    manifest.pop("dom_diff_capture_parameters", None)
 
-
-_BROWSER_DOM_DIFF_KEY_ORDER = (
-    "source",
-    "interval",
-    "action_type",
-    "geometry_excluded",
-    "covers_live_control_state",
-    "identity",
-    "status",
-    "before",
-    "after",
-    "change_count",
-    "semantic_change_count",
-    "viewport_change_count",
-    "totals",
-    "emitted_counts",
-    "compression",
-    "diff",
-)
-
-
-def _restore_browser_diff_float_fields(record: dict[str, Any]) -> None:
-    """Preserve Python artifact spelling for protocol numbers that may be integral."""
-    def restore(container: Any, key: str) -> None:
-        if not isinstance(container, dict):
-            return
-        value = container.get(key)
-        if isinstance(value, (int, float)) and not isinstance(value, bool):
-            container[key] = float(value)
-
-    compression = record.get("compression")
-    restore(compression, "max_collapse_document_percent")
-    diff = record.get("diff")
-    indexes = diff.get("indexes") if isinstance(diff, dict) else None
-    subtrees = indexes.get("subtrees") if isinstance(indexes, dict) else None
-    if isinstance(subtrees, list):
-        for subtree in subtrees:
-            restore(subtree, "document_percent")
-    viewport = diff.get("viewport_delta") if isinstance(diff, dict) else None
-    geometry = viewport.get("geometry") if isinstance(viewport, dict) else None
-    shift = geometry.get("dominant_shift") if isinstance(geometry, dict) else None
-    for key in ("delta_x", "delta_y", "share_of_shifted_nodes_percent"):
-        restore(shift, key)
-
-
-def _prepare_browser_dom_diff_record(
-    browser_diff: dict[str, Any],
+def state_manifest_record(
+    state_number: int,
+    bundle: CaptureBundle,
+    run_dir: Path,
 ) -> dict[str, Any]:
-    """Normalize one browser-produced diff without writing any artifact."""
-    if not isinstance(browser_diff, dict):
-        raise RunnerError("ChromiumRL.captureSnapshotDiff returned no diff object")
-    unexpected = set(browser_diff) - set(_BROWSER_DOM_DIFF_KEY_ORDER)
-    if unexpected:
-        raise RunnerError(
-            "ChromiumRL.captureSnapshotDiff returned unexpected diff keys: "
-            + ", ".join(sorted(unexpected))
-        )
-    # A JSON round trip detaches the CDP response before host-only metadata is added.
-    detached = json.loads(json.dumps(browser_diff, ensure_ascii=False))
-    record = {key: detached[key] for key in _BROWSER_DOM_DIFF_KEY_ORDER if key in detached}
-    _restore_browser_diff_float_fields(record)
-    record["artifact"] = {
-        "max_json_bytes": MAX_DOM_DIFF_JSON_BYTES,
-        "json_bytes": 0,
-        "json_lines": 0,
-        "over_size_limit": False,
+    """Describe one captured browser state without copying its files."""
+    state_dir = bundle.snapshot_path.parent
+    relative = lambda path: str(path.relative_to(run_dir))
+    return {
+        "state": state_number,
+        "directory": relative(state_dir),
+        "snapshot": relative(bundle.snapshot_path),
+        "dom_full": relative(bundle.snapshot_path.with_name("dom_full.txt")),
+        "model_dom": relative(bundle.snapshot_path.with_name("dom_model.json")),
+        "model_text": relative(bundle.snapshot_path.with_name("dom_model.txt")),
+        "screenshot": relative(bundle.screenshot_path),
+        "agent_browser_snapshot": (
+            relative(bundle.agent_browser_path) if bundle.agent_browser_path else None
+        ),
+        "agent_browser_action_snapshot": (
+            relative(bundle.agent_browser_action_path)
+            if bundle.agent_browser_action_path
+            else None
+        ),
+        "document_url": bundle.document_url or bundle.snapshot.get("url") or "",
+        "document_language": bundle.document_language or None,
     }
-    for _ in range(5):
-        serialized = json.dumps(record, ensure_ascii=False, indent=2) + "\n"
-        record["artifact"]["json_lines"] = len(serialized.splitlines())
-        record["artifact"]["json_bytes"] = len(serialized.encode("utf-8"))
-        record["artifact"]["over_size_limit"] = (
-            record["artifact"]["json_bytes"] > MAX_DOM_DIFF_JSON_BYTES
+
+
+def quarantine_uncommitted_steps(
+    run_dir: Path,
+    manifest: dict[str, Any],
+) -> list[dict[str, str]]:
+    """Move partial action directories out of the authoritative step sequence.
+
+    A directory becomes a recorded state after its evidence paths have been
+    appended to the manifest. If an exception happens earlier, retain the
+    partial files for diagnosis without letting them create a gap.
+    """
+    steps_root = run_dir / "steps"
+    if not steps_root.is_dir():
+        return []
+    committed_names: set[str] = set()
+    manifest_states = manifest.get("states")
+    if isinstance(manifest_states, list):
+        for row in manifest_states:
+            if not isinstance(row, dict):
+                continue
+            number = row.get("state")
+            if isinstance(number, int) and number > 0:
+                committed_names.add(f"step_{number:03d}")
+
+    quarantined: list[dict[str, str]] = []
+    for step_dir in sorted(steps_root.iterdir()):
+        if (
+            not step_dir.is_dir()
+            or not re.fullmatch(r"step_\d+", step_dir.name)
+            or step_dir.name in committed_names
+        ):
+            continue
+        incomplete_root = run_dir / "incomplete_steps"
+        incomplete_root.mkdir(parents=True, exist_ok=True)
+        destination = incomplete_root / step_dir.name
+        suffix = 2
+        while destination.exists():
+            destination = incomplete_root / f"{step_dir.name}-{suffix}"
+            suffix += 1
+        step_dir.replace(destination)
+        quarantined.append(
+            {
+                "source": str(step_dir.relative_to(run_dir)),
+                "preserved_as": str(destination.relative_to(run_dir)),
+                "reason": "state capture failed before its manifest commit",
+            }
         )
-    return record
+    return quarantined
 
 
-def write_browser_dom_diff_files(
-    browser_diff: dict[str, Any],
-    json_path: Path,
-) -> dict[str, Any]:
-    """Persist a live browser-computed step diff without recomputing it."""
-    record = _prepare_browser_dom_diff_record(browser_diff)
-    write_json(json_path, record)
-    write_text(json_path.with_suffix(".txt"), dom_diff_text(record))
-    return record
+def finalize_recording_artifacts(
+    run_dir: Path,
+    manifest: dict[str, Any],
+    final: dict[str, Any],
+    *,
+    manifest_status: str | None = None,
+    error: str | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Finalize every initialized live run from its committed action steps.
+
+    The final step number, manifest step count, trajectory rows, and WebSurfer
+    rows use the same committed-action sequence. Model turns remain available
+    separately because rejected decisions are not executed browser actions.
+    """
+    quarantined = quarantine_uncommitted_steps(run_dir, manifest)
+    if quarantined:
+        manifest.setdefault("incomplete_steps", []).extend(quarantined)
+        manifest.setdefault("warnings", []).append(
+            f"preserved {len(quarantined)} uncommitted action step(s) outside steps/"
+        )
+
+    manifest_steps = manifest.get("steps")
+    committed_count = len(manifest_steps) if isinstance(manifest_steps, list) else 0
+    normalized_final = dict(final)
+    model_turn = normalized_final.get("model_turn", normalized_final.get("step"))
+    normalized_final["step"] = committed_count
+    if model_turn is not None:
+        normalized_final["model_turn"] = model_turn
+    normalized_final["recorded_steps"] = committed_count
+    write_json(run_dir / "final.json", normalized_final)
+
+    manifest["status"] = manifest_status or str(
+        normalized_final.get("status") or "failure"
+    )
+    manifest["completed_at"] = utc_now()
+    manifest["final"] = normalized_final
+    if error:
+        manifest["error"] = error
+    trajectory_export = generate_trajectory_artifacts(run_dir)
+    manifest["trajectory_export"] = trajectory_export
+    manifest["artifact_alignment"] = {
+        "committed_steps": committed_count,
+        "trajectory_actions": trajectory_export.get("exported_actions"),
+        "web_surfer_actions": trajectory_export.get("exported_actions"),
+        "human_intervention_steps_skipped": len(
+            trajectory_export.get("skipped") or []
+        ),
+    }
+    if trajectory_export.get("skipped"):
+        manifest.setdefault("warnings", []).append(
+            "verifier trajectory export skipped "
+            f"{len(trajectory_export['skipped'])} human intervention step(s)"
+        )
+    if trajectory_export["status"] != "complete":
+        manifest.setdefault("warnings", []).append(
+            "verifier trajectory export is invalid; rerun the task "
+            "before dataset generation"
+        )
+    write_json(run_dir / "manifest.json", manifest)
+    return normalized_final, trajectory_export
 
 
 ACTION_SCHEMA: dict[str, Any] = {
@@ -327,15 +327,6 @@ ACTION_SCHEMA: dict[str, Any] = {
         "thought",
         "memory",
     ],
-    "additionalProperties": False,
-}
-TERMINATION_REVIEW_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "verdict": {"type": "string", "enum": ["accept", "continue"]},
-        "reason": {"type": "string"},
-    },
-    "required": ["verdict", "reason"],
     "additionalProperties": False,
 }
 
@@ -486,22 +477,47 @@ def compact_model_response(response: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def parse_decision(text: str) -> dict[str, Any]:
-    """Parse one JSON decision, tolerating only an outer Markdown code fence."""
+def parse_model_json_object(text: str, *, context: str) -> dict[str, Any]:
+    """Return the final complete top-level JSON object from model output.
+
+    Structured-output providers normally return one object. Some providers can
+    concatenate a preliminary object and their final structured object in the
+    convenience output-text field. The final object is the authoritative one;
+    callers still validate its action schema immediately afterward.
+    """
     value = text.strip()
     if value.startswith("```"):
         value = re.sub(r"^```(?:json)?\s*", "", value)
         value = re.sub(r"\s*```$", "", value)
     try:
-        decision = json.loads(value)
+        candidate = json.loads(value)
     except json.JSONDecodeError:
-        start = value.find("{")
-        end = value.rfind("}")
-        if start < 0 or end <= start:
-            raise RunnerError(f"model did not return a JSON action: {text}")
-        decision = json.loads(value[start : end + 1])
-    if not isinstance(decision, dict):
-        raise RunnerError("model action must be a JSON object")
+        decoder = json.JSONDecoder()
+        candidates: list[dict[str, Any]] = []
+        offset = 0
+        while True:
+            start = value.find("{", offset)
+            if start < 0:
+                break
+            try:
+                decoded, end = decoder.raw_decode(value[start:])
+            except json.JSONDecodeError:
+                offset = start + 1
+                continue
+            if isinstance(decoded, dict):
+                candidates.append(decoded)
+            offset = start + end
+        if not candidates:
+            raise RunnerError(f"model did not return a JSON {context}: {text}")
+        candidate = candidates[-1]
+    if not isinstance(candidate, dict):
+        raise RunnerError(f"model {context} must be a JSON object")
+    return candidate
+
+
+def parse_decision(text: str) -> dict[str, Any]:
+    """Parse and validate one structured action decision."""
+    decision = parse_model_json_object(text, context="action")
     allowed = set(ACTION_SCHEMA["properties"]["action"]["enum"])
     action = decision.get("action")
     if action not in allowed:
@@ -553,18 +569,9 @@ class ModelClient:
         allow_human_intervention: bool,
         bundle: CaptureBundle,
         task_memory: str,
-        previous_dom_diff: dict[str, Any] | None,
         recent_actions: list[dict[str, Any]],
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Ask for one schema-constrained action from current recorded evidence.
-
-        Only the previous-diff prompt projection is capped at 32 ranked entries;
-        persisted diffs and the current DOM renderer output are not shortened here.
-        """
-        previous_text = json.dumps(
-            bounded_dom_diff_for_model(previous_dom_diff),
-            ensure_ascii=False,
-        )
+        """Ask for one schema-constrained action from current recorded evidence."""
         recent_text = json.dumps(recent_actions[-6:], ensure_ascii=False)
         action_text = bundle.executable_agent_browser_text()
         chromiumrl_text = chromiumrl_evidence_for_model(bundle.model_text)
@@ -574,7 +581,6 @@ class ModelClient:
             "chromiumrl_chars": len(bundle.model_text),
             "chromiumrl_prompt_chars": len(chromiumrl_text),
             "task_memory_chars": len(task_memory),
-            "previous_diff_chars": len(previous_text),
             "recent_actions_chars": len(recent_text),
             "observation_truncated": False,
             "conversation_history_reused": False,
@@ -588,7 +594,6 @@ class ModelClient:
             f"current_document_url: {bundle.document_url or bundle.snapshot.get('url', '')}\n\n"
             f"current_agent_browser_snapshot:\n{action_text}\n\n"
             f"current_chromiumrl_evidence:\n{chromiumrl_text}\n\n"
-            f"previous_action_snapshot_dom_diff:\n{previous_text}\n\n"
             f"recent_action_outcomes:\n{recent_text or '[]'}\n\n"
             "Use the recorded progress signals and writable-control verification in "
             "recent_action_outcomes. If an action made no observable progress or a requested "
@@ -608,7 +613,7 @@ class ModelClient:
                     ],
                 }
             ],
-            "max_output_tokens": 3000,
+            "max_output_tokens": 6000,
             "text": {
                 "format": {
                     "type": "json_schema",
@@ -622,64 +627,6 @@ class ModelClient:
         decision = parse_decision(response_text(response))
         return decision, response
 
-    async def review_termination(
-        self,
-        *,
-        task: str,
-        bundle: CaptureBundle,
-        task_memory: str,
-        proposed: dict[str, Any],
-        dom_diff_history: list[dict[str, Any]],
-        recent_actions: list[dict[str, Any]],
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Independently accept or reject a proposed task termination.
-
-        Each prior step contributes at most eight ranked diff entries to keep the
-        review prompt bounded while retaining every step chronologically.
-        """
-        action_text = bundle.executable_agent_browser_text()
-        chromiumrl_text = chromiumrl_evidence_for_model(bundle.model_text)
-        prior_evidence_text = json.dumps(
-            bounded_dom_diff_history_for_review(dom_diff_history),
-            ensure_ascii=False,
-        )
-        prompt = (
-            f"task:\n{task}\n\n"
-            f"task_memory_from_prior_steps:\n{task_memory or '(none)'}\n\n"
-            f"proposed_termination:\n{json.dumps(proposed, ensure_ascii=False)}\n\n"
-            f"current_document_url: {bundle.document_url or bundle.snapshot.get('url', '')}\n\n"
-            f"current_agent_browser_snapshot:\n{action_text}\n\n"
-            f"current_chromiumrl_evidence:\n{chromiumrl_text}\n\n"
-            "recorded_prior_step_dom_diff_evidence (authoritative):\n"
-            f"{prior_evidence_text or '[]'}\n\n"
-            f"recent_action_outcomes:\n{json.dumps(recent_actions[-8:], ensure_ascii=False)}"
-        )
-        payload = {
-            "model": self.model,
-            "instructions": TERMINATION_REVIEW_PROMPT,
-            "input": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": prompt},
-                    ],
-                }
-            ],
-            "max_output_tokens": 1200,
-            "text": {
-                "format": {
-                    "type": "json_schema",
-                    "name": "termination_review",
-                    "strict": True,
-                    "schema": TERMINATION_REVIEW_SCHEMA,
-                }
-            },
-        }
-        response = await asyncio.to_thread(self._post, payload)
-        review = json.loads(response_text(response))
-        if not isinstance(review, dict) or review.get("verdict") not in {"accept", "continue"}:
-            raise RunnerError("termination reviewer returned an invalid verdict")
-        return review, response
 
 
 def action_rejection_reason(
@@ -726,15 +673,6 @@ def action_rejection_reason(
             return f"ref {identifier!r} has no DOM-derived role in the current snapshot"
         if not clean_dom_text(action_context.get("name")):
             return f"ref {identifier!r} has no DOM-derived name in the current snapshot"
-    if (
-        action == "terminate"
-        and recent_actions
-        and isinstance(recent_actions[-1].get("rejected_termination"), dict)
-    ):
-        return (
-            "the previous termination was rejected; execute a browser action "
-            "that gathers the missing evidence before terminating again"
-        )
     executable_decision = browser_decision(decision)
     completed = [
         item
@@ -828,8 +766,8 @@ async def run(args: argparse.Namespace) -> int:
     """Execute one task and record one contiguous evidence step per real action.
 
     A step is committed only after its action, after-snapshot, screenshot, diff,
-    and metadata are available. Termination proposals are reviews, not actions,
-    so they do not create gaps in the numbered verifier trajectory.
+    and metadata are available. A terminate decision creates no browser action,
+    so it does not create a gap in the numbered verifier trajectory.
     """
     if not args.capture_only and not args.task:
         raise RunnerError("--task is required unless --capture-only is used")
@@ -864,12 +802,13 @@ async def run(args: argparse.Namespace) -> int:
         "task_name": args.task_name,
         "task": args.task or "capture-only",
         "created_at": utc_now(),
-        "browser_image": os.environ.get("IMAGE", "devjangid/wootzapp-chromium-desktop:latest"),
+        "browser_image": os.environ.get("IMAGE", "w8-core:chromium-desktop"),
         "browser_profile_provenance": browser_profile_provenance_from_environment(),
         "dom_capture_parameters": {
             "max_nodes": args.snapshot_max_nodes,
             "max_text_chars": args.snapshot_max_text_chars,
-            "include_offscreen": True,
+            "in_viewport_only": True,
+            "include_offscreen": False,
         },
         "dom_capture_source": "ChromiumRL.captureStructuredSnapshot",
         "action_coordinate_capture": {
@@ -886,7 +825,8 @@ async def run(args: argparse.Namespace) -> int:
             "max_elements": 10000,
             "max_interactive_elements": 10000,
         },
-        "renderer_files": [FULL_RENDERER.name, MODEL_RENDERER.name],
+        "renderer_files": [FULL_RENDERER.name, MODEL_DOM_TEXT_RENDERER.name],
+        "model_renderer_command": "ChromiumRL.getModelDOM",
         "renderer_versions": current_renderer_versions,
         "model_input_renderer": current_renderer_versions["model"],
         "model_input_policy": "dom_only",
@@ -898,10 +838,6 @@ async def run(args: argparse.Namespace) -> int:
             "conversation_history_reused": False,
             "task_memory_max_chars": MAX_TASK_MEMORY_CHARS,
             "action_thought_max_chars": MAX_ACTION_THOUGHT_CHARS,
-            "termination_review_dom_diff_history": "all executed steps",
-            "termination_review_diff_entries_per_step": (
-                MAX_TERMINATION_REVIEW_DIFF_ENTRIES_PER_STEP
-            ),
             "decision_log": "decisions.jsonl",
             "executed_trajectory": "trajectory.jsonl",
             "web_surfer_log": "web_surfer.log",
@@ -909,10 +845,10 @@ async def run(args: argparse.Namespace) -> int:
                 "exact agent-browser ref plus role/name from the same "
                 "pre-action interactive snapshot"
             ),
-            "termination_review": True,
         },
         "step_numbering": {
-            "step_directories": "contiguous recorded browser actions",
+            "step_directories": "contiguous captured browser states",
+            "action_file": "action.json is stored in the state from which it executes",
             "model_turn_field": "model_turn",
             "decision_log_step": "model turn",
         },
@@ -923,6 +859,7 @@ async def run(args: argparse.Namespace) -> int:
             "session": agent_browser.session,
             "cdp_target": agent_browser.cdp_target,
         },
+        "states": [],
         "steps": [],
         "human_intervention": {
             "enabled": bool(args.allow_human_intervention),
@@ -934,12 +871,8 @@ async def run(args: argparse.Namespace) -> int:
         ),
         "status": "running",
     }
-    live_diff_engine: dict[str, Any] = {
-        "name": "ChromiumRL.captureSnapshotDiff",
-        "browser_version": None,
-    }
-    apply_diff_metadata(manifest, diff_engine=live_diff_engine)
     write_json(run_dir / "manifest.json", manifest)
+    active_model_turn: int | None = None
 
     try:
         async with CDPClient(
@@ -957,8 +890,6 @@ async def run(args: argparse.Namespace) -> int:
                     }
                 )
             manifest["browser_session"] = cdp.connection_report
-            live_diff_engine["browser_version"] = cdp.browser_version or None
-            apply_diff_metadata(manifest, diff_engine=live_diff_engine)
             session_warnings = cdp.connection_report.get("tab_cleanup", {}).get("warnings", [])
             if session_warnings:
                 manifest.setdefault("warnings", []).extend(session_warnings)
@@ -993,12 +924,13 @@ async def run(args: argparse.Namespace) -> int:
                 write_json(run_dir / "manifest.json", manifest)
 
             if args.capture_only:
-                await capture_bundle(
+                captured = await capture_bundle(
                     cdp,
-                    run_dir / "initial",
+                    run_dir / "steps" / "step_001",
                     max_nodes=args.snapshot_max_nodes,
                     max_text_chars=args.snapshot_max_text_chars,
                 )
+                manifest["states"].append(state_manifest_record(1, captured, run_dir))
                 manifest["status"] = "captured"
                 manifest["completed_at"] = utc_now()
                 write_json(run_dir / "manifest.json", manifest)
@@ -1010,18 +942,21 @@ async def run(args: argparse.Namespace) -> int:
                 max_nodes=args.snapshot_max_nodes,
                 max_text_chars=args.snapshot_max_text_chars,
             )
-            current = await materialize_bundle(cdp, run_dir / "initial", initial_snapshot)
+            current = await materialize_bundle(
+                cdp, run_dir / "steps" / "step_001", initial_snapshot
+            )
             current = await attach_agent_browser_observation(current, agent_browser)
+            manifest["states"].append(state_manifest_record(1, current, run_dir))
+            write_json(run_dir / "manifest.json", manifest)
             model = ModelClient(args.api_key, args.model, args.openai_base_url)
-            previous_dom_diff: dict[str, Any] | None = None
-            dom_diff_history: list[dict[str, Any]] = []
             recent_actions: list[dict[str, Any]] = []
             task_memory = ""
             decision_log_path = run_dir / "decisions.jsonl"
             final: dict[str, Any] | None = None
-            recorded_step = 0
+            recorded_step = 1
 
             for step in range(1, args.max_steps + 1):
+                active_model_turn = step
                 for decision_attempt in range(1, 5):
                     memory_before = task_memory
                     decision, model_response = await model.decide(
@@ -1031,7 +966,6 @@ async def run(args: argparse.Namespace) -> int:
                         allow_human_intervention=args.allow_human_intervention,
                         bundle=current,
                         task_memory=task_memory,
-                        previous_dom_diff=previous_dom_diff,
                         recent_actions=recent_actions,
                     )
                     proposed_memory = decision.get("memory")
@@ -1100,38 +1034,6 @@ async def run(args: argparse.Namespace) -> int:
                     break
 
                 if decision["action"] == "terminate":
-                    proposed_termination = browser_decision(decision)
-                    review, review_response = await model.review_termination(
-                        task=args.task,
-                        bundle=current,
-                        task_memory=candidate_task_memory,
-                        proposed=proposed_termination,
-                        dom_diff_history=dom_diff_history,
-                        recent_actions=recent_actions,
-                    )
-                    append_json_line(
-                        decision_log_path,
-                        {
-                            "kind": "termination_review",
-                            "recorded_at": utc_now(),
-                            "step": step,
-                            "model_turn": step,
-                            "recorded_steps": recorded_step,
-                            "proposed": proposed_termination,
-                            "review": review,
-                            "model_response": compact_model_response(review_response),
-                        },
-                    )
-                    if review["verdict"] == "continue":
-                        recent_actions.append(
-                            {
-                                "step": step,
-                                "model_turn": step,
-                                "rejected_termination": proposed_termination,
-                                "reason": review["reason"],
-                            }
-                        )
-                        continue
                     task_memory = candidate_task_memory
                     final = {
                         "status": decision.get("status") or "failure",
@@ -1142,8 +1044,6 @@ async def run(args: argparse.Namespace) -> int:
                         "model_usage": model_response.get("usage"),
                         "task_memory": task_memory,
                         "thought": decision["thought"],
-                        "termination_review": review,
-                        "termination_review_response_id": review_response.get("id"),
                     }
                     break
 
@@ -1168,21 +1068,22 @@ async def run(args: argparse.Namespace) -> int:
                             )
                         )
                         if isinstance(executable_coordinate_capture, dict):
-                            executable_coordinate_capture["phase"] = "before_action"
+                            executable_coordinate_capture["phase"] = "pre_action"
                     except Exception as error:
                         executable_coordinate_capture = {
                             "status": "error",
                             "source": "ChromiumRL.getAgentObservation",
                             "coordinate_source": "get_agent_observation",
-                            "phase": "before_action",
+                            "phase": "pre_action",
                             "error": f"{type(error).__name__}: {error}",
                         }
 
-                recorded_step += 1
-                step_dir = run_dir / "steps" / f"step_{recorded_step:03d}"
-                step_dir.mkdir(parents=True, exist_ok=False)
-
-                before = copy_bundle(current, step_dir / "before")
+                step_dir = current.snapshot_path.parent
+                expected_state_dir = run_dir / "steps" / f"step_{recorded_step:03d}"
+                if step_dir != expected_state_dir:
+                    raise RunnerError("current state directory is not in the recorded sequence")
+                next_state_number = recorded_step + 1
+                next_state_dir = run_dir / "steps" / f"step_{next_state_number:03d}"
                 started_at = utc_now()
                 started = time.monotonic()
                 action_error = ""
@@ -1203,8 +1104,8 @@ async def run(args: argparse.Namespace) -> int:
                         "reason": reason,
                         "novnc_url": args.novnc_url,
                         "started_at": started_at,
-                        "before_snapshot": str(before.snapshot_path.relative_to(run_dir)),
-                        "before_screenshot": str(before.screenshot_path.relative_to(run_dir)),
+                        "state_snapshot": str(current.snapshot_path.relative_to(run_dir)),
+                        "state_screenshot": str(current.screenshot_path.relative_to(run_dir)),
                     }
                     write_json(intervention_path, pending_intervention)
                     manifest["status"] = "waiting_for_human"
@@ -1272,20 +1173,20 @@ async def run(args: argparse.Namespace) -> int:
                     and isinstance(action_result, dict)
                     and action_result.get("success") is True
                 )
-                before_url = clean_dom_text(
-                    before.snapshot.get("url") or before.document_url
+                current_url = clean_dom_text(
+                    current.snapshot.get("url") or current.document_url
                 )
                 active_url = clean_dom_text(target_sync.get("agent_browser_url"))
                 if (
                     not coordinate_was_resolved
                     and AgentBrowserClient.action_ref(executable_decision.get("id"))
                     and action_completed
-                    and same_document_except_fragment(before_url, active_url)
+                    and same_document_except_fragment(current_url, active_url)
                 ):
                     previous_coordinate_capture = executable_coordinate_capture
                     try:
                         fallback_capture = structured_snapshot_action_coordinate(
-                            before.snapshot,
+                            current.snapshot,
                             executable_action_target,
                         )
                         if isinstance(fallback_capture, dict):
@@ -1293,15 +1194,15 @@ async def run(args: argparse.Namespace) -> int:
                                 "structured_snapshot_bounds"
                             )
                             fallback_capture["phase"] = (
-                                "after_action_same_document_fallback"
+                                "same_document_fallback"
                             )
-                            fallback_capture["before_action"] = (
+                            fallback_capture["prior_coordinate_capture"] = (
                                 previous_coordinate_capture
                             )
                             executable_coordinate_capture = fallback_capture
                     except Exception as error:
                         if isinstance(executable_coordinate_capture, dict):
-                            executable_coordinate_capture["after_action_error"] = (
+                            executable_coordinate_capture["post_action_error"] = (
                                 f"{type(error).__name__}: {error}"
                             )
                 if not action_error and args.post_action_language_redirect:
@@ -1313,39 +1214,30 @@ async def run(args: argparse.Namespace) -> int:
                         )
                     except Exception as error:
                         language_guard_error = f"{type(error).__name__}: {error}"
-                action_type = clean_dom_text(executable_decision.get("action")) or None
-                after, browser_diff, capture_reconnects = (
-                    await capture_after_action_diff_bundle(
-                        cdp,
-                        agent_browser,
-                        step_dir / "after",
-                        before.snapshot,
-                        action_type=action_type,
-                        max_nodes=args.snapshot_max_nodes,
-                        max_text_chars=args.snapshot_max_text_chars,
-                    )
+                next_state, capture_reconnects = await capture_after_action_bundle(
+                    cdp,
+                    agent_browser,
+                    next_state_dir,
+                    max_nodes=args.snapshot_max_nodes,
+                    max_text_chars=args.snapshot_max_text_chars,
                 )
                 if capture_reconnects:
                     target_sync["capture_reconnects"] = capture_reconnects
-                diff_record = write_browser_dom_diff_files(
-                    browser_diff,
-                    step_dir / "dom_diff.json",
-                )
                 agent_browser_snapshot_error = ""
                 try:
-                    after = await attach_agent_browser_observation(after, agent_browser)
+                    next_state = await attach_agent_browser_observation(next_state, agent_browser)
                 except Exception as error:
                     agent_browser_snapshot_error = f"{type(error).__name__}: {error}"
-                    after = attach_agent_browser_observation_error(after, error)
+                    next_state = attach_agent_browser_observation_error(next_state, error)
                 action_verification = verify_agent_browser_action(
-                    executable_decision, before, after
+                    executable_decision, current, next_state
                 )
                 if agent_browser_snapshot_error and action_verification.get("applicable"):
                     action_verification.update(
                         status="unavailable",
-                        reason="after-action agent-browser observation is unavailable",
+                        reason="post-action agent-browser observation is unavailable",
                     )
-                progress = action_progress(before, after, diff_record)
+                progress = action_progress(current, next_state)
                 action_succeeded = bool(
                     not action_error
                     and not human_aborted
@@ -1354,11 +1246,6 @@ async def run(args: argparse.Namespace) -> int:
                 )
                 if action_succeeded:
                     task_memory = candidate_task_memory
-                artifact = (
-                    diff_record.get("artifact")
-                    if isinstance(diff_record.get("artifact"), dict)
-                    else {}
-                )
                 step_record = {
                     "step": recorded_step,
                     "model_turn": step,
@@ -1398,58 +1285,54 @@ async def run(args: argparse.Namespace) -> int:
                     "model_input_agent_browser": {
                         "version": agent_browser.version,
                         "snapshot_command": list(
-                            before.agent_browser_action_snapshot_command
+                            current.agent_browser_action_snapshot_command
                         ),
                         "snapshot": str(
-                            before.agent_browser_action_path.relative_to(run_dir)
-                            if before.agent_browser_action_path is not None
+                            current.agent_browser_action_path.relative_to(run_dir)
+                            if current.agent_browser_action_path is not None
                             else ""
                         ),
                         "full_evidence_snapshot_command": list(
-                            before.agent_browser_snapshot_command
+                            current.agent_browser_snapshot_command
                         ),
                         "full_evidence_snapshot": str(
-                            before.agent_browser_path.relative_to(run_dir)
-                            if before.agent_browser_path is not None
+                            current.agent_browser_path.relative_to(run_dir)
+                            if current.agent_browser_path is not None
                             else ""
                         ),
                     },
-                    "before_snapshot": str(before.snapshot_path.relative_to(run_dir)),
-                    "after_snapshot": str(after.snapshot_path.relative_to(run_dir)),
-                    "dom_diff": str((step_dir / "dom_diff.json").relative_to(run_dir)),
-                    "dom_diff_text": str((step_dir / "dom_diff.txt").relative_to(run_dir)),
-                    "dom_diff_engine": dict(live_diff_engine),
-                    "dom_diff_status": diff_record["status"],
-                    "dom_diff_change_count": diff_record["change_count"],
-                    "dom_diff_json_lines": int(artifact.get("json_lines") or 0),
-                    "dom_diff_json_bytes": int(artifact.get("json_bytes") or 0),
-                    "dom_diff_over_size_limit": bool(artifact.get("over_size_limit")),
-                    "before_screenshot": str(before.screenshot_path.relative_to(run_dir)),
-                    "after_screenshot": str(after.screenshot_path.relative_to(run_dir)),
-                    "after_agent_browser_snapshot": str(
-                        after.agent_browser_path.relative_to(run_dir)
-                        if after.agent_browser_path is not None
+                    "state": recorded_step,
+                    "next_state": next_state_number,
+                    "state_snapshot": str(current.snapshot_path.relative_to(run_dir)),
+                    "next_state_snapshot": str(next_state.snapshot_path.relative_to(run_dir)),
+                    "state_model_dom": str(
+                        current.snapshot_path.with_name("dom_model.json").relative_to(run_dir)
+                    ),
+                    "next_state_model_dom": str(
+                        next_state.snapshot_path.with_name("dom_model.json").relative_to(run_dir)
+                    ),
+                    "state_screenshot": str(current.screenshot_path.relative_to(run_dir)),
+                    "next_state_screenshot": str(next_state.screenshot_path.relative_to(run_dir)),
+                    "next_state_agent_browser_snapshot": str(
+                        next_state.agent_browser_path.relative_to(run_dir)
+                        if next_state.agent_browser_path is not None
                         else ""
                     ),
-                    "after_agent_browser_snapshot_command": list(
-                        after.agent_browser_snapshot_command
+                    "next_state_agent_browser_snapshot_command": list(
+                        next_state.agent_browser_snapshot_command
                     ),
-                    "after_agent_browser_action_snapshot": str(
-                        after.agent_browser_action_path.relative_to(run_dir)
-                        if after.agent_browser_action_path is not None
+                    "next_state_agent_browser_action_snapshot": str(
+                        next_state.agent_browser_action_path.relative_to(run_dir)
+                        if next_state.agent_browser_action_path is not None
                         else ""
                     ),
-                    "after_agent_browser_action_snapshot_command": list(
-                        after.agent_browser_action_snapshot_command
+                    "next_state_agent_browser_action_snapshot_command": list(
+                        next_state.agent_browser_action_snapshot_command
                     ),
-                    "before_document_language": before.document_language,
-                    "after_document_language": after.document_language,
-                    "before_document_language_error": (
-                        before.document_language_error or None
-                    ),
-                    "after_document_language_error": (
-                        after.document_language_error or None
-                    ),
+                    "document_language": current.document_language,
+                    "next_document_language": next_state.document_language,
+                    "document_language_error": current.document_language_error or None,
+                    "next_document_language_error": next_state.document_language_error or None,
                 }
                 if human_intervention_record is not None:
                     step_record["human_intervention"] = {
@@ -1461,32 +1344,28 @@ async def run(args: argparse.Namespace) -> int:
                 if language_redirects:
                     manifest.setdefault("warnings", []).append(
                         f"step {recorded_step}: compatibility-mode post-action "
-                        "language redirect made this diff cover more than one navigation"
+                        "language redirect followed the executed navigation"
                     )
                 if action_verification.get("status") == "mismatch":
                     manifest.setdefault("warnings", []).append(
-                        f"step {recorded_step}: requested control value was not verified in the after-action observation"
-                    )
-                if artifact.get("over_size_limit"):
-                    manifest.setdefault("warnings", []).append(
-                        f"step {recorded_step}: dom_diff.json has {artifact.get('json_bytes')} bytes, "
-                        f"above the reviewed maximum {MAX_DOM_DIFF_JSON_BYTES}"
+                        f"step {recorded_step}: requested control value was not verified in the next-state observation"
                     )
                 manifest["action_driver"]["reconnect_count"] = agent_browser.reconnect_count
                 write_json(step_dir / "action.json", step_record)
+                manifest["states"].append(
+                    state_manifest_record(next_state_number, next_state, run_dir)
+                )
                 manifest["steps"].append(step_record)
                 write_json(run_dir / "manifest.json", manifest)
-                current = after
-                previous_dom_diff = diff_record
-                dom_diff_history.append(diff_record)
+                current = next_state
+                recorded_step = next_state_number
                 recent_action = {
-                    "step": recorded_step,
+                    "step": step_record["step"],
                     "model_turn": step,
                     "action": executable_decision,
                     "action_context": executable_action_context,
                     "action_error": action_error or None,
                     "action_succeeded": action_succeeded,
-                    "dom_diff_change_count": diff_record["change_count"],
                     "action_verification": action_verification,
                     "progress": progress,
                 }
@@ -1498,13 +1377,6 @@ async def run(args: argparse.Namespace) -> int:
                         "status"
                     )
                 recent_actions.append(recent_action)
-                if diff_record["status"] == "unsafe_node_identity":
-                    final = {
-                        "status": "failure",
-                        "final_answer": "snapshot node paths were not unique; no DOM diff was inferred",
-                        "step": step,
-                    }
-                    break
                 if human_aborted:
                     final = {
                         "status": "failure",
@@ -1532,44 +1404,49 @@ async def run(args: argparse.Namespace) -> int:
 
             if final is None:
                 final = {"status": "failure", "final_answer": "maximum step count reached", "step": args.max_steps}
-            final.setdefault("model_turn", final.get("step"))
-            final["recorded_steps"] = recorded_step
-            write_json(run_dir / "final.json", final)
-            manifest["status"] = final["status"]
-            manifest["completed_at"] = utc_now()
-            manifest["final"] = final
-            trajectory_export = generate_trajectory_artifacts(run_dir)
-            manifest["trajectory_export"] = trajectory_export
-            if trajectory_export.get("skipped"):
-                manifest.setdefault("warnings", []).append(
-                    "verifier trajectory export skipped "
-                    f"{len(trajectory_export['skipped'])} human intervention step(s)"
-                )
-            if trajectory_export["status"] != "complete":
-                manifest.setdefault("warnings", []).append(
-                    "verifier trajectory export is invalid; rerun the task "
-                    "before dataset generation"
-                )
-            write_json(run_dir / "manifest.json", manifest)
+            if final["status"] != "success":
+                await cdp.close_owned_target_on_failure()
+            final, _trajectory_export = finalize_recording_artifacts(
+                run_dir,
+                manifest,
+                final,
+            )
             print(run_dir)
             return 0 if final["status"] == "success" else 2
     except asyncio.CancelledError:
-        manifest["status"] = "interrupted"
-        manifest["completed_at"] = utc_now()
         manifest["interruption"] = {
             "reason": "runner received a shutdown signal",
-            "trajectory_exported": False,
+            "trajectory_exported": True,
         }
         manifest.setdefault("warnings", []).append(
             "run interrupted before completion; do not use it for verifier dataset generation"
         )
-        write_json(run_dir / "manifest.json", manifest)
+        finalize_recording_artifacts(
+            run_dir,
+            manifest,
+            {
+                "status": "failure",
+                "run_status": "interrupted",
+                "final_answer": "runner received a shutdown signal",
+                "model_turn": active_model_turn,
+            },
+            manifest_status="interrupted",
+        )
         raise
     except BaseException as error:
-        manifest["status"] = "error"
-        manifest["completed_at"] = utc_now()
-        manifest["error"] = f"{type(error).__name__}: {error}"
-        write_json(run_dir / "manifest.json", manifest)
+        error_text = f"{type(error).__name__}: {error}"
+        finalize_recording_artifacts(
+            run_dir,
+            manifest,
+            {
+                "status": "failure",
+                "run_status": "error",
+                "final_answer": error_text,
+                "model_turn": active_model_turn,
+            },
+            manifest_status="error",
+            error=error_text,
+        )
         raise
     finally:
         await agent_browser.close()

@@ -12,22 +12,65 @@ sys.path.insert(0, str(ROOT))
 
 import capture  # noqa: E402
 import runner  # noqa: E402
+from recorder_support import RunnerError  # noqa: E402
 from agent_browser import AgentBrowserClient  # noqa: E402
 
 
 class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
-    async def test_live_snapshot_diff_timeout_is_not_retried(self) -> None:
+    async def test_structured_capture_uses_viewport_scoped_evidence(self) -> None:
         cdp = MagicMock()
-        cdp.call = AsyncMock(side_effect=TimeoutError("deadline"))
-        with self.assertRaisesRegex(runner.RunnerError, "timed out after 1 attempts"):
-            await capture.capture_snapshot_diff(
+        cdp.call = AsyncMock(return_value={"snapshot": {"nodes": []}})
+
+        await capture.capture_structured_snapshot(
+            cdp,
+            max_nodes=7000,
+            max_text_chars=200000,
+        )
+
+        cdp.call.assert_awaited_once_with(
+            "ChromiumRL.captureStructuredSnapshot",
+            {
+                "inViewportOnly": True,
+                "maxNodes": 7000,
+                "maxTextChars": 200000,
+                "includeOffscreen": False,
+            },
+        )
+
+    async def test_nonempty_zero_node_capture_is_retried_before_use(self) -> None:
+        cdp = MagicMock()
+        cdp.call = AsyncMock(
+            side_effect=[
+                {"snapshot": {"stats": {"rawNodes": 12, "returnedNodes": 0}}},
+                {"snapshot": {"stats": {"rawNodes": 12, "returnedNodes": 4}}},
+            ]
+        )
+        with patch.object(capture.asyncio, "sleep", AsyncMock()) as sleep:
+            snapshot = await capture.capture_structured_snapshot(
                 cdp,
-                {"nodes": []},
-                action_type="click",
                 max_nodes=7000,
                 max_text_chars=200000,
             )
-        cdp.call.assert_awaited_once()
+
+        self.assertEqual(snapshot["stats"]["returnedNodes"], 4)
+        self.assertEqual(cdp.call.await_count, 2)
+        sleep.assert_awaited_once_with(0.25)
+
+    async def test_persistently_empty_nonempty_capture_fails(self) -> None:
+        cdp = MagicMock()
+        cdp.call = AsyncMock(
+            return_value={"snapshot": {"stats": {"rawNodes": 12, "returnedNodes": 0}}}
+        )
+        with (
+            patch.object(capture.asyncio, "sleep", AsyncMock()),
+            self.assertRaisesRegex(RunnerError, "returned zero nodes"),
+        ):
+            await capture.capture_structured_snapshot(
+                cdp,
+                max_nodes=7000,
+                max_text_chars=200000,
+            )
+        self.assertEqual(cdp.call.await_count, 3)
 
     def test_runner_reexports_structured_client(self) -> None:
         self.assertIs(runner.AgentBrowserClient, AgentBrowserClient)
@@ -833,41 +876,6 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
             runner.action_rejection_reason(decision, frozenset(), successful), ""
         )
 
-    def test_rejected_termination_requires_new_browser_evidence(self) -> None:
-        recent = [
-            {
-                "rejected_termination": {
-                    "action": "terminate",
-                    "status": "success",
-                    "final_answer": "premature",
-                },
-                "reason": "one field is not verified",
-            }
-        ]
-        self.assertIn(
-            "gathers the missing evidence",
-            runner.action_rejection_reason(
-                {"action": "terminate", "status": "success", "memory": "facts"},
-                frozenset(),
-                recent,
-            ),
-        )
-        self.assertEqual(
-            runner.action_rejection_reason(
-                {"action": "navigate", "url": "https://example.test", "memory": "facts"},
-                frozenset(),
-                recent,
-            ),
-            "",
-        )
-        self.assertEqual(
-            runner.action_rejection_reason(
-                {"action": "click", "id": "e25"},
-                frozenset({"e23", "e24", "e25"}),
-                recent,
-            ),
-            "",
-        )
 
 
 if __name__ == "__main__":

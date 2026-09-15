@@ -34,7 +34,7 @@ RUNNER = ROOT / "runner.py"
 # the JSONL catalog and may be replaced through TASK_CATALOG_URL without changing
 # the command interface or recorder behavior.
 DEFAULT_TASK_CATALOG_URL = (
-    "https://huggingface.co/datasets/ishagarg1103/browser-agent-tasks/"
+    "https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/"
     "resolve/main/tasks.jsonl"
 )
 RUNTIME_ROOT = ROOT / ".runtime"
@@ -177,7 +177,7 @@ def ensure_browser_service(env_file: Path) -> None:
         "-d",
         "--no-recreate",
         "--wait",
-        "wootz-desktop",
+        "w8-core",
     ]
     completed = subprocess.run(
         command,
@@ -201,7 +201,7 @@ def restart_browser_service(env_file: Path) -> None:
         "--env-file",
         str(env_file),
         "restart",
-        "wootz-desktop",
+        "w8-core",
     ]
     completed = subprocess.run(
         command,
@@ -647,7 +647,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.no_browser_start:
             restart_browser_service(args.env_file.resolve())
         profile_provenance = claim_browser_profile_provenance(
-            os.environ.get("CONTAINER_NAME", "task-recorder-dom-diff-browser")
+            os.environ.get("CONTAINER_NAME", "w8-core-browser-engine")
         )
         runner_environment = os.environ.copy()
         runner_environment["RUNNER_BROWSER_PROFILE_PROVENANCE"] = json.dumps(

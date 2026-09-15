@@ -32,7 +32,7 @@ class ChromiumRLProtocolTests(unittest.TestCase):
         ):
             self.assertIn(field, protocol)
 
-    def test_coordinate_protocols_are_declared_without_becoming_dom_diff_fields(self) -> None:
+    def test_coordinate_protocols_are_declared_for_action_capture(self) -> None:
         protocol = (ROOT / "chromium_files" / "ChromiumRL.pdl").read_text(encoding="utf-8")
         self.assertIn("command getTouchTraces", protocol)
         self.assertIn("command getAgentObservation", protocol)

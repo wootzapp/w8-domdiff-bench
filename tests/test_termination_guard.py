@@ -1,9 +1,24 @@
+import inspect
 import unittest
 
 import runner
+from prompts import SYSTEM_PROMPT
 
 
 class TerminationGuardTests(unittest.TestCase):
+    def test_completion_uses_the_action_decision_entrypoint(self) -> None:
+        public_async_methods = sorted(
+            name
+            for name, value in inspect.getmembers(
+                runner.ModelClient,
+                predicate=inspect.iscoroutinefunction,
+            )
+            if not name.startswith("_")
+        )
+
+        self.assertEqual(public_async_methods, ["decide"])
+        self.assertIn("Before choosing terminate", " ".join(SYSTEM_PROMPT.split()))
+
     def test_resumed_human_intervention_allows_successful_termination(self) -> None:
         recent_actions = [
             {

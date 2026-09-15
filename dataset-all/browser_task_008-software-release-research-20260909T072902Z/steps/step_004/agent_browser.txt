@@ -1,0 +1,267 @@
+- generic
+  - link "Skip to content" [ref=e1]
+  - banner
+    - heading "Navigation Menu" [level=2, ref=e22]
+    - generic
+      - link "Homepage" [ref=e48]
+      - navigation "Global" [ref=e78]
+        - list
+          - listitem [level=1]
+            - generic
+              - button "Platform" [expanded=false, ref=e97]
+          - listitem [level=1]
+            - generic
+              - button "Solutions" [expanded=false, ref=e98]
+          - listitem [level=1]
+            - generic
+              - button "Resources" [expanded=false, ref=e99]
+          - listitem [level=1]
+            - generic
+              - button "Open Source" [expanded=false, ref=e100]
+          - listitem [level=1]
+            - generic
+              - button "Enterprise" [expanded=false, ref=e101]
+          - listitem [level=1]
+            - link "Pricing" [ref=e96]
+      - button "Search or jump to, type / to search" [expanded=false, ref=e79]
+      - link "Sign in" [ref=e95]
+      - link "Sign up" [ref=e80]
+      - button "Appearance settings" [ref=e81]
+- main
+  - generic
+    - link "microsoft" [ref=e5]
+    - StaticText "/"
+    - strong
+      - link "playwright" [ref=e23]
+    - StaticText "Public"
+    - list
+      - listitem [level=1]
+        - link "You must be signed in to change notification settings" [ref=e82]
+      - listitem [level=1]
+        - link "Fork 6.4k" [ref=e83]
+      - listitem [level=1]
+        - link "You must be signed in to star a repository" [ref=e84]
+    - navigation "Repository" [ref=e6]
+      - list
+        - listitem [level=1]
+          - link "Code" [ref=e85]
+        - listitem [level=1]
+          - link "Issues 152" [ref=e86]
+        - listitem [level=1]
+          - link "Pull requests 8" [ref=e87]
+        - listitem [level=1]
+          - link "Actions" [ref=e88]
+        - listitem [level=1]
+          - link "Security and quality" [ref=e89]
+        - listitem [level=1]
+          - link "Insights" [ref=e90]
+  - navigation "Breadcrumb" [ref=e7]
+    - list
+      - listitem [level=1]
+        - link "Releases" [ref=e91]
+      - listitem [level=1]
+        - link "v1.63.0" [ref=e92]
+  - generic
+    - heading "v1.63.0" [level=1, ref=e24]
+    - link "Latest" [ref=e25]
+  - generic
+    - button "Compare" [expanded=false, ref=e26]
+  - generic
+    - image "@yury-s"
+    - StaticText " "
+    - link "yury-s" [ref=e27]
+    - StaticText " released this "
+    - StaticText "4 days ago"
+  - link "Tag v1.63.0" [ref=e28]
+    - image "Tag"
+    - StaticText "v1.63.0"
+  - generic
+    - link "Commit 1b025d7" [ref=e29]
+    - group
+  - heading "🔒 Test locks" [level=2, ref=e8]
+  - paragraph
+    - StaticText "Tests that access a shared resource — an external service, a global account setting — can now declare a named "
+    - code
+    - StaticText "."
+    - LineBreak "\n"
+    - StaticText "Tests that share a lock name never run concurrently, across files, workers and "
+    - link "projects" [ref=e30]
+    - StaticText ", while"
+    - LineBreak "\n"
+    - StaticText "everything else keeps running in parallel:"
+  - generic
+    - generic
+      - StaticText "test('update user settings', { lock: 'user-settings' }, async ({ page }) => {\n  // never runs at the same time as other tests holding 'user-settings'\n});"
+    - button "Copy code to clipboard" [ref=e49]
+  - paragraph
+    - StaticText "A test can hold multiple locks, and "
+    - link "test.describe()" [ref=e31]
+    - StaticText " accepts a "
+    - code
+    - StaticText " for the whole group."
+    - LineBreak "\n"
+    - StaticText "Learn more about "
+    - link "test locks" [ref=e32]
+    - StaticText "."
+  - heading "🪟 Locate across frames" [level=2, ref=e9]
+  - paragraph
+    - link "page.frameLocator()" [ref=e33]
+    - StaticText " and "
+    - link "frame.frameLocator()" [ref=e34]
+    - StaticText " called without a selector search in any frame of the"
+    - LineBreak "\n"
+    - StaticText "subtree, so you no longer need to locate the iframe first:"
+  - generic
+    - generic
+    - button "Copy code to clipboard" [ref=e50]
+  - paragraph
+    - StaticText "The rest of the locator resolves inside a single frame, just like a regular locator, and an error is thrown when it"
+    - LineBreak "\n"
+    - StaticText "matches elements in several frames."
+  - heading "👁️ Visible-only locators" [level=2, ref=e10]
+  - paragraph
+    - StaticText "New "
+    - link "locator.visible()" [ref=e35]
+    - StaticText " returns a locator that matches only visible elements. It is the recommended"
+    - LineBreak "\n"
+    - StaticText "replacement for the "
+    - code
+    - StaticText " CSS pseudo-class:"
+  - generic
+    - generic
+    - button "Copy code to clipboard" [ref=e51]
+  - heading "🧾 Step params and subtitles" [level=2, ref=e11]
+  - paragraph
+    - StaticText "Steps now carry structured data for reporters. Playwright API steps report the target locator and call arguments,"
+    - LineBreak "\n"
+    - StaticText "and "
+    - link "test.step()" [ref=e36]
+    - StaticText " accepts "
+    - code
+    - StaticText " and "
+    - code
+    - StaticText " options for your own steps:"
+  - generic
+    - generic
+      - StaticText "await test.step('Login', async () => {\n  // ...\n}, { subtitle: 'as admin', params: { user: 'admin' } });"
+    - button "Copy code to clipboard" [ref=e52]
+  - paragraph
+    - StaticText "Reporters receive them via "
+    - link "testStep.subtitle" [ref=e37]
+    - StaticText " and "
+    - link "testStep.params" [ref=e38]
+    - StaticText ". For Playwright API"
+    - LineBreak "\n"
+    - StaticText "steps, the subtitle is the locator or the navigation url — for example, "
+    - code
+    - StaticText " with subtitle "
+    - code
+    - StaticText "."
+    - LineBreak "\n"
+    - StaticText "Both are rendered next to the step title in the trace viewer and the HTML report."
+  - heading "🖼️ Aria and screen snapshots in traces" [level=2, ref=e12]
+  - paragraph
+    - StaticText "The "
+    - code
+    - StaticText " option of "
+    - link "tracing.start()" [ref=e39]
+    - StaticText " and the "
+    - link "testOptions.trace" [ref=e40]
+    - StaticText " fixture option now accept an"
+    - LineBreak "\n"
+    - StaticText "object selecting what to capture on every action:"
+  - generic
+    - generic
+      - StaticText "// playwright.config.ts\nexport default defineConfig({\n  use: {\n    trace: {\n      mode: 'on',\n      snapshots: { dom: true, aria: true, screen: true }\n    },\n  },\n});"
+    - button "Copy code to clipboard" [ref=e53]
+  - paragraph
+    - StaticText "With aria and screen snapshots recorded, the new "
+    - strong
+    - StaticText " mode in the trace viewer shows the action screenshot"
+    - LineBreak "\n"
+    - StaticText "side by side with the aria snapshot, and hovering an aria node highlights it on the screenshot."
+  - heading "New APIs" [level=2, ref=e13]
+  - heading "Browser and Context" [level=3, ref=e14]
+  - list
+    - listitem [level=1]
+      - link "httpCredentials" [ref=e54]
+    - listitem [level=1]
+      - link "opfs" [ref=e55]
+      - link "origin private file system" [ref=e56]
+    - listitem [level=1]
+      - link "page.on('dialogclosed')" [ref=e57]
+      - link "browserContext.on('dialogclosed')" [ref=e58]
+  - heading "Locators" [level=3, ref=e15]
+  - list
+    - listitem [level=1]
+      - link "locator.ariaSnapshotJSON()" [ref=e59]
+      - link "page.ariaSnapshotJSON()" [ref=e60]
+    - listitem [level=1]
+      - link "apiRequestContext.get()" [ref=e61]
+  - generic
+    - generic
+    - button "Copy code to clipboard" [ref=e62]
+  - heading "Test runner" [level=3, ref=e16]
+  - list
+    - listitem [level=1]
+      - link "testOptions.reducedMotion" [ref=e63]
+      - link "testOptions.forcedColors" [ref=e64]
+      - link "testOptions.contrast" [ref=e65]
+    - listitem [level=1]
+    - listitem [level=1]
+  - heading "Command line" [level=3, ref=e17]
+  - list
+    - listitem [level=1]
+    - listitem [level=1]
+  - heading "Miscellaneous" [level=3, ref=e18]
+  - list
+    - listitem [level=1]
+      - link "perfetto" [ref=e66]
+      - link "Perfetto UI" [ref=e67]
+    - listitem [level=1]
+  - heading "Announcements" [level=2, ref=e19]
+  - list
+    - listitem [level=1]
+      - link "migration guide" [ref=e68]
+      - link "fixtures.mount()" [ref=e69]
+    - listitem [level=1]
+    - listitem [level=1]
+      - link "Chrome for Testing" [ref=e70]
+  - heading "Browser Versions" [level=2, ref=e20]
+  - list
+  - paragraph
+  - list
+  - group
+    - button "Assets 2" [expanded=true, ref=e41]
+  - form
+    - button "thumbs up (17): yury-s, 10:11PM on September 04" [disabled, ref=e42]
+    - button "laugh (1): yury-s, 10:11PM on September 04" [disabled, ref=e43]
+    - button "hooray (12): yury-s, 10:11PM on September 04" [disabled, ref=e44]
+    - button "heart (8): yury-s, 10:11PM on September 04" [disabled, ref=e45]
+    - button "rocket (13): yury-s, 10:11PM on September 04" [disabled, ref=e46]
+    - button "eyes (4): yury-s, 10:11PM on September 04" [disabled, ref=e47]
+- contentinfo
+  - heading "Footer" [level=2, ref=e2]
+  - link "GitHub Homepage" [ref=e3]
+  - StaticText "© 2026 GitHub,Inc."
+  - navigation "Footer" [ref=e4]
+    - heading "Footer navigation" [level=3, ref=e21]
+    - list "Footer navigation"
+      - listitem [level=1]
+        - link "Terms" [ref=e71]
+      - listitem [level=1]
+        - link "Privacy" [ref=e72]
+      - listitem [level=1]
+        - link "Security" [ref=e73]
+      - listitem [level=1]
+        - link "Status" [ref=e74]
+      - listitem [level=1]
+        - link "Community" [ref=e75]
+      - listitem [level=1]
+        - link "Docs" [ref=e76]
+      - listitem [level=1]
+        - link "Contact" [ref=e77]
+      - listitem [level=1]
+        - button "Manage cookies" [ref=e93]
+      - listitem [level=1]
+        - button "Do not share my personal information" [ref=e94]
