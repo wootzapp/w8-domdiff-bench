@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import re
+import asyncio
+import json
 import sys
 import tempfile
 import unittest
@@ -16,70 +17,56 @@ from recorder_support import RunnerError  # noqa: E402
 
 
 class ModelDOMProtocolTests(unittest.IsolatedAsyncioTestCase):
-    def test_runtime_command_is_declared_snapshot_only_and_versioned(self) -> None:
-        protocol = (ROOT / "chromium_files" / "ChromiumRL.pdl").read_text(
-            encoding="utf-8"
-        )
-        command = re.search(
-            r"  command getModelDOM\n(?P<body>.*?)(?=\n  command )",
-            protocol,
-            re.DOTALL,
-        )
-
-        self.assertIsNotNone(command)
-        self.assertEqual(
-            command.group("body").split("\n\n", 1)[0].strip().splitlines(),
-            [
-                "parameters",
-                "      StructuredPageSnapshot snapshot",
-                "    returns",
-                "      string modelDOM",
-                "      string rendererVersion",
-            ],
-        )
+    def test_runtime_command_uses_structured_model_dom_contract(self) -> None:
         self.assertEqual(capture.MODEL_DOM_COMMAND, "ChromiumRL.getModelDOM")
+        self.assertEqual(capture.MODEL_DOM_RENDERER_NAME, "chromiumrl-model-dom")
 
-    async def test_model_dom_uses_versioned_browser_result(self) -> None:
+    async def test_model_dom_accepts_structured_result_and_extra_keys(self) -> None:
         cdp = MagicMock()
+        model_dom = {
+            "rendererName": capture.MODEL_DOM_RENDERER_NAME,
+            "sections": [
+                {"name": "header", "lines": ["model-facing DOM"]},
+            ],
+        }
         cdp.call = AsyncMock(
             return_value={
-                "modelDOM": "model-facing DOM\n",
-                "rendererVersion": capture.MODEL_DOM_RENDERER_VERSION,
+                "modelDOM": model_dom,
+                "futureField": "allowed",
             }
         )
         snapshot = {"snapshotId": "fixture", "nodes": []}
 
         rendered = await capture.model_dom_from_snapshot(cdp, snapshot)
 
-        self.assertEqual(rendered, "model-facing DOM\n")
+        self.assertIs(rendered, model_dom)
         cdp.call.assert_awaited_once_with(
             capture.MODEL_DOM_COMMAND,
             {"snapshot": snapshot},
         )
 
-    async def test_model_dom_rejects_unknown_renderer_version(self) -> None:
+    async def test_model_dom_rejects_unknown_renderer_name(self) -> None:
         cdp = MagicMock()
         cdp.call = AsyncMock(
             return_value={
-                "modelDOM": "model-facing DOM\n",
-                "rendererVersion": "unexpected-version",
+                "modelDOM": {
+                    "rendererName": "unexpected-renderer",
+                    "sections": [
+                        {"name": "header", "lines": ["model-facing DOM"]},
+                    ],
+                },
             }
         )
 
         with self.assertRaisesRegex(
             RunnerError,
-            "unexpected ChromiumRL.getModelDOM rendererVersion",
+            "unexpected ChromiumRL.getModelDOM rendererName",
         ):
             await capture.model_dom_from_snapshot(cdp, {"nodes": []})
 
-
-    async def test_model_dom_rejects_missing_text(self) -> None:
+    async def test_model_dom_rejects_missing_object(self) -> None:
         cdp = MagicMock()
-        cdp.call = AsyncMock(
-            return_value={
-                "rendererVersion": capture.MODEL_DOM_RENDERER_VERSION,
-            }
-        )
+        cdp.call = AsyncMock(return_value={"futureField": "allowed"})
 
         with self.assertRaisesRegex(
             RunnerError,
@@ -87,17 +74,52 @@ class ModelDOMProtocolTests(unittest.IsolatedAsyncioTestCase):
         ):
             await capture.model_dom_from_snapshot(cdp, {"nodes": []})
 
+    async def test_capture_call_retries_asyncio_timeout(self) -> None:
+        cdp = MagicMock()
+        cdp.call = AsyncMock(
+            side_effect=[
+                asyncio.TimeoutError(),
+                {"snapshot": {"nodes": []}},
+            ]
+        )
+
+        with patch.object(capture.asyncio, "sleep", AsyncMock()) as sleep:
+            result = await capture.capture_call(
+                cdp,
+                "ChromiumRL.captureStructuredSnapshot",
+                {},
+            )
+
+        self.assertEqual(result, {"snapshot": {"nodes": []}})
+        self.assertEqual(cdp.call.await_count, 2)
+        sleep.assert_awaited_once_with(0.5)
+
     async def test_live_materialization_has_no_python_model_fallback(self) -> None:
         cdp = MagicMock()
         snapshot = {"snapshotId": "exact-browser-result", "nodes": []}
         screenshot = {"data": ""}
+        model_dom = {
+            "rendererName": capture.MODEL_DOM_RENDERER_NAME,
+            "sections": [
+                {"name": "header", "lines": ["browser model DOM"]},
+            ],
+        }
+
+        def render_projection(model_dom_path: Path) -> None:
+            envelope = json.loads(model_dom_path.read_text(encoding="utf-8"))
+            self.assertEqual(envelope, {"result": {"modelDOM": model_dom}})
+            model_dom_path.with_suffix(".txt").write_text(
+                "browser model DOM\n",
+                encoding="utf-8",
+            )
+
         with tempfile.TemporaryDirectory() as temporary_directory:
             destination = Path(temporary_directory) / "capture"
             with (
                 patch.object(
                     capture,
                     "model_dom_from_snapshot",
-                    AsyncMock(return_value="browser model DOM\n"),
+                    AsyncMock(return_value=model_dom),
                 ) as browser_renderer,
                 patch.object(
                     capture,
@@ -112,21 +134,23 @@ class ModelDOMProtocolTests(unittest.IsolatedAsyncioTestCase):
                 patch.object(capture, "render_full_stored_snapshot") as full_renderer,
                 patch.object(
                     capture,
+                    "render_model_dom_stored_projection",
+                    side_effect=render_projection,
+                ) as model_projection,
+                patch.object(
+                    capture,
                     "render_stored_snapshot",
-                    side_effect=AssertionError("Python model renderer fallback used"),
+                    side_effect=AssertionError("legacy model renderer used"),
                 ) as legacy_renderer,
             ):
                 bundle = await capture.materialize_bundle(cdp, destination, snapshot)
 
             browser_renderer.assert_awaited_once_with(cdp, snapshot)
             full_renderer.assert_called_once_with(destination / "dom.json")
+            model_projection.assert_called_once_with(destination / "dom_model.json")
             legacy_renderer.assert_not_called()
             self.assertEqual(bundle.snapshot, snapshot)
             self.assertEqual(bundle.model_text, "browser model DOM\n")
-            self.assertEqual(
-                (destination / "dom_model.txt").read_text(encoding="utf-8"),
-                "browser model DOM\n",
-            )
 
 
 if __name__ == "__main__":

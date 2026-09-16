@@ -557,7 +557,7 @@ async def capture_call(
     for attempt in range(1, attempts + 1):
         try:
             return await cdp.call(method, params)
-        except TimeoutError as error:
+        except (asyncio.TimeoutError, TimeoutError) as error:
             if attempt == attempts:
                 raise RunnerError(f"{method} timed out after {attempts} attempts") from error
             await asyncio.sleep(0.5 * attempt)
@@ -619,7 +619,7 @@ async def model_dom_from_snapshot(
 ) -> dict[str, Any]:
     """Build structured model-facing DOM JSON inside Chromium."""
     result = await capture_call(cdp, MODEL_DOM_COMMAND, {"snapshot": snapshot})
-    if set(result) != {"modelDOM"}:
+    if "modelDOM" not in result:
         raise RunnerError(f"unexpected {MODEL_DOM_COMMAND} response: {result}")
     model_dom = result.get("modelDOM")
     if not isinstance(model_dom, dict):

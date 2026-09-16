@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -219,6 +220,36 @@ class TaskCliTests(unittest.TestCase):
 
         self.assertIsNotNone(record)
         self.assertEqual(record["run_id"], "new-run")
+
+    def test_profile_counter_path_can_be_configured(self) -> None:
+        custom_path = "/custom/profile/task-count"
+        completed = [
+            SimpleNamespace(
+                returncode=0,
+                stdout='[{"Id": "container-id", "Created": "created-at"}]',
+                stderr="",
+            ),
+            SimpleNamespace(returncode=0, stdout="2", stderr=""),
+            SimpleNamespace(returncode=0, stdout="", stderr=""),
+        ]
+
+        with (
+            patch.dict(
+                task_cli.os.environ,
+                {"BROWSER_PROFILE_TASK_COUNT_PATH": custom_path},
+            ),
+            patch.object(
+                task_cli.subprocess,
+                "run",
+                side_effect=completed,
+            ) as run,
+        ):
+            provenance = task_cli.claim_browser_profile_provenance("browser")
+
+        self.assertEqual(provenance["tasks_previously_run_in_container"], 2)
+        self.assertFalse(provenance["profile_fresh_at_run_start"])
+        self.assertEqual(run.call_args_list[1].args[0][-1], custom_path)
+        self.assertEqual(run.call_args_list[2].args[0][-2], custom_path)
 
     def test_human_request_requires_opt_in_and_reason(self) -> None:
         decision = {

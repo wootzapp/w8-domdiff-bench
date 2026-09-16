@@ -35,3 +35,8 @@ Our initial audit measures **evidence loss**: whether the recording preserves th
 We manually audit missing evidence separately from verifier reasoning errors. These results measure evidence preservation across the audited tasks; they do not represent an agent success rate.
 
 The final rerun outputs are stored under `results/task_01_rerun/` through `results/task_100_rerun/`. Each task retains the screenshot-verifier result, DOM-verifier result, and consolidated comparison JSON.
+
+## Task Recorder
+
+The browser task recording harness lives in [`task-recorder/`](task-recorder/).
+See [`task-recorder/README.md`](task-recorder/README.md) for setup and usage.
