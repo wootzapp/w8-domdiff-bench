@@ -753,6 +753,31 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(mismatch["status"], "mismatch")
 
+    def test_model_dom_change_counts_as_progress_without_changing_schema(self) -> None:
+        before = runner.CaptureBundle(
+            snapshot={"url": "https://example.test/"},
+            snapshot_path=Path("before-dom.json"),
+            model_text="Before model evidence\n",
+            screenshot_path=Path("before-screenshot.png"),
+        )
+        after = runner.CaptureBundle(
+            snapshot={"url": "https://example.test/"},
+            snapshot_path=Path("after-dom.json"),
+            model_text="After model evidence\n",
+            screenshot_path=Path("after-screenshot.png"),
+        )
+
+        self.assertEqual(
+            runner.action_progress(before, after),
+            {
+                "url_changed": False,
+                "agent_browser_observation_changed": False,
+                "screenshot_changed": False,
+                "made_progress": True,
+            },
+        )
+
+
     def test_recent_stalled_strategy_is_rejected(self) -> None:
         stalled = {"made_progress": False}
         recent = [
