@@ -1,0 +1,23 @@
+"""Official agent-browser CLI integration used by the task recorder."""
+
+# Re-export the adapter's public surface so callers do not depend on its internal
+# file layout.
+from .client import (
+    AgentBrowserBaseError,
+    AgentBrowserClient,
+    AgentBrowserError,
+    AgentBrowserObservation,
+    AgentBrowserPage,
+    agent_browser_session_name,
+    normalized_http_url,
+)
+
+__all__ = [
+    "AgentBrowserBaseError",
+    "AgentBrowserClient",
+    "AgentBrowserError",
+    "AgentBrowserObservation",
+    "AgentBrowserPage",
+    "agent_browser_session_name",
+    "normalized_http_url",
+]
