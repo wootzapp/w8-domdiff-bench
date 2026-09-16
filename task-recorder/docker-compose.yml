@@ -1,0 +1,43 @@
+name: task-recorder-dom-diff
+
+# w8-core: a new kind of browser engine.
+# The model-driven runner stays host-side in runner.py. OPENAI_API_KEY and
+# OPENAI_MODEL are therefore not injected into this browser service.
+services:
+  w8-core:
+    image: ${IMAGE:-w8-core:chromium-desktop}
+    container_name: ${CONTAINER_NAME:-w8-core-browser-engine}
+    restart: unless-stopped
+    shm_size: "2gb"
+    ports:
+      - "127.0.0.1:${CDP_HOST_PORT:-49335}:9222"
+      - "127.0.0.1:${NOVNC_HOST_PORT:-16191}:6080"
+      - "127.0.0.1:${VNC_HOST_PORT:-15911}:5900"
+    environment:
+      NOVNC_PORT: "6080"
+      VNC_PORT: "5900"
+      VNC_SCREEN: ${VNC_SCREEN:-1365x768x24}
+      TZ: ${TZ:-America/New_York}
+      LANG: ${RECORDER_LANG:-en_US.UTF-8}
+      LANGUAGE: ${RECORDER_LANGUAGE:-en_US:en}
+      LC_ALL: ${RECORDER_LC_ALL:-en_US.UTF-8}
+      BROWSER_LANG: ${BROWSER_LANG:-en-US}
+      BROWSER_ACCEPT_LANGUAGE: ${BROWSER_ACCEPT_LANGUAGE:-en-US,en;q=0.9}
+      CHROMIUM_EXTRA_ARGS: "${CHROMIUM_EXTRA_ARGS:---lang=en-US}"
+      CHROMIUM_HEADLESS: ${CHROMIUM_HEADLESS:-0}
+      CHROMIUM_RESET_PROFILE: ${CHROMIUM_RESET_PROFILE:-0}
+      CDP_PORT: "9222"
+      CHROMIUM_CDP_PORT: "9223"
+      START_URL: ${START_URL:-about:blank}
+    healthcheck:
+      test:
+        - CMD
+        - /usr/local/bin/chromium-runtime-entrypoint
+        - status
+        - --quiet
+        - --timeout
+        - "2"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
