@@ -49,7 +49,6 @@ requests.
   joins its ordered sections into `dom_model.txt`.
 - `scripts/render_chromiumrl_snapshot_model.py` — regression oracle for the
   browser-produced model projection.
-- `chromium_files/` — prepared browser protocol source used for browser builds.
 - `tests/` — recorder unit tests.
 
 ## View the Browser Through an SSH Tunnel
@@ -57,8 +56,10 @@ requests.
 Run this on your local computer:
 
 ```bash
-ssh -N -L "[::1]:39084:127.0.0.1:16191" ubuntu@static.235.31.55.162.clients.your-server.de
+ssh -N -L "[::1]:39084:127.0.0.1:16191" ubuntu@SERVER_HOST
 ```
+
+Replace `SERVER_HOST` with the hostname or IP address of your recorder server.
 
 Then open:
 
@@ -71,7 +72,7 @@ http://[::1]:39084/vnc.html?resize=scale&autoconnect=1&path=websockify
 Run a catalog task:
 
 ```bash
-cd /data/aayush/task-recorder-dom-diff
+cd /path/to/task-recorder
 ./run-task task1 --output-dir /path/to/recordings
 ```
 
