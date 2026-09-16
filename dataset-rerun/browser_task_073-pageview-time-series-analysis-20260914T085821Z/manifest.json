@@ -1,0 +1,212 @@
+{
+  "task_id": "browser_task_073-pageview-time-series-analysis-20260914T085821Z",
+  "source_task_id": "browser_task_073",
+  "source_catalog": null,
+  "task_name": "pageview time-series analysis",
+  "task": "Using the official Wikimedia Pageviews API response for the English Wikipedia article Apollo 11 from 2025-01-01 through 2025-01-07, report each date's daily view count, calculate the seven-day total, and identify the date with the highest count and that count.\n\nStopping condition: Stop after all seven date-count pairs, their calculated total, and the highest-view date and count have been recorded.\n\nConstraints:\n- Use only the items returned by the supplied official API response.\n- Convert each returned daily timestamp only to its YYYY-MM-DD date; do not change timezone or aggregate a different interval.\n- Show the arithmetic used for the total and maximum selection.\n- Preserve all view counts as exact integers.",
+  "created_at": "2026-09-14T08:58:21.689Z",
+  "browser_image": "w8-core:chromium-desktop",
+  "browser_profile_provenance": {
+    "container_id": "8321fb75fa9311498a63026789e8746f081cf3d3ed135ea4672589d472b8a5f7",
+    "container_created_at": "2026-09-11T06:54:35.578255267Z",
+    "profile_fresh_at_run_start": false,
+    "tasks_previously_run_in_container": 13
+  },
+  "dom_capture_parameters": {
+    "max_nodes": 7000,
+    "max_text_chars": 200000,
+    "in_viewport_only": true,
+    "include_offscreen": false
+  },
+  "dom_capture_source": "ChromiumRL.captureStructuredSnapshot",
+  "action_coordinate_capture": {
+    "source": "ChromiumRL.getAgentObservation",
+    "fallback_source": "existing ChromiumRL.captureStructuredSnapshot bounds",
+    "purpose": "pre-action coordinates only",
+    "stored_as_dom_evidence": false,
+    "takes_additional_structured_snapshot": false,
+    "fallback_requires": "one visible hit-testable semantic match",
+    "in_viewport_only": false,
+    "include_content": false,
+    "include_diff": false,
+    "update_baseline": false,
+    "max_elements": 10000,
+    "max_interactive_elements": 10000
+  },
+  "renderer_files": [
+    "render_chromiumrl_snapshot_full.py",
+    "render_chromiumrl_model_dom.py"
+  ],
+  "model_renderer_command": "ChromiumRL.getModelDOM",
+  "renderer_versions": {
+    "full": {
+      "file": "render_chromiumrl_snapshot_full.py",
+      "sha256": "12afbc9aa3fa651b1116850fc49402ab65a8ff4fcfe5fefd980167b068156c72"
+    },
+    "model": {
+      "command": "ChromiumRL.getModelDOM",
+      "renderer_name": "chromiumrl-model-dom",
+      "text_renderer": {
+        "file": "render_chromiumrl_model_dom.py",
+        "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+      }
+    }
+  },
+  "model_input_renderer": {
+    "command": "ChromiumRL.getModelDOM",
+    "renderer_name": "chromiumrl-model-dom",
+    "text_renderer": {
+      "file": "render_chromiumrl_model_dom.py",
+      "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+    }
+  },
+  "model_input_policy": "dom_only",
+  "model_context": {
+    "full_agent_browser_evidence": "stored unchanged in agent_browser.txt",
+    "action_namespace": "official agent-browser snapshot --interactive",
+    "chromiumrl_action_ids_executable": false,
+    "observation_truncation": false,
+    "conversation_history_reused": false,
+    "task_memory_max_chars": 8000,
+    "action_thought_max_chars": 1200,
+    "decision_log": "decisions.jsonl",
+    "executed_trajectory": "trajectory.jsonl",
+    "web_surfer_log": "web_surfer.log",
+    "ref_target_identity": "exact agent-browser ref plus role/name from the same pre-action interactive snapshot"
+  },
+  "step_numbering": {
+    "step_directories": "contiguous captured browser states",
+    "action_file": "action.json is stored in the state from which it executes",
+    "model_turn_field": "model_turn",
+    "decision_log_step": "model turn"
+  },
+  "action_driver": {
+    "name": "agent-browser",
+    "implementation": "official vercel-labs/agent-browser",
+    "command": [
+      "./node_modules/.bin/agent-browser"
+    ],
+    "session": "rec-b4dec75bf335e942-3364390",
+    "cdp_target": "49335",
+    "version": "agent-browser 0.27.3",
+    "connection": {
+      "success": true,
+      "data": {
+        "launched": true
+      },
+      "error": null
+    }
+  },
+  "states": [
+    {
+      "state": 1,
+      "directory": "steps/step_001",
+      "snapshot": "steps/step_001/dom.json",
+      "dom_full": "steps/step_001/dom_full.txt",
+      "model_dom": "steps/step_001/dom_model.json",
+      "model_text": "steps/step_001/dom_model.txt",
+      "screenshot": "steps/step_001/screenshot.png",
+      "agent_browser_snapshot": "steps/step_001/agent_browser.txt",
+      "agent_browser_action_snapshot": "steps/step_001/agent_browser_actions.txt",
+      "document_url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107",
+      "document_language": null
+    }
+  ],
+  "steps": [],
+  "human_intervention": {
+    "enabled": false,
+    "novnc_url": null,
+    "count": 0
+  },
+  "post_action_language_redirect": false,
+  "status": "failure",
+  "browser_session": {
+    "browser_version": "Chrome/152.0.7948.0",
+    "tab_cleanup": {
+      "page_targets_found": 1,
+      "page_target_urls": [
+        "https://www.gov.uk/bank-holidays.json"
+      ],
+      "keep_existing_tabs": false,
+      "fresh_target_created": true,
+      "closed_count": 1,
+      "closed_targets": [
+        {
+          "target_id": "AFB317626C3C447A79BC63073094A84B",
+          "url": "https://www.gov.uk/bank-holidays.json"
+        }
+      ],
+      "close_errors": [],
+      "warnings": [],
+      "fresh_target_id": "BAC30C4405737ECA40FFF7A2AC61CD2A",
+      "cleanup_passes": 1,
+      "cleanup_timeout_seconds": 5.0,
+      "remaining_page_targets": [],
+      "selected_target_id": "BAC30C4405737ECA40FFF7A2AC61CD2A",
+      "selected_target_url": "about:blank"
+    },
+    "locale_setup": {
+      "network_enable": {
+        "status": "ok",
+        "value": null
+      },
+      "accept_language_header": {
+        "status": "ok",
+        "value": {
+          "Accept-Language": "en-US,en;q=0.9"
+        }
+      },
+      "locale_override": {
+        "status": "ok",
+        "value": "en-US"
+      }
+    },
+    "target_switches": [],
+    "failure_target_cleanup": {
+      "target_id": "BAC30C4405737ECA40FFF7A2AC61CD2A",
+      "status": "closed"
+    }
+  },
+  "initial_target_sync": {
+    "agent_browser_tab_id": "t1",
+    "agent_browser_url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107",
+    "agent_browser_title": "wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107",
+    "previous_target_id": "BAC30C4405737ECA40FFF7A2AC61CD2A",
+    "previous_target_url": "about:blank",
+    "selected_target_id": "BAC30C4405737ECA40FFF7A2AC61CD2A",
+    "selected_target_url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107",
+    "switched": false
+  },
+  "initial_page_language": {
+    "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/Apollo_11/daily/20250101/20250107",
+    "language": "",
+    "error": null,
+    "automatic_redirects": []
+  },
+  "completed_at": "2026-09-14T08:59:00.958Z",
+  "final": {
+    "status": "failure",
+    "final_answer": "model did not produce an executable action after four generic retries",
+    "step": 0,
+    "model_turn": 1,
+    "recorded_steps": 0
+  },
+  "trajectory_export": {
+    "schema_version": "1.0",
+    "status": "complete",
+    "captured_states": 1,
+    "exported_actions": 0,
+    "errors": [],
+    "skipped": [],
+    "trajectory": "trajectory.jsonl",
+    "web_surfer_log": "web_surfer.log",
+    "self_contained_action_targets": true,
+    "requires_action_json_after_export": false
+  },
+  "artifact_alignment": {
+    "committed_steps": 0,
+    "trajectory_actions": 0,
+    "web_surfer_actions": 0,
+    "human_intervention_steps_skipped": 0
+  }
+}

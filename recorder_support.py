@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,28 @@ def normalized_http_url(value: str) -> str:
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise RunnerError(f"invalid CDP URL: {value!r}")
     return urlunsplit((parsed.scheme, parsed.netloc, "", "", ""))
+
+
+def clean_dom_text(value: Any) -> str:
+    """Normalize whitespace for recorder comparisons and labels."""
+    return re.sub(r"\s+", " ", "" if value is None else str(value)).strip()
+
+
+def same_document_except_fragment(first_url: str, second_url: str) -> bool:
+    """Return whether two HTTP URLs differ only by their fragment."""
+    first = urlsplit(first_url)
+    second = urlsplit(second_url)
+    return (
+        first.scheme.lower(),
+        first.netloc.lower(),
+        first.path,
+        first.query,
+    ) == (
+        second.scheme.lower(),
+        second.netloc.lower(),
+        second.path,
+        second.query,
+    )
 
 
 def utc_now() -> str:

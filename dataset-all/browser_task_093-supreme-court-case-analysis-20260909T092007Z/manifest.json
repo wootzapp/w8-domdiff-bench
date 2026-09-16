@@ -1,0 +1,530 @@
+{
+  "task_id": "browser_task_093-supreme-court-case-analysis-20260909T092007Z",
+  "source_task_id": "browser_task_093",
+  "source_catalog": "https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/resolve/main/tasks.jsonl",
+  "task_name": "Supreme Court case analysis",
+  "task": "On the Oyez page for Brown v. Board of Education of Topeka (1), report docket number, deciding Court, argued dates, reargued dates, decided date, the displayed Question, decision split and prevailing side, majority-opinion author, and the one-line holding immediately below the majority-opinion label.\n\nStopping condition: Stop after all requested identity, date, question, and decision fields have been recorded from the specified Brown I page.\n\nConstraints:\n- Use only Brown v. Board of Education of Topeka (1) on the supplied Oyez page; do not substitute Brown II.\n- Keep argued and reargued date ranges distinct.\n- Take the split, prevailing side, author, and one-line holding from the Conclusion decision card.\n- Do not substitute the longer explanatory paragraph or an outside summary for the requested one-line holding.",
+  "created_at": "2026-09-09T09:20:07.928Z",
+  "browser_image": "w8-core:chromium-desktop",
+  "browser_profile_provenance": {
+    "container_id": "6b388e5b86e00f44d7d91c6ed0e6b1548f87c30791a290dd80b8c2a41694b99c",
+    "container_created_at": "2026-09-07T07:10:25.040651606Z",
+    "profile_fresh_at_run_start": false,
+    "tasks_previously_run_in_container": 104
+  },
+  "dom_capture_parameters": {
+    "max_nodes": 7000,
+    "max_text_chars": 200000,
+    "in_viewport_only": true,
+    "include_offscreen": false
+  },
+  "dom_capture_source": "ChromiumRL.captureStructuredSnapshot",
+  "action_coordinate_capture": {
+    "source": "ChromiumRL.getAgentObservation",
+    "fallback_source": "existing ChromiumRL.captureStructuredSnapshot bounds",
+    "purpose": "pre-action coordinates only",
+    "stored_as_dom_evidence": false,
+    "takes_additional_structured_snapshot": false,
+    "fallback_requires": "one visible hit-testable semantic match",
+    "in_viewport_only": false,
+    "include_content": false,
+    "include_diff": false,
+    "update_baseline": false,
+    "max_elements": 10000,
+    "max_interactive_elements": 10000
+  },
+  "renderer_files": [
+    "render_chromiumrl_snapshot_full.py",
+    "render_chromiumrl_model_dom.py"
+  ],
+  "model_renderer_command": "ChromiumRL.getModelDOM",
+  "renderer_versions": {
+    "full": {
+      "file": "render_chromiumrl_snapshot_full.py",
+      "sha256": "12afbc9aa3fa651b1116850fc49402ab65a8ff4fcfe5fefd980167b068156c72"
+    },
+    "model": {
+      "command": "ChromiumRL.getModelDOM",
+      "renderer_name": "chromiumrl-model-dom",
+      "text_renderer": {
+        "file": "render_chromiumrl_model_dom.py",
+        "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+      }
+    }
+  },
+  "model_input_renderer": {
+    "command": "ChromiumRL.getModelDOM",
+    "renderer_name": "chromiumrl-model-dom",
+    "text_renderer": {
+      "file": "render_chromiumrl_model_dom.py",
+      "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+    }
+  },
+  "model_input_policy": "dom_only",
+  "model_context": {
+    "full_agent_browser_evidence": "stored unchanged in agent_browser.txt",
+    "action_namespace": "official agent-browser snapshot --interactive",
+    "chromiumrl_action_ids_executable": false,
+    "observation_truncation": false,
+    "conversation_history_reused": false,
+    "task_memory_max_chars": 8000,
+    "action_thought_max_chars": 1200,
+    "decision_log": "decisions.jsonl",
+    "executed_trajectory": "trajectory.jsonl",
+    "web_surfer_log": "web_surfer.log",
+    "ref_target_identity": "exact agent-browser ref plus role/name from the same pre-action interactive snapshot"
+  },
+  "step_numbering": {
+    "step_directories": "contiguous captured browser states",
+    "action_file": "action.json is stored in the state from which it executes",
+    "model_turn_field": "model_turn",
+    "decision_log_step": "model turn"
+  },
+  "action_driver": {
+    "name": "agent-browser",
+    "implementation": "official vercel-labs/agent-browser",
+    "command": [
+      "npx",
+      "--yes",
+      "agent-browser@0.27.3"
+    ],
+    "session": "rec-d45825313bcc35cd-1346778",
+    "cdp_target": "49337",
+    "version": "agent-browser 0.27.3",
+    "connection": {
+      "success": true,
+      "data": {
+        "launched": true
+      },
+      "error": null
+    },
+    "reconnect_count": 0
+  },
+  "states": [
+    {
+      "state": 1,
+      "directory": "steps/step_001",
+      "snapshot": "steps/step_001/dom.json",
+      "dom_full": "steps/step_001/dom_full.txt",
+      "model_dom": "steps/step_001/dom_model.json",
+      "model_text": "steps/step_001/dom_model.txt",
+      "screenshot": "steps/step_001/screenshot.png",
+      "agent_browser_snapshot": "steps/step_001/agent_browser.txt",
+      "agent_browser_action_snapshot": "steps/step_001/agent_browser_actions.txt",
+      "document_url": "https://www.oyez.org/cases/1940-1955/347us483",
+      "document_language": "en"
+    },
+    {
+      "state": 2,
+      "directory": "steps/step_002",
+      "snapshot": "steps/step_002/dom.json",
+      "dom_full": "steps/step_002/dom_full.txt",
+      "model_dom": "steps/step_002/dom_model.json",
+      "model_text": "steps/step_002/dom_model.txt",
+      "screenshot": "steps/step_002/screenshot.png",
+      "agent_browser_snapshot": "steps/step_002/agent_browser.txt",
+      "agent_browser_action_snapshot": "steps/step_002/agent_browser_actions.txt",
+      "document_url": "https://www.oyez.org/cases/1940-1955/347us483",
+      "document_language": "en"
+    },
+    {
+      "state": 3,
+      "directory": "steps/step_003",
+      "snapshot": "steps/step_003/dom.json",
+      "dom_full": "steps/step_003/dom_full.txt",
+      "model_dom": "steps/step_003/dom_model.json",
+      "model_text": "steps/step_003/dom_model.txt",
+      "screenshot": "steps/step_003/screenshot.png",
+      "agent_browser_snapshot": "steps/step_003/agent_browser.txt",
+      "agent_browser_action_snapshot": "steps/step_003/agent_browser_actions.txt",
+      "document_url": "https://www.oyez.org/cases/1940-1955/347us483",
+      "document_language": "en"
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "model_turn": 1,
+      "started_at": "2026-09-09T09:20:20.979Z",
+      "completed_at": "2026-09-09T09:20:26.886Z",
+      "duration_seconds": 5.906,
+      "action": {
+        "action": "scroll",
+        "url": null,
+        "id": null,
+        "text": null,
+        "key": null,
+        "pixels": 800,
+        "seconds": null,
+        "status": null,
+        "final_answer": null
+      },
+      "thought": "Need to scroll to bring the Question and Conclusion sections fully into view to capture the displayed question and decision details from the Conclusion card.",
+      "target": null,
+      "coordinate_capture": null,
+      "action_context": {
+        "document_url": "https://www.oyez.org/cases/1940-1955/347us483",
+        "control_signature": "",
+        "ref": "",
+        "role": "",
+        "name": ""
+      },
+      "action_driver": "agent-browser",
+      "action_result": {
+        "success": true,
+        "data": {
+          "scrolled": true
+        },
+        "error": null,
+        "normalized_parameters": {
+          "pixels": 800
+        },
+        "hover_issued": false
+      },
+      "action_error": null,
+      "action_succeeded": true,
+      "recoverable_action_error": false,
+      "agent_browser_snapshot_error": null,
+      "agent_browser_reconnect_count": 0,
+      "target_sync": {
+        "agent_browser_tab_id": "t1",
+        "agent_browser_url": "https://www.oyez.org/cases/1940-1955/347us483",
+        "agent_browser_title": "oyez.org/cases/1940-1955/347us483",
+        "previous_target_id": "FDD9B13D59F4DB1DAB61217EE82E2713",
+        "previous_target_url": "https://www.oyez.org/cases/1940-1955/347us483",
+        "selected_target_id": "FDD9B13D59F4DB1DAB61217EE82E2713",
+        "selected_target_url": "https://www.oyez.org/cases/1940-1955/347us483",
+        "switched": false
+      },
+      "action_verification": {
+        "applicable": false,
+        "status": "not_applicable"
+      },
+      "progress": {
+        "url_changed": false,
+        "agent_browser_observation_changed": false,
+        "screenshot_changed": true,
+        "made_progress": true
+      },
+      "language_guard_error": null,
+      "automatic_language_redirects": [],
+      "model": {
+        "name": "gpt-5.1",
+        "response_id": "resp_0907aab4e4e2aff0006aa124d21f6487d29e0229297816d2e6",
+        "output_text": "{\"action\":\"scroll\",\"url\":null,\"id\":null,\"text\":null,\"key\":null,\"pixels\":800,\"seconds\":null,\"status\":null,\"final_answer\":null,\"thought\":\"Need to scroll to bring the Question and Conclusion sections fully into view to capture the displayed question and decision details from the Conclusion card.\",\"memory\":\"Target case: Brown v. Board of Education of Topeka (1) on Oyez (https://www.oyez.org/cases/1940-1955/347us483). Already visible and recorded: docket no. 1; decided by Warren Court; argued Dec 9 - 11, 1952; reargued Dec 7 - 9, 1953; decided May 17, 1954. Need still: full Question text; decision split and prevailing side; majority-opinion author; one-line holding from Conclusion card.\"}",
+        "usage": {
+          "input_tokens": 2856,
+          "input_tokens_details": {
+            "cache_write_tokens": 0,
+            "cached_tokens": 0
+          },
+          "output_tokens": 199,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 3055
+        }
+      },
+      "task_memory": "Target case: Brown v. Board of Education of Topeka (1) on Oyez (https://www.oyez.org/cases/1940-1955/347us483). Already visible and recorded: docket no. 1; decided by Warren Court; argued Dec 9 - 11, 1952; reargued Dec 7 - 9, 1953; decided May 17, 1954. Need still: full Question text; decision split and prevailing side; majority-opinion author; one-line holding from Conclusion card.",
+      "model_input": {
+        "full_agent_browser_chars": 7509,
+        "action_agent_browser_chars": 2177,
+        "chromiumrl_chars": 1996,
+        "chromiumrl_prompt_chars": 1966,
+        "task_memory_chars": 0,
+        "recent_actions_chars": 2,
+        "observation_truncated": false,
+        "conversation_history_reused": false
+      },
+      "model_input_renderer": {
+        "command": "ChromiumRL.getModelDOM",
+        "renderer_name": "chromiumrl-model-dom",
+        "text_renderer": {
+          "file": "render_chromiumrl_model_dom.py",
+          "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+        }
+      },
+      "model_input_agent_browser": {
+        "version": "agent-browser 0.27.3",
+        "snapshot_command": [
+          "snapshot",
+          "-i"
+        ],
+        "snapshot": "steps/step_001/agent_browser_actions.txt",
+        "full_evidence_snapshot_command": [
+          "snapshot",
+          "-c"
+        ],
+        "full_evidence_snapshot": "steps/step_001/agent_browser.txt"
+      },
+      "state": 1,
+      "next_state": 2,
+      "state_snapshot": "steps/step_001/dom.json",
+      "next_state_snapshot": "steps/step_002/dom.json",
+      "state_model_dom": "steps/step_001/dom_model.json",
+      "next_state_model_dom": "steps/step_002/dom_model.json",
+      "state_screenshot": "steps/step_001/screenshot.png",
+      "next_state_screenshot": "steps/step_002/screenshot.png",
+      "next_state_agent_browser_snapshot": "steps/step_002/agent_browser.txt",
+      "next_state_agent_browser_snapshot_command": [
+        "snapshot",
+        "-c"
+      ],
+      "next_state_agent_browser_action_snapshot": "steps/step_002/agent_browser_actions.txt",
+      "next_state_agent_browser_action_snapshot_command": [
+        "snapshot",
+        "-i"
+      ],
+      "document_language": "en",
+      "next_document_language": "en",
+      "document_language_error": null,
+      "next_document_language_error": null
+    },
+    {
+      "step": 2,
+      "model_turn": 2,
+      "started_at": "2026-09-09T09:20:29.443Z",
+      "completed_at": "2026-09-09T09:20:35.715Z",
+      "duration_seconds": 6.272,
+      "action": {
+        "action": "scroll",
+        "url": null,
+        "id": null,
+        "text": null,
+        "key": null,
+        "pixels": 800,
+        "seconds": null,
+        "status": null,
+        "final_answer": null
+      },
+      "thought": "Need to scroll further to bring the full Question text and the Conclusion decision card (split, side, author, one-line holding) into the visible DOM.",
+      "target": null,
+      "coordinate_capture": null,
+      "action_context": {
+        "document_url": "https://www.oyez.org/cases/1940-1955/347us483",
+        "control_signature": "",
+        "ref": "",
+        "role": "",
+        "name": ""
+      },
+      "action_driver": "agent-browser",
+      "action_result": {
+        "success": true,
+        "data": {
+          "scrolled": true
+        },
+        "error": null,
+        "normalized_parameters": {
+          "pixels": 800
+        },
+        "hover_issued": false
+      },
+      "action_error": null,
+      "action_succeeded": true,
+      "recoverable_action_error": false,
+      "agent_browser_snapshot_error": null,
+      "agent_browser_reconnect_count": 0,
+      "target_sync": {
+        "agent_browser_tab_id": "t1",
+        "agent_browser_url": "https://www.oyez.org/cases/1940-1955/347us483",
+        "agent_browser_title": "oyez.org/cases/1940-1955/347us483",
+        "previous_target_id": "FDD9B13D59F4DB1DAB61217EE82E2713",
+        "previous_target_url": "https://www.oyez.org/cases/1940-1955/347us483",
+        "selected_target_id": "FDD9B13D59F4DB1DAB61217EE82E2713",
+        "selected_target_url": "https://www.oyez.org/cases/1940-1955/347us483",
+        "switched": false
+      },
+      "action_verification": {
+        "applicable": false,
+        "status": "not_applicable"
+      },
+      "progress": {
+        "url_changed": false,
+        "agent_browser_observation_changed": false,
+        "screenshot_changed": true,
+        "made_progress": true
+      },
+      "language_guard_error": null,
+      "automatic_language_redirects": [],
+      "model": {
+        "name": "gpt-5.1",
+        "response_id": "resp_0fff409ce1f2b870006aa124db152887d2954f6a376f83f8b1",
+        "output_text": "{\"action\":\"scroll\",\"url\":null,\"id\":null,\"text\":null,\"key\":null,\"pixels\":800,\"seconds\":null,\"status\":null,\"final_answer\":null,\"thought\":\"Need to scroll further to bring the full Question text and the Conclusion decision card (split, side, author, one-line holding) into the visible DOM.\",\"memory\":\"Target case remains Brown v. Board of Education of Topeka (1), Oyez URL https://www.oyez.org/cases/1940-1955/347us483. Already confirmed from prior steps: docket no. 1; decided by Warren Court; argued Dec 9 - 11, 1952; reargued Dec 7 - 9, 1953; decided May 17, 1954. Still need: complete Question text; decision split and prevailing side; majority-opinion author; one-line holding from Conclusion card.\"}",
+        "usage": {
+          "input_tokens": 3310,
+          "input_tokens_details": {
+            "cache_write_tokens": 0,
+            "cached_tokens": 0
+          },
+          "output_tokens": 204,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 3514
+        }
+      },
+      "task_memory": "Target case remains Brown v. Board of Education of Topeka (1), Oyez URL https://www.oyez.org/cases/1940-1955/347us483. Already confirmed from prior steps: docket no. 1; decided by Warren Court; argued Dec 9 - 11, 1952; reargued Dec 7 - 9, 1953; decided May 17, 1954. Still need: complete Question text; decision split and prevailing side; majority-opinion author; one-line holding from Conclusion card.",
+      "model_input": {
+        "full_agent_browser_chars": 7509,
+        "action_agent_browser_chars": 2177,
+        "chromiumrl_chars": 2889,
+        "chromiumrl_prompt_chars": 2802,
+        "task_memory_chars": 385,
+        "recent_actions_chars": 582,
+        "observation_truncated": false,
+        "conversation_history_reused": false
+      },
+      "model_input_renderer": {
+        "command": "ChromiumRL.getModelDOM",
+        "renderer_name": "chromiumrl-model-dom",
+        "text_renderer": {
+          "file": "render_chromiumrl_model_dom.py",
+          "sha256": "bd5a50cb0093514180e0d3057974f5ae386390e1bb5ba99bceebbfc9c32a9695"
+        }
+      },
+      "model_input_agent_browser": {
+        "version": "agent-browser 0.27.3",
+        "snapshot_command": [
+          "snapshot",
+          "-i"
+        ],
+        "snapshot": "steps/step_002/agent_browser_actions.txt",
+        "full_evidence_snapshot_command": [
+          "snapshot",
+          "-c"
+        ],
+        "full_evidence_snapshot": "steps/step_002/agent_browser.txt"
+      },
+      "state": 2,
+      "next_state": 3,
+      "state_snapshot": "steps/step_002/dom.json",
+      "next_state_snapshot": "steps/step_003/dom.json",
+      "state_model_dom": "steps/step_002/dom_model.json",
+      "next_state_model_dom": "steps/step_003/dom_model.json",
+      "state_screenshot": "steps/step_002/screenshot.png",
+      "next_state_screenshot": "steps/step_003/screenshot.png",
+      "next_state_agent_browser_snapshot": "steps/step_003/agent_browser.txt",
+      "next_state_agent_browser_snapshot_command": [
+        "snapshot",
+        "-c"
+      ],
+      "next_state_agent_browser_action_snapshot": "steps/step_003/agent_browser_actions.txt",
+      "next_state_agent_browser_action_snapshot_command": [
+        "snapshot",
+        "-i"
+      ],
+      "document_language": "en",
+      "next_document_language": "en",
+      "document_language_error": null,
+      "next_document_language_error": null
+    }
+  ],
+  "human_intervention": {
+    "enabled": false,
+    "novnc_url": null,
+    "count": 0
+  },
+  "post_action_language_redirect": false,
+  "status": "success",
+  "browser_session": {
+    "browser_version": "Chrome/152.0.7948.0",
+    "tab_cleanup": {
+      "page_targets_found": 1,
+      "page_target_urls": [
+        "https://clerk.house.gov/Votes/2021369"
+      ],
+      "keep_existing_tabs": false,
+      "fresh_target_created": true,
+      "closed_count": 1,
+      "closed_targets": [
+        {
+          "target_id": "B0D3DA8839C479E98749649BF4946838",
+          "url": "https://clerk.house.gov/Votes/2021369"
+        }
+      ],
+      "close_errors": [],
+      "warnings": [],
+      "fresh_target_id": "FDD9B13D59F4DB1DAB61217EE82E2713",
+      "cleanup_passes": 1,
+      "cleanup_timeout_seconds": 5.0,
+      "remaining_page_targets": [],
+      "selected_target_id": "FDD9B13D59F4DB1DAB61217EE82E2713",
+      "selected_target_url": "about:blank"
+    },
+    "locale_setup": {
+      "network_enable": {
+        "status": "ok",
+        "value": null
+      },
+      "accept_language_header": {
+        "status": "ok",
+        "value": {
+          "Accept-Language": "en-US,en;q=0.9"
+        }
+      },
+      "locale_override": {
+        "status": "ok",
+        "value": "en-US"
+      }
+    },
+    "target_switches": []
+  },
+  "initial_target_sync": {
+    "agent_browser_tab_id": "t1",
+    "agent_browser_url": "https://www.oyez.org/cases/1940-1955/347us483",
+    "agent_browser_title": "oyez.org/cases/1940-1955/347us483",
+    "previous_target_id": "FDD9B13D59F4DB1DAB61217EE82E2713",
+    "previous_target_url": "about:blank",
+    "selected_target_id": "FDD9B13D59F4DB1DAB61217EE82E2713",
+    "selected_target_url": "https://www.oyez.org/cases/1940-1955/347us483",
+    "switched": false
+  },
+  "initial_page_language": {
+    "url": "https://www.oyez.org/cases/1940-1955/347us483",
+    "language": "en",
+    "error": null,
+    "automatic_redirects": []
+  },
+  "completed_at": "2026-09-09T09:20:40.334Z",
+  "final": {
+    "status": "success",
+    "final_answer": "From the Oyez page for Brown v. Board of Education of Topeka (1) (https://www.oyez.org/cases/1940-1955/347us483), the recorded information is as follows:\n\n- Docket number: 1\n- Deciding Court: Warren Court\n- Argued dates: December 9–11, 1952\n- Reargued dates: December 7–9, 1953\n- Decided date: May 17, 1954\n\nQuestion (from the Question section on the Brown I page):\n- \"Does the segregation of public education based solely on race violate the Equal Protection Clause of the Fourteenth Amendment?\"\n\nDecision information (from the Conclusion decision card on the Brown I page):\n- Decision split: Unanimous decision\n- Prevailing side: for Brown et al.\n- Majority-opinion author: Earl Warren (\"majority opinion by Earl Warren\")\n- One-line holding (the single-sentence holding immediately below the majority-opinion label on the Conclusion card, not the longer explanatory paragraph):\n  - \"Separate but equal educational facilities for racial minorities is inherently unequal violating the Equal Protection Clause of the Fourteenth Amendment.\"\n\nAll requested identity, date, question, and decision fields have been captured from the specified Brown v. Board of Education of Topeka (1) page on Oyez, keeping argued and reargued date ranges distinct and using the Conclusion card for the decision fields and one-line holding.",
+    "step": 2,
+    "model": "gpt-5.1",
+    "model_response_id": "resp_0ee37a7a42e95383006aa124e3e0f887d29be3e8ca6236a796",
+    "model_usage": {
+      "input_tokens": 3622,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 566,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 4188
+    },
+    "task_memory": "Brown v. Board of Education of Topeka (1), Oyez URL https://www.oyez.org/cases/1940-1955/347us483; docket no. 1; decided by Warren Court; argued Dec 9–11, 1952; reargued Dec 7–9, 1953; decided May 17, 1954; Question: \"Does the segregation of public education based solely on race violate the Equal Protection Clause of the Fourteenth Amendment?\"; Conclusion card: unanimous decision for Brown et al.; majority opinion by Earl Warren; one-line holding: \"Separate but equal educational facilities for racial minorities is inherently unequal violating the Equal Protection Clause of the Fourteenth Amendment.\"",
+    "thought": "All requested question and decision fields are visible in the current DOM snapshot, and prior steps already captured the dates and court; I can now report the compiled information and stop per the user’s stopping condition.",
+    "model_turn": 3,
+    "recorded_steps": 2
+  },
+  "trajectory_export": {
+    "schema_version": "1.0",
+    "status": "complete",
+    "captured_states": 3,
+    "exported_actions": 2,
+    "errors": [],
+    "skipped": [],
+    "trajectory": "trajectory.jsonl",
+    "web_surfer_log": "web_surfer.log",
+    "self_contained_action_targets": true,
+    "requires_action_json_after_export": false
+  },
+  "artifact_alignment": {
+    "committed_steps": 2,
+    "trajectory_actions": 2,
+    "web_surfer_actions": 2,
+    "human_intervention_steps_skipped": 0
+  }
+}

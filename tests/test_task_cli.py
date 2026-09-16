@@ -174,7 +174,7 @@ class TaskCliTests(unittest.TestCase):
         self.assertIn("--no-recreate", command)
         self.assertNotIn("--force-recreate", command)
         self.assertNotIn("down", command)
-        self.assertEqual(command[-1], "wootz-desktop")
+        self.assertEqual(command[-1], "w8-core")
 
     def test_task_boundary_restart_preserves_container_and_waits_for_health(self) -> None:
         completed = SimpleNamespace(returncode=0, stdout="", stderr="")
@@ -184,11 +184,11 @@ class TaskCliTests(unittest.TestCase):
             task_cli.restart_browser_service(Path("/tmp/recorder.env"))
 
         commands = [call.args[0] for call in run.call_args_list]
-        self.assertEqual(commands[0][-1], "wootz-desktop")
+        self.assertEqual(commands[0][-1], "w8-core")
         self.assertIn("--no-recreate", commands[0])
-        self.assertEqual(commands[1][-2:], ["restart", "wootz-desktop"])
+        self.assertEqual(commands[1][-2:], ["restart", "w8-core"])
         self.assertNotIn("down", commands[1])
-        self.assertEqual(commands[2][-1], "wootz-desktop")
+        self.assertEqual(commands[2][-1], "w8-core")
         self.assertIn("--wait", commands[2])
 
     def test_stale_active_run_record_is_removed_without_signalling(self) -> None:

@@ -271,6 +271,29 @@ class ModelSnapshotRenderer:
         for siblings in self.children.values():
             siblings.sort(key=self.source_order)
 
+        # Mark structurally repeated sibling branches. Many applications build
+        # logical rows from role-less div/span trees instead of listitems. Text
+        # deduplication must be scoped to one such branch so equal metadata in
+        # separate rows is not mistaken for a duplicate.
+        self.repeated_item_refs: set[str] = set()
+        for siblings in self.children.values():
+            by_signature: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+            for child in siblings:
+                signature = (
+                    clean(child.get("tag"), fix_mojibake=False).lower(),
+                    clean(child.get("role"), fix_mojibake=False).lower(),
+                    clean(child.get("semanticBoundary"), fix_mojibake=False).lower(),
+                )
+                by_signature.setdefault(signature, []).append(child)
+            for repeated in by_signature.values():
+                if len(repeated) < 2:
+                    continue
+                self.repeated_item_refs.update(
+                    str(child.get("ref"))
+                    for child in repeated
+                    if child.get("ref") is not None
+                )
+
         # Read-only tasks must not expose content-authoring widgets. Identify them
         # by ARIA role and DOM containment rather than by application-specific
         # names: an authoring field is a plain `textbox`, and its toolbar and send
@@ -740,6 +763,77 @@ class ModelSnapshotRenderer:
                 return ancestor
         return None
 
+    def semantic_owner_ref(self, node: dict[str, Any]) -> str:
+        """Scope repeated text to its nearest readable item when one exists."""
+        if self.is_readable_item(node):
+            return self.node_ref(node)
+        owner = self.nearest_readable_item(node)
+        if owner is None:
+            owner = next(
+                (
+                    ancestor
+                    for ancestor in self.ancestors(node)
+                    if self.node_ref(ancestor) in self.repeated_item_refs
+                ),
+                None,
+            )
+        return self.node_ref(owner) if owner is not None else ""
+
+    def additional_content_evidence(
+        self,
+        node: dict[str, Any],
+        emitted_lines: list[str],
+    ) -> list[str]:
+        """Preserve captured descendant-control facts omitted from parent text.
+
+        Interactive descendants can carry accessibility metadata (for example,
+        precise timestamps or control state) that is not present in their
+        parent's subtree text. Such facts remain read-only evidence here; no
+        executable action id is introduced.
+        """
+        ref = self.node_ref(node)
+        if not ref:
+            return []
+        emitted_key = norm_key(" ".join(emitted_lines))
+        owner_ref = self.semantic_owner_ref(node)
+        evidence: list[str] = []
+        seen: set[str] = set()
+        descendant_nodes = [
+            self.by_ref[child_ref]
+            for child_ref in self.descendants(ref)
+            if child_ref in self.by_ref
+        ]
+        descendant_nodes.sort(key=self.source_order)
+        for child in descendant_nodes:
+            if not self.action_types(child):
+                continue
+            child_owner_ref = self.semantic_owner_ref(child)
+            if owner_ref and child_owner_ref and child_owner_ref != owner_ref:
+                continue
+            attrs = attr_map(child)
+            candidates = [
+                clean(child.get("accessibleName")),
+                attrs.get("aria-label", ""),
+                attrs.get("value", ""),
+                attrs.get("title", ""),
+                self.text(child),
+            ]
+            raw_states = child.get("states", [])
+            has_state = isinstance(raw_states, list) and any(
+                isinstance(state, dict) and clean(state.get("value")) for state in raw_states
+            )
+            for value in candidates:
+                value = clean(value)
+                if not has_state and not any(character.isdigit() for character in value):
+                    continue
+                key = norm_key(value)
+                if not key or key in seen or key in emitted_key:
+                    continue
+                seen.add(key)
+                evidence.append(value)
+                break
+        return evidence
+
     def is_broad_action(self, node: dict[str, Any], actions: list[str]) -> bool:
         """Identify container-wide actions that are unusable or excessively noisy."""
         tag = clean(node.get("tag"), fix_mojibake=False).lower()
@@ -1129,11 +1223,14 @@ class ModelSnapshotRenderer:
         direct = clean(node.get("directText"))
         if not direct:
             return False
-        # ...but a short role-less label that merely repeats an interactive
-        # element's name is chrome (navigation entries, tab captions, toolbar
-        # captions). It is already listed, with an id, in the action list, so
-        # emitting it again pushes real content down the observation.
-        if len(direct) <= self.chrome_label_max_chars and self.matches_action_label(direct):
+        # Keep action-linked text out of content when it is only a repeated
+        # control caption. Numeric metadata (dates, counts, versions, sizes)
+        # remains evidence even when the page also wraps it in a control.
+        if (
+            len(direct) <= self.chrome_label_max_chars
+            and self.matches_action_label(direct)
+            and not any(character.isdigit() for character in text)
+        ):
             return False
         return True
 
@@ -1169,7 +1266,12 @@ class ModelSnapshotRenderer:
         return False
 
     def render_content(self, covered: set[str]) -> tuple[list[str], set[str]]:
-        """Render deduplicated visible/offscreen content within the configured block cap."""
+        """Render deduplicated visible/offscreen content within an optional cap.
+
+        A non-positive max_content_blocks value is deliberately unlimited. The
+        recorder uses that mode so this projection cannot discard evidence that
+        is already present in the authoritative structured snapshot.
+        """
         candidates = [node for node in self.nodes if self.is_content_node(node, covered)]
         candidates.sort(key=self.source_order)
         visible_lines: list[str] = []
@@ -1182,7 +1284,7 @@ class ModelSnapshotRenderer:
         # broken duplicate sentence. Only fully-emitted ancestors suppress: when an
         # ancestor's text was clipped, a descendant may carry the part that was cut.
         whole_refs: set[str] = set()
-        seen: set[str] = set()
+        seen: set[tuple[str, str]] = set()
         context_by_bucket = {"visible": "", "offscreen": ""}
         visible_count = 0
         offscreen_count = 0
@@ -1192,12 +1294,22 @@ class ModelSnapshotRenderer:
                 continue
             full = self.text(node)
             text = clip(full, self.max_text_chars)
-            if ref and node.get("truncated") is not True and len(text) >= len(full):
+            # Rendering an ancestor's chosen own text does not prove that every
+            # distinct descendant fact was represented. Only leaves can safely
+            # suppress descendants; row/container children must still be
+            # considered and deduplicated in their semantic scope.
+            if (
+                ref
+                and not self.children.get(ref)
+                and node.get("truncated") is not True
+                and len(text) >= len(full)
+            ):
                 whole_refs.add(ref)
             key = norm_key(text)
-            if not key or key in seen:
+            dedupe_key = (self.semantic_owner_ref(node), key)
+            if not key or dedupe_key in seen:
                 continue
-            seen.add(key)
+            seen.add(dedupe_key)
             self.rendered_content_text_keys.add(key)
             rendered_refs.add(ref)
 
@@ -1229,9 +1341,12 @@ class ModelSnapshotRenderer:
                 item_prefix = f"- [{self.action_id(node)}]"
             elif self.include_refs and ref:
                 item_prefix = f"- ref={ref}"
-            target_lines.extend(
-                self.format_content_item_lines(full, prefix=item_prefix, attachments=attachment_labels)
+            item_lines = self.format_content_item_lines(
+                full, prefix=item_prefix, attachments=attachment_labels
             )
+            target_lines.extend(item_lines)
+            for evidence in self.additional_content_evidence(node, item_lines):
+                target_lines.append(f"  evidence: {evidence}")
             if controls:
                 rendered_controls = [
                     self.action_line(control, actions)
@@ -1241,12 +1356,13 @@ class ModelSnapshotRenderer:
                     target_lines.append("  actions: " + "; ".join(rendered_controls))
                 if len(useful_controls) > self.max_nested_actions:
                     target_lines.append(f"  [actions hidden: {len(useful_controls) - self.max_nested_actions} more]")
-            if len(rendered_refs) >= self.max_content_blocks:
+            if self.max_content_blocks > 0 and len(rendered_refs) >= self.max_content_blocks:
                 remaining_keys = set()
                 for rest in candidates[idx + 1:]:
                     rest_key = norm_key(clip(self.text(rest), self.max_text_chars))
-                    if rest_key and rest_key not in seen:
-                        remaining_keys.add(rest_key)
+                    rest_dedupe_key = (self.semantic_owner_ref(rest), rest_key)
+                    if rest_key and rest_dedupe_key not in seen:
+                        remaining_keys.add(rest_dedupe_key)
                 if remaining_keys:
                     target_lines.append(
                         f"[content hidden: {len(remaining_keys)} more reason=max_content_blocks]"
@@ -1371,9 +1487,42 @@ class ModelSnapshotRenderer:
             lines.append("=== USEFUL PAGE ACTIONS ===")
             for node, actions in compact_primary[:action_limit]:
                 lines.append(self.action_line(node, actions))
+            shown_refs = {
+                self.node_ref(node) for node, _ in compact_primary[:action_limit]
+            }
             hidden = max(0, len(primary) - min(len(compact_primary), action_limit))
             if hidden:
                 lines.append(f"[other actions hidden: {hidden}]")
+
+            read_only_rows: list[str] = []
+            seen_read_only: set[str] = set()
+            for node, _ in primary:
+                if self.node_ref(node) in shown_refs:
+                    continue
+                facts = [self.text(node)]
+                raw_states = node.get("states", [])
+                if isinstance(raw_states, list):
+                    for state in raw_states:
+                        if not isinstance(state, dict):
+                            continue
+                        name = clean(state.get("name"), fix_mojibake=False)
+                        value = clean(state.get("value"))
+                        if name and value:
+                            facts.append(f"{name}={value}")
+                fact = clean("; ".join(item for item in facts if item))
+                fact_key = norm_key(fact)
+                if not fact_key or fact_key in seen_read_only:
+                    continue
+                if any(
+                    fact_key == content_key or fact_key in content_key
+                    for content_key in self.rendered_content_text_keys
+                ):
+                    continue
+                seen_read_only.add(fact_key)
+                read_only_rows.append(f"- {fact}")
+            if read_only_rows:
+                lines.append("=== READ-ONLY CONTROL EVIDENCE ===")
+                lines.extend(read_only_rows)
 
         if self.include_secondary and secondary:
             lines.append("=== SECONDARY / DEBUG ACTIONS ===")
@@ -1381,6 +1530,24 @@ class ModelSnapshotRenderer:
                 lines.append(f"{self.action_line(node, actions, include_debug=True)} reason={reason}")
             if len(secondary) > self.max_secondary_actions:
                 lines.append(f"[secondary actions hidden: {len(secondary) - self.max_secondary_actions} more]")
+
+        # Action rows intentionally keep labels compact. When the captured label
+        # is richer than that executable representation, retain the complete
+        # value separately as read-only evidence rather than losing its tail.
+        complete_control_text: list[str] = []
+        seen_complete: set[str] = set()
+        for node, _ in self.action_nodes:
+            full = self.text(node)
+            if len(full) <= 220:
+                continue
+            key = norm_key(full)
+            if not key or key in seen_complete:
+                continue
+            seen_complete.add(key)
+            complete_control_text.append(f"- {full}")
+        if complete_control_text:
+            lines.append("=== COMPLETE READ-ONLY CONTROL TEXT ===")
+            lines.extend(complete_control_text)
         return lines
 
     def scroll_region_rows(self) -> list[tuple[float, dict[str, Any]]]:

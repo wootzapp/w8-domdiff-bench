@@ -7,7 +7,6 @@ import base64
 import hashlib
 import json
 import re
-import shutil
 import subprocess
 import sys
 import time
@@ -25,13 +24,22 @@ from agent_browser import (
     AgentBrowserObservation,
     AgentBrowserPage,
 )
-from recorder_support import RunnerError, normalized_http_url, write_json, write_text
-from dom_diff import clean_dom_text, same_document_except_fragment
+from recorder_support import (
+    RunnerError,
+    clean_dom_text,
+    normalized_http_url,
+    same_document_except_fragment,
+    write_json,
+    write_text,
+)
 
 
 ROOT = Path(__file__).resolve().parent
 FULL_RENDERER = ROOT / "scripts" / "render_chromiumrl_snapshot_full.py"
 MODEL_RENDERER = ROOT / "scripts" / "render_chromiumrl_snapshot_model.py"
+MODEL_DOM_TEXT_RENDERER = ROOT / "scripts" / "render_chromiumrl_model_dom.py"
+MODEL_DOM_COMMAND = "ChromiumRL.getModelDOM"
+MODEL_DOM_RENDERER_NAME = "chromiumrl-model-dom"
 
 class CDPError(RunnerError):
     def __init__(self, method: str, error: Any):
@@ -172,7 +180,6 @@ def verify_agent_browser_action(
 def action_progress(
     before: CaptureBundle,
     after: CaptureBundle,
-    diff_record: dict[str, Any],
 ) -> dict[str, bool]:
     """Conservative progress facts; any changed evidence prevents a false stall."""
     before_url = clean_dom_text(before.snapshot.get("url") or before.document_url)
@@ -192,54 +199,11 @@ def action_progress(
     )
     result = {
         "url_changed": before_url != after_url,
-        "semantic_dom_changed": int(
-            diff_record.get("semantic_change_count", diff_record.get("change_count")) or 0
-        )
-        > 0,
-        "viewport_content_changed": int(diff_record.get("viewport_change_count") or 0) > 0,
         "agent_browser_observation_changed": observation_changed,
         "screenshot_changed": screenshot_changed,
     }
     result["made_progress"] = any(result.values())
     return result
-
-
-def copy_bundle(bundle: CaptureBundle, directory: Path) -> CaptureBundle:
-    """Copy one immutable evidence bundle into an action's before directory."""
-    directory.mkdir(parents=True, exist_ok=False)
-    snapshot_path = directory / "dom.json"
-    screenshot_path = directory / "screenshot.png"
-    shutil.copy2(bundle.snapshot_path, snapshot_path)
-    shutil.copy2(bundle.snapshot_path.with_name("dom_full.txt"), directory / "dom_full.txt")
-    shutil.copy2(bundle.snapshot_path.with_name("dom_model.txt"), directory / "dom_model.txt")
-    shutil.copy2(bundle.screenshot_path, screenshot_path)
-    agent_browser_path: Path | None = None
-    if bundle.agent_browser_path is not None:
-        agent_browser_path = directory / "agent_browser.txt"
-        shutil.copy2(bundle.agent_browser_path, agent_browser_path)
-    agent_browser_action_path: Path | None = None
-    if bundle.agent_browser_action_path is not None:
-        agent_browser_action_path = directory / "agent_browser_actions.txt"
-        shutil.copy2(bundle.agent_browser_action_path, agent_browser_action_path)
-    return CaptureBundle(
-        snapshot=bundle.snapshot,
-        snapshot_path=snapshot_path,
-        model_text=bundle.model_text,
-        screenshot_path=screenshot_path,
-        agent_browser_text=bundle.agent_browser_text,
-        agent_browser_action_text=bundle.agent_browser_action_text,
-        agent_browser_refs=bundle.agent_browser_refs,
-        agent_browser_targets=bundle.agent_browser_targets,
-        agent_browser_path=agent_browser_path,
-        agent_browser_action_path=agent_browser_action_path,
-        agent_browser_snapshot_command=bundle.agent_browser_snapshot_command,
-        agent_browser_action_snapshot_command=(
-            bundle.agent_browser_action_snapshot_command
-        ),
-        document_language=bundle.document_language,
-        document_url=bundle.document_url,
-        document_language_error=bundle.document_language_error,
-    )
 
 
 
@@ -522,6 +486,32 @@ def run_renderer(arguments: list[str]) -> None:
         raise RunnerError(f"renderer failed: {completed.stderr.strip()}")
 
 
+def render_full_stored_snapshot(snapshot_path: Path) -> None:
+    """Render only the audit/full text projection from stored dom.json."""
+    run_renderer(
+        [
+            str(FULL_RENDERER),
+            str(snapshot_path),
+            "--output",
+            str(snapshot_path.with_name("dom_full.txt")),
+            "--include-action-index",
+            "--include-child-refs",
+        ]
+    )
+
+
+def render_model_dom_stored_projection(model_dom_path: Path) -> None:
+    """Render only the browser-produced structured model-DOM JSON."""
+    run_renderer(
+        [
+            str(MODEL_DOM_TEXT_RENDERER),
+            str(model_dom_path),
+            "--output",
+            str(model_dom_path.with_suffix(".txt")),
+        ]
+    )
+
+
 def render_stored_snapshot(snapshot_path: Path) -> None:
     """Regenerate both text projections from one stored structured snapshot."""
     full_path = snapshot_path.with_name("dom_full.txt")
@@ -546,6 +536,13 @@ def render_stored_snapshot(snapshot_path: Path) -> None:
             "--include-secondary",
             "--max-secondary-actions",
             "160",
+            # Zero is the renderer's documented unlimited value. The browser's
+            # captured dom.json is unchanged; these flags prevent this local
+            # model projection from discarding captured content or row tails.
+            "--max-content-blocks",
+            "0",
+            "--max-text-chars",
+            "0",
         ]
     )
 
@@ -562,7 +559,11 @@ def renderer_versions() -> dict[str, dict[str, str]]:
     """Content-addressed renderer version used for model and audit text."""
     return {
         "full": file_version(FULL_RENDERER),
-        "model": file_version(MODEL_RENDERER),
+        "model": {
+            "command": MODEL_DOM_COMMAND,
+            "renderer_name": MODEL_DOM_RENDERER_NAME,
+            "text_renderer": file_version(MODEL_DOM_TEXT_RENDERER),
+        },
     }
 
 
@@ -590,60 +591,72 @@ async def capture_structured_snapshot(
     max_nodes: int,
     max_text_chars: int,
 ) -> dict[str, Any]:
-    """Capture an initial or before-action snapshot through ChromiumRL.
+    """Capture one viewport-scoped structured snapshot through ChromiumRL.
 
-    Offscreen nodes are requested so recorded evidence does not depend only on
-    the current viewport. After actions, captureSnapshotDiff owns both capture
-    and comparison.
+    A task record proves what was visible in that state, so do not expose
+    offscreen page content to the model or verifier. A non-empty document with
+    zero returned nodes is not a usable capture; retry the read-only capture
+    before allowing the caller to materialize a state directory.
     """
     params: dict[str, Any] = {
-        "inViewportOnly": False,
+        "inViewportOnly": True,
         "maxNodes": max_nodes,
         "maxTextChars": max_text_chars,
-        "includeOffscreen": True,
+        "includeOffscreen": False,
     }
-    result = await capture_call(
-        cdp,
-        "ChromiumRL.captureStructuredSnapshot",
-        params,
-    )
-    snapshot = result.get("snapshot")
-    if not isinstance(snapshot, dict):
-        raise RunnerError(f"unexpected ChromiumRL snapshot response: {result}")
-    return snapshot
-
-
-async def capture_snapshot_diff(
-    cdp: CDPClient,
-    before_snapshot: dict[str, Any],
-    *,
-    action_type: str | None,
-    max_nodes: int,
-    max_text_chars: int,
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Capture the after-state and compute its diff inside ChromiumRL."""
-    params: dict[str, Any] = {
-        "beforeSnapshot": before_snapshot,
-        "inViewportOnly": False,
-        "maxNodes": max_nodes,
-        "maxTextChars": max_text_chars,
-        "includeOffscreen": True,
-    }
-    if action_type:
-        params["actionType"] = action_type
-    result = await capture_call(
-        cdp,
-        "ChromiumRL.captureSnapshotDiff",
-        params,
-        attempts=1,
-    )
-    after_snapshot = result.get("afterSnapshot")
-    diff = result.get("diff")
-    if not isinstance(after_snapshot, dict) or not isinstance(diff, dict):
-        raise RunnerError(
-            f"unexpected ChromiumRL captureSnapshotDiff response: {result}"
+    for capture_attempt in range(1, 4):
+        result = await capture_call(
+            cdp,
+            "ChromiumRL.captureStructuredSnapshot",
+            params,
         )
-    return after_snapshot, diff
+        snapshot = result.get("snapshot")
+        if not isinstance(snapshot, dict):
+            raise RunnerError(f"unexpected ChromiumRL snapshot response: {result}")
+
+        stats = snapshot.get("stats")
+        raw_nodes = stats.get("rawNodes") if isinstance(stats, dict) else None
+        returned_nodes = stats.get("returnedNodes") if isinstance(stats, dict) else None
+        if not (
+            isinstance(raw_nodes, int)
+            and raw_nodes > 0
+            and isinstance(returned_nodes, int)
+            and returned_nodes == 0
+        ):
+            return snapshot
+        if capture_attempt < 3:
+            await asyncio.sleep(0.25 * capture_attempt)
+
+    raise RunnerError(
+        "ChromiumRL.captureStructuredSnapshot returned zero nodes for a "
+        "non-empty document after 3 attempts"
+    )
+
+
+
+async def model_dom_from_snapshot(
+    cdp: CDPClient,
+    snapshot: dict[str, Any],
+) -> dict[str, Any]:
+    """Build structured model-facing DOM JSON inside Chromium."""
+    result = await capture_call(cdp, MODEL_DOM_COMMAND, {"snapshot": snapshot})
+    if set(result) != {"modelDOM"}:
+        raise RunnerError(f"unexpected {MODEL_DOM_COMMAND} response: {result}")
+    model_dom = result.get("modelDOM")
+    if not isinstance(model_dom, dict):
+        raise RunnerError(f"unexpected {MODEL_DOM_COMMAND} response: {result}")
+    renderer_name = model_dom.get("rendererName")
+    if renderer_name != MODEL_DOM_RENDERER_NAME:
+        raise RunnerError(
+            f"unexpected {MODEL_DOM_COMMAND} rendererName: "
+            f"{renderer_name!r}"
+        )
+    sections = model_dom.get("sections")
+    if not isinstance(sections, list) or not sections:
+        raise RunnerError(f"unexpected {MODEL_DOM_COMMAND} sections: {sections!r}")
+    return model_dom
+
+
 
 
 async def materialize_bundle(
@@ -652,6 +665,7 @@ async def materialize_bundle(
     snapshot: dict[str, Any],
 ) -> CaptureBundle:
     """Atomically materialize one snapshot, screenshot, and two text views."""
+    model_dom = await model_dom_from_snapshot(cdp, snapshot)
     screenshot_result = await capture_call(
         cdp,
         "Page.captureScreenshot",
@@ -662,19 +676,23 @@ async def materialize_bundle(
         raise RunnerError("Page.captureScreenshot returned no image")
     language_state = await page_language_state(cdp)
 
-    # Do not materialize a partial after/ directory if the CDP transport drops
+    # Do not materialize a partial state directory if the CDP transport drops
     # between snapshot and screenshot capture; the caller can reconnect and retry.
     directory.mkdir(parents=True, exist_ok=False)
     snapshot_path = directory / "dom.json"
     write_json(snapshot_path, {"result": {"snapshot": snapshot}})
     screenshot_path = directory / "screenshot.png"
     screenshot_path.write_bytes(base64.b64decode(screenshot_data))
-    render_stored_snapshot(snapshot_path)
+    render_full_stored_snapshot(snapshot_path)
+    model_dom_path = directory / "dom_model.json"
+    write_json(model_dom_path, {"result": {"modelDOM": model_dom}})
+    render_model_dom_stored_projection(model_dom_path)
     model_path = directory / "dom_model.txt"
+    model_text = model_path.read_text(encoding="utf-8")
     return CaptureBundle(
         snapshot=snapshot,
         snapshot_path=snapshot_path,
-        model_text=model_path.read_text(encoding="utf-8"),
+        model_text=model_text,
         screenshot_path=screenshot_path,
         document_language=language_state.language,
         document_url=language_state.url,
@@ -712,39 +730,6 @@ async def capture_after_action_bundle(
     raise AssertionError("unreachable")
 
 
-async def capture_after_action_diff_bundle(
-    cdp: CDPClient,
-    agent_browser: AgentBrowserClient,
-    directory: Path,
-    before_snapshot: dict[str, Any],
-    *,
-    action_type: str | None,
-    max_nodes: int,
-    max_text_chars: int,
-    attempts: int = 3,
-) -> tuple[CaptureBundle, dict[str, Any], list[dict[str, Any]]]:
-    """Capture and diff after an action, reattaching on transport loss."""
-    reconnects: list[dict[str, Any]] = []
-    for attempt in range(1, max(1, attempts) + 1):
-        try:
-            snapshot, diff = await capture_snapshot_diff(
-                cdp,
-                before_snapshot,
-                action_type=action_type,
-                max_nodes=max_nodes,
-                max_text_chars=max_text_chars,
-            )
-            bundle = await materialize_bundle(cdp, directory, snapshot)
-            return bundle, diff, reconnects
-        except RunnerError as error:
-            if not is_cdp_transport_error(error) or attempt >= max(1, attempts):
-                raise
-            reconnect = await synchronize_recorder_target(cdp, agent_browser)
-            reconnect["capture_attempt"] = attempt
-            reconnects.append(reconnect)
-            await asyncio.sleep(0.75 * attempt)
-    raise AssertionError("unreachable")
-
 
 async def capture_bundle(
     cdp: CDPClient,
@@ -753,7 +738,7 @@ async def capture_bundle(
     max_nodes: int,
     max_text_chars: int,
 ) -> CaptureBundle:
-    """Capture and materialize an ordinary before/initial evidence bundle."""
+    """Capture and materialize one evidence bundle."""
     snapshot = await capture_structured_snapshot(
         cdp,
         max_nodes=max_nodes,
@@ -808,7 +793,7 @@ def attach_agent_browser_observation_error(
     bundle: CaptureBundle,
     error: BaseException,
 ) -> CaptureBundle:
-    """Materialize a failed supplementary observation without losing the DOM diff."""
+    """Materialize a failed supplementary observation alongside the DOM evidence."""
     path = bundle.snapshot_path.with_name("agent_browser.txt")
     action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
     text = f"[agent-browser snapshot unavailable: {type(error).__name__}: {error}]\n"
@@ -958,13 +943,13 @@ async def synchronize_recorder_target(
     cdp: CDPClient,
     agent_browser: AgentBrowserClient,
     *,
-    attempts: int = 3,
+    attempts: int = 6,
 ) -> dict[str, Any]:
     """Keep capture and action sessions on the same active page.
 
     A popup target can appear before Target.getTargets exposes its final URL.
-    Retry the official active-tab lookup and target match briefly, but never
-    fall back to capturing the previously attached page.
+    Give Chromium enough time to retire duplicate transient targets, but never
+    fall back to capturing the previously attached page or choose ambiguously.
     """
     last_error: BaseException | None = None
     for attempt in range(1, max(1, attempts) + 1):
@@ -975,7 +960,7 @@ async def synchronize_recorder_target(
             last_error = error
             if attempt < attempts:
                 await agent_browser.reconnect()
-                await asyncio.sleep(0.25 * attempt)
+                await asyncio.sleep(0.5 * attempt)
         except RunnerError as error:
             last_error = error
             transport_lost = is_cdp_transport_error(error)
@@ -988,7 +973,7 @@ async def synchronize_recorder_target(
                 except (AgentBrowserBaseError, RunnerError, OSError) as reconnect_error:
                     last_error = reconnect_error
             if attempt < attempts:
-                await asyncio.sleep(0.25 * attempt)
+                await asyncio.sleep(0.5 * attempt)
     assert last_error is not None
     raise RunnerError(
         f"could not synchronize recorder to agent-browser active tab after "
@@ -1024,7 +1009,7 @@ class CDPClient:
     def __init__(
         self,
         http_url: str,
-        timeout: float = 30.0,
+        timeout: float = 90.0,
         *,
         keep_existing_tabs: bool = False,
         browser_language: str = "",
@@ -1045,6 +1030,7 @@ class CDPClient:
         self.session_id = ""
         self.target: dict[str, Any] = {}
         self.connection_report: dict[str, Any] = {}
+        self._failure_target_cleanup_attempted = False
 
     async def _enable_attached_target(self) -> dict[str, Any]:
         """Enable required domains and best-effort English locale overrides."""
@@ -1093,8 +1079,47 @@ class CDPClient:
         return self
 
     async def __aexit__(self, exc_type: Any, exc: Any, traceback: Any) -> None:
-        """Always release websocket and HTTP resources on context exit."""
+        """Release resources, closing this run's page only after an exception."""
+        if exc_type is not None:
+            await self.close_owned_target_on_failure()
         await self.close()
+
+    async def close_owned_target_on_failure(self) -> None:
+        """Best-effort close of the page owned by an unsuccessful run."""
+        if self._failure_target_cleanup_attempted:
+            return
+        self._failure_target_cleanup_attempted = True
+        target_id = str(self.target.get("targetId", ""))
+        report: dict[str, Any] = {"target_id": target_id, "status": "skipped"}
+        self.connection_report["failure_target_cleanup"] = report
+        if not target_id:
+            return
+        try:
+            if self.session_id:
+                await self.call(
+                    "Target.detachFromTarget",
+                    {"sessionId": self.session_id},
+                    attached=False,
+                )
+                self.session_id = ""
+            result = await self.call(
+                "Target.closeTarget", {"targetId": target_id}, attached=False
+            )
+            if result.get("success") is False:
+                raise RunnerError("Target.closeTarget returned success=false")
+            for _ in range(8):
+                targets = (await self.call("Target.getTargets", attached=False)).get(
+                    "targetInfos", []
+                )
+                if not any(
+                    str(item.get("targetId", "")) == target_id for item in targets
+                ):
+                    report["status"] = "closed"
+                    return
+                await asyncio.sleep(0.1)
+            raise RunnerError("Target.closeTarget did not remove the owned target")
+        except Exception as error:
+            report.update(status="error", error=f"{type(error).__name__}: {error}")
 
     async def _open_browser_transport(self) -> None:
         """Open the browser-level CDP websocket used to enumerate/attach targets."""
@@ -1323,6 +1348,16 @@ class CDPClient:
                 if str(item.get("title", "")).strip() == active_page.title.strip()
             ]
             if title_matches:
+                candidates = title_matches
+        if not candidates and active_page.title:
+            # TargetInfo can transiently clear a page URL during a navigation.
+            # An exact title is safe only when it identifies one page target.
+            title_matches = [
+                item
+                for item in pages
+                if str(item.get("title", "")).strip() == active_page.title.strip()
+            ]
+            if len(title_matches) == 1:
                 candidates = title_matches
         if not candidates:
             raise RunnerError(
