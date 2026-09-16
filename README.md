@@ -30,3 +30,7 @@ Our initial audit measures **evidence loss**: whether the recording preserves th
 We manually audit missing evidence separately from verifier reasoning errors. These results measure evidence preservation across the audited tasks; they do not represent an agent success rate. 
 Task based results are stored in:  
 [https://github.com/wootzapp/w8-domdiff-bench/blob/main/results.md](https://github.com/wootzapp/w8-domdiff-bench/blob/main/results.md)
+
+The suite gives researchers a shared record for running browser tasks, inspecting agent behavior through DOMDiff based verifier. 
+
+Explore the [task dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks), [and recording harness](https://github.com/wootzapp/wootzapp_web_browser-/tree/model-task-recorder). 
