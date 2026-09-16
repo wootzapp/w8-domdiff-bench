@@ -21,8 +21,6 @@ Our browser infrastructure evolved from detailed DOM capture into **DOM-diff Opt
 | **Evidence-preservation refinements** | Improved child-text selection, retained repeated facts belonging to different results, preserved complete author labels and selected-control states, and corrected visibility handling after scrolling. | Addressed omissions in capture and formatting that could hide useful evidence. |
 | **Subtree-text limit removal** | Removed the subtree-text limit that truncated text within nested page elements. | Further improved evidence preservation; reported development measurements showed DOM evidence loss dropping from **26% to 0.4%**. |
 
-The **26% → 0.4%** figures describe development measurements. The final 100-task rerun below reports **2 missing criteria out of 639 (0.3%)**; these are presented separately because the development measurement's task and criterion counts are not specified.
-
 During a task, the harness supplies the model with DOM-diff Optimized, references to interactive controls, and context from previous actions. The model selects an action, the harness validates it, and `agent-browser` executes it in the Wootz browser. The resulting page becomes the next recorded state. Screenshots are saved alongside DOM evidence for later evaluation; the agent makes its decisions using text observations.
 
 For verification, the recorded attempt passes through the screenshot baseline and our DOM-based verifier. Each identifies the states relevant to the shared rubric, analyzes the selected evidence, and scores the trajectory. Because both evaluate the same attempt, differences can be investigated against a common action history and final answer.
