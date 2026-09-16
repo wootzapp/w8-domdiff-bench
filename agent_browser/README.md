@@ -106,9 +106,6 @@ Two exclusions are deliberate and should stay:
 
 - `hover`+`scroll` for ref-targeted scrolling (above). 0.27.3 offers no
   single-command ref-based wheel.
-- `back` is executable and recorded but has no `WEBSURFER_ACTION_MAP` entry, so a
-  run containing it fails export. Pending confirmation of the accepted action
-  string from the verifier.
 - Parallel sessions can contend for tabs in 0.27.3; `active_page()` requires
   exactly one active page tab and fails loudly otherwise. Not observed in any
   recording to date. Fixed upstream in 0.34.0 via `--pin-tab`; upgrading would

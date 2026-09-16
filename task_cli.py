@@ -41,7 +41,7 @@ RUNTIME_ROOT = ROOT / ".runtime"
 ACTIVE_RUN_PATH = RUNTIME_ROOT / "active-run.json"
 TRANSITION_LOCK_PATH = RUNTIME_ROOT / "task-transition.lock"
 DEFAULT_STOP_TIMEOUT_SECONDS = 15.0
-PROFILE_TASK_COUNT_PATH = "/home/wootz/.task-recorder-dom-diff-task-count"
+DEFAULT_PROFILE_TASK_COUNT_PATH = "/home/wootz/.task-recorder-dom-diff-task-count"
 # This grace period lets the old runner flush its manifest before SIGKILL; the
 # CLI exposes an override for unusually slow filesystems.
 
@@ -219,6 +219,10 @@ def restart_browser_service(env_file: Path) -> None:
 
 def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
     """Atomically claim one task slot for this container-lifetime profile."""
+    profile_task_count_path = os.environ.get(
+        "BROWSER_PROFILE_TASK_COUNT_PATH",
+        DEFAULT_PROFILE_TASK_COUNT_PATH,
+    )
     inspected = subprocess.run(
         ["docker", "inspect", container_name],
         text=True,
@@ -238,8 +242,11 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
         raise RunnerError("docker inspect returned invalid container provenance") from error
 
     counted = subprocess.run(
-        ["docker", "exec", container_name, "sh", "-c",
-         f"test -f {PROFILE_TASK_COUNT_PATH} && cat {PROFILE_TASK_COUNT_PATH} || printf 0"],
+        [
+            "docker", "exec", container_name, "sh", "-c",
+            'path="$1"; test -f "$path" && cat "$path" || printf 0',
+            "task-recorder-profile-counter", profile_task_count_path,
+        ],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -261,7 +268,7 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
             "docker", "exec", container_name, "sh", "-c",
             'set -eu; path="$1"; value="$2"; umask 077; '
             'printf "%s\n" "$value" > "${path}.tmp"; mv "${path}.tmp" "$path"',
-            "task-recorder-profile-counter", PROFILE_TASK_COUNT_PATH, str(next_count),
+            "task-recorder-profile-counter", profile_task_count_path, str(next_count),
         ],
         text=True,
         stdout=subprocess.PIPE,
