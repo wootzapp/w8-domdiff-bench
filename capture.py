@@ -36,7 +36,6 @@ from recorder_support import (
 
 ROOT = Path(__file__).resolve().parent
 FULL_RENDERER = ROOT / "scripts" / "render_chromiumrl_snapshot_full.py"
-MODEL_RENDERER = ROOT / "scripts" / "render_chromiumrl_snapshot_model.py"
 MODEL_DOM_TEXT_RENDERER = ROOT / "scripts" / "render_chromiumrl_model_dom.py"
 MODEL_DOM_COMMAND = "ChromiumRL.getModelDOM"
 MODEL_DOM_RENDERER_NAME = "chromiumrl-model-dom"
@@ -202,7 +201,11 @@ def action_progress(
         "agent_browser_observation_changed": observation_changed,
         "screenshot_changed": screenshot_changed,
     }
-    result["made_progress"] = any(result.values())
+    # Keep the persisted progress schema stable while recognizing changes in
+    # the same model-DOM evidence that drives the next decision.
+    result["made_progress"] = before.model_text != after.model_text or any(
+        result.values()
+    )
     return result
 
 
@@ -513,38 +516,14 @@ def render_model_dom_stored_projection(model_dom_path: Path) -> None:
 
 
 def render_stored_snapshot(snapshot_path: Path) -> None:
-    """Regenerate both text projections from one stored structured snapshot."""
-    full_path = snapshot_path.with_name("dom_full.txt")
-    model_path = snapshot_path.with_name("dom_model.txt")
-    run_renderer(
-        [
-            str(FULL_RENDERER),
-            str(snapshot_path),
-            "--output",
-            str(full_path),
-            "--include-action-index",
-            "--include-child-refs",
-        ]
-    )
-    run_renderer(
-        [
-            str(MODEL_RENDERER),
-            str(snapshot_path),
-            "--output",
-            str(model_path),
-            "--include-offscreen-content",
-            "--include-secondary",
-            "--max-secondary-actions",
-            "160",
-            # Zero is the renderer's documented unlimited value. The browser's
-            # captured dom.json is unchanged; these flags prevent this local
-            # model projection from discarding captured content or row tails.
-            "--max-content-blocks",
-            "0",
-            "--max-text-chars",
-            "0",
-        ]
-    )
+    """Regenerate projections from their matching stored JSON artifacts."""
+    model_dom_path = snapshot_path.with_name("dom_model.json")
+    if not model_dom_path.exists():
+        raise RunnerError(
+            f"required browser-produced model DOM is missing: {model_dom_path}"
+        )
+    render_full_stored_snapshot(snapshot_path)
+    render_model_dom_stored_projection(model_dom_path)
 
 
 def file_version(path: Path) -> dict[str, str]:
