@@ -1,0 +1,47 @@
+[
+  {
+    "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+    "confirmed_task": "On the USGS Search Earthquake Catalog page, set a custom UTC date-and-time range covering the preceding 24 hours, select magnitude 4.5 or greater, keep the geographic region worldwide, and order results by magnitude from largest to smallest. Report the first three results with magnitude, place, and UTC event time.\n\nStopping condition: Stop after the filters and ordering have been applied and up to three highest-magnitude matching earthquakes have been recorded.\n\nConstraints:\n- Do not enable alerts or notifications.\n- Use UTC for both the query range and reported event times.\n- If fewer than three earthquakes match, report every available result rather than inventing missing entries.\n- For equal magnitudes, preserve the order displayed by USGS.",
+    "website": "https://earthquake.usgs.gov/earthquakes/search/",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Apply correct USGS query filters (UTC range, worldwide, magnitude threshold)",
+          "description": "On the USGS Search Earthquake Catalog page, set a custom date-and-time range intended to cover the preceding 24 hours in UTC (or, if the UI does not provide an explicit UTC control/label, use the site’s default time basis and clearly note what the site indicates). Keep the geographic region worldwide (do not apply limiting map/region filters) and set minimum magnitude to 4.5 or greater. Full credit if these filters are correctly applied OR if the agent is blocked by site errors/CAPTCHA/outage after making a reasonable attempt and explicitly reports the issue. Partial credit if one element is slightly wrong but the overall intent is followed (e.g., correct 24h range but unclear UTC basis, or min magnitude slightly off). No credit if filters are largely not applied or a clear geographic restriction is inadvertently used.",
+          "max_points": 5,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Order results by magnitude (largest to smallest)",
+          "description": "Ensure results are sorted by magnitude descending (largest to smallest) as displayed by USGS. Full credit if sorting is correctly set/apparent OR if the interface does not allow changing sort order and the agent clearly states this and uses the best available method (e.g., manual interpretation from displayed magnitudes). Partial credit if sorting is attempted but not clearly applied/verified. No credit if results are left sorted by a different key when magnitude sorting is available.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report top three results with required fields (preserve USGS order for ties, UTC times)",
+          "description": "Record and report up to the first three earthquakes after filters and magnitude-desc ordering are applied, including magnitude, place, and event time in UTC. For equal magnitudes, preserve the order displayed by USGS. Full credit if all reported entries match the displayed list and include all required fields; if the page only displays times in a non-UTC format or does not clearly label the timezone, full credit if the agent reports exactly what USGS displays and explicitly notes the timezone ambiguity/limitation. Partial credit if one field is missing for one entry or if one entry is incorrect. No credit if entries are fabricated or not traceable to the filtered/sorted list.",
+          "max_points": 5,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Handle fewer-than-three results correctly",
+          "description": "If fewer than three earthquakes match the criteria, report every available result without inventing additional entries. Full credit if the agent reports all available matches or explicitly states there are none. Partial credit if the agent reports fewer than are available. No credit if the agent invents entries to reach three.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Respect constraints: no alerts/notifications and proper UTC handling disclosure",
+          "description": "Do not enable alerts or notifications during the process. Full credit if no alerts/notifications are enabled and the agent does not claim to have enabled them. Also, the agent should clearly indicate UTC usage for reported event times; if UTC cannot be confirmed from the UI, the agent must explicitly disclose that limitation rather than implying UTC. Partial credit if UTC is not clearly labeled but no alerts are enabled and the agent does not misrepresent timezone. No credit if alerts/notifications are enabled or if the agent falsely claims UTC when the page indicates otherwise.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

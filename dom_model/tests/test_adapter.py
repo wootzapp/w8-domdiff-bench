@@ -1,7 +1,6 @@
 """Tests for ``webtailbench.shared_data_adapter.create_datapoint``.
 
-Builds a minimal fara ``Trajectory`` on disk (action log + fake
-screenshots + FinalAnswer JSON) and verifies the DataPoint it produces
+Builds a minimal trajectory on disk (action log + FinalAnswer JSON) and verifies the DataPoint it produces
 matches what ``MMRubricAgent._extract_input_from_datapoint`` expects.
 """
 
@@ -35,19 +34,11 @@ def _make_trajectory_dir(root: Path, n_actions: int = 2) -> Path:
         )
     log.write_text("\n".join(json.dumps(e) for e in events) + "\n")
 
-    # Fake screenshots on disk — content not validated by the adapter.
-    screenshots = []
-    for i in range(n_actions):
-        p = d / f"screenshot_{i}.png"
-        p.write_bytes(b"\x89PNG\r\n\x1a\n")  # PNG signature, harmless for tests
-        screenshots.append(p.name)
-
     # FinalAnswer JSON — follows fara's FinalAnswer schema.
     answer = {
         "final_answer": "done",
         "env_state_json": "{}",
         "env_state_raw": "",
-        "screenshots": screenshots,
         "is_aborted": False,
         "is_rel_paths": True,
         "token_usage": {},
@@ -56,7 +47,7 @@ def _make_trajectory_dir(root: Path, n_actions: int = 2) -> Path:
     return d
 
 
-def test_create_datapoint_normalizes_screenshots_and_actions(tmp_path):
+def test_create_datapoint_normalizes_actions(tmp_path):
     from dom_model.adapter import create_datapoint
     from dom_model.trajectory import Trajectory
 
@@ -78,10 +69,10 @@ def test_create_datapoint_normalizes_screenshots_and_actions(tmp_path):
     assert len(summaries) == 3
     # Last action must have been normalized stop_execution → terminate.
     assert summaries[-1].action_name == "terminate"
-    # DOM-model evidence is loaded separately; the DataPoint carries no screenshots.
+    # DOM-model evidence is loaded separately from the action data point.
     for i, s in enumerate(summaries, start=1):
         assert s.index == i
-        assert s.screenshot_path == ""
+        assert s.evidence_path == ""
 
 
 def test_create_datapoint_handles_missing_init_url(tmp_path):

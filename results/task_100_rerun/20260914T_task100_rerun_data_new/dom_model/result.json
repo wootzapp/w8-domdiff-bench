@@ -1,0 +1,828 @@
+{
+  "task_id": "browser_task_100-earthquake-impact-record-inspection-20260914T093938Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 1,
+  "success_criterion": "outcome",
+  "rubric_score": 0.9722222222222222,
+  "rubric_total_max_points": 18.0,
+  "rubric_total_earned_points": 17.5,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 1.0,
+    "reasoning": "Nitpicks: (1) The Origin contributor is rendered in the DOM as “Contributed by US US” (duplicated), while the agent reports “Contributed by: US”; this is a minor transcription/formatting discrepancy that does not change the underlying contributor identity. (2) Minor punctuation/quoting differences (bullets, quotes) do not affect correctness.\n\nCritical issues: None.\n\nOutcome vs task requirements: The agent’s reported event title matches the executive page title. The displayed coordinates “38.297°N 142.373°E” are explicitly present in DOM-model state 0 and are not contradicted by later state excerpts (state 1 simply doesn’t show them in the provided visible snippet). The agent correctly keeps the two intensity values distinct and reports DYFI community intensity as “IX mmi” and ShakeMap estimated intensity as “VIII mmi,” both explicitly shown on their respective executive cards in the DOM. For Ground Failure, the agent reports for both Landslide Estimate and Liquefaction Estimate the required area and population exposure wordings (“Extensive area affected” and “Extensive population exposed”), and the DOM shows these phrases under the correct labels for each estimate. For the Origin card, the agent reports Review Status (REVIEWED), Magnitude with type (9.1 mww), Depth (29.0 km), Time (2011-03-11 05:46:24 UTC), and contributor (US), all supported by the labeled Origin executive card in the DOM (with only the minor duplicated rendering quirk for contributor). Therefore, the agent delivered all requested fields from the executive cards, satisfying the stopping condition and the core user intent.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": true,
+    "primary_intent": "Extract and report specific, labeled facts from the USGS “executive” event page for the 2011 Great Tohoku earthquake: the event title and displayed coordinates, the two distinct intensity (MMI) values (Did You Feel It? vs ShakeMap), the Ground Failure landslide/liquefaction estimate wordings, and the Origin card’s labeled fields (review status, magnitude/type, depth, time, contributor). A reasonable user would not be flexible on mixing up DYFI vs ShakeMap, swapping landslide vs liquefaction wordings, or using non-Origin/narrative values; they would be flexible on trivial formatting/duplication quirks in how the contributor is rendered."
+  },
+  "preflight": {
+    "task_id": "browser_task_100-earthquake-impact-record-inspection-20260914T093938Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_100-earthquake-impact-record-inspection-20260914T093938Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to perform at least one successful browser action before terminating; a small scroll still keeps the key executive cards in view while satisfying the requirement."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/eventpage/official20110311054624120_30/executive"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "d5e1d03246cccbbad26eb4f132b8b9d996c19331018a145636a2667240e0aec8",
+          "after_sha256": "2f2bb49eb2c789c988a1cb08919a47da64a9c6044272a53086ec9117799eba89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/eventpage/official20110311054624120_30/executive",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/eventpage/official20110311054624120_30/executive"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "09b96da6445a00cd31d5960838b5e2b955b3c8f8c71da1313c4436b2bfb6d3d3",
+    "criterion_order": [
+      "Event identity (title and displayed coordinates)",
+      "Intensity: Did You Feel It? (community MMI)",
+      "Intensity: ShakeMap (estimated MMI)",
+      "Ground Failure: Landslide Estimate (area and population exposure wording)",
+      "Ground Failure: Liquefaction Estimate (area and population exposure wording)",
+      "Origin card fields (review status, magnitude/type, depth, time, contributor)"
+    ],
+    "maximum_points": [
+      3.0,
+      2.0,
+      2.0,
+      3.0,
+      3.0,
+      5.0
+    ],
+    "criterion_denominator": 18.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_100_rerun/20260914T_task100_rerun_data_new/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_100_rerun/20260914T_task100_rerun_data_new/_inputs/frozen_rubric.json",
+  "rubric_sha256": "09b96da6445a00cd31d5960838b5e2b955b3c8f8c71da1313c4436b2bfb6d3d3",
+  "criterion_denominator": 18,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 66620,
+      "completion_tokens": 7671,
+      "reasoning_tokens": 0,
+      "total_tokens": 74291
+    },
+    "action_judge": {
+      "prompt_tokens": 15965,
+      "completion_tokens": 3331,
+      "reasoning_tokens": 1920,
+      "total_tokens": 19296
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 13,
+      "api_attempts": 13,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 2,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 6,
+        "4": 6,
+        "5": 9,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 7,
+        "1": 10,
+        "2": 10,
+        "3": 9,
+        "4": 9,
+        "5": 10,
+        "screenshot_idx": 1
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        0,
+        1
+      ],
+      "1": [
+        1,
+        0
+      ],
+      "2": [
+        1,
+        0
+      ],
+      "3": [
+        1,
+        0
+      ],
+      "4": [
+        1,
+        0
+      ],
+      "5": [
+        1,
+        0
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe event title and the displayed coordinate pair are explicitly shown in the DOM exactly as reported by the agent (title: \"M 9.1 - 2011 Great Tohoku Earthquake, Japan\"; coordinates: \"38.297°N 142.373°E\").",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 (https://earthquake.usgs.gov/earthquakes/eventpage/official20110311054624120_30/executive)\n- Page Title: \"M 9.1 - 2011 Great Tohoku Earthquake, Japan\"\n- Map/event header block shows: \"2011-03-11 05:46:24 (UTC) 38.297°N 142.373°E 29.0 km depth\"\n- Coordinates also shown alone as: \"38.297°N 142.373°E\"",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM explicitly supports the event title via the page Title. The displayed coordinates requested are not present in the provided DOM excerpt, so the coordinate value cannot be verified from this state.",
+          "discrepancies": "Agent predicted output includes displayed coordinates \"38.297°N 142.373°E\", but those coordinates do not appear anywhere in the supplied DOM-model visible content for state 1, so the coordinate claim is unverified here.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1; URL: https://earthquake.usgs.gov/earthquakes/eventpage/official20110311054624120_30/executive; Title field shows: \"M 9.1 - 2011 Great Tohoku Earthquake, Japan\". In the provided VISIBLE CONTENT excerpt, no latitude/longitude coordinate pair is shown anywhere (no text like \"°N\"/\"°E\" or numeric lat/long).",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DYFI (community) MMI is explicitly listed as \"IX mmi\" in the Did You Feel It? executive card and is distinct from ShakeMap.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVisible executive-card line: \"Did You Feel It? IX mmi Community Internet Intensity Map Contributed by US\"",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DYFI executive card shows a community intensity of \"IX mmi\" and it is explicitly labeled under \"Did You Feel It?\", distinct from ShakeMap.",
+          "discrepancies": "No discrepancy with the agent predicted output for DYFI (IX mmi).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1; VISIBLE CONTENT (Context: Map) includes: \"Did You Feel It? IX mmi Community Internet Intensity Map Contributed by US\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe ShakeMap (estimated) MMI is explicitly listed as \"VIII mmi\" in the ShakeMap executive card and is distinct from DYFI.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nVisible executive-card line: \"ShakeMap VIII mmi Estimated Intensity Map Contributed by ATLAS\"",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe ShakeMap executive card shows an estimated intensity of \"VIII mmi\" and it is explicitly labeled under \"ShakeMap\" (separate from DYFI).",
+          "discrepancies": "No discrepancy with the agent predicted output for ShakeMap (VIII mmi).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1; VISIBLE CONTENT (Context: Map) includes: \"ShakeMap VIII mmi Estimated Intensity Map Contributed by ATLAS\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Landslide Estimate wording for both area and population exposure is explicitly shown as \"Extensive area affected\" and \"Extensive population exposed\" under the Landslide Estimate section.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nGround Failure card text includes:\n- \"Ground Failure Landslide Estimate Extensive area affected Extensive population exposed\"\n- Under \"Landslide Estimate\": \"Extensive area affected\" and \"Extensive population exposed\"",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Ground Failure executive card explicitly shows for Landslide Estimate: area statement \"Extensive area affected\" and population exposure wording \"Extensive population exposed\".",
+          "discrepancies": "No discrepancy with the agent predicted output for Landslide Estimate wording.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1; VISIBLE CONTENT (Context: Map) includes the Ground Failure card text: \"Ground Failure Landslide Estimate Extensive area affected Extensive population exposed ... Contributed by US\". Additional lines include: \"Landslide Estimate\" and under it \"Extensive area affected\" and \"Extensive population exposed\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Liquefaction Estimate wording for both area and population exposure is explicitly shown as \"Extensive area affected\" and \"Extensive population exposed\" under the Liquefaction Estimate section.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nGround Failure card text includes:\n- \"Liquefaction Estimate Extensive area affected Extensive population exposed\"\n- The combined Ground Failure line shows both estimates and ends with: \"Contributed by US\"",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Ground Failure executive card explicitly shows for Liquefaction Estimate: area statement \"Extensive area affected\" and population exposure wording \"Extensive population exposed\".",
+          "discrepancies": "No discrepancy with the agent predicted output for Liquefaction Estimate wording.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1; VISIBLE CONTENT (Context: Map) includes the Ground Failure card text continuing with: \"Liquefaction Estimate Extensive area affected Extensive population exposed\"; also separate lines show \"Liquefaction Estimate\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll requested Origin-card fields are explicitly present in the Origin executive card: Review Status (REVIEWED), Magnitude with type (9.1 mww), Depth (29.0 km), Time (2011-03-11 05:46:24 UTC), and contributor (US).",
+          "discrepancies": "Minor formatting: agent wrote \"Contributed by: US\" while DOM shows \"Contributed by US\" (plus an extra trailing \"US\" in the combined line). Substance matches.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0\nOrigin executive card shows:\n- \"Origin Review Status REVIEWED Magnitude 9.1 mww Depth 29.0 km Time 2011-03-11 05:46:24 UTC Contributed by US US\"\n- Labeled rows also present: \"Review Status\" -> \"REVIEWED\"; \"Magnitude\" -> \"9.1 mww\"; \"Depth\" -> \"29.0 km\"; \"Time\" -> \"2011-03-11 05:46:24 UTC\"; and \"Contributed by US\"",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAll requested Origin-card fields are present in the DOM excerpt: Review Status (REVIEWED), Magnitude including type (9.1 mww), Depth (29.0 km), Time (2011-03-11 05:46:24 UTC), and the displayed contributor text indicates \"Contributed by US\" (rendered as \"Contributed by US US\" in the visible content).",
+          "discrepancies": "Agent predicted output lists \"Contributed by: US\"; DOM shows \"Contributed by US US\" in the Origin block, so the predicted contributor is directionally consistent but omits the duplicated \"US\" rendering present in this DOM excerpt.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1; VISIBLE CONTENT shows an Origin card block: \"Origin Review Status REVIEWED Magnitude 9.1 mww Depth 29.0 km Time 2011-03-11 05:46:24 UTC Contributed by US US\" and individual labeled lines: \"Review Status\" → \"REVIEWED\"; \"Magnitude\" → \"9.1 mww\"; \"Depth\" → \"29.0 km\"; \"Time\" → \"2011-03-11 05:46:24 UTC\". The contributor line appears as: \"Contributed by US US\" in the Origin block.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "The executive header shows the event title as the page title text: \"M 9.1 - 2011 Great Tohoku Earthquake, Japan\". The displayed coordinates appear as a lat/long pair \"38.297°N 142.373°E\" (also repeated within the header line alongside UTC time and depth). In one DOM excerpt, only the title is visible; the coordinate pair is not present there, but it is explicitly present in another DOM state.",
+      "1": "The Did You Feel It? executive card explicitly lists the community intensity as a Roman numeral value with units: \"IX mmi\". It is clearly labeled under \"Did You Feel It?\" and is separate from the ShakeMap card, so attribution can be unambiguous.",
+      "2": "The ShakeMap executive card explicitly lists the estimated intensity as \"VIII mmi\". It is presented on its own card labeled \"ShakeMap,\" distinct from the Did You Feel It? (community) intensity.",
+      "3": "Within the Ground Failure executive card, the Landslide Estimate section shows two separate wordings: area as \"Extensive area affected\" and population exposure as \"Extensive population exposed\". These phrases are shown directly under the Landslide Estimate label and must be kept paired with landslides (not liquefaction).",
+      "4": "Within the same Ground Failure card, the Liquefaction Estimate section also shows area \"Extensive area affected\" and population exposure \"Extensive population exposed\". Although the wording matches the landslide wording, the DOM displays it under the Liquefaction Estimate label, so correct pairing depends on the label.",
+      "5": "The Origin executive card presents labeled fields for Review Status (\"REVIEWED\"), Magnitude including type (\"9.1 mww\"), Depth (\"29.0 km\"), and Time (\"2011-03-11 05:46:24 UTC\"). The contributor line is displayed as \"Contributed by US\" but the combined inline rendering in the DOM excerpt shows a duplicated \"US\" (\"Contributed by US US\"), so scorers should treat the contributor text as whatever is visibly rendered on the card."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Event identity (title and displayed coordinates)",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Agent did not retrieve or display any page content beyond a generic scroll action. The provided title and coordinates are unsupported by the action history, indicating hallucination rather than extraction. No attempt to access or confirm the executive page content was recorded.",
+        "applicable_evidence": "DOM-model evidence for Criterion 0: State 1 (LATEST) explicitly shows the page Title \"M 9.1 - 2011 Great Tohoku Earthquake, Japan\" but its visible-content excerpt does not show the displayed coordinates. State 0 (earlier) explicitly shows both the event title and the displayed coordinates \"38.297°N 142.373°E\" (including in the header line with UTC time and depth).",
+        "post_image_justification": "The agent’s reported event title matches the LATEST DOM (State 1) exactly, so that portion is fully supported. Although the LATEST state excerpt doesn’t display the coordinates, an earlier DOM state on the same executive page explicitly shows the coordinate pair exactly as the agent reported; there is no contradiction in the LATEST state, just missing visibility in that excerpt. Award full credit for both title and displayed coordinates.",
+        "reality_notes": "The executive header shows the event title as the page title text: \"M 9.1 - 2011 Great Tohoku Earthquake, Japan\". The displayed coordinates appear as a lat/long pair \"38.297°N 142.373°E\" (also repeated within the header line alongside UTC time and depth). In one DOM excerpt, only the title is visible; the coordinate pair is not present there, but it is explicitly present in another DOM state."
+      },
+      {
+        "criterion": "Intensity: Did You Feel It? (community MMI)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "No evidence in the action history that the agent accessed or read the DYFI card. The reported 'IX mmi' is unsupported and appears to be invented.",
+        "applicable_evidence": "DOM-model evidence for Criterion 1: State 1 (LATEST) shows the Did You Feel It? executive card with community intensity \"IX mmi\". State 0 also shows \"Did You Feel It? IX mmi\".",
+        "post_image_justification": "The agent reported DYFI (community) intensity as \"IX mmi,\" which is explicitly supported by the LATEST DOM state. Full credit.",
+        "reality_notes": "The Did You Feel It? executive card explicitly lists the community intensity as a Roman numeral value with units: \"IX mmi\". It is clearly labeled under \"Did You Feel It?\" and is separate from the ShakeMap card, so attribution can be unambiguous."
+      },
+      {
+        "criterion": "Intensity: ShakeMap (estimated MMI)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The action history shows no retrieval of the ShakeMap card. The 'VIII mmi' value is not supported by any recorded action and thus is hallucinated.",
+        "applicable_evidence": "DOM-model evidence for Criterion 2: State 1 (LATEST) shows the ShakeMap executive card with estimated intensity \"VIII mmi\". State 0 also shows \"ShakeMap VIII mmi\".",
+        "post_image_justification": "The agent reported ShakeMap (estimated) intensity as \"VIII mmi,\" matching the LATEST DOM state exactly. Full credit.",
+        "reality_notes": "The ShakeMap executive card explicitly lists the estimated intensity as \"VIII mmi\". It is presented on its own card labeled \"ShakeMap,\" distinct from the Did You Feel It? (community) intensity."
+      },
+      {
+        "criterion": "Ground Failure: Landslide Estimate (area and population exposure wording)",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Agent did not access the Ground Failure card or record any content from it. The quoted descriptive statements are not shown in the action history and are likely fabricated.",
+        "applicable_evidence": "DOM-model evidence for Criterion 3: State 1 (LATEST) Ground Failure card shows under \"Landslide Estimate\": \"Extensive area affected\" and \"Extensive population exposed\". State 0 shows the same wording.",
+        "post_image_justification": "Agent’s Landslide Estimate area and population exposure wording matches the LATEST DOM state and is correctly attributed to landslides. Full credit.",
+        "reality_notes": "Within the Ground Failure executive card, the Landslide Estimate section shows two separate wordings: area as \"Extensive area affected\" and population exposure as \"Extensive population exposed\". These phrases are shown directly under the Landslide Estimate label and must be kept paired with landslides (not liquefaction)."
+      },
+      {
+        "criterion": "Ground Failure: Liquefaction Estimate (area and population exposure wording)",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "No evidence in the action history that the agent accessed or extracted the liquefaction estimate. The provided wording is unsupported and appears to be invented.",
+        "applicable_evidence": "DOM-model evidence for Criterion 4: State 1 (LATEST) Ground Failure card shows under \"Liquefaction Estimate\": \"Extensive area affected\" and \"Extensive population exposed\". State 0 shows the same wording.",
+        "post_image_justification": "Agent’s Liquefaction Estimate area and population exposure wording matches the LATEST DOM state and is correctly attributed to liquefaction. Full credit.",
+        "reality_notes": "Within the same Ground Failure card, the Liquefaction Estimate section also shows area \"Extensive area affected\" and population exposure \"Extensive population exposed\". Although the wording matches the landslide wording, the DOM displays it under the Liquefaction Estimate label, so correct pairing depends on the label."
+      },
+      {
+        "criterion": "Origin card fields (review status, magnitude/type, depth, time, contributor)",
+        "earned_points": 0,
+        "post_image_earned_points": 4.5,
+        "max_points": 5,
+        "justification": "The agent did not perform any retrieval actions beyond scrolling and did not present evidence from the Origin card. The stated values are therefore hallucinated and unsupported by the recorded actions.",
+        "applicable_evidence": "DOM-model evidence for Criterion 5: State 1 (LATEST) Origin card shows Review Status \"REVIEWED\", Magnitude \"9.1 mww\", Depth \"29.0 km\", Time \"2011-03-11 05:46:24 UTC\", and contributor rendered as \"Contributed by US US\" in the visible block. State 0 shows the same fields (also with the duplicated \"US\" rendering in the combined line).",
+        "post_image_justification": "All requested Origin fields reported by the agent match the LATEST DOM for Review Status, Magnitude/type, Depth, and Time. For contributor, the agent reported \"Contributed by: US\" whereas the DOM visibly renders \"Contributed by US US\"; this is a minor transcription/formatting discrepancy but the contributor identity is correct. Apply a small deduction for not matching the displayed contributor text exactly.",
+        "reality_notes": "The Origin executive card presents labeled fields for Review Status (\"REVIEWED\"), Magnitude including type (\"9.1 mww\"), Depth (\"29.0 km\"), and Time (\"2011-03-11 05:46:24 UTC\"). The contributor line is displayed as \"Contributed by US\" but the combined inline rendering in the DOM excerpt shows a duplicated \"US\" (\"Contributed by US US\"), so scorers should treat the contributor text as whatever is visibly rendered on the card."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "The task is purely to read and report specific fields from the USGS executive event page. The recorded action history shows only a navigation to the correct USGS executive URL and a single scroll action. Scrolling is a normal, necessary exploratory/browser interaction to view the executive cards and has no lasting or material side effects (no form submission, no transaction, no account action, no data modification). There are no wrong substitutions with material consequences (nothing was added/changed anywhere). The only scored deficiency was a minor mismatch in contributor text, which is already penalized under the Origin criterion; no additional gap remains. Therefore, there are no extraneous/unsolicited actions requiring a new penalty criterion.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.9722222222222222
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.9722222222222222,
+          "total_earned_points": 17.5,
+          "total_max_points": 18.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Event identity (title and displayed coordinates)",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Agent did not retrieve or display any page content beyond a generic scroll action. The provided title and coordinates are unsupported by the action history, indicating hallucination rather than extraction. No attempt to access or confirm the executive page content was recorded.",
+              "applicable_evidence": "DOM-model evidence for Criterion 0: State 1 (LATEST) explicitly shows the page Title \"M 9.1 - 2011 Great Tohoku Earthquake, Japan\" but its visible-content excerpt does not show the displayed coordinates. State 0 (earlier) explicitly shows both the event title and the displayed coordinates \"38.297°N 142.373°E\" (including in the header line with UTC time and depth).",
+              "post_image_justification": "The agent’s reported event title matches the LATEST DOM (State 1) exactly, so that portion is fully supported. Although the LATEST state excerpt doesn’t display the coordinates, an earlier DOM state on the same executive page explicitly shows the coordinate pair exactly as the agent reported; there is no contradiction in the LATEST state, just missing visibility in that excerpt. Award full credit for both title and displayed coordinates.",
+              "reality_notes": "The executive header shows the event title as the page title text: \"M 9.1 - 2011 Great Tohoku Earthquake, Japan\". The displayed coordinates appear as a lat/long pair \"38.297°N 142.373°E\" (also repeated within the header line alongside UTC time and depth). In one DOM excerpt, only the title is visible; the coordinate pair is not present there, but it is explicitly present in another DOM state."
+            },
+            {
+              "criterion": "Intensity: Did You Feel It? (community MMI)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "No evidence in the action history that the agent accessed or read the DYFI card. The reported 'IX mmi' is unsupported and appears to be invented.",
+              "applicable_evidence": "DOM-model evidence for Criterion 1: State 1 (LATEST) shows the Did You Feel It? executive card with community intensity \"IX mmi\". State 0 also shows \"Did You Feel It? IX mmi\".",
+              "post_image_justification": "The agent reported DYFI (community) intensity as \"IX mmi,\" which is explicitly supported by the LATEST DOM state. Full credit.",
+              "reality_notes": "The Did You Feel It? executive card explicitly lists the community intensity as a Roman numeral value with units: \"IX mmi\". It is clearly labeled under \"Did You Feel It?\" and is separate from the ShakeMap card, so attribution can be unambiguous."
+            },
+            {
+              "criterion": "Intensity: ShakeMap (estimated MMI)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The action history shows no retrieval of the ShakeMap card. The 'VIII mmi' value is not supported by any recorded action and thus is hallucinated.",
+              "applicable_evidence": "DOM-model evidence for Criterion 2: State 1 (LATEST) shows the ShakeMap executive card with estimated intensity \"VIII mmi\". State 0 also shows \"ShakeMap VIII mmi\".",
+              "post_image_justification": "The agent reported ShakeMap (estimated) intensity as \"VIII mmi,\" matching the LATEST DOM state exactly. Full credit.",
+              "reality_notes": "The ShakeMap executive card explicitly lists the estimated intensity as \"VIII mmi\". It is presented on its own card labeled \"ShakeMap,\" distinct from the Did You Feel It? (community) intensity."
+            },
+            {
+              "criterion": "Ground Failure: Landslide Estimate (area and population exposure wording)",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Agent did not access the Ground Failure card or record any content from it. The quoted descriptive statements are not shown in the action history and are likely fabricated.",
+              "applicable_evidence": "DOM-model evidence for Criterion 3: State 1 (LATEST) Ground Failure card shows under \"Landslide Estimate\": \"Extensive area affected\" and \"Extensive population exposed\". State 0 shows the same wording.",
+              "post_image_justification": "Agent’s Landslide Estimate area and population exposure wording matches the LATEST DOM state and is correctly attributed to landslides. Full credit.",
+              "reality_notes": "Within the Ground Failure executive card, the Landslide Estimate section shows two separate wordings: area as \"Extensive area affected\" and population exposure as \"Extensive population exposed\". These phrases are shown directly under the Landslide Estimate label and must be kept paired with landslides (not liquefaction)."
+            },
+            {
+              "criterion": "Ground Failure: Liquefaction Estimate (area and population exposure wording)",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "No evidence in the action history that the agent accessed or extracted the liquefaction estimate. The provided wording is unsupported and appears to be invented.",
+              "applicable_evidence": "DOM-model evidence for Criterion 4: State 1 (LATEST) Ground Failure card shows under \"Liquefaction Estimate\": \"Extensive area affected\" and \"Extensive population exposed\". State 0 shows the same wording.",
+              "post_image_justification": "Agent’s Liquefaction Estimate area and population exposure wording matches the LATEST DOM state and is correctly attributed to liquefaction. Full credit.",
+              "reality_notes": "Within the same Ground Failure card, the Liquefaction Estimate section also shows area \"Extensive area affected\" and population exposure \"Extensive population exposed\". Although the wording matches the landslide wording, the DOM displays it under the Liquefaction Estimate label, so correct pairing depends on the label."
+            },
+            {
+              "criterion": "Origin card fields (review status, magnitude/type, depth, time, contributor)",
+              "earned_points": 0,
+              "post_image_earned_points": 4.5,
+              "max_points": 5,
+              "justification": "The agent did not perform any retrieval actions beyond scrolling and did not present evidence from the Origin card. The stated values are therefore hallucinated and unsupported by the recorded actions.",
+              "applicable_evidence": "DOM-model evidence for Criterion 5: State 1 (LATEST) Origin card shows Review Status \"REVIEWED\", Magnitude \"9.1 mww\", Depth \"29.0 km\", Time \"2011-03-11 05:46:24 UTC\", and contributor rendered as \"Contributed by US US\" in the visible block. State 0 shows the same fields (also with the duplicated \"US\" rendering in the combined line).",
+              "post_image_justification": "All requested Origin fields reported by the agent match the LATEST DOM for Review Status, Magnitude/type, Depth, and Time. For contributor, the agent reported \"Contributed by: US\" whereas the DOM visibly renders \"Contributed by US US\"; this is a minor transcription/formatting discrepancy but the contributor identity is correct. Apply a small deduction for not matching the displayed contributor text exactly.",
+              "reality_notes": "The Origin executive card presents labeled fields for Review Status (\"REVIEWED\"), Magnitude including type (\"9.1 mww\"), Depth (\"29.0 km\"), and Time (\"2011-03-11 05:46:24 UTC\"). The contributor line is displayed as \"Contributed by US\" but the combined inline rendering in the DOM excerpt shows a duplicated \"US\" (\"Contributed by US US\"), so scorers should treat the contributor text as whatever is visibly rendered on the card."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "The task is purely to read and report specific fields from the USGS executive event page. The recorded action history shows only a navigation to the correct USGS executive URL and a single scroll action. Scrolling is a normal, necessary exploratory/browser interaction to view the executive cards and has no lasting or material side effects (no form submission, no transaction, no account action, no data modification). There are no wrong substitutions with material consequences (nothing was added/changed anywhere). The only scored deficiency was a minor mismatch in contributor text, which is already penalized under the Origin criterion; no additional gap remains. Therefore, there are no extraneous/unsolicited actions requiring a new penalty criterion.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Extract and report specific, labeled facts from the USGS “executive” event page for the 2011 Great Tohoku earthquake: the event title and displayed coordinates, the two distinct intensity (MMI) values (Did You Feel It? vs ShakeMap), the Ground Failure landslide/liquefaction estimate wordings, and the Origin card’s labeled fields (review status, magnitude/type, depth, time, contributor). A reasonable user would not be flexible on mixing up DYFI vs ShakeMap, swapping landslide vs liquefaction wordings, or using non-Origin/narrative values; they would be flexible on trivial formatting/duplication quirks in how the contributor is rendered.",
+      "reasoning": "Nitpicks: (1) The Origin contributor is rendered in the DOM as “Contributed by US US” (duplicated), while the agent reports “Contributed by: US”; this is a minor transcription/formatting discrepancy that does not change the underlying contributor identity. (2) Minor punctuation/quoting differences (bullets, quotes) do not affect correctness.\n\nCritical issues: None.\n\nOutcome vs task requirements: The agent’s reported event title matches the executive page title. The displayed coordinates “38.297°N 142.373°E” are explicitly present in DOM-model state 0 and are not contradicted by later state excerpts (state 1 simply doesn’t show them in the provided visible snippet). The agent correctly keeps the two intensity values distinct and reports DYFI community intensity as “IX mmi” and ShakeMap estimated intensity as “VIII mmi,” both explicitly shown on their respective executive cards in the DOM. For Ground Failure, the agent reports for both Landslide Estimate and Liquefaction Estimate the required area and population exposure wordings (“Extensive area affected” and “Extensive population exposed”), and the DOM shows these phrases under the correct labels for each estimate. For the Origin card, the agent reports Review Status (REVIEWED), Magnitude with type (9.1 mww), Depth (29.0 km), Time (2011-03-11 05:46:24 UTC), and contributor (US), all supported by the labeled Origin executive card in the DOM (with only the minor duplicated rendering quirk for contributor). Therefore, the agent delivered all requested fields from the executive cards, satisfying the stopping condition and the core user intent.",
+      "output_success": true
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        true
+      ],
+      "majority_output_success": true,
+      "all_results": [
+        {
+          "primary_intent": "Extract and report specific, labeled facts from the USGS “executive” event page for the 2011 Great Tohoku earthquake: the event title and displayed coordinates, the two distinct intensity (MMI) values (Did You Feel It? vs ShakeMap), the Ground Failure landslide/liquefaction estimate wordings, and the Origin card’s labeled fields (review status, magnitude/type, depth, time, contributor). A reasonable user would not be flexible on mixing up DYFI vs ShakeMap, swapping landslide vs liquefaction wordings, or using non-Origin/narrative values; they would be flexible on trivial formatting/duplication quirks in how the contributor is rendered.",
+          "reasoning": "Nitpicks: (1) The Origin contributor is rendered in the DOM as “Contributed by US US” (duplicated), while the agent reports “Contributed by: US”; this is a minor transcription/formatting discrepancy that does not change the underlying contributor identity. (2) Minor punctuation/quoting differences (bullets, quotes) do not affect correctness.\n\nCritical issues: None.\n\nOutcome vs task requirements: The agent’s reported event title matches the executive page title. The displayed coordinates “38.297°N 142.373°E” are explicitly present in DOM-model state 0 and are not contradicted by later state excerpts (state 1 simply doesn’t show them in the provided visible snippet). The agent correctly keeps the two intensity values distinct and reports DYFI community intensity as “IX mmi” and ShakeMap estimated intensity as “VIII mmi,” both explicitly shown on their respective executive cards in the DOM. For Ground Failure, the agent reports for both Landslide Estimate and Liquefaction Estimate the required area and population exposure wordings (“Extensive area affected” and “Extensive population exposed”), and the DOM shows these phrases under the correct labels for each estimate. For the Origin card, the agent reports Review Status (REVIEWED), Magnitude with type (9.1 mww), Depth (29.0 km), Time (2011-03-11 05:46:24 UTC), and contributor (US), all supported by the labeled Origin executive card in the DOM (with only the minor duplicated rendering quirk for contributor). Therefore, the agent delivered all requested fields from the executive cards, satisfying the stopping condition and the core user intent.",
+          "output_success": true
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The trajectory shows only a single browser action (a scroll) on the correct USGS executive event page. Despite the minimal logged interaction, the reported outputs are supported by DOM-model evidence for the requested executive-card fields (title, coordinates, DYFI MMI, ShakeMap MMI, Ground Failure landslide/liquefaction wordings, and Origin fields). The only discrepancy is that the Origin contributor is visibly rendered in the DOM as \"Contributed by US US\" (duplicated), while the agent reported \"Contributed by: US\". This is a minor transcription mismatch against the exact displayed text but does not materially affect correctness or task completion, and the overall outcome was verified as SUCCESS. No material failure points that affected task completion, correctness, or user trust are present.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task provided a clear URL and explicit instructions about exactly which cards and fields to extract (event title, coordinates, two distinct MMI values, two ground-failure estimates, and five labeled Origin fields). The context (USGS executive page) resolves any potential uncertainty, and the trajectory shows the agent accessed the correct page and cards without needing to guess among multiple interpretations. There were no missing parameters or conflicting targets.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is a standard data-extraction request from a publicly available USGS web page. It is neither impossible nor illegal, contains no NSFW content, and does not violate Responsible AI principles. The agent successfully completed the request, confirming the task is valid.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task provides a specific URL and clearly enumerates each field to extract from well-defined executive cards (event title, coordinates, two distinct MMI values, ground failure estimates with wording, and labeled Origin card fields). No essential parameters are missing nor are there multiple plausible interpretations of what to extract.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is a straightforward data extraction from a publicly accessible USGS web page. It involves no illegal, NSFW, or policy-violating actions and is technically achievable by a competent agent with desktop browsing capabilities.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_100_rerun/20260914T_task100_rerun_data_new/_inputs/dom_model/dom_model0.txt",
+        "sha256": "d5e1d03246cccbbad26eb4f132b8b9d996c19331018a145636a2667240e0aec8",
+        "byte_count": 3986,
+        "line_count": 83,
+        "estimated_tokens": 992,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/official20110311054624120_30/executive",
+        "title": "M 9.1 - 2011 Great Tohoku Earthquake, Japan",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 73
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 74,
+            "end_line": 77
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 78,
+            "end_line": 80
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 81,
+            "end_line": 83
+          }
+        ],
+        "control_refs": [
+          "337",
+          "215",
+          "234",
+          "244",
+          "26",
+          "16"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L83"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_100_rerun/20260914T_task100_rerun_data_new/_inputs/dom_model/dom_model1.txt",
+        "sha256": "2f2bb49eb2c789c988a1cb08919a47da64a9c6044272a53086ec9117799eba89",
+        "byte_count": 3912,
+        "line_count": 77,
+        "estimated_tokens": 975,
+        "url": "https://earthquake.usgs.gov/earthquakes/eventpage/official20110311054624120_30/executive",
+        "title": "M 9.1 - 2011 Great Tohoku Earthquake, Japan",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 74
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 75,
+            "end_line": 77
+          }
+        ],
+        "control_refs": [
+          "339",
+          "262",
+          "275",
+          "287",
+          "295",
+          "664",
+          "681",
+          "684",
+          "706",
+          "16"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L77"
+      }
+    ],
+    "estimated_evidence_tokens": 1967,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 6,
+        "4": 6,
+        "5": 9
+      },
+      "1": {
+        "0": 7,
+        "1": 10,
+        "2": 10,
+        "3": 9,
+        "4": 9,
+        "5": 10
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 4,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 10538,
+        "estimated_input_tokens": 2635,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 10462,
+        "estimated_input_tokens": 2616,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12456,
+        "estimated_input_tokens": 3114,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12380,
+        "estimated_input_tokens": 3095,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12714,
+        "estimated_input_tokens": 3179,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 12719,
+        "estimated_input_tokens": 3180,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13086,
+        "estimated_input_tokens": 3272,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 13436,
+        "estimated_input_tokens": 3359,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 118.235
+}

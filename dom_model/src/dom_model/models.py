@@ -109,10 +109,10 @@ class Observation(Component):
 
 
 class ComputerObservation(Observation):
-    """Observation from the environment: screenshot and/or page state."""
+    """Observation from the browser environment."""
 
     observation_type: Literal["environment"] = "environment"
-    screenshot_path: str = ""
+    evidence_path: str = ""
     url: str = ""
     page_info: str = ""
 
@@ -257,7 +257,7 @@ class StepSummary(BaseModel):
     url: str = ""
     state_description: str = ""
     previous_error: str = ""
-    screenshot_path: str = ""
+    evidence_path: str = ""
     user_messages_before: List[Tuple[UserMessageType, str]] = Field(
         default_factory=list
     )
@@ -391,27 +391,27 @@ class SolverLog(Component):
             return instructions[0]
         return "\n".join(f"{i + 1}. {inst}" for i, inst in enumerate(instructions))
 
-    def _get_screenshot_and_user_msgs(
+    def _get_evidence_and_user_msgs(
         self,
         step: Step,
     ) -> Tuple[str, List[Tuple[UserMessageType, str]]]:
-        """Shared helper for screenshot lookup and user-message collection."""
+        """Shared helper for evidence lookup and user-message collection."""
         user_msgs: List[Tuple[UserMessageType, str]] = [
             (msg.message_type, msg.content)
             for msg in get_observations(step.observations_pre.main, UserMessage)
         ]
 
         post_obs = step.observations_post.main + step.observations_post.next_pre.main
-        screenshot_obs = earliest(
+        evidence_obs = earliest(
             [
                 obs
                 for obs in get_observations(post_obs, ComputerObservation)
-                if obs.screenshot_path
+                if obs.evidence_path
             ]
         )
-        screenshot = screenshot_obs.screenshot_path if screenshot_obs else ""
+        evidence_path = evidence_obs.evidence_path if evidence_obs else ""
 
-        return screenshot, user_msgs
+        return evidence_path, user_msgs
 
     def get_step_summaries(self) -> List[StepSummary]:
         """Extract structured per-step data for the current agent format.
@@ -436,7 +436,7 @@ class SolverLog(Component):
                 if k not in ("screen_description", "reasoning")
             }
 
-            screenshot, user_msgs = self._get_screenshot_and_user_msgs(step)
+            evidence_path, user_msgs = self._get_evidence_and_user_msgs(step)
 
             pre_obs = step.observations_pre.previous_post + step.observations_pre.main
             url_obs = latest(
@@ -458,7 +458,7 @@ class SolverLog(Component):
                     url=url,
                     state_description=args.get("screen_description", ""),
                     previous_error=c.get("other_state", {}).get("previous_error", ""),
-                    screenshot_path=screenshot,
+                    evidence_path=evidence_path,
                     user_messages_before=user_msgs,
                 )
             )
@@ -482,7 +482,7 @@ class VerificationResult(Component):
 
 
 class ImageScore(BaseModel):
-    """Score for a single screenshot against task key points."""
+    """Score for a single evidence item against task key points."""
 
     path: str = ""
     llm_message: LLMMessage = Field(default_factory=LLMMessage)

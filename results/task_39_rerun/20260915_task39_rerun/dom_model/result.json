@@ -1,0 +1,860 @@
+{
+  "task_id": "browser_task_039-technical-parameter-extraction-20260915T074609Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 1,
+  "success_criterion": "outcome",
+  "rubric_score": 1.0,
+  "rubric_total_max_points": 12.0,
+  "rubric_total_earned_points": 12.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 1.0,
+    "reasoning": "Nitpicks: The agent did not restate the additional rounding rules and mutual-constraint notes mentioned in the docs for maxUnavailable/maxSurge (rounding down/up; cannot be 0 if the other is 0). However, the task only required meaning and default for each field (while preserving percentages/units/rounding behavior when displayed), and the agent preserved the percentage defaults and the seconds unit; the omitted rounding notes do not change the correctness of the reported meaning/defaults.\n\nCritical issues: None. The agent reported all three requested fields, gave a correct meaning for each, and provided the correct documented default values.\n\nOutcome vs evidence: DOM state 2 (Deployment docs Strategy section) explicitly defines maxUnavailable as the maximum number of Pods that can be unavailable during an update and states the default value is 25%; the agent output matches. DOM state 2 also defines maxSurge as the maximum number of Pods that can be created above the desired number during an update and states the default value is 25%; the agent output matches. DOM state 3 (Progress Deadline Seconds section) states .spec.progressDeadlineSeconds is the number of seconds to wait for progress before reporting failed progressing (with ProgressDeadlineExceeded condition details) and that it defaults to 600; the agent output matches and preserves the unit (seconds). The agent used the documentation field descriptions (not example manifests) and did not attempt to edit/execute any Kubernetes configuration. From an average user perspective, the requested information has been accurately recorded and is complete.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": true,
+    "primary_intent": "Extract from the official Kubernetes Deployment documentation the documented meaning and the documented default values for three specific fields: .spec.strategy.rollingUpdate.maxUnavailable, .spec.strategy.rollingUpdate.maxSurge, and .spec.progressDeadlineSeconds. A reasonable user would be flexible on minor phrasing/formatting differences, but not on wrong defaults, missing fields, or using example-manifest values instead of the docs’ field descriptions; they also need units/percentages preserved."
+  },
+  "preflight": {
+    "task_id": "browser_task_039-technical-parameter-extraction-20260915T074609Z",
+    "actions": 3,
+    "dom_model_states": 4,
+    "initial_state": 0,
+    "final_state": 3,
+    "alignment": {
+      "task_id": "browser_task_039-technical-parameter-extraction-20260915T074609Z",
+      "action_count": 3,
+      "state_count": 4,
+      "initial_state": 0,
+      "final_state": 3,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e275",
+            "target": {
+              "ref": "e275",
+              "role": "link",
+              "name": "Strategy"
+            },
+            "thoughts": "Jump directly to the Strategy section where maxUnavailable and maxSurge are described to find their meanings and defaults."
+          },
+          "observed_after_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy"
+        },
+        {
+          "ordinal": 2,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to scroll within the Strategy section until the detailed text for Max Unavailable, Max Surge, and Progress Deadline Seconds fields becomes visible."
+          },
+          "observed_after_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e276",
+            "target": {
+              "ref": "e276",
+              "role": "link",
+              "name": "Progress Deadline Seconds"
+            },
+            "thoughts": "MaxUnavailable and MaxSurge details are already visible; now I need the documented meaning and default for .spec.progressDeadlineSeconds, so I’ll click its in-page link to jump to that section."
+          },
+          "observed_after_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "36a2590ca2798cf4865e73e7d168f282f28ae62bf8e043503db2fc2c3554bbca",
+          "after_sha256": "564ce0aebc6c9f0da8811b9ad66eca056ece4c3a420fedf509d901fcb1929bcd",
+          "before_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/",
+          "after_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "564ce0aebc6c9f0da8811b9ad66eca056ece4c3a420fedf509d901fcb1929bcd",
+          "after_sha256": "0e2763b50f5e786afe6ae613d464580d6fdce329a65763c9886f487f72856ec8",
+          "before_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy",
+          "after_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "0e2763b50f5e786afe6ae613d464580d6fdce329a65763c9886f487f72856ec8",
+          "after_sha256": "f36341840877bd744be71587fc8a520d1d267645a6236087e71d6bdc7ea940bb",
+          "before_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy",
+          "after_url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e275' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e276' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "e09a0ab5237e118cd5f3c386ff2a529e59b9248793cb3808834b1af12137779e",
+    "criterion_order": [
+      "Report meaning and default for .spec.strategy.rollingUpdate.maxUnavailable",
+      "Report meaning and default for .spec.strategy.rollingUpdate.maxSurge",
+      "Report meaning and default for .spec.progressDeadlineSeconds"
+    ],
+    "maximum_points": [
+      4.0,
+      4.0,
+      4.0
+    ],
+    "criterion_denominator": 12.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_39_rerun/20260915_task39_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_39_rerun/20260915_task39_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "e09a0ab5237e118cd5f3c386ff2a529e59b9248793cb3808834b1af12137779e",
+  "criterion_denominator": 12,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 57794,
+      "completion_tokens": 2534,
+      "reasoning_tokens": 0,
+      "total_tokens": 60328
+    },
+    "action_judge": {
+      "prompt_tokens": 14100,
+      "completion_tokens": 3657,
+      "reasoning_tokens": 2688,
+      "total_tokens": 17757
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 11,
+      "api_attempts": 11,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 4,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 1,
+        "1": 1,
+        "2": 1,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 1,
+        "1": 1,
+        "2": 0,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 10,
+        "1": 10,
+        "2": 2,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 2,
+        "1": 0,
+        "2": 10,
+        "screenshot_idx": 3
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        2,
+        3,
+        1,
+        0
+      ],
+      "1": [
+        2,
+        1,
+        0,
+        3
+      ],
+      "2": [
+        3,
+        2,
+        0,
+        1
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly provides both the meaning (maximum unavailable Pods during update; absolute or percentage) and the default (25%). It also explicitly states the rounding behavior for percentages (“rounding down”) and the constraint relating to maxSurge.",
+          "discrepancies": "No discrepancy with the agent’s reported meaning/default for maxUnavailable. The agent did not mention the rounding-down rule or the “cannot be 0 if maxSurge is 0” constraint; however, the requested deliverable was meaning + default, and those match the documented text.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 (URL: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy)\nVisible field description under “Max Unavailable”:\n- “.spec.strategy.rollingUpdate.maxUnavailable is an optional field that specifies the maximum number of Pods that can be unavailable during the update process. The value can be an absolute number (for example, 5) or a percentage of desired Pods (for example, 10%). The absolute number is calculated from percentage by rounding down. The value cannot be 0 if .spec.strategy.rollingUpdate.maxSurge is 0. The default value is 25%.”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly provides both the meaning (max Pods created over desired during update; absolute or percentage) and the default (25%). It also states the rounding behavior (“rounding up”) and the constraint relating to maxUnavailable.",
+          "discrepancies": "No discrepancy with the agent’s reported meaning/default for maxSurge. The agent did not mention the rounding-up rule or the “cannot be 0 if maxUnavailable is 0” constraint; however, the requested deliverable was meaning + default, and those match the documented text.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 (URL: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy)\nVisible field description under “Max Surge”:\n- “.spec.strategy.rollingUpdate.maxSurge is an optional field that specifies the maximum number of Pods that can be created over the desired number of Pods. The value can be an absolute number (for example, 5) or a percentage of desired Pods (for example, 10%). The value cannot be 0 if maxUnavailable is 0. The absolute number is calculated from the percentage by rounding up. The default value is 25%.”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the Deployment documentation’s description of .spec.progressDeadlineSeconds, including (a) meaning: it is “an optional field” defining “the number of seconds you want to wait for your Deployment to progress before the system reports back that the Deployment has failed progressing,” and it specifies the surfaced condition details (“type: Progressing”, “status: \"False\"”, “reason: ProgressDeadlineExceeded”) plus “The Deployment controller will keep retrying the Deployment”; and (b) default: “This defaults to 600.” All of this appears verbatim in DOM_MODEL_STATE_INDEX: 3 under the “Progress Deadline Seconds” section.",
+          "discrepancies": "No discrepancies for this criterion: the agent’s predicted meaning (wait time in seconds before marking failed progressing with ProgressDeadlineExceeded) and default (600 seconds) match the exact text visible in DOM_MODEL_STATE_INDEX: 3.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the page at URL https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds with the visible section header “Progress Deadline Seconds” and the field description text: “.spec.progressDeadlineSeconds is an optional field that specifies the number of seconds you want to wait for your Deployment to progress before the system reports back that the Deployment has failed progressing - surfaced as a condition with type: Progressing , status: \"False\" . and reason: ProgressDeadlineExceeded in the status of the resource. The Deployment controller will keep retrying the Deployment. This defaults to 600.” This provides both the documented meaning and the documented default value (600 seconds).",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "The documentation section visible in the DOM includes a dedicated “Max Unavailable” description for .spec.strategy.rollingUpdate.maxUnavailable. It explicitly defines it as the maximum number of Pods that can be unavailable during an update, allows either an absolute number or a percentage, states that percentages are converted to an absolute number by rounding down, notes it cannot be 0 if maxSurge is 0, and gives a default of 25%.",
+      "1": "The DOM shows a dedicated “Max Surge” description for .spec.strategy.rollingUpdate.maxSurge. It explicitly defines it as the maximum number of Pods that can be created over the desired number during an update, allows either an absolute number or a percentage, states that percentages are converted to an absolute number by rounding up, notes it cannot be 0 if maxUnavailable is 0, and gives a default of 25%.",
+      "2": "The DOM contains a “Progress Deadline Seconds” section with the field description for .spec.progressDeadlineSeconds. It explicitly describes it as the number of seconds to wait for the Deployment to progress before reporting failed progressing, specifies the surfaced condition details (type Progressing, status \"False\", reason ProgressDeadlineExceeded), notes the controller keeps retrying, and states the default as 600 (seconds implied by the description)."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Report meaning and default for .spec.strategy.rollingUpdate.maxUnavailable",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent accurately reported both the meaning and default value (25%) exactly as documented in the official Kubernetes Deployment documentation, preserving the percentage format.",
+        "applicable_evidence": "DOM-model evidence analysis for Criterion 0 cites DOM_MODEL_STATE_INDEX 2 (latest relevant state) under Deployment > Strategy showing the field description for “Max Unavailable”: it defines .spec.strategy.rollingUpdate.maxUnavailable as the maximum number of Pods that can be unavailable during the update process; can be absolute number or percentage; percentage is converted by rounding down; default value is 25%.",
+        "post_image_justification": "The agent’s output matches the documented meaning and default (25%). Although the docs also mention rounding-down and a constraint when maxSurge is 0, the rubric requirement here is meaning + default, which are correctly reported and supported by the DOM.",
+        "reality_notes": "The documentation section visible in the DOM includes a dedicated “Max Unavailable” description for .spec.strategy.rollingUpdate.maxUnavailable. It explicitly defines it as the maximum number of Pods that can be unavailable during an update, allows either an absolute number or a percentage, states that percentages are converted to an absolute number by rounding down, notes it cannot be 0 if maxSurge is 0, and gives a default of 25%."
+      },
+      {
+        "criterion": "Report meaning and default for .spec.strategy.rollingUpdate.maxSurge",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent correctly provided the documented meaning and default value (25%) for maxSurge, matching the official Kubernetes documentation and preserving percentage format.",
+        "applicable_evidence": "DOM-model evidence analysis for Criterion 1 cites DOM_MODEL_STATE_INDEX 2 (latest relevant state) under Deployment > Strategy showing the field description for “Max Surge”: it defines .spec.strategy.rollingUpdate.maxSurge as the maximum number of Pods that can be created over the desired number of Pods; can be absolute number or percentage; percentage is converted by rounding up; default value is 25%.",
+        "post_image_justification": "The agent’s output correctly reports the documented meaning and default (25%), which is explicitly supported by the DOM. Extra rounding/constraint details were not required for credit on this criterion.",
+        "reality_notes": "The DOM shows a dedicated “Max Surge” description for .spec.strategy.rollingUpdate.maxSurge. It explicitly defines it as the maximum number of Pods that can be created over the desired number during an update, allows either an absolute number or a percentage, states that percentages are converted to an absolute number by rounding up, notes it cannot be 0 if maxUnavailable is 0, and gives a default of 25%."
+      },
+      {
+        "criterion": "Report meaning and default for .spec.progressDeadlineSeconds",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent faithfully reproduced the meaning and default (600 seconds) for progressDeadlineSeconds as stated in the official Kubernetes documentation, preserving the units and described behavior.",
+        "applicable_evidence": "DOM-model evidence analysis for Criterion 2 cites DOM_MODEL_STATE_INDEX 3 (latest relevant state) at the “Progress Deadline Seconds” section showing: .spec.progressDeadlineSeconds specifies the number of seconds to wait for the Deployment to progress before reporting failed progressing (condition type Progressing, status \"False\", reason ProgressDeadlineExceeded); controller keeps retrying; defaults to 600.",
+        "post_image_justification": "The agent’s output matches the documentation’s meaning and includes the default value (600 seconds). This is directly supported by the latest DOM state.",
+        "reality_notes": "The DOM contains a “Progress Deadline Seconds” section with the field description for .spec.progressDeadlineSeconds. It explicitly describes it as the number of seconds to wait for the Deployment to progress before reporting failed progressing, specifies the surfaced condition details (type Progressing, status \"False\", reason ProgressDeadlineExceeded), notes the controller keeps retrying, and states the default as 600 (seconds implied by the description)."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "The task was to report the documented meaning and default values for three Deployment fields from Kubernetes documentation. The agent’s actions consisted of in-page navigation: clicking the “Strategy” anchor link, scrolling to reveal the relevant field descriptions, and clicking the “Progress Deadline Seconds” anchor link. These are normal exploratory/document-navigation steps needed to locate the requested text. There were no actions with material side effects (no edits to config, no submissions, no downloads, no sign-ups, no transactions). The rubric summary shows full points for all criteria, and there is no unpenalized wrong substitution or other side effect. Therefore, no new penalty criterion is warranted.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        1.0
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 1.0,
+          "total_earned_points": 12.0,
+          "total_max_points": 12.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Report meaning and default for .spec.strategy.rollingUpdate.maxUnavailable",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent accurately reported both the meaning and default value (25%) exactly as documented in the official Kubernetes Deployment documentation, preserving the percentage format.",
+              "applicable_evidence": "DOM-model evidence analysis for Criterion 0 cites DOM_MODEL_STATE_INDEX 2 (latest relevant state) under Deployment > Strategy showing the field description for “Max Unavailable”: it defines .spec.strategy.rollingUpdate.maxUnavailable as the maximum number of Pods that can be unavailable during the update process; can be absolute number or percentage; percentage is converted by rounding down; default value is 25%.",
+              "post_image_justification": "The agent’s output matches the documented meaning and default (25%). Although the docs also mention rounding-down and a constraint when maxSurge is 0, the rubric requirement here is meaning + default, which are correctly reported and supported by the DOM.",
+              "reality_notes": "The documentation section visible in the DOM includes a dedicated “Max Unavailable” description for .spec.strategy.rollingUpdate.maxUnavailable. It explicitly defines it as the maximum number of Pods that can be unavailable during an update, allows either an absolute number or a percentage, states that percentages are converted to an absolute number by rounding down, notes it cannot be 0 if maxSurge is 0, and gives a default of 25%."
+            },
+            {
+              "criterion": "Report meaning and default for .spec.strategy.rollingUpdate.maxSurge",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent correctly provided the documented meaning and default value (25%) for maxSurge, matching the official Kubernetes documentation and preserving percentage format.",
+              "applicable_evidence": "DOM-model evidence analysis for Criterion 1 cites DOM_MODEL_STATE_INDEX 2 (latest relevant state) under Deployment > Strategy showing the field description for “Max Surge”: it defines .spec.strategy.rollingUpdate.maxSurge as the maximum number of Pods that can be created over the desired number of Pods; can be absolute number or percentage; percentage is converted by rounding up; default value is 25%.",
+              "post_image_justification": "The agent’s output correctly reports the documented meaning and default (25%), which is explicitly supported by the DOM. Extra rounding/constraint details were not required for credit on this criterion.",
+              "reality_notes": "The DOM shows a dedicated “Max Surge” description for .spec.strategy.rollingUpdate.maxSurge. It explicitly defines it as the maximum number of Pods that can be created over the desired number during an update, allows either an absolute number or a percentage, states that percentages are converted to an absolute number by rounding up, notes it cannot be 0 if maxUnavailable is 0, and gives a default of 25%."
+            },
+            {
+              "criterion": "Report meaning and default for .spec.progressDeadlineSeconds",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent faithfully reproduced the meaning and default (600 seconds) for progressDeadlineSeconds as stated in the official Kubernetes documentation, preserving the units and described behavior.",
+              "applicable_evidence": "DOM-model evidence analysis for Criterion 2 cites DOM_MODEL_STATE_INDEX 3 (latest relevant state) at the “Progress Deadline Seconds” section showing: .spec.progressDeadlineSeconds specifies the number of seconds to wait for the Deployment to progress before reporting failed progressing (condition type Progressing, status \"False\", reason ProgressDeadlineExceeded); controller keeps retrying; defaults to 600.",
+              "post_image_justification": "The agent’s output matches the documentation’s meaning and includes the default value (600 seconds). This is directly supported by the latest DOM state.",
+              "reality_notes": "The DOM contains a “Progress Deadline Seconds” section with the field description for .spec.progressDeadlineSeconds. It explicitly describes it as the number of seconds to wait for the Deployment to progress before reporting failed progressing, specifies the surfaced condition details (type Progressing, status \"False\", reason ProgressDeadlineExceeded), notes the controller keeps retrying, and states the default as 600 (seconds implied by the description)."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "The task was to report the documented meaning and default values for three Deployment fields from Kubernetes documentation. The agent’s actions consisted of in-page navigation: clicking the “Strategy” anchor link, scrolling to reveal the relevant field descriptions, and clicking the “Progress Deadline Seconds” anchor link. These are normal exploratory/document-navigation steps needed to locate the requested text. There were no actions with material side effects (no edits to config, no submissions, no downloads, no sign-ups, no transactions). The rubric summary shows full points for all criteria, and there is no unpenalized wrong substitution or other side effect. Therefore, no new penalty criterion is warranted.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Extract from the official Kubernetes Deployment documentation the documented meaning and the documented default values for three specific fields: .spec.strategy.rollingUpdate.maxUnavailable, .spec.strategy.rollingUpdate.maxSurge, and .spec.progressDeadlineSeconds. A reasonable user would be flexible on minor phrasing/formatting differences, but not on wrong defaults, missing fields, or using example-manifest values instead of the docs’ field descriptions; they also need units/percentages preserved.",
+      "reasoning": "Nitpicks: The agent did not restate the additional rounding rules and mutual-constraint notes mentioned in the docs for maxUnavailable/maxSurge (rounding down/up; cannot be 0 if the other is 0). However, the task only required meaning and default for each field (while preserving percentages/units/rounding behavior when displayed), and the agent preserved the percentage defaults and the seconds unit; the omitted rounding notes do not change the correctness of the reported meaning/defaults.\n\nCritical issues: None. The agent reported all three requested fields, gave a correct meaning for each, and provided the correct documented default values.\n\nOutcome vs evidence: DOM state 2 (Deployment docs Strategy section) explicitly defines maxUnavailable as the maximum number of Pods that can be unavailable during an update and states the default value is 25%; the agent output matches. DOM state 2 also defines maxSurge as the maximum number of Pods that can be created above the desired number during an update and states the default value is 25%; the agent output matches. DOM state 3 (Progress Deadline Seconds section) states .spec.progressDeadlineSeconds is the number of seconds to wait for progress before reporting failed progressing (with ProgressDeadlineExceeded condition details) and that it defaults to 600; the agent output matches and preserves the unit (seconds). The agent used the documentation field descriptions (not example manifests) and did not attempt to edit/execute any Kubernetes configuration. From an average user perspective, the requested information has been accurately recorded and is complete.",
+      "output_success": true
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        true
+      ],
+      "majority_output_success": true,
+      "all_results": [
+        {
+          "primary_intent": "Extract from the official Kubernetes Deployment documentation the documented meaning and the documented default values for three specific fields: .spec.strategy.rollingUpdate.maxUnavailable, .spec.strategy.rollingUpdate.maxSurge, and .spec.progressDeadlineSeconds. A reasonable user would be flexible on minor phrasing/formatting differences, but not on wrong defaults, missing fields, or using example-manifest values instead of the docs’ field descriptions; they also need units/percentages preserved.",
+          "reasoning": "Nitpicks: The agent did not restate the additional rounding rules and mutual-constraint notes mentioned in the docs for maxUnavailable/maxSurge (rounding down/up; cannot be 0 if the other is 0). However, the task only required meaning and default for each field (while preserving percentages/units/rounding behavior when displayed), and the agent preserved the percentage defaults and the seconds unit; the omitted rounding notes do not change the correctness of the reported meaning/defaults.\n\nCritical issues: None. The agent reported all three requested fields, gave a correct meaning for each, and provided the correct documented default values.\n\nOutcome vs evidence: DOM state 2 (Deployment docs Strategy section) explicitly defines maxUnavailable as the maximum number of Pods that can be unavailable during an update and states the default value is 25%; the agent output matches. DOM state 2 also defines maxSurge as the maximum number of Pods that can be created above the desired number during an update and states the default value is 25%; the agent output matches. DOM state 3 (Progress Deadline Seconds section) states .spec.progressDeadlineSeconds is the number of seconds to wait for progress before reporting failed progressing (with ProgressDeadlineExceeded condition details) and that it defaults to 600; the agent output matches and preserves the unit (seconds). The agent used the documentation field descriptions (not example manifests) and did not attempt to edit/execute any Kubernetes configuration. From an average user perspective, the requested information has been accurately recorded and is complete.",
+          "output_success": true
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent navigated within the official Kubernetes Deployment documentation to the relevant sections (“Strategy” and “Progress Deadline Seconds”), and extracted the meaning and documented default values for all three requested fields. The predicted output matches the DOM evidence for each field’s meaning and default (maxUnavailable default 25%, maxSurge default 25%, progressDeadlineSeconds default 600). Although the docs also include rounding behavior and mutual constraints for maxUnavailable/maxSurge, the rubric and outcome verification indicate these details were not required for success here, and there is no contradiction or missing required deliverable. No material failures are present in the trajectory.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task clearly specifies which fields to document and provides the starting URL for context. All necessary information to complete the task is present and unambiguous; a competent agent can infer the correct actions and interpretation. The successful completion without clarification or guessing confirms there was no ambiguity.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully achievable using standard web navigation to the public Kubernetes documentation. It does not involve illegal, NSFW, or policy-violating content, nor does it require unavailable credentials or impossible actions. The agent was able to complete it successfully.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies a concrete URL (Kubernetes Deployment documentation), lists exact fields to report, and gives clear constraints on what to retrieve and how to present it. A competent agent can uniquely interpret and complete this task without making assumptions.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task merely involves reading public documentation and reporting field meanings and defaults. It requires no credentials, involves no illegal or NSFW content, and does not violate any Responsible AI or environmental constraints.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 4,
+    "final_state_index": 3,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_39_rerun/20260915_task39_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "36a2590ca2798cf4865e73e7d168f282f28ae62bf8e043503db2fc2c3554bbca",
+        "byte_count": 8740,
+        "line_count": 93,
+        "estimated_tokens": 2138,
+        "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/",
+        "title": "Deployments | Kubernetes",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 68
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 69,
+            "end_line": 71
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 72,
+            "end_line": 74
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 75,
+            "end_line": 82
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 83,
+            "end_line": 85
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 86,
+            "end_line": 89
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 90,
+            "end_line": 93
+          }
+        ],
+        "control_refs": [
+          "929",
+          "932",
+          "935",
+          "958",
+          "1103",
+          "56",
+          "other",
+          "953",
+          "1075"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L93"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_39_rerun/20260915_task39_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "564ce0aebc6c9f0da8811b9ad66eca056ece4c3a420fedf509d901fcb1929bcd",
+        "byte_count": 10557,
+        "line_count": 114,
+        "estimated_tokens": 2592,
+        "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy",
+        "title": "Deployments | Kubernetes",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 98
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 99,
+            "end_line": 101
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 102,
+            "end_line": 103
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 104,
+            "end_line": 106
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 107,
+            "end_line": 110
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 111,
+            "end_line": 114
+          }
+        ],
+        "control_refs": [
+          "929",
+          "932",
+          "935",
+          "1120",
+          "1172",
+          "56",
+          "other",
+          "953",
+          "1075"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L114"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_39_rerun/20260915_task39_rerun/_inputs/dom_model/dom_model2.txt",
+        "sha256": "0e2763b50f5e786afe6ae613d464580d6fdce329a65763c9886f487f72856ec8",
+        "byte_count": 12099,
+        "line_count": 115,
+        "estimated_tokens": 2977,
+        "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy",
+        "title": "Deployments | Kubernetes",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 96
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 97,
+            "end_line": 99
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 100,
+            "end_line": 101
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 102,
+            "end_line": 104
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 105,
+            "end_line": 109
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 110,
+            "end_line": 115
+          }
+        ],
+        "control_refs": [
+          "929",
+          "932",
+          "935",
+          "1120",
+          "1172",
+          "2629",
+          "2632",
+          "2635",
+          "56",
+          "other",
+          "953",
+          "1075",
+          "2637",
+          "2638"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L115"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_39_rerun/20260915_task39_rerun/_inputs/dom_model/dom_model3.txt",
+        "sha256": "f36341840877bd744be71587fc8a520d1d267645a6236087e71d6bdc7ea940bb",
+        "byte_count": 11110,
+        "line_count": 116,
+        "estimated_tokens": 2729,
+        "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds",
+        "title": "Deployments | Kubernetes",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 96
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 97,
+            "end_line": 99
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 100,
+            "end_line": 101
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 102,
+            "end_line": 105
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 106,
+            "end_line": 110
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 111,
+            "end_line": 116
+          }
+        ],
+        "control_refs": [
+          "929",
+          "932",
+          "935",
+          "1120",
+          "1172",
+          "56",
+          "other",
+          "953",
+          "1075",
+          "2637",
+          "2638"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L116"
+      }
+    ],
+    "estimated_evidence_tokens": 10436,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 4,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 1,
+        "1": 1,
+        "2": 1
+      },
+      "1": {
+        "0": 1,
+        "1": 1,
+        "2": 0
+      },
+      "2": {
+        "0": 10,
+        "1": 10,
+        "2": 2
+      },
+      "3": {
+        "0": 2,
+        "1": 0,
+        "2": 10
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 0,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 13909,
+        "estimated_input_tokens": 3478,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 15733,
+        "estimated_input_tokens": 3934,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 17278,
+        "estimated_input_tokens": 4320,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 16298,
+        "estimated_input_tokens": 4075,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1
+        ],
+        "char_count": 19589,
+        "estimated_input_tokens": 4898,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 17376,
+        "estimated_input_tokens": 4344,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 79.139
+}

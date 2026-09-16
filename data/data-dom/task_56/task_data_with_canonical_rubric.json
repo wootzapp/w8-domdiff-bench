@@ -1,0 +1,61 @@
+[
+  {
+    "task_id": "browser_task_056-biomedical-literature-filtering-20260915T075812Z",
+    "confirmed_task": "On PubMed, search for the phrase large language model in the Title field. Apply the Review article-type filter and the past-five-years publication-date filter, then sort by Most Recent. Report the first three results in displayed order with full title, PMID, publication type, and complete journal citation.\n\nStopping condition: Stop after the required query, both filters, and sorting are visibly applied and the first three results and requested fields have been recorded.\n\nConstraints:\n- Use PubMed's Title field rather than an unrestricted all-fields search.\n- Use the Review article-type filter, not Systematic Review unless PubMed also classifies a returned result as Review.\n- Use the relative past-five-years filter shown by PubMed and do not replace it with an assumed calendar-year range.\n- Preserve the displayed result order, PMID, publication type, and complete journal citation exactly.",
+    "website": "https://pubmed.ncbi.nlm.nih.gov/",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Run PubMed Title-field search for the exact phrase",
+          "description": "Perform the PubMed query using the Title field (not an all-fields search) for the phrase \"large language model\". Full credit if the final query clearly targets Title (e.g., [Title] or [ti]) and uses the specified phrase. Partial credit if the phrase is used but field restriction is unclear/incorrect. Full credit if PubMed is inaccessible (e.g., captcha/outage) but the agent clearly attempts the correct Title-field query and reports the blocker; no credit if the search is not on PubMed or the agent makes no reasonable attempt.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Apply required PubMed filters",
+          "description": "Apply BOTH PubMed filters exactly as specified: (1) Article type = Review (not Systematic Review unless the returned items are also classified as Review), and (2) Publication date = Past 5 years using PubMed's relative filter. Full credit if both filters are visibly applied OR if the agent clearly indicates both were selected/applied but UI evidence is unavailable due to platform limitations. Partial credit if only one filter is applied, or if the agent substitutes a manual year range instead of PubMed's Past 5 years filter. Full credit if PubMed prevents applying filters (UI failure/blocking) but the agent reports the issue after a reasonable attempt.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Sort results by Most Recent",
+          "description": "Change sorting to PubMed's \"Most Recent\" (or equivalent casing/label such as “Most recent”) and preserve the displayed order for reporting. Full credit if sorting is visibly set to Most Recent OR if the agent clearly states it set Most Recent but UI evidence is unavailable due to platform limitations. Partial credit if sorting is attempted but not clearly confirmed, or order is not preserved. Full credit if PubMed prevents changing sort (UI failure/blocking) but the agent reports the issue after a reasonable attempt.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Record first result with all required fields",
+          "description": "For the first (top) result in the filtered, Most Recent-sorted list, report: full title, PMID, publication type(s) as displayed/classified, and the complete journal citation exactly (journal name, year/date, volume/issue/pages/eLocation as shown). Full credit if all fields are captured and match the listing. Partial credit if one element is missing or citation is incomplete. If fewer than 1 result exists after applying the required query/filters/sort, full credit if the agent clearly reports that no results are returned (or results are unavailable due to PubMed access issues) and does not fabricate details.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Record second result with all required fields",
+          "description": "For the second result in displayed order, report: full title, PMID, publication type(s), and complete journal citation exactly as shown on PubMed. Full credit if all fields are correct and complete. Partial credit if minor omissions (e.g., missing publication type or incomplete citation). If fewer than 2 results exist after applying the required query/filters/sort, full credit if the agent clearly reports that fewer than two results are available and does not fabricate details.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Record third result with all required fields",
+          "description": "For the third result in displayed order, report: full title, PMID, publication type(s), and complete journal citation exactly as shown on PubMed. Full credit if all fields are correct and complete. Partial credit for missing one required field or incomplete citation. If fewer than 3 results exist after applying the required query/filters/sort, full credit if the agent clearly reports that fewer than three results are available and does not fabricate details.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Stop after capturing the first three results (stopping condition)",
+          "description": "Stop once the specified query, both filters, and Most Recent sorting are applied and the first three results' required fields have been recorded, or once it is confirmed that fewer than three results exist. Full credit if the agent does not continue browsing beyond what is needed. Partial credit if extra unnecessary navigation occurs but does not change results/order. No credit if the agent continues and ends up reporting items from a changed query/filter/sort state or fabricates missing items.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

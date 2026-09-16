@@ -1,0 +1,1771 @@
+{
+  "task_id": "browser_task_003-job-listing-extraction-20260915T065726Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.875,
+  "rubric_total_max_points": 20.0,
+  "rubric_total_earned_points": 17.5,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: (1) The agent listed three responsibilities instead of exactly two—this exceeds the requirement and doesn’t harm usefulness. (2) Minor phrasing differences in paraphrasing responsibilities/work-site arrangement would be fine, but here they match the page.\n\nCritical issues: (1) The agent did not provide two preferred qualifications, which is an explicitly requested primary deliverable item. The output instead says the preferred-qualification bullets were not readable/visible; however, the provided DOM evidence for the opened listing (states 4–5) does not show a “Preferred Qualifications” heading in-view, so the claim that the heading was visible is not supported by the DOM (a minor accuracy problem), and more importantly the agent failed to extract the required two preferred qualifications.\n\nWhat was completed successfully: The agent did perform the correct targeted search on Microsoft Careers for “Applied Scientist” with location “Redmond, Washington” (DOM states 3–5 show the query/location parameters). The agent opened a relevant listing (“Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI)”) that explicitly includes “United States, Washington, Redmond + 4 more” (DOM states 4–5). It correctly reported the job number (200017828) and work-site arrangement (“3 days / week in-office”), both explicitly shown in the DOM. It also reported at least two responsibilities that are directly supported by the Responsibilities bullets in DOM state 5.\n\nOverall outcome: Despite correctly finding and opening a relevant Redmond-associated Applied Scientist listing and extracting most required details, the agent failed to deliver one of the task’s required outputs (two preferred qualifications). Because that missing element is a hard requirement and part of the primary deliverable, the task is not successfully completed from an average user’s perspective.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "The user wanted the agent to use Microsoft Careers to find and open a relevant “Applied Scientist” job associated with Redmond, WA, then extract and report four specific pieces of information from that single listing: the job number, the work-site arrangement, two key responsibilities, and two preferred qualifications. A reasonable user would be flexible on the exact Applied Scientist level/title variant (e.g., Applied Scientist II/Senior) and “Redmond + other locations” being acceptable as long as Redmond is explicitly included, but would not be flexible on missing any of the requested fields—especially the two preferred qualifications."
+  },
+  "preflight": {
+    "task_id": "browser_task_003-job-listing-extraction-20260915T065726Z",
+    "actions": 5,
+    "dom_model_states": 6,
+    "initial_state": 0,
+    "final_state": 5,
+    "alignment": {
+      "task_id": "browser_task_003-job-listing-extraction-20260915T065726Z",
+      "action_count": 5,
+      "state_count": 6,
+      "initial_state": 0,
+      "final_state": 5,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e8",
+            "target": {
+              "ref": "e8",
+              "role": "textbox",
+              "name": "Search by job title, ID, or keyword"
+            },
+            "text": "Applied Scientist",
+            "thoughts": "Enter the job title into the search textbox to look for Applied Scientist roles."
+          },
+          "observed_after_url": "https://careers.microsoft.com/v2/global/en/home.html"
+        },
+        {
+          "ordinal": 2,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e34",
+            "target": {
+              "ref": "e34",
+              "role": "textbox",
+              "name": "City, state, or country/region"
+            },
+            "text": "Redmond, Washington",
+            "thoughts": "Set the location filter to Redmond, Washington before searching for jobs."
+          },
+          "observed_after_url": "https://careers.microsoft.com/v2/global/en/home.html"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e23",
+            "target": {
+              "ref": "e23",
+              "role": "button",
+              "name": "Find jobs"
+            },
+            "thoughts": "Search with the filled role and location by clicking the Find jobs button to get Applied Scientist listings in Redmond."
+          },
+          "observed_after_url": "https://apply.careers.microsoft.com/careers?query=Applied%20Scientist&location=Redmond%2C%20Washington&start=0"
+        },
+        {
+          "ordinal": 4,
+          "name": "wait",
+          "arguments": {
+            "action": "wait",
+            "seconds": 2.0,
+            "thoughts": "Job cards are still showing as 'Loading job card'; waiting briefly should allow the Applied Scientist results for Redmond to load before selecting one."
+          },
+          "observed_after_url": "https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington&pid=1970393556650765&sort_by=relevance&filter_distance=160&filter_include_remote=1&filter_include_relocation=0"
+        },
+        {
+          "ordinal": 5,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "The job number and work-site arrangement are visible, but responsibilities and preferred qualifications text are likely further down in the Job description tab panel, so I need to scroll within the page to bring them into view."
+          },
+          "observed_after_url": "https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington&pid=1970393556650765&sort_by=relevance&filter_distance=160&filter_include_remote=1&filter_include_relocation=0"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "38b973c32287853b1592e0d8a076367ce51fabd41f26167c9b318a4728ea4d18",
+          "after_sha256": "b583fc7b80be9bbb077e9080f61c465dd8317f88c7c8cbb000aa7dca2885b1a2",
+          "before_url": "https://careers.microsoft.com/v2/global/en/home.html",
+          "after_url": "https://careers.microsoft.com/v2/global/en/home.html"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "b583fc7b80be9bbb077e9080f61c465dd8317f88c7c8cbb000aa7dca2885b1a2",
+          "after_sha256": "549840af1ccdf1210cf535cd5ceb60eb7919f5f14014202fa7a1baa5772d0128",
+          "before_url": "https://careers.microsoft.com/v2/global/en/home.html",
+          "after_url": "https://careers.microsoft.com/v2/global/en/home.html"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "549840af1ccdf1210cf535cd5ceb60eb7919f5f14014202fa7a1baa5772d0128",
+          "after_sha256": "96d875837ed403c35e42314c6cdaaef06abb7c6d04606bc77f2b2ea94f8c7707",
+          "before_url": "https://careers.microsoft.com/v2/global/en/home.html",
+          "after_url": "https://apply.careers.microsoft.com/careers?query=Applied%20Scientist&location=Redmond%2C%20Washington&start=0"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "96d875837ed403c35e42314c6cdaaef06abb7c6d04606bc77f2b2ea94f8c7707",
+          "after_sha256": "452d06a6533b500ef0510b53318557f283c449079efa434a3e0d655637b5e1af",
+          "before_url": "https://apply.careers.microsoft.com/careers?query=Applied%20Scientist&location=Redmond%2C%20Washington&start=0",
+          "after_url": "https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington&pid=1970393556650765&sort_by=relevance&filter_distance=160&filter_include_remote=1&filter_include_relocation=0"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "452d06a6533b500ef0510b53318557f283c449079efa434a3e0d655637b5e1af",
+          "after_sha256": "9d5327e83613f8988c52ebb291c99984fd3c4797db0c33a027402d876a6e6579",
+          "before_url": "https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington&pid=1970393556650765&sort_by=relevance&filter_distance=160&filter_include_remote=1&filter_include_relocation=0",
+          "after_url": "https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington&pid=1970393556650765&sort_by=relevance&filter_distance=160&filter_include_remote=1&filter_include_relocation=0"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "initial_url_same_origin_redirect",
+          "message": "initial URL resolved from 'https://careers.microsoft.com/' to 'https://careers.microsoft.com/v2/global/en/home.html'",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e8' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e34' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e23' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "6cb1ce774b4da7e22243c6a0ae5ffb597dc341935f8a53dfbce2c309d01e3fb2",
+    "criterion_order": [
+      "Use Microsoft Careers to search for an Applied Scientist role in/associated with Redmond, WA (or clearly report access blockers)",
+      "Open one relevant listing and stop after opening one (or report that no exact match exists)",
+      "Report the job number from the listing (or state it is not shown)",
+      "Report the work-site arrangement from the listing (or state it is not shown)",
+      "Report two key responsibilities from the listing",
+      "Report two preferred qualifications from the listing (or clearly state preferred qualifications are not listed)",
+      "Respect constraints (no sign-in, no application, no form submission)"
+    ],
+    "maximum_points": [
+      3.0,
+      3.0,
+      2.0,
+      2.0,
+      3.0,
+      3.0,
+      4.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_03_rerun/20260915_task03_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_03_rerun/20260915_task03_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "6cb1ce774b4da7e22243c6a0ae5ffb597dc341935f8a53dfbce2c309d01e3fb2",
+  "criterion_denominator": 20,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 110618,
+      "completion_tokens": 12326,
+      "reasoning_tokens": 0,
+      "total_tokens": 122944
+    },
+    "action_judge": {
+      "prompt_tokens": 18884,
+      "completion_tokens": 3574,
+      "reasoning_tokens": 2112,
+      "total_tokens": 22458
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 24,
+      "api_attempts": 24,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 6,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 6,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 7,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 2,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 1,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 3,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 6,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 9,
+        "1": 2,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 5,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 2,
+        "5": 0,
+        "6": 8,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 0,
+        "6": 8,
+        "screenshot_idx": 5
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        5,
+        4,
+        3,
+        0,
+        2
+      ],
+      "1": [
+        5,
+        4,
+        3,
+        2,
+        0
+      ],
+      "2": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "3": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "4": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "5": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "6": [
+        5,
+        4,
+        0,
+        2,
+        3
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows a Microsoft Careers search with query set to “Applied Scientist” and location set to “Redmond, Washington,” and the results list includes roles labeled in “United States, Washington, Redmond…”, satisfying the targeted search requirement.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 shows URL `https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington...` and visible results list entries including “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) United States, Washington, Redmond + 4 more”.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM state confirms a Microsoft Careers search for “Applied Scientist” with location set to “Redmond, Washington” (both via URL parameters and the resulting list showing Redmond, WA roles).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4. URL shows query and location parameters: https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington&... Visible results include location text: “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) United States, Washington, Redmond + 4 more”. Search inputs present: [1635] search-input “Search by job title, ID, or keyword”; [1661] text-input “City, state, or country/region”.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly shows a Microsoft Careers search/results page URL containing both `query=Applied Scientist` and `location=Redmond, Washington`, demonstrating the agent performed a targeted search for Applied Scientist roles in Redmond, WA.",
+          "discrepancies": "None for this criterion. The evidence directly includes both the job query and the Redmond, Washington location parameter.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows URL `https://apply.careers.microsoft.com/careers?query=Applied%20Scientist&location=Redmond%2C%20Washington&start=0` with Title `Careers at Microsoft` (m3:L1-L4).",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM snapshot confirms the agent was on Microsoft Careers and had access to a search entry point (\"Search Search jobs\"). However, there is no DOM-confirmed evidence in the provided state of an actual search for \"Applied Scientist\" nor any location targeting to Redmond, Washington, and no evidence of opening a relevant listing. Therefore, only the general use of Microsoft Careers is supported; the targeted search specifics cannot be verified from DOM_MODEL_STATE_INDEX: 0 alone.",
+          "discrepancies": "Action history claims typing \"Applied Scientist\" and \"Redmond, Washington\" into specific textboxes and clicking \"Find jobs\", but those fields/actions/results are not present/confirmable in DOM_MODEL_STATE_INDEX: 0. The predicted output references a specific job number and work-site arrangement, but no job listing content is present in the provided DOM evidence.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL https://careers.microsoft.com/v2/global/en/home.html (Title: \"Home | Microsoft Careers\"). Visible content includes a header link to \"https://apply.careers.microsoft.com/careers\" and a job-search entry control: [25] button labeled \"Search Search jobs\". No DOM content in this snapshot shows the search input fields (e.g., \"Search by job title, ID, or keyword\" / \"City, state, or country/region\"), any typed values, a \"Find jobs\" click, results, or a selected listing.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe page shows one specific Applied Scientist listing opened/selected (the job title appears as the page title and the job description panel is populated). The listing is relevant and associated with “United States, Washington, Redmond + 4 more.”",
+          "discrepancies": "While the prompt asks to “open one relevant listing and stop after opening one,” the DOM/action history does not show clicks on multiple listings; however, we cannot prove from the DOM alone that no other listings were opened earlier (only that this one is currently open).",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 Title: “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) | Microsoft Careers”. The results list shows the link for this job with `control_state=current=true`, and the Job description panel is visible with fields like “Job number 200017828” and responsibilities text.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nOne relevant listing (Applied Scientist, associated with Redmond, WA) is open/selected in the job description panel, and the provided trace shows only this one listing being opened/used for extraction in the final reported output.",
+          "discrepancies": "The listing is “Redmond + 4 more” rather than exclusively Redmond-only, but it is explicitly associated with Redmond, WA in the listing header.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4. Page title: “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) | Microsoft Careers”. In results list, the corresponding item is marked current=true: [4147] link “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) United States, Washington, Redmond + 4 more ...” control_state=current=true. Job description panel header shows the same job title and location: “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI)” and “United States, Washington, Redmond + 4 more”.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe job number is explicitly displayed as 200017828 in the opened listing’s job description section.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 under Job description shows label “Job number” followed by value “200017828”.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe job number is explicitly shown as 200017828 on the opened listing.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4. In Job description panel: label “Job number” followed by value “200017828”. Also appears in COMPLETE READ-ONLY CONTROL TEXT: “Job number 200017828 ...”.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe listing explicitly states the work-site arrangement as “3 days / week in-office.”",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 under Job description shows “Work site” followed by “3 days / week in-office”.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe work-site arrangement is explicitly displayed as “3 days / week in-office.”",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4. Job details line shows: “Work site 3 days / week in-office”. This appears in COMPLETE READ-ONLY CONTROL TEXT: “... Work site 3 days / week in-office Travel Less than 25% ...”.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nAt least two distinct responsibilities are explicitly listed in the DOM under “Responsibilities,” including fine-tuning/evaluating LLMs with RLHF and designing/implementing agent adversarial evaluations and safety mitigations with the tech lead.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 includes a “Responsibilities” section with bullets, including: (1) “Conduct supervised fine-tuning of LLMs, applying Reinforcement Learning from Human Feedback in the process, and conducting thorough evaluation of those.” (2) “Work with tech lead on the design and implementation of Agent adversarial evaluations and safety mitigations, enabling agent creators to identify potential risks and apply appropriate safeguards to ensure the safety and security of Agents.” (3) Another bullet about collaborating with Responsible AI engineering team.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM snapshot does not include a preferred-qualifications section or any preferred-qualification bullets. Therefore, it cannot support extracting two preferred qualifications, nor can it conclusively prove that none exist elsewhere on the page (it may require additional scrolling not captured here).",
+          "discrepancies": "Agent predicted output claimed a “Preferred Qualifications” heading was visible but not the bullets; however, in DOM_MODEL_STATE_INDEX: 5, no “Preferred Qualifications” heading is present in the visible content provided.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 visible content includes headings and sections through “Responsibilities” and then “Insights from previous hires,” but does not show any “Preferred qualifications” / “Preferred Qualifications” section or bullets in the captured DOM.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe agent did not fabricate preferred qualifications; instead, it stated that the “Preferred Qualifications” heading was visible but the detailed bullet points were not accessible/visible in the evidence available. In the provided DOM evidence for state 4, the preferred-qualification bullets are not present, so two preferred qualifications cannot be verified from this state.",
+          "discrepancies": "The agent’s predicted output claims a “Preferred Qualifications” heading was visible, but the provided DOM_MODEL_STATE_INDEX: 4 excerpt does not include that heading text. Thus, the inability to extract two preferred qualifications is supported, but the specific claim about seeing the heading is not supported by this DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4. The visible content and complete read-only text include job metadata (job number, date posted, work site, travel, etc.) and the beginning of “Overview...”, but do not show a “Preferred qualifications” section or any preferred-qualification bullet points in the captured DOM excerpt.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM snapshot is limited to the search/results page URL and title and does not show an individual job listing page, nor any preferred-qualification bullets/text. Therefore, the agent’s ability (or inability) to extract and report two preferred qualifications from the listing cannot be verified from this DOM evidence.",
+          "discrepancies": "Agent-predicted output claims a specific job number, work-site arrangement, responsibilities, and that \"Preferred Qualifications\" heading is visible but bullets are not. None of that content is present in the provided DOM evidence (state 3), so those claims are not supportable from this snapshot.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 only contains the search/results URL and page title; it does not include any opened job listing content or any section labeled \"Preferred Qualifications\" or equivalent (m3:L1-L4).",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "condition_verification": true,
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM-model evidence is from the Microsoft Careers home page, not an opened job listing. It contains no job description content and therefore cannot verify whether the listing includes preferred qualifications or what they are. As a result, it cannot support or contradict the agent’s claim that preferred-qualification bullets were not visible/readable, nor can it confirm two preferred qualifications.",
+          "discrepancies": "The agent output references a specific listing (job number 200017828, work-site arrangement, responsibilities, and a \"Preferred Qualifications\" heading) but DOM_MODEL_STATE_INDEX 2 does not contain any of those listing-specific elements. The required two preferred qualifications cannot be validated from this state.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 (https://careers.microsoft.com/v2/global/en/home.html, \"Home | Microsoft Careers\"). Visible content shows only the Microsoft Careers home header/navigation and a search area with text including \"Applied Scientist\" and a \"Find jobs\" button. No job listing page content is present, and there is no \"Preferred Qualifications\" section or any qualifications text in this DOM snapshot.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nRubric criterion 5 requires two preferred qualifications from the opened listing, or an explicit statement that preferred qualifications are not present/identifiable on the listing. The only provided DOM evidence is the Microsoft Careers home page (DOM_MODEL_STATE_INDEX: 1) and does not include any opened job listing or job-description panel; therefore the presence/absence and content of a “Preferred Qualifications” section on the relevant listing cannot be verified or falsified from the DOM evidence available.",
+          "discrepancies": "The agent’s predicted output asserts that a listing shows a “Preferred Qualifications” heading but that bullet points are not visible; however, DOM_MODEL_STATE_INDEX: 1 contains no listing page and no “Preferred Qualifications” text at all. As a result, the claim that the heading is visible (and any inference about preferred qualifications) is not supported by the provided DOM evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL https://careers.microsoft.com/v2/global/en/home.html (Home | Microsoft Careers). Visible content includes navigation and a search module with text like “Search by job title, ID, or keyword”, “City, state, or country/region”, and a “Find jobs” button. There is no job listing detail page content, no job description section, and no visible text “Preferred Qualifications” or any preferred-qualification bullet items in this DOM snapshot.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "6": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nNo actions indicate signing in, initiating an application, uploading a resume, or submitting any form. Interactions are limited to search/filter input, a search button, waiting, and scrolling, which respects the constraints.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "Action history shows only typing in search fields (Actions 1–2), clicking “Find jobs” (Action 3), waiting (Action 4), and scrolling (Action 5). DOM_MODEL_STATE_INDEX: 5 shows buttons like “Apply now” and “Upload your resume” exist but no evidence of clicking them; no sign-in UI or submitted forms are evidenced.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nNo sign-in, no application action, and no form submission is evidenced in the recorded actions; the interactions stayed within search/browsing and scrolling.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4. There is a clickable “Sign in” control [1377] and an “Apply now” link [4401], but no evidence of activation of sign-in or application submission in the action history. Action history shows only typing into search fields, clicking “Find jobs”, waiting, and scrolling.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nWithin the available evidence, there is no indication the agent signed in, applied, or submitted any form. However, DOM state 3 alone cannot conclusively prove that no form submission occurred elsewhere (it only shows the results URL and title), so this is only partially supported by the provided record.",
+          "discrepancies": "None observed with respect to the constraint-violating actions; the logged actions are consistent with searching only.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the agent on a search/results URL (`.../careers?query=...&location=...`) and does not show any sign-in UI, application flow, or form submission confirmation (m3:L1-L4). Action history shows typing search fields and clicking \"Find jobs\" plus wait/scroll; no actions indicate sign-in/apply/submit.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nBased on the only provided DOM snapshot, there is no evidence the agent signed in, applied, or submitted any form. However, because the DOM evidence does not include later states where the agent allegedly navigated to listings, full compliance across the entire process cannot be conclusively verified from DOM_MODEL_STATE_INDEX: 0 alone.",
+          "discrepancies": "The action history indicates navigation to apply.careers.microsoft.com and interacting with search controls, which could include form-like inputs; none of that is present in the provided DOM snapshot, so constraint compliance beyond the initial page is not fully verifiable from DOM evidence alone.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows a [93] button \"Sign in\" is present, but there is no evidence it was clicked. No application or form-submission UI is shown in the snapshot (no \"Apply\" flow, no submitted form confirmation, no personal-info forms).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "condition_verification": true,
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nFrom this single DOM snapshot, we cannot fully verify the whole-session constraint compliance. The state does not show any sign-in, application, or submitted form, but it also does not include the later states where the agent allegedly opened a listing. Therefore, constraint compliance across the process cannot be conclusively confirmed from this evidence alone.",
+          "discrepancies": "Action history (outside the DOM snapshot) mentions navigating to apply.careers.microsoft.com and scrolling, but DOM_MODEL_STATE_INDEX 2 provides no corroborating evidence of those later interactions. No direct evidence of constraint violation is present in this state.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows a link \"Sign in\" [93] on the page, but there is no evidence of it being clicked or any sign-in flow. The snapshot is the home page; it does not show any application form, submission confirmation, or \"Apply\" workflow.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM evidence includes a dedicated Microsoft Careers search/results page where the query and location are explicit in the page context (shown via parameters and/or visible search inputs). Results shown on the page include roles labeled with location text that contains “United States, Washington, Redmond,” which is the site’s displayed format for associating a role with Redmond, WA.",
+      "1": "The listing titled “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI)” is shown as the currently selected/open item (e.g., marked current=true) with its job details panel visible. The location displayed for that listing is “United States, Washington, Redmond + 4 more,” indicating Redmond is included but the role is not shown as Redmond-only in the UI. The DOM snapshots only show this one listing in an opened/selected state, but DOM alone cannot prove the agent never opened any other listings earlier in the session.",
+      "2": "The opened listing’s details panel explicitly shows a “Job number” field with the value “200017828,” clearly visible in the DOM text.",
+      "3": "The listing explicitly displays a “Work site” field stating “3 days / week in-office,” visible in the job details metadata area.",
+      "4": "A “Responsibilities” section is visible in the listing with multiple bullet points. At least two responsibilities are explicitly present, including (a) conducting supervised fine-tuning of LLMs with Reinforcement Learning from Human Feedback and evaluating them, and (b) working with the tech lead on design/implementation of agent adversarial evaluations and safety mitigations.",
+      "5": "In the provided listing DOM views, content is visible through sections like “Responsibilities” and “Insights from previous hires,” but no “Preferred Qualifications” (or equivalent preferred/bonus section) text or bullets are shown in the captured excerpts. This absence in the snapshot cannot establish that preferred qualifications do not exist elsewhere on the page (e.g., below the captured scroll), but it does mean two preferred qualifications cannot be extracted/verified from the provided DOM evidence.",
+      "6": "The pages show sign-in and application-related controls (e.g., “Sign in,” “Apply now,” “Upload your resume”) exist in the UI, but the recorded interaction evidence available is limited to searching, waiting, and scrolling, with no DOM indication of entering an application flow, signing in, uploading, or submitting any form."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Use Microsoft Careers to search for an Applied Scientist role in/associated with Redmond, WA (or clearly report access blockers)",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent entered “Applied Scientist” into the job title search field, entered “Redmond, Washington” into the location field, and clicked Find jobs, demonstrating a clear targeted search for Applied Scientist positions in Redmond, WA.",
+        "applicable_evidence": "DOM-model state 4 and state 5 (latest) show the search/results URL includes both parameters: `query=Applied Scientist` and `location=Redmond, Washington` and the page contains search inputs plus results labeled with “United States, Washington, Redmond…”.",
+        "post_image_justification": "The DOM explicitly confirms the agent executed the intended search with the Redmond, Washington location constraint. Baseline score stands.",
+        "reality_notes": "DOM evidence includes a dedicated Microsoft Careers search/results page where the query and location are explicit in the page context (shown via parameters and/or visible search inputs). Results shown on the page include roles labeled with location text that contains “United States, Washington, Redmond,” which is the site’s displayed format for associating a role with Redmond, WA."
+      },
+      {
+        "criterion": "Open one relevant listing and stop after opening one (or report that no exact match exists)",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent opened a single Applied Scientist listing associated with Redmond, WA and provided details from that listing without opening additional listings.",
+        "applicable_evidence": "DOM-model state 5 (latest) title is “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) | Microsoft Careers”, and the matching result item is marked `current=true`, with the job details panel visible for that listing (location includes “United States, Washington, Redmond + 4 more”).",
+        "post_image_justification": "Evidence supports that one relevant Applied Scientist listing associated with Redmond is opened/selected. While DOM cannot prove no other listings were opened earlier, nothing indicates multiple listings were opened, and this criterion is satisfied by the opened relevant listing shown. Keep full credit.",
+        "reality_notes": "The listing titled “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI)” is shown as the currently selected/open item (e.g., marked current=true) with its job details panel visible. The location displayed for that listing is “United States, Washington, Redmond + 4 more,” indicating Redmond is included but the role is not shown as Redmond-only in the UI. The DOM snapshots only show this one listing in an opened/selected state, but DOM alone cannot prove the agent never opened any other listings earlier in the session."
+      },
+      {
+        "criterion": "Report the job number from the listing (or state it is not shown)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent accurately recorded the job number “200017828” exactly as displayed in the listing.",
+        "applicable_evidence": "DOM-model state 5 (latest) job metadata clearly shows “Job number 200017828”.",
+        "post_image_justification": "Agent reported job number 200017828, which is directly supported by DOM. Full credit maintained.",
+        "reality_notes": "The opened listing’s details panel explicitly shows a “Job number” field with the value “200017828,” clearly visible in the DOM text."
+      },
+      {
+        "criterion": "Report the work-site arrangement from the listing (or state it is not shown)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent reported the work-site arrangement “3 days / week in-office” matching the listing’s language.",
+        "applicable_evidence": "DOM-model state 5 (latest) job metadata shows “Work site 3 days / week in-office”.",
+        "post_image_justification": "Agent’s reported work-site arrangement matches the DOM exactly. Full credit maintained.",
+        "reality_notes": "The listing explicitly displays a “Work site” field stating “3 days / week in-office,” visible in the job details metadata area."
+      },
+      {
+        "criterion": "Report two key responsibilities from the listing",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent provided three distinct responsibilities directly reflecting the job description text, exceeding the requirement of two.",
+        "applicable_evidence": "DOM-model state 5 (latest) includes a “Responsibilities” section with bullets, including (a) supervised fine-tuning of LLMs with RLHF and evaluation, and (b) design/implementation of agent adversarial evaluations and safety mitigations (plus additional bullets).",
+        "post_image_justification": "At least two responsibilities the agent listed are explicitly present in the DOM responsibilities bullets. Full credit maintained.",
+        "reality_notes": "A “Responsibilities” section is visible in the listing with multiple bullet points. At least two responsibilities are explicitly present, including (a) conducting supervised fine-tuning of LLMs with Reinforcement Learning from Human Feedback and evaluating them, and (b) working with the tech lead on design/implementation of agent adversarial evaluations and safety mitigations."
+      },
+      {
+        "criterion": "Report two preferred qualifications from the listing (or clearly state preferred qualifications are not listed)",
+        "earned_points": 3,
+        "post_image_earned_points": 0.5,
+        "max_points": 3,
+        "justification": "The agent explicitly stated that although the “Preferred Qualifications” heading was visible, the detailed bullet points were not exposed in the current viewport and thus could not be reliably reported, without fabricating content.",
+        "applicable_evidence": "DOM-model state 5 (latest) shows sections through “Responsibilities” and “Insights from previous hires” but does not show any “Preferred Qualifications” section or bullets in the captured DOM. No DOM state provided contains two preferred-qualification bullet items to extract/verify.",
+        "post_image_justification": "This criterion requires two preferred qualifications from the listing, or stating that preferred qualifications are not listed. The agent did not provide any preferred qualifications, and also made an unsupported claim that a “Preferred Qualifications” heading was visible. Since preferred qualifications are neither provided nor verifiably absent from the listing (only absent from the captured excerpt), the core requirement is not met. Award minimal credit for correctly avoiding fabrication beyond that unsupported “heading visible” claim.",
+        "reality_notes": "In the provided listing DOM views, content is visible through sections like “Responsibilities” and “Insights from previous hires,” but no “Preferred Qualifications” (or equivalent preferred/bonus section) text or bullets are shown in the captured excerpts. This absence in the snapshot cannot establish that preferred qualifications do not exist elsewhere on the page (e.g., below the captured scroll), but it does mean two preferred qualifications cannot be extracted/verified from the provided DOM evidence."
+      },
+      {
+        "criterion": "Respect constraints (no sign-in, no application, no form submission)",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "Throughout the Action History and final output, the agent performed searches and scrolled through listings without signing in, applying for the job, or submitting any forms.",
+        "applicable_evidence": "Action history shows only typing into search fields, clicking “Find jobs,” waiting, and scrolling. DOM-model states 4-5 show “Sign in” and “Apply now” exist but no evidence of clicking them or submitting anything.",
+        "post_image_justification": "No sign-in, application initiation, or form submission is evidenced; behavior stays within search/browse constraints. Full credit maintained.",
+        "reality_notes": "The pages show sign-in and application-related controls (e.g., “Sign in,” “Apply now,” “Upload your resume”) exist in the UI, but the recorded interaction evidence available is limited to searching, waiting, and scrolling, with no DOM indication of entering an application flow, signing in, uploading, or submitting any form."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "The task required searching Microsoft Careers for an Applied Scientist role in Redmond, WA, opening one relevant listing, and recording specific details. The recorded actions consist of entering the query and location, clicking “Find jobs,” waiting for results, and scrolling within the job listing page. These are all necessary exploratory/navigation steps to complete the task and have no lasting material side effects. There is no evidence of signing in, applying, uploading a resume, submitting any forms, or otherwise taking actions that create persistent consequences (e.g., initiating an application workflow or submitting data). The only issue reflected in the rubric scoring is missing/unsupported extraction of preferred qualifications (already penalized under Criterion 5). No additional extraneous or unsolicited actions with material side effects occurred that were not already covered by existing rubric criteria. Therefore, no new penalty criterion is warranted.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.875
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.875,
+          "total_earned_points": 17.5,
+          "total_max_points": 20.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Use Microsoft Careers to search for an Applied Scientist role in/associated with Redmond, WA (or clearly report access blockers)",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent entered “Applied Scientist” into the job title search field, entered “Redmond, Washington” into the location field, and clicked Find jobs, demonstrating a clear targeted search for Applied Scientist positions in Redmond, WA.",
+              "applicable_evidence": "DOM-model state 4 and state 5 (latest) show the search/results URL includes both parameters: `query=Applied Scientist` and `location=Redmond, Washington` and the page contains search inputs plus results labeled with “United States, Washington, Redmond…”.",
+              "post_image_justification": "The DOM explicitly confirms the agent executed the intended search with the Redmond, Washington location constraint. Baseline score stands.",
+              "reality_notes": "DOM evidence includes a dedicated Microsoft Careers search/results page where the query and location are explicit in the page context (shown via parameters and/or visible search inputs). Results shown on the page include roles labeled with location text that contains “United States, Washington, Redmond,” which is the site’s displayed format for associating a role with Redmond, WA."
+            },
+            {
+              "criterion": "Open one relevant listing and stop after opening one (or report that no exact match exists)",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent opened a single Applied Scientist listing associated with Redmond, WA and provided details from that listing without opening additional listings.",
+              "applicable_evidence": "DOM-model state 5 (latest) title is “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) | Microsoft Careers”, and the matching result item is marked `current=true`, with the job details panel visible for that listing (location includes “United States, Washington, Redmond + 4 more”).",
+              "post_image_justification": "Evidence supports that one relevant Applied Scientist listing associated with Redmond is opened/selected. While DOM cannot prove no other listings were opened earlier, nothing indicates multiple listings were opened, and this criterion is satisfied by the opened relevant listing shown. Keep full credit.",
+              "reality_notes": "The listing titled “Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI)” is shown as the currently selected/open item (e.g., marked current=true) with its job details panel visible. The location displayed for that listing is “United States, Washington, Redmond + 4 more,” indicating Redmond is included but the role is not shown as Redmond-only in the UI. The DOM snapshots only show this one listing in an opened/selected state, but DOM alone cannot prove the agent never opened any other listings earlier in the session."
+            },
+            {
+              "criterion": "Report the job number from the listing (or state it is not shown)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent accurately recorded the job number “200017828” exactly as displayed in the listing.",
+              "applicable_evidence": "DOM-model state 5 (latest) job metadata clearly shows “Job number 200017828”.",
+              "post_image_justification": "Agent reported job number 200017828, which is directly supported by DOM. Full credit maintained.",
+              "reality_notes": "The opened listing’s details panel explicitly shows a “Job number” field with the value “200017828,” clearly visible in the DOM text."
+            },
+            {
+              "criterion": "Report the work-site arrangement from the listing (or state it is not shown)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent reported the work-site arrangement “3 days / week in-office” matching the listing’s language.",
+              "applicable_evidence": "DOM-model state 5 (latest) job metadata shows “Work site 3 days / week in-office”.",
+              "post_image_justification": "Agent’s reported work-site arrangement matches the DOM exactly. Full credit maintained.",
+              "reality_notes": "The listing explicitly displays a “Work site” field stating “3 days / week in-office,” visible in the job details metadata area."
+            },
+            {
+              "criterion": "Report two key responsibilities from the listing",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent provided three distinct responsibilities directly reflecting the job description text, exceeding the requirement of two.",
+              "applicable_evidence": "DOM-model state 5 (latest) includes a “Responsibilities” section with bullets, including (a) supervised fine-tuning of LLMs with RLHF and evaluation, and (b) design/implementation of agent adversarial evaluations and safety mitigations (plus additional bullets).",
+              "post_image_justification": "At least two responsibilities the agent listed are explicitly present in the DOM responsibilities bullets. Full credit maintained.",
+              "reality_notes": "A “Responsibilities” section is visible in the listing with multiple bullet points. At least two responsibilities are explicitly present, including (a) conducting supervised fine-tuning of LLMs with Reinforcement Learning from Human Feedback and evaluating them, and (b) working with the tech lead on design/implementation of agent adversarial evaluations and safety mitigations."
+            },
+            {
+              "criterion": "Report two preferred qualifications from the listing (or clearly state preferred qualifications are not listed)",
+              "earned_points": 3,
+              "post_image_earned_points": 0.5,
+              "max_points": 3,
+              "justification": "The agent explicitly stated that although the “Preferred Qualifications” heading was visible, the detailed bullet points were not exposed in the current viewport and thus could not be reliably reported, without fabricating content.",
+              "applicable_evidence": "DOM-model state 5 (latest) shows sections through “Responsibilities” and “Insights from previous hires” but does not show any “Preferred Qualifications” section or bullets in the captured DOM. No DOM state provided contains two preferred-qualification bullet items to extract/verify.",
+              "post_image_justification": "This criterion requires two preferred qualifications from the listing, or stating that preferred qualifications are not listed. The agent did not provide any preferred qualifications, and also made an unsupported claim that a “Preferred Qualifications” heading was visible. Since preferred qualifications are neither provided nor verifiably absent from the listing (only absent from the captured excerpt), the core requirement is not met. Award minimal credit for correctly avoiding fabrication beyond that unsupported “heading visible” claim.",
+              "reality_notes": "In the provided listing DOM views, content is visible through sections like “Responsibilities” and “Insights from previous hires,” but no “Preferred Qualifications” (or equivalent preferred/bonus section) text or bullets are shown in the captured excerpts. This absence in the snapshot cannot establish that preferred qualifications do not exist elsewhere on the page (e.g., below the captured scroll), but it does mean two preferred qualifications cannot be extracted/verified from the provided DOM evidence."
+            },
+            {
+              "criterion": "Respect constraints (no sign-in, no application, no form submission)",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "Throughout the Action History and final output, the agent performed searches and scrolled through listings without signing in, applying for the job, or submitting any forms.",
+              "applicable_evidence": "Action history shows only typing into search fields, clicking “Find jobs,” waiting, and scrolling. DOM-model states 4-5 show “Sign in” and “Apply now” exist but no evidence of clicking them or submitting anything.",
+              "post_image_justification": "No sign-in, application initiation, or form submission is evidenced; behavior stays within search/browse constraints. Full credit maintained.",
+              "reality_notes": "The pages show sign-in and application-related controls (e.g., “Sign in,” “Apply now,” “Upload your resume”) exist in the UI, but the recorded interaction evidence available is limited to searching, waiting, and scrolling, with no DOM indication of entering an application flow, signing in, uploading, or submitting any form."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "The task required searching Microsoft Careers for an Applied Scientist role in Redmond, WA, opening one relevant listing, and recording specific details. The recorded actions consist of entering the query and location, clicking “Find jobs,” waiting for results, and scrolling within the job listing page. These are all necessary exploratory/navigation steps to complete the task and have no lasting material side effects. There is no evidence of signing in, applying, uploading a resume, submitting any forms, or otherwise taking actions that create persistent consequences (e.g., initiating an application workflow or submitting data). The only issue reflected in the rubric scoring is missing/unsupported extraction of preferred qualifications (already penalized under Criterion 5). No additional extraneous or unsolicited actions with material side effects occurred that were not already covered by existing rubric criteria. Therefore, no new penalty criterion is warranted.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "The user wanted the agent to use Microsoft Careers to find and open a relevant “Applied Scientist” job associated with Redmond, WA, then extract and report four specific pieces of information from that single listing: the job number, the work-site arrangement, two key responsibilities, and two preferred qualifications. A reasonable user would be flexible on the exact Applied Scientist level/title variant (e.g., Applied Scientist II/Senior) and “Redmond + other locations” being acceptable as long as Redmond is explicitly included, but would not be flexible on missing any of the requested fields—especially the two preferred qualifications.",
+      "reasoning": "Nitpicks: (1) The agent listed three responsibilities instead of exactly two—this exceeds the requirement and doesn’t harm usefulness. (2) Minor phrasing differences in paraphrasing responsibilities/work-site arrangement would be fine, but here they match the page.\n\nCritical issues: (1) The agent did not provide two preferred qualifications, which is an explicitly requested primary deliverable item. The output instead says the preferred-qualification bullets were not readable/visible; however, the provided DOM evidence for the opened listing (states 4–5) does not show a “Preferred Qualifications” heading in-view, so the claim that the heading was visible is not supported by the DOM (a minor accuracy problem), and more importantly the agent failed to extract the required two preferred qualifications.\n\nWhat was completed successfully: The agent did perform the correct targeted search on Microsoft Careers for “Applied Scientist” with location “Redmond, Washington” (DOM states 3–5 show the query/location parameters). The agent opened a relevant listing (“Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI)”) that explicitly includes “United States, Washington, Redmond + 4 more” (DOM states 4–5). It correctly reported the job number (200017828) and work-site arrangement (“3 days / week in-office”), both explicitly shown in the DOM. It also reported at least two responsibilities that are directly supported by the Responsibilities bullets in DOM state 5.\n\nOverall outcome: Despite correctly finding and opening a relevant Redmond-associated Applied Scientist listing and extracting most required details, the agent failed to deliver one of the task’s required outputs (two preferred qualifications). Because that missing element is a hard requirement and part of the primary deliverable, the task is not successfully completed from an average user’s perspective.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "The user wanted the agent to use Microsoft Careers to find and open a relevant “Applied Scientist” job associated with Redmond, WA, then extract and report four specific pieces of information from that single listing: the job number, the work-site arrangement, two key responsibilities, and two preferred qualifications. A reasonable user would be flexible on the exact Applied Scientist level/title variant (e.g., Applied Scientist II/Senior) and “Redmond + other locations” being acceptable as long as Redmond is explicitly included, but would not be flexible on missing any of the requested fields—especially the two preferred qualifications.",
+          "reasoning": "Nitpicks: (1) The agent listed three responsibilities instead of exactly two—this exceeds the requirement and doesn’t harm usefulness. (2) Minor phrasing differences in paraphrasing responsibilities/work-site arrangement would be fine, but here they match the page.\n\nCritical issues: (1) The agent did not provide two preferred qualifications, which is an explicitly requested primary deliverable item. The output instead says the preferred-qualification bullets were not readable/visible; however, the provided DOM evidence for the opened listing (states 4–5) does not show a “Preferred Qualifications” heading in-view, so the claim that the heading was visible is not supported by the DOM (a minor accuracy problem), and more importantly the agent failed to extract the required two preferred qualifications.\n\nWhat was completed successfully: The agent did perform the correct targeted search on Microsoft Careers for “Applied Scientist” with location “Redmond, Washington” (DOM states 3–5 show the query/location parameters). The agent opened a relevant listing (“Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI)”) that explicitly includes “United States, Washington, Redmond + 4 more” (DOM states 4–5). It correctly reported the job number (200017828) and work-site arrangement (“3 days / week in-office”), both explicitly shown in the DOM. It also reported at least two responsibilities that are directly supported by the Responsibilities bullets in DOM state 5.\n\nOverall outcome: Despite correctly finding and opening a relevant Redmond-associated Applied Scientist listing and extracting most required details, the agent failed to deliver one of the task’s required outputs (two preferred qualifications). Because that missing element is a hard requirement and part of the primary deliverable, the task is not successfully completed from an average user’s perspective.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent correctly used Microsoft Careers to search for “Applied Scientist” with location set to Redmond, Washington and opened a relevant listing associated with “United States, Washington, Redmond + 4 more.” It successfully extracted and reported the job number, work-site arrangement, and at least two responsibilities grounded in the listing DOM. The trajectory fails on the required deliverable of providing two preferred qualifications: the agent stopped after a single scroll without continuing to search/scroll for the preferred-qualifications content, and its final output also included an unsupported statement that a “Preferred Qualifications” heading was visible even though the DOM excerpts provided (states 4–5) do not show that heading. These issues caused the overall task failure because two preferred qualifications are a hard requirement.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `wait` with unknown argument(s): seconds, thoughts. Valid arguments are: time.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['seconds', 'thoughts'] are not in the schema for `wait`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "After opening the listing, the agent performed only one scroll and then effectively concluded without continuing to locate and extract two preferred qualifications from the job description.",
+          "agent_reasoning": "The agent believed responsibilities and preferred qualifications were likely further down and attempted to scroll to bring them into view, but did not continue scrolling/searching when the preferred qualifications were not obtained.",
+          "evidence": "Action history ends at Action 5 (scroll). Rubric Criterion 5 shows preferred qualifications were not reported and DOM state 5 shows sections through “Responsibilities” and “Insights from previous hires” but no preferred-qualifications bullets captured; the agent did not take further actions (additional scrolls/search within page) to try to find them.",
+          "impact": "The agent failed to complete a required sub-goal (extract two preferred qualifications), leading directly to overall task failure."
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "2.1",
+          "error_category": "Hallucination",
+          "error_type": "Output contradiction",
+          "what_happened": "The agent claimed the current viewport clearly showed a “Preferred Qualifications” heading, but the provided DOM evidence for the opened listing does not show that heading in the captured content.",
+          "agent_reasoning": "The agent attempted to justify why it could not provide preferred-qualification bullets by stating the heading was visible but bullets were not.",
+          "evidence": "DOM-model evidence for Criterion 5 states that in DOM_MODEL_STATE_INDEX 4 and 5, no “Preferred Qualifications” heading text is present in the captured excerpts; rubric notes: “agent ... made an unsupported claim that a ‘Preferred Qualifications’ heading was visible.”",
+          "impact": "Reduced user trust/accuracy and weakened the explanation for missing preferred qualifications; combined with the missing deliverable, it contributed to task failure."
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "3.3",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete delivery",
+          "what_happened": "The agent did not deliver the required output of two preferred qualifications (nor did it cleanly and correctly conclude that preferred qualifications are not listed on the page).",
+          "agent_reasoning": "The agent believed it could not reliably read preferred-qualification bullets from what it had visible and chose to withhold them to avoid fabrication.",
+          "evidence": "Predicted Output contains no preferred qualification bullets and instead states it is unable to provide them. Outcome verification and rubric Criterion 5 confirm this is a hard requirement and was not met (0.5/3).",
+          "impact": "Primary deliverable missing; this is the decisive reason the overall outcome is FAILURE."
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task description unambiguously instructs the agent to search Microsoft Careers for “Applied Scientist” in Redmond, Washington, open one relevant listing, and report the job number, work-site arrangement, two responsibilities, and two preferred qualifications. All required parameters (search terms, location, and output fields) are specified, and the rubric confirms that a listing labeled “Redmond + 4 more” satisfies the Redmond requirement. The agent’s failure to extract preferred qualifications stems from its own incomplete scrolling and reading, not from any missing or conflicting task instructions.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully achievable via standard web interactions in a desktop browser and does not require credentials, involve illegal or NSFW content, nor violate any Responsible AI policy. There are no inherent environmental constraints, contradictory requirements, or prohibited actions. The agent could, in principle, complete the task as specified.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact website, job title (“Applied Scientist”), location (“Redmond, Washington”), and what to report (job number, work-site arrangement, two responsibilities, two preferred qualifications). There is a clear single interpretation and no missing critical information.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task involves browsing a public careers site without signing in or submitting forms, which is feasible and legal. It does not request illicit or NSFW content nor violate Responsible AI policies.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 6,
+    "final_state_index": 5,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_03_rerun/20260915_task03_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "38b973c32287853b1592e0d8a076367ce51fabd41f26167c9b318a4728ea4d18",
+        "byte_count": 2373,
+        "line_count": 33,
+        "estimated_tokens": 584,
+        "url": "https://careers.microsoft.com/v2/global/en/home.html",
+        "title": "Home | Microsoft Careers",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 24
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 25,
+            "end_line": 30
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 31,
+            "end_line": 33
+          }
+        ],
+        "control_refs": [
+          "45",
+          "48",
+          "25",
+          "93",
+          "30",
+          "34",
+          "110",
+          "36",
+          "20"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L33"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_03_rerun/20260915_task03_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "b583fc7b80be9bbb077e9080f61c465dd8317f88c7c8cbb000aa7dca2885b1a2",
+        "byte_count": 3644,
+        "line_count": 39,
+        "estimated_tokens": 897,
+        "url": "https://careers.microsoft.com/v2/global/en/home.html",
+        "title": "Home | Microsoft Careers",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 26
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 27,
+            "end_line": 32
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 33,
+            "end_line": 35
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 36,
+            "end_line": 37
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 38,
+            "end_line": 39
+          }
+        ],
+        "control_refs": [
+          "45",
+          "48",
+          "25",
+          "93",
+          "30",
+          "34",
+          "other",
+          "36"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L39"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_03_rerun/20260915_task03_rerun/_inputs/dom_model/dom_model2.txt",
+        "sha256": "549840af1ccdf1210cf535cd5ceb60eb7919f5f14014202fa7a1baa5772d0128",
+        "byte_count": 3644,
+        "line_count": 39,
+        "estimated_tokens": 897,
+        "url": "https://careers.microsoft.com/v2/global/en/home.html",
+        "title": "Home | Microsoft Careers",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 26
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 27,
+            "end_line": 32
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 33,
+            "end_line": 35
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 36,
+            "end_line": 37
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 38,
+            "end_line": 39
+          }
+        ],
+        "control_refs": [
+          "45",
+          "48",
+          "25",
+          "93",
+          "30",
+          "34",
+          "other",
+          "36"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L39"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_03_rerun/20260915_task03_rerun/_inputs/dom_model/dom_model3.txt",
+        "sha256": "96d875837ed403c35e42314c6cdaaef06abb7c6d04606bc77f2b2ea94f8c7707",
+        "byte_count": 282,
+        "line_count": 4,
+        "estimated_tokens": 71,
+        "url": "https://apply.careers.microsoft.com/careers?query=Applied%20Scientist&location=Redmond%2C%20Washington&start=0",
+        "title": "Careers at Microsoft",
+        "source_truncated": false,
+        "sections": [],
+        "control_refs": [],
+        "warnings": [],
+        "provenance": "m3:L1-L4"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_03_rerun/20260915_task03_rerun/_inputs/dom_model/dom_model4.txt",
+        "sha256": "452d06a6533b500ef0510b53318557f283c449079efa434a3e0d655637b5e1af",
+        "byte_count": 8923,
+        "line_count": 100,
+        "estimated_tokens": 2228,
+        "url": "https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington&pid=1970393556650765&sort_by=relevance&filter_distance=160&filter_include_remote=1&filter_include_relocation=0",
+        "title": "Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) | Microsoft Careers",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 55
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 56,
+            "end_line": 82
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 83,
+            "end_line": 86
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 87,
+            "end_line": 91
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 92,
+            "end_line": 96
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 97,
+            "end_line": 100
+          }
+        ],
+        "control_refs": [
+          "1204",
+          "1214",
+          "4147",
+          "4148",
+          "1635",
+          "1661",
+          "1453",
+          "2025",
+          "1693",
+          "1377",
+          "4396",
+          "1182",
+          "1190",
+          "2027",
+          "1692",
+          "2301",
+          "2309",
+          "2317",
+          "2325",
+          "2333",
+          "2341",
+          "1709",
+          "1710",
+          "1721",
+          "4401",
+          "4776",
+          "4413",
+          "4412",
+          "4424",
+          "other",
+          "1194",
+          "1767",
+          "4450",
+          "4451",
+          "1746"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L100"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_03_rerun/20260915_task03_rerun/_inputs/dom_model/dom_model5.txt",
+        "sha256": "9d5327e83613f8988c52ebb291c99984fd3c4797db0c33a027402d876a6e6579",
+        "byte_count": 10457,
+        "line_count": 104,
+        "estimated_tokens": 2611,
+        "url": "https://apply.careers.microsoft.com/careers?query=Applied+Scientist&start=0&location=Redmond%2C+Washington&pid=1970393556650765&sort_by=relevance&filter_distance=160&filter_include_remote=1&filter_include_relocation=0",
+        "title": "Applied Scientist II / Senior Applied Scientist - Responsible AI (CoreAI) | Microsoft Careers",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 88
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 89,
+            "end_line": 95
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 96,
+            "end_line": 100
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 101,
+            "end_line": 104
+          }
+        ],
+        "control_refs": [
+          "4147",
+          "4148",
+          "4165",
+          "4166",
+          "4183",
+          "4184",
+          "1767",
+          "4424",
+          "4450",
+          "4429",
+          "4430",
+          "4451",
+          "1746"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L104"
+      }
+    ],
+    "estimated_evidence_tokens": 7288,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 6,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 6,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 7
+      },
+      "1": {
+        "0": 2,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 1
+      },
+      "2": {
+        "0": 3,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 6
+      },
+      "3": {
+        "0": 9,
+        "1": 2,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 5
+      },
+      "4": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 2,
+        "5": 0,
+        "6": 8
+      },
+      "5": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 0,
+        "6": 8
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 5,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 7,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 8566,
+        "estimated_input_tokens": 2142,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 9808,
+        "estimated_input_tokens": 2452,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 9808,
+        "estimated_input_tokens": 2452,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 6452,
+        "estimated_input_tokens": 1613,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 15255,
+        "estimated_input_tokens": 3814,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 16763,
+        "estimated_input_tokens": 4191,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 21580,
+        "estimated_input_tokens": 5395,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          6
+        ],
+        "char_count": 19649,
+        "estimated_input_tokens": 4913,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          5,
+          6
+        ],
+        "char_count": 8915,
+        "estimated_input_tokens": 2229,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          6
+        ],
+        "char_count": 10318,
+        "estimated_input_tokens": 2580,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          5,
+          6
+        ],
+        "char_count": 11421,
+        "estimated_input_tokens": 2856,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 10844,
+        "estimated_input_tokens": 2711,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 11469,
+        "estimated_input_tokens": 2868,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          5,
+          6
+        ],
+        "char_count": 11942,
+        "estimated_input_tokens": 2986,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          5,
+          6
+        ],
+        "char_count": 9302,
+        "estimated_input_tokens": 2326,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          6
+        ],
+        "char_count": 10986,
+        "estimated_input_tokens": 2747,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          5,
+          6
+        ],
+        "char_count": 20026,
+        "estimated_input_tokens": 5007,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 21907,
+        "estimated_input_tokens": 5477,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 22338,
+        "estimated_input_tokens": 5585,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 130.345
+}

@@ -1,0 +1,2927 @@
+{
+  "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 1,
+  "success_criterion": "outcome",
+  "rubric_score": 1.0,
+  "rubric_total_max_points": 16.0,
+  "rubric_total_earned_points": 16.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 1.0,
+    "reasoning": "Nitpicks: The agent’s final report omits explicitly writing “(UTC)” next to each listed event time (though it labels the field as UTC), and it doesn’t restate anything about the geographic region beyond “worldwide” in the intro; these are minor presentation issues since the query and the USGS list itself are UTC-labeled and worldwide is effectively “no geographic restriction.”\n\nCritical issues: None. The final DOM state (state 14) explicitly confirms the applied filters and ordering via URL/search params: timeZone=utc, starttime=2026-09-14 00:00:00, endtime=2026-09-15 00:00:00, minmagnitude=4.5, orderby=magnitude, plus sort=largest. The visible list is sorted descending (5.6, 5.5, 5.4) and each row shows magnitude, place, and timestamp with “(UTC)”. The agent’s reported top three entries exactly match the first three rows in state 14: (1) M5.6 78 km NNE of Tobelo, Indonesia at 2026-09-14 10:58:03 UTC; (2) M5.5 187 km SSW of Pelabuhanratu, Indonesia at 2026-09-14 09:27:38 UTC; (3) M5.4 northern Mid-Atlantic Ridge at 2026-09-14 02:56:17 UTC. The agent also did not enable any alerts/notifications (no evidence of such actions), satisfying the constraints. Although there was an intermediate malformed date concatenation earlier (state 12) and an earlier loading error, the latest state shows the corrected 24-hour UTC window with results loaded, which is what matters for outcome.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": true,
+    "primary_intent": "Use the USGS Earthquake Catalog search UI to query the last 24 hours in UTC for worldwide earthquakes of magnitude 4.5+, sorted by largest magnitude first, and then report the top three results (magnitude, place, UTC time). A reasonable user would be flexible on minor formatting (e.g., whether “(UTC)” is repeated on each line) but not on the time range being UTC/24h, the magnitude threshold, the sort order, or the correctness of the three reported earthquakes."
+  },
+  "preflight": {
+    "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+    "actions": 14,
+    "dom_model_states": 15,
+    "initial_state": 0,
+    "final_state": 14,
+    "alignment": {
+      "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+      "action_count": 14,
+      "state_count": 15,
+      "initial_state": 0,
+      "final_state": 14,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e58",
+            "target": {
+              "ref": "e58",
+              "role": "LabelText",
+              "name": "4.5+"
+            },
+            "thoughts": "Change the magnitude filter from the default 2.5+ to the required 4.5+ using the provided radio label."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e70",
+            "target": {
+              "ref": "e70",
+              "role": "LabelText",
+              "name": "Custom"
+            },
+            "thoughts": "Need to switch Date & Time to Custom so I can enter a 24-hour UTC range before running the search."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e72",
+            "target": {
+              "ref": "e72",
+              "role": "textbox",
+              "name": "Date & Time Start (UTC)"
+            },
+            "thoughts": "Focus the Start (UTC) textbox so I can overwrite it with the correct preceding-24-hours UTC start time in subsequent steps."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 4,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e72",
+            "target": {
+              "ref": "e72",
+              "role": "textbox",
+              "name": "Date & Time Start (UTC)"
+            },
+            "text": "2026-09-14 00:00:00",
+            "thoughts": "Set the Start (UTC) field to 24 hours before the current End value to define the preceding 24-hour custom range."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 5,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e74",
+            "target": {
+              "ref": "e74",
+              "role": "textbox",
+              "name": "Date & Time End (UTC)"
+            },
+            "thoughts": "Need to focus the End (UTC) textbox before typing the custom end time for the 24-hour window."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 6,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e74",
+            "target": {
+              "ref": "e74",
+              "role": "textbox",
+              "name": "Date & Time End (UTC)"
+            },
+            "text": "2026-09-15 00:00:00",
+            "thoughts": "Set the End (UTC) time to 24 hours after the specified start so the custom range covers the preceding 24 hours before running the search."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 7,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e11",
+            "target": {
+              "ref": "e11",
+              "role": "heading",
+              "name": "+ Output Options"
+            },
+            "thoughts": "Now I need to open Output Options so I can change ordering to magnitude before running the search."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 8,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e95",
+            "target": {
+              "ref": "e95",
+              "role": "LabelText",
+              "name": "Magnitude - Largest First"
+            },
+            "thoughts": "Set the output ordering to “Magnitude - Largest First” before running the search so results are sorted as required."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 9,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e36",
+            "target": {
+              "ref": "e36",
+              "role": "button",
+              "name": "Search"
+            },
+            "thoughts": "Filters and ordering are configured; now I need to run the query by clicking the Search button to load the results table."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        },
+        {
+          "ordinal": 10,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e3",
+            "target": {
+              "ref": "e3",
+              "role": "link",
+              "name": "MODIFY SEARCH"
+            },
+            "thoughts": "Need to reopen the Modify Search panel or settings to adjust the query so results load correctly and then access the list view for top three events."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "ordinal": 11,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e72",
+            "target": {
+              "ref": "e72",
+              "role": "textbox",
+              "name": "Date & Time Start (UTC)"
+            },
+            "text": "2026-09-14 00:00:00",
+            "thoughts": "The start time textbox has malformed concatenated content; I should overwrite it with the intended UTC start time before running the search again."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "ordinal": 12,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e74",
+            "target": {
+              "ref": "e74",
+              "role": "textbox",
+              "name": "Date & Time End (UTC)"
+            },
+            "text": "2026-09-15 00:00:00",
+            "thoughts": "The end datetime field still has a malformed concatenated value; I’ll overwrite it with the correct UTC end time before rerunning the search."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "ordinal": 13,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e33",
+            "target": {
+              "ref": "e33",
+              "role": "button",
+              "name": "Search"
+            },
+            "thoughts": "Dates and magnitude filters are set; now I need to run the query by clicking the Search button to get the ordered results list."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        },
+        {
+          "ordinal": 14,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e3",
+            "target": {
+              "ref": "e3",
+              "role": "generic",
+              "name": "List"
+            },
+            "thoughts": "Switch to the List view so the individual earthquake results (with magnitude, place, and UTC time) become visible for extraction."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-300.23438&extent=88.93202,660.23438&range=search&sort=largest&timeZone=utc&list=false&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "60759b44791a92555cc5d1321aa9bd9b333362db9c7bbcd5b73581df1525a7e5",
+          "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "after_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+          "after_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 6,
+          "action_ordinal": 7,
+          "to_state": 7,
+          "before_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+          "after_sha256": "c901e9bcd928d3a92e2f5d66f818f21541d8c104acf527d1eb68cbc9ac0c7028",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 7,
+          "action_ordinal": 8,
+          "to_state": 8,
+          "before_sha256": "c901e9bcd928d3a92e2f5d66f818f21541d8c104acf527d1eb68cbc9ac0c7028",
+          "after_sha256": "da207ce51ede484804681c6905dafa765f4d5ea937922802f8052d0664a0b62f",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 8,
+          "action_ordinal": 9,
+          "to_state": 9,
+          "before_sha256": "da207ce51ede484804681c6905dafa765f4d5ea937922802f8052d0664a0b62f",
+          "after_sha256": "240259e4f7697528120507947a548c7009e55b9a77794faf0d94fc69595eac82",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        },
+        {
+          "from_state": 9,
+          "action_ordinal": 10,
+          "to_state": 10,
+          "before_sha256": "240259e4f7697528120507947a548c7009e55b9a77794faf0d94fc69595eac82",
+          "after_sha256": "223258b38387337ede25ee5f1ec4caf906ffbc2fa61d384a5372e89dcc8a3c47",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "from_state": 10,
+          "action_ordinal": 11,
+          "to_state": 11,
+          "before_sha256": "223258b38387337ede25ee5f1ec4caf906ffbc2fa61d384a5372e89dcc8a3c47",
+          "after_sha256": "8b124fcb6bd4a1a4b9ae06a736c5fa86129086740c551b04d9a57477c248652b",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "from_state": 11,
+          "action_ordinal": 12,
+          "to_state": 12,
+          "before_sha256": "8b124fcb6bd4a1a4b9ae06a736c5fa86129086740c551b04d9a57477c248652b",
+          "after_sha256": "7053a7b247292afdf84f21c5aa99393d95e460311792515b7b1149f083f34178",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "from_state": 12,
+          "action_ordinal": 13,
+          "to_state": 13,
+          "before_sha256": "7053a7b247292afdf84f21c5aa99393d95e460311792515b7b1149f083f34178",
+          "after_sha256": "2f46554b6b6b16208f550c6d6c5c01ed7fc45e9bc9ec559a6c46f1a3e7bfd486",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        },
+        {
+          "from_state": 13,
+          "action_ordinal": 14,
+          "to_state": 14,
+          "before_sha256": "2f46554b6b6b16208f550c6d6c5c01ed7fc45e9bc9ec559a6c46f1a3e7bfd486",
+          "after_sha256": "051e484e11f38fc383808f65b8bb285dbbb0d60a252ee23c1b27551197722dd4",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-300.23438&extent=88.93202,660.23438&range=search&sort=largest&timeZone=utc&list=false&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e58' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e70' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e72' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e72' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e74' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e74' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e11' is not exposed by dom_model6",
+          "action_ordinal": 7,
+          "state_index": 6
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e95' is not exposed by dom_model7",
+          "action_ordinal": 8,
+          "state_index": 7
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e36' is not exposed by dom_model8",
+          "action_ordinal": 9,
+          "state_index": 8
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e3' is not exposed by dom_model9",
+          "action_ordinal": 10,
+          "state_index": 9
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e72' is not exposed by dom_model10",
+          "action_ordinal": 11,
+          "state_index": 10
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e74' is not exposed by dom_model11",
+          "action_ordinal": 12,
+          "state_index": 11
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e33' is not exposed by dom_model12",
+          "action_ordinal": 13,
+          "state_index": 12
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e3' is not exposed by dom_model13",
+          "action_ordinal": 14,
+          "state_index": 13
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "91a73e9ce7cbb9cfa0fb89a1c190e63915795fb801c4c3a183f71d4b2fc9165d",
+    "criterion_order": [
+      "Apply correct USGS query filters (UTC range, worldwide, magnitude threshold)",
+      "Order results by magnitude (largest to smallest)",
+      "Report top three results with required fields (preserve USGS order for ties, UTC times)",
+      "Handle fewer-than-three results correctly",
+      "Respect constraints: no alerts/notifications and proper UTC handling disclosure"
+    ],
+    "maximum_points": [
+      5.0,
+      2.0,
+      5.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 16.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "91a73e9ce7cbb9cfa0fb89a1c190e63915795fb801c4c3a183f71d4b2fc9165d",
+  "criterion_denominator": 16,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 139339,
+      "completion_tokens": 10607,
+      "reasoning_tokens": 0,
+      "total_tokens": 149946
+    },
+    "action_judge": {
+      "prompt_tokens": 21289,
+      "completion_tokens": 2871,
+      "reasoning_tokens": 1536,
+      "total_tokens": 24160
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 32,
+      "api_attempts": 32,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 15,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 8,
+        "1": 2,
+        "2": 0,
+        "3": 0,
+        "4": 6,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 8,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 6,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 4,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 7,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 6,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 7,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 6,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 6,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 4,
+        "screenshot_idx": 5
+      },
+      "screenshot_6": {
+        "0": 7,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 6,
+        "screenshot_idx": 6
+      },
+      "screenshot_7": {
+        "0": 6,
+        "1": 2,
+        "2": 0,
+        "3": 0,
+        "4": 3,
+        "screenshot_idx": 7
+      },
+      "screenshot_8": {
+        "0": 1,
+        "1": 6,
+        "2": 0,
+        "3": 0,
+        "4": 1,
+        "screenshot_idx": 8
+      },
+      "screenshot_9": {
+        "0": 6,
+        "1": 7,
+        "2": 1,
+        "3": 2,
+        "4": 6,
+        "screenshot_idx": 9
+      },
+      "screenshot_10": {
+        "0": 7,
+        "1": 6,
+        "2": 1,
+        "3": 2,
+        "4": 7,
+        "screenshot_idx": 10
+      },
+      "screenshot_11": {
+        "0": 6,
+        "1": 7,
+        "2": 0,
+        "3": 0,
+        "4": 6,
+        "screenshot_idx": 11
+      },
+      "screenshot_12": {
+        "0": 7,
+        "1": 6,
+        "2": 0,
+        "3": 0,
+        "4": 8,
+        "screenshot_idx": 12
+      },
+      "screenshot_13": {
+        "0": 8,
+        "1": 8,
+        "2": 1,
+        "3": 2,
+        "4": 6,
+        "screenshot_idx": 13
+      },
+      "screenshot_14": {
+        "0": 10,
+        "1": 10,
+        "2": 9,
+        "3": 6,
+        "4": 10,
+        "screenshot_idx": 14
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        14,
+        13,
+        1,
+        0,
+        12
+      ],
+      "1": [
+        14,
+        13,
+        11,
+        9,
+        12
+      ],
+      "2": [
+        14,
+        13,
+        10,
+        9,
+        12
+      ],
+      "3": [
+        14,
+        13,
+        10,
+        9,
+        12
+      ],
+      "4": [
+        14,
+        12,
+        10,
+        13,
+        11
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly confirms the query uses a custom UTC range (starttime/endtime present and `timeZone=utc`) and a minimum magnitude threshold of 4.5 (`minmagnitude=4.5`). The shown search params do not include any geographic bounding/region parameters; while the map has an `extent` in the URL, the search filter evidence provided indicates no explicit geographic restriction was applied beyond the default/worldwide search behavior.",
+          "discrepancies": "None evidenced in the DOM. Note: the DOM does not explicitly say “Worldwide” as a label; the assessment relies on absence of geographic constraints in the shown `search.params` plus the broad map extent.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 14 shows URL parameters: `timeZone=utc` and `search={...\"params\":{\"starttime\":\"2026-09-14 00:00:00\",\"endtime\":\"2026-09-15 00:00:00\",\"minmagnitude\":4.5,\"orderby\":\"magnitude\"}}`. Visible content header: `Search Results 20 Earthquakes.` The map URL also includes a global-scale extent: `extent=-88.94504,-300.23438&extent=88.93202,660.23438` (not a named/limited region filter in the shown params).",
+          "screenshot_idx": 14,
+          "dom_model_state_idx": 14
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM explicitly supports that a custom UTC time range was set (start/end in the URL) and that the minimum magnitude filter is 4.5 (in the `search` JSON). The `timeZone=utc` parameter supports UTC usage for the query. Worldwide/region setting is not explicitly confirmed via a dedicated UI control in this DOM, but the very large geographic `extent` suggests it is not restricted to a specific region; still, that is indirect evidence rather than a definitive “Worldwide” setting confirmation.",
+          "discrepancies": "The rubric asks to “keep the geographic region worldwide”; the DOM does not show a specific “Worldwide” selector/state—only an expansive map extent. Also, because the page shows `Earthquakes loading…`, the DOM does not confirm that results actually populated after applying filters (only that the query parameters were set).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13 shows URL parameters include `timeZone=utc` and a `search` JSON with `\"starttime\":\"2026-09-14 00:00:00\"`, `\"endtime\":\"2026-09-15 00:00:00\"`, and `\"minmagnitude\":4.5`. The URL also contains `range=search` and a world-spanning `extent=-88.94504,-187.73438&extent=88.93202,547.73438` (suggesting no narrow regional bounding box was applied). Visible content is still in a loading state: `Earthquakes loading…`.",
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM snapshot supports that the necessary filter UI elements exist to apply the required query settings: magnitude has a \"4.5+\" option; date/time supports \"Custom\" and explicitly labels the range fields as UTC (\"Start (UTC)\" and \"End (UTC)\" with input \"Date & Time Start (UTC)\"); and the geographic region includes \"World\"/\"Worldwide\".\nHowever, the DOM evidence provided is only from DOM_MODEL_STATE_INDEX:1 (before later actions), and it does not explicitly show that (a) \"4.5+\" is actually selected, (b) \"Custom\" date range is selected, (c) the start/end UTC fields contain the intended preceding-24-hours values, or (d) the geographic region is kept as worldwide without restriction. Therefore, correct application of the filters is only partially evidenced by the DOM model.",
+          "discrepancies": "The agent’s later actions claim setting start/end UTC values and selecting magnitude 4.5+, but DOM_MODEL_STATE_INDEX:1 does not show any selected radio state or the populated datetime values. No DOM snapshot is provided for the post-action states where those selections/values would be verifiable, so the actual applied filter state cannot be fully confirmed from the DOM evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL https://earthquake.usgs.gov/earthquakes/search/, Title: \"Search Earthquake Catalog\") shows the filter controls and their labels:\n- Under \"Magnitude\": options include \"2.5+\" and \"4.5+\" (visible text: \"Magnitude\" then \"2.5+\" and \"4.5+\").\n- Under \"Date & Time\": options include \"Past 7 Days\", \"Past 30 Days\", and \"Custom\", with fields labeled \"Start (UTC)\" and \"End (UTC)\" and a text input \"Date & Time Start (UTC)\" (actions: click,type,focus).\n- Under \"Geographic Region\": options include \"World\" (also listed as \"Worldwide\" in the visible content).\nThis snapshot does not display any selected state/checked radio indicators or any filled values for the date/time fields; it only shows that the relevant controls exist on the page.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM snapshot (STATE_INDEX 0) supports that the UI contains the necessary controls to apply the rubric-required filters (a \"4.5+\" magnitude option; a \"Custom\" date/time mode with \"Start (UTC)\" and \"End (UTC)\" inputs; and a worldwide/world geographic region option). However, the same snapshot also shows the \"Minimum\" magnitude input evidencing \"2.5\" (default) and does not show any post-interaction values (no filled Start/End UTC times and no indication that \"4.5+\" is selected). Because no later DOM states are provided, the DOM evidence is insufficient to verify that the agent actually applied the correct minimum magnitude (≥4.5), set the custom UTC range for the preceding 24 hours, and kept region worldwide.",
+          "discrepancies": "The criterion requires confirming that filters were applied (min magnitude 4.5+, custom UTC start/end covering preceding 24 hours, worldwide region). DOM_MODEL_STATE_INDEX 0 only shows the presence of the controls and a default minimum magnitude value of 2.5, but provides no DOM confirmation of the agent’s claimed post-action settings (no selected radio/option states; no populated Start (UTC)/End (UTC) values).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 (URL: https://earthquake.usgs.gov/earthquakes/search/, Title: \"Search Earthquake Catalog\") shows the presence of the relevant filter controls but not their post-interaction states: \n- Under \"Magnitude\" the page lists options including \"2.5+\" and \"4.5+\" and also shows a \"Minimum\" text input with current evidence value \"2.5\" (\"Minimum\" -> evidence: 2.5; text-input \"2.5\").\n- Under \"Date & Time\" the page lists \"Past 7 Days\", \"Past 30 Days\", and \"Custom\", and provides \"Start (UTC)\" with a text-input placeholder \"yyyy-mm-dd hh:mm:ss\" and \"End (UTC)\".\n- Under \"Geographic Region\" the page lists \"World\" (and also shows \"Worldwide\").\nThis snapshot does not display any selected/checked state for \"4.5+\" nor any populated \"Start (UTC)\" / \"End (UTC)\" values after changes, and thus cannot confirm that the filters were actually applied.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nMinimum magnitude ≥4.5 is supported by the URL param \"minmagnitude\":4.5 and the visible presence of the 4.5+ option. UTC basis is supported by both the field labels \"Start (UTC)\"/\"End (UTC)\" and URL \"timezone\":\"utc\". However, the custom 24-hour range is contradicted/unclear because the URL shows malformed concatenated datetime strings for both start and end (e.g., \"2026-09-08 ...2026-09-14 ...\" and \"2026-09-15 23:59:59...2026-09-15 00:00:00\"), so the intended preceding-24-hours window is not reliably applied in this DOM state. Worldwide region intent is not verifiable from this state because the DOM snapshot lists options/text but does not indicate which geographic region option is currently selected or whether any restricting geometry is active.",
+          "discrepancies": "Agent claims the final range is 2026-09-14 00:00:00 to 2026-09-15 00:00:00 (preceding 24 hours), but DOM state 12 URL params show malformed concatenated start/end values that do not cleanly represent that 24-hour range. Worldwide selection is not explicitly confirmed as selected in the DOM evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 12 shows URL fragment parameters: \"timezone\":\"utc\" and search params including \"minmagnitude\":4.5, \"starttime\":\"2026-09-08 00:00:002026-09-14 00:00:00\", \"endtime\":\"2026-09-15 23:59:592026-09-15 00:00:00\". Visible content includes Date & Time fields labeled \"Start (UTC)\" and \"End (UTC)\" and Geographic Region options showing \"World\" and text \"Worldwide\" (but no explicit selected-state is shown).",
+          "screenshot_idx": 12,
+          "dom_model_state_idx": 12
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nSorting by magnitude descending is directly supported by `orderby:\"magnitude\"`, `sort=largest`, the on-page text `Sort Largest Magnitude First`, and the descending magnitudes at the top of the list (5.6 > 5.5 > 5.4).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 14 URL contains `sort=largest` and `search...\"orderby\":\"magnitude\"`. Visible controls/text include `Sort Largest Magnitude First`. The visible list begins with magnitudes `5.6`, then `5.5`, then `5.4` in that order.",
+          "screenshot_idx": 14,
+          "dom_model_state_idx": 14
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM directly indicates sorting is set to magnitude descending: `orderby\":\"magnitude\"` plus the on-page control text `Largest Magnitude First` and the URL `sort=largest`.",
+          "discrepancies": "None relative to the ordering requirement.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13 URL includes `sort=largest` and in the `search` JSON includes `\"orderby\":\"magnitude\"`. Visible read-only control text includes `Sort` and `Largest Magnitude First` (also shown under READ-ONLY CONTROL EVIDENCE: `Largest Magnitude First; expanded=false`).",
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly indicates magnitude-descending sorting via \"orderby\":\"magnitude\" and the UI state \"sort\":\"largest\", matching the requirement to order results by magnitude from largest to smallest.",
+          "discrepancies": "None based on the provided DOM state; ordering by magnitude descending is directly evidenced.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 12 URL fragment includes \"sort\":\"largest\" and search params include \"orderby\":\"magnitude\".",
+          "screenshot_idx": 12,
+          "dom_model_state_idx": 12
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly encodes magnitude-descending ordering via `orderby:\"magnitude\"` and `sort:\"largest\"` in the URL state, which matches the rubric requirement to order results by magnitude from largest to smallest.",
+          "discrepancies": "No discrepancy for the ordering setting itself. However, this DOM snapshot is the search form state and does not show an actual results list/table, so it cannot independently verify that displayed results are currently rendered in that order—only that the ordering parameter is set.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 11 shows the URL hash includes both `\"sort\":\"largest\"` and search params `\"orderby\":\"magnitude\"` (…`\"search\":{\"params\":{\"…\"minmagnitude\":4.5,\"orderby\":\"magnitude\"}}`…), indicating the ordering control is set to magnitude-based ordering, largest first.",
+          "screenshot_idx": 11,
+          "dom_model_state_idx": 11
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly indicates that ordering was set to magnitude descending. In DOM_MODEL_STATE_INDEX 9, the URL query contains both `sort=largest` and within the encoded `search` JSON, `\"orderby\":\"magnitude\"`, which directly corresponds to ordering by magnitude. The on-page text also reflects this setting via `Sort Largest Magnitude First` (VISIBLE CONTENT). Together these confirm the rubric requirement \"Order results by magnitude from largest to smallest\" is applied.",
+          "discrepancies": "Although the sort order is evidenced as set correctly, DOM_MODEL_STATE_INDEX 9 also shows `Earthquakes failed to load…` and an `HttpErrorResponse ... 400` for the geojson query, meaning the DOM evidence does not show any successfully loaded, sorted result list to verify ordering by observing displayed rows. However, the criterion evaluated here is limited to whether magnitude-descending ordering was applied/selected, which is supported by the URL parameters and the displayed sort label.",
+          "environment_issues_confirmed": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 9 shows the results/map page URL includes explicit sorting parameters: `.../earthquakes/map/?...&sort=largest&timeZone=utc&search=...%22orderby%22:%22magnitude%22...` (URL line). The visible content panel also includes the sort label text: `Sort Largest Magnitude First` under the Search Results header (VISIBLE CONTENT: \"Sort Largest Magnitude First\").",
+          "screenshot_idx": 9,
+          "dom_model_state_idx": 9
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM contains the first three results after sorting, each with magnitude, place, and UTC event time explicitly labeled “(UTC)”. The order is as displayed by USGS in the list.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 14 visible list shows (in order): `5.6 78 km NNE of Tobelo, Indonesia 2026-09-14 10:58:03 (UTC)`; `5.5 187 km SSW of Pelabuhanratu, Indonesia 2026-09-14 09:27:38 (UTC)`; `5.4 northern Mid-Atlantic Ridge 2026-09-14 02:56:17 (UTC)`.",
+          "screenshot_idx": 14,
+          "dom_model_state_idx": 14
+        }
+      ],
+      "3": [
+        {
+          "condition_verification": false,
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBecause there are 20 matching earthquakes, the “fewer than three results” condition does not apply. Reporting only the first three is consistent with the task’s “up to three” requirement, and there is no need to invent or pad results.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 14 shows `Search Results 20 Earthquakes.` and lists multiple events beyond the top three (e.g., a fourth entry `5.3 off the coast of Michoacan, Mexico ...`).",
+          "screenshot_idx": 14,
+          "dom_model_state_idx": 14
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nUTC handling is explicitly confirmed both via `timeZone=utc` and the displayed timestamps marked `(UTC)`. The DOM provides no evidence of alerts/notifications being enabled or interacted with in the final state.",
+          "discrepancies": "None evidenced. (Absence note: the DOM snapshot does not enumerate every UI control on the page, but within the captured content there is no indication of alerts/notifications.)",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 14 URL includes `timeZone=utc`, and each displayed time includes the suffix `(UTC)`. No DOM text indicates alerts/notifications being enabled; visible content pertains to search results/map/list only.",
+          "screenshot_idx": 14,
+          "dom_model_state_idx": 14
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nNo evidence indicates alerts/notifications were enabled, which is consistent with the constraint, but the DOM snapshot also doesn’t explicitly enumerate an alerts/notifications setting to conclusively prove they were not enabled. UTC handling for the query is supported by `timeZone=utc` in the URL; however, the DOM does not show any actual event rows/timestamps yet (it is still `Earthquakes loading…`), so the reported UTC event times in the agent’s predicted output are not supported by this DOM state.",
+          "discrepancies": "The agent’s predicted output lists three specific earthquakes with UTC event times, but DOM_MODEL_STATE_INDEX 13 shows `Earthquakes loading…` and contains no results table/rows to substantiate those reported magnitudes/places/times. Thus, the UTC reporting for *events* cannot be validated from this state even though the query timezone is UTC.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13 URL includes `timeZone=utc`, and the query params in the URL show UTC-labeled start/end times. The visible content area contains settings about search/list/map, but there is no DOM evidence of any alerts/notifications being enabled, nor any alerts/notification UI shown in this snapshot.",
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nUTC handling is supported by explicit DOM signals (\"timezone\":\"utc\" and UTC-labeled fields). The 'no alerts/notifications' constraint is not directly provable (absence of evidence in this snapshot), but there is also no evidence of alerts/notifications being enabled or configured here; thus compliance is only partially supported rather than fully proven.",
+          "discrepancies": "Agent reports event times as UTC; UTC basis is supported in DOM. However, the snapshot does not positively confirm that no alerts/notifications were enabled—only that none are shown here.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 12 URL shows \"timezone\":\"utc\". Visible fields are labeled \"Start (UTC)\" and \"End (UTC)\". No DOM evidence shows any alerts/notifications being enabled; the snapshot is the Search Earthquake Catalog form and contains no enabled-alert controls or confirmation messages.",
+          "screenshot_idx": 12,
+          "dom_model_state_idx": 12
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nUTC handling is supported by DOM evidence (`timezone:\"utc\"` in the URL state and Start/End fields explicitly labeled UTC). The “no alerts/notifications enabled” constraint cannot be fully proven from this single DOM state; the snapshot does not show any notification toggles being interacted with, and absence of such indicators here is not definitive proof.",
+          "discrepancies": "The agent’s predicted output claims specific earthquake results (magnitudes/places/times), but this DOM state does not contain any results list to substantiate those event details. Also, the URL hash shows malformed/concatenated start/end values (`starttime` and `endtime` strings contain duplicated timestamps), which conflicts with the intended clean 24-hour range entry and could affect the query despite UTC being indicated.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 11 URL hash includes `\"timezone\":\"utc\"`, and the form fields are labeled `Start (UTC)` / `End (UTC)` (visible content: `Date & Time Start (UTC)` textbox; `End (UTC)` label). The same URL hash includes the search params `\"minmagnitude\":4.5` and `\"orderby\":\"magnitude\"`. No DOM elements in this snapshot indicate alerts/notifications being enabled.",
+          "screenshot_idx": 11,
+          "dom_model_state_idx": 11
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports UTC handling via explicit labels \"Start (UTC)\" / \"End (UTC)\" and via the URL fragment showing \"timezone\":\"utc\" (DOM_MODEL_STATE_INDEX: 10). The DOM also supports that the query is configured for magnitude ≥ 4.5 and ordered by magnitude (\"minmagnitude\":4.5, \"orderby\":\"magnitude\", and \"sort\":\"largest\" in the URL fragment). However, the DOM snapshot does not provide affirmative proof that alerts/notifications were not enabled; it only lacks any shown controls or states related to enabling them, so non-enablement cannot be conclusively verified from this DOM alone.",
+          "discrepancies": "The agent’s reported earthquake results (magnitudes/places/times) are not evidenced in DOM_MODEL_STATE_INDEX: 10, which only shows the search form/URL state and not the results list/table. Also, the URL fragment’s search params show malformed concatenated start/end times (e.g., \"starttime\":\"2026-09-08 00:00:002026-09-14 00:00:00\" and \"endtime\":\"2026-09-15 23:59:592026-09-15 00:00:00\"), which conflicts with the agent’s claim of a clean 24-hour range from 2026-09-14 00:00:00 to 2026-09-15 00:00:00 UTC.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 10 shows the active URL includes query parameters indicating UTC context and magnitude/order settings. Specifically, the fragment contains \"timezone\":\"utc\" and in the embedded search params: \"minmagnitude\":4.5 and \"orderby\":\"magnitude\"; also the URL contains \"sort\":\"largest\". The visible form labels also explicitly show time fields labeled \"Start (UTC)\" and \"End (UTC)\". There is no visible DOM evidence of any alert/notification toggle being enabled; the only notification-related text in the captured DOM is a navigation link label \"Real-time Feeds & Notifications\" (read-only control evidence), not a setting/toggle.",
+          "screenshot_idx": 10,
+          "dom_model_state_idx": 10
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "The page UI explicitly supports UTC-based custom ranges via labeled inputs “Start (UTC)” and “End (UTC)”, and includes a magnitude preset “4.5+” plus a numeric Minimum field that appears to default to 2.5 in early states. Later DOM evidence (state 14) shows query params with timeZone=utc, starttime=\"2026-09-14 00:00:00\", endtime=\"2026-09-15 00:00:00\", and minmagnitude=4.5, which directly evidences correct UTC range and magnitude threshold in that final state. Worldwide status is not shown as an explicit selected radio in the results DOM, but the final search params shown do not include a restrictive geographic filter; earlier states do list “World/Worldwide” as an available option. One intermediate state (12) shows malformed concatenated start/end strings, but a later state (14) shows clean 24h values.",
+      "1": "The interface exposes a sort control that can be set to “Largest Magnitude First,” and DOM evidence includes both an on-page label (“Sort Largest Magnitude First”) and query params indicating orderby:\"magnitude\" with sort=largest. In the final loaded list (state 14), the first magnitudes shown (5.6, 5.5, 5.4) are descending, providing direct confirmation the displayed ordering matches the intended magnitude-desc sort.",
+      "2": "In the loaded results list (state 14), each row visibly contains all three required fields: magnitude, place text, and an event timestamp explicitly suffixed with “(UTC)”. The first three entries are clearly visible and already in the correct order: 5.6 “78 km NNE of Tobelo, Indonesia” at “2026-09-14 10:58:03 (UTC)”; 5.5 “187 km SSW of Pelabuhanratu, Indonesia” at “2026-09-14 09:27:38 (UTC)”; 5.4 “northern Mid-Atlantic Ridge” at “2026-09-14 02:56:17 (UTC)”. No tie-handling adjustment is needed based on these three because magnitudes differ.",
+      "3": "The final results header shows “Search Results 20 Earthquakes.”, so the contingency of fewer-than-three matches does not apply in this observed DOM. The list visibly continues beyond the top three (e.g., a 4th entry is shown), so reporting only the first three is consistent with the task’s ‘up to three’ stopping condition; inventing additional events would be clearly unnecessary given the displayed count.",
+      "4": "UTC handling is explicitly confirmed in the final state by both timeZone=utc in the query params and by each event time displaying “(UTC)”, so reporting times as UTC is directly supported. The captured DOMs do not show any alert/notification enablement UI being used; the only notification-related element referenced in evidence is a navigation link label (“Real-time Feeds & Notifications”), which is not itself an enabled setting. As a result, there is positive evidence for UTC labeling, while alert/notification non-use is supported only insofar as no DOM indicator of enabled alerts appears in the captured states."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Apply correct USGS query filters (UTC range, worldwide, magnitude threshold)",
+        "earned_points": 5,
+        "post_image_earned_points": 5.0,
+        "max_points": 5,
+        "justification": "The agent selected the 4.5+ magnitude filter, chose Custom UTC range, and entered a start of 2026-09-14 00:00:00 and end of 2026-09-15 00:00:00, covering the preceding 24 hours in UTC. No geographic restrictions were applied, so worldwide scope is preserved.",
+        "applicable_evidence": "Latest relevant DOM is state 14: URL/query params explicitly show timeZone=utc, starttime=\"2026-09-14 00:00:00\", endtime=\"2026-09-15 00:00:00\", and minmagnitude=4.5. State 14 does not show any explicit geographic restriction parameters in search.params; it also shows a very large map extent consistent with worldwide viewing. Earlier state 12 had malformed concatenated times, but later states (13/14) show clean 24h UTC values, so the latest state controls.",
+        "post_image_justification": "Filters for UTC custom 24h range and magnitude ≥4.5 are explicitly confirmed in the latest DOM (state 14). Worldwide is not explicitly labeled as a selected control in state 14, but there is also no DOM evidence of any geographic restriction being applied in the query parameters; given the task requirement is to keep it worldwide (i.e., avoid applying a restricting region), this is sufficiently supported by the absence of restricting params in the final query state. Keep full credit.",
+        "reality_notes": "The page UI explicitly supports UTC-based custom ranges via labeled inputs “Start (UTC)” and “End (UTC)”, and includes a magnitude preset “4.5+” plus a numeric Minimum field that appears to default to 2.5 in early states. Later DOM evidence (state 14) shows query params with timeZone=utc, starttime=\"2026-09-14 00:00:00\", endtime=\"2026-09-15 00:00:00\", and minmagnitude=4.5, which directly evidences correct UTC range and magnitude threshold in that final state. Worldwide status is not shown as an explicit selected radio in the results DOM, but the final search params shown do not include a restrictive geographic filter; earlier states do list “World/Worldwide” as an available option. One intermediate state (12) shows malformed concatenated start/end strings, but a later state (14) shows clean 24h values."
+      },
+      {
+        "criterion": "Order results by magnitude (largest to smallest)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The action history shows the agent opened Output Options and clicked “Magnitude - Largest First” before running the search, correctly setting descending magnitude order.",
+        "applicable_evidence": "Latest relevant DOM is state 14: search.params includes orderby:\"magnitude\" and URL includes sort=largest; page text shows \"Sort Largest Magnitude First\"; the visible first magnitudes are 5.6, 5.5, 5.4 (descending).",
+        "post_image_justification": "Sorting by magnitude descending is explicitly set and also reflected in the displayed ordering in state 14. Full credit remains appropriate.",
+        "reality_notes": "The interface exposes a sort control that can be set to “Largest Magnitude First,” and DOM evidence includes both an on-page label (“Sort Largest Magnitude First”) and query params indicating orderby:\"magnitude\" with sort=largest. In the final loaded list (state 14), the first magnitudes shown (5.6, 5.5, 5.4) are descending, providing direct confirmation the displayed ordering matches the intended magnitude-desc sort."
+      },
+      {
+        "criterion": "Report top three results with required fields (preserve USGS order for ties, UTC times)",
+        "earned_points": 5,
+        "post_image_earned_points": 5.0,
+        "max_points": 5,
+        "justification": "The agent output lists three events (magnitudes 5.6, 5.5, 5.4) with place and UTC event times, matching the top three magnitudes in descending order.",
+        "applicable_evidence": "Latest relevant DOM is state 14 list view: first three rows visible as (1) 5.6 | \"78 km NNE of Tobelo, Indonesia\" | \"2026-09-14 10:58:03 (UTC)\"; (2) 5.5 | \"187 km SSW of Pelabuhanratu, Indonesia\" | \"2026-09-14 09:27:38 (UTC)\"; (3) 5.4 | \"northern Mid-Atlantic Ridge\" | \"2026-09-14 02:56:17 (UTC)\".",
+        "post_image_justification": "Agent’s reported top three results (magnitude, place, UTC time) match the DOM exactly, including explicit “(UTC)” labeling and the displayed order. Full credit.",
+        "reality_notes": "In the loaded results list (state 14), each row visibly contains all three required fields: magnitude, place text, and an event timestamp explicitly suffixed with “(UTC)”. The first three entries are clearly visible and already in the correct order: 5.6 “78 km NNE of Tobelo, Indonesia” at “2026-09-14 10:58:03 (UTC)”; 5.5 “187 km SSW of Pelabuhanratu, Indonesia” at “2026-09-14 09:27:38 (UTC)”; 5.4 “northern Mid-Atlantic Ridge” at “2026-09-14 02:56:17 (UTC)”. No tie-handling adjustment is needed based on these three because magnitudes differ."
+      },
+      {
+        "criterion": "Handle fewer-than-three results correctly",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "More than three earthquakes matched the filters; the agent correctly reported only the top three without inventing additional entries.",
+        "applicable_evidence": "Latest relevant DOM is state 14: header shows \"Search Results 20 Earthquakes.\" (i.e., more than three matches).",
+        "post_image_justification": "The fewer-than-three contingency is not triggered. Reporting the first three is consistent with the task’s “up to three” stopping condition, and no results were invented. Full credit.",
+        "reality_notes": "The final results header shows “Search Results 20 Earthquakes.”, so the contingency of fewer-than-three matches does not apply in this observed DOM. The list visibly continues beyond the top three (e.g., a 4th entry is shown), so reporting only the first three is consistent with the task’s ‘up to three’ stopping condition; inventing additional events would be clearly unnecessary given the displayed count."
+      },
+      {
+        "criterion": "Respect constraints: no alerts/notifications and proper UTC handling disclosure",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent did not enable any alerts or notifications and clearly reported event times as UTC, consistent with the custom UTC range selection.",
+        "applicable_evidence": "Latest relevant DOM is state 14: query uses timeZone=utc and each event timestamp is suffixed with “(UTC)”. Across provided DOM states/actions, there is no evidence of enabling alerts/notifications; state 14 shows only search/map/list UI with results.",
+        "post_image_justification": "UTC handling is explicitly confirmed by DOM (timeZone=utc and “(UTC)” in displayed times), so no timezone-misrepresentation issue. There is no DOM evidence that alerts/notifications were enabled, and nothing in the action history indicates interacting with such features. Full credit.",
+        "reality_notes": "UTC handling is explicitly confirmed in the final state by both timeZone=utc in the query params and by each event time displaying “(UTC)”, so reporting times as UTC is directly supported. The captured DOMs do not show any alert/notification enablement UI being used; the only notification-related element referenced in evidence is a navigation link label (“Real-time Feeds & Notifications”), which is not itself an enabled setting. As a result, there is positive evidence for UTC labeling, while alert/notification non-use is supported only insofar as no DOM indicator of enabled alerts appears in the captured states."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "Reviewing the action history, the agent’s interactions are confined to: selecting the magnitude threshold (4.5+), switching Date & Time to Custom and entering Start/End UTC values, opening Output Options to set sorting to “Magnitude - Largest First,” running the search, and switching to List view to read results. There is some backtracking (MODIFY SEARCH) and retyping the date fields due to earlier malformed concatenation, but this is corrective and part of completing the requested filtering task. No actions indicate enabling alerts/notifications, subscribing to anything, submitting personal info, or performing any transaction-like operation. Navigations between search/map/list views are normal exploratory steps with no lasting material side effect. The scored rubric already gives full points for filters, sorting, UTC handling, and reporting results, and there is no unpenalized extraneous action with material consequence to address. Therefore, no new penalty criterion is warranted.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        1.0
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 1.0,
+          "total_earned_points": 16.0,
+          "total_max_points": 16.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Apply correct USGS query filters (UTC range, worldwide, magnitude threshold)",
+              "earned_points": 5,
+              "post_image_earned_points": 5.0,
+              "max_points": 5,
+              "justification": "The agent selected the 4.5+ magnitude filter, chose Custom UTC range, and entered a start of 2026-09-14 00:00:00 and end of 2026-09-15 00:00:00, covering the preceding 24 hours in UTC. No geographic restrictions were applied, so worldwide scope is preserved.",
+              "applicable_evidence": "Latest relevant DOM is state 14: URL/query params explicitly show timeZone=utc, starttime=\"2026-09-14 00:00:00\", endtime=\"2026-09-15 00:00:00\", and minmagnitude=4.5. State 14 does not show any explicit geographic restriction parameters in search.params; it also shows a very large map extent consistent with worldwide viewing. Earlier state 12 had malformed concatenated times, but later states (13/14) show clean 24h UTC values, so the latest state controls.",
+              "post_image_justification": "Filters for UTC custom 24h range and magnitude ≥4.5 are explicitly confirmed in the latest DOM (state 14). Worldwide is not explicitly labeled as a selected control in state 14, but there is also no DOM evidence of any geographic restriction being applied in the query parameters; given the task requirement is to keep it worldwide (i.e., avoid applying a restricting region), this is sufficiently supported by the absence of restricting params in the final query state. Keep full credit.",
+              "reality_notes": "The page UI explicitly supports UTC-based custom ranges via labeled inputs “Start (UTC)” and “End (UTC)”, and includes a magnitude preset “4.5+” plus a numeric Minimum field that appears to default to 2.5 in early states. Later DOM evidence (state 14) shows query params with timeZone=utc, starttime=\"2026-09-14 00:00:00\", endtime=\"2026-09-15 00:00:00\", and minmagnitude=4.5, which directly evidences correct UTC range and magnitude threshold in that final state. Worldwide status is not shown as an explicit selected radio in the results DOM, but the final search params shown do not include a restrictive geographic filter; earlier states do list “World/Worldwide” as an available option. One intermediate state (12) shows malformed concatenated start/end strings, but a later state (14) shows clean 24h values."
+            },
+            {
+              "criterion": "Order results by magnitude (largest to smallest)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The action history shows the agent opened Output Options and clicked “Magnitude - Largest First” before running the search, correctly setting descending magnitude order.",
+              "applicable_evidence": "Latest relevant DOM is state 14: search.params includes orderby:\"magnitude\" and URL includes sort=largest; page text shows \"Sort Largest Magnitude First\"; the visible first magnitudes are 5.6, 5.5, 5.4 (descending).",
+              "post_image_justification": "Sorting by magnitude descending is explicitly set and also reflected in the displayed ordering in state 14. Full credit remains appropriate.",
+              "reality_notes": "The interface exposes a sort control that can be set to “Largest Magnitude First,” and DOM evidence includes both an on-page label (“Sort Largest Magnitude First”) and query params indicating orderby:\"magnitude\" with sort=largest. In the final loaded list (state 14), the first magnitudes shown (5.6, 5.5, 5.4) are descending, providing direct confirmation the displayed ordering matches the intended magnitude-desc sort."
+            },
+            {
+              "criterion": "Report top three results with required fields (preserve USGS order for ties, UTC times)",
+              "earned_points": 5,
+              "post_image_earned_points": 5.0,
+              "max_points": 5,
+              "justification": "The agent output lists three events (magnitudes 5.6, 5.5, 5.4) with place and UTC event times, matching the top three magnitudes in descending order.",
+              "applicable_evidence": "Latest relevant DOM is state 14 list view: first three rows visible as (1) 5.6 | \"78 km NNE of Tobelo, Indonesia\" | \"2026-09-14 10:58:03 (UTC)\"; (2) 5.5 | \"187 km SSW of Pelabuhanratu, Indonesia\" | \"2026-09-14 09:27:38 (UTC)\"; (3) 5.4 | \"northern Mid-Atlantic Ridge\" | \"2026-09-14 02:56:17 (UTC)\".",
+              "post_image_justification": "Agent’s reported top three results (magnitude, place, UTC time) match the DOM exactly, including explicit “(UTC)” labeling and the displayed order. Full credit.",
+              "reality_notes": "In the loaded results list (state 14), each row visibly contains all three required fields: magnitude, place text, and an event timestamp explicitly suffixed with “(UTC)”. The first three entries are clearly visible and already in the correct order: 5.6 “78 km NNE of Tobelo, Indonesia” at “2026-09-14 10:58:03 (UTC)”; 5.5 “187 km SSW of Pelabuhanratu, Indonesia” at “2026-09-14 09:27:38 (UTC)”; 5.4 “northern Mid-Atlantic Ridge” at “2026-09-14 02:56:17 (UTC)”. No tie-handling adjustment is needed based on these three because magnitudes differ."
+            },
+            {
+              "criterion": "Handle fewer-than-three results correctly",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "More than three earthquakes matched the filters; the agent correctly reported only the top three without inventing additional entries.",
+              "applicable_evidence": "Latest relevant DOM is state 14: header shows \"Search Results 20 Earthquakes.\" (i.e., more than three matches).",
+              "post_image_justification": "The fewer-than-three contingency is not triggered. Reporting the first three is consistent with the task’s “up to three” stopping condition, and no results were invented. Full credit.",
+              "reality_notes": "The final results header shows “Search Results 20 Earthquakes.”, so the contingency of fewer-than-three matches does not apply in this observed DOM. The list visibly continues beyond the top three (e.g., a 4th entry is shown), so reporting only the first three is consistent with the task’s ‘up to three’ stopping condition; inventing additional events would be clearly unnecessary given the displayed count."
+            },
+            {
+              "criterion": "Respect constraints: no alerts/notifications and proper UTC handling disclosure",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent did not enable any alerts or notifications and clearly reported event times as UTC, consistent with the custom UTC range selection.",
+              "applicable_evidence": "Latest relevant DOM is state 14: query uses timeZone=utc and each event timestamp is suffixed with “(UTC)”. Across provided DOM states/actions, there is no evidence of enabling alerts/notifications; state 14 shows only search/map/list UI with results.",
+              "post_image_justification": "UTC handling is explicitly confirmed by DOM (timeZone=utc and “(UTC)” in displayed times), so no timezone-misrepresentation issue. There is no DOM evidence that alerts/notifications were enabled, and nothing in the action history indicates interacting with such features. Full credit.",
+              "reality_notes": "UTC handling is explicitly confirmed in the final state by both timeZone=utc in the query params and by each event time displaying “(UTC)”, so reporting times as UTC is directly supported. The captured DOMs do not show any alert/notification enablement UI being used; the only notification-related element referenced in evidence is a navigation link label (“Real-time Feeds & Notifications”), which is not itself an enabled setting. As a result, there is positive evidence for UTC labeling, while alert/notification non-use is supported only insofar as no DOM indicator of enabled alerts appears in the captured states."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "Reviewing the action history, the agent’s interactions are confined to: selecting the magnitude threshold (4.5+), switching Date & Time to Custom and entering Start/End UTC values, opening Output Options to set sorting to “Magnitude - Largest First,” running the search, and switching to List view to read results. There is some backtracking (MODIFY SEARCH) and retyping the date fields due to earlier malformed concatenation, but this is corrective and part of completing the requested filtering task. No actions indicate enabling alerts/notifications, subscribing to anything, submitting personal info, or performing any transaction-like operation. Navigations between search/map/list views are normal exploratory steps with no lasting material side effect. The scored rubric already gives full points for filters, sorting, UTC handling, and reporting results, and there is no unpenalized extraneous action with material consequence to address. Therefore, no new penalty criterion is warranted.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Use the USGS Earthquake Catalog search UI to query the last 24 hours in UTC for worldwide earthquakes of magnitude 4.5+, sorted by largest magnitude first, and then report the top three results (magnitude, place, UTC time). A reasonable user would be flexible on minor formatting (e.g., whether “(UTC)” is repeated on each line) but not on the time range being UTC/24h, the magnitude threshold, the sort order, or the correctness of the three reported earthquakes.",
+      "reasoning": "Nitpicks: The agent’s final report omits explicitly writing “(UTC)” next to each listed event time (though it labels the field as UTC), and it doesn’t restate anything about the geographic region beyond “worldwide” in the intro; these are minor presentation issues since the query and the USGS list itself are UTC-labeled and worldwide is effectively “no geographic restriction.”\n\nCritical issues: None. The final DOM state (state 14) explicitly confirms the applied filters and ordering via URL/search params: timeZone=utc, starttime=2026-09-14 00:00:00, endtime=2026-09-15 00:00:00, minmagnitude=4.5, orderby=magnitude, plus sort=largest. The visible list is sorted descending (5.6, 5.5, 5.4) and each row shows magnitude, place, and timestamp with “(UTC)”. The agent’s reported top three entries exactly match the first three rows in state 14: (1) M5.6 78 km NNE of Tobelo, Indonesia at 2026-09-14 10:58:03 UTC; (2) M5.5 187 km SSW of Pelabuhanratu, Indonesia at 2026-09-14 09:27:38 UTC; (3) M5.4 northern Mid-Atlantic Ridge at 2026-09-14 02:56:17 UTC. The agent also did not enable any alerts/notifications (no evidence of such actions), satisfying the constraints. Although there was an intermediate malformed date concatenation earlier (state 12) and an earlier loading error, the latest state shows the corrected 24-hour UTC window with results loaded, which is what matters for outcome.",
+      "output_success": true
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        true
+      ],
+      "majority_output_success": true,
+      "all_results": [
+        {
+          "primary_intent": "Use the USGS Earthquake Catalog search UI to query the last 24 hours in UTC for worldwide earthquakes of magnitude 4.5+, sorted by largest magnitude first, and then report the top three results (magnitude, place, UTC time). A reasonable user would be flexible on minor formatting (e.g., whether “(UTC)” is repeated on each line) but not on the time range being UTC/24h, the magnitude threshold, the sort order, or the correctness of the three reported earthquakes.",
+          "reasoning": "Nitpicks: The agent’s final report omits explicitly writing “(UTC)” next to each listed event time (though it labels the field as UTC), and it doesn’t restate anything about the geographic region beyond “worldwide” in the intro; these are minor presentation issues since the query and the USGS list itself are UTC-labeled and worldwide is effectively “no geographic restriction.”\n\nCritical issues: None. The final DOM state (state 14) explicitly confirms the applied filters and ordering via URL/search params: timeZone=utc, starttime=2026-09-14 00:00:00, endtime=2026-09-15 00:00:00, minmagnitude=4.5, orderby=magnitude, plus sort=largest. The visible list is sorted descending (5.6, 5.5, 5.4) and each row shows magnitude, place, and timestamp with “(UTC)”. The agent’s reported top three entries exactly match the first three rows in state 14: (1) M5.6 78 km NNE of Tobelo, Indonesia at 2026-09-14 10:58:03 UTC; (2) M5.5 187 km SSW of Pelabuhanratu, Indonesia at 2026-09-14 09:27:38 UTC; (3) M5.4 northern Mid-Atlantic Ridge at 2026-09-14 02:56:17 UTC. The agent also did not enable any alerts/notifications (no evidence of such actions), satisfying the constraints. Although there was an intermediate malformed date concatenation earlier (state 12) and an earlier loading error, the latest state shows the corrected 24-hour UTC window with results loaded, which is what matters for outcome.",
+          "output_success": true
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent ultimately completed the task successfully: it set a custom UTC 24-hour range, applied min magnitude ≥4.5, kept the search effectively worldwide (no restrictive geographic params), set ordering to “Largest Magnitude First,” and extracted the top three results matching the final DOM list. However, there were intermediate execution issues: the first search attempt returned a load/HTTP 400 failure, and there was a temporary malformed/concatenated datetime parameter state (likely due to not clearing existing text when typing). These issues were corrected later and did not affect the final correctness, but they are distinct failure points in the trajectory.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4,6",
+          "error_code": "3.6",
+          "error_category": "Execution & Strategy",
+          "error_type": "Other",
+          "what_happened": "When typing the start/end datetimes, the agent did not clearly overwrite/clear existing field values, leading to a later malformed concatenated start/end in the query state.",
+          "agent_reasoning": "It believed it was setting Start (UTC) and End (UTC) to define the preceding 24-hour window.",
+          "evidence": "Action 4 and 6 are `type` calls without an explicit indication that existing text was cleared; later DOM evidence shows malformed concatenation: DOM state 12 has `starttime\":\"2026-09-08 00:00:002026-09-14 00:00:00\"` and `endtime\":\"2026-09-15 23:59:592026-09-15 00:00:00\"`.",
+          "impact": "Temporarily put the search into an invalid/ambiguous time-range state, requiring later correction (steps 11–13) before valid results could be obtained."
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "7",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "8",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "9",
+          "error_code": "3.4",
+          "error_category": "Execution & Strategy",
+          "error_type": "Environment failure",
+          "what_happened": "After clicking Search, the results page failed to load correctly due to an HTTP 400 error, preventing immediate access to the result list.",
+          "agent_reasoning": "It believed the filters were configured and attempted to run the query to load the results table.",
+          "evidence": "DOM-model state 9 notes: `Earthquakes failed to load…` and `HttpErrorResponse ... 400` for the geojson query, despite URL parameters showing sort/magnitude settings.",
+          "impact": "Blocked successful result retrieval on the first attempt, forcing the agent to go back to modify/re-enter search parameters and rerun the search."
+        },
+        {
+          "step_numbers": "9",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "10",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "11",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "12",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "13",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "14",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task description fully specifies all required parameters: a custom UTC date-and-time range covering the preceding 24 hours, a magnitude threshold (≥4.5), worldwide region, and sorting order (largest magnitude first). The starting URL context (USGS Earthquake Catalog) provides all necessary UI controls to resolve any potential interpretation. The agent’s successful execution—setting the custom UTC range, selecting 4.5+, keeping the region global, applying the correct sort, and reporting the top three results—confirms there was no missing or conflicting information that impeded completion.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is straightforward and achievable using the USGS web interface. There is no inherent impossibility, legal or policy violation, or NSFW content. The agent interacted with the publicly available search page using valid filters and reported genuine data, demonstrating that the task is valid.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact URL, the filters (UTC date and time range for the preceding 24 hours, magnitude ≥4.5, worldwide region), the sort order (magnitude descending), and the output format (first three results with magnitude, place, and UTC event time). A competent agent can infer the necessary date/time parameters from the system clock. No essential detail is missing.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible using the public USGS Earthquake Catalog interface, involves no illegal or NSFW content, and does not violate any Responsible AI principles. It merely requires applying standard filters and reporting public data.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 15,
+    "final_state_index": 14,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "60759b44791a92555cc5d1321aa9bd9b333362db9c7bbcd5b73581df1525a7e5",
+        "byte_count": 2546,
+        "line_count": 62,
+        "estimated_tokens": 635,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 39
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 40,
+            "end_line": 42
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 43,
+            "end_line": 47
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 48,
+            "end_line": 58
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 59,
+            "end_line": 62
+          }
+        ],
+        "control_refs": [
+          "235",
+          "238",
+          "27",
+          "7",
+          "323",
+          "220",
+          "292",
+          "other",
+          "341",
+          "343",
+          "345"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L62"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+        "byte_count": 2650,
+        "line_count": 65,
+        "estimated_tokens": 661,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 42
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 43,
+            "end_line": 45
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 46,
+            "end_line": 50
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 51,
+            "end_line": 61
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 62,
+            "end_line": 65
+          }
+        ],
+        "control_refs": [
+          "235",
+          "238",
+          "27",
+          "7",
+          "323",
+          "220",
+          "292",
+          "other",
+          "341",
+          "343",
+          "345"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L65"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model2.txt",
+        "sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+        "byte_count": 2650,
+        "line_count": 65,
+        "estimated_tokens": 661,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 42
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 43,
+            "end_line": 45
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 46,
+            "end_line": 50
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 51,
+            "end_line": 61
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 62,
+            "end_line": 65
+          }
+        ],
+        "control_refs": [
+          "235",
+          "238",
+          "27",
+          "7",
+          "323",
+          "220",
+          "292",
+          "other",
+          "341",
+          "343",
+          "345"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L65"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model3.txt",
+        "sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+        "byte_count": 2650,
+        "line_count": 65,
+        "estimated_tokens": 661,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 42
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 43,
+            "end_line": 45
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 46,
+            "end_line": 50
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 51,
+            "end_line": 61
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 62,
+            "end_line": 65
+          }
+        ],
+        "control_refs": [
+          "235",
+          "238",
+          "27",
+          "7",
+          "323",
+          "220",
+          "292",
+          "other",
+          "341",
+          "343",
+          "345"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L65"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model4.txt",
+        "sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+        "byte_count": 2650,
+        "line_count": 65,
+        "estimated_tokens": 661,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 42
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 43,
+            "end_line": 45
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 46,
+            "end_line": 50
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 51,
+            "end_line": 61
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 62,
+            "end_line": 65
+          }
+        ],
+        "control_refs": [
+          "235",
+          "238",
+          "27",
+          "7",
+          "323",
+          "220",
+          "292",
+          "other",
+          "341",
+          "343",
+          "345"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L65"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model5.txt",
+        "sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+        "byte_count": 3250,
+        "line_count": 73,
+        "estimated_tokens": 812,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 43
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 44,
+            "end_line": 47
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 48,
+            "end_line": 66
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 67,
+            "end_line": 73
+          }
+        ],
+        "control_refs": [
+          "27",
+          "28",
+          "7",
+          "6",
+          "298",
+          "292",
+          "other",
+          "323",
+          "325",
+          "19",
+          "359",
+          "361",
+          "363"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L73"
+      },
+      {
+        "index": 6,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model6.txt",
+        "sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+        "byte_count": 3250,
+        "line_count": 73,
+        "estimated_tokens": 812,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 43
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 44,
+            "end_line": 47
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 48,
+            "end_line": 66
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 67,
+            "end_line": 73
+          }
+        ],
+        "control_refs": [
+          "27",
+          "28",
+          "7",
+          "6",
+          "298",
+          "292",
+          "other",
+          "323",
+          "325",
+          "19",
+          "359",
+          "361",
+          "363"
+        ],
+        "warnings": [],
+        "provenance": "m6:L1-L73"
+      },
+      {
+        "index": 7,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model7.txt",
+        "sha256": "c901e9bcd928d3a92e2f5d66f818f21541d8c104acf527d1eb68cbc9ac0c7028",
+        "byte_count": 3049,
+        "line_count": 72,
+        "estimated_tokens": 762,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 47
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 48,
+            "end_line": 50
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 51,
+            "end_line": 65
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 66,
+            "end_line": 72
+          }
+        ],
+        "control_refs": [
+          "27",
+          "28",
+          "7",
+          "6",
+          "292",
+          "other",
+          "323",
+          "325",
+          "19",
+          "359",
+          "361",
+          "363"
+        ],
+        "warnings": [],
+        "provenance": "m7:L1-L72"
+      },
+      {
+        "index": 8,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model8.txt",
+        "sha256": "da207ce51ede484804681c6905dafa765f4d5ea937922802f8052d0664a0b62f",
+        "byte_count": 1900,
+        "line_count": 52,
+        "estimated_tokens": 475,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 32
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 33,
+            "end_line": 37
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 38,
+            "end_line": 48
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 49,
+            "end_line": 52
+          }
+        ],
+        "control_refs": [
+          "74",
+          "75",
+          "23",
+          "298",
+          "367",
+          "other",
+          "349",
+          "351",
+          "370"
+        ],
+        "warnings": [],
+        "provenance": "m8:L1-L52"
+      },
+      {
+        "index": 9,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model9.txt",
+        "sha256": "240259e4f7697528120507947a548c7009e55b9a77794faf0d94fc69595eac82",
+        "byte_count": 6428,
+        "line_count": 55,
+        "estimated_tokens": 1601,
+        "url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+        "title": "Latest Earthquakes",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 26
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 27,
+            "end_line": 31
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 32,
+            "end_line": 35
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 36,
+            "end_line": 49
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 50,
+            "end_line": 52
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 53,
+            "end_line": 55
+          }
+        ],
+        "control_refs": [
+          "2036",
+          "2047",
+          "2046",
+          "1540",
+          "1549",
+          "1635",
+          "1452",
+          "1659",
+          "1662",
+          "1348",
+          "1329",
+          "1337",
+          "1457",
+          "1666",
+          "2035",
+          "2042"
+        ],
+        "warnings": [],
+        "provenance": "m9:L1-L55"
+      },
+      {
+        "index": 10,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model10.txt",
+        "sha256": "223258b38387337ede25ee5f1ec4caf906ffbc2fa61d384a5372e89dcc8a3c47",
+        "byte_count": 3330,
+        "line_count": 62,
+        "estimated_tokens": 831,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 39
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 40,
+            "end_line": 42
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 43,
+            "end_line": 47
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 48,
+            "end_line": 58
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 59,
+            "end_line": 62
+          }
+        ],
+        "control_refs": [
+          "233",
+          "236",
+          "4",
+          "3",
+          "322",
+          "218",
+          "290",
+          "other",
+          "340",
+          "342",
+          "344"
+        ],
+        "warnings": [],
+        "provenance": "m10:L1-L62"
+      },
+      {
+        "index": 11,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model11.txt",
+        "sha256": "8b124fcb6bd4a1a4b9ae06a736c5fa86129086740c551b04d9a57477c248652b",
+        "byte_count": 3434,
+        "line_count": 65,
+        "estimated_tokens": 857,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 42
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 43,
+            "end_line": 45
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 46,
+            "end_line": 50
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 51,
+            "end_line": 61
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 62,
+            "end_line": 65
+          }
+        ],
+        "control_refs": [
+          "233",
+          "236",
+          "4",
+          "3",
+          "322",
+          "218",
+          "290",
+          "other",
+          "340",
+          "342",
+          "344"
+        ],
+        "warnings": [],
+        "provenance": "m11:L1-L65"
+      },
+      {
+        "index": 12,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model12.txt",
+        "sha256": "7053a7b247292afdf84f21c5aa99393d95e460311792515b7b1149f083f34178",
+        "byte_count": 4034,
+        "line_count": 73,
+        "estimated_tokens": 1008,
+        "url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+        "title": "Search Earthquake Catalog",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 43
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 44,
+            "end_line": 47
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 48,
+            "end_line": 66
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 67,
+            "end_line": 73
+          }
+        ],
+        "control_refs": [
+          "4",
+          "26",
+          "3",
+          "2",
+          "296",
+          "290",
+          "other",
+          "322",
+          "324",
+          "16",
+          "358",
+          "360",
+          "362"
+        ],
+        "warnings": [],
+        "provenance": "m12:L1-L73"
+      },
+      {
+        "index": 13,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model13.txt",
+        "sha256": "2f46554b6b6b16208f550c6d6c5c01ed7fc45e9bc9ec559a6c46f1a3e7bfd486",
+        "byte_count": 3678,
+        "line_count": 50,
+        "estimated_tokens": 915,
+        "url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+        "title": "Latest Earthquakes",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 21
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 22,
+            "end_line": 26
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 27,
+            "end_line": 32
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 33,
+            "end_line": 36
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 37,
+            "end_line": 44
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 45,
+            "end_line": 47
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 48,
+            "end_line": 50
+          }
+        ],
+        "control_refs": [
+          "1589",
+          "1591",
+          "1578",
+          "1499",
+          "1621",
+          "1623",
+          "other",
+          "1509",
+          "1620",
+          "1308",
+          "1289",
+          "1297",
+          "1417",
+          "1627"
+        ],
+        "warnings": [],
+        "provenance": "m13:L1-L50"
+      },
+      {
+        "index": 14,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_44_rerun/20260915_task44_rerun/_inputs/dom_model/dom_model14.txt",
+        "sha256": "051e484e11f38fc383808f65b8bb285dbbb0d60a252ee23c1b27551197722dd4",
+        "byte_count": 1384,
+        "line_count": 20,
+        "estimated_tokens": 346,
+        "url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-300.23438&extent=88.93202,660.23438&range=search&sort=largest&timeZone=utc&list=false&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+        "title": "Latest Earthquakes",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 13
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 14,
+            "end_line": 18
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 19,
+            "end_line": 20
+          }
+        ],
+        "control_refs": [
+          "1499"
+        ],
+        "warnings": [],
+        "provenance": "m14:L1-L20"
+      }
+    ],
+    "estimated_evidence_tokens": 11698,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 15,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 8,
+        "1": 2,
+        "2": 0,
+        "3": 0,
+        "4": 6
+      },
+      "1": {
+        "0": 8,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 6
+      },
+      "2": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 4
+      },
+      "3": {
+        "0": 7,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 6
+      },
+      "4": {
+        "0": 7,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 6
+      },
+      "5": {
+        "0": 6,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 4
+      },
+      "6": {
+        "0": 7,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 6
+      },
+      "7": {
+        "0": 6,
+        "1": 2,
+        "2": 0,
+        "3": 0,
+        "4": 3
+      },
+      "8": {
+        "0": 1,
+        "1": 6,
+        "2": 0,
+        "3": 0,
+        "4": 1
+      },
+      "9": {
+        "0": 6,
+        "1": 7,
+        "2": 1,
+        "3": 2,
+        "4": 6
+      },
+      "10": {
+        "0": 7,
+        "1": 6,
+        "2": 1,
+        "3": 2,
+        "4": 7
+      },
+      "11": {
+        "0": 6,
+        "1": 7,
+        "2": 0,
+        "3": 0,
+        "4": 6
+      },
+      "12": {
+        "0": 7,
+        "1": 6,
+        "2": 0,
+        "3": 0,
+        "4": 8
+      },
+      "13": {
+        "0": 8,
+        "1": 8,
+        "2": 1,
+        "3": 2,
+        "4": 6
+      },
+      "14": {
+        "0": 10,
+        "1": 10,
+        "2": 9,
+        "3": 6,
+        "4": 10
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 7,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 7,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 7,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 7,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 4,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 8379,
+        "estimated_input_tokens": 2095,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 8475,
+        "estimated_input_tokens": 2119,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 8475,
+        "estimated_input_tokens": 2119,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 8475,
+        "estimated_input_tokens": 2119,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 8475,
+        "estimated_input_tokens": 2119,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9095,
+        "estimated_input_tokens": 2274,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "relevance",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9095,
+        "estimated_input_tokens": 2274,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "relevance",
+        "state_index": 7,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 8891,
+        "estimated_input_tokens": 2223,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "relevance",
+        "state_index": 8,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 7714,
+        "estimated_input_tokens": 1929,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "relevance",
+        "state_index": 9,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 12273,
+        "estimated_input_tokens": 3069,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "relevance",
+        "state_index": 10,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9155,
+        "estimated_input_tokens": 2289,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "relevance",
+        "state_index": 11,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9262,
+        "estimated_input_tokens": 2316,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "relevance",
+        "state_index": 12,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9882,
+        "estimated_input_tokens": 2471,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "relevance",
+        "state_index": 13,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9509,
+        "estimated_input_tokens": 2378,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "relevance",
+        "state_index": 14,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 7167,
+        "estimated_input_tokens": 1792,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "batched_analysis",
+        "state_index": 14,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 14323,
+        "estimated_input_tokens": 3581,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 13,
+        "criterion_indices": [
+          0,
+          1,
+          4
+        ],
+        "char_count": 15407,
+        "estimated_input_tokens": 3852,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 12872,
+        "estimated_input_tokens": 3218,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 12776,
+        "estimated_input_tokens": 3194,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "batched_analysis",
+        "state_index": 12,
+        "criterion_indices": [
+          0,
+          1,
+          4
+        ],
+        "char_count": 15780,
+        "estimated_input_tokens": 3945,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "batched_analysis",
+        "state_index": 11,
+        "criterion_indices": [
+          1,
+          4
+        ],
+        "char_count": 14195,
+        "estimated_input_tokens": 3549,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "criterion_analysis",
+        "state_index": 9,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 16301,
+        "estimated_input_tokens": 4076,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 23,
+        "stage": "criterion_analysis",
+        "state_index": 10,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 13310,
+        "estimated_input_tokens": 3328,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 24,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 13565,
+        "estimated_input_tokens": 3392,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 25,
+        "stage": "batched_analysis",
+        "state_index": 11,
+        "criterion_indices": [
+          1,
+          4
+        ],
+        "char_count": 14635,
+        "estimated_input_tokens": 3659,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 26,
+        "stage": "batched_analysis",
+        "state_index": 14,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 14748,
+        "estimated_input_tokens": 3687,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 27,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 14387,
+        "estimated_input_tokens": 3597,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 102.17
+}

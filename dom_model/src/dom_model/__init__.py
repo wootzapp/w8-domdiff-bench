@@ -1,4 +1,4 @@
-"""Self-contained Microsoft screenshot Universal Verifier."""
+"""Self-contained DOM-model Universal Verifier."""
 
 from .rubric_agent import (
     MMRubricAgent,

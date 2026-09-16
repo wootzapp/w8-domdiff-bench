@@ -33,6 +33,7 @@ ACTION_NAMES = {
     "back": "history_back", "history_back": "history_back",
     "wait": "wait",
     "key": "key",
+    "select": "select",
 }
 CONTROL_FILES = {"task_data.json", "web_surfer.log", "final_answer.json"}
 SIDECAR = "task_data_with_canonical_rubric.json"

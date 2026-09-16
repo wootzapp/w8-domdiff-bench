@@ -1,0 +1,1826 @@
+{
+  "task_id": "browser_task_004-museum-film-lookup-20260915T065809Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.3333333333333333,
+  "rubric_total_max_points": 15.0,
+  "rubric_total_earned_points": 5.0,
+  "rubric_is_success": false,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: None applicable here, because the agent did not produce any substantive result to nitpick (no title/description/showtimes output at all).\n\nCritical issues: (1) Missing primary deliverable: the agent never reported a film title, what it is about, or any scheduled showtimes. The predicted output is only a timeout error. (2) No actionable fallback: the agent did not provide even partial useful information (e.g., a specific film name seen on the page, or an explicit statement that showtimes/films are inaccessible due to a confirmed site blocker).\n\nFrom the DOM evidence, the agent successfully navigated into relevant DMNS areas: the Films & Shows page contains a 'Now Showing'/'Sturm Theater' section (DOM state 1), and the agent reached the DMNS ticketing page filtered to 'Sturm Theater' (DOM states 2–5). However, none of the provided DOM states show any film listings or showtimes, and the agent’s run ended with an AgentBrowserError timeout rather than producing the required information. Even if the timeout indicates a technical problem, the user still did not receive the requested film title/description/showtimes, so the task outcome is not achieved.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "The user wanted the agent to use the Denver Museum of Nature & Science (dmns.org) website to find ONE film that is currently playing at the Sturm Infinity Theater, and report (a) the film title, (b) what it’s about, and (c) its scheduled showtimes. A reasonable user would be flexible about minor wording/formatting, but not flexible about missing any of the three required deliverables or providing unverified/incorrect film/showtime information."
+  },
+  "preflight": {
+    "task_id": "browser_task_004-museum-film-lookup-20260915T065809Z",
+    "actions": 5,
+    "dom_model_states": 6,
+    "initial_state": 0,
+    "final_state": 5,
+    "alignment": {
+      "task_id": "browser_task_004-museum-film-lookup-20260915T065809Z",
+      "action_count": 5,
+      "state_count": 6,
+      "initial_state": 0,
+      "final_state": 5,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e66",
+            "target": {
+              "ref": "e66",
+              "role": "button",
+              "name": "FILMS & SHOWS"
+            },
+            "thoughts": "Open the Films & Shows section to locate information about Sturm Infinity Theater films and showtimes."
+          },
+          "observed_after_url": "https://www.dmns.org/films-and-shows/"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e4",
+            "target": {
+              "ref": "e4",
+              "role": "button",
+              "name": "VIEW FILMS"
+            },
+            "thoughts": "Open the Sturm Theater films listing via the VIEW FILMS button to see currently playing films and their showtimes."
+          },
+          "observed_after_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater"
+        },
+        {
+          "ordinal": 3,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to scroll to reveal the list of Sturm Infinity Theater films and their showtimes under the selected tab."
+          },
+          "observed_after_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater"
+        },
+        {
+          "ordinal": 4,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to scroll further down the Sturm Theater tickets page to reveal film listings and showtimes, which are not yet visible in the current snapshot."
+          },
+          "observed_after_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater"
+        },
+        {
+          "ordinal": 5,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to scroll further to reveal the list of Sturm Infinity Theater films and their showtimes, since current viewport only shows header and footer info."
+          },
+          "observed_after_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "8e688fedc30c818afad8732c849c138d2d49f83417f358829e7b8749f20eb24f",
+          "after_sha256": "8c46d519e06dbc5bfca98ab90e8649ef4405a8ac72d0d9ac5d5468ab67371591",
+          "before_url": "https://www.dmns.org/",
+          "after_url": "https://www.dmns.org/films-and-shows/"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "8c46d519e06dbc5bfca98ab90e8649ef4405a8ac72d0d9ac5d5468ab67371591",
+          "after_sha256": "3d3ccc8da606e9d146537a55cd2051db3c750ac1806d07de053a4b58a14030ef",
+          "before_url": "https://www.dmns.org/films-and-shows/",
+          "after_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "3d3ccc8da606e9d146537a55cd2051db3c750ac1806d07de053a4b58a14030ef",
+          "after_sha256": "0fda41660664556698b2cf8d788cf1332126da5f087b0a845fac8acc2577cba4",
+          "before_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater",
+          "after_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "0fda41660664556698b2cf8d788cf1332126da5f087b0a845fac8acc2577cba4",
+          "after_sha256": "0fda41660664556698b2cf8d788cf1332126da5f087b0a845fac8acc2577cba4",
+          "before_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater",
+          "after_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "0fda41660664556698b2cf8d788cf1332126da5f087b0a845fac8acc2577cba4",
+          "after_sha256": "0fda41660664556698b2cf8d788cf1332126da5f087b0a845fac8acc2577cba4",
+          "before_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater",
+          "after_url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e66' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e4' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "81ae2fa388b310f12bcd2015339158be8169f748f3fd281893eb5bec3606ab77",
+    "criterion_order": [
+      "Navigate DMNS site to Sturm Infinity Theater 'currently playing' information",
+      "Identify one film currently playing (title)",
+      "Report what the film is about (description/summary)",
+      "Report scheduled showtimes for the selected film",
+      "Respect constraints (no sign-in, no purchase, no seat reservation) and stop after one film"
+    ],
+    "maximum_points": [
+      3.0,
+      3.0,
+      2.0,
+      4.0,
+      3.0
+    ],
+    "criterion_denominator": 15.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_04_rerun/20260915_task04_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_04_rerun/20260915_task04_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "81ae2fa388b310f12bcd2015339158be8169f748f3fd281893eb5bec3606ab77",
+  "criterion_denominator": 15,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 132355,
+      "completion_tokens": 22293,
+      "reasoning_tokens": 0,
+      "total_tokens": 154648
+    },
+    "action_judge": {
+      "prompt_tokens": 19131,
+      "completion_tokens": 2921,
+      "reasoning_tokens": 1664,
+      "total_tokens": 22052
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 36,
+      "api_attempts": 36,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 6,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 2,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 7,
+        "1": 2,
+        "2": 1,
+        "3": 0,
+        "4": 3,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 3,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 3,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 6,
+        "1": 1,
+        "2": 0,
+        "3": 1,
+        "4": 4,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 3,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 2,
+        "screenshot_idx": 5
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        1,
+        4,
+        2,
+        0,
+        3
+      ],
+      "1": [
+        1,
+        4,
+        5,
+        3,
+        2
+      ],
+      "2": [
+        1,
+        5,
+        4,
+        3,
+        2
+      ],
+      "3": [
+        4,
+        5,
+        3,
+        2,
+        1
+      ],
+      "4": [
+        4,
+        3,
+        2,
+        1,
+        5
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence confirms navigation to a DMNS page that contains a Sturm Theater \"Now Showing\" section, which is the correct part of the site for currently-playing Infinity/Sturm Theater information. However, the provided DOM snapshot does not include any actual list of films currently playing or showtimes, and no later DOM states are provided to confirm the agent reached a listing/details view.",
+          "discrepancies": "Action history indicates navigation/scrolling toward tickets/showtimes (States 2–5) but there is no DOM-model evidence for those states, so the analysis cannot confirm whether the films list/showtimes were present or accessible.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL https://www.dmns.org/films-and-shows/ with visible section text: \"Now Showing\" and \"Sturm Theater\" plus description of the \"state-of-the-art giant screen theater...\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent did reach a dmns.org page filtered to the Sturm Theater category (the URL query includes \"category=sturm-theater\"), which is consistent with navigating toward Sturm Infinity Theater show information. However, the provided DOM snapshot only shows footer/location/hours and does not explicitly show any \"currently playing\"/\"now showing\" film list or Infinity Theater-specific content in-view, so it is not fully evidenced that the agent reached the section that lists currently playing films.",
+          "discrepancies": "Rubric asks for a DMNS page that clearly indicates current Infinity Theater films; the snapshot does not display any film listings or an Infinity/IMAX/Sturm Infinity Theater “now playing” module—only general footer content and top nav text.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 shows URL \"https://www.dmns.org/purchase/tickets/?category=sturm-theater\" with page title \"Buy Tickets for the Denver Museum of Nature & Science\". Visible navigation includes \"Tickets\" and categories including \"Sturm Theater\" (text: \"Tickets General Admission Sturm Theater Planetarium Laser Shows...\").",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent reached a DMNS page clearly scoped to `Sturm Theater` ticketing (likely the correct area to find currently playing Sturm Infinity Theater films). However, in the provided DOM snapshot, there is no visible list/section showing `currently playing` / `now showing` films; only global navigation and the ticket category tabs are visible.",
+          "discrepancies": "The rubric target is a DMNS page that lists films currently playing/now showing at Sturm Infinity Theater; the captured DOM does not contain such a listing yet, so the navigation progress is incomplete in evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows URL `https://www.dmns.org/purchase/tickets/?category=sturm-theater` with ticket category tabs, including a selected tab labeled `Sturm Theater` (button `Sturm Theater`, control_state=selected=true).",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM evidence supports that the agent reached dmns.org and had a clear navigation path toward Films & Shows (DOM_MODEL_STATE_INDEX: 0, URL https://www.dmns.org/, link text “Films & Shows” with “Sturm Theater” submenu). However, there is no DOM-model evidence that the agent actually reached a Sturm Infinity Theater page listing “currently playing” films or showtimes, because no DOM snapshot is provided for those subsequent URLs and no film/showtime content appears in the available DOM. Environment issues are indicated only by the reported AgentBrowserError timeout, but the DOM evidence provided does not include an on-page blocker (e.g., CAPTCHA, access denied) or a DMNS-page load failure snapshot—only the external connection timeout message in the narrative.",
+          "discrepancies": "The task context/action history claims navigation to https://www.dmns.org/films-and-shows/ and https://www.dmns.org/purchase/tickets/ (and scrolling to reveal listings), but the only DOM snapshot provided is for https://www.dmns.org/ (DOM_MODEL_STATE_INDEX: 0). Therefore, the DOM-model record does not substantiate that the agent reached the Sturm Infinity Theater “currently playing” information page or viewed any film titles/showtimes. The AgentBrowserError timeout is also not represented as a DOM page state, so it cannot be fully corroborated from DOM content.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the agent is on DMNS main site URL https://www.dmns.org/ with main navigation containing a link labeled “Films & Shows” (actions: [59] link \"Films & Shows\" with subitems “Sturm Theater”, “Gates Planetarium”, “Laser Shows”). No DOM states are provided for https://www.dmns.org/films-and-shows/ or any Sturm Infinity Theater film listing page, and no DOM content shows a “currently playing/now showing” film list or showtimes. The action history notes later navigation to https://www.dmns.org/films-and-shows/ and https://www.dmns.org/purchase/tickets/ and multiple scrolls, but those states’ DOM snapshots are not included; instead an AgentBrowserError indicates a timeout: “agent-browser 'connect 49335' failed: timed out after 90 seconds.”",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent reached a DMNS page explicitly scoped to Sturm Theater via `?category=sturm-theater`, which indicates navigation into the relevant area for Sturm Infinity Theater content. However, the provided DOM snapshot does not contain any explicit \"currently playing/now showing\" film list or Sturm Infinity Theater film information; only footer/navigation content is visible, so the task goal is not fully evidenced in the DOM provided.",
+          "discrepancies": "No DOM evidence of a section listing Sturm Infinity Theater films currently playing; only the category-scoped tickets URL implies relevance.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows URL `https://www.dmns.org/purchase/tickets/?category=sturm-theater` and page title `Buy Tickets for the Denver Museum of Nature & Science`. Visible navigation includes `Tickets General Admission Sturm Theater Planetarium Laser Shows...` but the visible content is primarily footer items (`HOURS`, `LOCATION`, policies) and does not display any film listings or a \"currently playing\" section.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo film title is present in the provided DOM snapshot. Without a DOM state that shows a specific film card/listing or detail page indicating a film is currently playing at the Sturm Infinity Theater, the title cannot be verified.",
+          "discrepancies": "The action history mentions clicking \"VIEW FILMS\" (State 2) but no DOM evidence is provided for the resulting page contents, so a film title cannot be extracted/confirmed from dmns.org.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes headings \"Now Showing\" and \"Sturm Theater\" but contains no film titles in the visible content.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nNo title of a currently playing Sturm Infinity Theater film is identified in the DOM evidence. The snapshot does not include any film listing content from which a currently playing title could be recorded.",
+          "discrepancies": "Required: \"title of ONE film explicitly indicated as currently playing/now showing\". Observed: zero film titles and no \"currently playing\" indicator in the provided DOM snapshot.",
+          "environment_issues_confirmed": true,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 contains no film titles in the visible content; only general site info (hours, location, policies) and navigation labels (e.g., \"Sturm Theater\").",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo DOM evidence shows any film title, nor any text indicating a specific film is currently playing at the Sturm Infinity Theater. The session ended with a reported `AgentBrowserError: ... timed out after 90 seconds`, but that error is not present inside the provided DOM snapshot.",
+          "discrepancies": "The task requires identifying one currently playing film title from dmns.org; none is present in the provided DOM evidence, and the agent did not produce a title.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 contains no film titles in the visible content. The page shows navigation items (e.g., `Films & Shows`, `Sturm Theater`, etc.) and category buttons (`General Admission`, `Sturm Theater`, `Planetarium`, etc.), but no film entries.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot does not show any currently playing film titles for the Sturm Infinity Theater (or any film titles at all). Therefore, it cannot be confirmed that the agent identified a currently playing film title from dmns.org.",
+          "discrepancies": "Task requires one explicitly currently playing film title; none is present in the provided DOM evidence.",
+          "environment_issues_confirmed": true,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 contains no film titles or any film-related list items. Visible text includes navigation labels (e.g., `Sturm Theater`) and footer information, but no specific film name appears.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 1 requires identifying one film title explicitly indicated as currently playing at the Sturm Infinity Theater on dmns.org. In DOM_MODEL_STATE_INDEX: 5, the captured DOM does not include any explicit film title or any label indicating \"currently playing\"/\"now showing\" for the Sturm Infinity Theater. Because the relevant content (film titles/status) is absent from the provided DOM evidence, the criterion cannot be confirmed as met from this snapshot.",
+          "discrepancies": "Task expectation: the Sturm Theater ticketing page should show currently playing films and their titles. DOM evidence gap: DOM_MODEL_STATE_INDEX: 5 only exposes navigation/footer content and lacks the film listing portion of the page, so no film title can be extracted or tied to a \"currently playing\" designation from the DOM snapshot.",
+          "environment_issues_confirmed": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 (final)\nURL: https://www.dmns.org/purchase/tickets/?category=sturm-theater\nPage title: \"Buy Tickets for the Denver Museum of Nature & Science\"\nVisible DOM content in this snapshot shows only global navigation and footer items (e.g., \"Tickets\", \"General Admission\", \"Sturm Theater\", \"Planetarium\", \"Laser Shows\", plus footer \"HOURS\", \"LOCATION\", social links, and policies). There is no film list and no film title text present in the captured DOM. The snapshot explicitly contains no strings indicating a specific film or a \"currently playing/now showing\" section for Sturm Infinity Theater.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe provided DOM does not contain a film-specific description/synopsis, and no film detail page DOM is available. Therefore, what the film is about cannot be supported from dmns.org evidence.",
+          "discrepancies": "Because no film was identified in the DOM, no corresponding synopsis text can be matched to DMNS wording.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 provides only a general Sturm Theater venue description (e.g., \"state-of-the-art giant screen theater...\") and no film-specific synopsis text.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe DOM evidence contains no film description/summary, so the agent cannot have reported what the film is about based on dmns.org text in this state.",
+          "discrepancies": "Required: brief summary of the selected film based on dmns.org text. Observed: no film page content or descriptive copy present in the snapshot.",
+          "environment_issues_confirmed": true,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 has no synopsis/description text for any film; visible text is limited to hours, location, acknowledgements, and policy links.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nBecause no film was identified in the DOM evidence, there is also no accessible DMNS-provided synopsis/description text in the snapshot to summarize.",
+          "discrepancies": "The task requires a description of what the film is about based on DMNS text; the DOM snapshot provides none.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 contains no film detail blocks or synopsis/description text for any Sturm Theater film.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo film description/summary is present in the provided DOM evidence, so there is no support that the agent retrieved or reported what a film is about from dmns.org.",
+          "discrepancies": "Required film synopsis is not evidenced anywhere in the snapshot.",
+          "environment_issues_confirmed": true,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 includes no film detail pages, no synopsis text, and no content describing any film; only general site footer/navigation content is visible.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 2 requires reporting what the film is about (a description/summary) based on dmns.org text (or explicitly stating it could not be retrieved). In DOM_MODEL_STATE_INDEX: 5, no film description/synopsis text is present anywhere in the captured visible DOM. Therefore, the DOM evidence cannot support that the agent retrieved or could report a film description from dmns.org, nor can it confirm the agent explicitly stated the description could not be retrieved (no final answer content is provided in the DOM evidence).",
+          "discrepancies": "The task expects a film title, description (what it is about), and showtimes from the Sturm Infinity Theater section. However, DOM_MODEL_STATE_INDEX: 5 contains none of: (a) any film title, (b) any film synopsis/description, or (c) any scheduled showtimes. The session also shows a timeout error, which may explain missing content retrieval.",
+          "environment_issues_confirmed": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 shows URL https://www.dmns.org/purchase/tickets/?category=sturm-theater (\"Buy Tickets for the Denver Museum of Nature & Science\"). The visible DOM content in this snapshot contains only site navigation (\"Tickets General Admission Sturm Theater Planetarium Laser Shows Temporary Exhibitions Events Cart\"), footer info (hours, location, policies), and social links. There is no film title text, no synopsis/description text, and no showtime listings present in the visible DOM. The action history indicates multiple scroll attempts, but the final DOM snapshot still does not expose any film listing or description content. Additionally, the run ended with an error: \"AgentBrowserError: agent-browser 'connect 49335' failed: timed out after 90 seconds.\"",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo scheduled showtimes are visible in the provided DOM snapshot, and no later DOM states are available to confirm showtimes for any film. Thus, showtimes cannot be reported or validated from dmns.org evidence here.",
+          "discrepancies": "Action history shows repeated scrolling on https://www.dmns.org/purchase/tickets/ (States 3–5) and then a timeout error, but there is no DOM evidence indicating whether showtimes were present, hidden behind a purchase flow, or never loaded.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 does not display any showtime table/listing; it only shows the \"Now Showing\" header area and venue description text.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nNo scheduled showtimes for any Sturm Infinity Theater film are visible in the DOM evidence. Additionally, the run terminated with a timeout error, preventing further retrieval of showtimes within the provided evidence.",
+          "discrepancies": "Required: list scheduled showtimes from dmns.org (or clearly report inability due to constraints/blockers). Observed: no showtimes displayed and no explicit statement in the agent output describing a constraint-based blocker; instead there is a technical timeout error.",
+          "environment_issues_confirmed": true,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 includes no schedule module or times (no AM/PM showtime entries). The action history ends with an AgentBrowserError timeout after State 5.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nNo scheduled showtimes are visible in the provided DOM evidence, so showtimes cannot be extracted or verified from dmns.org based on this state alone.",
+          "discrepancies": "The task requires scheduled showtimes for the selected film; none are present in the DOM snapshot and no film was selected.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows only the ticket category tabs (with `Sturm Theater` selected) and site navigation; it does not show any showtime listings (no times, dates, or schedule table/cards).",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM snapshot does not display any scheduled showtimes for any Sturm Infinity Theater film. It is unclear whether showtimes exist elsewhere on the page (outside the captured/visible DOM region) or are blocked behind an interaction; the provided evidence does not confirm either way.",
+          "discrepancies": "Task requires transcribing scheduled showtimes for one currently playing film; none are visible in the DOM evidence provided.",
+          "environment_issues_confirmed": true,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows no showtime schedule, no time listings, and no film cards/rows. The visible content is footer information (hours, location) and policy links; there are no AM/PM times or schedule widgets in view.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 3 requires listing the scheduled showtimes shown on dmns.org for the selected film, or explicitly reporting that showtimes could not be viewed due to constraints/blocks. In DOM_MODEL_STATE_INDEX: 5, the captured DOM contains no showtimes (or any film listing at all) to transcribe, and it also does not display any explicit message that showtimes are blocked by sign-in/purchase flow/CAPTCHA. While the provided action history includes a timeout error, the DOM snapshot itself does not show showtimes nor an on-page blockage notice. Therefore, the DOM evidence is insufficient to support (or contradict) that scheduled showtimes were found and reported.",
+          "discrepancies": "The rubric criterion expects scheduled showtimes for a selected film (or a clear statement that showtimes could not be viewed, with where the blockage occurs). The DOM snapshot contains neither any showtimes nor any blockage/interstitial/CAPTCHA/sign-in requirement message. The only indication of an access problem is in the action history (timeout error), not within the DOM content itself.",
+          "environment_issues_confirmed": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 shows URL https://www.dmns.org/purchase/tickets/?category=sturm-theater with page title \"Buy Tickets for the Denver Museum of Nature & Science\". The visible DOM content captured is only site navigation (\"Tickets General Admission Sturm Theater Planetarium Laser Shows Temporary Exhibitions Events Cart\") and footer information (hours, location, social links, policies). There are no film titles, no showtime listings, and no schedule elements present in the visible content for this snapshot. The action history also records an exception: \"AgentBrowserError: agent-browser 'connect 49335' failed: timed out after 90 seconds,\" indicating a technical failure occurred during browsing.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nBased on the available evidence, the agent did not sign in, did not purchase tickets, and did not reserve/select seats; the only evidenced interaction is navigation and scrolling. However, because the task-required output (one film title/description/showtimes) is not present and later DOM states are missing, it is not shown that the agent stopped after successfully recording one film’s details (the stopping condition was not met in evidence).",
+          "discrepancies": "The session ends with an external timeout error per action history rather than a completed report of one film; lack of later DOM states prevents confirming whether the interface ever progressed toward prohibited steps (seat selection/checkout), though none are evidenced.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows navigation includes \"Login\" and \"Buy Tickets\" options, but there is no evidence of any sign-in form usage, checkout, or seat selection in the provided DOM. Action history includes a click on \"VIEW FILMS\" (State 2) on a tickets URL, followed by scrolling only.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraint compliance is supported insofar as there is no evidence of sign-in, purchase, or seat reservation actions in the recorded steps; the agent only clicked navigation (\"VIEW FILMS\") and scrolled. However, the stopping condition (stop after finding one film and recording title/description/showtimes) was not met because the agent did not produce any film details and the session ended due to a timeout.",
+          "discrepancies": "Rubric expects the agent to stop after reporting ONE film’s title/description/showtimes (or clearly report inability). The run stops due to a technical timeout without reporting film details; nevertheless, no prohibited purchase/sign-in/seat-selection steps are evidenced.",
+          "environment_issues_confirmed": true,
+          "screenshot_evidence": "Action history shows navigation and scrolling on dmns.org (States 1-5). DOM_MODEL_STATE_INDEX: 4 shows the \"Buy Tickets\" page with nav including \"Cart\" but no evidence of sign-in prompts, checkout flow, or seat selection in the visible content. The agent did not provide a final film report; instead the output shows \"AgentBrowserError... timed out\".",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe available evidence suggests the agent did not sign in, did not purchase tickets, and did not reserve/select seats (no such steps appear in the DOM snapshot or action list). However, the agent also did not complete the task’s stopping condition (report one film title + description + showtimes), so it did not appropriately stop after successfully finding one film.",
+          "discrepancies": "Meets the constraint-avoidance portion, but fails the “stop after finding one film and recording details” requirement because no film/details were found or recorded.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 includes a ticketing context (`Buy Tickets`) and has navigation items like `Cart`, but there is no evidence of sign-in submission, checkout, seat selection, or purchase steps being taken in the provided DOM snapshot. The action history shows clicks on `FILMS & SHOWS` and `VIEW FILMS`, plus scrolling; no actions indicate entering payment info or reserving seats.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nWithin the available evidence, the agent did not sign in, did not purchase tickets, and did not reserve/select seats; actions were limited to clicking navigation buttons and scrolling. However, the stopping condition (reporting one film with title/description/showtimes) is not met in the provided materials, and there is no final reported film information to verify that the agent stopped after one film.",
+          "discrepancies": "No evidence of prohibited actions (sign-in/purchase/seat reservation), but also no evidence the agent completed and stopped after reporting one film’s details.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "Action history shows navigation and scrolling only: clicks on `FILMS & SHOWS` then `VIEW FILMS`, followed by multiple `scroll` actions. DOM_MODEL_STATE_INDEX: 3 shows a tickets page with navigation including `Cart`, but no sign-in prompts, checkout steps, seat maps, or payment fields are visible in the provided snapshot.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM and action history support that the agent respected the key constraints against sign-in/purchase/seat reservation: the final DOM state (5) contains no sign-in UI, no checkout/payment UI, and no seat-selection controls, and the recorded actions are limited to navigation and scrolling (Actions 1–5). However, the rubric also requires stopping after reporting exactly one currently playing film with title, description, and showtimes. The DOM snapshot (state 5) provides no film title/description/showtimes, and the session ended with an environment timeout error, so there is no DOM-supported evidence that the agent completed the “one film reported” requirement or that it stopped after doing so.",
+          "discrepancies": "Stopping-condition compliance (reporting exactly one currently playing film with title/description/showtimes, then stopping) cannot be verified because the final DOM (state 5) shows only footer/navigation content and no film listings/showtimes, and the run terminated with a timeout error before any film details were captured. Thus, only the 'no sign-in/purchase/reservation' portion is evidenced; the 'exactly one film reported' portion is not.",
+          "environment_issues_confirmed": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 shows the agent on the DMNS ticketing page URL `https://www.dmns.org/purchase/tickets/?category=sturm-theater` (Title: \"Buy Tickets for the Denver Museum of Nature & Science\"). The visible DOM content contains only site navigation/footer items such as \"Tickets General Admission Sturm Theater Planetarium Laser Shows Temporary Exhibitions Events Cart\" and footer details (hours, location, policies). There is no DOM-visible evidence of any sign-in form, checkout flow, seat map, ticket quantity selectors, or payment fields; only informational/footer links and social links are present in this snapshot. The action history shows clicks on \"FILMS & SHOWS\" then \"VIEW FILMS\" and multiple scrolls; no actions indicating purchase/checkout/seat selection/sign-in occurred. Environment error shown in task log: `AgentBrowserError: agent-browser 'connect 49335' failed: timed out after 90 seconds`.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM evidence shows the site’s main navigation includes a “Films & Shows” menu with a “Sturm Theater” submenu item, and a separate page includes headings “Now Showing” and “Sturm Theater” plus general venue copy. However, the provided DOM snapshots do not show any actual film list or showtimes within the “Now Showing” area, and later navigation is only evidenced as reaching a ticketing page filtered to “Sturm Theater” (category selected) without film listings visible in the captured viewport.",
+      "1": "Across the provided DOM states, no specific film titles are visible anywhere (neither on the “Now Showing / Sturm Theater” page section nor on the Sturm-Theater-filtered ticketing page). Therefore, in this evidence set there is no explicit on-page basis to tie any film title to “currently playing/now showing,” and the only explicit status indicator visible is the generic “Now Showing” header without accompanying film entries.",
+      "2": "The DOM snapshots contain only venue-level descriptive copy about the Sturm Theater experience (e.g., it being a giant screen theater) and do not include any film-specific synopsis/summary text. Because no film title/detail module is visible, there is also no DMNS-provided film description available in the captured DOM to summarize or to compare against an agent-written synopsis.",
+      "3": "No scheduled showtimes (times/dates) are visible in any provided DOM snapshot. The Sturm-Theater-filtered ticketing page is shown, but the captured content is limited to navigation and footer elements; no schedule widgets, time entries, or film cards appear. The only indication of a problem is a separate technical timeout noted in logs, not an on-page message stating showtimes require sign-in, purchase steps, or seat selection.",
+      "4": "The recorded DOM states and action list show navigation and scrolling only; no sign-in form interactions, checkout/payment fields, ticket quantity selection, or seat map/reservation UI are visible in the captured DOM. Because the DOM evidence never shows a film title/description/showtimes being recorded, the ‘stop after one film’ portion cannot be grounded in the provided DOM; only the avoidance of clearly prohibited flows is supported by what’s visible."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Navigate DMNS site to Sturm Infinity Theater 'currently playing' information",
+        "earned_points": 3,
+        "post_image_earned_points": 2.0,
+        "max_points": 3,
+        "justification": "Agent attempted to navigate to the Films & Shows and VIEW FILMS pages on dmns.org but encountered a browser timeout (AgentBrowserError) after multiple scroll attempts. This represents an uncontrollable platform error preventing access to the current Infinity Theater listing, which the agent clearly reported.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3/4/5 showing the agent at https://www.dmns.org/purchase/tickets/?category=sturm-theater (Sturm Theater category selected) but with no film listings visible in the captured DOM. Earlier DOM_MODEL_STATE_INDEX: 1 shows https://www.dmns.org/films-and-shows/ with headings 'Now Showing' and 'Sturm Theater' (venue section) but still no film list shown in the snapshot. The only blocker mentioned is an AgentBrowserError timeout in the agent’s predicted output; there is no DOM-visible CAPTCHA/access-denied/login-wall message confirming an uncontrollable blocker.",
+        "post_image_justification": "The agent did navigate on dmns.org into the correct area (Films & Shows → Now Showing/Sturm Theater and the tickets page filtered to Sturm Theater). However, DOM evidence does not confirm an uncontrollable site blocker; it also does not confirm the agent reached a page state that clearly lists 'currently playing' films. So full credit for successful navigation to the relevant section is not warranted, but partial credit is appropriate for reaching the Sturm-Theater-scoped tickets URL and the Now Showing/Sturm Theater section.",
+        "reality_notes": "DOM evidence shows the site’s main navigation includes a “Films & Shows” menu with a “Sturm Theater” submenu item, and a separate page includes headings “Now Showing” and “Sturm Theater” plus general venue copy. However, the provided DOM snapshots do not show any actual film list or showtimes within the “Now Showing” area, and later navigation is only evidenced as reaching a ticketing page filtered to “Sturm Theater” (category selected) without film listings visible in the captured viewport."
+      },
+      {
+        "criterion": "Identify one film currently playing (title)",
+        "earned_points": 3,
+        "post_image_earned_points": 0.0,
+        "max_points": 3,
+        "justification": "Agent was blocked by the browser timeout and could not retrieve any film listings or titles from dmns.org; per rubric, an uncontrollable blocker reported via AgentBrowserError justifies full credit for this criterion.",
+        "applicable_evidence": "Across DOM_MODEL_STATE_INDEX: 1, 2, 3, 4, and latest 5, no film titles are present. DOM 1 shows only 'Now Showing'/'Sturm Theater' headings and venue description; DOMs 2/3/4/5 show the Sturm Theater category tickets page chrome/footer without any film cards/titles.",
+        "post_image_justification": "No DOM evidence supports identifying any currently playing film title, and the agent’s final output is only an AgentBrowserError (no title reported). Also, the claimed timeout is not DOM-confirmed as an on-page blocker that would justify full-credit escape. Therefore this criterion is not met.",
+        "reality_notes": "Across the provided DOM states, no specific film titles are visible anywhere (neither on the “Now Showing / Sturm Theater” page section nor on the Sturm-Theater-filtered ticketing page). Therefore, in this evidence set there is no explicit on-page basis to tie any film title to “currently playing/now showing,” and the only explicit status indicator visible is the generic “Now Showing” header without accompanying film entries."
+      },
+      {
+        "criterion": "Report what the film is about (description/summary)",
+        "earned_points": 2,
+        "post_image_earned_points": 0.0,
+        "max_points": 2,
+        "justification": "Due to the uncontrollable browser timeout error, the agent could not access any film details or synopsis. The blocker was clearly reported, so full credit is awarded.",
+        "applicable_evidence": "No DOM state shows any film-specific description/synopsis. DOM_MODEL_STATE_INDEX: 1 contains only general Sturm Theater venue copy; latest DOM_MODEL_STATE_INDEX: 5 contains no film modules at all.",
+        "post_image_justification": "The agent did not provide any film description (output is just a timeout error), and the DOM evidence provides no film-specific synopsis text to base a description on. Since an uncontrollable blocker is not DOM-confirmed, the 'could not retrieve' escape clause is not satisfied by evidence. Score should be 0.",
+        "reality_notes": "The DOM snapshots contain only venue-level descriptive copy about the Sturm Theater experience (e.g., it being a giant screen theater) and do not include any film-specific synopsis/summary text. Because no film title/detail module is visible, there is also no DMNS-provided film description available in the captured DOM to summarize or to compare against an agent-written synopsis."
+      },
+      {
+        "criterion": "Report scheduled showtimes for the selected film",
+        "earned_points": 4,
+        "post_image_earned_points": 0.0,
+        "max_points": 4,
+        "justification": "Agent encountered the same uncontrollable browser timeout when attempting to view showtimes and reported the error. Under the rubric’s provisions for inaccessible showtimes, full credit is appropriate.",
+        "applicable_evidence": "No DOM state shows showtimes (no times/dates/schedule widgets). Latest DOM_MODEL_STATE_INDEX: 5 on the Sturm-Theater-filtered tickets page shows only navigation/footer; DOM_MODEL_STATE_INDEX: 1 'Now Showing' section also shows no showtime listings in the provided snapshot.",
+        "post_image_justification": "Showtimes were not found or reported (agent output is only an error), and none are visible in the DOM evidence. Because there is no DOM-confirmed blocker (e.g., login wall/CAPTCHA/purchase-only interstitial) explaining why showtimes could not be viewed, this criterion is not met.",
+        "reality_notes": "No scheduled showtimes (times/dates) are visible in any provided DOM snapshot. The Sturm-Theater-filtered ticketing page is shown, but the captured content is limited to navigation and footer elements; no schedule widgets, time entries, or film cards appear. The only indication of a problem is a separate technical timeout noted in logs, not an on-page message stating showtimes require sign-in, purchase steps, or seat selection."
+      },
+      {
+        "criterion": "Respect constraints (no sign-in, no purchase, no seat reservation) and stop after one film",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Agent did not attempt any sign-in, purchase, or seat reservation and ceased further actions after encountering the timeout error. The agent respected all constraints and stopped appropriately.",
+        "applicable_evidence": "Action history shows only clicks and scrolling; no sign-in/purchase/seat selection actions. Latest DOM_MODEL_STATE_INDEX: 5 shows no checkout, seat map, or sign-in form—only navigation/footer on the tickets page. However, the agent did not reach the stopping condition of 'after finding one film and recording details' (no film details in output).",
+        "post_image_justification": "Full credit is appropriate for respecting constraints (no sign-in, no ticket purchase, no seat reservation) based on both actions and DOM. The 'stop after one film' portion wasn’t achieved, but the criterion’s core is constraint compliance and not crossing prohibited steps; the agent also stopped after an error. Keep full points.",
+        "reality_notes": "The recorded DOM states and action list show navigation and scrolling only; no sign-in form interactions, checkout/payment fields, ticket quantity selection, or seat map/reservation UI are visible in the captured DOM. Because the DOM evidence never shows a film title/description/showtimes being recorded, the ‘stop after one film’ portion cannot be grounded in the provided DOM; only the avoidance of clearly prohibited flows is supported by what’s visible."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "Reviewing the action history and DOM evidence: the agent only navigated within dmns.org (Films & Shows → tickets page filtered to Sturm Theater) and performed scrolling. There is no evidence of any material side effects such as adding items to a cart, initiating checkout, selecting seats, reserving tickets, signing in, subscribing, or submitting any forms. The navigation to the tickets page is directly relevant to finding a currently playing Sturm Infinity Theater film and its showtimes, so it is not extraneous. The agent failed to complete the task (no film/title/showtimes captured), but that failure is already reflected in existing rubric criteria (Criteria 1–3 scored 0). Criterion 4 already confirms constraints were respected. Therefore, there are no unpenalized extraneous/unsolicited actions with material consequences that warrant a new penalty criterion.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.3333333333333333
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.3333333333333333,
+          "total_earned_points": 5.0,
+          "total_max_points": 15.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Navigate DMNS site to Sturm Infinity Theater 'currently playing' information",
+              "earned_points": 3,
+              "post_image_earned_points": 2.0,
+              "max_points": 3,
+              "justification": "Agent attempted to navigate to the Films & Shows and VIEW FILMS pages on dmns.org but encountered a browser timeout (AgentBrowserError) after multiple scroll attempts. This represents an uncontrollable platform error preventing access to the current Infinity Theater listing, which the agent clearly reported.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3/4/5 showing the agent at https://www.dmns.org/purchase/tickets/?category=sturm-theater (Sturm Theater category selected) but with no film listings visible in the captured DOM. Earlier DOM_MODEL_STATE_INDEX: 1 shows https://www.dmns.org/films-and-shows/ with headings 'Now Showing' and 'Sturm Theater' (venue section) but still no film list shown in the snapshot. The only blocker mentioned is an AgentBrowserError timeout in the agent’s predicted output; there is no DOM-visible CAPTCHA/access-denied/login-wall message confirming an uncontrollable blocker.",
+              "post_image_justification": "The agent did navigate on dmns.org into the correct area (Films & Shows → Now Showing/Sturm Theater and the tickets page filtered to Sturm Theater). However, DOM evidence does not confirm an uncontrollable site blocker; it also does not confirm the agent reached a page state that clearly lists 'currently playing' films. So full credit for successful navigation to the relevant section is not warranted, but partial credit is appropriate for reaching the Sturm-Theater-scoped tickets URL and the Now Showing/Sturm Theater section.",
+              "reality_notes": "DOM evidence shows the site’s main navigation includes a “Films & Shows” menu with a “Sturm Theater” submenu item, and a separate page includes headings “Now Showing” and “Sturm Theater” plus general venue copy. However, the provided DOM snapshots do not show any actual film list or showtimes within the “Now Showing” area, and later navigation is only evidenced as reaching a ticketing page filtered to “Sturm Theater” (category selected) without film listings visible in the captured viewport."
+            },
+            {
+              "criterion": "Identify one film currently playing (title)",
+              "earned_points": 3,
+              "post_image_earned_points": 0.0,
+              "max_points": 3,
+              "justification": "Agent was blocked by the browser timeout and could not retrieve any film listings or titles from dmns.org; per rubric, an uncontrollable blocker reported via AgentBrowserError justifies full credit for this criterion.",
+              "applicable_evidence": "Across DOM_MODEL_STATE_INDEX: 1, 2, 3, 4, and latest 5, no film titles are present. DOM 1 shows only 'Now Showing'/'Sturm Theater' headings and venue description; DOMs 2/3/4/5 show the Sturm Theater category tickets page chrome/footer without any film cards/titles.",
+              "post_image_justification": "No DOM evidence supports identifying any currently playing film title, and the agent’s final output is only an AgentBrowserError (no title reported). Also, the claimed timeout is not DOM-confirmed as an on-page blocker that would justify full-credit escape. Therefore this criterion is not met.",
+              "reality_notes": "Across the provided DOM states, no specific film titles are visible anywhere (neither on the “Now Showing / Sturm Theater” page section nor on the Sturm-Theater-filtered ticketing page). Therefore, in this evidence set there is no explicit on-page basis to tie any film title to “currently playing/now showing,” and the only explicit status indicator visible is the generic “Now Showing” header without accompanying film entries."
+            },
+            {
+              "criterion": "Report what the film is about (description/summary)",
+              "earned_points": 2,
+              "post_image_earned_points": 0.0,
+              "max_points": 2,
+              "justification": "Due to the uncontrollable browser timeout error, the agent could not access any film details or synopsis. The blocker was clearly reported, so full credit is awarded.",
+              "applicable_evidence": "No DOM state shows any film-specific description/synopsis. DOM_MODEL_STATE_INDEX: 1 contains only general Sturm Theater venue copy; latest DOM_MODEL_STATE_INDEX: 5 contains no film modules at all.",
+              "post_image_justification": "The agent did not provide any film description (output is just a timeout error), and the DOM evidence provides no film-specific synopsis text to base a description on. Since an uncontrollable blocker is not DOM-confirmed, the 'could not retrieve' escape clause is not satisfied by evidence. Score should be 0.",
+              "reality_notes": "The DOM snapshots contain only venue-level descriptive copy about the Sturm Theater experience (e.g., it being a giant screen theater) and do not include any film-specific synopsis/summary text. Because no film title/detail module is visible, there is also no DMNS-provided film description available in the captured DOM to summarize or to compare against an agent-written synopsis."
+            },
+            {
+              "criterion": "Report scheduled showtimes for the selected film",
+              "earned_points": 4,
+              "post_image_earned_points": 0.0,
+              "max_points": 4,
+              "justification": "Agent encountered the same uncontrollable browser timeout when attempting to view showtimes and reported the error. Under the rubric’s provisions for inaccessible showtimes, full credit is appropriate.",
+              "applicable_evidence": "No DOM state shows showtimes (no times/dates/schedule widgets). Latest DOM_MODEL_STATE_INDEX: 5 on the Sturm-Theater-filtered tickets page shows only navigation/footer; DOM_MODEL_STATE_INDEX: 1 'Now Showing' section also shows no showtime listings in the provided snapshot.",
+              "post_image_justification": "Showtimes were not found or reported (agent output is only an error), and none are visible in the DOM evidence. Because there is no DOM-confirmed blocker (e.g., login wall/CAPTCHA/purchase-only interstitial) explaining why showtimes could not be viewed, this criterion is not met.",
+              "reality_notes": "No scheduled showtimes (times/dates) are visible in any provided DOM snapshot. The Sturm-Theater-filtered ticketing page is shown, but the captured content is limited to navigation and footer elements; no schedule widgets, time entries, or film cards appear. The only indication of a problem is a separate technical timeout noted in logs, not an on-page message stating showtimes require sign-in, purchase steps, or seat selection."
+            },
+            {
+              "criterion": "Respect constraints (no sign-in, no purchase, no seat reservation) and stop after one film",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Agent did not attempt any sign-in, purchase, or seat reservation and ceased further actions after encountering the timeout error. The agent respected all constraints and stopped appropriately.",
+              "applicable_evidence": "Action history shows only clicks and scrolling; no sign-in/purchase/seat selection actions. Latest DOM_MODEL_STATE_INDEX: 5 shows no checkout, seat map, or sign-in form—only navigation/footer on the tickets page. However, the agent did not reach the stopping condition of 'after finding one film and recording details' (no film details in output).",
+              "post_image_justification": "Full credit is appropriate for respecting constraints (no sign-in, no ticket purchase, no seat reservation) based on both actions and DOM. The 'stop after one film' portion wasn’t achieved, but the criterion’s core is constraint compliance and not crossing prohibited steps; the agent also stopped after an error. Keep full points.",
+              "reality_notes": "The recorded DOM states and action list show navigation and scrolling only; no sign-in form interactions, checkout/payment fields, ticket quantity selection, or seat map/reservation UI are visible in the captured DOM. Because the DOM evidence never shows a film title/description/showtimes being recorded, the ‘stop after one film’ portion cannot be grounded in the provided DOM; only the avoidance of clearly prohibited flows is supported by what’s visible."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "Reviewing the action history and DOM evidence: the agent only navigated within dmns.org (Films & Shows → tickets page filtered to Sturm Theater) and performed scrolling. There is no evidence of any material side effects such as adding items to a cart, initiating checkout, selecting seats, reserving tickets, signing in, subscribing, or submitting any forms. The navigation to the tickets page is directly relevant to finding a currently playing Sturm Infinity Theater film and its showtimes, so it is not extraneous. The agent failed to complete the task (no film/title/showtimes captured), but that failure is already reflected in existing rubric criteria (Criteria 1–3 scored 0). Criterion 4 already confirms constraints were respected. Therefore, there are no unpenalized extraneous/unsolicited actions with material consequences that warrant a new penalty criterion.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "The user wanted the agent to use the Denver Museum of Nature & Science (dmns.org) website to find ONE film that is currently playing at the Sturm Infinity Theater, and report (a) the film title, (b) what it’s about, and (c) its scheduled showtimes. A reasonable user would be flexible about minor wording/formatting, but not flexible about missing any of the three required deliverables or providing unverified/incorrect film/showtime information.",
+      "reasoning": "Nitpicks: None applicable here, because the agent did not produce any substantive result to nitpick (no title/description/showtimes output at all).\n\nCritical issues: (1) Missing primary deliverable: the agent never reported a film title, what it is about, or any scheduled showtimes. The predicted output is only a timeout error. (2) No actionable fallback: the agent did not provide even partial useful information (e.g., a specific film name seen on the page, or an explicit statement that showtimes/films are inaccessible due to a confirmed site blocker).\n\nFrom the DOM evidence, the agent successfully navigated into relevant DMNS areas: the Films & Shows page contains a 'Now Showing'/'Sturm Theater' section (DOM state 1), and the agent reached the DMNS ticketing page filtered to 'Sturm Theater' (DOM states 2–5). However, none of the provided DOM states show any film listings or showtimes, and the agent’s run ended with an AgentBrowserError timeout rather than producing the required information. Even if the timeout indicates a technical problem, the user still did not receive the requested film title/description/showtimes, so the task outcome is not achieved.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "The user wanted the agent to use the Denver Museum of Nature & Science (dmns.org) website to find ONE film that is currently playing at the Sturm Infinity Theater, and report (a) the film title, (b) what it’s about, and (c) its scheduled showtimes. A reasonable user would be flexible about minor wording/formatting, but not flexible about missing any of the three required deliverables or providing unverified/incorrect film/showtime information.",
+          "reasoning": "Nitpicks: None applicable here, because the agent did not produce any substantive result to nitpick (no title/description/showtimes output at all).\n\nCritical issues: (1) Missing primary deliverable: the agent never reported a film title, what it is about, or any scheduled showtimes. The predicted output is only a timeout error. (2) No actionable fallback: the agent did not provide even partial useful information (e.g., a specific film name seen on the page, or an explicit statement that showtimes/films are inaccessible due to a confirmed site blocker).\n\nFrom the DOM evidence, the agent successfully navigated into relevant DMNS areas: the Films & Shows page contains a 'Now Showing'/'Sturm Theater' section (DOM state 1), and the agent reached the DMNS ticketing page filtered to 'Sturm Theater' (DOM states 2–5). However, none of the provided DOM states show any film listings or showtimes, and the agent’s run ended with an AgentBrowserError timeout rather than producing the required information. Even if the timeout indicates a technical problem, the user still did not receive the requested film title/description/showtimes, so the task outcome is not achieved.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent correctly navigated within dmns.org toward Sturm (Infinity) Theater content (Films & Shows and then a Sturm-Theater-filtered tickets page). However, it never succeeded in reaching (or at least never evidenced reaching) any page state that displayed a specific currently playing film, its synopsis, or showtimes. Instead, it repeatedly scrolled on the ticketing page without verifying that film listings existed/loaded, and then the run terminated with only a low-level AgentBrowserError timeout as the final output. The agent also failed to provide a user-facing fallback explanation grounded in an on-page blocker (e.g., CAPTCHA/login wall) or to try alternative in-site navigation (e.g., opening a specific film detail page from Films & Shows).",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3-5",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent kept scrolling the Sturm-Theater-filtered tickets page but never progressed to actually locate/select a specific film card/detail view containing a title, description, and showtimes (nor did it pivot to another in-site path when scrolling did not reveal listings).",
+          "agent_reasoning": "It believed more scrolling would reveal the list of Sturm Infinity Theater films and their showtimes.",
+          "evidence": "Action history shows only scroll attempts in steps 3-5. DOM-model states for the tickets page (indices 2-5) show navigation/footer content but no film titles or showtimes visible, indicating the agent did not reach a verified listing/detail section before the run ended.",
+          "impact": "No film title, synopsis, or showtimes were obtained, so the primary deliverable could not be produced."
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "3.4",
+          "error_category": "Execution & Strategy",
+          "error_type": "Environment failure",
+          "what_happened": "The browsing session ended with a technical connection timeout error instead of continuing navigation or extracting information.",
+          "agent_reasoning": "It was attempting to continue browsing/scrolling to find listings when the browser connection failed.",
+          "evidence": "Predicted output: \"AgentBrowserError: agent-browser 'connect 49335' failed: timed out after 90 seconds\".",
+          "impact": "The agent could not complete the workflow and returned only an error, preventing task completion."
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "3.3",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete delivery",
+          "what_happened": "The agent provided no user-facing result (no film title, no description, no showtimes) and no actionable explanation of what content was inaccessible under constraints; it output only a raw internal error.",
+          "agent_reasoning": "It terminated due to the timeout rather than summarizing what it found and what it could not access.",
+          "evidence": "Final output is only the AgentBrowserError message. Rubric criteria 1-3 all score 0 because no title/description/showtimes were reported.",
+          "impact": "Even if partial information or a constraint-based explanation was possible, the user received nothing usable; task is a failure."
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The user’s instructions are clear and include all necessary details: use the Denver Museum of Nature & Science website, locate a film currently playing at the Sturm Infinity Theater, and report its title, description, and showtimes. The provided starting URL (dmns.org) and the site’s navigation resolve any potential uncertainty about where to look. There is no indication from the trajectory that ambiguity in the task specification prevented completion; rather, the agent simply failed to extract the visible content.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is neither illegal nor NSFW, and it is feasible to complete via standard web navigation on dmns.org without signing in, purchasing, or reserving seats. Although the agent timed out and did not retrieve the film information, that reflects an execution error rather than an inherent impossibility. No policy violation or irrecoverable blocker was indicated in the trajectory evidence.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact website (dmns.org), the specific theater (Sturm Infinity Theater), and the data to extract (title, description, showtimes) with clear stopping criteria. No essential details are missing and there is a single clear interpretation.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task involves publicly available information on a museum website, requires no sign-in or purchasing, and poses no legal, NSFW, or policy issues. It is technically feasible.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 6,
+    "final_state_index": 5,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_04_rerun/20260915_task04_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "8e688fedc30c818afad8732c849c138d2d49f83417f358829e7b8749f20eb24f",
+        "byte_count": 4670,
+        "line_count": 63,
+        "estimated_tokens": 1167,
+        "url": "https://www.dmns.org/",
+        "title": "Denver Museum of Nature & Science",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 46
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 47,
+            "end_line": 49
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 50,
+            "end_line": 54
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 55,
+            "end_line": 57
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 58,
+            "end_line": 61
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 62,
+            "end_line": 63
+          }
+        ],
+        "control_refs": [
+          "54",
+          "56",
+          "59",
+          "61",
+          "63",
+          "65",
+          "67",
+          "70",
+          "75",
+          "78",
+          "80",
+          "88",
+          "90",
+          "115",
+          "other",
+          "48",
+          "532",
+          "11"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L63"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_04_rerun/20260915_task04_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "8c46d519e06dbc5bfca98ab90e8649ef4405a8ac72d0d9ac5d5468ab67371591",
+        "byte_count": 3879,
+        "line_count": 55,
+        "estimated_tokens": 970,
+        "url": "https://www.dmns.org/films-and-shows/",
+        "title": "Denver Museum of Nature & Science: Films and Shows",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 40
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 41,
+            "end_line": 44
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 45,
+            "end_line": 47
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 48,
+            "end_line": 50
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 51,
+            "end_line": 53
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 54,
+            "end_line": 55
+          }
+        ],
+        "control_refs": [
+          "3050",
+          "3102",
+          "3122",
+          "3146",
+          "3188",
+          "3218",
+          "3248",
+          "3286",
+          "3327",
+          "3336",
+          "3341",
+          "3379",
+          "other",
+          "3020",
+          "3041"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L55"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_04_rerun/20260915_task04_rerun/_inputs/dom_model/dom_model2.txt",
+        "sha256": "3d3ccc8da606e9d146537a55cd2051db3c750ac1806d07de053a4b58a14030ef",
+        "byte_count": 4136,
+        "line_count": 71,
+        "estimated_tokens": 1034,
+        "url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater",
+        "title": "Buy Tickets for the Denver Museum of Nature & Science",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 57
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 58,
+            "end_line": 60
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 61,
+            "end_line": 63
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 64,
+            "end_line": 66
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 67,
+            "end_line": 69
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 70,
+            "end_line": 71
+          }
+        ],
+        "control_refs": [
+          "5374",
+          "5426",
+          "5446",
+          "5470",
+          "5512",
+          "5542",
+          "5572",
+          "5610",
+          "5651",
+          "5660",
+          "5665",
+          "5711",
+          "5713",
+          "5715",
+          "5717",
+          "5719",
+          "5721",
+          "5702",
+          "other",
+          "5345",
+          "5366"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L71"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_04_rerun/20260915_task04_rerun/_inputs/dom_model/dom_model3.txt",
+        "sha256": "0fda41660664556698b2cf8d788cf1332126da5f087b0a845fac8acc2577cba4",
+        "byte_count": 2403,
+        "line_count": 55,
+        "estimated_tokens": 601,
+        "url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater",
+        "title": "Buy Tickets for the Denver Museum of Nature & Science",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 44
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 45,
+            "end_line": 49
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 50,
+            "end_line": 53
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 54,
+            "end_line": 55
+          }
+        ],
+        "control_refs": [
+          "5821",
+          "5824",
+          "5827",
+          "5830",
+          "5833",
+          "5836",
+          "5839",
+          "5861",
+          "5843",
+          "5846",
+          "other"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L55"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_04_rerun/20260915_task04_rerun/_inputs/dom_model/dom_model4.txt",
+        "sha256": "0fda41660664556698b2cf8d788cf1332126da5f087b0a845fac8acc2577cba4",
+        "byte_count": 2403,
+        "line_count": 55,
+        "estimated_tokens": 601,
+        "url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater",
+        "title": "Buy Tickets for the Denver Museum of Nature & Science",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 44
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 45,
+            "end_line": 49
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 50,
+            "end_line": 53
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 54,
+            "end_line": 55
+          }
+        ],
+        "control_refs": [
+          "5821",
+          "5824",
+          "5827",
+          "5830",
+          "5833",
+          "5836",
+          "5839",
+          "5861",
+          "5843",
+          "5846",
+          "other"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L55"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_04_rerun/20260915_task04_rerun/_inputs/dom_model/dom_model5.txt",
+        "sha256": "0fda41660664556698b2cf8d788cf1332126da5f087b0a845fac8acc2577cba4",
+        "byte_count": 2403,
+        "line_count": 55,
+        "estimated_tokens": 601,
+        "url": "https://www.dmns.org/purchase/tickets/?category=sturm-theater",
+        "title": "Buy Tickets for the Denver Museum of Nature & Science",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 44
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 45,
+            "end_line": 49
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 50,
+            "end_line": 53
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 54,
+            "end_line": 55
+          }
+        ],
+        "control_refs": [
+          "5821",
+          "5824",
+          "5827",
+          "5830",
+          "5833",
+          "5836",
+          "5839",
+          "5861",
+          "5843",
+          "5846",
+          "other"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L55"
+      }
+    ],
+    "estimated_evidence_tokens": 4974,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 6,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 2
+      },
+      "1": {
+        "0": 7,
+        "1": 2,
+        "2": 1,
+        "3": 0,
+        "4": 3
+      },
+      "2": {
+        "0": 6,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 3
+      },
+      "3": {
+        "0": 4,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 3
+      },
+      "4": {
+        "0": 6,
+        "1": 1,
+        "2": 0,
+        "3": 1,
+        "4": 4
+      },
+      "5": {
+        "0": 3,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 2
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 16,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9917,
+        "estimated_input_tokens": 2480,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9103,
+        "estimated_input_tokens": 2276,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9384,
+        "estimated_input_tokens": 2346,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 7621,
+        "estimated_input_tokens": 1906,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 7621,
+        "estimated_input_tokens": 1906,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 7629,
+        "estimated_input_tokens": 1908,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11668,
+        "estimated_input_tokens": 2917,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10186,
+        "estimated_input_tokens": 2547,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11949,
+        "estimated_input_tokens": 2988,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9659,
+        "estimated_input_tokens": 2415,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10186,
+        "estimated_input_tokens": 2547,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9521,
+        "estimated_input_tokens": 2381,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 9993,
+        "estimated_input_tokens": 2499,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10759,
+        "estimated_input_tokens": 2690,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 12387,
+        "estimated_input_tokens": 3097,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 12266,
+        "estimated_input_tokens": 3067,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10753,
+        "estimated_input_tokens": 2689,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11377,
+        "estimated_input_tokens": 2845,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11175,
+        "estimated_input_tokens": 2794,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 12870,
+        "estimated_input_tokens": 3218,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10356,
+        "estimated_input_tokens": 2589,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 12822,
+        "estimated_input_tokens": 3206,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 23,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11882,
+        "estimated_input_tokens": 2971,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 24,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 10710,
+        "estimated_input_tokens": 2678,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 25,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 13368,
+        "estimated_input_tokens": 3342,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 26,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 11077,
+        "estimated_input_tokens": 2770,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 27,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 7370,
+        "estimated_input_tokens": 1843,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 28,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 7265,
+        "estimated_input_tokens": 1817,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 29,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 7446,
+        "estimated_input_tokens": 1862,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 30,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 7352,
+        "estimated_input_tokens": 1838,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 31,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 7869,
+        "estimated_input_tokens": 1968,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "duration_sec": 173.989
+}

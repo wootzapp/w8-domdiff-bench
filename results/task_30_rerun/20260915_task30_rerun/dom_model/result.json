@@ -1,0 +1,1029 @@
+{
+  "task_id": "browser_task_030-course-detail-inspection-20260915T074021Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.875,
+  "rubric_total_max_points": 16.0,
+  "rubric_total_earned_points": 14.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: The agent’s phrasing around “institution (Offered by)” vs Coursera’s on-page labeling (“Context: IBM”) is a minor labeling difference; the audit conclusion is appropriately cautious (it says audit isn’t clearly confirmable from the visible view), which is acceptable.\n\nCritical issues: (1) Wrong course page/title: DOM-models show the agent was on https://www.coursera.org/learn/python-for-applied-data-science-ai with title “Python for Data Science, AI & Development,” not the requested “Python for Applied Data Science” at https://www.coursera.org/learn/python-for-applied-data-science. The task explicitly asked to open the specific course; reporting details from a different course is not something most users would accept as completing the task. (2) Fabricated/unsupported syllabus details: The agent listed five specific module titles (e.g., “Python Basics; Python Data Structures; …”), but the DOM evidence only shows a summary count “5 modules” and does not show an expanded syllabus or any module titles. That means part of the reported syllabus detail is unreliable.\n\nWhat the agent did accomplish: It stayed within constraints (no sign-in/enroll/trial), correctly captured instructor “Joseph Santarcangelo,” partner “IBM” (shown as “Context: IBM”), and the visible count “5 modules” for the course page it actually opened. It also correctly noted that an explicit audit option was not visible in the captured view and treated audit availability as not confirmable.\n\nOverall outcome: Because the agent did not actually open/verify the requested course page and additionally reported invented module titles, the user would not have trustworthy, course-specific information for “Python for Applied Data Science.” This is a task failure despite some correct observations on a related page.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Open the specified Coursera course page and, without signing in or enrolling, extract key overview details: instructor, offering institution, how many modules/weeks are shown in the syllabus, and whether a free audit option is available (or state if it can’t be confirmed). A reasonable user would be flexible about minor wording/formatting, but not about reporting details for the wrong course page or inventing syllabus contents."
+  },
+  "preflight": {
+    "task_id": "browser_task_030-course-detail-inspection-20260915T074021Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_030-course-detail-inspection-20260915T074021Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need at least one successful browser action before terminating; scroll to reconfirm syllabus and look for any explicit free audit text near enrollment controls."
+          },
+          "observed_after_url": "https://www.coursera.org/learn/python-for-applied-data-science-ai"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "842c18d38e5151410a621591df78e99409b7d961591e071ec967da91d5ba140b",
+          "after_sha256": "ba2670af66ee12169aa35d33c9eacd6c20b84e1750b5e8b5baebf1aeddec6ef7",
+          "before_url": "https://www.coursera.org/learn/python-for-applied-data-science-ai",
+          "after_url": "https://www.coursera.org/learn/python-for-applied-data-science-ai"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "d72d9b5be1488b333321130e761a98f676847890a290a6b5fe324b932028a2e6",
+    "criterion_order": [
+      "Access the specified Coursera course page without signing in/enrolling (or record unavailability state)",
+      "Record instructor name(s)",
+      "Record institution/partner",
+      "Record number of modules/weeks shown in the syllabus",
+      "Determine whether a free audit option is available",
+      "Stop after recording overview and syllabus details (respect stopping condition and constraints)"
+    ],
+    "maximum_points": [
+      4.0,
+      2.0,
+      2.0,
+      3.0,
+      3.0,
+      2.0
+    ],
+    "criterion_denominator": 16.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_30_rerun/20260915_task30_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_30_rerun/20260915_task30_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "d72d9b5be1488b333321130e761a98f676847890a290a6b5fe324b932028a2e6",
+  "criterion_denominator": 16,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 105167,
+      "completion_tokens": 14102,
+      "reasoning_tokens": 0,
+      "total_tokens": 119269
+    },
+    "action_judge": {
+      "prompt_tokens": 16527,
+      "completion_tokens": 4033,
+      "reasoning_tokens": 2688,
+      "total_tokens": 20560
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 26,
+      "api_attempts": 26,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 2,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 6,
+        "1": 9,
+        "2": 7,
+        "3": 0,
+        "4": 6,
+        "5": 1,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 6,
+        "1": 10,
+        "2": 8,
+        "3": 7,
+        "4": 4,
+        "5": 5,
+        "screenshot_idx": 1
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        1,
+        0
+      ],
+      "1": [
+        1,
+        0
+      ],
+      "2": [
+        1,
+        0
+      ],
+      "3": [
+        1,
+        0
+      ],
+      "4": [
+        0,
+        1
+      ],
+      "5": [
+        1,
+        0
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 0 requires reaching the specified Coursera course page (or the allowed alternate starting URL context) and viewing the public overview without signing in/enrolling, or else reporting an access block. The DOM supports this: at DOM_MODEL_STATE_INDEX: 1 the URL is \"https://www.coursera.org/learn/python-for-applied-data-science-ai\" and the public overview content is readable, including \"Instructor: Joseph Santarcangelo\" and \"Enroll for free\" and \"5 modules\" in the VISIBLE CONTENT. There is no DOM evidence in this state of an access block (e.g., login-required interstitial, CAPTCHA, 404) and no DOM evidence of having initiated sign-in, enrollment, purchase, or a trial.",
+          "discrepancies": "The task URL requested \"https://www.coursera.org/learn/python-for-applied-data-science\"; the DOM shows the allowed alternate starting URL context \"https://www.coursera.org/learn/python-for-applied-data-science-ai\" (different slug/title: \"Python for Data Science, AI & Development\"). Criterion 0 still allows using the alternate starting URL context, but this is a mismatch relative to the originally requested URL/title.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browser at URL \"https://www.coursera.org/learn/python-for-applied-data-science-ai\" with the public course overview visible. The VISIBLE CONTENT includes the course header text \"Python for Data Science, AI & Development\" and explicitly shows \"Instructor: Joseph Santarcangelo\" plus the call-to-action \"Enroll for free\" and summary info like \"Starts Sep 15\" and \"5 modules\". No login-wall/error text is present in the visible DOM snapshot (no messages indicating sign-in required / unavailable / 404).",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nA public Coursera course page is accessible without showing any sign-in/enrollment flow in the DOM snapshot, satisfying the constraint aspect. However, the DOM shows a different course URL/title (\"python-for-applied-data-science-ai\" / \"Python for Data Science, AI & Development\") rather than the requested \"Python for Applied Data Science\" at https://www.coursera.org/learn/python-for-applied-data-science, so access to the specified target course page is not confirmed from this DOM evidence.",
+          "discrepancies": "Task targets https://www.coursera.org/learn/python-for-applied-data-science (Python for Applied Data Science), but DOM evidence is for https://www.coursera.org/learn/python-for-applied-data-science-ai with title \"Python for Data Science, AI & Development\".",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://www.coursera.org/learn/python-for-applied-data-science-ai\" and Title \"Python for Data Science, AI & Development | Coursera\". Visible CTA button: [103] \"Enroll for free Starts Sep 15\". Read-only control text includes \"Join for Free\". No DOM text indicating the user is signed in (e.g., account menu) is present in the provided snapshot.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly lists the instructor on the course overview header as \"Instructor: Joseph Santarcangelo\" (DOM_MODEL_STATE_INDEX: 1, visible content under Context: IBM: \"Instructor: Joseph Santarcangelo\"). This directly supports the reported instructor name for the rubric criterion.",
+          "discrepancies": "No discrepancy for this criterion: the agent’s reported instructor (Joseph Santarcangelo) matches the DOM text \"Instructor: Joseph Santarcangelo\" (DOM_MODEL_STATE_INDEX: 1).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (final)\nURL: https://www.coursera.org/learn/python-for-applied-data-science-ai\nVisible course header text includes: \"Instructor: Joseph Santarcangelo\" within the IBM course banner section: \"Python for Data Science, AI & Development ... Instructor: Joseph Santarcangelo Enroll for free ...\"",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe instructor name \"Joseph Santarcangelo\" is explicitly shown in the DOM for the course page that was opened (the -ai variant).",
+          "discrepancies": "Instructor is captured for the opened page (\"Python for Data Science, AI & Development\"), not verified for the requested \"Python for Applied Data Science\" course URL.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 visible content includes the line: \"Instructor: Joseph Santarcangelo\" under the course header area.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the course’s offering institution/partner as \"IBM\" via the visible header \"Context: IBM\" (DOM_MODEL_STATE_INDEX: 1). This directly supports reporting the institution/partner as IBM.",
+          "discrepancies": "No discrepancy between the criterion claim (institution/partner) and the DOM evidence: the DOM explicitly shows \"IBM\" as the context/partner label for the course page.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (URL: https://www.coursera.org/learn/python-for-applied-data-science-ai). In the VISIBLE CONTENT, the course page includes a section header reading \"Context: IBM\" and the adjacent course summary block begins under that header (e.g., \"Python for Data Science, AI & Development ... Instructor: Joseph Santarcangelo ...\"). This is the only explicit institution/partner label shown in the provided DOM snapshot.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe institution/partner \"IBM\" is explicitly indicated on the visible course header area in the DOM snapshot.",
+          "discrepancies": "Institution is confirmed for the opened -ai variant page; the evidence does not confirm the institution for the exact requested course URL.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows \"Context: IBM\" and nearby header content for the course page (the provider/partner label \"IBM\" appears as a section header above the course title block).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM explicitly supports that the course page displays “5 modules” (DOM_MODEL_STATE_INDEX: 1, visible content under Context: IBM). However, the rubric criterion asks for the “number of modules/weeks shown in the syllabus” and evidence of opening/scrolling to/expanding the actual syllabus section. The provided DOM snapshot does not show a syllabus/week-by-week list or module titles; it only shows the high-level summary badge “5 modules.” Therefore, the count is supported as a displayed module count, but it is not shown as being derived from the syllabus section itself.",
+          "discrepancies": "Agent output mentions “5 modules shown in the syllabus” and lists five module titles (Python Basics; Python Data Structures; Python Programming Fundamentals; Working with Data in Python; APIs and Data Collection). The DOM evidence provided does not contain those titles nor any expanded syllabus section; it only contains the summary text “5 modules.”",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (final). URL shown as https://www.coursera.org/learn/python-for-applied-data-science-ai. In the visible course header block, the page explicitly shows the syllabus size as the text “5 modules” (it appears at least twice in the same header summary line): “... Included with Coursera Plus • Learn more 5 modules Gain insight into a topic and learn the fundamentals. ...” and again “... Learn at your own pace 5 modules Gain insight into a topic and learn the fundamentals. ...”",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that, without signing in, the public page presents an \"Enroll for free\" option (DOM_MODEL_STATE_INDEX: 1, visible text: \"Enroll for free\") and mentions \"Included with Coursera Plus\". However, the DOM snapshot does not explicitly confirm whether a free audit option exists or not; it only shows that an audit option is not visible in this captured view. Because absence in this snapshot is not proof of nonexistence elsewhere on the page/flow, the agent’s conclusion that a free audit option cannot be clearly confirmed from this view is supported, but any definitive claim that audit is unavailable would not be supported.",
+          "discrepancies": "No discrepancy with the agent’s stated uncertainty: the DOM shows \"Enroll for free\" but provides no explicit \"Audit\" option text in the captured view, so audit availability cannot be confirmed from this evidence alone.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (final), URL: https://www.coursera.org/learn/python-for-applied-data-science-ai. In the visible course header text, the page shows the CTA/button text \"Enroll for free\" alongside course summary details: \"Instructor: Joseph Santarcangelo\" and \"Included with Coursera Plus • Learn more\". No DOM text in this snapshot contains \"Audit\", \"Audit the course\", \"Full course, no certificate\", or equivalent free-audit wording in the visible content.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that an \"Enroll for free\" option is shown, but it does not provide explicit evidence of a free audit option (e.g., \"Audit the course\"). Because the snapshot is limited to the visible portion and does not show the full enrollment modal or any expanded payment/audit alternatives, the presence/absence of a free audit option cannot be conclusively verified from this DOM alone.",
+          "discrepancies": "Agent-predicted output discusses lack of visible audit option; DOM evidence only confirms \"Enroll for free\" is present and does not conclusively establish audit availability. Also, this pertains to the -ai variant page rather than the requested course URL.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows primary CTA [103] button text \"Enroll for free Starts Sep 15\" and also text \"Included with Coursera Plus • Learn more\". No visible DOM strings such as \"Audit\", \"Audit the course\", or \"Full course, no certificate\" appear in the provided visible content.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 5 (stop after recording overview and syllabus details; respect constraints) is partially supported by DOM evidence. The DOM confirms the agent remained on the course overview page (no sign-in/enroll/trial UI evidenced) and contains the key overview/syllabus elements needed to stop: “Instructor: Joseph Santarcangelo” and “5 modules” plus the public CTA “Enroll for free.” However, the DOM provided does not include evidence that the agent recorded the institution (the user task requires institution), nor does it show the detailed syllabus/week list. Also, because the DOM capture does not show any explicit “Audit”/“Full course, no certificate” control, the agent’s statement about audit availability being unclear is consistent with this snapshot but cannot confirm whether audit exists elsewhere on the page. Thus we can only partially support that the agent met the stopping condition strictly after recording all required items.",
+          "discrepancies": "Institution is not explicitly evidenced in the provided DOM snapshot (only a context label “IBM” appears, but no explicit “Offered by IBM” string is shown). The DOM snapshot also does not display the module titles the agent listed (e.g., “Python Basics”, etc.), so the claimed module names are unsupported by this DOM evidence. The agent’s mention of an “upcoming start date” is consistent with “Starts Sep 15” in the DOM. Audit-option claim (“no explicit ‘Audit’ visible”) aligns with the absence of ‘Audit’ text in the captured DOM, but cannot prove it is unavailable elsewhere on the page.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the agent is on the public Coursera course page at URL https://www.coursera.org/learn/python-for-applied-data-science-ai (Title: “Python for Data Science, AI & Development | Coursera”). In the visible course header block, the DOM includes: “Instructor: Joseph Santarcangelo”, the CTA “Enroll for free”, and the syllabus summary “5 modules” (appearing twice in the same header snippet). No sign-in, enrollment, purchase, or trial flow is evidenced; only the page content and a scroll action occurred. There is no DOM text showing an “Audit” option; only “Enroll for free” and “Included with Coursera Plus • Learn more” are present in the captured view.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe recorded behavior remains within the requested stopping condition scope (overview-level content) and constraints: no sign-in/enroll/purchase/trial is evidenced, and the agent did not proceed beyond a simple scroll on the public course page.",
+          "discrepancies": "Although the stopping behavior is compliant, the underlying page appears to be a different (albeit related) course URL than the one requested, so the recorded details may not correspond to the exact target course.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "Only one action is recorded: Action 1 = scroll({\"pixels\": 800, ...}). DOM_MODEL_STATE_INDEX: 0 contains no evidence of sign-in, enrollment, purchase, or trial initiation (no checkout dialog, no account-auth UI).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "The DOM evidence shows a publicly viewable Coursera course overview page loaded without any visible sign-in wall, error, CAPTCHA, or region-block messaging, and without any indicators the user is signed in. However, the visible course title on the page is “Python for Data Science, AI & Development,” which differs from the requested course title “Python for Applied Data Science.” The rubric should treat access as satisfied for the page that is actually shown, but it does not explicitly confirm the originally requested course page/title.",
+      "1": "The instructor is explicitly shown in the visible course header area as “Instructor: Joseph Santarcangelo.” No additional instructors are visible in the provided DOM snapshots, so only this single instructor is supported by evidence.",
+      "2": "The only explicit institution/partner label visible in the provided DOM is “IBM,” shown as a context/provider label (“Context: IBM”). The DOM does not show a longer phrasing like “Offered by IBM,” but “IBM” is the explicit partner name present.",
+      "3": "The DOM shows a high-level course summary count of “5 modules” in the overview header. The provided snapshots do not show an expanded syllabus section, week-by-week/module-by-module listing, or any module titles. Scoring should distinguish between the visible summary count (“5 modules”) versus a verified count from an actually displayed syllabus list.",
+      "4": "In the visible area, the page shows “Enroll for free” and mentions “Included with Coursera Plus,” but there is no visible text/button for “Audit” or equivalent (e.g., “Full course, no certificate”) in the captured DOM. Because the evidence is limited to what is visible in the snapshot and does not include opening enrollment options/modals, absence of ‘Audit’ text here cannot establish that auditing is unavailable—only that it is not shown in this view.",
+      "5": "The recorded interaction is limited (a scroll on the public course page) and the DOM shows no evidence of sign-in, enrollment, purchase, or trial initiation. The overview elements needed by the task (instructor, partner label, module count, and visible enrollment CTA) appear on the page, but detailed syllabus content is not displayed in the provided evidence, and audit availability is not explicitly confirmable from the visible snapshot."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Access the specified Coursera course page without signing in/enrolling (or record unavailability state)",
+        "earned_points": 4,
+        "post_image_earned_points": 3.0,
+        "max_points": 4,
+        "justification": "Agent accessed the public course overview at the provided (alternate) URL and scrolled without signing in, enrolling, purchasing, or triggering a trial. No blockers encountered.",
+        "applicable_evidence": "Latest DOM-model state is INDEX 1 showing URL https://www.coursera.org/learn/python-for-applied-data-science-ai with title “Python for Data Science, AI & Development | Coursera” and visible public overview content (e.g., “Enroll for free”, “Instructor: Joseph Santarcangelo”), with no sign-in wall/CAPTCHA/404 and no evidence of sign-in/enrollment/trial. This is the allowed alternate starting URL context, but it does not explicitly match the requested course title “Python for Applied Data Science” or the exact URL https://www.coursera.org/learn/python-for-applied-data-science.",
+        "post_image_justification": "Full credit for access isn’t warranted because the DOM evidence does not confirm the agent opened the specifically requested course page/title; it confirms access to a closely related (and explicitly different-titled) course page that was allowed as starting context. The agent stayed within constraints (no sign-in/enroll), so partial credit is appropriate rather than a large deduction.",
+        "reality_notes": "The DOM evidence shows a publicly viewable Coursera course overview page loaded without any visible sign-in wall, error, CAPTCHA, or region-block messaging, and without any indicators the user is signed in. However, the visible course title on the page is “Python for Data Science, AI & Development,” which differs from the requested course title “Python for Applied Data Science.” The rubric should treat access as satisfied for the page that is actually shown, but it does not explicitly confirm the originally requested course page/title."
+      },
+      {
+        "criterion": "Record instructor name(s)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Instructor Joseph Santarcangelo was accurately identified exactly as shown on the public overview.",
+        "applicable_evidence": "Latest DOM-model INDEX 1 explicitly shows “Instructor: Joseph Santarcangelo” in the visible course header area.",
+        "post_image_justification": "Instructor name reported by the agent matches the DOM exactly for the course page that was actually opened. No evidence of additional instructors is present, so this is fully supported.",
+        "reality_notes": "The instructor is explicitly shown in the visible course header area as “Instructor: Joseph Santarcangelo.” No additional instructors are visible in the provided DOM snapshots, so only this single instructor is supported by evidence."
+      },
+      {
+        "criterion": "Record institution/partner",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent correctly recorded the offering institution as IBM from the public course page.",
+        "applicable_evidence": "Latest DOM-model INDEX 1 shows “Context: IBM” in the visible header area for the course page.",
+        "post_image_justification": "The institution/partner ‘IBM’ is explicitly present in the DOM (“Context: IBM”), supporting the agent’s institution claim. The wording ‘Offered by’ is not required; the partner name itself is confirmed.",
+        "reality_notes": "The only explicit institution/partner label visible in the provided DOM is “IBM,” shown as a context/provider label (“Context: IBM”). The DOM does not show a longer phrasing like “Offered by IBM,” but “IBM” is the explicit partner name present."
+      },
+      {
+        "criterion": "Record number of modules/weeks shown in the syllabus",
+        "earned_points": 3,
+        "post_image_earned_points": 2.0,
+        "max_points": 3,
+        "justification": "Agent scrolled to the syllabus section and counted five modules (Python Basics; Python Data Structures; Python Programming Fundamentals; Working with Data in Python; APIs and Data Collection), matching the public page.",
+        "applicable_evidence": "Latest DOM-model INDEX 1 shows a summary label “5 modules” in the visible overview area, but does not show an expanded syllabus list or the module titles. No DOM evidence supports the agent’s listed module names (Python Basics; Python Data Structures; etc.).",
+        "post_image_justification": "Only the count ‘5 modules’ is supported; the claim that specific module titles were shown/verified is not supported and appears fabricated relative to the provided DOM. Award substantial partial credit for correctly reporting the displayed module count, but deduct for the unsupported module-title details and for not demonstrating the count came from the syllabus list itself.",
+        "reality_notes": "The DOM shows a high-level course summary count of “5 modules” in the overview header. The provided snapshots do not show an expanded syllabus section, week-by-week/module-by-module listing, or any module titles. Scoring should distinguish between the visible summary count (“5 modules”) versus a verified count from an actually displayed syllabus list."
+      },
+      {
+        "criterion": "Determine whether a free audit option is available",
+        "earned_points": 2,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Agent noted only an “Enroll for free” call-to-action is visible on the public page and no explicit audit option label appears without signing in or starting a trial, accurately describing the uncertainty per UI.",
+        "applicable_evidence": "Latest DOM-model INDEX 1 shows “Enroll for free” and “Included with Coursera Plus • Learn more,” and contains no visible ‘Audit’ / ‘Audit the course’ / ‘Full course, no certificate’ text in the captured view.",
+        "post_image_justification": "The agent correctly describes what is visible (Enroll for free; no explicit audit option visible) and appropriately marks audit availability as not confirmable from this view. That matches the DOM evidence, so near-full credit is warranted (with a small deduction because the agent cannot confirm audit availability either way).",
+        "reality_notes": "In the visible area, the page shows “Enroll for free” and mentions “Included with Coursera Plus,” but there is no visible text/button for “Audit” or equivalent (e.g., “Full course, no certificate”) in the captured DOM. Because the evidence is limited to what is visible in the snapshot and does not include opening enrollment options/modals, absence of ‘Audit’ text here cannot establish that auditing is unavailable—only that it is not shown in this view."
+      },
+      {
+        "criterion": "Stop after recording overview and syllabus details (respect stopping condition and constraints)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent ceased activity after reporting all required overview and syllabus details and did not attempt to sign in, enroll, purchase, or start a trial.",
+        "applicable_evidence": "Action history shows only a scroll action; latest DOM-model INDEX 1 shows the agent remained on the public course overview page with no sign-in/enrollment/purchase/trial UI. The agent’s final output provides the requested overview items (instructor, institution, module count) and a qualified statement on audit visibility.",
+        "post_image_justification": "The agent stayed within constraints and stopped after reporting the required details (or appropriately noting inability to confirm audit). No evidence of overstepping into enrollment/sign-in flows. Full credit.",
+        "reality_notes": "The recorded interaction is limited (a scroll on the public course page) and the DOM shows no evidence of sign-in, enrollment, purchase, or trial initiation. The overview elements needed by the task (instructor, partner label, module count, and visible enrollment CTA) appear on the page, but detailed syllabus content is not displayed in the provided evidence, and audit availability is not explicitly confirmable from the visible snapshot."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "1) Review actions taken: The only recorded action is a single scroll on an already-open Coursera course page. 2) Check for material side effects: There is no evidence of signing in, enrolling, starting a trial, purchasing, adding anything to a cart, or submitting any form—so no lasting/material consequence occurred. 3) Consider wrong substitutions/extraneous navigation: The agent viewed a closely related course URL (-ai variant) rather than the exact requested slug, but this is exploratory navigation with no material side effect and is already penalized under Criterion 0 (access to specified page/title not confirmed) and partially under Criterion 3 (syllabus verification). 4) Since there are no additional unpenalized, material, unsolicited actions beyond what the existing rubric already captured, no new penalty criterion is warranted.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.875
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.875,
+          "total_earned_points": 14.0,
+          "total_max_points": 16.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Access the specified Coursera course page without signing in/enrolling (or record unavailability state)",
+              "earned_points": 4,
+              "post_image_earned_points": 3.0,
+              "max_points": 4,
+              "justification": "Agent accessed the public course overview at the provided (alternate) URL and scrolled without signing in, enrolling, purchasing, or triggering a trial. No blockers encountered.",
+              "applicable_evidence": "Latest DOM-model state is INDEX 1 showing URL https://www.coursera.org/learn/python-for-applied-data-science-ai with title “Python for Data Science, AI & Development | Coursera” and visible public overview content (e.g., “Enroll for free”, “Instructor: Joseph Santarcangelo”), with no sign-in wall/CAPTCHA/404 and no evidence of sign-in/enrollment/trial. This is the allowed alternate starting URL context, but it does not explicitly match the requested course title “Python for Applied Data Science” or the exact URL https://www.coursera.org/learn/python-for-applied-data-science.",
+              "post_image_justification": "Full credit for access isn’t warranted because the DOM evidence does not confirm the agent opened the specifically requested course page/title; it confirms access to a closely related (and explicitly different-titled) course page that was allowed as starting context. The agent stayed within constraints (no sign-in/enroll), so partial credit is appropriate rather than a large deduction.",
+              "reality_notes": "The DOM evidence shows a publicly viewable Coursera course overview page loaded without any visible sign-in wall, error, CAPTCHA, or region-block messaging, and without any indicators the user is signed in. However, the visible course title on the page is “Python for Data Science, AI & Development,” which differs from the requested course title “Python for Applied Data Science.” The rubric should treat access as satisfied for the page that is actually shown, but it does not explicitly confirm the originally requested course page/title."
+            },
+            {
+              "criterion": "Record instructor name(s)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Instructor Joseph Santarcangelo was accurately identified exactly as shown on the public overview.",
+              "applicable_evidence": "Latest DOM-model INDEX 1 explicitly shows “Instructor: Joseph Santarcangelo” in the visible course header area.",
+              "post_image_justification": "Instructor name reported by the agent matches the DOM exactly for the course page that was actually opened. No evidence of additional instructors is present, so this is fully supported.",
+              "reality_notes": "The instructor is explicitly shown in the visible course header area as “Instructor: Joseph Santarcangelo.” No additional instructors are visible in the provided DOM snapshots, so only this single instructor is supported by evidence."
+            },
+            {
+              "criterion": "Record institution/partner",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent correctly recorded the offering institution as IBM from the public course page.",
+              "applicable_evidence": "Latest DOM-model INDEX 1 shows “Context: IBM” in the visible header area for the course page.",
+              "post_image_justification": "The institution/partner ‘IBM’ is explicitly present in the DOM (“Context: IBM”), supporting the agent’s institution claim. The wording ‘Offered by’ is not required; the partner name itself is confirmed.",
+              "reality_notes": "The only explicit institution/partner label visible in the provided DOM is “IBM,” shown as a context/provider label (“Context: IBM”). The DOM does not show a longer phrasing like “Offered by IBM,” but “IBM” is the explicit partner name present."
+            },
+            {
+              "criterion": "Record number of modules/weeks shown in the syllabus",
+              "earned_points": 3,
+              "post_image_earned_points": 2.0,
+              "max_points": 3,
+              "justification": "Agent scrolled to the syllabus section and counted five modules (Python Basics; Python Data Structures; Python Programming Fundamentals; Working with Data in Python; APIs and Data Collection), matching the public page.",
+              "applicable_evidence": "Latest DOM-model INDEX 1 shows a summary label “5 modules” in the visible overview area, but does not show an expanded syllabus list or the module titles. No DOM evidence supports the agent’s listed module names (Python Basics; Python Data Structures; etc.).",
+              "post_image_justification": "Only the count ‘5 modules’ is supported; the claim that specific module titles were shown/verified is not supported and appears fabricated relative to the provided DOM. Award substantial partial credit for correctly reporting the displayed module count, but deduct for the unsupported module-title details and for not demonstrating the count came from the syllabus list itself.",
+              "reality_notes": "The DOM shows a high-level course summary count of “5 modules” in the overview header. The provided snapshots do not show an expanded syllabus section, week-by-week/module-by-module listing, or any module titles. Scoring should distinguish between the visible summary count (“5 modules”) versus a verified count from an actually displayed syllabus list."
+            },
+            {
+              "criterion": "Determine whether a free audit option is available",
+              "earned_points": 2,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Agent noted only an “Enroll for free” call-to-action is visible on the public page and no explicit audit option label appears without signing in or starting a trial, accurately describing the uncertainty per UI.",
+              "applicable_evidence": "Latest DOM-model INDEX 1 shows “Enroll for free” and “Included with Coursera Plus • Learn more,” and contains no visible ‘Audit’ / ‘Audit the course’ / ‘Full course, no certificate’ text in the captured view.",
+              "post_image_justification": "The agent correctly describes what is visible (Enroll for free; no explicit audit option visible) and appropriately marks audit availability as not confirmable from this view. That matches the DOM evidence, so near-full credit is warranted (with a small deduction because the agent cannot confirm audit availability either way).",
+              "reality_notes": "In the visible area, the page shows “Enroll for free” and mentions “Included with Coursera Plus,” but there is no visible text/button for “Audit” or equivalent (e.g., “Full course, no certificate”) in the captured DOM. Because the evidence is limited to what is visible in the snapshot and does not include opening enrollment options/modals, absence of ‘Audit’ text here cannot establish that auditing is unavailable—only that it is not shown in this view."
+            },
+            {
+              "criterion": "Stop after recording overview and syllabus details (respect stopping condition and constraints)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent ceased activity after reporting all required overview and syllabus details and did not attempt to sign in, enroll, purchase, or start a trial.",
+              "applicable_evidence": "Action history shows only a scroll action; latest DOM-model INDEX 1 shows the agent remained on the public course overview page with no sign-in/enrollment/purchase/trial UI. The agent’s final output provides the requested overview items (instructor, institution, module count) and a qualified statement on audit visibility.",
+              "post_image_justification": "The agent stayed within constraints and stopped after reporting the required details (or appropriately noting inability to confirm audit). No evidence of overstepping into enrollment/sign-in flows. Full credit.",
+              "reality_notes": "The recorded interaction is limited (a scroll on the public course page) and the DOM shows no evidence of sign-in, enrollment, purchase, or trial initiation. The overview elements needed by the task (instructor, partner label, module count, and visible enrollment CTA) appear on the page, but detailed syllabus content is not displayed in the provided evidence, and audit availability is not explicitly confirmable from the visible snapshot."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "1) Review actions taken: The only recorded action is a single scroll on an already-open Coursera course page. 2) Check for material side effects: There is no evidence of signing in, enrolling, starting a trial, purchasing, adding anything to a cart, or submitting any form—so no lasting/material consequence occurred. 3) Consider wrong substitutions/extraneous navigation: The agent viewed a closely related course URL (-ai variant) rather than the exact requested slug, but this is exploratory navigation with no material side effect and is already penalized under Criterion 0 (access to specified page/title not confirmed) and partially under Criterion 3 (syllabus verification). 4) Since there are no additional unpenalized, material, unsolicited actions beyond what the existing rubric already captured, no new penalty criterion is warranted.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Open the specified Coursera course page and, without signing in or enrolling, extract key overview details: instructor, offering institution, how many modules/weeks are shown in the syllabus, and whether a free audit option is available (or state if it can’t be confirmed). A reasonable user would be flexible about minor wording/formatting, but not about reporting details for the wrong course page or inventing syllabus contents.",
+      "reasoning": "Nitpicks: The agent’s phrasing around “institution (Offered by)” vs Coursera’s on-page labeling (“Context: IBM”) is a minor labeling difference; the audit conclusion is appropriately cautious (it says audit isn’t clearly confirmable from the visible view), which is acceptable.\n\nCritical issues: (1) Wrong course page/title: DOM-models show the agent was on https://www.coursera.org/learn/python-for-applied-data-science-ai with title “Python for Data Science, AI & Development,” not the requested “Python for Applied Data Science” at https://www.coursera.org/learn/python-for-applied-data-science. The task explicitly asked to open the specific course; reporting details from a different course is not something most users would accept as completing the task. (2) Fabricated/unsupported syllabus details: The agent listed five specific module titles (e.g., “Python Basics; Python Data Structures; …”), but the DOM evidence only shows a summary count “5 modules” and does not show an expanded syllabus or any module titles. That means part of the reported syllabus detail is unreliable.\n\nWhat the agent did accomplish: It stayed within constraints (no sign-in/enroll/trial), correctly captured instructor “Joseph Santarcangelo,” partner “IBM” (shown as “Context: IBM”), and the visible count “5 modules” for the course page it actually opened. It also correctly noted that an explicit audit option was not visible in the captured view and treated audit availability as not confirmable.\n\nOverall outcome: Because the agent did not actually open/verify the requested course page and additionally reported invented module titles, the user would not have trustworthy, course-specific information for “Python for Applied Data Science.” This is a task failure despite some correct observations on a related page.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Open the specified Coursera course page and, without signing in or enrolling, extract key overview details: instructor, offering institution, how many modules/weeks are shown in the syllabus, and whether a free audit option is available (or state if it can’t be confirmed). A reasonable user would be flexible about minor wording/formatting, but not about reporting details for the wrong course page or inventing syllabus contents.",
+          "reasoning": "Nitpicks: The agent’s phrasing around “institution (Offered by)” vs Coursera’s on-page labeling (“Context: IBM”) is a minor labeling difference; the audit conclusion is appropriately cautious (it says audit isn’t clearly confirmable from the visible view), which is acceptable.\n\nCritical issues: (1) Wrong course page/title: DOM-models show the agent was on https://www.coursera.org/learn/python-for-applied-data-science-ai with title “Python for Data Science, AI & Development,” not the requested “Python for Applied Data Science” at https://www.coursera.org/learn/python-for-applied-data-science. The task explicitly asked to open the specific course; reporting details from a different course is not something most users would accept as completing the task. (2) Fabricated/unsupported syllabus details: The agent listed five specific module titles (e.g., “Python Basics; Python Data Structures; …”), but the DOM evidence only shows a summary count “5 modules” and does not show an expanded syllabus or any module titles. That means part of the reported syllabus detail is unreliable.\n\nWhat the agent did accomplish: It stayed within constraints (no sign-in/enroll/trial), correctly captured instructor “Joseph Santarcangelo,” partner “IBM” (shown as “Context: IBM”), and the visible count “5 modules” for the course page it actually opened. It also correctly noted that an explicit audit option was not visible in the captured view and treated audit availability as not confirmable.\n\nOverall outcome: Because the agent did not actually open/verify the requested course page and additionally reported invented module titles, the user would not have trustworthy, course-specific information for “Python for Applied Data Science.” This is a task failure despite some correct observations on a related page.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent performed only a single scroll on a Coursera course page and then produced a final report. Two material issues caused failure: (1) it never navigated to or verified the specifically requested course URL/title (“Python for Applied Data Science” at /learn/python-for-applied-data-science), instead staying on the alternate /learn/python-for-applied-data-science-ai page whose title is “Python for Data Science, AI & Development”; and (2) it reported specific syllabus/module titles that are not present in the DOM evidence, which only shows a summary count (“5 modules”) and no expanded syllabus list. The agent did stay within constraints (no sign-in/enroll) and correctly captured instructor/partner and cautiously handled audit visibility, but the wrong course context plus fabricated syllabus details make the output untrustworthy for the requested course.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent never attempted to open or verify the exact requested course page (https://www.coursera.org/learn/python-for-applied-data-science) and instead remained on the -ai variant course page.",
+          "agent_reasoning": "It scrolled on the current page to “reconfirm syllabus and look for any explicit free audit text,” implicitly assuming the current page was the intended target or sufficient to answer the task.",
+          "evidence": "Action history shows only: State 1 at URL https://www.coursera.org/learn/python-for-applied-data-science-ai and Action 1 = scroll. DOM_MODEL_STATE_INDEX 0/1 titles the page “Python for Data Science, AI & Development | Coursera,” which differs from the requested “Python for Applied Data Science.” No visit_url/web_search actions to the requested URL appear.",
+          "impact": "All extracted details may correspond to a different course than requested, failing the primary intent to report information for the specified course."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "2.3",
+          "error_category": "Hallucination",
+          "error_type": "Output fabrication",
+          "what_happened": "The agent output lists five specific module titles as if they were shown in the syllabus, but the DOM evidence does not show any module titles or an expanded syllabus—only a high-level “5 modules” summary.",
+          "agent_reasoning": "It tried to “reconfirm syllabus” and then reported a detailed list of modules (Python Basics; Python Data Structures; Python Programming Fundamentals; Working with Data in Python; APIs and Data Collection).",
+          "evidence": "Criterion 3 DOM evidence: DOM_MODEL_STATE_INDEX 1 contains only the text “5 modules” and explicitly notes: “The provided snapshots do not show an expanded syllabus section, week-by-week/module-by-module listing, or any module titles.” The outcome verification also flags the module titles as invented/unsupported.",
+          "impact": "Introduces incorrect, ungrounded course details, undermining correctness and user trust; contributes directly to overall task failure."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[3.5] Incomplete task execution: The agent never attempted to open or verify the exact requested course page (https://www.coursera.org/learn/python-for-applied-data-science) and instead remained on the -ai variant course page."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The user’s instructions specify a single, well-defined URL (with a permissible alternate starting URL noted), list exactly which overview fields to extract (instructor, institution, module/week count, audit availability), and include clear stopping conditions and constraints. There is no missing or conflicting information that would force guesswork or multiple equally valid interpretations. Although the agent mis-opened a different course page and hallucinated syllabus titles, these are execution errors rather than effects of an underspecified or ambiguous task.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task—opening a public Coursera course page in a desktop browser and extracting visible details—poses no inherent impossibility, does not request illegal or NSFW content, and does not violate Responsible AI policies. It is feasible with the given environment and credentials. The agent’s failure resulted from selecting the wrong course page and inventing syllabus details, not from any invalidity in the task as specified.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies a concrete URL and clearly defines the fields to extract (instructor, institution, syllabus modules/weeks, free audit availability) along with constraints (no sign-in, no enrollment). The provided URL resolves any naming ambiguity, so a competent agent can unambiguously execute the steps.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task involves viewing publicly accessible course details on Coursera without requiring credentials, illegal actions, or policy violations. It is feasible in a desktop browser environment and does not ask for prohibited content or actions.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_30_rerun/20260915_task30_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "842c18d38e5151410a621591df78e99409b7d961591e071ec967da91d5ba140b",
+        "byte_count": 4669,
+        "line_count": 66,
+        "estimated_tokens": 1165,
+        "url": "https://www.coursera.org/learn/python-for-applied-data-science-ai",
+        "title": "Python for Data Science, AI & Development | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 39
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 40,
+            "end_line": 48
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 49,
+            "end_line": 53
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 54,
+            "end_line": 58
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 59,
+            "end_line": 62
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 63,
+            "end_line": 66
+          }
+        ],
+        "control_refs": [
+          "see",
+          "770",
+          "773",
+          "776",
+          "12",
+          "16",
+          "53",
+          "57",
+          "88",
+          "751",
+          "103",
+          "other",
+          "27",
+          "749",
+          "763",
+          "1202"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L66"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_30_rerun/20260915_task30_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "ba2670af66ee12169aa35d33c9eacd6c20b84e1750b5e8b5baebf1aeddec6ef7",
+        "byte_count": 6004,
+        "line_count": 73,
+        "estimated_tokens": 1498,
+        "url": "https://www.coursera.org/learn/python-for-applied-data-science-ai",
+        "title": "Python for Data Science, AI & Development | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 48
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 49,
+            "end_line": 55
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 56,
+            "end_line": 60
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 61,
+            "end_line": 65
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 66,
+            "end_line": 69
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 70,
+            "end_line": 73
+          }
+        ],
+        "control_refs": [
+          "see",
+          "770",
+          "773",
+          "776",
+          "12",
+          "16",
+          "53",
+          "57",
+          "751",
+          "other",
+          "27",
+          "749",
+          "763",
+          "1202"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L73"
+      }
+    ],
+    "estimated_evidence_tokens": 2663,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 6,
+        "1": 9,
+        "2": 7,
+        "3": 0,
+        "4": 6,
+        "5": 1
+      },
+      "1": {
+        "0": 6,
+        "1": 10,
+        "2": 8,
+        "3": 7,
+        "4": 4,
+        "5": 5
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 5,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 12,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 10594,
+        "estimated_input_tokens": 2649,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 11929,
+        "estimated_input_tokens": 2983,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 14026,
+        "estimated_input_tokens": 3507,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          4,
+          5
+        ],
+        "char_count": 12026,
+        "estimated_input_tokens": 3007,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          4,
+          5
+        ],
+        "char_count": 12536,
+        "estimated_input_tokens": 3134,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 14730,
+        "estimated_input_tokens": 3683,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 15226,
+        "estimated_input_tokens": 3807,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          4,
+          5
+        ],
+        "char_count": 13124,
+        "estimated_input_tokens": 3281,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 15701,
+        "estimated_input_tokens": 3926,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 16311,
+        "estimated_input_tokens": 4078,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 10846,
+        "estimated_input_tokens": 2712,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 10524,
+        "estimated_input_tokens": 2631,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 10413,
+        "estimated_input_tokens": 2604,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 10620,
+        "estimated_input_tokens": 2655,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 10611,
+        "estimated_input_tokens": 2653,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 10605,
+        "estimated_input_tokens": 2652,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 10771,
+        "estimated_input_tokens": 2693,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 11119,
+        "estimated_input_tokens": 2780,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 11625,
+        "estimated_input_tokens": 2907,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 12459,
+        "estimated_input_tokens": 3115,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "criterion_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 13189,
+        "estimated_input_tokens": 3298,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "duration_sec": 199.064
+}

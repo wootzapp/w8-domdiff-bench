@@ -59,6 +59,20 @@ def test_wait_action_is_preserved_and_compared(tmp_path):
     compare_semantic_actions(screenshot_actions, dom_actions)
 
 
+def test_select_action_is_preserved_and_compared(tmp_path):
+    screenshot_log = tmp_path / "screenshot.log"
+    dom_log = tmp_path / "dom.log"
+    event = json.dumps({"action": "select", "arguments": {"action": "select", "ref": "e69", "text": "Avg. Customer Review"}}) + "\n"
+    screenshot_log.write_text(event, encoding="utf-8")
+    dom_log.write_text(event, encoding="utf-8")
+
+    screenshot_actions = parse_actions(screenshot_log, mode="screenshot")
+    dom_actions = parse_actions(dom_log, mode="dom_model")
+
+    assert screenshot_actions[0]["action"] == "select"
+    compare_semantic_actions(screenshot_actions, dom_actions)
+
+
 def test_history_back_aliases_normalize_to_microsoft_action(tmp_path):
     screenshot_log = tmp_path / "screenshot.log"
     dom_log = tmp_path / "dom.log"

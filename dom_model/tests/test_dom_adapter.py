@@ -13,5 +13,5 @@ def test_adapter_preserves_microsoft_action_history_without_writes(pair_factory)
     after = sorted(path.name for path in pair["dom"].iterdir())
     assert before == after
     assert "Action 1: left_click" in extracted["action_history"]
-    assert extracted["actions_list"] == [{"id": 1, "screenshot": ""}]
+    assert extracted["actions_list"] == [{"id": 1}]
 

@@ -1,0 +1,634 @@
+{
+  "task_id": "browser_task_040-map-entity-inspection-20260915T074649Z",
+  "verifier": "microsoft_verifier",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.75,
+  "rubric_total_max_points": 16.0,
+  "rubric_total_earned_points": 12.0,
+  "rubric_is_success": false,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: None that materially affect the result; formatting of the reported fields is fine.\n\nCritical issues: The agent reports three requested tag values (tourism, museum, website) that are not shown in the provided screenshot evidence of the object\u2019s tag table. Screenshot 2 (the British Museum object page) clearly shows the header \u201cRelation: British Museum (177044)\u201d and tag rows for addr:street = Great Russell Street, addr:city = London, and addr:postcode = WC1B 3DG, but it does not display any \u201ctourism\u201d, \u201cmuseum\u201d, or \u201cwebsite\u201d rows in the visible portion. The task explicitly requires reporting values as displayed and marking missing requested tags as unavailable rather than inferring them. Therefore, those three tag values are unsupported by the evidence and constitute likely inference/hallucination relative to what was displayed.\n\nWhat was done correctly: The agent did open the correct object page (Relation 177044) corresponding to the British Museum on Great Russell Street, and it correctly reported object type/ID and the three address tags that are visible.\n\nOverall outcome: Because the task\u2019s core deliverable is an accurate report of the displayed values for all requested tags (or explicit \u2018unavailable\u2019 when not displayed), and the agent instead provided specific values for tags not evidenced as displayed, the user cannot trust the output as a faithful extraction from the object page. This is a substantive failure of the information retrieval requirement, even though the correct object was opened.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Open the correct OpenStreetMap object page for the British Museum (specifically the one on Great Russell Street, London) and accurately report the object type/ID plus the displayed values for a specific set of tags, explicitly marking any requested tags that are not displayed as unavailable. The user would not be flexible on incorrect/hallucinated tag values or using a different similarly named OSM feature."
+  },
+  "preflight": {
+    "actions": 1,
+    "screenshots": 2
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_40_rerun/20260915_task40_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "2f5a5cab05458d03a0e495ac223e152659863ab23a1d08ce8b9ad6bfd8dcac8e",
+  "criterion_denominator": 16,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 61436,
+      "completion_tokens": 5817,
+      "reasoning_tokens": 0,
+      "total_tokens": 67253
+    },
+    "action_judge": {
+      "prompt_tokens": 16227,
+      "completion_tokens": 5318,
+      "reasoning_tokens": 3776,
+      "total_tokens": 21545
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 10,
+      "api_attempts": 10,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    }
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 2,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 3,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 6,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 7,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 8,
+        "screenshot_idx": 1
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        0,
+        1
+      ],
+      "1": [
+        1,
+        0
+      ],
+      "2": [
+        1,
+        0
+      ],
+      "3": [
+        1,
+        0
+      ],
+      "4": [
+        1,
+        0
+      ],
+      "5": [
+        1,
+        0
+      ],
+      "6": [
+        1,
+        0
+      ],
+      "7": [
+        1,
+        0
+      ],
+      "8": [
+        1,
+        0
+      ],
+      "9": [
+        1,
+        0
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "screenshot_evidence": "The screenshot shows the OpenStreetMap website with the search box containing the text \u201cBritish Museum, London\u201d. A left-side panel titled \u201cSearch Results\u201d shows \u201cNominatim\u201d and a result reading: \u201cMuseum British Museum, Great Russell Street, St Giles, Bloomsbury, London Borough of Camden, Greater London, England, WC1B 3DG, United Kingdom\u201d. The main map is centered on the British Museum area with a red pin and label \u201cBritish Museum\u201d.",
+          "criterion_analysis": "Full credit: the screenshot clearly shows OpenStreetMap search being used for \u201cBritish Museum, London\u201d and displaying the relevant search result.",
+          "discrepancies": "No discrepancy regarding accessing OSM search; this is clearly visible.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 0
+        },
+        {
+          "screenshot_evidence": "The screenshot shows the OpenStreetMap site UI (logo \u201cOpenStreetMap\u201d top-left) with a search box in the left panel showing the query text \u201cBritish Museum, London\u201d. A magnifying-glass search button is visible next to the query.",
+          "criterion_analysis": "Meets the criterion: the screenshot clearly shows OSM and that a search for \u201cBritish Museum, London\u201d is in use/has been entered, indicating access to OSM search.",
+          "discrepancies": "No discrepancy; the screenshot supports that OSM search for British Museum, London is being used.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 1
+        }
+      ],
+      "1": [
+        {
+          "screenshot_evidence": "The left panel title reads \u201cRelation: British Museum (177044)\u201d and the map highlights the museum footprint in orange around the British Museum complex. Tags include \u201caddr:street Great Russell Street\u201d which aligns with the correct British Museum location.",
+          "criterion_analysis": "Full success: the screenshot shows the exact British Museum object page open as a Relation with ID 177044, matching the British Museum on Great Russell Street in London. The object page (not a generic map pin or sub-feature) is displayed.",
+          "discrepancies": "No discrepancy about which object is opened; it is clearly \u201cRelation: British Museum (177044)\u201d.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_idx": 1
+        }
+      ],
+      "2": [
+        {
+          "screenshot_evidence": "In the left panel header, the object is labeled \u201cRelation: British Museum (177044)\u201d.",
+          "criterion_analysis": "The screenshot supports reporting object type = relation and ID = 177044. This matches the agent\u2019s predicted output for type and ID.",
+          "discrepancies": "No discrepancy for type/ID; both are explicitly visible and match the predicted output.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_idx": 1
+        }
+      ],
+      "3": [
+        {
+          "screenshot_evidence": "In the Tags table, the row \u201caddr:street\u201d shows value \u201cGreat Russell Street\u201d.",
+          "criterion_analysis": "Criterion satisfied; addr:street is visible and matches the agent\u2019s predicted output (\u201cGreat Russell Street\u201d).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_idx": 1
+        }
+      ],
+      "4": [
+        {
+          "screenshot_evidence": "In the Tags table, the row \u201caddr:city\u201d shows value \u201cLondon\u201d.",
+          "criterion_analysis": "Criterion satisfied; addr:city is visible and matches the agent\u2019s predicted output (\u201cLondon\u201d).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_idx": 1
+        }
+      ],
+      "5": [
+        {
+          "screenshot_evidence": "In the Tags table, the row \u201caddr:postcode\u201d shows value \u201cWC1B 3DG\u201d.",
+          "criterion_analysis": "Criterion satisfied; addr:postcode is visible and matches the agent\u2019s predicted output (\u201cWC1B 3DG\u201d).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_idx": 1
+        }
+      ],
+      "6": [
+        {
+          "screenshot_evidence": "The screenshot is still on the search results/map view. It does not show an object page sidebar with tags; no \u201ctourism\u201d key/value is visible anywhere in the left panel or map labels.",
+          "criterion_analysis": "This criterion is conditional on the exact British Museum object page being opened and tags being viewable. In this screenshot, the object page with tags is not shown, so the condition is not met and the criterion should be skipped (no scoring based on this screenshot).",
+          "discrepancies": "Agent\u2019s predicted output reports \u201ctourism = museum\u201d, but the screenshot does not display any tag list or tourism tag value to support or contradict that claim.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_idx": 0
+        },
+        {
+          "screenshot_evidence": "The visible portion of the Tags table shows rows including addr:city, addr:country, addr:postcode, addr:street, architect, architect:wikidata, ata, building, and building:architecture. No \u201ctourism\u201d row is visible in this screenshot segment.",
+          "criterion_analysis": "Not confirmed from the screenshot: the tourism tag value is not visible, so the agent\u2019s predicted output \u201ctourism = museum\u201d is not supported by the pixels shown here. It may exist further down, but it is not displayed in this screenshot.",
+          "discrepancies": "Agent predicted \u201ctourism = museum\u201d, but the screenshot does not display any tourism tag row/value.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_idx": 1
+        }
+      ],
+      "7": [
+        {
+          "screenshot_evidence": "No object detail page or tag table is visible. There is no visible \u201cmuseum\u201d tag key/value; only map labels like \u201cBritish Museum\u201d and \u201cGreat Court\u201d appear.",
+          "criterion_analysis": "Conditional criterion; because tags are not viewable in the screenshot, the condition is not met and this criterion should be skipped.",
+          "discrepancies": "Agent\u2019s predicted output reports \u201cmuseum = archaeological\u201d, but the screenshot provides no tag display to verify it.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_idx": 0
+        },
+        {
+          "screenshot_evidence": "In the visible Tags table portion, there is no row labeled \u201cmuseum\u201d. Only \u201cbuilding = museum\u201d is visible among the lower rows.",
+          "criterion_analysis": "Not confirmed: the museum tag value is not visible in the screenshot. The agent\u2019s predicted output \u201cmuseum = archaeological\u201d is not supported by what is shown (and the only related visible item is \u201cbuilding: museum\u201d, which is a different key).",
+          "discrepancies": "Agent predicted \u201cmuseum = archaeological\u201d, but no \u201cmuseum\u201d tag row is visible; only \u201cbuilding = museum\u201d appears.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_idx": 1
+        }
+      ],
+      "8": [
+        {
+          "screenshot_evidence": "The screenshot does not show any website field or tags panel. No URL is visible other than OpenStreetMap UI elements; no \u201cwebsite\u201d tag value appears.",
+          "criterion_analysis": "Conditional criterion; the screenshot does not show the object page with tags, so the condition is not met and the criterion should be skipped.",
+          "discrepancies": "Agent\u2019s predicted output reports a website URL \u201chttps://www.britishmuseum.org\u201d, but the screenshot does not display any website tag value to confirm.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_idx": 0
+        },
+        {
+          "screenshot_evidence": "The visible Tags table portion does not show a row labeled \u201cwebsite\u201d.",
+          "criterion_analysis": "Not confirmed: the screenshot does not display a website tag value. The agent\u2019s predicted website \u201chttps://www.britishmuseum.org\u201d is not supported by the visible evidence.",
+          "discrepancies": "Agent predicted a website tag value, but no \u201cwebsite\u201d row/value is visible in the screenshot.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_idx": 1
+        }
+      ],
+      "9": [
+        {
+          "screenshot_evidence": "Top-right shows \u201cLog In\u201d and \u201cSign Up\u201d buttons, and the top-left shows an \u201cEdit\u201d dropdown, but there is no indication either was clicked. The screenshot remains on the search results/map view and does not show any editing interface, login form, or object page with recorded tag information.",
+          "criterion_analysis": "From the screenshot, the agent appears to be browsing without signing in or editing (good), but the stopping condition/recording of requested identifiers and tags is not evidenced here because the object page with tags is not shown. Based on this screenshot alone, constraints about no sign-in/edit are followed, but completion (stopping after recording all requested info) cannot be confirmed.",
+          "discrepancies": "Agent\u2019s predicted output claims to have opened relation 177044 and recorded multiple tags. The screenshot instead shows only the search results panel and map, not a relation object page or tag list, so the claimed completion is not supported by visible evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 0
+        },
+        {
+          "screenshot_evidence": "Top right shows \u201cLog In\u201d and \u201cSign Up\u201d buttons, and top left shows an \u201cEdit\u201d dropdown/button, but there is no indication they were clicked. The screen is in view mode showing an object page with tags; no editing UI or login prompt is visible.",
+          "criterion_analysis": "Constraints appear respected in this screenshot: no sign-in and no editing action is shown. However, the agent\u2019s predicted output includes tag values (tourism, museum, website) that are not visible in the screenshot; while this is more an accuracy issue than a constraint issue, it suggests the agent may not have reliably \u2018stopped after recording requested displayed values\u2019 based solely on what is shown.",
+          "discrepancies": "No discrepancy about signing in/editing (none shown). Potential discrepancy with \u2018stop after recording requested info\u2019: the agent reports additional tag values not visible here, implying possible guessing or off-screen info not evidenced by this screenshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_idx": 1
+        }
+      ]
+    },
+    "step4_5_disambiguation": {
+      "1": {
+        "is_condition_met": true,
+        "reasoning": "Screenshot 2 shows an opened OSM object sidebar ('Relation: British Museum (177044)') with the feature highlighted on the map, which implies OSM was accessible and interactive enough to open the object page from search/map."
+      },
+      "2": {
+        "is_condition_met": true,
+        "reasoning": "Screenshot 2 clearly shows the exact object page header 'Relation: British Museum (177044)', so the prerequisite (exact British Museum object page opened) is satisfied."
+      },
+      "3": {
+        "is_condition_met": true,
+        "reasoning": "In Screenshot 2 the exact object page is open and a Tags table is visible (with addr:* rows), so tags are viewable on the object page."
+      },
+      "4": {
+        "is_condition_met": true,
+        "reasoning": "Screenshot 2 shows the object page open and a visible Tags table including address tags, so the condition (object page opened + tags viewable) is met."
+      },
+      "5": {
+        "is_condition_met": true,
+        "reasoning": "Screenshot 2 includes the object page and visible tag rows (addr:city, addr:postcode, addr:street, etc.), confirming tags are viewable for the exact object."
+      },
+      "6": {
+        "is_condition_met": true,
+        "reasoning": "Although the tourism tag itself is not visible in the shown portion, Screenshot 2 does show the exact object page open with a visible Tags table. Therefore the condition (page opened + tags viewable) is met."
+      },
+      "7": {
+        "is_condition_met": true,
+        "reasoning": "Screenshot 2 shows the exact object page open and the Tags table is visible (even if the specific 'museum' key is not in the visible slice). Thus the condition for scoring is met."
+      },
+      "8": {
+        "is_condition_met": true,
+        "reasoning": "Screenshot 2 shows the exact object page open with a visible Tags table; the 'website' row is not visible, but tags are viewable, so the condition for scoring applies."
+      }
+    },
+    "step5_reality_check": {
+      "0": "Screenshots show the OpenStreetMap interface with the search box populated with \u201cBritish Museum, London\u201d and a visible \u201cSearch Results\u201d panel (Nominatim) listing a result for \u201cMuseum British Museum, Great Russell Street\u2026\u201d plus a map pin/label for British Museum. This is clear evidence of using OSM\u2019s built-in search.",
+      "1": "One screenshot shows an object details sidebar titled \u201cRelation: British Museum (177044)\u201d with the museum complex highlighted on the map, consistent with selecting the main British Museum feature (not an entrance/stop). The displayed addr:street value in that sidebar is Great Russell Street, aligning with the required location.",
+      "2": "The object type and ID are explicitly displayed in the left-panel header as \u201cRelation: British Museum (177044)\u201d, so both fields are directly readable from the screenshot.",
+      "3": "In the visible tag table on the object page, the key \u201caddr:street\u201d is shown with value \u201cGreat Russell Street\u201d, clearly legible.",
+      "4": "In the visible tag table on the object page, the key \u201caddr:city\u201d is shown with value \u201cLondon\u201d, clearly legible.",
+      "5": "In the visible tag table on the object page, the key \u201caddr:postcode\u201d is shown with value \u201cWC1B 3DG\u201d, clearly legible.",
+      "6": "The screenshots do not display any row for the key \u201ctourism\u201d in the visible portion of the tags table. Only part of the tag list is visible (address and some building/architect-related tags), so the tourism value cannot be confirmed from the provided evidence and should be treated as not shown.",
+      "7": "No \u201cmuseum\u201d key/value row is visible in the shown portion of the tags table. The screenshot does show \u201cbuilding = museum\u201d, but that is a different tag key than \u201cmuseum\u201d; the requested \u201cmuseum\u201d tag value is therefore not evidenced on-screen.",
+      "8": "No \u201cwebsite\u201d key/value row is visible in the displayed segment of the tags table, and the search-results screenshot also does not show any website field. Thus, the website tag value is not evidenced as displayed in the screenshots.",
+      "9": "Both screenshots show a logged-out view (buttons like \u201cLog In\u201d/\u201cSign Up\u201d visible) and a standard view-mode object sidebar; there is no visible login form, editing panel, or save/modify workflow. However, the screenshots do not show the agent recording all requested tag values (tourism/museum/website are not visible), so the \u2018stop after recording everything displayed\u2019 aspect cannot be verified from the images."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Access OpenStreetMap search for 'British Museum, London'",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent used the provided search URL context and clicked on the search result, demonstrating use of OSM search.",
+        "applicable_evidence": "Screenshot 1 shows OpenStreetMap search results with the query \u201cBritish Museum, London\u201d and a Search Results panel (Nominatim) listing \u201cMuseum British Museum, Great Russell Street\u2026 London\u2026 WC1B 3DG\u2026\u201d. Screenshot 2 (later) still shows the OSM UI with the same query in the search box.",
+        "post_image_justification": "Visual evidence confirms the agent accessed OSM and used its built-in search for \u201cBritish Museum, London.\u201d No adjustment needed.",
+        "reality_notes": "Screenshots show the OpenStreetMap interface with the search box populated with \u201cBritish Museum, London\u201d and a visible \u201cSearch Results\u201d panel (Nominatim) listing a result for \u201cMuseum British Museum, Great Russell Street\u2026\u201d plus a map pin/label for British Museum. This is clear evidence of using OSM\u2019s built-in search."
+      },
+      {
+        "criterion": "Navigate to the exact British Museum OSM object page",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "Agent opened relation/177044 which corresponds to the British Museum on Great Russell Street, correctly selecting the object page.",
+        "applicable_evidence": "Screenshot 2 (latest) shows the object sidebar header \u201cRelation: British Museum (177044)\u201d and the museum complex highlighted; tags include addr:street = Great Russell Street, matching the required British Museum on Great Russell Street in London.",
+        "post_image_justification": "The exact British Museum object page (relation 177044) is open, matching the specified location. Full credit appropriate.",
+        "reality_notes": "One screenshot shows an object details sidebar titled \u201cRelation: British Museum (177044)\u201d with the museum complex highlighted on the map, consistent with selecting the main British Museum feature (not an entrance/stop). The displayed addr:street value in that sidebar is Great Russell Street, aligning with the required location.",
+        "condition": "Only score this criterion if OpenStreetMap is accessible enough to interact with search results/map.",
+        "is_condition_met": true
+      },
+      {
+        "criterion": "Record displayed OSM object type and ID",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "Agent correctly reported the object type as relation and ID as 177044.",
+        "applicable_evidence": "Screenshot 2 shows header text \u201cRelation: British Museum (177044)\u201d which directly provides object type and ID.",
+        "post_image_justification": "Type and ID are explicitly visible and match the agent output. Keep full credit.",
+        "reality_notes": "The object type and ID are explicitly displayed in the left-panel header as \u201cRelation: British Museum (177044)\u201d, so both fields are directly readable from the screenshot.",
+        "condition": "Only score this criterion if the exact British Museum object page is opened.",
+        "is_condition_met": true
+      },
+      {
+        "criterion": "Report addr:street tag value",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "Agent reported 'Great Russell Street' exactly as displayed.",
+        "applicable_evidence": "Screenshot 2 tag table includes \u201caddr:street\u201d with value \u201cGreat Russell Street.\u201d",
+        "post_image_justification": "Agent\u2019s reported addr:street matches what is displayed. Full credit.",
+        "reality_notes": "In the visible tag table on the object page, the key \u201caddr:street\u201d is shown with value \u201cGreat Russell Street\u201d, clearly legible.",
+        "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+        "is_condition_met": true
+      },
+      {
+        "criterion": "Report addr:city tag value",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "Agent reported 'London' as shown on the page.",
+        "applicable_evidence": "Screenshot 2 tag table includes \u201caddr:city\u201d with value \u201cLondon.\u201d",
+        "post_image_justification": "Agent\u2019s reported addr:city matches what is displayed. Full credit.",
+        "reality_notes": "In the visible tag table on the object page, the key \u201caddr:city\u201d is shown with value \u201cLondon\u201d, clearly legible.",
+        "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+        "is_condition_met": true
+      },
+      {
+        "criterion": "Report addr:postcode tag value",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "Agent reported 'WC1B 3DG' exactly as displayed.",
+        "applicable_evidence": "Screenshot 2 tag table includes \u201caddr:postcode\u201d with value \u201cWC1B 3DG.\u201d",
+        "post_image_justification": "Agent\u2019s reported postcode matches what is displayed. Full credit.",
+        "reality_notes": "In the visible tag table on the object page, the key \u201caddr:postcode\u201d is shown with value \u201cWC1B 3DG\u201d, clearly legible.",
+        "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+        "is_condition_met": true
+      },
+      {
+        "criterion": "Report tourism tag value",
+        "earned_points": 1,
+        "post_image_earned_points": 0.0,
+        "max_points": 1,
+        "justification": "Agent reported 'museum' as the tourism tag value.",
+        "applicable_evidence": "Screenshot 2 shows a portion of the tag list (addr:* and some building/architect tags); no \u201ctourism\u201d row is visible in the displayed portion.",
+        "post_image_justification": "The agent reported \u201ctourism = museum,\u201d but the screenshots do not display any tourism tag value. Since the task requires values \u201cas displayed\u201d and missing should be reported as unavailable, this is unsupported by evidence (likely hallucinated/off-screen). Score to 0.",
+        "reality_notes": "The screenshots do not display any row for the key \u201ctourism\u201d in the visible portion of the tags table. Only part of the tag list is visible (address and some building/architect-related tags), so the tourism value cannot be confirmed from the provided evidence and should be treated as not shown.",
+        "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+        "is_condition_met": true
+      },
+      {
+        "criterion": "Report museum tag value",
+        "earned_points": 1,
+        "post_image_earned_points": 0.0,
+        "max_points": 1,
+        "justification": "Agent reported 'archaeological' as the museum tag value.",
+        "applicable_evidence": "Screenshot 2 shows \u201cbuilding = museum\u201d but no tag row with key \u201cmuseum\u201d is visible in the displayed portion.",
+        "post_image_justification": "Agent reported \u201cmuseum = archaeological,\u201d but the requested key is \u201cmuseum\u201d (not \u201cbuilding\u201d), and it is not visible in the screenshot. This is not supported and should have been reported as unavailable. Score to 0.",
+        "reality_notes": "No \u201cmuseum\u201d key/value row is visible in the shown portion of the tags table. The screenshot does show \u201cbuilding = museum\u201d, but that is a different tag key than \u201cmuseum\u201d; the requested \u201cmuseum\u201d tag value is therefore not evidenced on-screen.",
+        "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+        "is_condition_met": true
+      },
+      {
+        "criterion": "Report website tag value",
+        "earned_points": 1,
+        "post_image_earned_points": 0.0,
+        "max_points": 1,
+        "justification": "Agent reported 'https://www.britishmuseum.org' as displayed on the page.",
+        "applicable_evidence": "Screenshot 2 shows part of the tags table; no \u201cwebsite\u201d row/value is visible. Screenshot 1 also does not show any website tag.",
+        "post_image_justification": "Agent reported a website value, but it is not displayed in the provided evidence. Per task instructions, it should be reported as unavailable if not shown. Score to 0.",
+        "reality_notes": "No \u201cwebsite\u201d key/value row is visible in the displayed segment of the tags table, and the search-results screenshot also does not show any website field. Thus, the website tag value is not evidenced as displayed in the screenshots.",
+        "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+        "is_condition_met": true
+      },
+      {
+        "criterion": "Respect constraints (no sign-in/edit; stop after recording requested info)",
+        "earned_points": 2,
+        "post_image_earned_points": 1.0,
+        "max_points": 2,
+        "justification": "Agent did not sign in or edit, and stopped after recording all required information.",
+        "applicable_evidence": "Screenshots 1 and 2 show logged-out UI with \u201cLog In\u201d/\u201cSign Up\u201d visible and no editing workflow; however, the agent\u2019s final output includes tag values (tourism/museum/website) not shown in screenshots, indicating they did not adhere to \u201creport missing requested tags as unavailable rather than inferring them.\u201d",
+        "post_image_justification": "No sign-in/editing is evidenced (good), but the agent violated the core constraint by providing unsupported tag values instead of marking them unavailable. This is a substantive constraint failure, so reduce score.",
+        "reality_notes": "Both screenshots show a logged-out view (buttons like \u201cLog In\u201d/\u201cSign Up\u201d visible) and a standard view-mode object sidebar; there is no visible login form, editing panel, or save/modify workflow. However, the screenshots do not show the agent recording all requested tag values (tourism/museum/website are not visible), so the \u2018stop after recording everything displayed\u2019 aspect cannot be verified from the images."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "The task is limited to navigating within OpenStreetMap to the British Museum object page and recording specific displayed identifiers and tag values. The action history shows a single click leading to the relation page (relation/177044). There is no evidence of any material side effects such as logging in, editing, saving changes, adding items to carts, submitting forms, or subscribing to anything. The only observed behavior is normal exploratory navigation (opening the object page), which is explicitly required. The existing rubric already penalized the agent for reporting unsupported tag values (tourism/museum/website) and for not adhering to the \u201cas displayed/unavailable\u201d constraint under criteria 6\u20139, so there is no unpenalized gap related to wrong reporting. Since no extraneous actions with lasting consequences occurred, no new penalty criterion is warranted.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.75
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.75,
+          "total_earned_points": 12.0,
+          "total_max_points": 16.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Access OpenStreetMap search for 'British Museum, London'",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent used the provided search URL context and clicked on the search result, demonstrating use of OSM search.",
+              "applicable_evidence": "Screenshot 1 shows OpenStreetMap search results with the query \u201cBritish Museum, London\u201d and a Search Results panel (Nominatim) listing \u201cMuseum British Museum, Great Russell Street\u2026 London\u2026 WC1B 3DG\u2026\u201d. Screenshot 2 (later) still shows the OSM UI with the same query in the search box.",
+              "post_image_justification": "Visual evidence confirms the agent accessed OSM and used its built-in search for \u201cBritish Museum, London.\u201d No adjustment needed.",
+              "reality_notes": "Screenshots show the OpenStreetMap interface with the search box populated with \u201cBritish Museum, London\u201d and a visible \u201cSearch Results\u201d panel (Nominatim) listing a result for \u201cMuseum British Museum, Great Russell Street\u2026\u201d plus a map pin/label for British Museum. This is clear evidence of using OSM\u2019s built-in search."
+            },
+            {
+              "criterion": "Navigate to the exact British Museum OSM object page",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "Agent opened relation/177044 which corresponds to the British Museum on Great Russell Street, correctly selecting the object page.",
+              "applicable_evidence": "Screenshot 2 (latest) shows the object sidebar header \u201cRelation: British Museum (177044)\u201d and the museum complex highlighted; tags include addr:street = Great Russell Street, matching the required British Museum on Great Russell Street in London.",
+              "post_image_justification": "The exact British Museum object page (relation 177044) is open, matching the specified location. Full credit appropriate.",
+              "reality_notes": "One screenshot shows an object details sidebar titled \u201cRelation: British Museum (177044)\u201d with the museum complex highlighted on the map, consistent with selecting the main British Museum feature (not an entrance/stop). The displayed addr:street value in that sidebar is Great Russell Street, aligning with the required location.",
+              "condition": "Only score this criterion if OpenStreetMap is accessible enough to interact with search results/map.",
+              "is_condition_met": true
+            },
+            {
+              "criterion": "Record displayed OSM object type and ID",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "Agent correctly reported the object type as relation and ID as 177044.",
+              "applicable_evidence": "Screenshot 2 shows header text \u201cRelation: British Museum (177044)\u201d which directly provides object type and ID.",
+              "post_image_justification": "Type and ID are explicitly visible and match the agent output. Keep full credit.",
+              "reality_notes": "The object type and ID are explicitly displayed in the left-panel header as \u201cRelation: British Museum (177044)\u201d, so both fields are directly readable from the screenshot.",
+              "condition": "Only score this criterion if the exact British Museum object page is opened.",
+              "is_condition_met": true
+            },
+            {
+              "criterion": "Report addr:street tag value",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "Agent reported 'Great Russell Street' exactly as displayed.",
+              "applicable_evidence": "Screenshot 2 tag table includes \u201caddr:street\u201d with value \u201cGreat Russell Street.\u201d",
+              "post_image_justification": "Agent\u2019s reported addr:street matches what is displayed. Full credit.",
+              "reality_notes": "In the visible tag table on the object page, the key \u201caddr:street\u201d is shown with value \u201cGreat Russell Street\u201d, clearly legible.",
+              "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+              "is_condition_met": true
+            },
+            {
+              "criterion": "Report addr:city tag value",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "Agent reported 'London' as shown on the page.",
+              "applicable_evidence": "Screenshot 2 tag table includes \u201caddr:city\u201d with value \u201cLondon.\u201d",
+              "post_image_justification": "Agent\u2019s reported addr:city matches what is displayed. Full credit.",
+              "reality_notes": "In the visible tag table on the object page, the key \u201caddr:city\u201d is shown with value \u201cLondon\u201d, clearly legible.",
+              "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+              "is_condition_met": true
+            },
+            {
+              "criterion": "Report addr:postcode tag value",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "Agent reported 'WC1B 3DG' exactly as displayed.",
+              "applicable_evidence": "Screenshot 2 tag table includes \u201caddr:postcode\u201d with value \u201cWC1B 3DG.\u201d",
+              "post_image_justification": "Agent\u2019s reported postcode matches what is displayed. Full credit.",
+              "reality_notes": "In the visible tag table on the object page, the key \u201caddr:postcode\u201d is shown with value \u201cWC1B 3DG\u201d, clearly legible.",
+              "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+              "is_condition_met": true
+            },
+            {
+              "criterion": "Report tourism tag value",
+              "earned_points": 1,
+              "post_image_earned_points": 0.0,
+              "max_points": 1,
+              "justification": "Agent reported 'museum' as the tourism tag value.",
+              "applicable_evidence": "Screenshot 2 shows a portion of the tag list (addr:* and some building/architect tags); no \u201ctourism\u201d row is visible in the displayed portion.",
+              "post_image_justification": "The agent reported \u201ctourism = museum,\u201d but the screenshots do not display any tourism tag value. Since the task requires values \u201cas displayed\u201d and missing should be reported as unavailable, this is unsupported by evidence (likely hallucinated/off-screen). Score to 0.",
+              "reality_notes": "The screenshots do not display any row for the key \u201ctourism\u201d in the visible portion of the tags table. Only part of the tag list is visible (address and some building/architect-related tags), so the tourism value cannot be confirmed from the provided evidence and should be treated as not shown.",
+              "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+              "is_condition_met": true
+            },
+            {
+              "criterion": "Report museum tag value",
+              "earned_points": 1,
+              "post_image_earned_points": 0.0,
+              "max_points": 1,
+              "justification": "Agent reported 'archaeological' as the museum tag value.",
+              "applicable_evidence": "Screenshot 2 shows \u201cbuilding = museum\u201d but no tag row with key \u201cmuseum\u201d is visible in the displayed portion.",
+              "post_image_justification": "Agent reported \u201cmuseum = archaeological,\u201d but the requested key is \u201cmuseum\u201d (not \u201cbuilding\u201d), and it is not visible in the screenshot. This is not supported and should have been reported as unavailable. Score to 0.",
+              "reality_notes": "No \u201cmuseum\u201d key/value row is visible in the shown portion of the tags table. The screenshot does show \u201cbuilding = museum\u201d, but that is a different tag key than \u201cmuseum\u201d; the requested \u201cmuseum\u201d tag value is therefore not evidenced on-screen.",
+              "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+              "is_condition_met": true
+            },
+            {
+              "criterion": "Report website tag value",
+              "earned_points": 1,
+              "post_image_earned_points": 0.0,
+              "max_points": 1,
+              "justification": "Agent reported 'https://www.britishmuseum.org' as displayed on the page.",
+              "applicable_evidence": "Screenshot 2 shows part of the tags table; no \u201cwebsite\u201d row/value is visible. Screenshot 1 also does not show any website tag.",
+              "post_image_justification": "Agent reported a website value, but it is not displayed in the provided evidence. Per task instructions, it should be reported as unavailable if not shown. Score to 0.",
+              "reality_notes": "No \u201cwebsite\u201d key/value row is visible in the displayed segment of the tags table, and the search-results screenshot also does not show any website field. Thus, the website tag value is not evidenced as displayed in the screenshots.",
+              "condition": "Only score this criterion if the exact British Museum object page is opened and tags are viewable.",
+              "is_condition_met": true
+            },
+            {
+              "criterion": "Respect constraints (no sign-in/edit; stop after recording requested info)",
+              "earned_points": 2,
+              "post_image_earned_points": 1.0,
+              "max_points": 2,
+              "justification": "Agent did not sign in or edit, and stopped after recording all required information.",
+              "applicable_evidence": "Screenshots 1 and 2 show logged-out UI with \u201cLog In\u201d/\u201cSign Up\u201d visible and no editing workflow; however, the agent\u2019s final output includes tag values (tourism/museum/website) not shown in screenshots, indicating they did not adhere to \u201creport missing requested tags as unavailable rather than inferring them.\u201d",
+              "post_image_justification": "No sign-in/editing is evidenced (good), but the agent violated the core constraint by providing unsupported tag values instead of marking them unavailable. This is a substantive constraint failure, so reduce score.",
+              "reality_notes": "Both screenshots show a logged-out view (buttons like \u201cLog In\u201d/\u201cSign Up\u201d visible) and a standard view-mode object sidebar; there is no visible login form, editing panel, or save/modify workflow. However, the screenshots do not show the agent recording all requested tag values (tourism/museum/website are not visible), so the \u2018stop after recording everything displayed\u2019 aspect cannot be verified from the images."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "The task is limited to navigating within OpenStreetMap to the British Museum object page and recording specific displayed identifiers and tag values. The action history shows a single click leading to the relation page (relation/177044). There is no evidence of any material side effects such as logging in, editing, saving changes, adding items to carts, submitting forms, or subscribing to anything. The only observed behavior is normal exploratory navigation (opening the object page), which is explicitly required. The existing rubric already penalized the agent for reporting unsupported tag values (tourism/museum/website) and for not adhering to the \u201cas displayed/unavailable\u201d constraint under criteria 6\u20139, so there is no unpenalized gap related to wrong reporting. Since no extraneous actions with lasting consequences occurred, no new penalty criterion is warranted.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Open the correct OpenStreetMap object page for the British Museum (specifically the one on Great Russell Street, London) and accurately report the object type/ID plus the displayed values for a specific set of tags, explicitly marking any requested tags that are not displayed as unavailable. The user would not be flexible on incorrect/hallucinated tag values or using a different similarly named OSM feature.",
+      "reasoning": "Nitpicks: None that materially affect the result; formatting of the reported fields is fine.\n\nCritical issues: The agent reports three requested tag values (tourism, museum, website) that are not shown in the provided screenshot evidence of the object\u2019s tag table. Screenshot 2 (the British Museum object page) clearly shows the header \u201cRelation: British Museum (177044)\u201d and tag rows for addr:street = Great Russell Street, addr:city = London, and addr:postcode = WC1B 3DG, but it does not display any \u201ctourism\u201d, \u201cmuseum\u201d, or \u201cwebsite\u201d rows in the visible portion. The task explicitly requires reporting values as displayed and marking missing requested tags as unavailable rather than inferring them. Therefore, those three tag values are unsupported by the evidence and constitute likely inference/hallucination relative to what was displayed.\n\nWhat was done correctly: The agent did open the correct object page (Relation 177044) corresponding to the British Museum on Great Russell Street, and it correctly reported object type/ID and the three address tags that are visible.\n\nOverall outcome: Because the task\u2019s core deliverable is an accurate report of the displayed values for all requested tags (or explicit \u2018unavailable\u2019 when not displayed), and the agent instead provided specific values for tags not evidenced as displayed, the user cannot trust the output as a faithful extraction from the object page. This is a substantive failure of the information retrieval requirement, even though the correct object was opened.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Open the correct OpenStreetMap object page for the British Museum (specifically the one on Great Russell Street, London) and accurately report the object type/ID plus the displayed values for a specific set of tags, explicitly marking any requested tags that are not displayed as unavailable. The user would not be flexible on incorrect/hallucinated tag values or using a different similarly named OSM feature.",
+          "reasoning": "Nitpicks: None that materially affect the result; formatting of the reported fields is fine.\n\nCritical issues: The agent reports three requested tag values (tourism, museum, website) that are not shown in the provided screenshot evidence of the object\u2019s tag table. Screenshot 2 (the British Museum object page) clearly shows the header \u201cRelation: British Museum (177044)\u201d and tag rows for addr:street = Great Russell Street, addr:city = London, and addr:postcode = WC1B 3DG, but it does not display any \u201ctourism\u201d, \u201cmuseum\u201d, or \u201cwebsite\u201d rows in the visible portion. The task explicitly requires reporting values as displayed and marking missing requested tags as unavailable rather than inferring them. Therefore, those three tag values are unsupported by the evidence and constitute likely inference/hallucination relative to what was displayed.\n\nWhat was done correctly: The agent did open the correct object page (Relation 177044) corresponding to the British Museum on Great Russell Street, and it correctly reported object type/ID and the three address tags that are visible.\n\nOverall outcome: Because the task\u2019s core deliverable is an accurate report of the displayed values for all requested tags (or explicit \u2018unavailable\u2019 when not displayed), and the agent instead provided specific values for tags not evidenced as displayed, the user cannot trust the output as a faithful extraction from the object page. This is a substantive failure of the information retrieval requirement, even though the correct object was opened.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent successfully opened the correct OpenStreetMap object page for the British Museum (Relation 177044) and correctly extracted the visible address tags (addr:street, addr:city, addr:postcode). However, it reported specific values for three required tags (tourism, museum, website) that were not displayed in the visible tag table evidence. The task explicitly required reporting only displayed values and marking missing/off-screen tags as unavailable. This mismatch makes the final report untrustworthy and caused overall task failure.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "2.3",
+          "error_category": "Hallucination",
+          "error_type": "Output fabrication",
+          "what_happened": "The agent reported tag values for tourism, museum, and website even though these tags were not displayed in the visible portion of the object\u2019s tag table; per instructions they should have been reported as unavailable.",
+          "agent_reasoning": "The agent intended to open the British Museum object page and extract its tags; it implicitly assumed/filled in common OSM tag values for a museum rather than limiting to what was visibly displayed.",
+          "evidence": "Post-verification notes and Screenshot 2 show the tag table includes rows like addr:street, addr:city, addr:postcode, architect, and building, but no visible rows for key \u201ctourism\u201d, key \u201cmuseum\u201d (only \u201cbuilding = museum\u201d is visible, which is a different key), or key \u201cwebsite\u201d. Despite this, the predicted output states \u201ctourism = museum\u201d, \u201cmuseum = archaeological\u201d, and \u201cwebsite = https://www.britishmuseum.org\u201d.",
+          "impact": "Violates the task constraint to report only displayed tag values and mark missing ones as unavailable, causing the final deliverable to be incorrect and the overall task to fail."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[2.3] Output fabrication: The agent reported tag values for tourism, museum, and website even though these tags were not displayed in the visible portion of the object\u2019s tag table; per instructions they should have been reported as unavailable."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The user\u2019s instructions are complete and precise\u2014search for a well\u2010defined feature (\u201cBritish Museum, London\u201d), open its OSM object page, and report specific tag values. All required parameters (location, tags to report, and behavior for missing tags) are fully specified. The agent\u2019s errors arose from hallucinating off\u2010screen tag values, not from ambiguity in the task description.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task uses publicly accessible OpenStreetMap data via a web interface, involves no illegal or NSFW content, and is technically achievable without special permissions. There is no inherent impossibility or policy violation.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact website (OpenStreetMap), the specific query (British Museum, London), the exact object to select (the British Museum on Great Russell Street), and the list of tags to report. There is no missing or conflicting information and only one valid interpretation.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible using a desktop browser without requiring credentials, illegal actions, or policy violations. It involves only reading publicly available map data, so it is valid.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "duration_sec": 113.091
+}

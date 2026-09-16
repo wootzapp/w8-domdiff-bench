@@ -160,7 +160,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         config=MMRubricAgentConfig(
             o4mini_client=o4mini_client,
             gpt5_client=gpt5_client,
-            max_images_per_criterion=args.max_evidence_per_criterion,
+            max_states_per_criterion=args.max_evidence_per_criterion,
             min_relevance_threshold=args.min_relevance_threshold,
             majority_vote_instances=args.majority_vote_instances,
             dom_model_state_char_budget=args.dom_model_state_char_budget,
@@ -171,7 +171,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     datapoint = create_datapoint(task_data, trajectory)
     agent_input = MMRubricAgent._extract_input_from_datapoint(
-        datapoint, screenshots_dir=str(task_dir), redo_eval=args.redo_eval
+        datapoint, evidence_dir=str(task_dir), redo_eval=args.redo_eval
     )
     raw = asyncio.run(agent._generate_reply(agent_input))
     if not isinstance(raw, dict) or raw.get("error"):
