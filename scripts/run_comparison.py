@@ -35,7 +35,7 @@ from .validate_inputs import ordered_screenshots, validate_pair
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONFIG = ROOT / "config/endpoints/openai/canonical"
+DEFAULT_CONFIG = ROOT / "config"
 
 
 def _arg_value(command: list[str], flag: str, *, default: str | None = None) -> str:

@@ -180,6 +180,6 @@ def test_phase_a_rejects_protected_source_tree_as_staging_root():
                 "--screenshot-task", str(protected / "unused-screenshot"),
                 "--dom-task", str(protected / "unused-dom"),
                 "--staged-root", str(protected),
-                "--eval-config", str(experiment / "config/endpoints/openai/canonical"),
+                "--eval-config", str(experiment / "config"),
             ]
         )

@@ -38,7 +38,7 @@ from .validate_inputs import dataset_only_preflight, validate_pair
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONFIG = ROOT / "config/endpoints/openai/canonical"
+DEFAULT_CONFIG = ROOT / "config"
 
 
 def _usage(client: Any) -> dict[str, int]:
