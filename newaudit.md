@@ -1,16 +1,5 @@
 # Data-New Tasks 1–100: Screenshot vs DOM-Model Results
 
-## Overall result
-
-| Metric | Screenshot | DOM model |
-|---|---:|---:|
-| Tasks audited | 98 | 98 |
-| Rubric criteria audited | 621 | 621 |
-| Aggregate process points | 1157/1723 | 1146/1723 |
-| Scoring tokens | 11,215,516 | 15,083,036 |
-| Asymmetric source-evidence loss | 28/621 (4.5%) | 79/621 (12.7%) |
-
-Across 621 criteria, the cumulative asymmetric source gaps are twenty-eight screenshot losses and seventy-nine DOM losses. The cumulative confirmed verifier misses are eight screenshot misses and eight DOM misses. Tasks 51–60 add thirteen screenshot source gaps, no DOM source gaps, one screenshot-verifier miss, and three DOM-verifier interpretation misses. Tasks 41–50 add three screenshot source gaps, six DOM source gaps, and one DOM-verifier interpretation miss. Tasks 31–40 add two screenshot source gaps and no DOM source gaps; Tasks 91–96 and 98–100 add two screenshot source gaps and thirteen DOM source gaps. For Tasks 81–90 specifically, the second audit confirmed one screenshot source gap, twenty-one DOM source gaps, and two DOM-verifier grounding misses. DOM gaps include omitted linked text, lost formatting/typography, and fixed-prefix truncation of long JSON responses; they are not inferred merely from lower scores.
 
 ## Task 1 — Reddit ranking
 
