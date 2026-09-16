@@ -108,16 +108,16 @@ def test_llm_facing_evidence_prompts_use_dom_model_terminology():
     assert all("no screenshot" not in prompt.lower() for prompt in evidence_prompts)
     assert "dom_model_evidence" in evidence_prompts[0]
 
-def test_dom_facing_evidence_key_is_normalized_only_after_model_output():
+def test_dom_facing_evidence_key_is_validated_without_schema_translation():
     analysis = {
         "dom_model_evidence": "DOM_MODEL_STATE_INDEX: 1; Value: Active",
         "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED",
         "discrepancies": "None",
         "environment_issues_confirmed": False,
     }
-    normalized = DomModelRubricAgent._normalize_dom_model_analysis(analysis)
-    assert normalized["screenshot_evidence"].startswith("DOM_MODEL_STATE_INDEX")
-    assert "dom_model_evidence" not in normalized
+    validated = DomModelRubricAgent._validate_dom_model_analysis(analysis)
+    assert validated["dom_model_evidence"].startswith("DOM_MODEL_STATE_INDEX")
+    assert validated is analysis
 
 def test_policy_is_general_and_audited():
     all_policy_text = "\n".join(
@@ -154,24 +154,24 @@ def test_dom_prompt_overhead_stays_close_to_fixed_microsoft_prompts():
 def test_all_grounding_statuses_validate(status):
     analysis = {
         "criterion_analysis": f"EVIDENCE_STATUS: {status}\nGrounded explanation.",
-        "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1; Value: Active",
+        "dom_model_evidence": "DOM_MODEL_STATE_INDEX: 1; Value: Active",
     }
     assert validate_grounded_analysis(analysis) == status
 
 
 @pytest.mark.parametrize(
-    ("criterion_analysis", "screenshot_evidence"),
+    ("criterion_analysis", "dom_model_evidence"),
     (
         ("No status", "DOM_MODEL_STATE_INDEX: 1"),
         ("EVIDENCE_STATUS: PLAUSIBLE", "DOM_MODEL_STATE_INDEX: 1"),
         ("EVIDENCE_STATUS: SUPPORTED", "No state citation"),
     ),
 )
-def test_malformed_grounding_is_rejected(criterion_analysis, screenshot_evidence):
+def test_malformed_grounding_is_rejected(criterion_analysis, dom_model_evidence):
     with pytest.raises(ValueError):
         validate_grounded_analysis(
             {
                 "criterion_analysis": criterion_analysis,
-                "screenshot_evidence": screenshot_evidence,
+                "dom_model_evidence": dom_model_evidence,
             }
         )

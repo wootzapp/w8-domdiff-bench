@@ -3,8 +3,8 @@
 Scoring Summary — Multimodal Rubric Verification Pipeline (v3_mm)
 ================================================================================
 
-This module implements a multi-step rubric-based scoring pipeline that evaluates
-web navigation agent trajectories using both action logs and screenshot evidence.
+This module implements a multi-step DOM-evidence scoring pipeline that evaluates
+web navigation agent trajectories using both action logs and DOM state evidence.
 It produces two independent signals:
 
   - PROCESS REWARD (Steps 0–7): A fine-grained rubric score reflecting how well
@@ -20,7 +20,7 @@ Regarding failure analysis:
   - TRAJECTORY-INFORMED TASK VERIFICATION (Step 9b): Post-execution task
     verification using full trajectory context.  Same axes as Step 10
     (ambiguity + validity) but informed by action history, rubric scores,
-    screenshot evidence, and outcome verification.
+    DOM state evidence, and outcome verification.
   - TASK VERIFICATION (Step 10): Unified task verification via
     CHECK_VALID_TASK_PROMPT.  Classifies the task along two axes — ambiguity
     (is_ambiguous) and validity (is_invalid) — in a single LLM call using
@@ -41,7 +41,7 @@ Pre-Pipeline: Rubric Generation & Action-Only Scoring
     decompose, merge, or relax criteria.
 
   - Step 0c — Action-Only Scoring: Score the rubric using only the text action
-    history (no screenshots). This serves as the baseline. Key principles:
+    history (no dom_states). This serves as the baseline. Key principles:
       * Controllable vs. Uncontrollable: Distinguish agent mistakes (penalize)
         from environment blockers like CAPTCHAs, login walls, out-of-stock
         (award full credit).
@@ -51,53 +51,53 @@ Pre-Pipeline: Rubric Generation & Action-Only Scoring
       * Conditional Criteria: Evaluate is_condition_met and exclude unmet
         conditions from totals.
 
-Multimodal Pipeline (9 Steps)
+DOM Evidence Pipeline (9 Steps)
 -----------------------------
-  Step 1 — Load Screenshots:
-    Load all trajectory screenshots in chronological order with strict 1-to-1
-    correspondence to actions (every action must have exactly one screenshot).
+  Step 1 — Load DOM States:
+    Load all trajectory DOM states in chronological order. N actions require N+1
+    states: the initial state plus one state after each action.
 
-  Step 2 — Screenshot-Criterion Relevance Scoring:
-    For each screenshot, score its relevance (0–10) to ALL rubric criteria.
-    Runs M parallel LLM calls (one per screenshot). Determines which screenshots
+  Step 2 — DOM state-Criterion Relevance Scoring:
+    For each DOM state, score its relevance (0–10) to ALL rubric criteria.
+    Runs M parallel LLM calls (one per DOM state). Determines which dom_states
     are most informative for evaluating each criterion.
 
-  Step 3 — Group Top-K Screenshots Per Criterion:
-    Pure computation. For each criterion, select the K most relevant screenshots.
-    Optionally filters out clearly irrelevant screenshots: if any screenshot
-    scored >=6 for a criterion, drop screenshots scoring <5 that are >2 points
-    below the weakest high-relevance screenshot.
+  Step 3 — Group Top-K DOM States Per Criterion:
+    Pure computation. For each criterion, select the K most relevant dom_states.
+    Optionally filters out clearly irrelevant dom_states: if any DOM state
+    scored >=6 for a criterion, drop dom_states scoring <5 that are >2 points
+    below the weakest high-relevance DOM state.
 
-  Step 4 — Screenshot Evidence Analysis:
-    Analyze each (criterion, screenshot) pair to extract structured visual
+  Step 4 — DOM state Evidence Analysis:
+    Analyze each (criterion, DOM state) pair to extract structured DOM
     evidence. Two modes available:
-      * Batched (default): One LLM call per unique screenshot, analyzing all
-        criteria relevant to that screenshot simultaneously. More efficient.
-      * Per-pair (legacy): One LLM call per (criterion, screenshot) pair.
-    Extracts: screenshot_evidence (what is literally visible), criterion_analysis
-    (success/partial/failure), discrepancies (agent claims vs. visual reality),
+      * Batched (default): One LLM call per unique DOM state, analyzing all
+        criteria relevant to that DOM state simultaneously. More efficient.
+      * Per-pair (legacy): One LLM call per (criterion, DOM state) pair.
+    Extracts: dom_model_evidence (what is literally visible), criterion_analysis
+    (success/partial/failure), discrepancies (agent claims vs. explicit DOM state),
     environment_issues_confirmed, and condition_verification (for conditionals).
-    CRITICAL: Analysis is grounded in actual screenshot pixels — does NOT assume
+    CRITICAL: Analysis is grounded in explicit serialized DOM-model content — does NOT assume
     or infer from action history. Action history is only for comparison.
 
   Step 4.5 — Conditional Criteria Disambiguation (if >=2 conditional criteria):
     Resolves potential mutual-exclusivity conflicts. Each conditional criterion
-    was verified against its own screenshot subset in Step 4, which can produce
+    was verified against its own DOM state subset in Step 4, which can produce
     contradictions. This step looks at ALL conditional criteria and ALL evidence
     together to determine the correct is_condition_met for each, ensuring
     mutually exclusive conditions have exactly one set to true. When evidence
-    conflicts, latest (highest-numbered) screenshot takes precedence.
+    conflicts, latest (highest-numbered) DOM state takes precedence.
 
   Step 5 — Rubric Reality Check:
     Compares the rubric's original assumptions (written from the task description
-    alone) against what the screenshots actually show. Adds a "reality_notes"
+    alone) against what the dom_states actually show. Adds a "reality_notes"
     field to each criterion providing interpretive context — e.g., "the product
     'Atom' is actually a product line, not a single item." Does NOT change
     max_points or scoring standards, only clarifies factual grounding so
     downstream rescoring is fair.
 
   Step 6 — Multimodal Rescoring:
-    Rescore each criterion using screenshot evidence + action history + reality
+    Rescore each criterion using DOM state evidence + action history + reality
     notes. Produces post_image_earned_points and post_image_justification. Two
     modes:
       * Whole-rubric (default): 1 gpt-5 call rescores all criteria in a single
@@ -106,9 +106,9 @@ Multimodal Pipeline (9 Steps)
       * Per-criterion (legacy): N sequential o4-mini calls, each scoring one
         criterion with previously rescored criteria visible for context.
     Key rescoring principles:
-      * Trust latest screenshot when multiple show the same UI element.
-      * Visual evidence overrides action history claims.
-      * Verify environment blockers are actually visible in screenshots.
+      * Trust latest DOM state when multiple show the same UI element.
+      * DOM evidence overrides action history claims.
+      * Verify environment blockers are actually visible in dom_states.
       * Cascading dependencies: don't re-penalize same upstream deviation.
       * Reality notes override criterion descriptions for conflicting facts.
       * Distinguish contradiction, fabrication, and supported inference from
@@ -156,14 +156,14 @@ Multimodal Pipeline (9 Steps)
     Tool Interaction (7.1–7.4). Each failure is identified by error_code,
     category, and type. The FIRST (earliest step number) failure is computed
     programmatically from the LLM's failure_points list. Uses the scored
-    rubric, screenshot evidence, action history, and outcome verification as
+    rubric, DOM state evidence, action history, and outcome verification as
     context. Produces a diagnostic signal for error analysis — does not affect
     scoring.
 
   Step 9b — Trajectory-Informed Task Verification:
     Same classification axes as Step 10 (Ambiguity and Invalid Task) but
     performed after execution with full trajectory context: action history,
-    predicted output, scored rubric, screenshot evidence, and outcome
+    predicted output, scored rubric, DOM state evidence, and outcome
     verification.  This allows the LLM to use execution evidence to make a
     more informed judgment about whether the *task itself* was ambiguous or
     invalid (as opposed to the agent simply failing).
@@ -175,7 +175,7 @@ Multimodal Pipeline (9 Steps)
 
   Step 10 — Unified Task Verification (CHECK_VALID_TASK_PROMPT):
     Classifies the task along two axes in a single LLM call using only the
-    task description, starting URL, and current date (no screenshots or
+    task description, starting URL, and current date (no dom_states or
     action history):
       - Ambiguity (Category 7): is the task underspecified, ambiguous, or
         unsafe?  Produces {reasoning_is_ambiguous, is_ambiguous,
@@ -223,8 +223,8 @@ Cross-Cutting Design Principles
      transactions requiring personal/payment info unless explicitly authorized.
      Stopping at a critical point is correct behavior, not a failure.
 
-  8. Visual Grounding: Screenshot evidence overrides action history claims.
-     Chronologically ordered screenshots with latest-state-wins semantics.
+  8. DOM Grounding: DOM state evidence overrides action history claims.
+     Chronologically ordered dom_states with latest-state-wins semantics.
      The reality check (Step 5) grounds rubric assumptions in observed reality.
 
      Agent claims are evaluated against visual evidence using five categories:
@@ -232,24 +232,24 @@ Cross-Cutting Design Principles
      ┌─────────────────────────────────────────┬──────────┬─────────────────────────────────────┐
      │ Category                                │ Penalize │ Example                             │
      ├─────────────────────────────────────────┼──────────┼─────────────────────────────────────┤
-     │ Contradiction: screenshots show X,      │   YES    │ Screenshot shows booking calendar   │
+     │ Contradiction: dom_states show X,      │   YES    │ DOM state shows booking calendar   │
      │ agent claims not-X                       │          │ but agent says "no booking system"  │
      ├─────────────────────────────────────────┼──────────┼─────────────────────────────────────┤
      │ Fabrication: agent claims X with zero   │   YES    │ Agent states a price that appears   │
-     │ evidentiary basis                        │          │ nowhere in any screenshot           │
+     │ evidentiary basis                        │          │ nowhere in any DOM state           │
      ├─────────────────────────────────────────┼──────────┼─────────────────────────────────────┤
      │ Omission: agent didn't view everything  │   YES    │ Task: "highest ranked NHL team in   │
-     │ it needed to; screenshots show no        │          │ Western Conference." Agent only     │
+     │ it needed to; dom_states show no        │          │ Western Conference." Agent only     │
      │ evidence of X, but X is commonly known   │          │ checked Central Division, never     │
      │ to exist                                 │          │ viewed Pacific Division.            │
      ├─────────────────────────────────────────┼──────────┼─────────────────────────────────────┤
      │ Supported inference from absence:       │    NO    │ No booking UI visible across all    │
-     │ screenshots show no evidence of X, AND   │          │ pages → agent concludes "no online  │
+     │ dom_states show no evidence of X, AND   │          │ pages → agent concludes "no online  │
      │ X is not commonly known to exist         │          │ booking available"                  │
      ├─────────────────────────────────────────┼──────────┼─────────────────────────────────────┤
      │ Visual confirmation without explicit    │    NO    │ Agent found female cardiologists    │
      │ statement: agent omits justification     │          │ but didn't say "female" — photos    │
-     │ but screenshots visually confirm result  │          │ in screenshots confirm it           │
+     │ but dom_states visually confirm result  │          │ in dom_states confirm it           │
      └─────────────────────────────────────────┴──────────┴─────────────────────────────────────┘
 
 Verifier Comparison — How Each Scoring Component Handles Different Scenarios
@@ -293,7 +293,7 @@ penalize and what they forgive:
   Hallucination /         │              │   PENALIZE   │   PENALIZE   │
   grounding error         │   N/A        │  Visual      │  Wrong info  │
   (claims contradicted    │              │  evidence    │  = failure   │
-  by screenshots)         │              │  overrides   │              │
+  by dom_states)         │              │  overrides   │              │
   └────────────────────────────────────────────────────────────────────┘
 
   * Critical Point Verifier is implemented separately (by Luiz) and is not
@@ -337,24 +337,24 @@ Top-level fields on task_data.json (via shared_data_point setters):
 
 intermediate_mm_rubric_steps sub-fields:
 
-  step1_num_screenshots : int
-      Number of loaded screenshots (verified 1-to-1 with actions).
+  step1_num_dom_states : int
+      Number of loaded dom_states (verified 1-to-1 with actions).
 
   step2_relevance_scores : Dict[str, Dict]
-      Per-screenshot relevance scores (0-10) to all criteria.
-      Format: {"screenshot_0": {criterion_idx: score, ...}, ...}.
+      Per-DOM-state relevance scores (0-10) to all criteria.
+      Format: {"dom_state_0": {criterion_idx: score, ...}, ...}.
 
-  step3_grouped_screenshots : Dict[str, List[int]]
-      Top-K screenshot indices grouped per criterion after filtering.
+  step3_grouped_dom_states : Dict[str, List[int]]
+      Top-K DOM state indices grouped per criterion after filtering.
 
   step4_evidence_by_criterion : Dict[str, List[Dict]]
-      Per-criterion screenshot evidence analysis. Each evidence dict has:
-      screenshot_evidence, criterion_analysis, discrepancies,
+      Per-criterion DOM state evidence analysis. Each evidence dict has:
+      dom_model_evidence, criterion_analysis, discrepancies,
       environment_issues_confirmed, condition_verification.
 
   step4_mode : str
-      "batched" (all criteria per screenshot in 1 call) or "per_pair"
-      (one call per criterion-screenshot pair).
+      "batched" (all criteria per DOM state in 1 call) or "per_pair"
+      (one call per criterion-DOM state pair).
 
   step4_num_llm_calls : int
       Total LLM calls made in Step 4.
@@ -364,7 +364,7 @@ intermediate_mm_rubric_steps sub-fields:
       {criterion_idx: {"is_condition_met": bool, "reasoning": str}}.
 
   step5_reality_check : Dict[str, str]
-      Reality notes per criterion from rubric-vs-screenshot comparison.
+      Reality notes per criterion from rubric-vs-DOM state comparison.
 
   step6_rescoring_summary : Dict
       Rescoring details from the median instance.
@@ -425,7 +425,7 @@ Each criterion in items contains:
   post_image_justification : str — Rescoring justification.
   is_condition_met : bool       — (Conditional criteria only) Whether the
                                   condition applies.
-  applicable_evidence : List[str] — Screenshot IDs with relevant evidence.
+  applicable_evidence : List[str] — DOM state IDs with relevant evidence.
   reality_notes : str           — Factual grounding notes from Step 5.
   penalty : bool                — (Step 7 additions only) Marks unsolicited
                                   side-effect penalties.
@@ -439,8 +439,8 @@ In practice, model_client is typically o4-mini.
   gpt5_client (gpt-5.2):
     - Step 0a — Rubric Generation (_generate_rubric)
     - Step 0b — Rubric Dependency Checking (_check_rubric_dependencies)
-    - Step 2  — Screenshot-Criterion Relevance Scoring
-    - Step 4  — Screenshot Evidence Analysis (batched or per-pair)
+    - Step 2  — DOM state-Criterion Relevance Scoring
+    - Step 4  — DOM state Evidence Analysis (batched or per-pair)
     - Step 5  — Rubric Reality Check
     - Step 6  — Whole-Rubric Rescoring (default, rescore_whole_mm_rubric=True)
     - Step 7  — Unsolicited Side-Effect Detection
@@ -461,7 +461,6 @@ In practice, model_client is typically o4-mini.
 
 import asyncio
 import copy
-import io
 import json
 import logging
 import re
@@ -471,7 +470,6 @@ from pathlib import Path
 from string import Template
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from PIL import Image
 from pydantic import ConfigDict, model_validator
 
 from .agent import AgentConfig, RunContext, VerifierAgent
@@ -516,9 +514,6 @@ from .prompts import (  # noqa: E402
     ACTION_ONLY_RUBRIC_SCORER_PROMPT,
     RUBRIC_GENERATION_PROMPT_TEMPLATE,
     RUBRIC_DEPENDENCY_CHECKING_PROMPT,
-    MM_SCREENSHOT_CRITERION_RELEVANCE_PROMPT,
-    MM_SCREENSHOT_EVIDENCE_ANALYSIS_PROMPT,
-    MM_SCREENSHOT_BATCHED_EVIDENCE_ANALYSIS_PROMPT,
     MM_CRITERION_RESCORING_PROMPT,
     MM_RUBRIC_RESCORING_PROMPT,
     RUBRIC_REALITY_CHECK_PROMPT,
@@ -592,12 +587,12 @@ class MMRubricAgentConfig(AgentConfig):
     gpt5_client_config: Optional[Dict[str, Any]] = None
 
     # Pipeline knobs
-    max_images_per_criterion: int = 5
-    screenshots_dir: Optional[str] = None
+    max_states_per_criterion: int = 5
+    evidence_dir: Optional[str] = None
     rescore_whole_mm_rubric: bool = True
-    batch_screenshot_analysis: bool = True
+    batch_dom_analysis: bool = True
     min_relevance_threshold: int = 0
-    ignore_irrelevant_screenshots: bool = True
+    ignore_irrelevant_dom_states: bool = True
     majority_vote_instances: int = 1
     redo_eval: bool = False
     failure_analysis_only: bool = False
@@ -926,9 +921,9 @@ class MMRubricAgent(VerifierAgent):
     # ------------------------------------------------------------------
     async def initialize(self, run_context: RunContext) -> None:
         await super().initialize(run_context)
-        # Default screenshots_dir to the run output directory
-        if not self.config.screenshots_dir:
-            self.config.screenshots_dir = str(run_context.output_dir)
+        # Default evidence_dir to the run output directory
+        if not self.config.evidence_dir:
+            self.config.evidence_dir = str(run_context.output_dir)
 
     async def run(
         self, run_context: RunContext, input: Any = None
@@ -944,7 +939,7 @@ class MMRubricAgent(VerifierAgent):
         dp = run_context.data_point
         input_dict = self._extract_input_from_datapoint(
             dp,
-            screenshots_dir=self.config.screenshots_dir,
+            evidence_dir=self.config.evidence_dir,
             redo_eval=self.config.redo_eval,
         )
         result = await self._generate_reply(input_dict)
@@ -986,17 +981,14 @@ class MMRubricAgent(VerifierAgent):
     @staticmethod
     def _extract_input_from_datapoint(
         dp: DataPoint,
-        screenshots_dir: str | None,
+        evidence_dir: str | None,
         redo_eval: bool,
     ) -> dict:
         """Convert a DataPoint into the dict expected by _generate_reply."""
         summaries = dp.solver_log.get_step_summaries()
 
-        # Build actions_list with pre-action screenshots (state before each action).
-        actions_list = [
-            {"id": s.index, "screenshot": s.screenshot_path.replace("_post.", "_pre.")}
-            for s in summaries
-        ]
+        # DOM states are loaded separately; action ordinals provide alignment.
+        actions_list = [{"id": s.index} for s in summaries]
 
         # Per-step action name + arg keys for programmatic tool-error detection.
         step_actions = [
@@ -1028,7 +1020,7 @@ class MMRubricAgent(VerifierAgent):
             "predicted_output": (
                 dp.solver_log.outcome.answer if dp.solver_log.outcome else ""
             ),
-            "screenshots_dir": screenshots_dir,
+            "evidence_dir": evidence_dir,
             "actions_list": actions_list,
             "step_actions": step_actions,
             "precomputed_rubric": dp.task.metadata.get("precomputed_rubric"),
@@ -1097,7 +1089,7 @@ class MMRubricAgent(VerifierAgent):
         """Call a :class:`ChatCompletionClient` and return the response text.
 
         ``messages`` is a list of OpenAI-chat-completion dicts (with
-        ``image_url`` blocks for screenshots). The wrappers in
+        ``image_url`` blocks for dom_states). The wrappers in
         :mod:`dom_model.clients.wrapper` accept these dicts directly
         — no message-type conversion needed.
         """
@@ -1287,232 +1279,42 @@ class MMRubricAgent(VerifierAgent):
         return cleared
 
     # ------------------------------------------------------------------
-    # Step 1: Load Screenshots
+    # Steps 1-2: DOM evidence hooks implemented by DomModelRubricAgent
     # ------------------------------------------------------------------
     @staticmethod
-    def _load_screenshots(
-        screenshots_dir: str, actions_list: list
-    ) -> List[Image.Image]:
-        """Load all screenshots in chronological order with strict 1-to-1 verification."""
+    def _load_dom_states(evidence_dir: str, actions_list: list) -> list:
+        raise NotImplementedError("DOM evidence loader must be implemented by the evidence agent")
 
-        def _screenshot_index(filename: str) -> int:
-            # Handles both "screenshot_3.png" and "screenshot_3_pre.png" patterns
-            match = re.search(r"screenshot_(\d+)", Path(filename).stem)
-            return int(match.group(1)) if match else 0
-
-        sorted_actions = sorted(
-            actions_list, key=lambda a: _screenshot_index(str(a.get("screenshot", "")))
-        )
-
-        screenshots: List[Image.Image] = []
-        missing, load_errors, id_mismatches = [], [], []
-
-        for action in sorted_actions:
-            screenshot_file = action.get("screenshot", "")
-            if not screenshot_file:
-                missing.append(f"Action {action.get('id')} has no screenshot field")
-                continue
-
-            sid = _screenshot_index(screenshot_file)
-            try:
-                aid = int(action["id"])
-            except (TypeError, ValueError, KeyError):
-                raise ValueError(
-                    f"Action id '{action.get('id')}' is not an int (file: {screenshot_file})"
-                )
-            if aid != sid:
-                id_mismatches.append(
-                    f"Action id {aid} does not match screenshot index {sid} (file: {screenshot_file})"
-                )
-
-            screenshot_path = Path(screenshots_dir) / screenshot_file
-            if not screenshot_path.exists():
-                missing.append(
-                    f"Action {action.get('id')}: file does not exist at {screenshot_path}"
-                )
-                continue
-            try:
-                img = Image.open(screenshot_path).convert("RGB").copy()
-                screenshots.append(img)
-            except Exception as e:
-                load_errors.append(f"Action {action.get('id')}: failed to load - {e}")
-
-        if id_mismatches:
-            raise ValueError(
-                f"Screenshot-action ordering mismatch ({len(id_mismatches)}):\n"
-                + "\n".join(f"  - {m}" for m in id_mismatches)
-            )
-
-        sorted_indices = sorted(
-            _screenshot_index(a.get("screenshot", ""))
-            for a in sorted_actions
-            if a.get("screenshot")
-        )
-        if sorted_indices:
-            expected = list(
-                range(sorted_indices[0], sorted_indices[0] + len(sorted_indices))
-            )
-            if sorted_indices != expected:
-                raise ValueError(
-                    f"Screenshot indices not consecutive. Got {sorted_indices}, expected {expected}"
-                )
-
-        if missing or load_errors:
-            error_msg = f"Failed to load ALL screenshots. Expected {len(sorted_actions)}, got {len(screenshots)}.\n"
-            if missing:
-                error_msg += (
-                    "Missing:\n" + "\n".join(f"  - {m}" for m in missing[:10]) + "\n"
-                )
-            if load_errors:
-                error_msg += (
-                    "Errors:\n" + "\n".join(f"  - {m}" for m in load_errors[:10]) + "\n"
-                )
-            raise RuntimeError(error_msg)
-
-        if len(screenshots) != len(sorted_actions):
-            raise RuntimeError(
-                f"Screenshot count mismatch: expected {len(sorted_actions)}, loaded {len(screenshots)}"
-            )
-        return screenshots
-
-    # ------------------------------------------------------------------
-    # Step 2: Screenshot-Criterion Relevance Scoring
-    # ------------------------------------------------------------------
-    async def _score_screenshot_criterion_relevance(
+    async def _score_dom_state_criterion_relevance(
         self,
-        screenshots: List[Image.Image],
+        dom_states: list,
         rubric: dict,
         task: str,
         init_url_context: str,
     ) -> Dict[int, Dict]:
-        rubric_criteria_text = ""
-        for idx, criterion in enumerate(rubric["items"]):
-            rubric_criteria_text += f"\n{idx}. **{criterion['criterion']}**\n"
-            rubric_criteria_text += f"   Description: {criterion['description']}\n"
-
-        num_criteria = len(rubric["items"])
-
-        async def score_single_screenshot(screenshot_idx: int, screenshot: Image.Image):
-            prompt = Template(MM_SCREENSHOT_CRITERION_RELEVANCE_PROMPT).substitute(
-                task_definition=task,
-                init_url_context=init_url_context,
-                rubric_criteria=rubric_criteria_text,
-            )
-
-            img_b64 = self._encode_image(screenshot)
-            messages = self.DEFAULT_SYSTEM_MESSAGES + [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{img_b64}",
-                                "detail": "high",
-                            },
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                }
-            ]
-
-            max_iters = self.config.max_iters
-            last_error = None
-            while max_iters > 0:
-                try:
-                    response_text = await self._call_llm(
-                        messages, self._gpt5_client, json_output=True
-                    )
-                    scores_dict = json.loads(response_text)
-                    result = {}
-                    missing_keys, invalid_values = [], []
-
-                    for criterion_idx in range(num_criteria):
-                        key_variants = [
-                            f"criterion_{criterion_idx}",
-                            str(criterion_idx),
-                            criterion_idx,
-                        ]
-                        found = False
-                        for key in key_variants:
-                            if key in scores_dict:
-                                try:
-                                    score = int(scores_dict[key])
-                                    if 0 <= score <= 10:
-                                        result[criterion_idx] = score
-                                        found = True
-                                        break
-                                    else:
-                                        invalid_values.append(
-                                            f"criterion_{criterion_idx}: score {score} not in range [0, 10]"
-                                        )
-                                except (ValueError, TypeError):
-                                    invalid_values.append(
-                                        f"criterion_{criterion_idx}: value '{scores_dict[key]}' is not an integer"
-                                    )
-                        if not found:
-                            missing_keys.append(f"criterion_{criterion_idx}")
-
-                    if missing_keys or invalid_values:
-                        error_msg = f"Incomplete or invalid scores for screenshot {screenshot_idx}. "
-                        if missing_keys:
-                            error_msg += (
-                                f"Missing scores for: {', '.join(missing_keys)}. "
-                            )
-                        if invalid_values:
-                            error_msg += (
-                                f"Invalid values: {'; '.join(invalid_values)}. "
-                            )
-                        error_msg += f"Expected scores for ALL {num_criteria} criteria (criterion_0 through criterion_{num_criteria - 1})."
-                        raise ValueError(error_msg)
-
-                    result["screenshot_idx"] = screenshot_idx
-                    return result
-                except Exception as e:
-                    last_error = str(e)
-                    logger.error(
-                        f"Error scoring screenshot {screenshot_idx} (attempt {self.config.max_iters + 1 - max_iters}): {e}"
-                    )
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": f"Error: {e}. Please provide scores for ALL {num_criteria} criteria using the exact format specified.",
-                        }
-                    )
-                    max_iters -= 1
-
-            logger.warning(
-                f"Failed to score screenshot {screenshot_idx} after {self.config.max_iters} attempts. Last error: {last_error}"
-            )
-            fallback = {i: 0 for i in range(num_criteria)}
-            fallback["screenshot_idx"] = screenshot_idx
-            return fallback
-
-        tasks = [score_single_screenshot(idx, s) for idx, s in enumerate(screenshots)]
-        results = await asyncio.gather(*tasks)
-        return {r["screenshot_idx"]: r for r in results}
+        raise NotImplementedError("DOM relevance scoring must be implemented by the evidence agent")
 
     # ------------------------------------------------------------------
-    # Step 3: Group Top-K Screenshots Per Criterion
+    # Step 3: Group Top-K DOM states per criterion
     # ------------------------------------------------------------------
-    def _group_screenshots_by_criterion(
+    def _group_dom_states_by_criterion(
         self, relevance_scores: Dict[int, Dict], num_criteria: int
     ) -> Dict[int, List[int]]:
         grouped = {c: [] for c in range(num_criteria)}
-        for screenshot_idx, scores_dict in relevance_scores.items():
+        for dom_model_state_idx, scores_dict in relevance_scores.items():
             for key, score in scores_dict.items():
-                if key == "screenshot_idx":
+                if key == "dom_model_state_idx":
                     continue
-                grouped[key].append((screenshot_idx, score))
+                grouped[key].append((dom_model_state_idx, score))
 
-        max_k = self.config.max_images_per_criterion
+        max_k = self.config.max_states_per_criterion
         for c in grouped:
             grouped[c].sort(key=lambda x: (x[1], x[0]), reverse=True)
             grouped[c] = [s for s, _ in grouped[c][:max_k]]
         return grouped
 
     @staticmethod
-    def _invert_grouped_screenshots(
+    def _invert_grouped_dom_states(
         grouped: Dict[int, List[int]],
     ) -> Dict[int, List[int]]:
         inverted: Dict[int, List[int]] = {}
@@ -1523,7 +1325,7 @@ class MMRubricAgent(VerifierAgent):
             inverted[s_idx].sort()
         return inverted
 
-    def _filter_irrelevant_screenshots(
+    def _filter_irrelevant_dom_states(
         self, grouped: Dict[int, List[int]], relevance_scores: Dict[int, Dict]
     ) -> Dict[int, List[int]]:
         filtered: Dict[int, List[int]] = {}
@@ -1544,128 +1346,31 @@ class MMRubricAgent(VerifierAgent):
             filtered[c_idx] = kept
         if total_removed > 0:
             logger.info(
-                f"[MM Pipeline] Filtered {total_removed} irrelevant (criterion, screenshot) "
+                f"[MM Pipeline] Filtered {total_removed} irrelevant (criterion, DOM state) "
                 f"pairs before step 4"
             )
         return filtered
 
     # ------------------------------------------------------------------
-    # Step 4: Screenshot Evidence Analysis
+    # Step 4: DOM evidence-analysis hooks implemented by DomModelRubricAgent
     # ------------------------------------------------------------------
-    async def _analyze_screenshot_evidence(
+    async def _analyze_dom_evidence(
         self,
-        screenshots: List[Image.Image],
+        dom_states: list,
         rubric: dict,
-        grouped_screenshots: Dict[int, List[int]],
+        grouped_dom_states: Dict[int, List[int]],
         task: str,
         init_url_context: str,
         action_history: str,
         predicted_output: str,
     ) -> Dict[int, List[Dict]]:
-        async def analyze_single_pair(criterion_idx: int, screenshot_idx: int):
-            criterion = rubric["items"][criterion_idx]
-            screenshot = screenshots[screenshot_idx]
+        raise NotImplementedError("DOM evidence analysis must be implemented by the evidence agent")
 
-            criterion_info = (
-                f"**Criterion {criterion_idx}:** {criterion['criterion']}\n"
-            )
-            criterion_info += f"**Description:** {criterion['description']}\n"
-            criterion_info += f"**Max Points:** {criterion['max_points']}"
-
-            conditional_check, conditional_output = "", ""
-            is_conditional = "condition" in criterion
-            if is_conditional:
-                conditional_check = (
-                    f'\n\n5. **condition_verification**: This is a CONDITIONAL criterion that only applies if: "{criterion["condition"]}"\n'
-                    "   Based on what you see in the screenshot, verify whether this condition is actually met.\n"
-                    "   - Output true if the condition IS met (criterion should be evaluated)\n"
-                    "   - Output false if the condition is NOT met (criterion should be skipped)"
-                )
-                conditional_output = ',\n  "condition_verification": true/false'
-
-            prompt = Template(MM_SCREENSHOT_EVIDENCE_ANALYSIS_PROMPT).substitute(
-                task_definition=task,
-                init_url_context=init_url_context,
-                action_history=action_history,
-                agent_predicted_output=predicted_output,
-                criterion_info=criterion_info,
-                conditional_check=conditional_check,
-                conditional_output=conditional_output,
-            )
-
-            img_b64 = self._encode_image(screenshot)
-            messages = self.DEFAULT_SYSTEM_MESSAGES + [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{img_b64}",
-                                "detail": "high",
-                            },
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                }
-            ]
-
-            max_iters = self.config.max_iters
-            last_error = None
-            while max_iters > 0:
-                try:
-                    response_text = await self._call_llm(
-                        messages, self._gpt5_client, json_output=True
-                    )
-                    analysis = json.loads(response_text)
-                    self._validate_evidence_analysis(analysis, is_conditional)
-                    analysis["screenshot_idx"] = screenshot_idx
-                    return (criterion_idx, analysis)
-                except Exception as e:
-                    last_error = str(e)
-                    logger.error(
-                        f"Error analyzing criterion {criterion_idx}, screenshot {screenshot_idx} (attempt {self.config.max_iters + 1 - max_iters}): {e}"
-                    )
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": f"Error: {e}. Please ensure your output includes all required fields in the correct format.",
-                        }
-                    )
-                    max_iters -= 1
-
-            logger.warning(
-                f"Failed to analyze criterion {criterion_idx}, screenshot {screenshot_idx} after {self.config.max_iters} attempts. Last error: {last_error}"
-            )
-            return (
-                criterion_idx,
-                {
-                    "screenshot_evidence": f"Error: Analysis failed after {self.config.max_iters} attempts",
-                    "criterion_analysis": "Unable to analyze due to repeated errors",
-                    "discrepancies": "N/A",
-                    "environment_issues_confirmed": False,
-                    "screenshot_idx": screenshot_idx,
-                },
-            )
-
-        all_tasks = []
-        for c_idx, s_indices in grouped_screenshots.items():
-            for s_idx in s_indices:
-                all_tasks.append(analyze_single_pair(c_idx, s_idx))
-        results = await asyncio.gather(*all_tasks)
-
-        evidence_by_criterion: Dict[int, List[Dict]] = {
-            i: [] for i in range(len(rubric["items"]))
-        }
-        for c_idx, analysis in results:
-            evidence_by_criterion[c_idx].append(analysis)
-        return evidence_by_criterion
-
-    async def _analyze_screenshot_evidence_batched(
+    async def _analyze_dom_evidence_batched(
         self,
-        screenshots: List[Image.Image],
+        dom_states: list,
         rubric: dict,
-        grouped_screenshots: Dict[int, List[int]],
+        grouped_dom_states: Dict[int, List[int]],
         task: str,
         init_url_context: str,
         action_history: str,
@@ -1673,234 +1378,7 @@ class MMRubricAgent(VerifierAgent):
         relevance_scores: Dict[int, Dict] | None = None,
         min_relevance_threshold: int = 0,
     ) -> Dict[int, List[Dict]]:
-        screenshots_to_criteria = self._invert_grouped_screenshots(grouped_screenshots)
-
-        if min_relevance_threshold > 0 and relevance_scores is not None:
-            for s_idx in list(screenshots_to_criteria.keys()):
-                scores = relevance_scores.get(s_idx, {})
-                filtered = [
-                    c
-                    for c in screenshots_to_criteria[s_idx]
-                    if scores.get(c, 0) > min_relevance_threshold
-                ]
-                if filtered:
-                    screenshots_to_criteria[s_idx] = filtered
-                else:
-                    del screenshots_to_criteria[s_idx]
-
-        async def analyze_single_pair_for_batch(
-            criterion_idx: int, screenshot_idx: int
-        ):
-            criterion = rubric["items"][criterion_idx]
-            screenshot = screenshots[screenshot_idx]
-
-            criterion_info = (
-                f"**Criterion {criterion_idx}:** {criterion['criterion']}\n"
-            )
-            criterion_info += f"**Description:** {criterion['description']}\n"
-            criterion_info += f"**Max Points:** {criterion['max_points']}"
-
-            conditional_check, conditional_output = "", ""
-            is_conditional = "condition" in criterion
-            if is_conditional:
-                conditional_check = (
-                    f'\n\n5. **condition_verification**: This is a CONDITIONAL criterion that only applies if: "{criterion["condition"]}"\n'
-                    "   Based on what you see in the screenshot, verify whether this condition is actually met.\n"
-                    "   - Output true if the condition IS met (criterion should be evaluated)\n"
-                    "   - Output false if the condition is NOT met (criterion should be skipped)"
-                )
-                conditional_output = ',\n  "condition_verification": true/false'
-
-            prompt = Template(MM_SCREENSHOT_EVIDENCE_ANALYSIS_PROMPT).substitute(
-                task_definition=task,
-                init_url_context=init_url_context,
-                action_history=action_history,
-                agent_predicted_output=predicted_output,
-                criterion_info=criterion_info,
-                conditional_check=conditional_check,
-                conditional_output=conditional_output,
-            )
-
-            img_b64 = self._encode_image(screenshot)
-            messages = self.DEFAULT_SYSTEM_MESSAGES + [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{img_b64}",
-                                "detail": "high",
-                            },
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                }
-            ]
-
-            max_iters = self.config.max_iters
-            last_error = None
-            while max_iters > 0:
-                try:
-                    response_text = await self._call_llm(
-                        messages, self._gpt5_client, json_output=True
-                    )
-                    analysis = json.loads(response_text)
-                    self._validate_evidence_analysis(analysis, is_conditional)
-                    analysis["screenshot_idx"] = screenshot_idx
-                    return [(criterion_idx, analysis)]
-                except Exception as e:
-                    last_error = str(e)
-                    logger.error(
-                        f"Error analyzing criterion {criterion_idx}, screenshot {screenshot_idx} (attempt {self.config.max_iters + 1 - max_iters}): {e}"
-                    )
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": f"Error: {e}. Please ensure your output includes all required fields in the correct format.",
-                        }
-                    )
-                    max_iters -= 1
-
-            logger.warning(
-                f"Failed to analyze criterion {criterion_idx}, screenshot {screenshot_idx} after {self.config.max_iters} attempts. Last error: {last_error}"
-            )
-            return [
-                (
-                    criterion_idx,
-                    {
-                        "screenshot_evidence": f"Error: Analysis failed after {self.config.max_iters} attempts",
-                        "criterion_analysis": "Unable to analyze due to repeated errors",
-                        "discrepancies": "N/A",
-                        "environment_issues_confirmed": False,
-                        "screenshot_idx": screenshot_idx,
-                    },
-                )
-            ]
-
-        async def analyze_multi_criteria_screenshot(
-            screenshot_idx: int, criterion_indices: List[int]
-        ):
-            screenshot = screenshots[screenshot_idx]
-            criteria_info_block = ""
-            conditional_criteria = set()
-            for c_idx in criterion_indices:
-                criterion = rubric["items"][c_idx]
-                criteria_info_block += (
-                    f"\n**Criterion {c_idx}:** {criterion['criterion']}\n"
-                )
-                criteria_info_block += f"**Description:** {criterion['description']}\n"
-                criteria_info_block += f"**Max Points:** {criterion['max_points']}\n"
-                if "condition" in criterion:
-                    conditional_criteria.add(c_idx)
-                    criteria_info_block += f'**CONDITIONAL:** This criterion only applies if: "{criterion["condition"]}". You MUST include "condition_verification": true/false in the output for this criterion.\n'
-
-            prompt = Template(
-                MM_SCREENSHOT_BATCHED_EVIDENCE_ANALYSIS_PROMPT
-            ).substitute(
-                task_definition=task,
-                init_url_context=init_url_context,
-                action_history=action_history,
-                agent_predicted_output=predicted_output,
-                criteria_info_block=criteria_info_block,
-            )
-
-            img_b64 = self._encode_image(screenshot)
-            messages = self.DEFAULT_SYSTEM_MESSAGES + [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{img_b64}",
-                                "detail": "high",
-                            },
-                        },
-                        {"type": "text", "text": prompt},
-                    ],
-                }
-            ]
-
-            max_iters = self.config.max_iters
-            last_error = None
-            while max_iters > 0:
-                try:
-                    response_text = await self._call_llm(
-                        messages, self._gpt5_client, json_output=True
-                    )
-                    analyses = json.loads(response_text)
-                    analyses = self._normalize_batched_analysis_response(
-                        analyses, criterion_indices
-                    )
-                    if analyses is None or len(analyses) != len(criterion_indices):
-                        raise ValueError(
-                            f"Expected {len(criterion_indices)} entries, got {len(analyses) if analyses else 'None'}"
-                        )
-
-                    for i, (analysis, expected_c_idx) in enumerate(
-                        zip(analyses, criterion_indices)
-                    ):
-                        if not isinstance(analysis, dict):
-                            raise ValueError(f"Entry {i} is not a dict")
-                        returned_idx = analysis.get("criterion_idx")
-                        if returned_idx is None:
-                            analysis["criterion_idx"] = expected_c_idx
-                        elif returned_idx != expected_c_idx:
-                            raise ValueError(
-                                f"Entry {i}: expected criterion_idx={expected_c_idx}, got {returned_idx}"
-                            )
-                        is_conditional = expected_c_idx in conditional_criteria
-                        self._validate_evidence_analysis(analysis, is_conditional)
-
-                    results = []
-                    for analysis, expected_c_idx in zip(analyses, criterion_indices):
-                        analysis.pop("criterion_idx", None)
-                        analysis["screenshot_idx"] = screenshot_idx
-                        results.append((expected_c_idx, analysis))
-                    return results
-                except Exception as e:
-                    last_error = str(e)
-                    logger.error(
-                        f"Error analyzing screenshot {screenshot_idx} "
-                        f"(criteria {criterion_indices}, attempt {self.config.max_iters + 1 - max_iters}): {e}"
-                    )
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": f'Error: {e}. Please output a JSON object like {{"analyses": [...]}} where the "analyses" list has exactly {len(criterion_indices)} entries, one per criterion. Each entry must have screenshot_evidence, criterion_analysis, discrepancies, environment_issues_confirmed, and criterion_idx. You ARE given a screenshot image — analyze the attached image.',
-                        }
-                    )
-                    max_iters -= 1
-
-            # Batched call failed — fall back to individual per-pair calls
-            logger.warning(
-                f"Batched analysis failed for screenshot {screenshot_idx} "
-                f"(criteria {criterion_indices}) after {self.config.max_iters} attempts. "
-                f"Falling back to per-pair calls. Last error: {last_error}"
-            )
-            fallback_tasks = [
-                analyze_single_pair_for_batch(c, screenshot_idx)
-                for c in criterion_indices
-            ]
-            fallback_results = await asyncio.gather(*fallback_tasks)
-            return [item for sublist in fallback_results for item in sublist]
-
-        all_tasks = []
-        for s_idx, c_indices in screenshots_to_criteria.items():
-            if len(c_indices) == 1:
-                all_tasks.append(analyze_single_pair_for_batch(c_indices[0], s_idx))
-            else:
-                all_tasks.append(analyze_multi_criteria_screenshot(s_idx, c_indices))
-        all_results = await asyncio.gather(*all_tasks)
-
-        evidence_by_criterion: Dict[int, List[Dict]] = {
-            i: [] for i in range(len(rubric["items"]))
-        }
-        for result_list in all_results:
-            for c_idx, analysis in result_list:
-                evidence_by_criterion[c_idx].append(analysis)
-        return evidence_by_criterion
+        raise NotImplementedError("Batched DOM evidence analysis must be implemented by the evidence agent")
 
     # ------------------------------------------------------------------
     # Step 4 validation helper
@@ -1908,7 +1386,7 @@ class MMRubricAgent(VerifierAgent):
     @staticmethod
     def _validate_evidence_analysis(analysis: dict, is_conditional: bool) -> None:
         required = [
-            "screenshot_evidence",
+            "dom_model_evidence",
             "criterion_analysis",
             "discrepancies",
             "environment_issues_confirmed",
@@ -1944,7 +1422,7 @@ class MMRubricAgent(VerifierAgent):
     ) -> list | None:
         expected = len(criterion_indices)
         analysis_fields = {
-            "screenshot_evidence",
+            "dom_model_evidence",
             "criterion_analysis",
             "discrepancies",
             "environment_issues_confirmed",
@@ -2028,14 +1506,14 @@ class MMRubricAgent(VerifierAgent):
 
             for analysis in sorted(
                 evidence_by_criterion.get(c_idx, []),
-                key=lambda x: x.get("screenshot_idx", 0),
+                key=lambda x: x.get("dom_model_state_idx", 0),
             ):
-                sn = analysis.get("screenshot_idx", 0)
+                sn = analysis.get("dom_model_state_idx", 0)
                 conditional_criteria_with_evidence += (
                     f"\n### DOM-model state {sn} evidence:\n"
                 )
                 conditional_criteria_with_evidence += (
-                    f"- Evidence: {analysis.get('screenshot_evidence', 'N/A')}\n"
+                    f"- Evidence: {analysis.get('dom_model_evidence', 'N/A')}\n"
                 )
                 conditional_criteria_with_evidence += (
                     f"- Analysis: {analysis.get('criterion_analysis', 'N/A')}\n"
@@ -2044,7 +1522,7 @@ class MMRubricAgent(VerifierAgent):
                     f"- Discrepancies: {analysis.get('discrepancies', 'N/A')}\n"
                 )
                 if "condition_verification" in analysis:
-                    conditional_criteria_with_evidence += f"- Per-screenshot condition verification: {analysis['condition_verification']}\n"
+                    conditional_criteria_with_evidence += f"- Per-DOM-state condition verification: {analysis['condition_verification']}\n"
 
         prompt = Template(CONDITIONAL_CRITERIA_DISAMBIGUATION_PROMPT).substitute(
             task_definition=task,
@@ -2156,12 +1634,12 @@ class MMRubricAgent(VerifierAgent):
             criteria_with_evidence += f"**Max Points:** {criterion['max_points']}\n"
             for analysis in sorted(
                 evidence_by_criterion.get(c_idx, []),
-                key=lambda x: x.get("screenshot_idx", 0),
+                key=lambda x: x.get("dom_model_state_idx", 0),
             ):
-                sn = analysis.get("screenshot_idx", 0)
+                sn = analysis.get("dom_model_state_idx", 0)
                 criteria_with_evidence += f"\n### DOM-model state {sn} evidence:\n"
                 criteria_with_evidence += (
-                    f"- Evidence: {analysis.get('screenshot_evidence', 'N/A')}\n"
+                    f"- Evidence: {analysis.get('dom_model_evidence', 'N/A')}\n"
                 )
                 criteria_with_evidence += (
                     f"- Analysis: {analysis.get('criterion_analysis', 'N/A')}\n"
@@ -2244,7 +1722,7 @@ class MMRubricAgent(VerifierAgent):
     # ------------------------------------------------------------------
     # Step 6a: Per-Criterion Rescoring (legacy, sequential)
     # ------------------------------------------------------------------
-    async def _rescore_criterion_with_screenshots(
+    async def _rescore_criterion_with_dom_evidence(
         self,
         rubric: dict,
         evidence_by_criterion: Dict[int, List[Dict]],
@@ -2252,7 +1730,7 @@ class MMRubricAgent(VerifierAgent):
         init_url_context: str,
         action_history: str,
         predicted_output: str,
-        total_screenshots: int = 0,
+        total_dom_states: int = 0,
     ) -> dict:
         for c_idx in range(len(rubric["items"])):
             criterion = rubric["items"][c_idx]
@@ -2270,16 +1748,16 @@ class MMRubricAgent(VerifierAgent):
 
             analyses = sorted(
                 evidence_by_criterion.get(c_idx, []),
-                key=lambda x: x.get("screenshot_idx", 0),
+                key=lambda x: x.get("dom_model_state_idx", 0),
             )
             concatenated = ""
             for i_a, analysis in enumerate(analyses):
-                sn = analysis.get("screenshot_idx", i_a)
+                sn = analysis.get("dom_model_state_idx", i_a)
                 concatenated += (
                     f"\n### DOM-model state {sn} analysis:\n"
                 )
                 concatenated += (
-                    f"**Evidence:** {analysis.get('screenshot_evidence', 'N/A')}\n"
+                    f"**Evidence:** {analysis.get('dom_model_evidence', 'N/A')}\n"
                 )
                 concatenated += (
                     f"**Analysis:** {analysis.get('criterion_analysis', 'N/A')}\n"
@@ -2299,7 +1777,7 @@ class MMRubricAgent(VerifierAgent):
                 agent_predicted_output=predicted_output,
                 full_rubric_context=full_rubric_context,
                 max_points=criterion["max_points"],
-                concatenated_screenshot_analyses=concatenated,
+                concatenated_dom_model_analyses=concatenated,
             )
             messages = self.DEFAULT_SYSTEM_MESSAGES + [
                 {"role": "user", "content": prompt}
@@ -2349,7 +1827,7 @@ class MMRubricAgent(VerifierAgent):
     # ------------------------------------------------------------------
     # Step 6b: Whole-Rubric Rescoring (default, 1 gpt-5 call)
     # ------------------------------------------------------------------
-    async def _rescore_rubric_with_screenshots(
+    async def _rescore_rubric_with_dom_evidence(
         self,
         rubric: dict,
         evidence_by_criterion: Dict[int, List[Dict]],
@@ -2357,7 +1835,7 @@ class MMRubricAgent(VerifierAgent):
         init_url_context: str,
         action_history: str,
         predicted_output: str,
-        total_screenshots: int = 0,
+        total_dom_states: int = 0,
     ) -> dict:
         num_criteria = len(rubric["items"])
         skipped = set()
@@ -2375,8 +1853,8 @@ class MMRubricAgent(VerifierAgent):
                 skipped.add(c_idx)
 
         full_rubric = self._build_full_rubric_with_baselines(rubric)
-        all_evidence = self._build_all_screenshot_evidence_text(
-            rubric, evidence_by_criterion, total_screenshots
+        all_evidence = self._build_all_dom_evidence_text(
+            rubric, evidence_by_criterion, total_dom_states
         )
 
         prompt = Template(MM_RUBRIC_RESCORING_PROMPT).substitute(
@@ -2385,7 +1863,7 @@ class MMRubricAgent(VerifierAgent):
             action_history=action_history,
             agent_predicted_output=predicted_output,
             full_rubric_with_baselines=full_rubric,
-            all_screenshot_evidence=all_evidence,
+            all_dom_model_evidence=all_evidence,
             num_criteria=num_criteria,
             num_criteria_minus_1=num_criteria - 1,
         )
@@ -2555,7 +2033,7 @@ class MMRubricAgent(VerifierAgent):
             all_evidence_text += f"\n\n## Criterion {c_idx}: {criterion['criterion']}\n"
             for analysis in analyses:
                 all_evidence_text += (
-                    f"- **Evidence:** {analysis.get('screenshot_evidence', 'N/A')}\n"
+                    f"- **Evidence:** {analysis.get('dom_model_evidence', 'N/A')}\n"
                 )
                 all_evidence_text += (
                     f"- **Analysis:** {analysis.get('criterion_analysis', 'N/A')}\n"
@@ -2692,11 +2170,11 @@ class MMRubricAgent(VerifierAgent):
         init_url_context: str,
         action_history: str,
         predicted_output: str,
-        total_screenshots: int = 0,
+        total_dom_states: int = 0,
     ) -> dict:
         rubric_summary = self._build_scored_rubric_summary(rubric)
-        evidence_summary = self._build_all_screenshot_evidence_text(
-            rubric, evidence_by_criterion, total_screenshots
+        evidence_summary = self._build_all_dom_evidence_text(
+            rubric, evidence_by_criterion, total_dom_states
         )
 
         prompt = Template(OUTCOME_VERIFICATION_PROMPT).substitute(
@@ -2772,7 +2250,7 @@ class MMRubricAgent(VerifierAgent):
         action_history: str,
         predicted_output: str,
         outcome_result: dict,
-        total_screenshots: int = 0,
+        total_dom_states: int = 0,
         action_definitions: Optional[Dict[str, Set[str]]] = None,
         step_actions: Optional[List[Dict[str, Any]]] = None,
     ) -> dict:
@@ -2799,8 +2277,8 @@ class MMRubricAgent(VerifierAgent):
             action_definitions = self.config.action_definitions
 
         rubric_summary = self._build_scored_rubric_summary(rubric)
-        evidence_summary = self._build_all_screenshot_evidence_text(
-            rubric, evidence_by_criterion, total_screenshots
+        evidence_summary = self._build_all_dom_evidence_text(
+            rubric, evidence_by_criterion, total_dom_states
         )
 
         outcome_success = outcome_result.get("output_success")
@@ -3088,14 +2566,14 @@ class MMRubricAgent(VerifierAgent):
         action_history: str,
         predicted_output: str,
         outcome_result: dict,
-        total_screenshots: int = 0,
+        total_dom_states: int = 0,
         apps: str = "N/A",
     ) -> dict:
         """Step 9b: Trajectory-informed task verification.
 
         Uses the same ambiguity / validity axes as Step 10
         (``CHECK_VALID_TASK_PROMPT``), but enriched with the full trajectory
-        context (action history, scored rubric, screenshot evidence, and
+        context (action history, scored rubric, DOM state evidence, and
         outcome verification).  This allows the LLM to use execution evidence
         to make a more informed judgment about whether the *task itself* was
         ambiguous or invalid.
@@ -3109,8 +2587,8 @@ class MMRubricAgent(VerifierAgent):
         from datetime import datetime, timezone
 
         rubric_summary = self._build_scored_rubric_summary(rubric)
-        evidence_summary = self._build_all_screenshot_evidence_text(
-            rubric, evidence_by_criterion, total_screenshots
+        evidence_summary = self._build_all_dom_evidence_text(
+            rubric, evidence_by_criterion, total_dom_states
         )
 
         outcome_success = outcome_result.get("output_success")
@@ -3252,7 +2730,7 @@ class MMRubricAgent(VerifierAgent):
         self,
         rubric_dict: dict,
         evidence_by_criterion: Dict,
-        screenshots: List,
+        dom_states: List,
         task: str,
         init_url_context: str,
         action_history: str,
@@ -3263,24 +2741,24 @@ class MMRubricAgent(VerifierAgent):
         instance_steps = {}
 
         if self.config.rescore_whole_mm_rubric:
-            rubric_copy = await self._rescore_rubric_with_screenshots(
+            rubric_copy = await self._rescore_rubric_with_dom_evidence(
                 rubric_copy,
                 evidence_by_criterion,
                 task,
                 init_url_context,
                 action_history,
                 predicted_output,
-                total_screenshots=len(screenshots),
+                total_dom_states=len(dom_states),
             )
         else:
-            rubric_copy = await self._rescore_criterion_with_screenshots(
+            rubric_copy = await self._rescore_criterion_with_dom_evidence(
                 rubric_copy,
                 evidence_by_criterion,
                 task,
                 init_url_context,
                 action_history,
                 predicted_output,
-                total_screenshots=len(screenshots),
+                total_dom_states=len(dom_states),
             )
 
         instance_steps["step6_rescoring_summary"] = [
@@ -3436,10 +2914,10 @@ class MMRubricAgent(VerifierAgent):
         return "\n".join(lines)
 
     @staticmethod
-    def _build_all_screenshot_evidence_text(
+    def _build_all_dom_evidence_text(
         rubric: dict,
         evidence_by_criterion: Dict[int, List[Dict]],
-        total_screenshots: int,
+        total_dom_states: int,
     ) -> str:
         lines = []
         for c_idx, criterion in enumerate(rubric["items"]):
@@ -3451,13 +2929,13 @@ class MMRubricAgent(VerifierAgent):
                 lines.append("No DOM-model evidence available for this criterion.")
                 lines.append("")
                 continue
-            for analysis in sorted(analyses, key=lambda x: x.get("screenshot_idx", 0)):
-                sn = analysis.get("screenshot_idx", 0)
+            for analysis in sorted(analyses, key=lambda x: x.get("dom_model_state_idx", 0)):
+                sn = analysis.get("dom_model_state_idx", 0)
                 lines.append(
                     f"### DOM-model state {sn} analysis:"
                 )
                 lines.append(
-                    f"**Evidence:** {analysis.get('screenshot_evidence', 'N/A')}"
+                    f"**Evidence:** {analysis.get('dom_model_evidence', 'N/A')}"
                 )
                 lines.append(
                     f"**Analysis:** {analysis.get('criterion_analysis', 'N/A')}"
@@ -3506,19 +2984,6 @@ class MMRubricAgent(VerifierAgent):
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
-    # Image encoding helper
-    # ------------------------------------------------------------------
-    @staticmethod
-    def _encode_image(image: Image.Image) -> str:
-        import base64
-
-        if image.mode == "RGBA":
-            image = image.convert("RGB")
-        buf = io.BytesIO()
-        image.save(buf, format="JPEG")
-        return base64.b64encode(buf.getvalue()).decode("utf-8")
-
-    # ------------------------------------------------------------------
     # Failure-points-only pipeline
     # ------------------------------------------------------------------
     async def run_failure_points_only(self, input: dict) -> dict:
@@ -3528,7 +2993,7 @@ class MMRubricAgent(VerifierAgent):
         Requires that the input contains a fully scored ``precomputed_rubric``
         and that ``intermediate_mm_rubric_steps`` is available (either in the
         input dict or loaded from ``task_data.json`` on disk at the candidate
-        path indicated by ``screenshots_dir``).
+        path indicated by ``evidence_dir``).
 
         Returns the rubric dict with ``first_point_of_failure``,
         ``task_verification_with_trajectory``, and ``task_verification``
@@ -3537,8 +3002,8 @@ class MMRubricAgent(VerifierAgent):
         task: str = input["task"]
         action_history: str = input["action_history"]
         predicted_output: str = input.get("predicted_output", "")
-        screenshots_dir: str = (
-            input.get("screenshots_dir") or self.config.screenshots_dir
+        evidence_dir: str = (
+            input.get("evidence_dir") or self.config.evidence_dir
         )
         init_url: str = input.get("init_url", "")
         apps_list: list = input.get("apps", [])
@@ -3566,8 +3031,8 @@ class MMRubricAgent(VerifierAgent):
 
         # --- Load intermediate steps (for evidence and outcome) ---
         intermediate = input.get("intermediate_mm_rubric_steps")
-        if intermediate is None and screenshots_dir:
-            td_path = Path(screenshots_dir) / "task_data.json"
+        if intermediate is None and evidence_dir:
+            td_path = Path(evidence_dir) / "task_data.json"
             if td_path.exists():
                 with open(td_path, "r", encoding="utf-8") as f:
                     td = json.load(f)
@@ -3591,7 +3056,7 @@ class MMRubricAgent(VerifierAgent):
             rubric_dict.get("outcome_verification", {}),
         )
 
-        total_screenshots = intermediate.get("step1_num_screenshots", 0)
+        total_dom_states = intermediate.get("step1_num_dom_states", 0)
 
         # --- Step 9a: Points of failure analysis ---
         step_actions: Optional[List[Dict[str, Any]]] = input.get("step_actions")
@@ -3607,7 +3072,7 @@ class MMRubricAgent(VerifierAgent):
             action_history,
             predicted_output,
             outcome_result=outcome_result,
-            total_screenshots=total_screenshots,
+            total_dom_states=total_dom_states,
             action_definitions=action_definitions,
             step_actions=step_actions,
         )
@@ -3627,7 +3092,7 @@ class MMRubricAgent(VerifierAgent):
             action_history,
             predicted_output,
             outcome_result=outcome_result,
-            total_screenshots=total_screenshots,
+            total_dom_states=total_dom_states,
             apps=apps_str,
         )
         intermediate["step9b_task_verification_with_trajectory"] = step9b_result
@@ -3660,8 +3125,8 @@ class MMRubricAgent(VerifierAgent):
         task: str = input["task"]
         action_history: str = input["action_history"]
         predicted_output: str = input.get("predicted_output", "")
-        screenshots_dir: str = (
-            input.get("screenshots_dir") or self.config.screenshots_dir
+        evidence_dir: str = (
+            input.get("evidence_dir") or self.config.evidence_dir
         )
         actions_list: list = input["actions_list"]
         step_actions: Optional[List[Dict[str, Any]]] = input.get("step_actions")
@@ -3757,63 +3222,63 @@ class MMRubricAgent(VerifierAgent):
             }
 
         # ---- Multimodal Pipeline ----
-        if screenshots_dir is None:
-            raise RuntimeError("screenshots_dir is required for rubric evaluation.")
+        if evidence_dir is None:
+            raise RuntimeError("evidence_dir is required for rubric evaluation.")
 
         try:
             intermediate = {}
 
-            # Step 1: Load screenshots
-            logger.info("[Step 1/9] Loading screenshots...")
-            screenshots = self._load_screenshots(screenshots_dir, actions_list)
-            logger.info(f"[Step 1/9] Loaded {len(screenshots)} screenshots")
-            intermediate["step1_num_screenshots"] = len(screenshots)
+            # Step 1: Load dom_states
+            logger.info("[Step 1/9] Loading dom_states...")
+            dom_states = self._load_dom_states(evidence_dir, actions_list)
+            logger.info(f"[Step 1/9] Loaded {len(dom_states)} dom_states")
+            intermediate["step1_num_dom_states"] = len(dom_states)
 
             # Step 2: Relevance scoring
             logger.info(
-                f"[Step 2/9] Scoring relevance ({len(screenshots)} screenshots)..."
+                f"[Step 2/9] Scoring relevance ({len(dom_states)} dom_states)..."
             )
-            relevance_scores = await self._score_screenshot_criterion_relevance(
-                screenshots, rubric_dict, task, init_url_context
+            relevance_scores = await self._score_dom_state_criterion_relevance(
+                dom_states, rubric_dict, task, init_url_context
             )
-            # Validate: every screenshot must have scores for ALL criteria
+            # Validate: every DOM state must have scores for ALL criteria
             num_criteria = len(rubric_dict["items"])
             for sid, scores in relevance_scores.items():
-                criterion_keys = {k for k in scores if k != "screenshot_idx"}
+                criterion_keys = {k for k in scores if k != "dom_model_state_idx"}
                 assert len(criterion_keys) == num_criteria, (
-                    f"Screenshot {sid} has {len(criterion_keys)} criterion scores but expected {num_criteria}. "
+                    f"DOM state {sid} has {len(criterion_keys)} criterion scores but expected {num_criteria}. "
                     f"Got keys: {sorted(criterion_keys)}, expected: {list(range(num_criteria))}"
                 )
                 assert (
-                    scores["screenshot_idx"] == sid
-                ), f"screenshot_idx mismatch: dict key is {sid} but stored screenshot_idx is {scores['screenshot_idx']}"
+                    scores["dom_model_state_idx"] == sid
+                ), f"dom_model_state_idx mismatch: dict key is {sid} but stored dom_model_state_idx is {scores['dom_model_state_idx']}"
 
             intermediate["step2_relevance_scores"] = {
-                f"screenshot_{sid}": {str(k): v for k, v in scores.items()}
+                f"dom_state_{sid}": {str(k): v for k, v in scores.items()}
                 for sid, scores in relevance_scores.items()
             }
 
-            # Step 3: Group screenshots
-            logger.info("[Step 3/9] Grouping screenshots...")
-            grouped_screenshots = self._group_screenshots_by_criterion(
+            # Step 3: Group dom_states
+            logger.info("[Step 3/9] Grouping dom_states...")
+            grouped_dom_states = self._group_dom_states_by_criterion(
                 relevance_scores, len(rubric_dict["items"])
             )
-            intermediate["step3_grouped_screenshots"] = {
-                str(k): v for k, v in grouped_screenshots.items()
+            intermediate["step3_grouped_dom_states"] = {
+                str(k): v for k, v in grouped_dom_states.items()
             }
 
-            if self.config.ignore_irrelevant_screenshots:
-                grouped_screenshots = self._filter_irrelevant_screenshots(
-                    grouped_screenshots, relevance_scores
+            if self.config.ignore_irrelevant_dom_states:
+                grouped_dom_states = self._filter_irrelevant_dom_states(
+                    grouped_dom_states, relevance_scores
                 )
 
             # Step 4: Evidence analysis
-            logger.info("[Step 4/9] Analyzing screenshot evidence...")
-            if self.config.batch_screenshot_analysis:
-                evidence_by_criterion = await self._analyze_screenshot_evidence_batched(
-                    screenshots,
+            logger.info("[Step 4/9] Analyzing DOM-model evidence...")
+            if self.config.batch_dom_analysis:
+                evidence_by_criterion = await self._analyze_dom_evidence_batched(
+                    dom_states,
                     rubric_dict,
-                    grouped_screenshots,
+                    grouped_dom_states,
                     task,
                     init_url_context,
                     action_history,
@@ -3822,10 +3287,10 @@ class MMRubricAgent(VerifierAgent):
                     min_relevance_threshold=self.config.min_relevance_threshold,
                 )
             else:
-                evidence_by_criterion = await self._analyze_screenshot_evidence(
-                    screenshots,
+                evidence_by_criterion = await self._analyze_dom_evidence(
+                    dom_states,
                     rubric_dict,
-                    grouped_screenshots,
+                    grouped_dom_states,
                     task,
                     init_url_context,
                     action_history,
@@ -3885,7 +3350,7 @@ class MMRubricAgent(VerifierAgent):
                 self._run_steps_6_7_single_instance(
                     rubric_dict,
                     evidence_by_criterion,
-                    screenshots,
+                    dom_states,
                     task,
                     init_url_context,
                     action_history,
@@ -3944,7 +3409,7 @@ class MMRubricAgent(VerifierAgent):
                     init_url_context,
                     action_history,
                     predicted_output,
-                    total_screenshots=len(screenshots),
+                    total_dom_states=len(dom_states),
                 )
                 for _ in range(N)
             ]
@@ -3994,7 +3459,7 @@ class MMRubricAgent(VerifierAgent):
                     action_history,
                     predicted_output,
                     outcome_result=majority_outcome_result,
-                    total_screenshots=len(screenshots),
+                    total_dom_states=len(dom_states),
                     action_definitions=self.config.action_definitions,
                     step_actions=step_actions,
                 )
@@ -4024,7 +3489,7 @@ class MMRubricAgent(VerifierAgent):
                     action_history,
                     predicted_output,
                     outcome_result=majority_outcome_result,
-                    total_screenshots=len(screenshots),
+                    total_dom_states=len(dom_states),
                     apps=apps_str,
                 )
             intermediate["step9b_task_verification_with_trajectory"] = step9b_result

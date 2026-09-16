@@ -53,6 +53,6 @@ def validate_grounded_analysis(analysis: dict) -> str:
     status = first_line.removeprefix(prefix)
     if status not in EVIDENCE_STATUSES:
         raise ValueError(f"Invalid DOM evidence status: {status!r}")
-    if "DOM_MODEL_STATE_INDEX" not in analysis["screenshot_evidence"]:
+    if "DOM_MODEL_STATE_INDEX" not in analysis["dom_model_evidence"]:
         raise ValueError("DOM-model evidence must cite DOM_MODEL_STATE_INDEX")
     return status

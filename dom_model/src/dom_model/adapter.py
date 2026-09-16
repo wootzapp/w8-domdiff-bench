@@ -1,4 +1,4 @@
-"""Build Microsoft DataPoint objects without creating screenshot compatibility files."""
+"""Build package-local data points for DOM-model verification."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def create_datapoint(task_data: dict[str, Any], trajectory: Trajectory) -> DataP
                 action_nl_description=str(arguments.get("thoughts") or ""),
             )
         )
-        events.append(ComputerObservation(action_id=action_id, screenshot_path=""))
+        events.append(ComputerObservation(action_id=action_id, evidence_path=""))
 
     rubric = task_data.get("precomputed_rubric")
     metadata = {"precomputed_rubric": rubric} if rubric is not None else {}

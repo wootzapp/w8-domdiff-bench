@@ -38,26 +38,14 @@ def _write_json(path: Path, value: object) -> None:
 def pair_factory(tmp_path):
     def make(*, sidecars: bool = True, metrics: bool = True):
         staged = tmp_path / "staged"
-        screenshot = staged / "data-new-screenshot" / "task1"
         dom = staged / "data-new-dom-model" / "task1"
-        screenshot.mkdir(parents=True)
         dom.mkdir(parents=True)
         task = {
             "task_id": "internal-task-1",
             "confirmed_task": "Set the example value and save it.",
             "website": "https://example.test/start",
         }
-        _write_json(screenshot / "task_data.json", task)
         _write_json(dom / "task_data.json", task)
-        screenshot_event = {
-            "action": "left_click",
-            "url": "https://example.test/done",
-            "arguments": {
-                "action": "left_click",
-                "coordinate": [10, 20],
-                "thoughts": "Save the value",
-            },
-        }
         dom_event = {
             "action": "left_click",
             "url": "https://example.test/done",
@@ -68,19 +56,7 @@ def pair_factory(tmp_path):
                 "thoughts": "Save the value",
             },
         }
-        (screenshot / "web_surfer.log").write_text(json.dumps(screenshot_event) + "\n", encoding="utf-8")
         (dom / "web_surfer.log").write_text(json.dumps(dom_event) + "\n", encoding="utf-8")
-        (screenshot / "screenshot0.png").write_bytes(b"offline-placeholder-0")
-        (screenshot / "screenshot1.png").write_bytes(b"offline-placeholder-1")
-        _write_json(
-            screenshot / "final_answer.json",
-            {
-                "final_answer": "Saved",
-                "is_aborted": False,
-                "screenshots": ["screenshot0.png", "screenshot1.png"],
-                "token_usage": {},
-            },
-        )
         _write_json(
             dom / "final_answer.json",
             {"final_answer": "Saved", "is_aborted": False, "token_usage": {}},
@@ -107,7 +83,6 @@ def pair_factory(tmp_path):
         rubric_path = tmp_path / "experiment" / "rubrics" / "task1.json"
         _write_json(rubric_path, {"task_id": task["task_id"], "precomputed_rubric": RUBRIC})
         if sidecars:
-            _write_json(screenshot / "task_data_with_canonical_rubric.json", {**task, "precomputed_rubric": RUBRIC})
             _write_json(dom / "task_data_with_canonical_rubric.json", {**task, "precomputed_rubric": RUBRIC})
         metrics_path = tmp_path / "experiment" / "rubrics" / "task1_generation_metrics.json"
         if metrics:
@@ -137,7 +112,6 @@ def pair_factory(tmp_path):
         )
         return {
             "staged": staged,
-            "screenshot": screenshot,
             "dom": dom,
             "rubric": rubric_path,
             "metrics": metrics_path,

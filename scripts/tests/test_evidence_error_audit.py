@@ -24,27 +24,27 @@ def _write(path: Path, value: object) -> None:
 
 def _result(*, dom: bool, final_points: float) -> dict:
     state_key = "dom_model_state_idx" if dom else "screenshot_idx"
+    evidence_key = "dom_model_evidence" if dom else "screenshot_evidence"
     evidence = "DOM says Saved" if dom else "Screenshot says no readable value"
     return {
         "task_id": "task-fixture",
         "rubric_sha256": "rubric-hash",
         "intermediate_mm_rubric_steps": {
             "step2_relevance_scores": {
-                "screenshot_0": {"0": 2, "screenshot_idx": 0},
-                "screenshot_1": {"0": 9, "screenshot_idx": 1},
+                ("dom_state_0" if dom else "screenshot_0"): {"0": 2, state_key: 0},
+                ("dom_state_1" if dom else "screenshot_1"): {"0": 9, state_key: 1},
             },
-            "step3_grouped_screenshots": {"0": [1]},
+            ("step3_grouped_dom_states" if dom else "step3_grouped_screenshots"): {"0": [1]},
             "step4_evidence_by_criterion": {
                 "0": [
                     {
-                        "screenshot_evidence": evidence,
+                        evidence_key: evidence,
                         "criterion_analysis": (
                             "EVIDENCE_STATUS: SUPPORTED" if dom else "The value cannot be verified"
                         ),
                         "discrepancies": "none" if dom else "value unreadable",
                         "environment_issues_confirmed": False,
-                        "screenshot_idx": 1,
-                        **({state_key: 1} if dom else {}),
+                        state_key: 1,
                     }
                 ]
             },
