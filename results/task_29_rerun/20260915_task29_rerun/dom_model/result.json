@@ -1,0 +1,2317 @@
+{
+  "task_id": "browser_task_029-course-search-and-filtering-20260915T073923Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 1,
+  "success_criterion": "outcome",
+  "rubric_score": 0.9444444444444444,
+  "rubric_total_max_points": 18.0,
+  "rubric_total_earned_points": 17.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 1.0,
+    "reasoning": "Nitpicks: (1) The agent included extra fields (providers, duration) not requested; that doesn’t harm the deliverable. (2) It cited review counts alongside ratings; that’s fine since it didn’t mislabel them as enrollments. \n\nCritical issues: The agent asserted that “items are already ordered by rating (descending).” DOM evidence (state 5/6) shows the sort control remains “Sort by: Best Match,” so that claim is not supported. However, this is mainly an explanation error rather than a wrong deliverable if the selected courses are still plausibly the top-rated set. The bigger question is whether the agent truly identified the “three highest-rated matching courses.” DOM state 6 shows at least one 4.9 (Machine Learning) and multiple 4.8-rated matches (AI Fundamentals, AI Mastery for Professionals, Prompt Engineering, etc.). Because there are several ties at 4.8 and the page is not sorted by rating, the agent did not (and likely could not from the shown evidence) conclusively verify that its chosen two 4.8 courses are the definitive top two among all equally-high 4.8 options, nor that no other 4.9 exists further down the results. \n\nThat said, the core task outcome is largely met: DOM states 5/6 clearly confirm the required filters are applied (English + Beginner + 1–3 Months, with Data Science satisfied via /browse/data-science context) and confirm the three reported course titles and ratings: Machine Learning (4.9), AI Fundamentals (4.8), AI Mastery for Professionals (4.8). DOM also supports that enrollment counts are not displayed on these cards, so reporting enrollment as “unavailable” is correct and non-hallucinatory. From an average user’s perspective, they received three correctly filtered, highly rated courses with the requested fields handled properly; the only shortfall is strict “highest-rated” verification among tied 4.8s and the incorrect claim about sort order.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": true,
+    "primary_intent": "The user wanted Coursera course results constrained to Data Science + Beginner + English + 1–3 months, and then to be told the three highest-rated courses that match, including each course’s title, rating, and enrollment count when (and only when) Coursera displays it (otherwise explicitly say unavailable). A reasonable user would be flexible about how “Subject=Data Science” is satisfied (e.g., via being on the Data Science browse page) and tie-breaking among equally-rated courses, but would not be flexible about missing filters, wrong courses/ratings, or guessed enrollment counts."
+  },
+  "preflight": {
+    "task_id": "browser_task_029-course-search-and-filtering-20260915T073923Z",
+    "actions": 6,
+    "dom_model_states": 7,
+    "initial_state": 0,
+    "final_state": 6,
+    "alignment": {
+      "task_id": "browser_task_029-course-search-and-filtering-20260915T073923Z",
+      "action_count": 6,
+      "state_count": 7,
+      "initial_state": 0,
+      "final_state": 6,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e319",
+            "target": {
+              "ref": "e319",
+              "role": "checkbox",
+              "name": "English(3,242)"
+            },
+            "thoughts": "Apply the English language filter first in the Filters panel before adding level and duration constraints so search results match the requested language condition."
+          },
+          "observed_after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e127",
+            "target": {
+              "ref": "e127",
+              "role": "button",
+              "name": "Reject"
+            },
+            "thoughts": "Cookie banner is blocking filter checkbox clicks; click Reject to dismiss it with minimal state change before applying filters."
+          },
+          "observed_after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e313",
+            "target": {
+              "ref": "e313",
+              "role": "checkbox",
+              "name": "English(3,242)"
+            },
+            "thoughts": "Now that the cookie banner is dismissed, begin applying required filters by selecting English under Language Required."
+          },
+          "observed_after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e261",
+            "target": {
+              "ref": "e261",
+              "role": "LabelText",
+              "name": "Beginner(1,330)"
+            },
+            "thoughts": "Beginner level filter is currently unchecked; click its label to apply the required Level=Beginner filter before setting duration and gathering top-rated courses."
+          },
+          "observed_after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "ordinal": 5,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e269",
+            "target": {
+              "ref": "e269",
+              "role": "LabelText",
+              "name": "1-3 Months(367)"
+            },
+            "thoughts": "Duration 1-3 Months is still unchecked; clicking its label will apply the remaining required filter before sorting by rating."
+          },
+          "observed_after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "ordinal": 6,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e70",
+            "target": {
+              "ref": "e70",
+              "role": "button",
+              "name": "Sort by: Best Match"
+            },
+            "thoughts": "Duration filter is now set to 1-3 months; next I should open the sort control to sort by rating or see rating-related options to identify the three highest-rated courses."
+          },
+          "observed_after_url": "https://www.coursera.org/browse/data-science"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "5d680badcae0439c121b22e849b47d00135b819db70754c82be4530e69b260ed",
+          "after_sha256": "323ac6f9bbed9624bb841a75cc1bfeb06156e67ebac1e94671c9ff1ff244396d",
+          "before_url": "https://www.coursera.org/browse/data-science",
+          "after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "323ac6f9bbed9624bb841a75cc1bfeb06156e67ebac1e94671c9ff1ff244396d",
+          "after_sha256": "45c19df0f176b4a940fcc8b26345ff99ca80767774bec61ac628e4ccc44ba79f",
+          "before_url": "https://www.coursera.org/browse/data-science",
+          "after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "45c19df0f176b4a940fcc8b26345ff99ca80767774bec61ac628e4ccc44ba79f",
+          "after_sha256": "fe069ece38693eb36f3c3a161a444d61f8061ca3e524b5f45fa74bdb51807ed9",
+          "before_url": "https://www.coursera.org/browse/data-science",
+          "after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "fe069ece38693eb36f3c3a161a444d61f8061ca3e524b5f45fa74bdb51807ed9",
+          "after_sha256": "2b351f5e5800ff457d4fb79a3fc6fe20dede59df708a06927797982f22ae8b48",
+          "before_url": "https://www.coursera.org/browse/data-science",
+          "after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "2b351f5e5800ff457d4fb79a3fc6fe20dede59df708a06927797982f22ae8b48",
+          "after_sha256": "a9c4d15da75c0343167138f9e6a66b3f2331fe5addd4890422b53f2af941f357",
+          "before_url": "https://www.coursera.org/browse/data-science",
+          "after_url": "https://www.coursera.org/browse/data-science"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "a9c4d15da75c0343167138f9e6a66b3f2331fe5addd4890422b53f2af941f357",
+          "after_sha256": "a9c4d15da75c0343167138f9e6a66b3f2331fe5addd4890422b53f2af941f357",
+          "before_url": "https://www.coursera.org/browse/data-science",
+          "after_url": "https://www.coursera.org/browse/data-science"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e319' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e127' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e313' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e261' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e269' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e70' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "3daffb68fd3e0e8bf3aed4b5b7a36a638215f13377b5964ac7a3093aad4e3094",
+    "criterion_order": [
+      "Access Coursera Data Science browse/search results without signing in",
+      "Apply all requested Coursera filters (Data Science subject, Beginner level, English language, 1–3 months duration) or document unavoidable UI limitations",
+      "Identify the three highest-rated matching courses (or report fewer if not available)",
+      "Report required fields for Course #1 (title, rating, enrollment count if displayed)",
+      "Report required fields for Course #2 (title, rating, enrollment count if displayed)",
+      "Report required fields for Course #3 (title, rating, enrollment count if displayed)",
+      "Comply with constraints (no sign-in; no enroll/purchase/start trial; stop after verification)"
+    ],
+    "maximum_points": [
+      1.0,
+      4.0,
+      4.0,
+      2.0,
+      2.0,
+      2.0,
+      3.0
+    ],
+    "criterion_denominator": 18.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "3daffb68fd3e0e8bf3aed4b5b7a36a638215f13377b5964ac7a3093aad4e3094",
+  "criterion_denominator": 18,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 220878,
+      "completion_tokens": 23594,
+      "reasoning_tokens": 0,
+      "total_tokens": 244472
+    },
+    "action_judge": {
+      "prompt_tokens": 25700,
+      "completion_tokens": 3459,
+      "reasoning_tokens": 1920,
+      "total_tokens": 29159
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 31,
+      "api_attempts": 31,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 7,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 8,
+        "1": 3,
+        "2": 2,
+        "3": 4,
+        "4": 4,
+        "5": 2,
+        "6": 6,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 9,
+        "1": 5,
+        "2": 4,
+        "3": 3,
+        "4": 3,
+        "5": 2,
+        "6": 7,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 9,
+        "1": 6,
+        "2": 4,
+        "3": 3,
+        "4": 3,
+        "5": 1,
+        "6": 8,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 9,
+        "1": 6,
+        "2": 4,
+        "3": 5,
+        "4": 5,
+        "5": 2,
+        "6": 7,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 9,
+        "1": 7,
+        "2": 4,
+        "3": 2,
+        "4": 2,
+        "5": 1,
+        "6": 6,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 10,
+        "1": 9,
+        "2": 4,
+        "3": 2,
+        "4": 2,
+        "5": 2,
+        "6": 6,
+        "screenshot_idx": 5
+      },
+      "screenshot_6": {
+        "0": 9,
+        "1": 10,
+        "2": 6,
+        "3": 4,
+        "4": 4,
+        "5": 4,
+        "6": 7,
+        "screenshot_idx": 6
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        5,
+        6,
+        4,
+        3,
+        2
+      ],
+      "1": [
+        6,
+        5,
+        4,
+        3,
+        2
+      ],
+      "2": [
+        6,
+        5,
+        4,
+        3,
+        2
+      ],
+      "3": [
+        3,
+        6,
+        0,
+        2,
+        1
+      ],
+      "4": [
+        3,
+        6,
+        0,
+        2,
+        1
+      ],
+      "5": [
+        6,
+        5,
+        3,
+        1,
+        0
+      ],
+      "6": [
+        2,
+        6,
+        3,
+        1,
+        5
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 0 asks whether the agent can access Coursera Data Science browse/search results without signing in. In DOM_MODEL_STATE_INDEX: 5, the URL and title confirm the Data Science browse page is loaded (`https://www.coursera.org/browse/data-science`, `Data Science Online Courses | Coursera`) and the results list is present (`All results` plus course cards like `Machine Learning`). The presence of `Log In` / `Join for Free` controls further supports that the page is being viewed without being signed in, and there is no DOM evidence of a hard sign-in wall, captcha, or region restriction blocking access.",
+          "discrepancies": "No discrepancies for Criterion 0. (Note: this criterion does not require verifying filter settings or the specific courses reported; it only concerns access to results without sign-in.)",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 shows the agent is on Coursera without a sign-in wall: URL is explicitly `https://www.coursera.org/browse/data-science` with page title `Data Science Online Courses | Coursera`. The read-only controls include `Log In` and `Join for Free`, indicating the page is accessible in a logged-out state and presenting browse results content (e.g., section `All results`, and multiple course cards such as `Machine Learning`). No CAPTCHA, forced login modal, or access-blocking error text is present in the visible content.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows the agent is on Coursera’s Data Science browse page with a visible course results list and no sign-in wall. Presence of “Log In”/“Join for Free” controls supports that the user is browsing while not signed in.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 shows URL https://www.coursera.org/browse/data-science (Title: “Data Science Online Courses | Coursera”) with a visible results list under “All results” and a Filters panel. Read-only header includes “Log In” and “Join for Free,” indicating the agent is not required to be signed in to view results.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snapshot demonstrates the agent has reached Coursera’s Data Science browse/results page and can view a results list without being signed in (presence of \"Log In\" / \"Join for Free\" controls and visible course results).",
+          "discrepancies": "None observed for this criterion; the DOM does not show any forced sign-in or blocking interstitials.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 shows URL https://www.coursera.org/browse/data-science and page title \"Data Science Online Courses | Coursera\". The header contains \"Log In\" and \"Join for Free\" (READ-ONLY CONTROL EVIDENCE), indicating the page is accessible without forcing authentication in this state. Search results content is visible under \"All results\" with multiple course cards (e.g., \"Google AI\" and rating text). No captcha/sign-in wall text is present in the captured DOM.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows the agent is on Coursera’s Data Science browse page with visible course results and no forced sign-in gate, satisfying access without signing in.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows URL \"https://www.coursera.org/browse/data-science\" with page title \"Data Science Online Courses | Coursera\" and an \"All results\" list containing course cards (e.g., \"Google AI\", \"Google Data Analytics\") without any sign-in wall blocking access. Header shows \"Log In\" and \"Join for Free\" options, implying user is not signed in.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows the agent is on Coursera’s Data Science browse/results page with a visible results list and no requirement to sign in to view results.",
+          "discrepancies": "None for this state: access to results is shown without a sign-in gate; only optional \"Log In\"/\"Join for Free\" links appear.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows URL \"https://www.coursera.org/browse/data-science\" with page title \"Data Science Online Courses | Coursera\" and visible \"All results\" list containing course cards (e.g., \"Google AI\" and \"Google Data Analytics\") plus header links \"Log In\" and \"Join for Free\" (no sign-in wall shown).",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 1 (apply and verify requested Coursera filters) is supported by DOM state 5: the browse context is Data Science (URL \"/browse/data-science\"), and the DOM explicitly indicates three active filters via \"3 active filters\" plus dedicated clear-filter buttons for each required filter: \"Clear Language: English filter\", \"Clear Beginner filter\", and \"Clear 1-3 Months filter\". These controls are strong DOM evidence that Language=English, Level=Beginner, and Duration=1–3 Months are applied; additionally, result cards show \"Beginner\" and \"1 - 3 Months\" in their metadata strings, corroborating the filter effect.",
+          "discrepancies": "No discrepancy for Criterion 1. Note: DOM state 5 shows the language option text as \"English ( 367 )\" (not \"English(3,242)\" as earlier action text), but this does not conflict with the criterion of applying the English filter; it only reflects the post-filter result count.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 (URL https://www.coursera.org/browse/data-science; Title: \"Data Science Online Courses | Coursera\"). The page shows filters and their active state:\n- Subject context is Data Science via the URL path \"/browse/data-science\" and title.\n- Filter area explicitly shows \"All results\" and \"3 active filters\".\n- The active filters are evidenced by the presence of clear-filter controls: [7429] button \"Clear Language: English filter\", [7430] button \"Clear Beginner filter\", [7431] button \"Clear 1-3 Months filter\" (plus [7432] \"Clear all filters\").\n- The filter groups displayed include:\n  - \"Language Required\" with option text \"English ( 367 )\".\n  - \"Level Required\" with option text \"Beginner ( 367 )\".\n  - \"Duration Required\" with option text \"1-3 Months ( 367 )\".\n- Within the results list, multiple cards include the combined metadata string confirming the filtered attributes, e.g.:\n  - \"★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months\" for \"Machine Learning\".\n  - \"★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months\" for \"AI Fundamentals\".\n  - \"★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months\" for \"AI Mastery for Professionals\".",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nEnglish, Beginner, and 1–3 Months are explicitly active (clear-filter buttons and “3 active filters”). Subject=Data Science is supported by the page URL (/browse/data-science) and breadcrumb entry “Data Science”.",
+          "discrepancies": "The UI shows 3 active filters (Language, Level, Duration). Subject is implied by being on the Data Science browse page rather than appearing as an explicit “active filter” chip; this is acceptable per task context.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6:\n- Page context: URL contains /browse/data-science and breadcrumb includes “Data Science Data Science”.\n- Active filters area shows: “3 active filters” and clear buttons: [7429] “Clear Language: English filter”, [7430] “Clear Beginner filter”, [7431] “Clear 1-3 Months filter”.\n- Filter groups show the selected facets available: Language Required: “English ( 367 )”; Level Required: “Beginner ( 367 )”; Duration Required: “1-3 Months ( 367 )”.\n- Result cards include “★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months” etc., consistent with the filters.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nLanguage=English and Level=Beginner are verified as active via the explicit \"Clear Language: English filter\" and \"Clear Beginner filter\" controls and the \"2 active filters\" text. Subject=Data Science is strongly suggested by the URL and page title, but the DOM does not explicitly show an applied/active subject filter chip—rather it is the browse context. Duration between 1–3 months is not verified in this DOM state; only the Duration filter group and some options are visible, and none indicates selection of \"1-3 Months\" here.",
+          "discrepancies": "Agent history claims Duration \"1-3 Months(367)\" was clicked (Action 5), but DOM_MODEL_STATE_INDEX: 4 does not show an active duration filter (still reads \"2 active filters\" and only shows clear buttons for Language and Beginner). Also, the visible results cards in this DOM show durations like \"3 - 6 Months\" for multiple items (e.g., \"Google AI\" and \"Google Data Analytics\"), which would conflict with a verified \"1–3 months\" filter if it had been applied and functioning.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 shows under results header: \"2 active filters\" and filter-clear buttons: [6302] \"Clear Language: English filter\" and [6303] \"Clear Beginner filter\". The filter groups displayed include \"Duration Required *\" with options \"Less Than 2 Hours (131)\" and \"1-4 Weeks (654)\"; no visible selected duration option is shown in this snapshot. The subject context is consistent with the URL path \"/browse/data-science\" and the presence of the \"Data Science\" category link [2154].",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nOnly the Language=English filter is verified as active in the DOM (\"1 active filter\" + \"Clear Language: English filter\"). There is no DOM evidence that Level=Beginner and Duration=1–3 Months filters are applied/active, and the presence of \"3 - 6 Months\" items indicates the duration filter is not constrained to 1–3 months in this captured state. Subject=Data Science is supported by the URL/path (/browse/data-science).",
+          "discrepancies": "Agent predicted output claims all requested filters are applied and verified (Beginner + English + 1–3 Months). DOM state provided only verifies English (and page context Data Science) and still shows 3–6 month results.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows in results area: \"1 active filter\" and a control [5186] \"Clear Language: English filter\", indicating English filter is active. It does not show Beginner and 1–3 Months as active filters. Visible course cards still include duration \"3 - 6 Months\" (e.g., \"Google AI\" card shows \"Beginner, Professional Certificate, 3 - 6 Months\"), which conflicts with the requested 1–3 months constraint being applied at this moment.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nIn the provided DOM state, there is no explicit evidence that all requested filters (English, Beginner, 1–3 months) are applied/active; moreover, the visible results include \"3 - 6 Months\" items, contradicting that a \"1-3 Months\" duration filter is in effect at this moment. Subject=Data Science is supported by the URL/path and page title, but the other three filters are not verified here.",
+          "discrepancies": "Agent history/claimed output says English + Beginner + 1–3 Months were applied, but DOM_MODEL_STATE_INDEX:2 does not show checked states or active-filter chips, and visible results show \"3 - 6 Months\" entries.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows the filter groups including \"Language Required *\" with an option labeled \"English ( 3,242 )\" and a sort control \"Sort by : Best Match\". However, the DOM does not show any selected/checked state for \"English\", nor does it show \"Beginner\" or \"1-3 Months\" as active filters in this snapshot. The visible results include durations like \"3 - 6 Months\" (e.g., \"Google AI\" shows \"Beginner, Professional Certificate, 3 - 6 Months\"), which is inconsistent with a verified active duration filter of 1–3 months.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 2 requires identifying three highest-rated matching courses by displayed rating. In DOM_MODEL_STATE_INDEX: 5, three matching course records with explicit ratings are visible:\n1) \"Machine Learning\" — \"★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months\".\n2) \"AI Fundamentals\" — \"★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months\".\n3) \"AI Mastery for Professionals\" — \"★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months\".\nThese provide sufficient DOM evidence for course title and rating for three records under the applied filters. (Enrollment counts are not displayed in the DOM for these cards, consistent with reporting them as unavailable.)",
+          "discrepancies": "The agent’s narrative claim that the list is \"already ordered by rating (descending)\" is not directly proven by the DOM; the DOM shows a sort control \"Sort by : Best Match\" (DOM_MODEL_STATE_INDEX: 5) and does not explicitly state a rating sort order. However, Criterion 2 only requires selecting top-rated courses by displayed rating, not proving the platform’s sort order.\nAlso, enrollment counts are not shown; DOM only shows review counts (e.g., \"(39K)\").",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 (URL https://www.coursera.org/browse/data-science) shows the filtered results list with course cards including titles and ratings:\n- Card: \"Machine Learning\" with line \"★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months\".\n- Card: \"AI Fundamentals\" with line \"★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months\".\n- Card: \"AI Mastery for Professionals\" with line \"★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months\".\nThe page also indicates filters are active via \"All results\" and \"3 active filters\" and provides clear-filter buttons: \"Clear Language: English filter\", \"Clear Beginner filter\", \"Clear 1-3 Months filter\".\nNo enrollment counts are present on these cards; instead, review counts appear (e.g., \"(39K)\", \"(5.3K)\", \"(9.7K)\").",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThree matching offerings with the highest visible ratings can be identified from the DOM as 4.9 then several 4.8 entries. However, the DOM does not confirm the page is sorted by rating, and multiple 4.8-rated items are visible; selecting exactly which three are the “highest-rated” overall requires a tie-break rule and/or verifying more results beyond the viewport. The agent’s chosen three (Machine Learning 4.9; AI Fundamentals 4.8; AI Mastery for Professionals 4.8) are consistent with “top rating values visible,” but it is not proven they are the top three by a deterministic tie-break (e.g., highest among 4.8 by reviews/enrollments) nor that no other 4.9 items exist further down.",
+          "discrepancies": "Agent claimed: “items are already ordered by rating (descending)”; DOM shows sort is “Best Match” and does not show a “Rating” sort being applied. Also, other 4.8-rated items are visible (“Prompt Engineering”, “Generative AI Assistants”), so the basis for choosing which two 4.8s make the top-three is not fully justified/verified.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 visible results include (with ratings):\n- “Machine Learning” shows “★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months”.\n- “IBM AI Foundations for Business” shows “★ 4.7 (100K) · Beginner · Specialization · 1 - 3 Months”.\n- “AI Fundamentals” shows “★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months”.\n- “AI Mastery for Professionals” shows “★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months”.\n- “Prompt Engineering” shows “★ 4.8 (9.5K) · Beginner · Specialization · 1 - 3 Months”.\nSort control shows [2808] “Sort by : Best Match” (expanded=false), not “Rating”.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent’s reported “three highest-rated matching courses” are not supported by the DOM state provided. (1) The DOM indicates sorting is \"Best Match\", not by rating, so “already ordered by rating (descending)” is unverified. (2) The visible results shown include items with duration \"3 - 6 Months\", which do not meet the requested 1–3 months constraint; thus “matching all filters” is not verified. (3) Two of the agent’s three reported course titles (\"AI Fundamentals\" and \"AI Mastery for Professionals\") do not appear anywhere in the provided DOM evidence. Only a \"Machine Learning\" entry with 4.9 and 39K reviews is partially visible, and even its product type/duration line is truncated, so it cannot be confirmed as matching all filters.",
+          "discrepancies": "Agent output lists:\n- \"Machine Learning (Specialization)\" rating 4.9 (39K reviews): DOM shows a truncated \"Machine Learning\" with 4.9 and 39K reviews but does not confirm it is a Specialization, nor confirm duration is 1–3 months.\n- \"AI Fundamentals (Course)\" and \"AI Mastery for Professionals (Specialization)\": not present in DOM_MODEL_STATE_INDEX: 4.\nAdditionally, the visible cards explicitly show \"3 - 6 Months\" durations, conflicting with the task’s duration requirement and the agent’s claim that the duration filter is set to 1–3 months.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 shows a sort control [2808] labeled \"Sort by : Best Match\" (not rating). Visible course cards include: \"Google AI\" with \"★ 4.8 (11K) · Beginner · Professional Certificate · 3 - 6 Months\"; \"Google Data Analytics\" with \"★ 4.8 (182K) · Beginner · Professional Certificate · 3 - 6 Months\"; and a truncated entry \"Multiple educators Machine Learning ... 4.9 stars, 39K reviews, Beginner, Specia...\". Enrollment counts are not shown on the visible cards in this snapshot (only ratings and review counts appear).",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nBecause the requested filters (especially Duration 1–3 months) are not verified as applied in the DOM, the agent cannot be credited for identifying the \"three highest-rated matching courses\" under the fully constrained filter set. Additionally, only one 4.9-rated item (Machine Learning) is partially visible/truncated; the other two courses named in the agent output (\"AI Fundamentals\", \"AI Mastery for Professionals\") are not evidenced in the DOM.",
+          "discrepancies": "Agent output lists three specific courses/specializations not supported by DOM (two not present at all), and asserts ordering by rating under the fully filtered set, which is not evidenced and conflicts with visible 3–6 month durations.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows some ratings in the results list, including a truncated card line: \"Multiple educators Machine Learning ... 4.9 stars, 39K reviews, Beginner, Specia\". Other visible results include \"Google AI\" (4.8, 11K reviews) and \"Google Data Analytics\" (4.8, 182K reviews) and \"Google AI Essentials\" (4.8, 25K reviews). However, the DOM does not show Duration=1–3 Months being applied, and the visible cards explicitly show \"3 - 6 Months\" for several items.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent’s predicted three “highest-rated matching” items are not supported by the DOM state: (a) the list is explicitly sorted by \"Best Match\" (not rating), (b) filters are not verified as applied (and \"3 - 6 Months\" results are visible), and (c) two of the predicted titles (\"AI Fundamentals\" and \"AI Mastery for Professionals\") do not appear anywhere in the visible DOM content provided. Therefore, the selection/verification of the top three matching courses cannot be confirmed and is partly contradicted.",
+          "discrepancies": "Predicted items \"AI Fundamentals\" and \"AI Mastery for Professionals\" are absent from the visible DOM; also the page is sorted by \"Best Match\" not by rating, so \"three highest-rated\" is not established from this state.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows some ratings in the results list (e.g., \"Google AI\" with \"4.8 stars, 11K reviews\"; \"Google Data Analytics\" with \"4.8 stars, 182K reviews\"; a partially shown entry \"Multiple educators Machine Learning ... 4.9 stars, 39K reviews, Beginner, Specia...\"). The DOM does not show any sort set to rating; the sort control reads \"Sort by : Best Match\".",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCourse #1 title and rating are explicitly present in the DOM. Enrollment count is not displayed in the visible card content, so reporting it as unavailable aligns with the rubric.",
+          "discrepancies": "Agent labeled it “(Specialization)”—DOM indicates “Specialization” on the card, so consistent. Agent also included providers “DeepLearning.AI, Stanford Online” which appear in the action link text but were not required for this criterion.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 result card:\n- Title: “Machine Learning”\n- Rating text: “4.9 stars, 39K reviews” and “★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months”.\nNo enrollment count text is shown on the card; only reviews are displayed.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCourse #1 in the agent answer (\"Machine Learning\") has partial DOM support for title and rating (4.9 stars) but the card is truncated and does not show duration or enrollment count. Enrollment is not displayed in the shown DOM content, so reporting it as unavailable would be acceptable, but the course’s compliance with the 1–3 months filter cannot be verified here.",
+          "discrepancies": "Agent claims it is a \"Specialization\" and fits \"1–3 Months\"; DOM only shows \"Specia\" truncated and does not confirm duration. Enrollment count unavailable is consistent with visible DOM (not shown).",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 contains a truncated listing snippet for \"Machine Learning\" with: \"4.9 stars, 39K reviews, Beginner, Specia\". No enrollment count is shown in the visible snippet for this item.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that a result titled \"Machine Learning\" with rating \"4.9 stars\" and \"39K reviews\" is present in the results list, and that \"Beginner\" appears on that truncated line. However, the agent’s reported course #1 details (that it is a \"Specialization\" and that it matches the requested duration filter \"1–3 Months\") are not verified in this DOM snapshot, and enrollment count is not shown here (so only \"unavailable\" would be supportable).",
+          "discrepancies": "Agent claims \"Machine Learning (Specialization)\" and that it matches \"1–3 Months\"; DOM only shows truncated \"Beginner, Specia...\" and no duration. Enrollment count is not displayed in this snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 includes a partially visible result: \"Multiple educators Machine Learning ... 4.9 stars, 39K reviews, Beginner, Specia...\" but does not show the full card details (e.g., whether it is a Course vs Specialization, duration, or enrollment). The DOM does not display any enrollment count field for this item in the visible excerpt.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe agent’s reported Course #1 (“Machine Learning (Specialization)” rating “4.9”, enrollment “unavailable”) cannot be verified from the only provided DOM snapshot. DOM_MODEL_STATE_INDEX 0 shows different courses (e.g., Google Data Analytics, Foundations: Data, Data, Everywhere, IBM programs) and does not contain the claimed title or rating, nor any enrollment field for that claimed item. Therefore, the DOM evidence is insufficient to support or contradict the specific Course #1 record the agent reported.",
+          "discrepancies": "Agent output claims Course #1 is “Machine Learning (Specialization)” with “4.9 stars (39K reviews)” and enrollment “unavailable”. DOM_MODEL_STATE_INDEX 0 does not show that course card, does not show a 4.9 rating, and does not show any enrollment info for that claimed item; thus the reported fields are unverified in the provided DOM evidence.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 (https://www.coursera.org/browse/data-science). Visible “All Collection” items include:\n- “Google Data Analytics” with text: “4.8 stars, 182K reviews, Beginner, Professional Certificate, 6 months” and “★ 4.8 (182K) · Beginner · Professional Certificate · 6 months”.\n- “Foundations: Data, Data, Everywhere” with text: “4.8 stars, 123K reviews, Beginner, Course” and “★ 4.8 (123K) · Beginner · Course”.\n- “IBM Generative AI Engineering” with text: “4.7 stars, 101K reviews, Beginner, Professional Certificate, 6 months”.\n- “IBM Data Science” with text: “4.6 stars, 151K reviews, Beginner, Professional Certificate, 5 months”.\nNo visible item text includes “Machine Learning”, “DeepLearning.AI”, “Stanford Online”, “4.9”, or an enrollment count field.\nAdditionally, a cookie banner is present: “We Care About Your Privacy … Select ‘Accept’ … or ‘Reject’ …” (region [830]).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM snapshot supports that a result titled “Machine Learning” is present and shows a “4.9 stars, 39K reviews” rating/review snippet. However, the DOM is truncated at “Specia…”, and does not explicitly show (a) whether this is the exact course/specialization title formatting the agent reported (“Machine Learning (Specialization)”), (b) any enrollment count, or (c) the rest of the metadata needed to verify the agent’s exact record. Reporting enrollment as “unavailable” is consistent with the provided DOM (enrollment not shown), but the exact claimed title/type cannot be fully verified from the truncated snippet.",
+          "discrepancies": "Agent claimed: “Machine Learning (Specialization) - Provider: DeepLearning.AI, Stanford Online - Rating: 4.9 stars (39K reviews) - Duration: 1–3 Months”. DOM only shows “Multiple educators Machine Learning … 4.9 stars, 39K reviews, Beginner, Specia…” and does not show provider, duration, or the full “Specialization” label due to truncation.",
+          "environment_issues_confirmed": true,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 (https://www.coursera.org/browse/data-science)\nWithin “All results” list a card shows: “Multiple educators Machine Learning … 4.9 stars, 39K reviews, Beginner, Specia…” (truncated in the DOM snapshot). No enrollment count text is shown in this visible snippet.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCourse #2 title and rating are explicitly shown. Enrollment is not displayed, so “unavailable” is appropriate.",
+          "discrepancies": "None for required fields.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 result card:\n- Title: “AI Fundamentals”\n- Rating text: “4.8 stars, 5.3K reviews” and “★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months”.\nNo enrollment count is displayed on the card.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent’s reported Course #2 (\"AI Fundamentals\") is not present in the provided DOM evidence, so its title/rating/enrollment cannot be verified and appears fabricated relative to this DOM snapshot.",
+          "discrepancies": "Agent output names \"AI Fundamentals (Course) - Provider: Google - Rating: 4.8\"; DOM shows other Google-titled items but not \"AI Fundamentals\".",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 does not show any course card titled \"AI Fundamentals\". It does show \"Google AI\" (4.8 stars, 11K reviews) and \"Google AI Essentials\" (4.8 stars, 25K reviews), but those are different titles than the agent reported.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nCourse #2 as reported by the agent (\"AI Fundamentals\" with rating 4.8) is not evidenced in the DOM state provided. The only clearly visible Google-titled items shown are \"Google AI\", \"Google Data Analytics\", and \"Google AI Essentials\"; none is labeled \"AI Fundamentals\" in the visible content. Also, visible Google items show duration \"3 - 6 Months,\" conflicting with the requested 1–3 months constraint.",
+          "discrepancies": "Reported title \"AI Fundamentals\" does not appear; visible Google items are different titles and show \"3 - 6 Months\" duration.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows entries including \"Google AI\" (\"4.8 stars, 11K reviews, Beginner, Professional Certificate, 3 - 6 Months\") and \"Google Data Analytics\" (\"4.8 stars, 182K reviews, Beginner, Professional Certificate, 3 - 6 Months\"). The predicted \"AI Fundamentals (Course)\" is not present in the visible DOM.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe agent’s reported Course #2 (“AI Fundamentals (Course)” rating “4.8”, enrollment “unavailable”) is not present in the only DOM-model state provided. Since the DOM snapshot does not include the course card or its rating/enrollment fields, the required fields for Course #2 cannot be verified from DOM evidence.",
+          "discrepancies": "Agent output asserts Course #2 is “AI Fundamentals (Course)” with “4.8 stars (5.3K reviews)” and enrollment “unavailable”. DOM_MODEL_STATE_INDEX 0 does not display any “AI Fundamentals” result or corresponding rating/review/enrollment information, so the record is unverified by the provided DOM.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 (https://www.coursera.org/browse/data-science). Visible course cards list:\n- “Google Data Analytics” with “★ 4.8 (182K) · Beginner · Professional Certificate · 6 months”.\n- “Foundations: Data, Data, Everywhere” with “★ 4.8 (123K) · Beginner · Course”.\nNo visible item text includes “AI Fundamentals”, “Google” as the provider for an “AI Fundamentals” item, “5.3K reviews”, or any enrollment count display.\nCookie banner text is present (region [830]) but no post-filter result list is shown in this snapshot.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent’s Course #2 (“AI Fundamentals (Course) … Google … Rating 4.8 …”) is not present in the provided DOM evidence. The visible Google results in the DOM are “Google AI”, “Google Data Analytics”, and “Google AI Essentials”, each with 4.8 stars but with durations “3 - 6 Months”, and none matches the title “AI Fundamentals”. Therefore the agent’s reported Course #2 is not supported by this DOM state and is effectively contradicted by the absence of the claimed title in the represented results list.",
+          "discrepancies": "Agent reported a course titled “AI Fundamentals” with 4.8 stars and 1–3 months duration. DOM shows no “AI Fundamentals” title; the Google results shown have “3 - 6 Months,” not “1–3 Months.”",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows multiple Google items such as:\n- “Google Google AI … 4.8 stars, 11K reviews, Beginner, Professional Certificate, 3 - 6 Months”\n- “Google Google Data Analytics … 4.8 stars, 182K reviews, Beginner, Professional Certificate, 3 - 6 Months”\n- “Google Google AI Essentials … 4.8 stars, 25K reviews, Beginner, Specialization, 3 - 6 Months”\nNo visible card text in the snapshot shows “AI Fundamentals”.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 5 asks to report Course #3’s title, rating, and enrollment count if displayed (or 'unavailable' if not shown). In DOM_MODEL_STATE_INDEX: 5, Course #3 is present as \"AI Mastery for Professionals\" with rating shown as \"4.8 stars\" (also \"★ 4.8 (9.7K)\"). The DOM snapshot does not display any enrollment count for this item (it shows review count only), so reporting enrollment as \"unavailable\" is consistent with the DOM evidence.",
+          "discrepancies": "No discrepancy for Course #3 title/rating: the DOM explicitly contains \"AI Mastery for Professionals\" and \"4.8 stars\". Enrollment count is not displayed in the DOM for this card (only \"9.7K reviews\"), so the agent’s \"unavailable\" claim is not contradicted. (Note: DOM evidence supports only that enrollments are not shown in the captured visible text; it does not prove they are absent elsewhere on the page beyond this snapshot.)",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 (URL: https://www.coursera.org/browse/data-science) shows a visible search-result card for the third reported item:\n- Provider/title text: \"Vanderbilt University\" and \"AI Mastery for Professionals\".\n- Rating text on the card: \"4.8 stars, 9.7K reviews\" and also \"★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months\".\n- No enrollment count appears anywhere in the visible text for this card; the only quantitative popularity metric shown is \"9.7K reviews\".\n\nThese strings appear under the \"All results\" section with \"3 active filters\" and include the item’s displayed rating but not enrollments.",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCourse #3 title and rating are explicitly shown. Enrollment count is not shown in the DOM evidence, so “unavailable” is correct.",
+          "discrepancies": "None for required fields.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 result card:\n- Title: “AI Mastery for Professionals”\n- Rating text: “4.8 stars, 9.7K reviews” and “★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months”.\nNo enrollment count is displayed on the card.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent’s reported Course #3 (\"AI Mastery for Professionals\") is not evidenced in the DOM snapshot; therefore the required fields cannot be verified and the claim conflicts with available evidence.",
+          "discrepancies": "Agent output cites Vanderbilt University specialization with rating and reviews; no such listing appears in DOM state 3.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 does not show any course/specialization card titled \"AI Mastery for Professionals\" (or Vanderbilt). Visible providers include Google and IBM, and the partial \"Machine Learning\" entry is shown as \"Multiple educators\".",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe agent’s reported Course #3 (“AI Mastery for Professionals (Specialization)” rating “4.8”, enrollment “unavailable”) cannot be verified because the only DOM snapshot does not contain that course card or its displayed metadata. As a result, there is insufficient DOM coverage to confirm the title, rating, or whether enrollment count is shown for that specific course.",
+          "discrepancies": "Agent output claims Course #3 is “AI Mastery for Professionals (Specialization)” with “4.8 stars (9.7K reviews)” and enrollment “unavailable”. DOM_MODEL_STATE_INDEX 0 does not show this item or its rating/review/enrollment fields; therefore the claim is unverified given the provided DOM evidence.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 (https://www.coursera.org/browse/data-science). Visible items are limited to several cards under “All Collection” (e.g., Google Data Analytics; Foundations: Data, Data, Everywhere; IBM Generative AI Engineering; IBM Data Science) with ratings and review counts, but no enrollment counts.\nNo visible text includes “AI Mastery for Professionals”, “Vanderbilt University”, “9.7K reviews”, or an enrollment count field for that claimed item.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent’s Course #3 (“AI Mastery for Professionals (Specialization) … Vanderbilt University … Rating 4.8 …”) does not appear anywhere in the provided DOM evidence. Since the DOM snapshot includes a substantial portion of the results list and does not show the claimed title/provider, the reported record is not verifiable from this state and is contradicted by its absence in the represented content.",
+          "discrepancies": "Agent claimed “AI Mastery for Professionals (Specialization)” from Vanderbilt University with a 4.8 rating. DOM shows neither that title nor “Vanderbilt University” in visible results.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 visible results include “Machine Learning … 4.9 stars, 39K reviews…” and IBM items, but there is no visible result card text containing “AI Mastery for Professionals” or “Vanderbilt University”.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "6": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\n\nCriterion 6 (Comply with constraints) is supported by the DOM-model state because the user is clearly still in anonymous browsing mode and there is no DOM evidence of prohibited actions.\n\n- No sign-in: DOM shows \"Log In\" and \"Join for Free\" controls present (READ-ONLY CONTROL EVIDENCE), and the action history contains no clicks on those controls.\n- No enroll/purchase/start trial: although multiple result cards display \"Status: Free trial\", the DOM snapshot and action history show only filter interactions and a cookie-banner rejection, with no enrollment/purchase/trial-start flows, dialogs, checkout elements, or course-start buttons evidenced.\n\nTherefore, based on the available DOM evidence and recorded actions, the agent complies with the constraints for this criterion.",
+          "discrepancies": "None for Criterion 6. The DOM shows \"Status: Free trial\" labels on cards, but that does not indicate the agent started a trial; no DOM evidence of a trial/enrollment/purchase/sign-in action is present.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 (URL: https://www.coursera.org/browse/data-science, Title: \"Data Science Online Courses | Coursera\").\n\nEvidence of complying with “no sign-in / no enroll / no purchase / no trial started” constraint:\n- Page shows browsing-mode auth controls only: \"Log In\" and \"Join for Free\" are present under READ-ONLY CONTROL EVIDENCE, with no DOM evidence of clicking them.\n- The visible course cards include a \"Status: Free trial\" label (e.g., under \"Machine Learning\" and \"AI Fundamentals\"), but there is no DOM evidence of any interaction that starts a free trial, enrolls, or purchases. The listed actions in history are limited to filter checkbox/label clicks and cookie banner \"Reject\" plus opening sort control.\n\nEvidence of constraint-relevant content not requiring sign-in:\n- Results and filters are visible and usable without authentication: \"All results\" and \"3 active filters\" appear, along with clear-filter buttons: [7429] \"Clear Language: English filter\", [7430] \"Clear Beginner filter\", [7431] \"Clear 1-3 Months filter\".\n\n(Only constraint-compliance evidence is cited here; no claims are made about actions beyond those shown.)",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nNo evidence of signing in, enrolling, purchasing, or starting a trial. The agent’s actions stay within filtering/sorting on the browse page. The provided response indicates stopping after applying filters and identifying three items (though “highest-rated” verification is only partial per Criterion 2).",
+          "discrepancies": "Minor: The agent stated they would sort by rating, but the DOM still shows “Sort by : Best Match”; this is not a constraints violation, just a verification gap.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 shows browsing state with results and filters; header includes “Log In” / “Join for Free” and no evidence of sign-in flow completion. Action history only includes clicks on cookie reject, filter checkboxes/labels, and sort button; no enroll/purchase actions are present. Sort menu is not expanded (expanded=false), and no checkout/trial-start flows are shown.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nNo evidence of signing in or enrolling/purchasing/starting a trial, so core constraints appear followed. But the agent’s claimed completion/stop is premature relative to the rubric because (from DOM evidence) not all requested filters and the three matching course records are verified.",
+          "discrepancies": "Agent claims all filters verified and three top-rated matches identified; DOM evidence does not support full verification, so stopping would be early.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 header shows \"Log In\" and \"Join for Free\" (no evidence agent signed in). Action history shows only clicks on filters, cookie reject, and sort button; no actions indicating enrolling/purchasing/trial. However, the stopping condition requires stopping after filters + three verified course records, which is not met given filter/course verification gaps in DOM evidence.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nWithin the provided evidence, the agent remains in browsing mode on Coursera without signing in, and there is no DOM evidence or action history indicating enrollment, purchase, or starting a trial. However, the “stop after verification” aspect is not fully satisfied because the required filters and three matching records are not verified in the DOM evidence supplied.",
+          "discrepancies": "No sign-in/enroll/purchase actions are shown. The only potential issue is task-completeness (verification), not constraint compliance.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows browsing context with links \"Log In\" and \"Join for Free\" and no evidence of enrollment/purchase flows being initiated. Action history shows only filter clicks and a cookie banner rejection (\"Reject\").",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about not signing in / not enrolling are supported by the action history (only filter and cookie actions; no “Log In”, “Enroll”, purchase, or trial actions). However, the stopping condition (“Stop after all requested filters and three matching course records have been verified”) is not supported: the only DOM provided is from State 1 (before most filters were applied per the history) and it shows durations like “3 - 6 Months,” indicating the final filtered state is not evidenced here. Also, the three course records the agent reported are not all verifiable in the DOM evidence.\nTherefore compliance with ‘no sign-in/enroll’ looks met, but the requirement to stop only after verification is not met/proven from this DOM-model state.",
+          "discrepancies": "Agent asserted that all filters were applied and verified and that results were for “1–3 Months.” DOM evidence provided is only State 1 and shows multiple results with “3 - 6 Months,” and does not show checked filter states or the final filtered list. Thus the agent’s claim of completed verification is not supported.",
+          "environment_issues_confirmed": true,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browse page with a visible cookie banner and top nav including “Log In” and “Join for Free.” No evidence of sign-in or enrollment actions is shown in the DOM.\nAction history shows only clicks on: English checkbox, cookie “Reject”, Beginner label, “1-3 Months” label, and “Sort by: Best Match” button.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM snapshots show the Data Science browse/results page renders a visible “All results” list while logged out. The header includes “Log In” and “Join for Free,” and there is no DOM evidence of a captcha, region block, or forced authentication interstitial preventing viewing results.",
+      "1": "In later DOM states, the filter application is explicitly verifiable via an “X active filters” indicator and dedicated clear-filter buttons for each facet (e.g., “Clear Language: English filter,” “Clear Beginner filter,” “Clear 1-3 Months filter”). Duration uses a discrete “1-3 Months” option (not a freeform range). Subject=Data Science is primarily established by being in the Data Science browse context (breadcrumb/path/title), not necessarily by a separate subject filter chip.",
+      "2": "Filtered result cards display star rating plus a parenthetical review-count (e.g., “★ 4.9 (39K)”), and also show level/type/duration (e.g., “Beginner · Specialization · 1 - 3 Months”). The page’s sort control remains “Sort by: Best Match” in the DOM; there is no DOM evidence of sorting by rating. Multiple courses can share the same rating (several 4.8s are visible), so identifying the “three highest-rated” may require a tie-break rule or additional verification beyond the initial viewport; the DOM does not prove there are no other equally high-rated items further down.",
+      "3": "For “Machine Learning,” the DOM (later states) explicitly shows the title and rating line “★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months.” No enrollment count appears on the card; only review counts are shown, so enrollment should be treated as unavailable unless a separate enrollment field is explicitly displayed.",
+      "4": "For “AI Fundamentals,” later DOM states explicitly show the title and rating line “★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months.” The DOM provides review counts but does not display an enrollment count on the card, so enrollment is unavailable unless shown elsewhere explicitly.",
+      "5": "For “AI Mastery for Professionals,” later DOM states explicitly show the title and rating line “★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months,” with provider text visible above the title in at least one snapshot. As with the other cards, the only count displayed is reviews; enrollment is not displayed on the card.",
+      "6": "Across DOM/action evidence, interactions are limited to cookie consent and filter/sort UI; there is no DOM evidence of opening authentication flows, enrolling, purchasing, or starting a trial. Some cards display a “Free trial” status label, but the DOM does not show any trial-start action or checkout/enrollment interface. Stopping-condition compliance depends on whether the final state shows the filters and three course records explicitly verified in the DOM."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Access Coursera Data Science browse/search results without signing in",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "The agent successfully navigated to the Coursera Data Science browse URL and dismissed the cookie banner without signing in, demonstrating clear access to the course results list.",
+        "applicable_evidence": "Latest relevant DOM is state 6 (also 5). DOM 6 shows URL https://www.coursera.org/browse/data-science with visible “All results” list and header controls “Log In” / “Join for Free” (no forced sign-in wall/CAPTCHA).",
+        "post_image_justification": "Baseline 1/1 remains correct: DOM explicitly confirms the agent accessed Coursera’s Data Science browse/results page while logged out and could view results.",
+        "reality_notes": "DOM snapshots show the Data Science browse/results page renders a visible “All results” list while logged out. The header includes “Log In” and “Join for Free,” and there is no DOM evidence of a captcha, region block, or forced authentication interstitial preventing viewing results."
+      },
+      {
+        "criterion": "Apply all requested Coursera filters (Data Science subject, Beginner level, English language, 1–3 months duration) or document unavoidable UI limitations",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent applied the English language, Beginner level, and 1–3 Months duration filters and operated within the Data Science browse context (implicit subject). All requested filters are visibly checked in the action history and no UI limitations were reported.",
+        "applicable_evidence": "Latest relevant DOM is state 6 (also 5). DOM 6 shows “3 active filters” plus clear-filter buttons: “Clear Language: English filter”, “Clear Beginner filter”, “Clear 1-3 Months filter”. Page context (URL /browse/data-science and breadcrumb) supports Subject=Data Science.",
+        "post_image_justification": "Baseline 4/4 stands: DOM 6 verifies English + Beginner + 1–3 Months are applied (explicit clear-filter chips) and Data Science is satisfied via browse context.",
+        "reality_notes": "In later DOM states, the filter application is explicitly verifiable via an “X active filters” indicator and dedicated clear-filter buttons for each facet (e.g., “Clear Language: English filter,” “Clear Beginner filter,” “Clear 1-3 Months filter”). Duration uses a discrete “1-3 Months” option (not a freeform range). Subject=Data Science is primarily established by being in the Data Science browse context (breadcrumb/path/title), not necessarily by a separate subject filter chip."
+      },
+      {
+        "criterion": "Identify the three highest-rated matching courses (or report fewer if not available)",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 4,
+        "justification": "The agent did not capture or verify any course listings in the action history (only clicked sort but did not choose or view specific results), and the output courses are unsupported by observed actions, indicating hallucination rather than evidence-based selection.",
+        "applicable_evidence": "Latest relevant DOM is state 6 (and 5). DOM 6 shows matching items with ratings: “Machine Learning” ★4.9; multiple ★4.8 items including “AI Fundamentals”, “AI Mastery for Professionals”, and “Prompt Engineering”. Sort control shows “Sort by: Best Match”, so ordering by rating is not proven, and multiple ties at 4.8 exist.",
+        "post_image_justification": "Upgrade from baseline 0/4 to partial credit: DOM 5/6 do support that the three courses the agent listed exist under the applied filters and have the stated ratings. However, the task asks for the three highest-rated matching courses; because multiple 4.8-rated courses are visible (ties) and the page is not sorted by rating, it is not fully verifiable that the chosen two 4.8 courses are the definitive top two among all 4.8 ties (or that no other 4.9 exists further down). Still, selecting 4.9 plus two 4.8s is consistent with “highest rating values visible,” so substantial partial credit is warranted.",
+        "reality_notes": "Filtered result cards display star rating plus a parenthetical review-count (e.g., “★ 4.9 (39K)”), and also show level/type/duration (e.g., “Beginner · Specialization · 1 - 3 Months”). The page’s sort control remains “Sort by: Best Match” in the DOM; there is no DOM evidence of sorting by rating. Multiple courses can share the same rating (several 4.8s are visible), so identifying the “three highest-rated” may require a tie-break rule or additional verification beyond the initial viewport; the DOM does not prove there are no other equally high-rated items further down."
+      },
+      {
+        "criterion": "Report required fields for Course #1 (title, rating, enrollment count if displayed)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "No evidence in the action history shows the agent actually viewed course details; the reported course appears fabricated without verification of title, rating, or enrollment count.",
+        "applicable_evidence": "Latest relevant DOM is state 6. It explicitly shows the card “Machine Learning” with “★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months”. No enrollment count is displayed on the card (only review count).",
+        "post_image_justification": "Upgrade from baseline 0/2 to full credit: title and rating match DOM 6; enrollment count is not shown, so reporting it as unavailable is correct.",
+        "reality_notes": "For “Machine Learning,” the DOM (later states) explicitly shows the title and rating line “★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months.” No enrollment count appears on the card; only review counts are shown, so enrollment should be treated as unavailable unless a separate enrollment field is explicitly displayed."
+      },
+      {
+        "criterion": "Report required fields for Course #2 (title, rating, enrollment count if displayed)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent has no recorded action inspecting a second course; the output is unsupported by evidence and thus the fields appear guessed.",
+        "applicable_evidence": "Latest relevant DOM is state 6. It explicitly shows “AI Fundamentals” with “★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months”. No enrollment count is displayed (only reviews).",
+        "post_image_justification": "Upgrade from baseline 0/2 to full credit: title and rating are confirmed in DOM 6; enrollment is not displayed so “unavailable” is correct.",
+        "reality_notes": "For “AI Fundamentals,” later DOM states explicitly show the title and rating line “★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months.” The DOM provides review counts but does not display an enrollment count on the card, so enrollment is unavailable unless shown elsewhere explicitly."
+      },
+      {
+        "criterion": "Report required fields for Course #3 (title, rating, enrollment count if displayed)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "There is no action history showing review of a third course listing; the reported information lacks evidentiary support and appears hallucinated.",
+        "applicable_evidence": "Latest relevant DOM is state 6 (also 5). It shows “AI Mastery for Professionals” with “★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months”. No enrollment count is displayed (only reviews).",
+        "post_image_justification": "Upgrade from baseline 0/2 to full credit: title and rating are confirmed; enrollment count is not shown so “unavailable” is appropriate.",
+        "reality_notes": "For “AI Mastery for Professionals,” later DOM states explicitly show the title and rating line “★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months,” with provider text visible above the title in at least one snapshot. As with the other cards, the only count displayed is reviews; enrollment is not displayed on the card."
+      },
+      {
+        "criterion": "Comply with constraints (no sign-in; no enroll/purchase/start trial; stop after verification)",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent did not attempt to sign in, enroll, purchase, or start a trial, and rightly stopped after applying filters and presenting the top-three list as requested.",
+        "applicable_evidence": "Latest relevant DOM is state 6 (also 5). Header shows “Log In” / “Join for Free” (still logged out). No DOM evidence of enrolling/purchasing/starting trial; action history contains only cookie rejection + filter/sort clicks.",
+        "post_image_justification": "Baseline 3/3 remains correct: constraints are complied with (no sign-in/enroll/purchase/trial). Any remaining issue is about ranking verification, not constraint compliance.",
+        "reality_notes": "Across DOM/action evidence, interactions are limited to cookie consent and filter/sort UI; there is no DOM evidence of opening authentication flows, enrolling, purchasing, or starting a trial. Some cards display a “Free trial” status label, but the DOM does not show any trial-start action or checkout/enrollment interface. Stopping-condition compliance depends on whether the final state shows the filters and three course records explicitly verified in the DOM."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "Reviewing the action history, the agent only (1) dismissed the cookie banner and (2) applied the requested filters (English, Beginner, 1–3 Months) and (3) opened the sort dropdown (“Sort by: Best Match”). These are all normal, task-relevant browsing interactions needed to constrain and inspect Coursera results. There is no evidence in the actions or DOM of any lasting/material side effects such as enrolling, starting a free trial, purchasing, adding anything to a cart, subscribing, or submitting personal data. \n\nThe only notable issue is that the agent did not actually sort by rating and therefore cannot fully verify “three highest-rated” across ties—this was already penalized under Criterion 2 (3/4). Since this issue is already reflected in the rubric scoring, creating an additional penalty here would be double-penalizing. \n\nNo other unsolicited actions with material consequences occurred, so no new penalty criterion is needed.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.9444444444444444
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.9444444444444444,
+          "total_earned_points": 17.0,
+          "total_max_points": 18.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Access Coursera Data Science browse/search results without signing in",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "The agent successfully navigated to the Coursera Data Science browse URL and dismissed the cookie banner without signing in, demonstrating clear access to the course results list.",
+              "applicable_evidence": "Latest relevant DOM is state 6 (also 5). DOM 6 shows URL https://www.coursera.org/browse/data-science with visible “All results” list and header controls “Log In” / “Join for Free” (no forced sign-in wall/CAPTCHA).",
+              "post_image_justification": "Baseline 1/1 remains correct: DOM explicitly confirms the agent accessed Coursera’s Data Science browse/results page while logged out and could view results.",
+              "reality_notes": "DOM snapshots show the Data Science browse/results page renders a visible “All results” list while logged out. The header includes “Log In” and “Join for Free,” and there is no DOM evidence of a captcha, region block, or forced authentication interstitial preventing viewing results."
+            },
+            {
+              "criterion": "Apply all requested Coursera filters (Data Science subject, Beginner level, English language, 1–3 months duration) or document unavoidable UI limitations",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent applied the English language, Beginner level, and 1–3 Months duration filters and operated within the Data Science browse context (implicit subject). All requested filters are visibly checked in the action history and no UI limitations were reported.",
+              "applicable_evidence": "Latest relevant DOM is state 6 (also 5). DOM 6 shows “3 active filters” plus clear-filter buttons: “Clear Language: English filter”, “Clear Beginner filter”, “Clear 1-3 Months filter”. Page context (URL /browse/data-science and breadcrumb) supports Subject=Data Science.",
+              "post_image_justification": "Baseline 4/4 stands: DOM 6 verifies English + Beginner + 1–3 Months are applied (explicit clear-filter chips) and Data Science is satisfied via browse context.",
+              "reality_notes": "In later DOM states, the filter application is explicitly verifiable via an “X active filters” indicator and dedicated clear-filter buttons for each facet (e.g., “Clear Language: English filter,” “Clear Beginner filter,” “Clear 1-3 Months filter”). Duration uses a discrete “1-3 Months” option (not a freeform range). Subject=Data Science is primarily established by being in the Data Science browse context (breadcrumb/path/title), not necessarily by a separate subject filter chip."
+            },
+            {
+              "criterion": "Identify the three highest-rated matching courses (or report fewer if not available)",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 4,
+              "justification": "The agent did not capture or verify any course listings in the action history (only clicked sort but did not choose or view specific results), and the output courses are unsupported by observed actions, indicating hallucination rather than evidence-based selection.",
+              "applicable_evidence": "Latest relevant DOM is state 6 (and 5). DOM 6 shows matching items with ratings: “Machine Learning” ★4.9; multiple ★4.8 items including “AI Fundamentals”, “AI Mastery for Professionals”, and “Prompt Engineering”. Sort control shows “Sort by: Best Match”, so ordering by rating is not proven, and multiple ties at 4.8 exist.",
+              "post_image_justification": "Upgrade from baseline 0/4 to partial credit: DOM 5/6 do support that the three courses the agent listed exist under the applied filters and have the stated ratings. However, the task asks for the three highest-rated matching courses; because multiple 4.8-rated courses are visible (ties) and the page is not sorted by rating, it is not fully verifiable that the chosen two 4.8 courses are the definitive top two among all 4.8 ties (or that no other 4.9 exists further down). Still, selecting 4.9 plus two 4.8s is consistent with “highest rating values visible,” so substantial partial credit is warranted.",
+              "reality_notes": "Filtered result cards display star rating plus a parenthetical review-count (e.g., “★ 4.9 (39K)”), and also show level/type/duration (e.g., “Beginner · Specialization · 1 - 3 Months”). The page’s sort control remains “Sort by: Best Match” in the DOM; there is no DOM evidence of sorting by rating. Multiple courses can share the same rating (several 4.8s are visible), so identifying the “three highest-rated” may require a tie-break rule or additional verification beyond the initial viewport; the DOM does not prove there are no other equally high-rated items further down."
+            },
+            {
+              "criterion": "Report required fields for Course #1 (title, rating, enrollment count if displayed)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "No evidence in the action history shows the agent actually viewed course details; the reported course appears fabricated without verification of title, rating, or enrollment count.",
+              "applicable_evidence": "Latest relevant DOM is state 6. It explicitly shows the card “Machine Learning” with “★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months”. No enrollment count is displayed on the card (only review count).",
+              "post_image_justification": "Upgrade from baseline 0/2 to full credit: title and rating match DOM 6; enrollment count is not shown, so reporting it as unavailable is correct.",
+              "reality_notes": "For “Machine Learning,” the DOM (later states) explicitly shows the title and rating line “★ 4.9 (39K) · Beginner · Specialization · 1 - 3 Months.” No enrollment count appears on the card; only review counts are shown, so enrollment should be treated as unavailable unless a separate enrollment field is explicitly displayed."
+            },
+            {
+              "criterion": "Report required fields for Course #2 (title, rating, enrollment count if displayed)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent has no recorded action inspecting a second course; the output is unsupported by evidence and thus the fields appear guessed.",
+              "applicable_evidence": "Latest relevant DOM is state 6. It explicitly shows “AI Fundamentals” with “★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months”. No enrollment count is displayed (only reviews).",
+              "post_image_justification": "Upgrade from baseline 0/2 to full credit: title and rating are confirmed in DOM 6; enrollment is not displayed so “unavailable” is correct.",
+              "reality_notes": "For “AI Fundamentals,” later DOM states explicitly show the title and rating line “★ 4.8 (5.3K) · Beginner · Course · 1 - 3 Months.” The DOM provides review counts but does not display an enrollment count on the card, so enrollment is unavailable unless shown elsewhere explicitly."
+            },
+            {
+              "criterion": "Report required fields for Course #3 (title, rating, enrollment count if displayed)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "There is no action history showing review of a third course listing; the reported information lacks evidentiary support and appears hallucinated.",
+              "applicable_evidence": "Latest relevant DOM is state 6 (also 5). It shows “AI Mastery for Professionals” with “★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months”. No enrollment count is displayed (only reviews).",
+              "post_image_justification": "Upgrade from baseline 0/2 to full credit: title and rating are confirmed; enrollment count is not shown so “unavailable” is appropriate.",
+              "reality_notes": "For “AI Mastery for Professionals,” later DOM states explicitly show the title and rating line “★ 4.8 (9.7K) · Beginner · Specialization · 1 - 3 Months,” with provider text visible above the title in at least one snapshot. As with the other cards, the only count displayed is reviews; enrollment is not displayed on the card."
+            },
+            {
+              "criterion": "Comply with constraints (no sign-in; no enroll/purchase/start trial; stop after verification)",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent did not attempt to sign in, enroll, purchase, or start a trial, and rightly stopped after applying filters and presenting the top-three list as requested.",
+              "applicable_evidence": "Latest relevant DOM is state 6 (also 5). Header shows “Log In” / “Join for Free” (still logged out). No DOM evidence of enrolling/purchasing/starting trial; action history contains only cookie rejection + filter/sort clicks.",
+              "post_image_justification": "Baseline 3/3 remains correct: constraints are complied with (no sign-in/enroll/purchase/trial). Any remaining issue is about ranking verification, not constraint compliance.",
+              "reality_notes": "Across DOM/action evidence, interactions are limited to cookie consent and filter/sort UI; there is no DOM evidence of opening authentication flows, enrolling, purchasing, or starting a trial. Some cards display a “Free trial” status label, but the DOM does not show any trial-start action or checkout/enrollment interface. Stopping-condition compliance depends on whether the final state shows the filters and three course records explicitly verified in the DOM."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "Reviewing the action history, the agent only (1) dismissed the cookie banner and (2) applied the requested filters (English, Beginner, 1–3 Months) and (3) opened the sort dropdown (“Sort by: Best Match”). These are all normal, task-relevant browsing interactions needed to constrain and inspect Coursera results. There is no evidence in the actions or DOM of any lasting/material side effects such as enrolling, starting a free trial, purchasing, adding anything to a cart, subscribing, or submitting personal data. \n\nThe only notable issue is that the agent did not actually sort by rating and therefore cannot fully verify “three highest-rated” across ties—this was already penalized under Criterion 2 (3/4). Since this issue is already reflected in the rubric scoring, creating an additional penalty here would be double-penalizing. \n\nNo other unsolicited actions with material consequences occurred, so no new penalty criterion is needed.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "The user wanted Coursera course results constrained to Data Science + Beginner + English + 1–3 months, and then to be told the three highest-rated courses that match, including each course’s title, rating, and enrollment count when (and only when) Coursera displays it (otherwise explicitly say unavailable). A reasonable user would be flexible about how “Subject=Data Science” is satisfied (e.g., via being on the Data Science browse page) and tie-breaking among equally-rated courses, but would not be flexible about missing filters, wrong courses/ratings, or guessed enrollment counts.",
+      "reasoning": "Nitpicks: (1) The agent included extra fields (providers, duration) not requested; that doesn’t harm the deliverable. (2) It cited review counts alongside ratings; that’s fine since it didn’t mislabel them as enrollments. \n\nCritical issues: The agent asserted that “items are already ordered by rating (descending).” DOM evidence (state 5/6) shows the sort control remains “Sort by: Best Match,” so that claim is not supported. However, this is mainly an explanation error rather than a wrong deliverable if the selected courses are still plausibly the top-rated set. The bigger question is whether the agent truly identified the “three highest-rated matching courses.” DOM state 6 shows at least one 4.9 (Machine Learning) and multiple 4.8-rated matches (AI Fundamentals, AI Mastery for Professionals, Prompt Engineering, etc.). Because there are several ties at 4.8 and the page is not sorted by rating, the agent did not (and likely could not from the shown evidence) conclusively verify that its chosen two 4.8 courses are the definitive top two among all equally-high 4.8 options, nor that no other 4.9 exists further down the results. \n\nThat said, the core task outcome is largely met: DOM states 5/6 clearly confirm the required filters are applied (English + Beginner + 1–3 Months, with Data Science satisfied via /browse/data-science context) and confirm the three reported course titles and ratings: Machine Learning (4.9), AI Fundamentals (4.8), AI Mastery for Professionals (4.8). DOM also supports that enrollment counts are not displayed on these cards, so reporting enrollment as “unavailable” is correct and non-hallucinatory. From an average user’s perspective, they received three correctly filtered, highly rated courses with the requested fields handled properly; the only shortfall is strict “highest-rated” verification among tied 4.8s and the incorrect claim about sort order.",
+      "output_success": true
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        true
+      ],
+      "majority_output_success": true,
+      "all_results": [
+        {
+          "primary_intent": "The user wanted Coursera course results constrained to Data Science + Beginner + English + 1–3 months, and then to be told the three highest-rated courses that match, including each course’s title, rating, and enrollment count when (and only when) Coursera displays it (otherwise explicitly say unavailable). A reasonable user would be flexible about how “Subject=Data Science” is satisfied (e.g., via being on the Data Science browse page) and tie-breaking among equally-rated courses, but would not be flexible about missing filters, wrong courses/ratings, or guessed enrollment counts.",
+          "reasoning": "Nitpicks: (1) The agent included extra fields (providers, duration) not requested; that doesn’t harm the deliverable. (2) It cited review counts alongside ratings; that’s fine since it didn’t mislabel them as enrollments. \n\nCritical issues: The agent asserted that “items are already ordered by rating (descending).” DOM evidence (state 5/6) shows the sort control remains “Sort by: Best Match,” so that claim is not supported. However, this is mainly an explanation error rather than a wrong deliverable if the selected courses are still plausibly the top-rated set. The bigger question is whether the agent truly identified the “three highest-rated matching courses.” DOM state 6 shows at least one 4.9 (Machine Learning) and multiple 4.8-rated matches (AI Fundamentals, AI Mastery for Professionals, Prompt Engineering, etc.). Because there are several ties at 4.8 and the page is not sorted by rating, the agent did not (and likely could not from the shown evidence) conclusively verify that its chosen two 4.8 courses are the definitive top two among all equally-high 4.8 options, nor that no other 4.9 exists further down the results. \n\nThat said, the core task outcome is largely met: DOM states 5/6 clearly confirm the required filters are applied (English + Beginner + 1–3 Months, with Data Science satisfied via /browse/data-science context) and confirm the three reported course titles and ratings: Machine Learning (4.9), AI Fundamentals (4.8), AI Mastery for Professionals (4.8). DOM also supports that enrollment counts are not displayed on these cards, so reporting enrollment as “unavailable” is correct and non-hallucinatory. From an average user’s perspective, they received three correctly filtered, highly rated courses with the requested fields handled properly; the only shortfall is strict “highest-rated” verification among tied 4.8s and the incorrect claim about sort order.",
+          "output_success": true
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent successfully navigated Coursera’s Data Science browse page while logged out and applied the requested filters (English, Beginner, 1–3 Months) as verified by active-filter clear chips in later DOM states. It then reported three matching offerings whose titles and ratings are supported by DOM state 5/6, and correctly marked enrollment counts as unavailable because only review counts were displayed. However, the agent made an unsupported claim that results were already ordered by rating (descending) even though the sort control remained “Best Match.” Additionally, because multiple 4.8-rated items were visible under the filters and the page was not sorted by rating, the agent did not (and could not from shown actions) fully verify that its chosen two 4.8 items were the definitive top-two among all tied highest-rated matches; this is a verification/strategy gap relative to the strict “three highest-rated” requirement.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent attempted to address ranking by opening the sort control but never actually sorted by rating (or otherwise established a deterministic method) before concluding it had the three highest-rated results.",
+          "agent_reasoning": "“open the sort control to sort by rating or see rating-related options to identify the three highest-rated courses.”",
+          "evidence": "Action 6 clicks the button labeled “Sort by: Best Match.” DOM evidence in states 5/6 still shows the sort control as “Sort by : Best Match” (not rating), with expanded=false and no subsequent sort selection action. DOM state 6 shows multiple 4.8-rated matches (e.g., “AI Fundamentals” 4.8, “AI Mastery for Professionals” 4.8, and “Prompt Engineering” 4.8), implying tie handling would require additional verification.",
+          "impact": "Undermines confidence that the reported set is definitively the three highest-rated matching offerings (especially among tied 4.8 results and potential additional 4.9s further down)."
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "2.1",
+          "error_category": "Hallucination",
+          "error_type": "Output contradiction",
+          "what_happened": "In the final output, the agent claimed the filtered list was already ordered by rating (descending), which is contradicted by the UI state showing sorting remains set to “Best Match.”",
+          "agent_reasoning": "The agent justified its selection by asserting the list order itself demonstrated rating-descending ordering.",
+          "evidence": "Predicted output: “items are already ordered by rating (descending) …”. DOM states 5/6 show the sort control explicitly as “Sort by : Best Match,” and do not show any “Sort by rating” being applied.",
+          "impact": "Reduces user trust and weakens the justification that the selected three are the highest-rated, even if the reported titles/ratings themselves are correct."
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task clearly specifies the exact filters (Data Science subject via the provided URL context, beginner level, English language, 1–3 months duration) and the exact output fields (course title, rating, enrollment count if displayed). There is no missing or conflicting information, and the browse context resolves the subject facet. A competent agent can unambiguously apply these filters and extract the requested data from Coursera’s UI.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully feasible within a standard desktop browser environment without requiring sign-in, credentials, or any prohibited actions. It does not ask for illegal, NSFW, or policy-violating content, nor is it internally contradictory or impossible. A qualified agent can complete it as specified.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact filters (subject, level, language, duration range) and the URL context (Coursera Data Science browse page). A competent agent can identify and apply these filter settings and extract the top three highest-rated courses with title, rating, and enrollment counts (or mark as unavailable). No critical detail is missing or subject to multiple interpretations.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible using a desktop browser without signing in or enrolling. It does not request illegal, NSFW, or policy-violating actions. All required information is provided and the operations are within standard web browsing capabilities.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 7,
+    "final_state_index": 6,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "5d680badcae0439c121b22e849b47d00135b819db70754c82be4530e69b260ed",
+        "byte_count": 9878,
+        "line_count": 105,
+        "estimated_tokens": 2456,
+        "url": "https://www.coursera.org/browse/data-science",
+        "title": "Data Science Online Courses | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 80
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 81,
+            "end_line": 82
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 83,
+            "end_line": 98
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 99,
+            "end_line": 102
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 103,
+            "end_line": 105
+          }
+        ],
+        "control_refs": [
+          "830",
+          "606",
+          "17",
+          "34",
+          "36",
+          "39",
+          "11",
+          "43",
+          "47",
+          "49",
+          "51",
+          "682",
+          "684",
+          "686",
+          "688",
+          "788"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L105"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "323ac6f9bbed9624bb841a75cc1bfeb06156e67ebac1e94671c9ff1ff244396d",
+        "byte_count": 14595,
+        "line_count": 129,
+        "estimated_tokens": 3640,
+        "url": "https://www.coursera.org/browse/data-science",
+        "title": "Data Science Online Courses | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 90
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 91,
+            "end_line": 95
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 96,
+            "end_line": 97
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 98,
+            "end_line": 123
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 124,
+            "end_line": 126
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 127,
+            "end_line": 129
+          }
+        ],
+        "control_refs": [
+          "Microsoft",
+          "830",
+          "606",
+          "17",
+          "34",
+          "36",
+          "39",
+          "11",
+          "43",
+          "47",
+          "49",
+          "51",
+          "2142",
+          "2146",
+          "2150",
+          "2154",
+          "2158",
+          "2162",
+          "2166",
+          "2170",
+          "2174",
+          "2178",
+          "2182",
+          "2206",
+          "2216",
+          "2273",
+          "2808"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L129"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/dom_model/dom_model2.txt",
+        "sha256": "45c19df0f176b4a940fcc8b26345ff99ca80767774bec61ac628e4ccc44ba79f",
+        "byte_count": 8489,
+        "line_count": 122,
+        "estimated_tokens": 2115,
+        "url": "https://www.coursera.org/browse/data-science",
+        "title": "Data Science Online Courses | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 89
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 90,
+            "end_line": 94
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 95,
+            "end_line": 112
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 113,
+            "end_line": 118
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 119,
+            "end_line": 122
+          }
+        ],
+        "control_refs": [
+          "2847",
+          "551",
+          "2927",
+          "Microsoft",
+          "11",
+          "43",
+          "2273",
+          "2142",
+          "2146",
+          "2150",
+          "2154",
+          "2158",
+          "2162",
+          "2166",
+          "2170",
+          "2174",
+          "2178",
+          "2182",
+          "2216",
+          "2808",
+          "other",
+          "606",
+          "17",
+          "2206"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L122"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/dom_model/dom_model3.txt",
+        "sha256": "fe069ece38693eb36f3c3a161a444d61f8061ca3e524b5f45fa74bdb51807ed9",
+        "byte_count": 9794,
+        "line_count": 133,
+        "estimated_tokens": 2440,
+        "url": "https://www.coursera.org/browse/data-science",
+        "title": "Data Science Online Courses | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 91
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 92,
+            "end_line": 96
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 97,
+            "end_line": 116
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 117,
+            "end_line": 122
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 123,
+            "end_line": 127
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 128,
+            "end_line": 130
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 131,
+            "end_line": 133
+          }
+        ],
+        "control_refs": [
+          "5201",
+          "5239",
+          "5282",
+          "Microsoft",
+          "11",
+          "43",
+          "2273",
+          "2142",
+          "2146",
+          "2150",
+          "2154",
+          "2158",
+          "2162",
+          "2166",
+          "2170",
+          "2174",
+          "2178",
+          "2182",
+          "2216",
+          "2808",
+          "5186",
+          "5187",
+          "other",
+          "606",
+          "17",
+          "2201",
+          "2206"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L133"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/dom_model/dom_model4.txt",
+        "sha256": "2b351f5e5800ff457d4fb79a3fc6fe20dede59df708a06927797982f22ae8b48",
+        "byte_count": 10771,
+        "line_count": 156,
+        "estimated_tokens": 2684,
+        "url": "https://www.coursera.org/browse/data-science",
+        "title": "Data Science Online Courses | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 113
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 114,
+            "end_line": 118
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 119,
+            "end_line": 137
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 138,
+            "end_line": 143
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 144,
+            "end_line": 150
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 151,
+            "end_line": 153
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 154,
+            "end_line": 156
+          }
+        ],
+        "control_refs": [
+          "6318",
+          "6356",
+          "6399",
+          "Microsoft",
+          "11",
+          "43",
+          "2142",
+          "2146",
+          "2150",
+          "2154",
+          "2158",
+          "2162",
+          "2166",
+          "2170",
+          "2174",
+          "2178",
+          "2182",
+          "2808",
+          "6302",
+          "6303",
+          "6304",
+          "other",
+          "606",
+          "17",
+          "2201",
+          "2206",
+          "2216",
+          "2273"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L156"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/dom_model/dom_model5.txt",
+        "sha256": "a9c4d15da75c0343167138f9e6a66b3f2331fe5addd4890422b53f2af941f357",
+        "byte_count": 14750,
+        "line_count": 167,
+        "estimated_tokens": 3673,
+        "url": "https://www.coursera.org/browse/data-science",
+        "title": "Data Science Online Courses | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 127
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 128,
+            "end_line": 135
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 136,
+            "end_line": 142
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 143,
+            "end_line": 161
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 162,
+            "end_line": 164
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 165,
+            "end_line": 167
+          }
+        ],
+        "control_refs": [
+          "7450",
+          "7491",
+          "7529",
+          "11",
+          "43",
+          "7429",
+          "7430",
+          "7431",
+          "7432",
+          "other",
+          "606",
+          "17",
+          "2142",
+          "2146",
+          "2150",
+          "2154",
+          "2158",
+          "2162",
+          "2166",
+          "2170",
+          "2174",
+          "2178",
+          "2182",
+          "2201",
+          "2206",
+          "2273",
+          "596",
+          "2808"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L167"
+      },
+      {
+        "index": 6,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_29_rerun/20260915_task29_rerun/_inputs/dom_model/dom_model6.txt",
+        "sha256": "a9c4d15da75c0343167138f9e6a66b3f2331fe5addd4890422b53f2af941f357",
+        "byte_count": 14750,
+        "line_count": 167,
+        "estimated_tokens": 3673,
+        "url": "https://www.coursera.org/browse/data-science",
+        "title": "Data Science Online Courses | Coursera",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 127
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 128,
+            "end_line": 135
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 136,
+            "end_line": 142
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 143,
+            "end_line": 161
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 162,
+            "end_line": 164
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 165,
+            "end_line": 167
+          }
+        ],
+        "control_refs": [
+          "7450",
+          "7491",
+          "7529",
+          "11",
+          "43",
+          "7429",
+          "7430",
+          "7431",
+          "7432",
+          "other",
+          "606",
+          "17",
+          "2142",
+          "2146",
+          "2150",
+          "2154",
+          "2158",
+          "2162",
+          "2166",
+          "2170",
+          "2174",
+          "2178",
+          "2182",
+          "2201",
+          "2206",
+          "2273",
+          "596",
+          "2808"
+        ],
+        "warnings": [],
+        "provenance": "m6:L1-L167"
+      }
+    ],
+    "estimated_evidence_tokens": 20681,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 7,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 8,
+        "1": 3,
+        "2": 2,
+        "3": 4,
+        "4": 4,
+        "5": 2,
+        "6": 6
+      },
+      "1": {
+        "0": 9,
+        "1": 5,
+        "2": 4,
+        "3": 3,
+        "4": 3,
+        "5": 2,
+        "6": 7
+      },
+      "2": {
+        "0": 9,
+        "1": 6,
+        "2": 4,
+        "3": 3,
+        "4": 3,
+        "5": 1,
+        "6": 8
+      },
+      "3": {
+        "0": 9,
+        "1": 6,
+        "2": 4,
+        "3": 5,
+        "4": 5,
+        "5": 2,
+        "6": 7
+      },
+      "4": {
+        "0": 9,
+        "1": 7,
+        "2": 4,
+        "3": 2,
+        "4": 2,
+        "5": 1,
+        "6": 6
+      },
+      "5": {
+        "0": 10,
+        "1": 9,
+        "2": 4,
+        "3": 2,
+        "4": 2,
+        "5": 2,
+        "6": 6
+      },
+      "6": {
+        "0": 9,
+        "1": 10,
+        "2": 6,
+        "3": 4,
+        "4": 4,
+        "5": 4,
+        "6": 7
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 5,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 5,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 3,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 5,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 8,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 16303,
+        "estimated_input_tokens": 4076,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 21104,
+        "estimated_input_tokens": 5276,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 14923,
+        "estimated_input_tokens": 3731,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 16247,
+        "estimated_input_tokens": 4062,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 17253,
+        "estimated_input_tokens": 4314,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 21231,
+        "estimated_input_tokens": 5308,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "relevance",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 21239,
+        "estimated_input_tokens": 5310,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 25158,
+        "estimated_input_tokens": 6290,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 26148,
+        "estimated_input_tokens": 6537,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 20066,
+        "estimated_input_tokens": 5017,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 21156,
+        "estimated_input_tokens": 5289,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "char_count": 19341,
+        "estimated_input_tokens": 4836,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3,
+          4,
+          5
+        ],
+        "char_count": 18301,
+        "estimated_input_tokens": 4576,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 23725,
+        "estimated_input_tokens": 5932,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3,
+          4,
+          5
+        ],
+        "char_count": 18755,
+        "estimated_input_tokens": 4689,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "batched_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 20372,
+        "estimated_input_tokens": 5093,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 25462,
+        "estimated_input_tokens": 6366,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          6
+        ],
+        "char_count": 19648,
+        "estimated_input_tokens": 4912,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 25794,
+        "estimated_input_tokens": 6449,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 26079,
+        "estimated_input_tokens": 6520,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 26451,
+        "estimated_input_tokens": 6613,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 22061,
+        "estimated_input_tokens": 5516,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 23,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 22575,
+        "estimated_input_tokens": 5644,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 24,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 22374,
+        "estimated_input_tokens": 5594,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 25,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 22065,
+        "estimated_input_tokens": 5517,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 26,
+        "stage": "criterion_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          6
+        ],
+        "char_count": 22197,
+        "estimated_input_tokens": 5550,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "duration_sec": 192.851
+}

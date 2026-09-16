@@ -1,0 +1,3846 @@
+{
+  "task_id": "browser_task_057-clinical-trial-filtering-20260915T080033Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.45,
+  "rubric_total_max_points": 20.0,
+  "rubric_total_earned_points": 9.0,
+  "rubric_is_success": false,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: Minor wording like “not shown in current viewport” vs simply “not available” is not important; also not providing URLs is fine because the task didn’t ask for them.\n\nCritical issues:\n1) Missing required field (“Last Update Posted” date) for all three results. The task explicitly requires reporting the Last Update Posted date for each of the first three displayed results; the agent instead outputs “Not shown…”. This is a core deliverable, not a cosmetic omission.\n2) Sorting not verified/applied as required. DOM evidence (state 13) explicitly shows “Relevance” checked while “Newest First” is merely an available option; later DOM states do not visibly confirm newest-first sorting is active. Since the requested top-3 must be under newest-first order, failure to actually reach/confirm that state undermines correctness of the reported ordering.\n3) Wrong first result in displayed order. DOM evidence repeatedly shows NCT07282743 as the first displayed NCT in the list (e.g., states 8/9/10/15), whereas the agent reports NCT07340320 as #1. Even if filters were largely applied, this mismatch means the agent did not preserve the displayed order for the first item.\n\nWhat the agent did accomplish: It did navigate on ClinicalTrials.gov, searched “type 2 diabetes,” and there is strong evidence that United States + Recruiting were applied (URL/title/search details), and Phase 3 appears checked in later states (e.g., 13/15/16). It also avoided prohibited actions (no contacting/saving/submitting).\n\nOutcome: From an average user perspective, the task is not completed because the agent did not provide the required “Last Update Posted” dates, did not reliably establish/verify the required newest-first sort, and at least the first listed study is not the actual first displayed result per DOM evidence. These are not nitpicks; they prevent the user from getting the correct top three results under the requested sort/filter settings.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "The user wanted the agent to use ClinicalTrials.gov’s search UI to retrieve the first three results after applying specific constraints (Recruiting + Phase 3 + United States) and sorting by “Last Update Posted” (newest first), then report for each of the top 3: NCT number, full title, study status, and the Last Update Posted date. A reasonable user would be flexible about minor UI wording/where the controls live, but not flexible about missing the required sort, wrong top-3 ordering, or missing the required “Last Update Posted” dates."
+  },
+  "preflight": {
+    "task_id": "browser_task_057-clinical-trial-filtering-20260915T080033Z",
+    "actions": 16,
+    "dom_model_states": 17,
+    "initial_state": 0,
+    "final_state": 16,
+    "alignment": {
+      "task_id": "browser_task_057-clinical-trial-filtering-20260915T080033Z",
+      "action_count": 16,
+      "state_count": 17,
+      "initial_state": 0,
+      "final_state": 16,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e143",
+            "target": {
+              "ref": "e143",
+              "role": "combobox",
+              "name": "Condition/disease"
+            },
+            "thoughts": "Need to enter the search term 'type 2 diabetes' in the Condition/disease field before applying filters and sorting."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "ordinal": 2,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e143",
+            "target": {
+              "ref": "e143",
+              "role": "combobox",
+              "name": "Condition/disease"
+            },
+            "text": "type 2 diabetes",
+            "thoughts": "Enter the required search condition 'type 2 diabetes' into the Condition/disease search box to focus results before applying filters."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e150",
+            "target": {
+              "ref": "e150",
+              "role": "LabelText",
+              "name": "Recruiting (64,669)"
+            },
+            "thoughts": "Need to apply the Recruiting filter under Study Status as specified before other filters and sorting."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "ordinal": 4,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e183",
+            "target": {
+              "ref": "e183",
+              "role": "checkbox",
+              "name": "Phase 3 (49,846)"
+            },
+            "thoughts": "Next required filter is Study Phase; click the Phase 3 checkbox to apply it before setting location and sort order."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "ordinal": 5,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e146",
+            "target": {
+              "ref": "e146",
+              "role": "combobox",
+              "name": "In country, state, or city"
+            },
+            "thoughts": "Need to set Study Location to United States by opening the location combobox before choosing the country."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "ordinal": 6,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e146",
+            "target": {
+              "ref": "e146",
+              "role": "combobox",
+              "name": "In country, state, or city"
+            },
+            "text": "United States",
+            "thoughts": "Need to enter the location filter value; the country combobox is focused and expanded, so I should type 'United States' into it before applying filters."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "ordinal": 7,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e274",
+            "target": {
+              "ref": "e274",
+              "role": "option",
+              "name": "United States"
+            },
+            "thoughts": "Select the United States option from the location dropdown so the Apply Filters button can enable and we can apply all filters before sorting and recording results."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "ordinal": 8,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e40",
+            "target": {
+              "ref": "e40",
+              "role": "button",
+              "name": "Apply Filters"
+            },
+            "thoughts": "Filters are set (type 2 diabetes, Recruiting, Phase 3, United States), so I should click Apply Filters next to execute them before sorting and reading results."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "ordinal": 9,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e186",
+            "target": {
+              "ref": "e186",
+              "role": "checkbox",
+              "name": "Phase 3 (31)"
+            },
+            "thoughts": "Phase 3 is not yet selected on this updated page; I need to check its box before reapplying filters and then sorting."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "ordinal": 10,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e41",
+            "target": {
+              "ref": "e41",
+              "role": "button",
+              "name": "Apply Filters"
+            },
+            "thoughts": "Phase 3 is now checked but filters not yet applied; clicking the enabled Apply Filters button will apply the Phase 3 filter before sorting and reading results."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "ordinal": 11,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to locate and use the sort control (Last Update Posted, newest first), which is likely above or near the results; scrolling will reveal it if currently off-screen."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "ordinal": 12,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e188",
+            "target": {
+              "ref": "e188",
+              "role": "LabelText",
+              "name": "Phase 3 (31)"
+            },
+            "thoughts": "Phase 3 is still unchecked; I need to click its label so the checkbox toggles and the filter becomes active before verifying results and sorting."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "ordinal": 13,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e61",
+            "target": {
+              "ref": "e61",
+              "role": "button",
+              "name": "Display"
+            },
+            "thoughts": "Phase 3, Recruiting, and United States filters are active; next I need to sort results by Last Update Posted newest first, likely via the Display button."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "ordinal": 14,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e270",
+            "target": {
+              "ref": "e270",
+              "role": "radio",
+              "name": "Newest First"
+            },
+            "thoughts": "Set sort order to Newest First (Last Update Posted newest first) via the visible sort radio control before extracting the top three results."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "ordinal": 15,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Sorting was just set to Newest First; now I need to scroll to view the top three study cards and capture their NCT, title, status, and Last Update Posted fields."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "ordinal": 16,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": -800,
+            "thoughts": "Need to scroll slightly up where individual study cards show NCT number, status, and Last Update Posted so I can read the first three results fully."
+          },
+          "observed_after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "c64865894c262e04ea3d30aa122fa8dfa1d45b6b00ef58e7b4119fda96af1929",
+          "after_sha256": "cdc04f5b82e96ff6fee23ac332f6ef0c3bb7668c468afeb5dc8dcbf6d4c3219a",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "cdc04f5b82e96ff6fee23ac332f6ef0c3bb7668c468afeb5dc8dcbf6d4c3219a",
+          "after_sha256": "222b8a558ad6ca39885fe2862180326abf57503cce910ad604080e77db69f422",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "222b8a558ad6ca39885fe2862180326abf57503cce910ad604080e77db69f422",
+          "after_sha256": "b2db51ffb51ab3515cfe1b72b8c5f3fd2f49c32961be17665e192ad3e744fbfb",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "b2db51ffb51ab3515cfe1b72b8c5f3fd2f49c32961be17665e192ad3e744fbfb",
+          "after_sha256": "16f37403d2d36ca0dc3e6014bf9597e39f69311faa615353133b1ff1b28d4614",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "16f37403d2d36ca0dc3e6014bf9597e39f69311faa615353133b1ff1b28d4614",
+          "after_sha256": "521ec8e581fa2bbb4b204b2f0d5e97b20326946a6bd19f0fb4e95faeef11a8c6",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "521ec8e581fa2bbb4b204b2f0d5e97b20326946a6bd19f0fb4e95faeef11a8c6",
+          "after_sha256": "a5db79bfbc93a6662aaeaf32852b82aff1a5cc3bf864c9140e70e3fd36a171c6",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "from_state": 6,
+          "action_ordinal": 7,
+          "to_state": 7,
+          "before_sha256": "a5db79bfbc93a6662aaeaf32852b82aff1a5cc3bf864c9140e70e3fd36a171c6",
+          "after_sha256": "6a6aa75ee314384d347a0f6690ae5a80cb42631f099df8c6862060133e70da9c",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card"
+        },
+        {
+          "from_state": 7,
+          "action_ordinal": 8,
+          "to_state": 8,
+          "before_sha256": "6a6aa75ee314384d347a0f6690ae5a80cb42631f099df8c6862060133e70da9c",
+          "after_sha256": "65ab51c0f90d58555fb01e42ae7284f174f889c3eaae6a15ed54f37765a6f726",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "from_state": 8,
+          "action_ordinal": 9,
+          "to_state": 9,
+          "before_sha256": "65ab51c0f90d58555fb01e42ae7284f174f889c3eaae6a15ed54f37765a6f726",
+          "after_sha256": "1367ccb61b6bbb71e10d01fb320e7c15f4ce190fd49a7cef4381c9ed2c580c89",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "from_state": 9,
+          "action_ordinal": 10,
+          "to_state": 10,
+          "before_sha256": "1367ccb61b6bbb71e10d01fb320e7c15f4ce190fd49a7cef4381c9ed2c580c89",
+          "after_sha256": "1367ccb61b6bbb71e10d01fb320e7c15f4ce190fd49a7cef4381c9ed2c580c89",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "from_state": 10,
+          "action_ordinal": 11,
+          "to_state": 11,
+          "before_sha256": "1367ccb61b6bbb71e10d01fb320e7c15f4ce190fd49a7cef4381c9ed2c580c89",
+          "after_sha256": "3cf3248154259a8e4bee8961860a7f6dbfe5b0f16d6678512c4b1b4fe7f8f5a2",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "from_state": 11,
+          "action_ordinal": 12,
+          "to_state": 12,
+          "before_sha256": "3cf3248154259a8e4bee8961860a7f6dbfe5b0f16d6678512c4b1b4fe7f8f5a2",
+          "after_sha256": "5b4f2a7ad844527803def7523cc5c12e2ba50843570c79eb777be1611a6f1275",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "from_state": 12,
+          "action_ordinal": 13,
+          "to_state": 13,
+          "before_sha256": "5b4f2a7ad844527803def7523cc5c12e2ba50843570c79eb777be1611a6f1275",
+          "after_sha256": "31e51065b1def0d542d6ac0450cf30272c7bf3bffe90d192556820f852f88ef5",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "from_state": 13,
+          "action_ordinal": 14,
+          "to_state": 14,
+          "before_sha256": "31e51065b1def0d542d6ac0450cf30272c7bf3bffe90d192556820f852f88ef5",
+          "after_sha256": "5b4f2a7ad844527803def7523cc5c12e2ba50843570c79eb777be1611a6f1275",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "from_state": 14,
+          "action_ordinal": 15,
+          "to_state": 15,
+          "before_sha256": "5b4f2a7ad844527803def7523cc5c12e2ba50843570c79eb777be1611a6f1275",
+          "after_sha256": "62c5c7f2bd25a7a2113264e48fb617f52c37f1cd2f9910565125c7697e5f99d2",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        },
+        {
+          "from_state": 15,
+          "action_ordinal": 16,
+          "to_state": 16,
+          "before_sha256": "62c5c7f2bd25a7a2113264e48fb617f52c37f1cd2f9910565125c7697e5f99d2",
+          "after_sha256": "5b4f2a7ad844527803def7523cc5c12e2ba50843570c79eb777be1611a6f1275",
+          "before_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+          "after_url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e143' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e143' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e150' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e183' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e146' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e146' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e274' is not exposed by dom_model6",
+          "action_ordinal": 7,
+          "state_index": 6
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e40' is not exposed by dom_model7",
+          "action_ordinal": 8,
+          "state_index": 7
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e186' is not exposed by dom_model8",
+          "action_ordinal": 9,
+          "state_index": 8
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e41' is not exposed by dom_model9",
+          "action_ordinal": 10,
+          "state_index": 9
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e188' is not exposed by dom_model11",
+          "action_ordinal": 12,
+          "state_index": 11
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e61' is not exposed by dom_model12",
+          "action_ordinal": 13,
+          "state_index": 12
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e270' is not exposed by dom_model13",
+          "action_ordinal": 14,
+          "state_index": 13
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "1ee0926b0edcdcc789f7b4f26568b5f9d84824be172b8387c267c7bef3072441",
+    "criterion_order": [
+      "Apply specified search and filters on ClinicalTrials.gov",
+      "Sort results by Last Update Posted (newest first)",
+      "Report first displayed result (in displayed order) with required fields",
+      "Report second displayed result (in displayed order) with required fields",
+      "Report third displayed result (in displayed order) with required fields",
+      "Respect task constraints and stopping condition"
+    ],
+    "maximum_points": [
+      4.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      4.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "1ee0926b0edcdcc789f7b4f26568b5f9d84824be172b8387c267c7bef3072441",
+  "criterion_denominator": 20,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 239354,
+      "completion_tokens": 20477,
+      "reasoning_tokens": 0,
+      "total_tokens": 259831
+    },
+    "action_judge": {
+      "prompt_tokens": 25956,
+      "completion_tokens": 4663,
+      "reasoning_tokens": 3136,
+      "total_tokens": 30619
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 37,
+      "api_attempts": 37,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 17,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 1,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 2,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 1,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 2,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 2,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 3,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 3,
+        "1": 1,
+        "2": 2,
+        "3": 1,
+        "4": 1,
+        "5": 4,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 2,
+        "1": 1,
+        "2": 2,
+        "3": 1,
+        "4": 1,
+        "5": 6,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 3,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 2,
+        "screenshot_idx": 5
+      },
+      "screenshot_6": {
+        "0": 4,
+        "1": 0,
+        "2": 2,
+        "3": 1,
+        "4": 0,
+        "5": 4,
+        "screenshot_idx": 6
+      },
+      "screenshot_7": {
+        "0": 2,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 2,
+        "screenshot_idx": 7
+      },
+      "screenshot_8": {
+        "0": 7,
+        "1": 1,
+        "2": 4,
+        "3": 2,
+        "4": 1,
+        "5": 4,
+        "screenshot_idx": 8
+      },
+      "screenshot_9": {
+        "0": 6,
+        "1": 0,
+        "2": 4,
+        "3": 1,
+        "4": 0,
+        "5": 3,
+        "screenshot_idx": 9
+      },
+      "screenshot_10": {
+        "0": 6,
+        "1": 2,
+        "2": 4,
+        "3": 3,
+        "4": 1,
+        "5": 5,
+        "screenshot_idx": 10
+      },
+      "screenshot_11": {
+        "0": 7,
+        "1": 1,
+        "2": 3,
+        "3": 3,
+        "4": 2,
+        "5": 6,
+        "screenshot_idx": 11
+      },
+      "screenshot_12": {
+        "0": 6,
+        "1": 0,
+        "2": 2,
+        "3": 1,
+        "4": 0,
+        "5": 3,
+        "screenshot_idx": 12
+      },
+      "screenshot_13": {
+        "0": 7,
+        "1": 2,
+        "2": 3,
+        "3": 4,
+        "4": 4,
+        "5": 6,
+        "screenshot_idx": 13
+      },
+      "screenshot_14": {
+        "0": 6,
+        "1": 1,
+        "2": 3,
+        "3": 3,
+        "4": 1,
+        "5": 4,
+        "screenshot_idx": 14
+      },
+      "screenshot_15": {
+        "0": 7,
+        "1": 2,
+        "2": 4,
+        "3": 3,
+        "4": 2,
+        "5": 6,
+        "screenshot_idx": 15
+      },
+      "screenshot_16": {
+        "0": 7,
+        "1": 1,
+        "2": 4,
+        "3": 6,
+        "4": 6,
+        "5": 3,
+        "screenshot_idx": 16
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        16,
+        15,
+        13,
+        11,
+        8
+      ],
+      "1": [
+        15,
+        13,
+        10,
+        16,
+        14
+      ],
+      "2": [
+        16,
+        15,
+        10,
+        9,
+        8
+      ],
+      "3": [
+        16,
+        13,
+        15,
+        14,
+        11
+      ],
+      "4": [
+        16,
+        13,
+        15,
+        11,
+        14
+      ],
+      "5": [
+        15,
+        13,
+        11,
+        4,
+        10
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that the search is for “type 2 diabetes” (via `cond=type%202%20diabetes` in the URL), Study Location is United States (via `country=US` and `locStr=United%20States` in the URL), and Study Phase=Phase 3 is visibly applied (Phase 3 checkbox is `checked=true`). Recruiting appears in the URL as an aggregated filter (`aggFilters=status:rec`), but in the visible filter list the “Recruiting (306)” entry is not shown with an explicit checked state in this DOM snapshot, so “visibly applied” for Recruiting is not fully proven from DOM alone.",
+          "discrepancies": "Rubric requires all three filters be “visibly applied” before recording results. Phase 3 is visibly checked; Recruiting and United States are strongly implied via URL parameters and “Clear Filters (4)”, but the DOM snapshot does not explicitly show Recruiting as checked/selected in the filter UI.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 16 shows URL parameters indicating condition, location, and recruiting filter: `https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec`. In the left filter panel, under Study Status it lists options including “Recruiting (306)” (not explicit that it is selected/checked). Under Study Phase it explicitly shows “Phase 3 (31) control_state=checked=true”. A button “Clear Filters (4)” is visible, implying 4 filters are active, but the DOM does not enumerate which four are active beyond the checked Phase 3 and the URL params.",
+          "screenshot_idx": 16,
+          "dom_model_state_idx": 16
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM explicitly supports that the search condition is `type 2 diabetes` (both `cond=type%202%20diabetes` and Search Details), Study Status is filtered to `Recruiting` (`aggFilters=status:rec` and Search Details `Recruiting studies`), and Study Location is `United States` (`country=US`/`locStr=United States` and Search Details `In United States`).\nHowever, this single DOM state does not explicitly confirm that the Phase 3 filter is applied to the result set (e.g., Search Details including `Phase 3` or a corresponding URL filter token); it only shows the Phase 3 checkbox is checked in the UI.",
+          "discrepancies": "Phase 3 is shown as checked, but the result-set filter application is not explicitly evidenced in the Search Details line or URL filter tokens within this DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 15, URL shows query + filters in parameters: `https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec`.\nSearch Details text: `Viewing 1-10 out of 306 studies for: type 2 diabetes | In United States | Recruiting studies`.\nFilter panel shows Study Phase option `Phase 3 (31)` with `control_state=checked=true`.",
+          "screenshot_idx": 15,
+          "dom_model_state_idx": 15
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM explicitly supports that the search term is \"type 2 diabetes\" (URL param cond=type%202%20diabetes) and that location is United States (URL params locStr=United%20States&country=US). It also explicitly shows Study Phase \"Phase 3 (31)\" is checked (control_state=checked=true). Recruiting is strongly indicated by both the page title (\"...Recruiting studies\") and the URL parameter aggFilters=status:rec; however, within the visible Study Status filter list, the DOM does not explicitly mark the \"Recruiting\" checkbox as checked (no control_state=checked=true shown for that specific status control in this state). Therefore, confirmation that *all three* required filters are visibly applied is incomplete from this single DOM state.",
+          "discrepancies": "Missing explicit DOM confirmation that the Study Status=Recruiting control is checked (only listed as an option \"Recruiting (306)\"; inferred via title/URL aggFilters=status:rec).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13 (https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec)\n- Title: \"Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov\"\n- URL query params: cond=type%202%20diabetes; locStr=United%20States; country=US; aggFilters=status:rec\n- Filter section shows: \"Phase 3 (31)\" with control_state=checked=true\n- Study Status facet lists \"Recruiting (306)\" (but no control_state shown for Recruiting in this snapshot)",
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nSearch term and at least two required filters are evidenced: condition appears in URL as cond=type%202%20diabetes; United States appears as country=US/locStr=United%20States; Recruiting appears as aggFilters=status:rec and the title includes \"Recruiting studies\". However, the Phase 3 filter being applied is not explicitly confirmed in the DOM snapshot: while \"Phase 3 (31)\" appears as an available filter option, there is no explicit checked/selected state shown for Phase 3 in this evidence, nor any URL parameter clearly encoding Phase 3. Therefore full verification that ALL three filters (Recruiting + Phase 3 + United States) are applied is incomplete from this DOM-model state alone.",
+          "discrepancies": "Agent claims all three filters (Recruiting, Phase 3, United States) are visibly applied. DOM state 11 supports Recruiting + United States + condition term, but does not explicitly confirm Phase 3 is applied/selected (only that Phase 3 is an available filter option and that \"Clear Filters (3)\" exists, which is suggestive but not definitive about which exact three filters).",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 11 shows URL https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec and page title: \"Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results\". The left filter panel text includes \"Recruiting (306)\" under Study Status and \"Phase 3 (31)\" under Study Phase, but the DOM does not explicitly show Phase 3 as selected/checked. There is a button \"Clear Filters (3)\" visible, implying 3 filters are active, and the results list shows studies with US locations and \"Recruiting\" status (e.g., NCT07385547 shows \"Recruiting\" and multiple \"United States\" locations).",
+          "screenshot_idx": 11,
+          "dom_model_state_idx": 11
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM clearly supports that the search term/condition is \"type 2 diabetes\" and filters include Study Status = Recruiting and Study Location = United States (supported by both the URL params and the on-page \"Search Details\" string). However, the required Study Phase = Phase 3 filter is not evidenced as applied in DOM state 8: the URL does not include a phase filter parameter, and the visible facets shown do not display a checked \"Phase 3\" control. The presence of \"Clear Filters (3)\" indicates three filters are active, but this snapshot does not prove one of them is \"Phase 3\".",
+          "discrepancies": "Required filter \"Study Phase = Phase 3\" is not demonstrably applied in DOM state 8 (no checked Phase 3 shown; no phase filter parameter visible in URL).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 8 (URL shows applied query params)\n- URL: https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec\n- Page title: \"Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results\"\n- Study Status facet shows: \"Recruiting (306)\" with control_state=checked=true.\n- Results header text: \"Search Details: Viewing 1-10 out of 306 studies for: type 2 diabetes | In United States | Recruiting studies\"\n- Also shows \"Clear Filters (3)\" (but does not enumerate which 3 in this snapshot).\n- No visible Study Phase facet/selection is present in the visible content for state 8 (only Study Status facet is shown in the snapshot).",
+          "screenshot_idx": 8,
+          "dom_model_state_idx": 8
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe agent action history indicates the user clicked “Display” and selected a radio “Newest First” earlier, but actions are not proof of the resulting browser state. In the final DOM snapshot, the sort setting (“Last Update Posted, newest first”) is not explicitly displayed/confirmed, so the required newest-first sorting cannot be verified from DOM evidence.",
+          "discrepancies": "Rubric requires sorting by “Last Update Posted” newest first to be visibly applied. The DOM snapshot does not confirm the active sort order or that it is specifically “Last Update Posted”.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 16 includes a “Display” button ([6355] button \"Display\"), but there is no visible text in the snapshot indicating the current sort is “Last Update Posted” or “Newest First”, and the URL shown does not include an explicit sort parameter in the captured evidence.",
+          "screenshot_idx": 16,
+          "dom_model_state_idx": 16
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThis DOM snapshot does not provide explicit evidence that sorting is set to `Last Update Posted` with `Newest First`. The presence of a `Display` control is not sufficient to verify the chosen sort order, and the URL shown contains no sort parameter in the captured state.",
+          "discrepancies": "Agent claims `Newest First (Last Update Posted)` sorting is applied, but the DOM provided does not confirm the selected sort option.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 15 shows controls `Download Save RSS Display` but does not show an active sort field/value (no visible `Last Update Posted` sort control text, no `Newest First` indicator, and no URL parameter indicating sort).",
+          "screenshot_idx": 15,
+          "dom_model_state_idx": 15
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM shows the sort option \"Newest First\" exists. However, it does not explicitly indicate that \"Newest First\" is selected (no control_state=checked=true for it), and it explicitly shows \"Relevance\" is checked. The task requires sorting by \"Last Update Posted\" newest first and that this is visibly applied before capturing results. From this DOM state alone, newest-first sorting is not confirmed as applied; instead, the state suggests the current sort remains \"Relevance\".",
+          "discrepancies": "DOM indicates \"Relevance\" is selected (control_state=checked=true) and does not show \"Newest First\" as selected; therefore, required newest-first sort is not verified/applied in the provided DOM evidence.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13\n- Sort section shows:\n  - \"Relevance\" control_state=checked=true\n  - \"Newest First\" (present, but no control_state shown next to it)\n- No explicit text stating the active sort is \"Last Update Posted\"; only the option label \"Newest First\" is visible in this snapshot.",
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM snapshot confirms a \"Display\" control exists (which plausibly contains sorting options), but it does not expose the currently selected sort field/order. Because neither a visible sort indicator (e.g., \"Last Update Posted\" / \"Newest First\") nor any displayed \"Last Update Posted\" values appear in state 10, the required sorting cannot be verified as visibly applied from this DOM evidence alone.",
+          "discrepancies": "Task requires sorting by \"Last Update Posted\" newest first to be visibly applied before capture. In DOM state 10, there is no explicit evidence that sort = \"Last Update Posted, Newest First\" is active.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 10 (URL: https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec)\nVisible controls include button \"Display\" ([6355]) and the results header text \"Search Details: Viewing 1-10 out of 306 studies for: type 2 diabetes | In United States | Recruiting studies\". The visible result cards do not show any field labeled \"Last Update Posted\", and no on-page text indicates \"Last Update Posted\" or \"Newest First\" is selected.",
+          "screenshot_idx": 10,
+          "dom_model_state_idx": 10
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe rubric criterion requires that results are sorted by \"Last Update Posted\" with newest first and that this sorting is visibly applied/selected. In DOM state 14, there is no DOM-visible indication of a sort field (e.g., \"Last Update Posted\") nor a selected sort order (e.g., a checked radio \"Newest First\"). While the action history indicates the agent clicked a radio named \"Newest First\" in a later step (action 14), actions do not prove the resulting browser state. Therefore, based on the DOM snapshot alone, the required newest-first sorting cannot be confirmed.",
+          "discrepancies": "Agent claimed: \"Sorting: Newest First (Last Update Posted) has been applied via the Display control.\" DOM state 14 does not display any selected sort option or any \"Last Update Posted\" sort label; only a \"Display\" button is visible, so the claim is not supported by DOM evidence. Additionally, the DOM does not show a checked state for a \"Newest First\" control in this snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 14 (URL: https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec). In the visible content, a sort choice such as \"Last Update Posted\" and/or a selected control labeled \"Newest First\" is not present. The only relevant control shown is a button labeled \"Display\" (USEFUL PAGE ACTIONS: [6355] button \"Display\"). The DOM does show filters like Study Phase \"Phase 3 (31)\" with control_state=checked=true, but it does not show any explicit DOM text or control state indicating sorting by \"Last Update Posted\" or that \"Newest First\" is selected.",
+          "screenshot_idx": 14,
+          "dom_model_state_idx": 14
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that NCT07340320 is a displayed result (via the study links containing NCT07340320). However, the DOM snapshot does not explicitly show the full title for NCT07340320, nor any “Last Update Posted” date, and Recruiting status for this specific first card is not explicitly visible in the captured text. Therefore the required fields for the first result are not fully supported by DOM evidence.",
+          "discrepancies": "Agent-reported full title (“Efficacy and Safety of GL0034…”) and recruiting status for NCT07340320 are not present in the DOM snapshot; “Last Update Posted” is also not shown in the DOM, so the rubric-required date is missing/unverifiable.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 16 shows first result content for NCT07340320 including locations and links, but does not show a full study title string adjacent to NCT07340320 in the visible content. It does show the NCT number implicitly via links: “Find Contact Information (https://clinicaltrials.gov/study/NCT07340320#contact-and-locations)” and “Check who can join (https://clinicaltrials.gov/study/NCT07340320#participation-criteria)”. No “Last Update Posted” field/date is shown in the visible card content. The visible content includes “Recruiting” for later cards; for NCT07340320, “Recruiting” text is not clearly shown near it in this snapshot segment.",
+          "screenshot_idx": 16,
+          "dom_model_state_idx": 16
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the first displayed result’s NCT number and full title (NCT07282743; `Efficacy and Safety of GL0034 in Overweight or Obese Adults With Type II Diabetes Mellitus`).\nBut the required fields also include `Study status` and `Last Update Posted` date for that result; within this snapshot, `Last Update Posted` is not shown for the card, and the status for this specific first card is not explicitly captured adjacent to the card content shown (even though other cards show `Recruiting`).",
+          "discrepancies": "Agent-reported first NCT (`NCT07340320`) does not match DOM first displayed (`NCT07282743`). Also, `Last Update Posted` date is missing from DOM-visible card information.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 15 first displayed study card content includes: `NCT07282743` and title text `Efficacy and Safety of GL0034 in Overweight or Obese Adults With Type II Diabetes Mellitus`.\nNo `Last Update Posted` date is visible for this card in the snapshot.",
+          "screenshot_idx": 15,
+          "dom_model_state_idx": 15
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe agent’s reported first displayed result (NCT07340320) conflicts with DOM state 8, where the first visible NCT in the results list is \"NCT07282743\" (so the first displayed result is different). Additionally, the required field \"Last Update Posted\" is not present in the visible DOM for the first card(s), so it cannot be recorded “exactly as listed” from this state. Finally, newest-first sorting and Phase 3 filtering are not evidenced in this DOM snapshot, so the “first displayed result after filters + newest-first sorting” condition is not met/proven.",
+          "discrepancies": "1) First displayed study in DOM state 8 is \"NCT07282743\", not the agent-reported \"NCT07340320\".\n2) \"Last Update Posted\" date is not shown in the visible DOM for the study cards, so the agent did not (and could not from this state) provide the required date exactly as listed.\n3) Required precondition (Phase 3 filter + newest-first sorting applied) is not evidenced in this DOM snapshot, so the identified 'first result' basis is not supported.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 8\n- Visible results include NCT IDs in order as shown:\n  • \"NCT07282743\" (appears first in the visible list)\n  • \"NCT07340320\" (appears next)\n- For \"NCT07340320\", the title link is visible: \"Efficacy and Safety of GL0034 in Overweight or Obese Adults With Type II Diabetes Mellitus\".\n- A later visible card shows title: \"A Study of CX11 Tablets in Patients With Type 2 Diabetes Mellitus\" and also includes the text \"Recruiting\" alongside it, but the NCT ID line visible near it is not unambiguously paired in this snapshot.\n- No \"Last Update Posted\" date text is visible anywhere in the shown card snippets in state 8.",
+          "screenshot_idx": 8,
+          "dom_model_state_idx": 8
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe snapshot provides enough evidence to identify at least one displayed study (e.g., NCT07340320 with its full linked title) and indicates studies are recruiting (\"Recruiting\" text is visible on at least one card area). But the required field \"Last Update Posted\" is not displayed in this DOM state, and the first displayed result after the required sorting cannot be confirmed because the required sort state is not evidenced. Therefore, the first-result reporting requirement cannot be fully validated from the provided DOM evidence.",
+          "discrepancies": "Agent-predicted output names the first result as NCT07340320, but DOM state 10 shows \"NCT07282743\" listed before \"NCT07340320\", so the claimed first displayed result order is not supported. Additionally, \"Last Update Posted\" dates are missing from the DOM, so that required field is unrecorded/unsupported.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 10 shows result identifiers and some titles/links:\n- \"NCT07282743\" appears as a result identifier.\n- \"NCT07340320\" appears, and there is a title link \"Efficacy and Safety of GL0034 in Overweight or Obese Adults With Type II Diabetes Mellitus\" ([6540]).\n- A title fragment \"Select Study to Evaluate if Exposure to Drug is Impacted in Participants With Renal Insufficiency\" is visible near a card area; also shows \"Recruiting\" and then \"Find Contact Information\" linking to \"https://clinicaltrials.gov/study/NCT07385547#contact-and-locations\" plus \"Check who can join\".\nHowever, the DOM does not show the \"Last Update Posted\" date for any of these studies in the visible card content.",
+          "screenshot_idx": 10,
+          "dom_model_state_idx": 10
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 2 requires the first displayed study AFTER required filters + newest-first sorting, reported with NCT number, full title, study status, and Last Update Posted date.\n- Supported: The DOM explicitly shows the first displayed NCT number as “NCT07282743” (DOM_MODEL_STATE_INDEX: 9, visible results list).\n- Missing/unsupported: The DOM does not include (for NCT07282743) the full title text, the study status text (“Recruiting”) for that specific card, nor any “Last Update Posted” date. Therefore the required fields for the first displayed result cannot be fully verified from DOM evidence.\n- Also missing: DOM state 9 does not confirm Phase 3 filter application nor newest-first sorting, which are prerequisites for which study should be “first displayed” under the task’s final settings.",
+          "discrepancies": "Agent’s predicted first result is NCT07340320, but DOM_MODEL_STATE_INDEX: 9 shows the first displayed NCT as NCT07282743 (i.e., NCT07340320 is listed after it).\nAgent claims filters include Phase 3 and sorting newest-first; DOM_MODEL_STATE_INDEX: 9 confirms Recruiting + United States + condition in Search Details, but does not provide explicit evidence that Phase 3 is applied or that sorting is set to newest-first.\nAgent states “Last Update Posted not shown”; DOM_MODEL_STATE_INDEX: 9 indeed does not show Last Update Posted for the first card, but since the agent reported different studies than the first displayed in the DOM, their recorded first study is inconsistent with the DOM ordering.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 9 shows the first displayed study in the results list after the applied search context.\n- URL includes the applied search + filters (except Phase 3 not yet reflected in URL here): https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec\n- “Search Details: Viewing 1-10 out of 306 studies for: type 2 diabetes | In United States | Recruiting studies” confirms condition + location + Recruiting filter are applied.\n- In the visible results list, the first NCT ID shown is “NCT07282743” (appears before “NCT07340320”).\n- For this first result, the DOM excerpt only shows the NCT ID and locations (e.g., “Little Rock, Arkansas, United States … Miami, Florida, United States”), but does NOT show the study’s full title, study status line for this first card, or any “Last Update Posted” date in the visible content.\n- The “Study Phase” section shows an available filter “Phase 3 (31)”, but the DOM snippet does not explicitly indicate it is checked/applied (no checked-state evidence is provided for criterion 2).",
+          "screenshot_idx": 9,
+          "dom_model_state_idx": 9
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the second displayed NCT number (NCT07385547) and its study status (Recruiting). The title is only partially visible/truncated in a context string and not clearly present as full, exact on-page title text in the visible DOM evidence; the “Last Update Posted” date is not shown. Thus only some required fields are supported.",
+          "discrepancies": "Full title is not fully evidenced (only truncated context suggests it). “Last Update Posted” date is missing from DOM evidence and from the agent’s recorded data.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 16 explicitly lists “NCT07385547” and shows “Recruiting” on that card. The full title is not shown as plain text in the visible content; there is a non-hit-testable link labeled “Show all 48 locations” with context that includes truncated title text: `context=\"... Select A Study of CX11 Tablets in Patients With Type 2 Diabetes Melli…\"`. No “Last Update Posted” field/date is present in the card content shown.",
+          "screenshot_idx": 16,
+          "dom_model_state_idx": 16
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the second displayed result’s NCT number (NCT07385547) and that its study status shown on the card is \"Recruiting\". However, the DOM evidence provided does not include the full study title text for NCT07385547 (it is not present in the visible content excerpt for that card, aside from a truncated/non-authoritative debug-like line), and it does not show any \"Last Update Posted\" date. Thus, required fields are incomplete for the second result.",
+          "discrepancies": "Missing full title and missing \"Last Update Posted\" date for the second displayed result in the DOM evidence.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13 (Card results list excerpts)\n- Second displayed study card (as listed after the first card content block):\n  - \"NCT07385547\"\n  - Condition tokens: \"Type II\", \"Diabetes\", \"Mellitus\"\n  - Locations include \"Miami, Florida, United States\" etc.\n  - \"Recruiting\" appears on the card\n- No \"Last Update Posted\" date text is visible in the card excerpts shown.",
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the third displayed result’s NCT number (NCT07361341), full title (Culturally Tailored Program for Food-Insecure Adults: SPICE-D), and study status (Recruiting). However, the required “Last Update Posted” date is not present in the DOM snapshot, so the entry is incomplete per rubric.",
+          "discrepancies": "Missing “Last Update Posted” date for the third displayed result (not visible in DOM evidence and not provided by the agent).",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 16 shows the third result title and NCT: it includes the link “Culturally Tailored Program for Food-Insecure Adults: SPICE-D” and separately lists “NCT07361341”. It also shows “Recruiting” for this card. No “Last Update Posted” field/date is shown in the visible content.",
+          "screenshot_idx": 16,
+          "dom_model_state_idx": 16
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports the third displayed result’s NCT number (NCT07361341), full title (\"Culturally Tailored Program for Food-Insecure Adults: SPICE-D\" via link text), and study status (\"Recruiting\"). The \"Last Update Posted\" date is not present in the visible DOM excerpt for this card. Therefore, one required field is missing.",
+          "discrepancies": "Missing \"Last Update Posted\" date for the third displayed result in the DOM evidence.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13\n- Third displayed study card:\n  - Link text: \"Culturally Tailored Program for Food-Insecure Adults: SPICE-D\"\n  - \"NCT07361341\"\n  - \"Recruiting\" appears on the card\n- No \"Last Update Posted\" date text is visible for this card in the provided snapshot.",
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nFrom the provided DOM state, there is no evidence the agent contacted a study, saved studies, or submitted information, and the agent appears to be on the results page.\nHowever, the stopping condition requires stopping only after (a) all three filters and (b) newest-first sorting are visibly applied and then recording the first three results with all requested fields. In this DOM snapshot, newest-first sorting is not evidenced, Phase 3 application to the result set is not fully evidenced, and the reported results/fields are incomplete (missing `Last Update Posted`) and inconsistent with the DOM ordering.",
+          "discrepancies": "Stopping condition not met per DOM: sort not verified; Phase 3 application not fully verified; required fields (especially `Last Update Posted`) not recorded; reported top results differ from DOM order.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 15 shows no evidence of prohibited actions (no form submission, no saving action completed; only presence of `Save selected studies` control). The page remains on search results URL with filters in query string and Search Details line present.",
+          "screenshot_idx": 15,
+          "dom_model_state_idx": 15
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraint compliance (no contacting/saving/submitting) is supported by the DOM: there is no sign of prohibited actions being executed, and the Save button is disabled. However, the stopping condition requires that all three filters and newest-first sorting are visibly applied and that the first three results include all requested fields (including \"Last Update Posted\"). In this DOM state, Phase 3 is checked and US location/type 2 diabetes are supported via URL, but Recruiting is not explicitly shown as checked, and sorting appears to be \"Relevance\" (checked) rather than confirmed newest-first. Additionally, the recorded outputs omitted Last Update Posted dates. Therefore, the stopping condition is not satisfied based on the provided evidence.",
+          "discrepancies": "(1) Required newest-first sorting not verified/applied in DOM (\"Relevance\" is checked). (2) Recruiting filter not explicitly shown as checked. (3) Output missing required \"Last Update Posted\" dates; thus results were recorded before meeting stopping condition.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 13\n- No evidence of contacting studies; only links like \"Find Contact Information\" and \"Check who can join\" are present as available actions.\n- \"Save\" button is present and disabled (control_state=disabled=true), indicating no saving action occurred in this state.\n- The agent’s predicted output claims three studies and notes Last Update Posted not shown; however, the task required reporting Last Update Posted dates.\n- Sorting evidence shows \"Relevance\" checked rather than confirmed \"Newest First\".",
+          "screenshot_idx": 13,
+          "dom_model_state_idx": 13
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about not contacting/saving/submitting and preserving displayed order appear satisfied in the recorded output: the agent reports the first three NCTs in the same order as shown in DOM state 11, and no prohibited actions (contacting studies, saving, submitting) are evidenced in the action history or DOM.\n\nHowever, the stopping condition required \"newest-first sorting\" to be visibly applied, and the agent must report Last Update Posted dates for the first three results. In DOM state 11, there is no evidence that sorting by \"Last Update Posted, newest first\" is applied, and the agent output explicitly lacks the Last Update Posted dates (stating they are \"Not shown\"). That fails the task requirement to report those dates and does not meet the stopping condition as specified.",
+          "discrepancies": "1) Agent asserts sorting \"Newest First (Last Update Posted)\" is applied; DOM state 11 does not show any sort indicator or \"Last Update Posted\"/\"Newest first\" text.\n2) Task requires reporting Last Update Posted date for each of the first three results; agent did not provide dates.\n3) Agent states navigating into each study would be needed, but the task did not prohibit opening study pages (it prohibited contacting/saving/submitting). So stopping without obtaining the dates is not justified by the stated constraints.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 11 includes results in a displayed order: NCT07340320, then NCT07385547, then NCT07361341, then NCT07029009. For NCT07385547 and NCT07361341, the DOM shows \"Recruiting\" on the card and US locations. No DOM text shows \"Last Update Posted\" for any card in the visible content. The DOM shows a \"Display\" button (id 6355), but does not show any selected sort field/order, nor text like \"Last Update Posted\" or \"Newest first\" in this state. Also visible are links \"Find Contact Information\" and \"Check who can join\" (agent did not click them in the provided action history).",
+          "screenshot_idx": 11,
+          "dom_model_state_idx": 11
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about not contacting/saving/submitting appear satisfied in the provided evidence (no prohibited actions shown, and \"Save\" is disabled). The DOM supports that condition=type 2 diabetes, location=United States, and status=Recruiting are applied (via header text and URL). However, Phase 3 being applied is not confirmed in state 10: \"Phase 3 (31)\" is visible as an available filter option, but the DOM does not indicate it is selected; and \"Clear Filters (3)\" suggests only three filters are applied (likely condition, location, recruiting), not necessarily Phase 3. Also, the stopping condition is not met because sort visibility and the required fields (including Last Update Posted) are not evidenced/recorded.",
+          "discrepancies": "Task requires four constraints to be in effect before stopping: Recruiting + Phase 3 + United States filters, plus sorting newest-first by Last Update Posted, and then recording the first three results with Last Update Posted dates. In state 10, Phase 3 selection and newest-first sorting are not evidenced, and Last Update Posted values are not displayed; thus stopping condition cannot be satisfied/verified from this DOM state.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 10 shows filters/context in the results header: \"Viewing 1-10 out of 306 studies for: type 2 diabetes | In United States | Recruiting studies\".\nIt also shows Study Phase options including \"Phase 3 (31)\" in the filter list, and a \"Clear Filters (3)\" button ([886]) indicating three filters are applied. The URL includes aggFilters=status:rec and country=US and cond=type%202%20diabetes.\nNo DOM evidence indicates any contacting/saving/submitting actions were taken; \"Save\" button is present but disabled ([6265]).",
+          "screenshot_idx": 10,
+          "dom_model_state_idx": 10
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\n\nCriterion 5 (Respect task constraints and stopping condition) is contradicted by the DOM evidence available. The task requires results after applying: condition “type 2 diabetes”, Study Status = “Recruiting”, Study Phase = “Phase 3”, Study Location = “United States”, and sorting by “Last Update Posted, newest first”, then reporting the first three displayed results with specific fields.\n\nIn DOM_MODEL_STATE_INDEX 4, the page is effectively unfiltered: it says “Viewing 1-10 out of 602,735 studies for: All”, and visible results include “Not yet recruiting” studies and at least one non-US location (Switzerland). This conflicts with the requirement that the agent stop only after all three filters + newest-first sorting are visibly applied and then record the first three results. Therefore, based on this DOM snapshot alone, the agent’s claimed filtered state and stopping condition are not met.",
+          "discrepancies": "1) Condition filter discrepancy: DOM shows “Viewing 1-10 out of 602,735 studies for: All”, not “type 2 diabetes”, so the required query term is not evidenced as applied.\n2) Location filter discrepancy: Visible first result includes “Sankt Gallen, St.Gallen, Switzerland”, contradicting the required Study Location = United States.\n3) Study Status discrepancy: Visible results include “Not yet recruiting”, contradicting the requirement to use only “Recruiting”.\n4) Phase 3 discrepancy: Phase 3 is listed as an available checkbox (“Phase 3 (49,846)”) but DOM does not evidence it being selected/applied.\n5) Sorting discrepancy: No DOM evidence that sorting is set to “Last Update Posted” or “Newest First”.\n6) Output-field discrepancy: Agent output admits “Last Update Posted” not shown, but the task requires reporting that date for each of the first three results; DOM snapshot does not provide those dates for any studies shown.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 (URL: https://clinicaltrials.gov/search?viewType=Card). The visible filter panel shows the presence of the required filter options but does not show them as selected for this task’s query. Specifically, under Study Status it lists: “Not yet recruiting (29,653)”, “Recruiting (64,669)”, etc., and under Study Phase it lists “Phase 3 (49,846)”. The search details line reads: “Search Details: Viewing 1-10 out of 602,735 studies for: All … No synonyms found”, which indicates the condition term “type 2 diabetes” is not applied in this DOM snapshot. The displayed results also include statuses like “Not yet recruiting” (e.g., NCT07819396; NCT07819383) and a Switzerland location (NCT07819409 “Sankt Gallen, St.Gallen, Switzerland”), which is inconsistent with filters ‘Recruiting’ + ‘United States’. No DOM text indicates sorting by “Last Update Posted” or “Newest First”; instead it shows only “Download Save RSS Display” without an explicit sort setting in this snapshot.",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM evidence shows the condition term (type 2 diabetes) and United States + Recruiting context clearly via the Search Details line and URL parameters (cond=..., country=US/locStr=..., aggFilters=status:rec). The Phase 3 filter is explicitly shown as checked in later states (e.g., state 13/15/16: “Phase 3 (31)” with control_state=checked=true). However, the Recruiting checkbox itself is not consistently shown with an explicit checked control_state in those later states, even though Recruiting is indicated by page title/Search Details/URL. Also, “Clear Filters (3)/(4)” is visible but does not enumerate which filters are active, so it is only suggestive, not definitive, about the exact set of active filters.",
+      "1": "The page includes a “Display” control and a visible sort section in at least one state (state 13), where “Relevance” is explicitly checked and “Newest First” appears as an available option. The DOM does not explicitly show “Newest First” as selected (no checked state shown for it), and no “Last Update Posted” label or sort indicator is visible in the captured results views. The URL snapshots shown also do not include an explicit sort parameter, so DOM evidence alone cannot confirm that sorting by “Last Update Posted (newest first)” was applied.",
+      "2": "Across multiple states, the first visible NCT identifier in the list is “NCT07282743” (e.g., state 8/9/10/15), indicating that is the first displayed result in those snapshots. In state 15, the first card’s title text visible alongside NCT07282743 is “Efficacy and Safety of GL0034 in Overweight or Obese Adults With Type II Diabetes Mellitus.” The DOM excerpts do not show a “Last Update Posted” date on the cards, and for the first card the “Recruiting” label is not consistently captured adjacent to that specific card in the provided snippets (even though Recruiting is shown elsewhere and implied by Search Details). Therefore, only some required fields for the first result are directly visible in DOM.",
+      "3": "The second displayed study in the visible order is evidenced as “NCT07385547” in states where ordering is shown (e.g., state 13/16), and the card includes a visible “Recruiting” status label. The full title for NCT07385547 is not shown as complete, exact on-page title text in the provided DOM snippets; at most, a truncated title-like string appears in a context attribute in state 16. No “Last Update Posted” date is visible for this card in the DOM excerpts.",
+      "4": "The third displayed study is evidenced as “NCT07361341” with the full visible linked title “Culturally Tailored Program for Food-Insecure Adults: SPICE-D” and a visible “Recruiting” label (state 13 and state 16). The “Last Update Posted” date is not displayed in the provided card excerpts for this result.",
+      "5": "DOM evidence shows no indication of prohibited actions being taken (no form submissions; “Save” appears disabled in some states; only passive links like “Find Contact Information” are present). However, the stopping condition depends on (1) filters + newest-first sort being visibly applied and (2) recording first three results including “Last Update Posted.” The DOM excerpts do not show “Last Update Posted” values on result cards, and sort state is not visibly confirmed as newest-first (state 13 explicitly shows “Relevance” checked). Also, earlier unfiltered state evidence (state 4) shows mixed statuses/locations, illustrating that the page can be in an unfiltered mode unless the later filtered states are used as the basis for stopping."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Apply specified search and filters on ClinicalTrials.gov",
+        "earned_points": 4,
+        "post_image_earned_points": 3.0,
+        "max_points": 4,
+        "justification": "The agent entered the search term and visibly applied all three required filters (Recruiting, Phase 3, United States) before capturing results, as confirmed by the action history and final output.",
+        "applicable_evidence": "Latest relevant DOM is state 16 (also 15/13). State 16 URL includes cond=type%202%20diabetes, locStr=United%20States, country=US, aggFilters=status:rec, and the Study Phase facet shows “Phase 3 (31)” with control_state=checked=true. However, in state 16 the Study Status facet lists “Recruiting (306)” without an explicit checked control_state, so “Recruiting visibly applied” is not directly DOM-confirmed (though it is represented in the URL/title). Earlier: state 13 shows Phase 3 checked=true; state 8 explicitly shows Recruiting checked=true but does not show Phase 3 applied.",
+        "post_image_justification": "The evidence supports that the query is type 2 diabetes, location is United States, and Phase 3 is checked in the UI in the latest states. Recruiting is strongly supported via URL/title (aggFilters=status:rec; page title indicates Recruiting), but not shown as a checked control in the latest DOM. Because the criterion emphasizes filters being “visibly applied,” this is not fully proven for Recruiting in the final DOM, but the site state does represent Recruiting as active via URL/title. Downgrade slightly from full credit.",
+        "reality_notes": "DOM evidence shows the condition term (type 2 diabetes) and United States + Recruiting context clearly via the Search Details line and URL parameters (cond=..., country=US/locStr=..., aggFilters=status:rec). The Phase 3 filter is explicitly shown as checked in later states (e.g., state 13/15/16: “Phase 3 (31)” with control_state=checked=true). However, the Recruiting checkbox itself is not consistently shown with an explicit checked control_state in those later states, even though Recruiting is indicated by page title/Search Details/URL. Also, “Clear Filters (3)/(4)” is visible but does not enumerate which filters are active, so it is only suggestive, not definitive, about the exact set of active filters."
+      },
+      {
+        "criterion": "Sort results by Last Update Posted (newest first)",
+        "earned_points": 3,
+        "post_image_earned_points": 0.0,
+        "max_points": 3,
+        "justification": "The agent located the sort control, clicked the Display button, and explicitly selected the \"Newest First\" (Last Update Posted) radio option, confirming the required sort order.",
+        "applicable_evidence": "Latest relevant DOM is state 16 (also 15/14/13). None of these states show an active sort indicator. State 13 explicitly shows “Relevance” control_state=checked=true while “Newest First” is merely an option (not shown checked). No URL sort parameter is evidenced. Thus newest-first sorting by Last Update Posted is not DOM-confirmed and is in fact contradicted by state 13 showing Relevance selected.",
+        "post_image_justification": "The agent’s action history includes clicking “Newest First,” but actions don’t prove resulting state. The latest DOM does not show newest-first applied, and an earlier-but-relevant DOM (state 13) shows Relevance selected, contradicting the claimed applied sort. Score should be reduced to near-zero (some minimal credit for attempt is already accounted for elsewhere, but this criterion is about verified sorting).",
+        "reality_notes": "The page includes a “Display” control and a visible sort section in at least one state (state 13), where “Relevance” is explicitly checked and “Newest First” appears as an available option. The DOM does not explicitly show “Newest First” as selected (no checked state shown for it), and no “Last Update Posted” label or sort indicator is visible in the captured results views. The URL snapshots shown also do not include an explicit sort parameter, so DOM evidence alone cannot confirm that sorting by “Last Update Posted (newest first)” was applied."
+      },
+      {
+        "criterion": "Report first displayed result (in displayed order) with required fields",
+        "earned_points": 2,
+        "post_image_earned_points": 0.5,
+        "max_points": 3,
+        "justification": "The agent correctly identified the first study (NCT07340320) and recorded the NCT number, full title, and status, but did not capture the Last Update Posted date.",
+        "applicable_evidence": "Latest DOM (state 16/15) indicates the first displayed result is NCT07282743 (states 8/9/10/15 explicitly show NCT07282743 first). Agent reported first as NCT07340320, which is not first in the displayed order in those DOM snapshots. Additionally, no DOM state shows “Last Update Posted” on the cards, so the date cannot be verified as recorded. Titles/status for the true first result are inconsistently evidenced (state 15 shows NCT07282743 paired with the GL0034 title; status not clearly shown for that specific card).",
+        "post_image_justification": "The agent’s first result is wrong per displayed order supported by DOM (NCT07282743 appears first). Also, the required Last Update Posted date is missing. Because both the identity/order and a required field are incorrect/missing, only minimal credit is warranted.",
+        "reality_notes": "Across multiple states, the first visible NCT identifier in the list is “NCT07282743” (e.g., state 8/9/10/15), indicating that is the first displayed result in those snapshots. In state 15, the first card’s title text visible alongside NCT07282743 is “Efficacy and Safety of GL0034 in Overweight or Obese Adults With Type II Diabetes Mellitus.” The DOM excerpts do not show a “Last Update Posted” date on the cards, and for the first card the “Recruiting” label is not consistently captured adjacent to that specific card in the provided snippets (even though Recruiting is shown elsewhere and implied by Search Details). Therefore, only some required fields for the first result are directly visible in DOM."
+      },
+      {
+        "criterion": "Report second displayed result (in displayed order) with required fields",
+        "earned_points": 2,
+        "post_image_earned_points": 1.5,
+        "max_points": 3,
+        "justification": "The agent correctly identified the second study (NCT07385547) and recorded the NCT number, full title, and status, but omitted the Last Update Posted date.",
+        "applicable_evidence": "DOM states 13/16 show NCT07385547 as the second displayed study, with “Recruiting” visible on that card. However, the agent did not provide a DOM-supported Last Update Posted date (not shown on cards), and the full title for NCT07385547 is not cleanly/fully shown in DOM (only truncated/contextual text).",
+        "post_image_justification": "The agent’s second item NCT matches DOM ordering for the second result, and Recruiting status is supported. But the required Last Update Posted is missing, and the title is not robustly DOM-confirmed as “full title.” Partial credit for correctly identifying the second NCT and status, but not for missing required fields.",
+        "reality_notes": "The second displayed study in the visible order is evidenced as “NCT07385547” in states where ordering is shown (e.g., state 13/16), and the card includes a visible “Recruiting” status label. The full title for NCT07385547 is not shown as complete, exact on-page title text in the provided DOM snippets; at most, a truncated title-like string appears in a context attribute in state 16. No “Last Update Posted” date is visible for this card in the DOM excerpts."
+      },
+      {
+        "criterion": "Report third displayed result (in displayed order) with required fields",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 3,
+        "justification": "The agent correctly identified the third study (NCT07361341) and recorded the NCT number, full title, and status, but omitted the Last Update Posted date.",
+        "applicable_evidence": "DOM states 13/16 show the third displayed study as NCT07361341 with linked full title “Culturally Tailored Program for Food-Insecure Adults: SPICE-D” and “Recruiting” visible. No DOM state shows a “Last Update Posted” date on the card.",
+        "post_image_justification": "Agent’s third result matches DOM for NCT, title, and status, preserving displayed order (for the third item). But the required Last Update Posted date is missing/unverified. Award partial credit accordingly.",
+        "reality_notes": "The third displayed study is evidenced as “NCT07361341” with the full visible linked title “Culturally Tailored Program for Food-Insecure Adults: SPICE-D” and a visible “Recruiting” label (state 13 and state 16). The “Last Update Posted” date is not displayed in the provided card excerpts for this result."
+      },
+      {
+        "criterion": "Respect task constraints and stopping condition",
+        "earned_points": 4,
+        "post_image_earned_points": 2.0,
+        "max_points": 4,
+        "justification": "The agent adhered to all task constraints, applied the correct filters and sort, preserved displayed order, did not navigate into individual studies or perform prohibited actions, and stopped after recording three results.",
+        "applicable_evidence": "No DOM evidence of prohibited actions (no contacting/saving/submitting; Save appears disabled in some states). However, the stopping condition required newest-first sorting to be visibly applied and to record Last Update Posted dates; DOM shows sorting not confirmed (state 13 shows Relevance checked) and Last Update Posted is not captured in output. Also, the agent’s reported first result conflicts with DOM ordering.",
+        "post_image_justification": "They respected the ‘don’t contact/save/submit’ constraints, but did not meet the stopping condition (stopped without verified newest-first sort and without Last Update Posted dates) and also reported an order mismatch for the first result. Reduce from full credit but not to zero because constraint compliance on prohibited actions is supported.",
+        "reality_notes": "DOM evidence shows no indication of prohibited actions being taken (no form submissions; “Save” appears disabled in some states; only passive links like “Find Contact Information” are present). However, the stopping condition depends on (1) filters + newest-first sort being visibly applied and (2) recording first three results including “Last Update Posted.” The DOM excerpts do not show “Last Update Posted” values on result cards, and sort state is not visibly confirmed as newest-first (state 13 explicitly shows “Relevance” checked). Also, earlier unfiltered state evidence (state 4) shows mixed statuses/locations, illustrating that the page can be in an unfiltered mode unless the later filtered states are used as the basis for stopping."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "Reviewing the action history, the agent only interacted with ClinicalTrials.gov search UI elements: entered the condition term, selected filters (Recruiting, Phase 3, United States), clicked Apply Filters, opened Display/sort controls, chose “Newest First,” and scrolled. These are all directly in service of the task (search + filter + sort + read top results). There is no evidence of any lasting/material side effects such as saving studies, submitting forms, contacting a study team, or performing any external transactions. The DOM evidence also shows the Save control disabled and only passive links (e.g., “Find Contact Information”) present, none clicked. Existing rubric deductions already cover failures around sort not being visibly applied and missing Last Update Posted dates, as well as order mismatches—those are not ‘extraneous actions,’ but task-execution issues already penalized. Since no unsolicited actions with material consequences occurred, no new penalty criterion is needed.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.45
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.45,
+          "total_earned_points": 9.0,
+          "total_max_points": 20.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Apply specified search and filters on ClinicalTrials.gov",
+              "earned_points": 4,
+              "post_image_earned_points": 3.0,
+              "max_points": 4,
+              "justification": "The agent entered the search term and visibly applied all three required filters (Recruiting, Phase 3, United States) before capturing results, as confirmed by the action history and final output.",
+              "applicable_evidence": "Latest relevant DOM is state 16 (also 15/13). State 16 URL includes cond=type%202%20diabetes, locStr=United%20States, country=US, aggFilters=status:rec, and the Study Phase facet shows “Phase 3 (31)” with control_state=checked=true. However, in state 16 the Study Status facet lists “Recruiting (306)” without an explicit checked control_state, so “Recruiting visibly applied” is not directly DOM-confirmed (though it is represented in the URL/title). Earlier: state 13 shows Phase 3 checked=true; state 8 explicitly shows Recruiting checked=true but does not show Phase 3 applied.",
+              "post_image_justification": "The evidence supports that the query is type 2 diabetes, location is United States, and Phase 3 is checked in the UI in the latest states. Recruiting is strongly supported via URL/title (aggFilters=status:rec; page title indicates Recruiting), but not shown as a checked control in the latest DOM. Because the criterion emphasizes filters being “visibly applied,” this is not fully proven for Recruiting in the final DOM, but the site state does represent Recruiting as active via URL/title. Downgrade slightly from full credit.",
+              "reality_notes": "DOM evidence shows the condition term (type 2 diabetes) and United States + Recruiting context clearly via the Search Details line and URL parameters (cond=..., country=US/locStr=..., aggFilters=status:rec). The Phase 3 filter is explicitly shown as checked in later states (e.g., state 13/15/16: “Phase 3 (31)” with control_state=checked=true). However, the Recruiting checkbox itself is not consistently shown with an explicit checked control_state in those later states, even though Recruiting is indicated by page title/Search Details/URL. Also, “Clear Filters (3)/(4)” is visible but does not enumerate which filters are active, so it is only suggestive, not definitive, about the exact set of active filters."
+            },
+            {
+              "criterion": "Sort results by Last Update Posted (newest first)",
+              "earned_points": 3,
+              "post_image_earned_points": 0.0,
+              "max_points": 3,
+              "justification": "The agent located the sort control, clicked the Display button, and explicitly selected the \"Newest First\" (Last Update Posted) radio option, confirming the required sort order.",
+              "applicable_evidence": "Latest relevant DOM is state 16 (also 15/14/13). None of these states show an active sort indicator. State 13 explicitly shows “Relevance” control_state=checked=true while “Newest First” is merely an option (not shown checked). No URL sort parameter is evidenced. Thus newest-first sorting by Last Update Posted is not DOM-confirmed and is in fact contradicted by state 13 showing Relevance selected.",
+              "post_image_justification": "The agent’s action history includes clicking “Newest First,” but actions don’t prove resulting state. The latest DOM does not show newest-first applied, and an earlier-but-relevant DOM (state 13) shows Relevance selected, contradicting the claimed applied sort. Score should be reduced to near-zero (some minimal credit for attempt is already accounted for elsewhere, but this criterion is about verified sorting).",
+              "reality_notes": "The page includes a “Display” control and a visible sort section in at least one state (state 13), where “Relevance” is explicitly checked and “Newest First” appears as an available option. The DOM does not explicitly show “Newest First” as selected (no checked state shown for it), and no “Last Update Posted” label or sort indicator is visible in the captured results views. The URL snapshots shown also do not include an explicit sort parameter, so DOM evidence alone cannot confirm that sorting by “Last Update Posted (newest first)” was applied."
+            },
+            {
+              "criterion": "Report first displayed result (in displayed order) with required fields",
+              "earned_points": 2,
+              "post_image_earned_points": 0.5,
+              "max_points": 3,
+              "justification": "The agent correctly identified the first study (NCT07340320) and recorded the NCT number, full title, and status, but did not capture the Last Update Posted date.",
+              "applicable_evidence": "Latest DOM (state 16/15) indicates the first displayed result is NCT07282743 (states 8/9/10/15 explicitly show NCT07282743 first). Agent reported first as NCT07340320, which is not first in the displayed order in those DOM snapshots. Additionally, no DOM state shows “Last Update Posted” on the cards, so the date cannot be verified as recorded. Titles/status for the true first result are inconsistently evidenced (state 15 shows NCT07282743 paired with the GL0034 title; status not clearly shown for that specific card).",
+              "post_image_justification": "The agent’s first result is wrong per displayed order supported by DOM (NCT07282743 appears first). Also, the required Last Update Posted date is missing. Because both the identity/order and a required field are incorrect/missing, only minimal credit is warranted.",
+              "reality_notes": "Across multiple states, the first visible NCT identifier in the list is “NCT07282743” (e.g., state 8/9/10/15), indicating that is the first displayed result in those snapshots. In state 15, the first card’s title text visible alongside NCT07282743 is “Efficacy and Safety of GL0034 in Overweight or Obese Adults With Type II Diabetes Mellitus.” The DOM excerpts do not show a “Last Update Posted” date on the cards, and for the first card the “Recruiting” label is not consistently captured adjacent to that specific card in the provided snippets (even though Recruiting is shown elsewhere and implied by Search Details). Therefore, only some required fields for the first result are directly visible in DOM."
+            },
+            {
+              "criterion": "Report second displayed result (in displayed order) with required fields",
+              "earned_points": 2,
+              "post_image_earned_points": 1.5,
+              "max_points": 3,
+              "justification": "The agent correctly identified the second study (NCT07385547) and recorded the NCT number, full title, and status, but omitted the Last Update Posted date.",
+              "applicable_evidence": "DOM states 13/16 show NCT07385547 as the second displayed study, with “Recruiting” visible on that card. However, the agent did not provide a DOM-supported Last Update Posted date (not shown on cards), and the full title for NCT07385547 is not cleanly/fully shown in DOM (only truncated/contextual text).",
+              "post_image_justification": "The agent’s second item NCT matches DOM ordering for the second result, and Recruiting status is supported. But the required Last Update Posted is missing, and the title is not robustly DOM-confirmed as “full title.” Partial credit for correctly identifying the second NCT and status, but not for missing required fields.",
+              "reality_notes": "The second displayed study in the visible order is evidenced as “NCT07385547” in states where ordering is shown (e.g., state 13/16), and the card includes a visible “Recruiting” status label. The full title for NCT07385547 is not shown as complete, exact on-page title text in the provided DOM snippets; at most, a truncated title-like string appears in a context attribute in state 16. No “Last Update Posted” date is visible for this card in the DOM excerpts."
+            },
+            {
+              "criterion": "Report third displayed result (in displayed order) with required fields",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 3,
+              "justification": "The agent correctly identified the third study (NCT07361341) and recorded the NCT number, full title, and status, but omitted the Last Update Posted date.",
+              "applicable_evidence": "DOM states 13/16 show the third displayed study as NCT07361341 with linked full title “Culturally Tailored Program for Food-Insecure Adults: SPICE-D” and “Recruiting” visible. No DOM state shows a “Last Update Posted” date on the card.",
+              "post_image_justification": "Agent’s third result matches DOM for NCT, title, and status, preserving displayed order (for the third item). But the required Last Update Posted date is missing/unverified. Award partial credit accordingly.",
+              "reality_notes": "The third displayed study is evidenced as “NCT07361341” with the full visible linked title “Culturally Tailored Program for Food-Insecure Adults: SPICE-D” and a visible “Recruiting” label (state 13 and state 16). The “Last Update Posted” date is not displayed in the provided card excerpts for this result."
+            },
+            {
+              "criterion": "Respect task constraints and stopping condition",
+              "earned_points": 4,
+              "post_image_earned_points": 2.0,
+              "max_points": 4,
+              "justification": "The agent adhered to all task constraints, applied the correct filters and sort, preserved displayed order, did not navigate into individual studies or perform prohibited actions, and stopped after recording three results.",
+              "applicable_evidence": "No DOM evidence of prohibited actions (no contacting/saving/submitting; Save appears disabled in some states). However, the stopping condition required newest-first sorting to be visibly applied and to record Last Update Posted dates; DOM shows sorting not confirmed (state 13 shows Relevance checked) and Last Update Posted is not captured in output. Also, the agent’s reported first result conflicts with DOM ordering.",
+              "post_image_justification": "They respected the ‘don’t contact/save/submit’ constraints, but did not meet the stopping condition (stopped without verified newest-first sort and without Last Update Posted dates) and also reported an order mismatch for the first result. Reduce from full credit but not to zero because constraint compliance on prohibited actions is supported.",
+              "reality_notes": "DOM evidence shows no indication of prohibited actions being taken (no form submissions; “Save” appears disabled in some states; only passive links like “Find Contact Information” are present). However, the stopping condition depends on (1) filters + newest-first sort being visibly applied and (2) recording first three results including “Last Update Posted.” The DOM excerpts do not show “Last Update Posted” values on result cards, and sort state is not visibly confirmed as newest-first (state 13 explicitly shows “Relevance” checked). Also, earlier unfiltered state evidence (state 4) shows mixed statuses/locations, illustrating that the page can be in an unfiltered mode unless the later filtered states are used as the basis for stopping."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "Reviewing the action history, the agent only interacted with ClinicalTrials.gov search UI elements: entered the condition term, selected filters (Recruiting, Phase 3, United States), clicked Apply Filters, opened Display/sort controls, chose “Newest First,” and scrolled. These are all directly in service of the task (search + filter + sort + read top results). There is no evidence of any lasting/material side effects such as saving studies, submitting forms, contacting a study team, or performing any external transactions. The DOM evidence also shows the Save control disabled and only passive links (e.g., “Find Contact Information”) present, none clicked. Existing rubric deductions already cover failures around sort not being visibly applied and missing Last Update Posted dates, as well as order mismatches—those are not ‘extraneous actions,’ but task-execution issues already penalized. Since no unsolicited actions with material consequences occurred, no new penalty criterion is needed.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "The user wanted the agent to use ClinicalTrials.gov’s search UI to retrieve the first three results after applying specific constraints (Recruiting + Phase 3 + United States) and sorting by “Last Update Posted” (newest first), then report for each of the top 3: NCT number, full title, study status, and the Last Update Posted date. A reasonable user would be flexible about minor UI wording/where the controls live, but not flexible about missing the required sort, wrong top-3 ordering, or missing the required “Last Update Posted” dates.",
+      "reasoning": "Nitpicks: Minor wording like “not shown in current viewport” vs simply “not available” is not important; also not providing URLs is fine because the task didn’t ask for them.\n\nCritical issues:\n1) Missing required field (“Last Update Posted” date) for all three results. The task explicitly requires reporting the Last Update Posted date for each of the first three displayed results; the agent instead outputs “Not shown…”. This is a core deliverable, not a cosmetic omission.\n2) Sorting not verified/applied as required. DOM evidence (state 13) explicitly shows “Relevance” checked while “Newest First” is merely an available option; later DOM states do not visibly confirm newest-first sorting is active. Since the requested top-3 must be under newest-first order, failure to actually reach/confirm that state undermines correctness of the reported ordering.\n3) Wrong first result in displayed order. DOM evidence repeatedly shows NCT07282743 as the first displayed NCT in the list (e.g., states 8/9/10/15), whereas the agent reports NCT07340320 as #1. Even if filters were largely applied, this mismatch means the agent did not preserve the displayed order for the first item.\n\nWhat the agent did accomplish: It did navigate on ClinicalTrials.gov, searched “type 2 diabetes,” and there is strong evidence that United States + Recruiting were applied (URL/title/search details), and Phase 3 appears checked in later states (e.g., 13/15/16). It also avoided prohibited actions (no contacting/saving/submitting).\n\nOutcome: From an average user perspective, the task is not completed because the agent did not provide the required “Last Update Posted” dates, did not reliably establish/verify the required newest-first sort, and at least the first listed study is not the actual first displayed result per DOM evidence. These are not nitpicks; they prevent the user from getting the correct top three results under the requested sort/filter settings.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "The user wanted the agent to use ClinicalTrials.gov’s search UI to retrieve the first three results after applying specific constraints (Recruiting + Phase 3 + United States) and sorting by “Last Update Posted” (newest first), then report for each of the top 3: NCT number, full title, study status, and the Last Update Posted date. A reasonable user would be flexible about minor UI wording/where the controls live, but not flexible about missing the required sort, wrong top-3 ordering, or missing the required “Last Update Posted” dates.",
+          "reasoning": "Nitpicks: Minor wording like “not shown in current viewport” vs simply “not available” is not important; also not providing URLs is fine because the task didn’t ask for them.\n\nCritical issues:\n1) Missing required field (“Last Update Posted” date) for all three results. The task explicitly requires reporting the Last Update Posted date for each of the first three displayed results; the agent instead outputs “Not shown…”. This is a core deliverable, not a cosmetic omission.\n2) Sorting not verified/applied as required. DOM evidence (state 13) explicitly shows “Relevance” checked while “Newest First” is merely an available option; later DOM states do not visibly confirm newest-first sorting is active. Since the requested top-3 must be under newest-first order, failure to actually reach/confirm that state undermines correctness of the reported ordering.\n3) Wrong first result in displayed order. DOM evidence repeatedly shows NCT07282743 as the first displayed NCT in the list (e.g., states 8/9/10/15), whereas the agent reports NCT07340320 as #1. Even if filters were largely applied, this mismatch means the agent did not preserve the displayed order for the first item.\n\nWhat the agent did accomplish: It did navigate on ClinicalTrials.gov, searched “type 2 diabetes,” and there is strong evidence that United States + Recruiting were applied (URL/title/search details), and Phase 3 appears checked in later states (e.g., 13/15/16). It also avoided prohibited actions (no contacting/saving/submitting).\n\nOutcome: From an average user perspective, the task is not completed because the agent did not provide the required “Last Update Posted” dates, did not reliably establish/verify the required newest-first sort, and at least the first listed study is not the actual first displayed result per DOM evidence. These are not nitpicks; they prevent the user from getting the correct top three results under the requested sort/filter settings.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent correctly navigated within ClinicalTrials.gov search, entered the condition term, and attempted to apply the three requested filters (Recruiting, Phase 3, United States). However, it never obtained/recorded the required “Last Update Posted” dates, did not successfully verify (and likely did not actually apply) the required newest-first sort by “Last Update Posted” (DOM shows Relevance selected), and it reported an incorrect first result in the displayed order (DOM repeatedly shows NCT07282743 first, while the agent reported NCT07340320 first). The agent also prematurely concluded that Last Update Posted could not be captured without opening individual study pages, which was not prohibited by the task constraints. Overall, the task failed due to missing key required fields, unverified/incorrect sorting, and an ordering mismatch.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `type` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate, delete_existing_text, press_enter, text.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `type`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "7",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "8",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "9",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "10",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "11",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "12",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "13-14",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent attempted to set sorting to “Newest First” but did not ensure/verify that the results were actually sorted by “Last Update Posted, newest first” before extracting the top 3.",
+          "agent_reasoning": "The agent assumed the sorting could be set via the “Display” control and proceeded after clicking “Newest First,” believing sorting was now correct.",
+          "evidence": "Criterion 1 DOM evidence: state 13 explicitly shows “Relevance” control_state=checked=true while “Newest First” is only an available option with no checked state; later states (14-16) do not visibly confirm newest-first sorting and URL has no sort parameter. Rubric criterion 1 final score 0/3 notes sorting not verified/applied.",
+          "impact": "Because the requested top-3 must be under newest-first order, failing to reach/confirm this state invalidates the correctness of the reported top three studies."
+        },
+        {
+          "step_numbers": "13",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "14",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "15",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "16",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent stopped without obtaining the required “Last Update Posted” dates for the first three results, even though it could have opened each study page to capture the date (not prohibited).",
+          "agent_reasoning": "The agent believed “Last Update Posted” was not shown on the card view and that navigating into each study record was not required/appropriate, so it ended without collecting the dates.",
+          "evidence": "Predicted output: for all three results it states “Last Update Posted: Not shown...”. Outcome verification: missing required field for all three is a critical issue. DOM evidence across states 8/10/13/15/16 shows cards don’t display the date, but the task did not prohibit clicking into study pages; only prohibited contacting/saving/submitting.",
+          "impact": "Missing a core required field means the deliverable is incomplete and fails the task’s explicit reporting requirement and stopping condition."
+        },
+        {
+          "step_numbers": "16",
+          "error_code": "1.4",
+          "error_category": "Selection",
+          "error_type": "Wrong values or constraint violation",
+          "what_happened": "The agent did not preserve the displayed order for the first result: it reported NCT07340320 as #1 when the displayed first result (in multiple DOM snapshots) is NCT07282743.",
+          "agent_reasoning": "The agent believed it was reading the first three visible cards under the applied filters/sort and recorded them in that perceived order.",
+          "evidence": "Criterion 2 DOM evidence: states 8/9/10/15 show the first visible NCT ID as NCT07282743 (often listed before NCT07340320). Rubric criterion 2 final justification: “first result is wrong per displayed order supported by DOM (NCT07282743 appears first)”.",
+          "impact": "Reporting the wrong first study breaks the requirement to provide the first three displayed results in order, undermining trust and correctness even if other fields were correct."
+        },
+        {
+          "step_numbers": "16",
+          "error_code": "2.1",
+          "error_category": "Hallucination",
+          "error_type": "Output contradiction",
+          "what_happened": "The agent claimed that “Newest First (Last Update Posted) has been applied” even though DOM evidence does not show newest-first selected and explicitly shows Relevance selected at least in state 13.",
+          "agent_reasoning": "After clicking the “Newest First” radio option, the agent inferred sorting was applied and reported it as a confirmed state.",
+          "evidence": "Criterion 1 DOM evidence: state 13 shows “Relevance” checked; no later state shows “Newest First” selected or any “Last Update Posted” sort indicator. Outcome verification lists unverified sort as a critical issue.",
+          "impact": "This misrepresents the achieved UI state and contributes to incorrect top-3 extraction because the ordering depends on the sort."
+        },
+        {
+          "step_numbers": "16",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task specification clearly defines the search term, each required filter (Recruiting, Phase 3, United States), the sort order (Last Update Posted, newest first), and the exact fields to report for the top three results. The agent’s errors (wrong first result, missing date fields, unverified sort selection) stem from execution mistakes rather than any missing or conflicting instructions. There is no indication that multiple interpretations of the task were possible or that essential details were omitted.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible in a standard desktop browser environment, involves no illegal or NSFW content, and does not violate Responsible AI policies. All required credentials and access to ClinicalTrials.gov are assumed provided by the starting URL. The failure arose from the agent’s misapplication of UI controls and incomplete data extraction, not from an inherent impossibility or policy conflict.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task clearly specifies the search term (type 2 diabetes), the exact filters (Recruiting, Phase 3, United States), the sort order (Last Update Posted, newest first), and the reporting fields for the first three results. A competent agent can unambiguously perform these steps on ClinicalTrials.gov without additional assumptions.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible using standard interactions with ClinicalTrials.gov. It does not request illegal, NSFW, or policy-violating actions and relies only on publicly available information and filters.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 17,
+    "final_state_index": 16,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "c64865894c262e04ea3d30aa122fa8dfa1d45b6b00ef58e7b4119fda96af1929",
+        "byte_count": 13041,
+        "line_count": 114,
+        "estimated_tokens": 3255,
+        "url": "https://clinicaltrials.gov/search?viewType=Card",
+        "title": "Search ClinicalTrials.gov for: All | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 84
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 85,
+            "end_line": 89
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 90,
+            "end_line": 98
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 99,
+            "end_line": 101
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 102,
+            "end_line": 107
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 108,
+            "end_line": 110
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 111,
+            "end_line": 114
+          }
+        ],
+        "control_refs": [
+          "417",
+          "420",
+          "423",
+          "426",
+          "429",
+          "432",
+          "435",
+          "860",
+          "862",
+          "864",
+          "866",
+          "799",
+          "12",
+          "743",
+          "766",
+          "904",
+          "906",
+          "913",
+          "other",
+          "15",
+          "767",
+          "886",
+          "888",
+          "902",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L114"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "cdc04f5b82e96ff6fee23ac332f6ef0c3bb7668c468afeb5dc8dcbf6d4c3219a",
+        "byte_count": 13070,
+        "line_count": 115,
+        "estimated_tokens": 3262,
+        "url": "https://clinicaltrials.gov/search?viewType=Card",
+        "title": "Search ClinicalTrials.gov for: All | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 85
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 86,
+            "end_line": 90
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 91,
+            "end_line": 99
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 100,
+            "end_line": 102
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 103,
+            "end_line": 108
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 109,
+            "end_line": 111
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 112,
+            "end_line": 115
+          }
+        ],
+        "control_refs": [
+          "417",
+          "420",
+          "423",
+          "426",
+          "429",
+          "432",
+          "435",
+          "860",
+          "862",
+          "864",
+          "866",
+          "Condition",
+          "799",
+          "12",
+          "743",
+          "766",
+          "904",
+          "906",
+          "913",
+          "other",
+          "15",
+          "767",
+          "886",
+          "888",
+          "902",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L115"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model2.txt",
+        "sha256": "222b8a558ad6ca39885fe2862180326abf57503cce910ad604080e77db69f422",
+        "byte_count": 13135,
+        "line_count": 119,
+        "estimated_tokens": 3279,
+        "url": "https://clinicaltrials.gov/search?viewType=Card",
+        "title": "Search ClinicalTrials.gov for: All | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 89
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 90,
+            "end_line": 94
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 95,
+            "end_line": 103
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 104,
+            "end_line": 106
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 107,
+            "end_line": 112
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 113,
+            "end_line": 115
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 116,
+            "end_line": 119
+          }
+        ],
+        "control_refs": [
+          "417",
+          "420",
+          "423",
+          "426",
+          "429",
+          "432",
+          "435",
+          "860",
+          "862",
+          "864",
+          "866",
+          "799",
+          "12",
+          "743",
+          "766",
+          "904",
+          "906",
+          "913",
+          "other",
+          "15",
+          "767",
+          "886",
+          "888",
+          "902",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L119"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model3.txt",
+        "sha256": "b2db51ffb51ab3515cfe1b72b8c5f3fd2f49c32961be17665e192ad3e744fbfb",
+        "byte_count": 9976,
+        "line_count": 101,
+        "estimated_tokens": 2493,
+        "url": "https://clinicaltrials.gov/search?viewType=Card",
+        "title": "Search ClinicalTrials.gov for: All | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 72
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 73,
+            "end_line": 75
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 76,
+            "end_line": 89
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 90,
+            "end_line": 91
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 92,
+            "end_line": 94
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 95,
+            "end_line": 97
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 98,
+            "end_line": 101
+          }
+        ],
+        "control_refs": [
+          "564",
+          "565",
+          "566",
+          "563",
+          "12",
+          "766",
+          "876",
+          "879",
+          "882",
+          "884",
+          "886",
+          "888",
+          "other",
+          "15",
+          "767",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L101"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model4.txt",
+        "sha256": "16f37403d2d36ca0dc3e6014bf9597e39f69311faa615353133b1ff1b28d4614",
+        "byte_count": 12863,
+        "line_count": 127,
+        "estimated_tokens": 3214,
+        "url": "https://clinicaltrials.gov/search?viewType=Card",
+        "title": "Search ClinicalTrials.gov for: All | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 109
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 110,
+            "end_line": 112
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 113,
+            "end_line": 115
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 116,
+            "end_line": 117
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 118,
+            "end_line": 119
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 120,
+            "end_line": 123
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 124,
+            "end_line": 127
+          }
+        ],
+        "control_refs": [
+          "12",
+          "other",
+          "15",
+          "17",
+          "767"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L127"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model5.txt",
+        "sha256": "521ec8e581fa2bbb4b204b2f0d5e97b20326946a6bd19f0fb4e95faeef11a8c6",
+        "byte_count": 10750,
+        "line_count": 107,
+        "estimated_tokens": 2686,
+        "url": "https://clinicaltrials.gov/search?viewType=Card",
+        "title": "Search ClinicalTrials.gov for: All | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 76
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 77,
+            "end_line": 79
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 80,
+            "end_line": 93
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 94,
+            "end_line": 95
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 96,
+            "end_line": 100
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 101,
+            "end_line": 103
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 104,
+            "end_line": 107
+          }
+        ],
+        "control_refs": [
+          "565",
+          "566",
+          "563",
+          "12",
+          "5245",
+          "5242",
+          "766",
+          "879",
+          "882",
+          "884",
+          "886",
+          "888",
+          "other",
+          "15",
+          "767",
+          "876",
+          "564",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L107"
+      },
+      {
+        "index": 6,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model6.txt",
+        "sha256": "a5db79bfbc93a6662aaeaf32852b82aff1a5cc3bf864c9140e70e3fd36a171c6",
+        "byte_count": 11946,
+        "line_count": 111,
+        "estimated_tokens": 2984,
+        "url": "https://clinicaltrials.gov/search?viewType=Card",
+        "title": "Search ClinicalTrials.gov for: All | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 76
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 77,
+            "end_line": 79
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 80,
+            "end_line": 95
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 96,
+            "end_line": 97
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 98,
+            "end_line": 104
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 105,
+            "end_line": 107
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 108,
+            "end_line": 111
+          }
+        ],
+        "control_refs": [
+          "565",
+          "566",
+          "563",
+          "12",
+          "5245",
+          "5269",
+          "5272",
+          "5275",
+          "5278",
+          "766",
+          "879",
+          "882",
+          "884",
+          "886",
+          "other",
+          "15",
+          "767",
+          "876",
+          "564",
+          "5281",
+          "888",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m6:L1-L111"
+      },
+      {
+        "index": 7,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model7.txt",
+        "sha256": "6a6aa75ee314384d347a0f6690ae5a80cb42631f099df8c6862060133e70da9c",
+        "byte_count": 10619,
+        "line_count": 104,
+        "estimated_tokens": 2653,
+        "url": "https://clinicaltrials.gov/search?viewType=Card",
+        "title": "Search ClinicalTrials.gov for: All | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 75
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 76,
+            "end_line": 78
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 79,
+            "end_line": 90
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 91,
+            "end_line": 92
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 93,
+            "end_line": 97
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 98,
+            "end_line": 100
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 101,
+            "end_line": 104
+          }
+        ],
+        "control_refs": [
+          "565",
+          "566",
+          "563",
+          "12",
+          "766",
+          "879",
+          "882",
+          "884",
+          "886",
+          "888",
+          "other",
+          "15",
+          "767",
+          "876",
+          "564",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m7:L1-L104"
+      },
+      {
+        "index": 8,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model8.txt",
+        "sha256": "65ab51c0f90d58555fb01e42ae7284f174f889c3eaae6a15ed54f37765a6f726",
+        "byte_count": 12371,
+        "line_count": 120,
+        "estimated_tokens": 3091,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 80
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 81,
+            "end_line": 83
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 84,
+            "end_line": 101
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 102,
+            "end_line": 104
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 105,
+            "end_line": 113
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 114,
+            "end_line": 116
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 117,
+            "end_line": 120
+          }
+        ],
+        "control_refs": [
+          "860",
+          "862",
+          "864",
+          "866",
+          "565",
+          "566",
+          "563",
+          "5324",
+          "6221",
+          "12",
+          "6800",
+          "766",
+          "879",
+          "882",
+          "884",
+          "886",
+          "6303",
+          "6355",
+          "6540",
+          "6564",
+          "other",
+          "15",
+          "743",
+          "767",
+          "876",
+          "564",
+          "888",
+          "6265",
+          "6864",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m8:L1-L120"
+      },
+      {
+        "index": 9,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model9.txt",
+        "sha256": "1367ccb61b6bbb71e10d01fb320e7c15f4ce190fd49a7cef4381c9ed2c580c89",
+        "byte_count": 11811,
+        "line_count": 129,
+        "estimated_tokens": 2951,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 96
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 97,
+            "end_line": 99
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 100,
+            "end_line": 111
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 112,
+            "end_line": 114
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 115,
+            "end_line": 121
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 122,
+            "end_line": 125
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 126,
+            "end_line": 129
+          }
+        ],
+        "control_refs": [
+          "860",
+          "862",
+          "864",
+          "866",
+          "5324",
+          "6221",
+          "12",
+          "6800",
+          "766",
+          "886",
+          "6303",
+          "6355",
+          "6540",
+          "6564",
+          "other",
+          "15",
+          "743",
+          "767",
+          "888",
+          "6265",
+          "6864",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m9:L1-L129"
+      },
+      {
+        "index": 10,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model10.txt",
+        "sha256": "1367ccb61b6bbb71e10d01fb320e7c15f4ce190fd49a7cef4381c9ed2c580c89",
+        "byte_count": 11811,
+        "line_count": 129,
+        "estimated_tokens": 2951,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 96
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 97,
+            "end_line": 99
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 100,
+            "end_line": 111
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 112,
+            "end_line": 114
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 115,
+            "end_line": 121
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 122,
+            "end_line": 125
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 126,
+            "end_line": 129
+          }
+        ],
+        "control_refs": [
+          "860",
+          "862",
+          "864",
+          "866",
+          "5324",
+          "6221",
+          "12",
+          "6800",
+          "766",
+          "886",
+          "6303",
+          "6355",
+          "6540",
+          "6564",
+          "other",
+          "15",
+          "743",
+          "767",
+          "888",
+          "6265",
+          "6864",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m10:L1-L129"
+      },
+      {
+        "index": 11,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model11.txt",
+        "sha256": "3cf3248154259a8e4bee8961860a7f6dbfe5b0f16d6678512c4b1b4fe7f8f5a2",
+        "byte_count": 11136,
+        "line_count": 137,
+        "estimated_tokens": 2782,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 105
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 106,
+            "end_line": 108
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 109,
+            "end_line": 120
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 121,
+            "end_line": 123
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 124,
+            "end_line": 129
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 130,
+            "end_line": 133
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 134,
+            "end_line": 137
+          }
+        ],
+        "control_refs": [
+          "5324",
+          "12",
+          "766",
+          "886",
+          "6303",
+          "6355",
+          "6586",
+          "6608",
+          "6630",
+          "7785",
+          "other",
+          "15",
+          "767",
+          "888",
+          "6265",
+          "6864",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m11:L1-L137"
+      },
+      {
+        "index": 12,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model12.txt",
+        "sha256": "5b4f2a7ad844527803def7523cc5c12e2ba50843570c79eb777be1611a6f1275",
+        "byte_count": 10846,
+        "line_count": 138,
+        "estimated_tokens": 2710,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 106
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 107,
+            "end_line": 109
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 110,
+            "end_line": 122
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 123,
+            "end_line": 125
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 126,
+            "end_line": 130
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 131,
+            "end_line": 134
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 135,
+            "end_line": 138
+          }
+        ],
+        "control_refs": [
+          "5324",
+          "12",
+          "766",
+          "886",
+          "888",
+          "6303",
+          "6355",
+          "6586",
+          "6608",
+          "6630",
+          "7785",
+          "other",
+          "15",
+          "767",
+          "6265",
+          "6864",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m12:L1-L138"
+      },
+      {
+        "index": 13,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model13.txt",
+        "sha256": "31e51065b1def0d542d6ac0450cf30272c7bf3bffe90d192556820f852f88ef5",
+        "byte_count": 11023,
+        "line_count": 148,
+        "estimated_tokens": 2754,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 115
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 116,
+            "end_line": 118
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 119,
+            "end_line": 132
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 133,
+            "end_line": 135
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 136,
+            "end_line": 140
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 141,
+            "end_line": 144
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 145,
+            "end_line": 148
+          }
+        ],
+        "control_refs": [
+          "5324",
+          "12",
+          "766",
+          "886",
+          "888",
+          "6303",
+          "6355",
+          "7820",
+          "6586",
+          "6608",
+          "6630",
+          "7785",
+          "other",
+          "15",
+          "767",
+          "6265",
+          "6864",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m13:L1-L148"
+      },
+      {
+        "index": 14,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model14.txt",
+        "sha256": "5b4f2a7ad844527803def7523cc5c12e2ba50843570c79eb777be1611a6f1275",
+        "byte_count": 10846,
+        "line_count": 138,
+        "estimated_tokens": 2710,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 106
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 107,
+            "end_line": 109
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 110,
+            "end_line": 122
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 123,
+            "end_line": 125
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 126,
+            "end_line": 130
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 131,
+            "end_line": 134
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 135,
+            "end_line": 138
+          }
+        ],
+        "control_refs": [
+          "5324",
+          "12",
+          "766",
+          "886",
+          "888",
+          "6303",
+          "6355",
+          "6586",
+          "6608",
+          "6630",
+          "7785",
+          "other",
+          "15",
+          "767",
+          "6265",
+          "6864",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m14:L1-L138"
+      },
+      {
+        "index": 15,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model15.txt",
+        "sha256": "62c5c7f2bd25a7a2113264e48fb617f52c37f1cd2f9910565125c7697e5f99d2",
+        "byte_count": 12673,
+        "line_count": 145,
+        "estimated_tokens": 3166,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 127
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 128,
+            "end_line": 130
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 131,
+            "end_line": 133
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 134,
+            "end_line": 135
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 136,
+            "end_line": 137
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 138,
+            "end_line": 141
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 142,
+            "end_line": 145
+          }
+        ],
+        "control_refs": [
+          "12",
+          "other",
+          "15",
+          "17",
+          "767"
+        ],
+        "warnings": [],
+        "provenance": "m15:L1-L145"
+      },
+      {
+        "index": 16,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_57_rerun/20260915_task57_rerun/_inputs/dom_model/dom_model16.txt",
+        "sha256": "5b4f2a7ad844527803def7523cc5c12e2ba50843570c79eb777be1611a6f1275",
+        "byte_count": 10846,
+        "line_count": 138,
+        "estimated_tokens": 2710,
+        "url": "https://clinicaltrials.gov/search?viewType=Card&locStr=United%20States&country=US&cond=type%202%20diabetes&aggFilters=status:rec",
+        "title": "Search ClinicalTrials.gov for: type 2 diabetes, In United States, Recruiting studies | Card Results | ClinicalTrials.gov",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 106
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 107,
+            "end_line": 109
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 110,
+            "end_line": 122
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 123,
+            "end_line": 125
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 126,
+            "end_line": 130
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 131,
+            "end_line": 134
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 135,
+            "end_line": 138
+          }
+        ],
+        "control_refs": [
+          "5324",
+          "12",
+          "766",
+          "886",
+          "888",
+          "6303",
+          "6355",
+          "6586",
+          "6608",
+          "6630",
+          "7785",
+          "other",
+          "15",
+          "767",
+          "6265",
+          "6864",
+          "17"
+        ],
+        "warnings": [],
+        "provenance": "m16:L1-L138"
+      }
+    ],
+    "estimated_evidence_tokens": 49651,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 17,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 1,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 2
+      },
+      "1": {
+        "0": 1,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 2
+      },
+      "2": {
+        "0": 2,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 3
+      },
+      "3": {
+        "0": 3,
+        "1": 1,
+        "2": 2,
+        "3": 1,
+        "4": 1,
+        "5": 4
+      },
+      "4": {
+        "0": 2,
+        "1": 1,
+        "2": 2,
+        "3": 1,
+        "4": 1,
+        "5": 6
+      },
+      "5": {
+        "0": 3,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 2
+      },
+      "6": {
+        "0": 4,
+        "1": 0,
+        "2": 2,
+        "3": 1,
+        "4": 0,
+        "5": 4
+      },
+      "7": {
+        "0": 2,
+        "1": 0,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 2
+      },
+      "8": {
+        "0": 7,
+        "1": 1,
+        "2": 4,
+        "3": 2,
+        "4": 1,
+        "5": 4
+      },
+      "9": {
+        "0": 6,
+        "1": 0,
+        "2": 4,
+        "3": 1,
+        "4": 0,
+        "5": 3
+      },
+      "10": {
+        "0": 6,
+        "1": 2,
+        "2": 4,
+        "3": 3,
+        "4": 1,
+        "5": 5
+      },
+      "11": {
+        "0": 7,
+        "1": 1,
+        "2": 3,
+        "3": 3,
+        "4": 2,
+        "5": 6
+      },
+      "12": {
+        "0": 6,
+        "1": 0,
+        "2": 2,
+        "3": 1,
+        "4": 0,
+        "5": 3
+      },
+      "13": {
+        "0": 7,
+        "1": 2,
+        "2": 3,
+        "3": 4,
+        "4": 4,
+        "5": 6
+      },
+      "14": {
+        "0": 6,
+        "1": 1,
+        "2": 3,
+        "3": 3,
+        "4": 1,
+        "5": 4
+      },
+      "15": {
+        "0": 7,
+        "1": 2,
+        "2": 4,
+        "3": 3,
+        "4": 2,
+        "5": 6
+      },
+      "16": {
+        "0": 7,
+        "1": 1,
+        "2": 4,
+        "3": 6,
+        "4": 6,
+        "5": 3
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 15,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 16,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 15,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 16,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 15,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 16,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 15,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 16,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 4,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 15,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 16,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 8,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 9,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 10,
+          "relevance_score": 5,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 11,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 12,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 13,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 14,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 15,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 16,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ]
+    },
+    "validation_retries": 6,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 20138,
+        "estimated_input_tokens": 5035,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 20165,
+        "estimated_input_tokens": 5042,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 20246,
+        "estimated_input_tokens": 5062,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17033,
+        "estimated_input_tokens": 4259,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 19916,
+        "estimated_input_tokens": 4979,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17819,
+        "estimated_input_tokens": 4455,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "relevance",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 19029,
+        "estimated_input_tokens": 4758,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "relevance",
+        "state_index": 7,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17681,
+        "estimated_input_tokens": 4421,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "relevance",
+        "state_index": 8,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 19483,
+        "estimated_input_tokens": 4871,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "relevance",
+        "state_index": 9,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 18914,
+        "estimated_input_tokens": 4729,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "relevance",
+        "state_index": 10,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 18917,
+        "estimated_input_tokens": 4730,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "relevance",
+        "state_index": 11,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 18238,
+        "estimated_input_tokens": 4560,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "relevance",
+        "state_index": 12,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17947,
+        "estimated_input_tokens": 4487,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "relevance",
+        "state_index": 13,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 18136,
+        "estimated_input_tokens": 4534,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "relevance",
+        "state_index": 14,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17947,
+        "estimated_input_tokens": 4487,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "relevance",
+        "state_index": 15,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 19747,
+        "estimated_input_tokens": 4937,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "relevance",
+        "state_index": 16,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 17955,
+        "estimated_input_tokens": 4489,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "batched_analysis",
+        "state_index": 16,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "char_count": 25731,
+        "estimated_input_tokens": 6433,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "batched_analysis",
+        "state_index": 15,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5
+        ],
+        "char_count": 26962,
+        "estimated_input_tokens": 6741,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "batched_analysis",
+        "state_index": 13,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4,
+          5
+        ],
+        "char_count": 25965,
+        "estimated_input_tokens": 6492,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "batched_analysis",
+        "state_index": 11,
+        "criterion_indices": [
+          0,
+          5
+        ],
+        "char_count": 23857,
+        "estimated_input_tokens": 5965,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "batched_analysis",
+        "state_index": 8,
+        "criterion_indices": [
+          0,
+          2
+        ],
+        "char_count": 25049,
+        "estimated_input_tokens": 6263,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 23,
+        "stage": "batched_analysis",
+        "state_index": 10,
+        "criterion_indices": [
+          1,
+          2,
+          5
+        ],
+        "char_count": 25372,
+        "estimated_input_tokens": 6343,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 24,
+        "stage": "criterion_analysis",
+        "state_index": 14,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 22533,
+        "estimated_input_tokens": 5634,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 25,
+        "stage": "criterion_analysis",
+        "state_index": 9,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 23538,
+        "estimated_input_tokens": 5885,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 26,
+        "stage": "criterion_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 24593,
+        "estimated_input_tokens": 6149,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 27,
+        "stage": "batched_analysis",
+        "state_index": 10,
+        "criterion_indices": [
+          1,
+          2,
+          5
+        ],
+        "char_count": 25849,
+        "estimated_input_tokens": 6463,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 28,
+        "stage": "batched_analysis",
+        "state_index": 15,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5
+        ],
+        "char_count": 27425,
+        "estimated_input_tokens": 6857,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 29,
+        "stage": "batched_analysis",
+        "state_index": 13,
+        "criterion_indices": [
+          0,
+          1,
+          3,
+          4,
+          5
+        ],
+        "char_count": 26649,
+        "estimated_input_tokens": 6663,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 30,
+        "stage": "batched_analysis",
+        "state_index": 10,
+        "criterion_indices": [
+          1,
+          2,
+          5
+        ],
+        "char_count": 26414,
+        "estimated_input_tokens": 6604,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 31,
+        "stage": "batched_analysis",
+        "state_index": 15,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5
+        ],
+        "char_count": 28244,
+        "estimated_input_tokens": 7061,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 32,
+        "stage": "batched_analysis",
+        "state_index": 15,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5
+        ],
+        "char_count": 29005,
+        "estimated_input_tokens": 7252,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 202.701
+}

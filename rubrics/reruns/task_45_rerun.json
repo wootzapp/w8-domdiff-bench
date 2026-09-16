@@ -1,0 +1,42 @@
+{
+  "task_id": "browser_task_045-weather-forecast-extraction-20260915T075136Z",
+  "precomputed_rubric": {
+    "items": [
+      {
+        "criterion": "Use National Weather Service forecast page for Downtown Seattle (or report access blocker)",
+        "description": "Navigate to the National Weather Service (forecast.weather.gov) forecast for Downtown Seattle (e.g., via the provided MapClick URL) and view the forecast periods displayed. Full credit if the agent uses the NWS page and can access the forecast content (tiles and/or text forecast), OR if the page is inaccessible (site down/CAPTCHA/error/blocked) and the agent clearly reports the blocker (without fabricating data). Partial credit if the agent uses a non-NWS source despite NWS being accessible.",
+        "max_points": 3,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Identify the first displayed daytime forecast period and the immediately following nighttime period (or report ambiguity)",
+        "description": "Correctly locate (not assume) the first displayed daytime forecast period in the NWS forecast presentation available (graphical tiles if present; otherwise the first day period in the textual/alternate forecast list) and then select the nighttime period immediately after it. Full credit if the chosen daytime period is the first daytime period visible and the nighttime period is the next nighttime period; OR if the page does not clearly indicate day/night ordering (e.g., missing labels/tiles fail to load) and the agent explicitly reports that the first-daytime/next-nighttime pairing cannot be determined from what is displayed. Partial credit if the agent selects a reasonable but not clearly-first daytime period when clearer ordering is visible.",
+        "max_points": 4,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Report required fields for the daytime period (with unavailable handling)",
+        "description": "For the identified daytime period, report: period name, conditions, temperature, precipitation chance, and wind forecast as displayed on the NWS forecast. Full credit if all five fields are correctly captured; OR if one or more specific fields are not displayed/accessible on the page for that period and the agent reports those fields as \"unavailable\" rather than guessing (including precipitation chance). Partial credit if one field is missing without being marked unavailable, or if content is taken from outside NWS while NWS data for that field is available.",
+        "max_points": 5,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Report required fields for the nighttime period (with unavailable handling)",
+        "description": "For the immediately following nighttime period, report: period name, conditions, temperature, precipitation chance, and wind forecast as displayed on the NWS forecast. Full credit if all five fields are correctly captured; OR if one or more specific fields are not displayed/accessible on the page for that period and the agent reports those fields as \"unavailable\" rather than guessing (including precipitation chance). Partial credit if one field is missing without being marked unavailable, or if content is taken from outside NWS while NWS data for that field is available.",
+        "max_points": 5,
+        "justification": "",
+        "earned_points": ""
+      },
+      {
+        "criterion": "Respect constraints and stopping condition (no guessing; one pair only; no permissions)",
+        "description": "Comply with: (a) do not enable location access, alerts, or notifications; (b) stop after reporting exactly one consecutive daytime-and-nighttime forecast pair (do not report additional pairs); (c) if precipitation chance (or any required field) is not stated, report it as \"unavailable\" rather than guessing. Full credit if all constraints are followed. Partial credit if minor extra navigation/output occurs but does not include additional forecast pairs. No credit if the agent enables permissions, guesses missing values, or reports more than the single required pair.",
+        "max_points": 3,
+        "justification": "",
+        "earned_points": ""
+      }
+    ]
+  }
+}

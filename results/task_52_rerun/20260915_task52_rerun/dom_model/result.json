@@ -1,0 +1,1800 @@
+{
+  "task_id": "browser_task_052-museum-object-metadata-20260915T075604Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 1,
+  "success_criterion": "outcome",
+  "rubric_score": 0.9772727272727273,
+  "rubric_total_max_points": 22.0,
+  "rubric_total_earned_points": 21.5,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 1.0,
+    "reasoning": "Nitpicks: The agent adds the parenthetical “(Smithsonian Institution)” to the museum name, which is not shown verbatim in the DOM; this is a minor embellishment that does not change the museum identification for an average user.\n\nCritical issues: None. The agent accessed the correct specified NASM object record (DOM states show the exact URL and page title/heading “Apollo 11 Command Module Columbia”). The object name matches the page heading exactly. The mission month and year are correctly taken from the Brief Description (“July, 1969” appears in the Brief Description text in the DOM). Primary Materials are copied completely as displayed (“Primary Materials: Aluminum alloy, Stainless steel, Titanium”). The Overall Dimensions field is captured completely and preserves the exact measurements/symbols/subparts as shown (including “×”, the lb/cm/kg conversions, and the additional sub-dimensions like Other/Support/stand height). The Inventory Number is correctly reported as “A19700102000”. The response stays within scope and stops after recording the requested fields without using external links or adding unrelated information. Overall, the agent satisfied the task’s primary intent: it recorded all required fields from the specified object record, with only a minor, non-impactful museum phrasing addition.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": true,
+    "primary_intent": "Extract specific fields from the single Smithsonian/National Air and Space Museum object record for the Apollo 11 Command Module Columbia: object name, museum, mission month+year as stated in the Brief Description, full Primary Materials, full Overall Dimensions (verbatim measurements), and the Inventory Number. A reasonable user would not be flexible on using a different object record or getting any of these fields wrong/omitted, but would be flexible about minor labeling/formatting and small non-misleading wording differences (e.g., how the museum is phrased) as long as the required values are correct and sourced from the record."
+  },
+  "preflight": {
+    "task_id": "browser_task_052-museum-object-metadata-20260915T075604Z",
+    "actions": 3,
+    "dom_model_states": 4,
+    "initial_state": 0,
+    "final_state": 3,
+    "alignment": {
+      "task_id": "browser_task_052-museum-object-metadata-20260915T075604Z",
+      "action_count": 3,
+      "state_count": 4,
+      "initial_state": 0,
+      "final_state": 3,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to scroll to reveal the Brief Description, Materials, Dimensions, and Inventory Number fields under Object Details."
+          },
+          "observed_after_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000"
+        },
+        {
+          "ordinal": 2,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to scroll further down to reveal the Object Details fields such as Brief Description, Materials, Dimensions, and Inventory Number."
+          },
+          "observed_after_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000"
+        },
+        {
+          "ordinal": 3,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to scroll further to reveal the full text for Brief Description, Dimensions, Materials, and museum field not yet in visible snapshot."
+          },
+          "observed_after_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "e68499ccb819245b6587168cc10c51020f0e2f8aff116814fc8409cf51a5b532",
+          "after_sha256": "a638af44439a678abb67532464909dc08936c2b72be869b44d164489a90ac63e",
+          "before_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000",
+          "after_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "a638af44439a678abb67532464909dc08936c2b72be869b44d164489a90ac63e",
+          "after_sha256": "8529d65b0f949d920788b484ef4d19bd04f6e5eae74043d2eff2583e2c69084d",
+          "before_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000",
+          "after_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "8529d65b0f949d920788b484ef4d19bd04f6e5eae74043d2eff2583e2c69084d",
+          "after_sha256": "5cd7020406f6a7d2563c48e86c005a6f187c2af30471eacec482c33e9e1d2e15",
+          "before_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000",
+          "after_url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000"
+        }
+      ],
+      "warnings": []
+    },
+    "frozen_rubric_sha256": "c02904ee56b52f562119b176de2bac1fc28485b26acb5f9b7abc0bc96bd4a09e",
+    "criterion_order": [
+      "Access the specified Smithsonian/NASM object record (Apollo 11 Command Module Columbia)",
+      "Record the object name",
+      "Record the museum",
+      "Extract mission month and year from Brief Description",
+      "Record complete Primary Materials field (verbatim)",
+      "Record complete Overall Dimensions field (verbatim, exact measurements)",
+      "Record Inventory Number",
+      "Respect stopping condition and scope constraints (single-record only; no extras)"
+    ],
+    "maximum_points": [
+      3.0,
+      2.0,
+      2.0,
+      3.0,
+      4.0,
+      4.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 22.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_52_rerun/20260915_task52_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_52_rerun/20260915_task52_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "c02904ee56b52f562119b176de2bac1fc28485b26acb5f9b7abc0bc96bd4a09e",
+  "criterion_denominator": 22,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 176024,
+      "completion_tokens": 21621,
+      "reasoning_tokens": 0,
+      "total_tokens": 197645
+    },
+    "action_judge": {
+      "prompt_tokens": 19477,
+      "completion_tokens": 3111,
+      "reasoning_tokens": 1728,
+      "total_tokens": 22588
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 46,
+      "api_attempts": 46,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 4,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 10,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 3,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 10,
+        "1": 2,
+        "2": 2,
+        "3": 8,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 1,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 10,
+        "1": 3,
+        "2": 0,
+        "3": 10,
+        "4": 0,
+        "5": 10,
+        "6": 10,
+        "7": 6,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 10,
+        "1": 6,
+        "2": 2,
+        "3": 10,
+        "4": 10,
+        "5": 9,
+        "6": 10,
+        "7": 7,
+        "screenshot_idx": 3
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "1": [
+        0,
+        3,
+        2,
+        1
+      ],
+      "2": [
+        3,
+        1,
+        0,
+        2
+      ],
+      "3": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "4": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "5": [
+        2,
+        3,
+        1,
+        0
+      ],
+      "6": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "7": [
+        3,
+        2,
+        0,
+        1
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 0 asks whether the agent accessed/used the specified Smithsonian/NASM object record for the Apollo 11 Command Module Columbia. The DOM directly supports this: DOM_MODEL_STATE_INDEX: 3 lists the exact specified URL (https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000) and the page title \"Apollo 11 Command Module Columbia | National Air and Space Museum\". The presence of standard object-record fields (e.g., \"Brief Description\", \"Dimensions\", \"Materials\", \"Inventory Number\") further confirms it is the NASM object record page for this object. There is no DOM evidence of blocking (no error/CAPTCHA).",
+          "discrepancies": "None for Criterion 0. The DOM evidence explicitly matches the required Smithsonian/NASM record URL and title for the Apollo 11 Command Module Columbia.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the browser at URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000 with page Title: \"Apollo 11 Command Module Columbia | National Air and Space Museum\". The visible page content includes object-record metadata sections such as \"Brief Description\" (with the Apollo 11 mission text), \"Dimensions\", \"Materials\", and \"Inventory Number\" (value \"A19700102000\"). No CAPTCHA, network error, or access-blocking dialog is present in the snapshot.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM state explicitly shows the agent on the specified Smithsonian/NASM object record for the Apollo 11 Command Module Columbia: the exact URL is present (https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000) and the page title matches the record (“Apollo 11 Command Module Columbia | National Air and Space Museum”) in DOM_MODEL_STATE_INDEX: 2. This directly supports Criterion 0 (access the specified record). No blocking dialogs/errors (CAPTCHA, network errors, etc.) are shown in the captured DOM snapshot.",
+          "discrepancies": "No discrepancy for Criterion 0: the DOM explicitly matches the specified NASM record URL and title. (Note: other reported fields like “Primary Materials” and “museum” are not evidenced in this DOM snapshot, but that is outside the scope of Criterion 0.)",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows the browser at URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000 with title “Apollo 11 Command Module Columbia | National Air and Space Museum.” Within the visible content it includes “Object Details,” “Brief Description,” and the brief description text: “The Apollo 11 Command Module, Columbia, carried astronauts Neil Armstrong, Edwin \"Buzz\" Aldrin and Michael Collins to the Moon and back on the first lunar landing mission in July, 1969.” It also lists “Alternate Name” with value “Apollo 11 Command Module Columbia,” “Dimensions” with value “Overall: 8 ft. 11 in. × 12 ft. 10 in., 9130lb. (271.8 × 391.2cm, 4141.3kg) Other: 1 ft. 10 in. (55.9cm) Support (at base width): 12 ft. 10 in. (391.2cm) Overall capsule on stand height: 10'9\" Support (Stand): 2035.7kg (4488lb.),” and “Inventory Number” with value “A19700102000.”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly shows the agent is on the specified Smithsonian/NASM object record page for the Apollo 11 Command Module Columbia (matching the provided starting URL and the record title). No blockers (CAPTCHA/network errors) are indicated in the DOM snapshot.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL \"https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000\" and page Title \"Apollo 11 Command Module Columbia | National Air and Space Museum\".",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 0 asks whether the agent accessed the specified Smithsonian/NASM object record for the Apollo 11 Command Module Columbia. DOM_MODEL_STATE_INDEX 0 explicitly shows the exact specified NASM collection object URL (\"https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000\") and the page title/heading \"Apollo 11 Command Module Columbia\", demonstrating the correct record was opened.",
+          "discrepancies": "None for Criterion 0. The DOM evidence directly matches the specified record URL and object title/heading.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the browser at URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000 with page Title: \"Apollo 11 Command Module Columbia | National Air and Space Museum\" and visible page heading text: \"Apollo 11 Command Module Columbia\" (also shows breadcrumb ending in \"Apollo 11 Command Module Columbia\").",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 1 asks to record the object name exactly as shown in the specified record. In DOM_MODEL_STATE_INDEX 3, the object name text is explicitly present as \"Apollo 11 Command Module Columbia\" (page Title and the \"Alternate Name\" field). The agent’s reported object name, \"Apollo 11 Command Module Columbia,\" matches the DOM evidence exactly.",
+          "discrepancies": "No discrepancy for the object name; it matches the DOM text exactly.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the page title and object details. Evidence of object name appears as: Title: \"Apollo 11 Command Module Columbia | National Air and Space Museum\" and within the fields list: \"Alternate Name Apollo 11 Command Module Columbia\" on URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion is to record the object name exactly as shown in the specified Smithsonian record. In DOM_MODEL_STATE_INDEX: 0, the object name is explicitly present as the page title/heading text “Apollo 11 Command Module Columbia” (VISIBLE CONTENT). The agent’s reported object name (“Apollo 11 Command Module Columbia”) matches this exactly.",
+          "discrepancies": "No discrepancy for Criterion 1: the DOM shows “Apollo 11 Command Module Columbia,” and the agent output matches exactly.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 (URL: https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000). In the VISIBLE CONTENT, the page shows the object title text exactly as: “Apollo 11 Command Module Columbia”. This same text also appears in the breadcrumb trail (“Collection Objects” > “Apollo 11 Command Module Columbia”).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion asks to record the museum/unit responsible as displayed. In DOM_MODEL_STATE_INDEX: 3, the record explicitly shows “Data Source — National Air and Space Museum,” which is the museum/unit responsible presented on the page. This supports reporting the museum as “National Air and Space Museum.”",
+          "discrepancies": "The agent’s predicted output reports “Museum: National Air and Space Museum (Smithsonian Institution)”. The DOM evidence explicitly shows “National Air and Space Museum” (under “Data Source”) but does not display the parenthetical “(Smithsonian Institution)” in the provided snapshot, so that extra wording is not DOM-supported.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the Smithsonian record page at URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000. In the visible content, the page explicitly lists a museum/unit field as:\n- “Data Source”\n- “National Air and Space Museum”",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nCriterion 2 asks to record the museum/unit responsible as displayed in the specified record. In DOM_MODEL_STATE_INDEX 2, there is no explicit \"Museum\" (or equivalent) field/value shown under \"Object Details\". Although the page title includes \"| National Air and Space Museum\", the DOM evidence does not show this as the museum/unit responsible field in the record, so the agent’s reported museum is not explicitly supported by the captured DOM.",
+          "discrepancies": "The agent output includes: \"Museum: National Air and Space Museum (Smithsonian Institution)\". The captured DOM (STATE_INDEX 2) does not display a dedicated \"Museum\"/\"Unit\" field/value, so this museum claim cannot be verified from the provided DOM evidence (title text alone is not an explicit museum/unit-responsible field).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 (URL: https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000)\n- Page title text: \"Apollo 11 Command Module Columbia | National Air and Space Museum\".\n- Visible section header: \"Object Details\".\n- Visible fields/values include (non-exhaustive):\n  - \"Brief Description\" followed by: \"The Apollo 11 Command Module, Columbia, carried astronauts Neil Armstrong, Edwin \"Buzz\" Aldrin and Michael Collins to the Moon and back on the first lunar landing mission in July, 1969.\"\n  - \"Alternate Name\" followed by: \"Apollo 11 Command Module Columbia\"\n  - \"Inventory Number\" followed by: \"A19700102000\"\n- No visible label/value pair for \"Museum\" (or \"Museum/Unit\" / \"Museum/unit responsible\") is present in the captured Object Details content for this DOM state.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM supports that the record is on the National Air and Space Museum site via the page title, but it does not explicitly show a museum/unit field value as a labeled record field. The agent’s reported museum (\"National Air and Space Museum (Smithsonian Institution)\") is not directly evidenced as a field in the shown DOM content.",
+          "discrepancies": "Museum/unit responsible is not shown as an explicit field in the DOM excerpt; only the site/title indicates \"National Air and Space Museum\".",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes the page Title text: \"Apollo 11 Command Module Columbia | National Air and Space Museum\". No separate field labeled \"Museum\" or \"Unit\" is visible in the provided DOM excerpt.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe museum/unit responsible is explicitly present in the DOM snapshot as the link text \"National Air and Space Museum\" (DOM_MODEL_STATE_INDEX: 0, action [97] link \"National Air and Space Museum\"). This supports the agent’s reported museum as National Air and Space Museum.",
+          "discrepancies": "The agent output expands the museum to \"National Air and Space Museum (Smithsonian Institution)\". The DOM evidence explicitly shows only \"National Air and Space Museum\"; the parenthetical \"(Smithsonian Institution)\" is not supported by the provided DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the Smithsonian object record page at URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000 (Title: \"Apollo 11 Command Module Columbia | National Air and Space Museum\"). In the visible content, there is a link labeled \"National Air and Space Museum\" (action [97]). No other museum/unit name is shown in this DOM snapshot.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe mission month and year are explicitly stated in the record’s Brief Description as “July, 1969” (DOM_MODEL_STATE_INDEX: 3, Brief Description line ending with “in July, 1969.”). This satisfies the criterion requiring month+year sourced from the Brief Description rather than an acquisition/transfer date.",
+          "discrepancies": "No discrepancy for this criterion: the agent-reported mission month and year “July, 1969” matches the Brief Description text in DOM_MODEL_STATE_INDEX: 3.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the Brief Description text: “The Apollo 11 Command Module, Columbia, carried astronauts Neil Armstrong, Edwin \"Buzz\" Aldrin and Michael Collins to the Moon and back on the first lunar landing mission in July, 1969.” (URL: https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000)",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe record’s Brief Description explicitly contains the mission month and year “July, 1969” (DOM_MODEL_STATE_INDEX: 2, Brief Description sentence ending “…mission in July, 1969.”). This directly supports the agent’s reported mission month and year from the Brief Description.",
+          "discrepancies": "No discrepancy for this criterion: the agent output “July, 1969,” which matches the Brief Description text shown in DOM_MODEL_STATE_INDEX: 2.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 (https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000)\nUnder the heading “Brief Description”, the visible text states: “The Apollo 11 Command Module, Columbia, carried astronauts Neil Armstrong, Edwin \"Buzz\" Aldrin and Michael Collins to the Moon and back on the first lunar landing mission in July, 1969.”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly states the mission month and year in the description as \"July 1969,\" which matches the agent’s reported mission month and year (from Brief Description).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 contains the Brief Description sentence: \"...during most of the first crewed lunar landing mission in July 1969.\"",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the complete Primary Materials field verbatim. In DOM_MODEL_STATE_INDEX: 3, under the “Materials” section, the page text shows “Primary Materials: Aluminum alloy, Stainless steel, Titanium,” which matches the agent’s reported Primary Materials exactly.",
+          "discrepancies": "No discrepancies for the Primary Materials field: the agent output (“Primary Materials: Aluminum alloy, Stainless steel, Titanium”) matches the DOM text exactly.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 (https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000) shows the field label/value under “Materials” as:\n- “Materials”\n- “Primary Materials: Aluminum alloy, Stainless steel, Titanium”",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the complete Overall Dimensions field under the label \"Dimensions\" in DOM_MODEL_STATE_INDEX 3, including all sub-dimensions and measurements (Overall; Other; Support (at base width); Overall capsule on stand height; Support (Stand)) with units and symbols exactly as displayed. This directly supports the agent’s recorded Overall Dimensions content.",
+          "discrepancies": "No discrepancy for this criterion: the DOM provides the Overall Dimensions string verbatim, and it matches the agent’s transcribed Overall Dimensions field content (including ×, ft./in., cm/kg conversions, and the 10'9\" height).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 at URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000 shows a \"Dimensions\" field with the full text:\n\"Overall: 8 ft. 11 in. × 12 ft. 10 in., 9130lb. (271.8 × 391.2cm, 4141.3kg) Other: 1 ft. 10 in. (55.9cm) Support (at base width): 12 ft. 10 in. (391.2cm) Overall capsule on stand height: 10'9\" Support (Stand): 2035.7kg (4488lb.)\"",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the complete Overall Dimensions field in State 2 under “Dimensions,” including all sub-dimensions and measurements (“Overall… Other… Support (at base width)… Overall capsule on stand height… Support (Stand)…”). This matches the agent’s reported Overall Dimensions text, indicating the agent recorded it verbatim from the specified Smithsonian record.",
+          "discrepancies": "No discrepancy found for the Overall Dimensions field: the DOM in State 2 includes the complete Overall Dimensions string, and it matches the agent’s provided transcription.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 (https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000) shows under the label “Dimensions” the full field text:\n“Overall: 8 ft. 11 in. × 12 ft. 10 in., 9130lb. (271.8 × 391.2cm, 4141.3kg) Other: 1 ft. 10 in. (55.9cm) Support (at base width): 12 ft. 10 in. (391.2cm) Overall capsule on stand height: 10'9\" Support (Stand): 2035.7kg (4488lb.)”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "6": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly contains the Inventory Number field and its value. In DOM_MODEL_STATE_INDEX 3 under VISIBLE CONTENT, the page lists \"Inventory Number\" followed immediately by \"A19700102000\", which supports reporting the inventory number exactly as shown.",
+          "discrepancies": "No discrepancy for this criterion. The agent’s predicted output inventory number \"A19700102000\" matches the DOM text exactly.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 (https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000) shows the field label and value:\n- \"Inventory Number\"\n- \"A19700102000\"",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly includes the Inventory Number field and its value. In DOM_MODEL_STATE_INDEX 2 under VISIBLE CONTENT, the page lists “Inventory Number” and directly beneath it “A19700102000,” which matches the agent’s reported inventory number.",
+          "discrepancies": "No discrepancies for Criterion 6 (Inventory Number). The agent output “A19700102000,” which exactly matches the DOM evidence in state 2.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows the Object Details section with the label “Inventory Number” followed immediately by the value “A19700102000” on the page https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000.\nRelevant extracted text:\n- “Inventory Number”\n- “A19700102000”",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ],
+      "7": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 7 (Respect stopping condition and scope constraints) is supported by the DOM evidence because the browser state (DOM_MODEL_STATE_INDEX: 3) contains exactly the single specified Smithsonian object record (URL matches the required record) and exposes the exact fields the agent reported (Brief Description mission month/year; Materials/Primary Materials; Dimensions/Overall; Inventory Number). No DOM evidence indicates that the agent needed to follow external links; the visible page already contains all required fields within this one record. The agent’s predicted output (as provided) lists only the requested items and stops, aligning with the stopping condition.",
+          "discrepancies": "None for Criterion 7. (Note: The DOM snapshot does not explicitly show a separate labeled \"Museum\" field; it is only implied by the page title \"... | National Air and Space Museum\" and \"Data Source: National Air and Space Museum\". This does not affect the scope/stopping-condition criterion being evaluated here.)",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows the Smithsonian record page at URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000 (Title: \"Apollo 11 Command Module Columbia | National Air and Space Museum\"). The visible content includes only the requested record fields: \"Brief Description\" with the mission timing \"in July, 1969.\"; \"Dimensions\" with the full \"Overall: 8 ft. 11 in. × 12 ft. 10 in., 9130lb. (271.8 × 391.2cm, 4141.3kg) Other: 1 ft. 10 in. (55.9cm) Support (at base width): 12 ft. 10 in. (391.2cm) Overall capsule on stand height: 10'9\" Support (Stand): 2035.7kg (4488lb.)\"; \"Materials\" with \"Primary Materials: Aluminum alloy, Stainless steel, Titanium\"; and \"Inventory Number\" with value \"A19700102000\". The record header/title provides the object name text \"Apollo 11 Command Module Columbia\". The page title also explicitly indicates the museum name as \"National Air and Space Museum\".",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nCriterion 7 (Respect stopping condition and scope constraints): The agent’s predicted output contains only the requested fields and then stops; it does not add external links, extra sections, or additional object-record data beyond object name/museum/mission month+year/Primary Materials/Overall Dimensions/Inventory Number, which supports compliance with the stopping condition and scope constraint in the response structure. However, DOM evidence (STATE_INDEX: 2) only explicitly supports some of the included fields (Brief Description mission month+year “July, 1969”; Alternate Name “Apollo 11 Command Module Columbia”; Dimensions/Overall string; Inventory Number “A19700102000”). The DOM excerpt does not evidence the “Museum” value nor the “Primary Materials” field/value, so we cannot fully verify that all reported items were sourced solely from the specified record without overreach; thus only partial support is possible based on available DOM coverage.",
+          "discrepancies": "DOM_MODEL_STATE_INDEX: 2 does not display any “Museum” field/value nor any “Primary Materials” field/value. Therefore, the agent’s inclusion of “Museum: National Air and Space Museum (Smithsonian Institution)” and “Primary Materials: Aluminum alloy, Stainless steel, Titanium” is not directly supported by the provided DOM evidence (not proven true/false from this snapshot). All other requested fields in the agent output are explicitly present in the DOM excerpt (Alternate Name/object name; Brief Description month+year; Dimensions overall string; Inventory Number).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows the Smithsonian NASM object record page at URL https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000 (Title: “Apollo 11 Command Module Columbia | National Air and Space Museum”). The visible content includes the required fields and indicates what should be extracted and that the task is limited to this single record:\n- “Brief Description” text explicitly states the mission month and year: “...first lunar landing mission in July, 1969.”\n- “Dimensions” includes the full “Overall:” string: “Overall: 8 ft. 11 in. × 12 ft. 10 in., 9130lb. (271.8 × 391.2cm, 4141.3kg) Other: 1 ft. 10 in. (55.9cm) Support (at base width): 12 ft. 10 in. (391.2cm) Overall capsule on stand height: 10'9\" Support (Stand): 2035.7kg (4488lb.)”\n- “Alternate Name” shows: “Apollo 11 Command Module Columbia”\n- “Inventory Number” shows: “A19700102000”\nThis DOM snapshot does not show the “Museum” field label/value nor the “Primary Materials” field/value in the visible content excerpt, so those portions of the agent’s reported output are not directly evidenced here.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM states show the intended single collection object page is loaded with the visible page title/heading “Apollo 11 Command Module Columbia” and standard object-record sections (e.g., Brief Description, Dimensions, Materials, Inventory Number). No access blockers (CAPTCHA/errors) are visible in the captured states.",
+      "1": "The object name is explicitly visible as the main page heading “Apollo 11 Command Module Columbia” (also echoed in the page title and as an “Alternate Name” value). This provides direct on-page evidence for the object name.",
+      "2": "The page does not show a dedicated field labeled “Museum,” but it does explicitly show “Data Source — National Air and Space Museum,” and the page title includes “| National Air and Space Museum.” The DOM does not display any additional parenthetical like “(Smithsonian Institution).”",
+      "3": "The Brief Description text explicitly includes the mission timing as “in July, 1969” (with a comma after July in some states). This is the only mission month/year stated in the Brief Description shown.",
+      "4": "The materials section is labeled “Materials” and contains a single line for “Primary Materials: Aluminum alloy, Stainless steel, Titanium.” No other primary-material items are shown in the captured DOM.",
+      "5": "The record uses a “Dimensions” field (not explicitly labeled “Overall Dimensions”) whose value begins with “Overall:” and continues with additional sub-dimensions (Other; Support (at base width); Overall capsule on stand height; Support (Stand)). The full string includes symbols like “×”, mixed unit formatting (e.g., 9130lb., cm/kg in parentheses), and the height formatted as 10'9\"; these appear in one continuous text block in the DOM.",
+      "6": "The Inventory Number is explicitly shown as a labeled field “Inventory Number” with value “A19700102000” in the visible Object Details section.",
+      "7": "All requested data elements (object name/heading, Brief Description month+year, Materials/Primary Materials, Dimensions text including “Overall: …”, and Inventory Number) are present on the single object-record page in the DOM; no external navigation is necessary to obtain them. The page itself includes additional fields (e.g., Alternate Name, Data Source), so scorers should focus on whether the response restricts output to only the requested fields."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Access the specified Smithsonian/NASM object record (Apollo 11 Command Module Columbia)",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "Agent used the provided Smithsonian/NASM URL and scrolled to reveal the object details, demonstrating successful access to the specified record.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (also 0/1/2). It shows the exact required URL (https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000) and page title “Apollo 11 Command Module Columbia | National Air and Space Museum,” with standard object-record fields visible. No blockers shown.",
+        "post_image_justification": "The agent accessed the specified Smithsonian/NASM object record page as required. No adjustment needed.",
+        "reality_notes": "DOM states show the intended single collection object page is loaded with the visible page title/heading “Apollo 11 Command Module Columbia” and standard object-record sections (e.g., Brief Description, Dimensions, Materials, Inventory Number). No access blockers (CAPTCHA/errors) are visible in the captured states."
+      },
+      {
+        "criterion": "Record the object name",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent recorded “Apollo 11 Command Module Columbia,” exactly matching the record’s object name.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (and 0). The page heading/record name is explicitly “Apollo 11 Command Module Columbia.”",
+        "post_image_justification": "Agent’s object name matches the record exactly.",
+        "reality_notes": "The object name is explicitly visible as the main page heading “Apollo 11 Command Module Columbia” (also echoed in the page title and as an “Alternate Name” value). This provides direct on-page evidence for the object name."
+      },
+      {
+        "criterion": "Record the museum",
+        "earned_points": 2,
+        "post_image_earned_points": 1.5,
+        "max_points": 2,
+        "justification": "The agent reported “National Air and Space Museum (Smithsonian Institution),” matching the museum field as displayed.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3. It explicitly shows “Data Source — National Air and Space Museum.” The DOM does not show the parenthetical “(Smithsonian Institution).”",
+        "post_image_justification": "Museum is supported as “National Air and Space Museum,” but the added “(Smithsonian Institution)” is not DOM-supported. Minor, non-substantive embellishment → small deduction.",
+        "reality_notes": "The page does not show a dedicated field labeled “Museum,” but it does explicitly show “Data Source — National Air and Space Museum,” and the page title includes “| National Air and Space Museum.” The DOM does not display any additional parenthetical like “(Smithsonian Institution).”"
+      },
+      {
+        "criterion": "Extract mission month and year from Brief Description",
+        "earned_points": 3,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent correctly extracted “July, 1969” from the Brief Description.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (also 2). Brief Description ends with “…first lunar landing mission in July, 1969.”",
+        "post_image_justification": "Agent correctly extracted the mission month and year from the Brief Description.",
+        "reality_notes": "The Brief Description text explicitly includes the mission timing as “in July, 1969” (with a comma after July in some states). This is the only mission month/year stated in the Brief Description shown."
+      },
+      {
+        "criterion": "Record complete Primary Materials field (verbatim)",
+        "earned_points": 4,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent provided “Aluminum alloy, Stainless steel, Titanium” verbatim, matching the full Primary Materials field.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3. Under “Materials,” it shows “Primary Materials: Aluminum alloy, Stainless steel, Titanium.”",
+        "post_image_justification": "Agent copied the complete Primary Materials field as displayed.",
+        "reality_notes": "The materials section is labeled “Materials” and contains a single line for “Primary Materials: Aluminum alloy, Stainless steel, Titanium.” No other primary-material items are shown in the captured DOM."
+      },
+      {
+        "criterion": "Record complete Overall Dimensions field (verbatim, exact measurements)",
+        "earned_points": 2,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent listed multiple dimensions and weights but did not preserve the exact line breaks and formatting from the record, merging entries and altering unit presentation.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (also 2). The “Dimensions” field is shown as one continuous text block: “Overall: 8 ft. 11 in. × 12 ft. 10 in., 9130lb. (271.8 × 391.2cm, 4141.3kg) Other: 1 ft. 10 in. (55.9cm) Support (at base width): 12 ft. 10 in. (391.2cm) Overall capsule on stand height: 10'9\" Support (Stand): 2035.7kg (4488lb.)”",
+        "post_image_justification": "Agent’s transcription matches the complete dimensions string shown in the DOM (including symbols/units/subparts). No deduction warranted.",
+        "reality_notes": "The record uses a “Dimensions” field (not explicitly labeled “Overall Dimensions”) whose value begins with “Overall:” and continues with additional sub-dimensions (Other; Support (at base width); Overall capsule on stand height; Support (Stand)). The full string includes symbols like “×”, mixed unit formatting (e.g., 9130lb., cm/kg in parentheses), and the height formatted as 10'9\"; these appear in one continuous text block in the DOM."
+      },
+      {
+        "criterion": "Record Inventory Number",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent recorded “A19700102000,” exactly matching the Inventory Number in the record.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (also 2). It shows “Inventory Number — A19700102000.”",
+        "post_image_justification": "Agent reported the inventory number exactly as displayed.",
+        "reality_notes": "The Inventory Number is explicitly shown as a labeled field “Inventory Number” with value “A19700102000” in the visible Object Details section."
+      },
+      {
+        "criterion": "Respect stopping condition and scope constraints (single-record only; no extras)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent’s output included only the six requested fields with no extraneous information or external links.",
+        "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3, which contains all requested fields on the single specified record page. Agent output includes only the requested fields and stops; no external links or extra fields were added.",
+        "post_image_justification": "Response respects scope/stopping condition and stays within the single-record constraint.",
+        "reality_notes": "All requested data elements (object name/heading, Brief Description month+year, Materials/Primary Materials, Dimensions text including “Overall: …”, and Inventory Number) are present on the single object-record page in the DOM; no external navigation is necessary to obtain them. The page itself includes additional fields (e.g., Alternate Name, Data Source), so scorers should focus on whether the response restricts output to only the requested fields."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "The agent’s actions consist only of opening the specified NASM Smithsonian object record page and scrolling down to reveal required fields (Brief Description, Materials, Dimensions, Inventory Number). Scrolling is necessary to access the requested information and has no lasting/material side effects. There is no evidence of adding items to a cart, submitting forms, signing up for anything, or following external links. The only noted issue in the rubric summary is a minor museum wording embellishment, which was already penalized under Criterion 2. Therefore, there are no additional extraneous or unsolicited actions with material consequences that went unpenalized.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.9772727272727273
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.9772727272727273,
+          "total_earned_points": 21.5,
+          "total_max_points": 22.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Access the specified Smithsonian/NASM object record (Apollo 11 Command Module Columbia)",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "Agent used the provided Smithsonian/NASM URL and scrolled to reveal the object details, demonstrating successful access to the specified record.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (also 0/1/2). It shows the exact required URL (https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000) and page title “Apollo 11 Command Module Columbia | National Air and Space Museum,” with standard object-record fields visible. No blockers shown.",
+              "post_image_justification": "The agent accessed the specified Smithsonian/NASM object record page as required. No adjustment needed.",
+              "reality_notes": "DOM states show the intended single collection object page is loaded with the visible page title/heading “Apollo 11 Command Module Columbia” and standard object-record sections (e.g., Brief Description, Dimensions, Materials, Inventory Number). No access blockers (CAPTCHA/errors) are visible in the captured states."
+            },
+            {
+              "criterion": "Record the object name",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent recorded “Apollo 11 Command Module Columbia,” exactly matching the record’s object name.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (and 0). The page heading/record name is explicitly “Apollo 11 Command Module Columbia.”",
+              "post_image_justification": "Agent’s object name matches the record exactly.",
+              "reality_notes": "The object name is explicitly visible as the main page heading “Apollo 11 Command Module Columbia” (also echoed in the page title and as an “Alternate Name” value). This provides direct on-page evidence for the object name."
+            },
+            {
+              "criterion": "Record the museum",
+              "earned_points": 2,
+              "post_image_earned_points": 1.5,
+              "max_points": 2,
+              "justification": "The agent reported “National Air and Space Museum (Smithsonian Institution),” matching the museum field as displayed.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3. It explicitly shows “Data Source — National Air and Space Museum.” The DOM does not show the parenthetical “(Smithsonian Institution).”",
+              "post_image_justification": "Museum is supported as “National Air and Space Museum,” but the added “(Smithsonian Institution)” is not DOM-supported. Minor, non-substantive embellishment → small deduction.",
+              "reality_notes": "The page does not show a dedicated field labeled “Museum,” but it does explicitly show “Data Source — National Air and Space Museum,” and the page title includes “| National Air and Space Museum.” The DOM does not display any additional parenthetical like “(Smithsonian Institution).”"
+            },
+            {
+              "criterion": "Extract mission month and year from Brief Description",
+              "earned_points": 3,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent correctly extracted “July, 1969” from the Brief Description.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (also 2). Brief Description ends with “…first lunar landing mission in July, 1969.”",
+              "post_image_justification": "Agent correctly extracted the mission month and year from the Brief Description.",
+              "reality_notes": "The Brief Description text explicitly includes the mission timing as “in July, 1969” (with a comma after July in some states). This is the only mission month/year stated in the Brief Description shown."
+            },
+            {
+              "criterion": "Record complete Primary Materials field (verbatim)",
+              "earned_points": 4,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent provided “Aluminum alloy, Stainless steel, Titanium” verbatim, matching the full Primary Materials field.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3. Under “Materials,” it shows “Primary Materials: Aluminum alloy, Stainless steel, Titanium.”",
+              "post_image_justification": "Agent copied the complete Primary Materials field as displayed.",
+              "reality_notes": "The materials section is labeled “Materials” and contains a single line for “Primary Materials: Aluminum alloy, Stainless steel, Titanium.” No other primary-material items are shown in the captured DOM."
+            },
+            {
+              "criterion": "Record complete Overall Dimensions field (verbatim, exact measurements)",
+              "earned_points": 2,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent listed multiple dimensions and weights but did not preserve the exact line breaks and formatting from the record, merging entries and altering unit presentation.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (also 2). The “Dimensions” field is shown as one continuous text block: “Overall: 8 ft. 11 in. × 12 ft. 10 in., 9130lb. (271.8 × 391.2cm, 4141.3kg) Other: 1 ft. 10 in. (55.9cm) Support (at base width): 12 ft. 10 in. (391.2cm) Overall capsule on stand height: 10'9\" Support (Stand): 2035.7kg (4488lb.)”",
+              "post_image_justification": "Agent’s transcription matches the complete dimensions string shown in the DOM (including symbols/units/subparts). No deduction warranted.",
+              "reality_notes": "The record uses a “Dimensions” field (not explicitly labeled “Overall Dimensions”) whose value begins with “Overall:” and continues with additional sub-dimensions (Other; Support (at base width); Overall capsule on stand height; Support (Stand)). The full string includes symbols like “×”, mixed unit formatting (e.g., 9130lb., cm/kg in parentheses), and the height formatted as 10'9\"; these appear in one continuous text block in the DOM."
+            },
+            {
+              "criterion": "Record Inventory Number",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent recorded “A19700102000,” exactly matching the Inventory Number in the record.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3 (also 2). It shows “Inventory Number — A19700102000.”",
+              "post_image_justification": "Agent reported the inventory number exactly as displayed.",
+              "reality_notes": "The Inventory Number is explicitly shown as a labeled field “Inventory Number” with value “A19700102000” in the visible Object Details section."
+            },
+            {
+              "criterion": "Respect stopping condition and scope constraints (single-record only; no extras)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent’s output included only the six requested fields with no extraneous information or external links.",
+              "applicable_evidence": "Latest relevant DOM is DOM_MODEL_STATE_INDEX: 3, which contains all requested fields on the single specified record page. Agent output includes only the requested fields and stops; no external links or extra fields were added.",
+              "post_image_justification": "Response respects scope/stopping condition and stays within the single-record constraint.",
+              "reality_notes": "All requested data elements (object name/heading, Brief Description month+year, Materials/Primary Materials, Dimensions text including “Overall: …”, and Inventory Number) are present on the single object-record page in the DOM; no external navigation is necessary to obtain them. The page itself includes additional fields (e.g., Alternate Name, Data Source), so scorers should focus on whether the response restricts output to only the requested fields."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "The agent’s actions consist only of opening the specified NASM Smithsonian object record page and scrolling down to reveal required fields (Brief Description, Materials, Dimensions, Inventory Number). Scrolling is necessary to access the requested information and has no lasting/material side effects. There is no evidence of adding items to a cart, submitting forms, signing up for anything, or following external links. The only noted issue in the rubric summary is a minor museum wording embellishment, which was already penalized under Criterion 2. Therefore, there are no additional extraneous or unsolicited actions with material consequences that went unpenalized.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Extract specific fields from the single Smithsonian/National Air and Space Museum object record for the Apollo 11 Command Module Columbia: object name, museum, mission month+year as stated in the Brief Description, full Primary Materials, full Overall Dimensions (verbatim measurements), and the Inventory Number. A reasonable user would not be flexible on using a different object record or getting any of these fields wrong/omitted, but would be flexible about minor labeling/formatting and small non-misleading wording differences (e.g., how the museum is phrased) as long as the required values are correct and sourced from the record.",
+      "reasoning": "Nitpicks: The agent adds the parenthetical “(Smithsonian Institution)” to the museum name, which is not shown verbatim in the DOM; this is a minor embellishment that does not change the museum identification for an average user.\n\nCritical issues: None. The agent accessed the correct specified NASM object record (DOM states show the exact URL and page title/heading “Apollo 11 Command Module Columbia”). The object name matches the page heading exactly. The mission month and year are correctly taken from the Brief Description (“July, 1969” appears in the Brief Description text in the DOM). Primary Materials are copied completely as displayed (“Primary Materials: Aluminum alloy, Stainless steel, Titanium”). The Overall Dimensions field is captured completely and preserves the exact measurements/symbols/subparts as shown (including “×”, the lb/cm/kg conversions, and the additional sub-dimensions like Other/Support/stand height). The Inventory Number is correctly reported as “A19700102000”. The response stays within scope and stops after recording the requested fields without using external links or adding unrelated information. Overall, the agent satisfied the task’s primary intent: it recorded all required fields from the specified object record, with only a minor, non-impactful museum phrasing addition.",
+      "output_success": true
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        true
+      ],
+      "majority_output_success": true,
+      "all_results": [
+        {
+          "primary_intent": "Extract specific fields from the single Smithsonian/National Air and Space Museum object record for the Apollo 11 Command Module Columbia: object name, museum, mission month+year as stated in the Brief Description, full Primary Materials, full Overall Dimensions (verbatim measurements), and the Inventory Number. A reasonable user would not be flexible on using a different object record or getting any of these fields wrong/omitted, but would be flexible about minor labeling/formatting and small non-misleading wording differences (e.g., how the museum is phrased) as long as the required values are correct and sourced from the record.",
+          "reasoning": "Nitpicks: The agent adds the parenthetical “(Smithsonian Institution)” to the museum name, which is not shown verbatim in the DOM; this is a minor embellishment that does not change the museum identification for an average user.\n\nCritical issues: None. The agent accessed the correct specified NASM object record (DOM states show the exact URL and page title/heading “Apollo 11 Command Module Columbia”). The object name matches the page heading exactly. The mission month and year are correctly taken from the Brief Description (“July, 1969” appears in the Brief Description text in the DOM). Primary Materials are copied completely as displayed (“Primary Materials: Aluminum alloy, Stainless steel, Titanium”). The Overall Dimensions field is captured completely and preserves the exact measurements/symbols/subparts as shown (including “×”, the lb/cm/kg conversions, and the additional sub-dimensions like Other/Support/stand height). The Inventory Number is correctly reported as “A19700102000”. The response stays within scope and stops after recording the requested fields without using external links or adding unrelated information. Overall, the agent satisfied the task’s primary intent: it recorded all required fields from the specified object record, with only a minor, non-impactful museum phrasing addition.",
+          "output_success": true
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent stayed on the correct Smithsonian/NASM object record URL and (per DOM-model evidence) the page contained all required fields: object name, Brief Description with mission month/year, Materials/Primary Materials, Dimensions (Overall string), and Inventory Number. The predicted output accurately reports all required fields and respects scope/stopping conditions. The only material discrepancy is a minor embellishment in the museum line: the agent added “(Smithsonian Institution)” which is not shown in the DOM; this is a small, non-impactful misrepresentation rather than a task-blocking failure. No other errors (wrong record, missing fields, wrong constraints, or external navigation) occurred.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "2.3",
+          "error_category": "Hallucination",
+          "error_type": "Output fabrication",
+          "what_happened": "The agent’s final output appended “(Smithsonian Institution)” to the museum name, which is not displayed in the Smithsonian record DOM evidence.",
+          "agent_reasoning": "The agent was trying to report the museum responsible for the object record, likely assuming the broader institutional parent organization.",
+          "evidence": "Rubric Criterion 2 notes: DOM shows “Data Source — National Air and Space Museum” and page title “... | National Air and Space Museum”; “(Smithsonian Institution)” is explicitly not DOM-supported. Agent output: “Museum: National Air and Space Museum (Smithsonian Institution)”.",
+          "impact": "Minor: does not change identification of the museum for this task and did not prevent successful completion, but it is an unsupported addition that could slightly reduce user trust."
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task provided a clear starting URL and explicitly listed all required fields (object name, museum, mission month and year from the Brief Description, Primary Materials, Overall Dimensions, and Inventory Number). There was only one relevant Smithsonian/NASM record at the given URL, and no critical details were left unspecified or open to multiple interpretations. The agent was able to locate and extract each field without confusion, so there is no evidence of underspecification or ambiguity in the task description or environment.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is entirely feasible within a desktop browser environment, involves no illegal, NSFW, or policy-violating content, and requires only publicly accessible information on a Smithsonian website. The agent successfully completed the task, indicating that there were no inherent impossibilities or Responsible AI violations.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact Smithsonian object record via URL and clearly defines which fields to extract (object name, museum, mission month and year from the Brief Description, Primary Materials, Overall Dimensions, and Inventory Number). There is no missing or conflicting information, and no multiple interpretations. A competent agent can uniquely complete it.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible: it involves accessing a public museum object record and extracting information. There are no legal, NSFW, or policy violations and no reference to unavailable or contradictory data.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 4,
+    "final_state_index": 3,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_52_rerun/20260915_task52_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "e68499ccb819245b6587168cc10c51020f0e2f8aff116814fc8409cf51a5b532",
+        "byte_count": 7288,
+        "line_count": 76,
+        "estimated_tokens": 1817,
+        "url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000",
+        "title": "Apollo 11 Command Module Columbia | National Air and Space Museum",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 30
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 31,
+            "end_line": 41
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 42,
+            "end_line": 48
+          },
+          {
+            "heading": "READ-ONLY CONTROL EVIDENCE",
+            "start_line": 49,
+            "end_line": 56
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 57,
+            "end_line": 64
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 65,
+            "end_line": 70
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 71,
+            "end_line": 76
+          }
+        ],
+        "control_refs": [
+          "379",
+          "382",
+          "385",
+          "387",
+          "389",
+          "391",
+          "46",
+          "108",
+          "79",
+          "97",
+          "99",
+          "other",
+          "95",
+          "77",
+          "376",
+          "384",
+          "395",
+          "397",
+          "399",
+          "94"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L76"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_52_rerun/20260915_task52_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "a638af44439a678abb67532464909dc08936c2b72be869b44d164489a90ac63e",
+        "byte_count": 12214,
+        "line_count": 85,
+        "estimated_tokens": 3050,
+        "url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000",
+        "title": "Apollo 11 Command Module Columbia | National Air and Space Museum",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 27
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 28,
+            "end_line": 50
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 51,
+            "end_line": 55
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 56,
+            "end_line": 73
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 74,
+            "end_line": 79
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 80,
+            "end_line": 85
+          }
+        ],
+        "control_refs": [
+          "81",
+          "83",
+          "393",
+          "media",
+          "395",
+          "397",
+          "399",
+          "659",
+          "77",
+          "79",
+          "245",
+          "247",
+          "376",
+          "384",
+          "401",
+          "403",
+          "405",
+          "407",
+          "409",
+          "411",
+          "413",
+          "415",
+          "417",
+          "419",
+          "421",
+          "94"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L85"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_52_rerun/20260915_task52_rerun/_inputs/dom_model/dom_model2.txt",
+        "sha256": "8529d65b0f949d920788b484ef4d19bd04f6e5eae74043d2eff2583e2c69084d",
+        "byte_count": 3984,
+        "line_count": 52,
+        "estimated_tokens": 995,
+        "url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000",
+        "title": "Apollo 11 Command Module Columbia | National Air and Space Museum",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 29
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 30,
+            "end_line": 37
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 38,
+            "end_line": 40
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 41,
+            "end_line": 46
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 47,
+            "end_line": 49
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 50,
+            "end_line": 52
+          }
+        ],
+        "control_refs": [
+          "77",
+          "659",
+          "413",
+          "415",
+          "417",
+          "419",
+          "421",
+          "94"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L52"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_52_rerun/20260915_task52_rerun/_inputs/dom_model/dom_model3.txt",
+        "sha256": "5cd7020406f6a7d2563c48e86c005a6f187c2af30471eacec482c33e9e1d2e15",
+        "byte_count": 2795,
+        "line_count": 48,
+        "estimated_tokens": 697,
+        "url": "https://airandspace.si.edu/collection-objects/command-module-apollo-11/nasm_A19700102000",
+        "title": "Apollo 11 Command Module Columbia | National Air and Space Museum",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 35
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 36,
+            "end_line": 38
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 39,
+            "end_line": 40
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 41,
+            "end_line": 42
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 43,
+            "end_line": 45
+          },
+          {
+            "heading": "SCROLLABLE REGIONS",
+            "start_line": 46,
+            "end_line": 48
+          }
+        ],
+        "control_refs": [
+          "659",
+          "77",
+          "94"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L48"
+      }
+    ],
+    "estimated_evidence_tokens": 6559,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 4,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 1,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 3
+      },
+      "1": {
+        "0": 10,
+        "1": 2,
+        "2": 2,
+        "3": 8,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 1
+      },
+      "2": {
+        "0": 10,
+        "1": 3,
+        "2": 0,
+        "3": 10,
+        "4": 0,
+        "5": 10,
+        "6": 10,
+        "7": 6
+      },
+      "3": {
+        "0": 10,
+        "1": 6,
+        "2": 2,
+        "3": 10,
+        "4": 10,
+        "5": 9,
+        "6": 10,
+        "7": 7
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 2,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "7": [
+        {
+          "state_index": 0,
+          "relevance_score": 3,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 7,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 19,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 13829,
+        "estimated_input_tokens": 3458,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 18853,
+        "estimated_input_tokens": 4714,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 10483,
+        "estimated_input_tokens": 2621,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 9248,
+        "estimated_input_tokens": 2312,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 11824,
+        "estimated_input_tokens": 2956,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          2,
+          3,
+          5,
+          6,
+          7
+        ],
+        "char_count": 12046,
+        "estimated_input_tokens": 3012,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          2,
+          3
+        ],
+        "char_count": 18704,
+        "estimated_input_tokens": 4676,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 13609,
+        "estimated_input_tokens": 3403,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 13923,
+        "estimated_input_tokens": 3481,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          2,
+          3
+        ],
+        "char_count": 18987,
+        "estimated_input_tokens": 4747,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          2,
+          3,
+          5,
+          6,
+          7
+        ],
+        "char_count": 12376,
+        "estimated_input_tokens": 3094,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 14223,
+        "estimated_input_tokens": 3556,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 12181,
+        "estimated_input_tokens": 3046,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 14542,
+        "estimated_input_tokens": 3636,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          2,
+          3,
+          5,
+          6,
+          7
+        ],
+        "char_count": 12690,
+        "estimated_input_tokens": 3173,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 14924,
+        "estimated_input_tokens": 3731,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 12485,
+        "estimated_input_tokens": 3122,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 12572,
+        "estimated_input_tokens": 3143,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 12444,
+        "estimated_input_tokens": 3111,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 12391,
+        "estimated_input_tokens": 3098,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          2,
+          3,
+          5,
+          6,
+          7
+        ],
+        "char_count": 13002,
+        "estimated_input_tokens": 3251,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 12772,
+        "estimated_input_tokens": 3193,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 23,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          2,
+          3,
+          5,
+          6,
+          7
+        ],
+        "char_count": 13342,
+        "estimated_input_tokens": 3336,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 24,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "char_count": 13094,
+        "estimated_input_tokens": 3274,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 25,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9226,
+        "estimated_input_tokens": 2307,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 26,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 9045,
+        "estimated_input_tokens": 2262,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 27,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 9169,
+        "estimated_input_tokens": 2293,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 28,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 9284,
+        "estimated_input_tokens": 2321,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 29,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          6
+        ],
+        "char_count": 9081,
+        "estimated_input_tokens": 2271,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 30,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          7
+        ],
+        "char_count": 9279,
+        "estimated_input_tokens": 2320,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 31,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 7991,
+        "estimated_input_tokens": 1998,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 32,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 7863,
+        "estimated_input_tokens": 1966,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 33,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 7810,
+        "estimated_input_tokens": 1953,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 34,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 7934,
+        "estimated_input_tokens": 1984,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 35,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 7968,
+        "estimated_input_tokens": 1992,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 36,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 8049,
+        "estimated_input_tokens": 2013,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 37,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          6
+        ],
+        "char_count": 7846,
+        "estimated_input_tokens": 1962,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 38,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          7
+        ],
+        "char_count": 8044,
+        "estimated_input_tokens": 2011,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 39,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 9694,
+        "estimated_input_tokens": 2424,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 40,
+        "stage": "criterion_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 8733,
+        "estimated_input_tokens": 2184,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 41,
+        "stage": "criterion_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 10372,
+        "estimated_input_tokens": 2593,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 3
+  },
+  "duration_sec": 168.781
+}

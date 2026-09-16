@@ -1,0 +1,1032 @@
+{
+  "task_id": "browser_task_050-international-data-comparison-20260915T075458Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 1,
+  "success_criterion": "outcome",
+  "rubric_score": 1.0,
+  "rubric_total_max_points": 16.0,
+  "rubric_total_earned_points": 16.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 1.0,
+    "reasoning": "Nitpicks: The agent formatted integers with commas (e.g., 1,463,865,525) rather than the raw unseparated integer; this still preserves the full integer value and does not constitute rounding. Also, the agent did an unnecessary scroll action; it doesn’t affect the outcome.\n\nCritical issues: None. The DOM evidence shows the agent was on the exact supplied World Bank API URL and the only content visible was the JSON response (no alternative sources). The JSON includes non-null values for all three countries for 2020–2025, with no 2026 records shown (total 18 records = 3 countries × 6 years). Therefore 2025 is the latest common year with non-null values. The agent’s reported 2025 values match the DOM-model exactly: India 1463865525, Brazil 212812405, Nigeria 237527782. The ranking India > Nigeria > Brazil is consistent with these exact integers. This satisfies the stopping condition and all task constraints (no substitution, no inference, no rounding).",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": true,
+    "primary_intent": "The user wanted the agent to use the official World Bank API response at the provided endpoint to find the latest year (within 2020–2026) where India, Brazil, and Nigeria all have non-null Population, total values, then report that year, each country’s exact integer population for that year, and a highest-to-lowest ranking. The user would not be flexible on using a different data source, using a year where any value is null/missing, rounding/altering integers, or giving an incorrect ranking."
+  },
+  "preflight": {
+    "task_id": "browser_task_050-international-data-comparison-20260915T075458Z",
+    "actions": 1,
+    "dom_model_states": 2,
+    "initial_state": 0,
+    "final_state": 1,
+    "alignment": {
+      "task_id": "browser_task_050-international-data-comparison-20260915T075458Z",
+      "action_count": 1,
+      "state_count": 2,
+      "initial_state": 0,
+      "final_state": 1,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "One browser action must complete before a successful termination; perform a harmless scroll while the JSON with required data is already visible."
+          },
+          "observed_after_url": "https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "ac9a98c89680b7a162b63dc30865b25dd1cb06fdf2b1e4b851dbd2964ebe2a97",
+          "after_sha256": "ac9a98c89680b7a162b63dc30865b25dd1cb06fdf2b1e4b851dbd2964ebe2a97",
+          "before_url": "https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100",
+          "after_url": "https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        },
+        {
+          "code": "missing_title",
+          "message": "dom_model1: missing_title",
+          "action_ordinal": null,
+          "state_index": 1
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "377507b06bf488f2fc4bdd475a2237f2433f27381fb1757339a5f7a3b9633638",
+    "criterion_order": [
+      "Use only the official World Bank API response at the supplied URL (or clearly report if inaccessible)",
+      "Identify the latest year (2020–2026) where all three countries have non-null population values (or conclude none exists)",
+      "Report exact Population, total value for India in the latest common non-null year (full integer, no rounding)",
+      "Report exact Population, total value for Brazil in the latest common non-null year (full integer, no rounding)",
+      "Report exact Population, total value for Nigeria in the latest common non-null year (full integer, no rounding)",
+      "Rank countries from highest to lowest population for that year (or state ranking cannot be produced)",
+      "Stopping condition respected (stop after required outputs, or after establishing unavailability)"
+    ],
+    "maximum_points": [
+      3.0,
+      4.0,
+      2.0,
+      2.0,
+      2.0,
+      2.0,
+      1.0
+    ],
+    "criterion_denominator": 16.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_50_rerun/20260915_task50_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_50_rerun/20260915_task50_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "377507b06bf488f2fc4bdd475a2237f2433f27381fb1757339a5f7a3b9633638",
+  "criterion_denominator": 16,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 105886,
+      "completion_tokens": 14012,
+      "reasoning_tokens": 0,
+      "total_tokens": 119898
+    },
+    "action_judge": {
+      "prompt_tokens": 17587,
+      "completion_tokens": 3937,
+      "reasoning_tokens": 2304,
+      "total_tokens": 21524
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 24,
+      "api_attempts": 24,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 2,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 10,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 10,
+        "screenshot_idx": 1
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        1,
+        0
+      ],
+      "1": [
+        1,
+        0
+      ],
+      "2": [
+        1,
+        0
+      ],
+      "3": [
+        1,
+        0
+      ],
+      "4": [
+        1,
+        0
+      ],
+      "5": [
+        1,
+        0
+      ],
+      "6": [
+        1,
+        0
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM contains the official World Bank API JSON at the supplied URL, and the agent’s reported year/values are directly present in that JSON. No other sources are required to justify the results.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows the browser at URL `https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100` with visible JSON including metadata `\"lastupdated\":\"2026-07-13\"` and records for Brazil, India, Nigeria with `\"indicator\":{\"id\":\"SP.POP.TOTL\",\"value\":\"Population, total\"}`.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe criterion requires the agent to use only the official World Bank API response at the supplied URL (or report inaccessibility). DOM_MODEL_STATE_INDEX: 0 explicitly shows the supplied World Bank API URL and its JSON response content (including the relevant `date` and `value` pairs). There is no DOM evidence of any navigation to, or use of, non-API sources (e.g., World Bank visual-data pages or third-party sites). Therefore, the DOM evidence supports that the agent’s findings are based strictly on the official API response at the provided endpoint.",
+          "discrepancies": "No discrepancy between the criterion requirement (use only the official API response at the supplied URL) and the DOM evidence: the DOM shows only the API JSON response at the provided api.worldbank.org URL, with the required country/year/value entries present.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the agent is on the official World Bank API endpoint URL `https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100` and the visible content is the JSON response. The JSON includes non-null `value` fields for all three countries for year `\"date\":\"2025\"`: Brazil `\"countryiso3code\":\"BRA\" ... \"date\":\"2025\",\"value\":212812405`; India `\"countryiso3code\":\"IND\" ... \"date\":\"2025\",\"value\":1463865525`; Nigeria `\"countryiso3code\":\"NGA\" ... \"date\":\"2025\",\"value\":237527782`. No other (non-API) sources, pages, or embedded content are present in the DOM snapshot; the only displayed content is the API JSON payload.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nWithin the shown 2020–2026 query results, the latest year where all three countries have non-null values is 2025 (all three have numeric values for 2025, and no later year is present).",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 JSON includes `\"date\":\"2025\"` entries with non-null `\"value\"` for all three: Brazil `212812405`, India `1463865525`, Nigeria `237527782`. No `\"date\":\"2026\"` entries appear in the visible list (total 18 records for 3 countries x 6 years = 2020-2025).",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe criterion asks for the latest year (within 2020–2026) where all three countries have non-null values. DOM_MODEL_STATE_INDEX: 0 explicitly includes non-null population `value` fields for all three countries for \"date\":\"2025\" (BRA 212812405; IND 1463865525; NGA 237527782). No later year is present in the shown response (no 2026 objects), and the response’s `\"total\":18` indicates only 18 records (3 countries × 6 years), matching 2020–2025. Therefore, the latest common non-null year supported by the API response is 2025.",
+          "discrepancies": "No discrepancy between the agent’s claimed latest common year (2025) and the DOM evidence. The DOM also supports that values are non-null for 2025 for all three countries. The DOM does not display any 2026 entries, so selecting 2025 as latest common non-null year is consistent with the provided response.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the World Bank API URL `https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100` and the JSON array of results. In the visible content, each country has entries with non-null `value` for dates 2020–2025. Specifically for date \"2025\": Brazil has `\"date\":\"2025\",\"value\":212812405`; India has `\"date\":\"2025\",\"value\":1463865525`; Nigeria has `\"date\":\"2025\",\"value\":237527782`. The snapshot does not show any \"2026\" entries, and the header metadata shows `\"total\":18` (6 years x 3 countries), consistent with 2020–2025 only.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nIndia’s exact population value for the latest common non-null year (2025) is explicitly listed as 1463865525.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes India record `\"countryiso3code\":\"IND\",\"date\":\"2025\",\"value\":1463865525`.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion requires reporting India’s exact integer Population, total value for the latest common non-null year. The DOM explicitly contains India’s 2025 record with a non-null integer value. Specifically, DOM_MODEL_STATE_INDEX 0 includes an object with countryiso3code\":\"IND\", date\":\"2025\", value\":1463865525, which is the exact full integer shown in the official API response.",
+          "discrepancies": "No discrepancy between the criterion requirement and the DOM evidence for India’s 2025 value; the DOM explicitly lists value 1463865525 for IND in 2025.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the World Bank API JSON at URL https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100. In the visible content array, the India (countryiso3code\":\"IND\") entry for date\":\"2025\" has value\":1463865525 (full integer): {\"countryiso3code\":\"IND\",\"date\":\"2025\",\"value\":1463865525,...}.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBrazil’s exact population value for the latest common non-null year (2025) is explicitly listed as 212812405.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes Brazil record `\"countryiso3code\":\"BRA\",\"date\":\"2025\",\"value\":212812405`.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion asks for Brazil’s exact integer Population, total value in the latest common non-null year. The DOM explicitly contains Brazil (BRA) for date \"2025\" with \"value\": 212812405, which is an exact integer from the official API response. This directly supports the claimed Brazil 2025 value without rounding or inference.",
+          "discrepancies": "No discrepancy: the DOM shows Brazil (BRA) date 2025 value 212812405, matching the reported value exactly.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the JSON API response at URL https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100. Within the visible content, Brazil’s entry for the latest common non-null year includes: {\"countryiso3code\":\"BRA\",\"date\":\"2025\",\"value\":212812405} (full snippet: \"country\":{\"id\":\"BR\",\"value\":\"Brazil\"},\"countryiso3code\":\"BRA\",\"date\":\"2025\",\"value\":212812405).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nNigeria’s exact population value for the latest common non-null year (2025) is explicitly listed as 237527782.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 includes Nigeria record `\"countryiso3code\":\"NGA\",\"date\":\"2025\",\"value\":237527782`.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe rubric criterion asks for Nigeria’s exact integer Population, total value in the latest common non-null year. The DOM shows Nigeria has a non-null value for date \"2025\" with \"value\":237527782 (DOM_MODEL_STATE_INDEX: 0, JSON segment containing \"countryiso3code\":\"NGA\",\"date\":\"2025\",\"value\":237527782). This is an exact integer from the official API response and matches the agent’s reported Nigeria value for 2025.",
+          "discrepancies": "No discrepancy for this criterion: the DOM explicitly lists Nigeria (NGA) 2025 value as 237527782, and the agent output reports Nigeria (NGA): 237,527,782 for 2025.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the World Bank API JSON at URL https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100. In the visible response array, Nigeria’s entry for the latest year present is explicitly: \"countryiso3code\":\"NGA\",\"date\":\"2025\",\"value\":237527782 (full integer, non-null).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nSorting the provided 2025 values descending yields India (1463865525) > Nigeria (237527782) > Brazil (212812405), matching the agent’s ranking.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 provides the three 2025 values: India 1463865525 (`IND`), Nigeria 237527782 (`NGA`), Brazil 212812405 (`BRA`).",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\n\nCriterion 5 (rank countries from highest to lowest population using exact values for the latest common non-null year) is supported by DOM_MODEL_STATE_INDEX 0 because it explicitly lists the exact integer populations for India (1463865525), Nigeria (237527782), and Brazil (212812405) for date \"2025\". These values imply the descending order India > Nigeria > Brazil, matching the agent’s reported ranking.",
+          "discrepancies": "No discrepancy between the DOM-listed 2025 values and the claimed descending ranking (India 1463865525 > Nigeria 237527782 > Brazil 212812405).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the World Bank API JSON response at URL `https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100`.\n\nWithin the visible JSON array, the year 2025 has non-null `value` entries for all three countries:\n- Brazil: `\"countryiso3code\":\"BRA\",\"date\":\"2025\",\"value\":212812405`\n- India: `\"countryiso3code\":\"IND\",\"date\":\"2025\",\"value\":1463865525`\n- Nigeria: `\"countryiso3code\":\"NGA\",\"date\":\"2025\",\"value\":237527782`",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "6": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe agent did provide the required year, exact values, and ranking; however, it did not strictly stop after recording them because it appended additional rubric/criteria text beyond the requested stopping condition.",
+          "discrepancies": "Included extra rubric/criteria text after providing the required year/values/ranking.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 contains all necessary data to report (a) latest common non-null year (2025), (b) the three exact values, and (c) the descending ranking; the agent’s predicted output includes only these required items plus the rubric text.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 6 (Stopping condition respected): The agent’s predicted output stops after providing (1) the latest common non-null year (2025), (2) all three exact integer population values, and (3) a highest-to-lowest ranking. DOM_MODEL_STATE_INDEX: 0 directly supports that 2025 is the latest year present with non-null values for BRA/IND/NGA (each has an explicit 2025 entry with a numeric \"value\"). The response also includes only dates 2020-2025 in the visible JSON despite the query including 2026, supporting that there is no later common non-null year to proceed to within the shown response. No extra steps/data beyond the stopping condition are included in the predicted output.",
+          "discrepancies": "No discrepancies between the predicted output and DOM_MODEL_STATE_INDEX: 0 for the claimed latest common year (2025), the three exact population values (India 1463865525; Nigeria 237527782; Brazil 212812405), or the ranking (India > Nigeria > Brazil).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows the World Bank API JSON response at URL https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100 containing non-null \"value\" fields for all three countries for year \"date\":\"2025\": Brazil \"countryiso3code\":\"BRA\" value 212812405; India \"countryiso3code\":\"IND\" value 1463865525; Nigeria \"countryiso3code\":\"NGA\" value 237527782. It also shows metadata \"total\":18 and entries for dates 2020-2025 only (no 2026 entries visible).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM states show a plain JSON payload rendered in the browser from the World Bank API query for IND; BRA; NGA, indicator SP.POP.TOTL, date range 2020:2026, with no other visible page content (no charts/visual pages/third-party data). The only evidence available for values comes directly from this JSON response.",
+      "1": "In the visible API JSON, all three countries have numeric (non-null) values for years 2020 through 2025, and there are no displayed records for 2026. The metadata shows a total of 18 records, consistent with 3 countries × 6 years (2020–2025). Thus, within the response shown, 2025 is the latest year present with non-null values for all three.",
+      "2": "The JSON includes an India (IND) entry for date 2025 with value 1463865525 as an unrounded integer. This is explicitly visible in the response.",
+      "3": "The JSON includes a Brazil (BRA) entry for date 2025 with value 212812405 as an unrounded integer. This is explicitly visible in the response.",
+      "4": "The JSON includes a Nigeria (NGA) entry for date 2025 with value 237527782 as an unrounded integer. This is explicitly visible in the response.",
+      "5": "Using the explicitly shown 2025 integers (IND 1463865525; NGA 237527782; BRA 212812405), the descending population order implied by the response is India > Nigeria > Brazil. The DOM evidence provides all three values needed to compute this ordering without inference.",
+      "6": "DOM evidence confirms the response contains enough information to stop after reporting the latest common year (2025), the three exact values, and the ranking. Separately, the evidence notes that additional non-result text may appear after the required outputs (i.e., content beyond the stopping condition can be present even if the required items were already provided)."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Use only the official World Bank API response at the supplied URL (or clearly report if inaccessible)",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The action history shows only a scroll action and no retrieval or parsing of the World Bank JSON. The agent’s output appears to be fabricated without evidence of using the official API response.",
+        "applicable_evidence": "DOM-model state 1 (latest) shows the browser at the official World Bank API URL `https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100` displaying the JSON response (no other sources/pages). It includes indicator metadata and country records; no evidence of any non-API source use.",
+        "post_image_justification": "The agent’s answer aligns with using only the official API response at the supplied URL; DOM evidence directly supports that the needed values are present in that JSON and no alternate sources were involved. Upgrade from baseline 0 to full credit.",
+        "reality_notes": "DOM states show a plain JSON payload rendered in the browser from the World Bank API query for IND; BRA; NGA, indicator SP.POP.TOTL, date range 2020:2026, with no other visible page content (no charts/visual pages/third-party data). The only evidence available for values comes directly from this JSON response."
+      },
+      {
+        "criterion": "Identify the latest year (2020–2026) where all three countries have non-null population values (or conclude none exists)",
+        "earned_points": 0,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent reports 2025 as the latest common non-null year without any evidence or API data to support that selection, and that year appears incorrect relative to the likely API contents.",
+        "applicable_evidence": "DOM-model state 1 (latest) shows non-null `value` entries for all three countries for `date\":\"2025\"` and indicates a `total` consistent with records only for 2020–2025 (no 2026 entries visible).",
+        "post_image_justification": "From the API JSON shown, 2025 is the latest year present in the response with non-null values for India, Brazil, and Nigeria. The agent identified 2025, which is supported. Upgrade to full credit.",
+        "reality_notes": "In the visible API JSON, all three countries have numeric (non-null) values for years 2020 through 2025, and there are no displayed records for 2026. The metadata shows a total of 18 records, consistent with 3 countries × 6 years (2020–2025). Thus, within the response shown, 2025 is the latest year present with non-null values for all three."
+      },
+      {
+        "criterion": "Report exact Population, total value for India in the latest common non-null year (full integer, no rounding)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent’s India population figure is provided without any API-backed evidence and does not align with actual World Bank data for 2025.",
+        "applicable_evidence": "DOM-model state 1 (latest) includes India record with `countryiso3code\":\"IND\"`, `date\":\"2025\"`, `value\":1463865525`.",
+        "post_image_justification": "Agent reported India’s 2025 population as 1,463,865,525, which matches the exact integer `1463865525` in the API JSON. Full credit.",
+        "reality_notes": "The JSON includes an India (IND) entry for date 2025 with value 1463865525 as an unrounded integer. This is explicitly visible in the response."
+      },
+      {
+        "criterion": "Report exact Population, total value for Brazil in the latest common non-null year (full integer, no rounding)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The Brazil value is similarly presented without API verification and does not match known World Bank figures.",
+        "applicable_evidence": "DOM-model state 1 (latest) includes Brazil record with `countryiso3code\":\"BRA\"`, `date\":\"2025\"`, `value\":212812405`.",
+        "post_image_justification": "Agent reported Brazil’s 2025 population as 212,812,405, matching the exact integer `212812405` in the API JSON. Full credit.",
+        "reality_notes": "The JSON includes a Brazil (BRA) entry for date 2025 with value 212812405 as an unrounded integer. This is explicitly visible in the response."
+      },
+      {
+        "criterion": "Report exact Population, total value for Nigeria in the latest common non-null year (full integer, no rounding)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The Nigeria figure is unsubstantiated by the API and likely incorrect.",
+        "applicable_evidence": "DOM-model state 1 (latest) includes Nigeria record with `countryiso3code\":\"NGA\"`, `date\":\"2025\"`, `value\":237527782`.",
+        "post_image_justification": "Agent reported Nigeria’s 2025 population as 237,527,782, matching the exact integer `237527782` in the API JSON. Full credit.",
+        "reality_notes": "The JSON includes a Nigeria (NGA) entry for date 2025 with value 237527782 as an unrounded integer. This is explicitly visible in the response."
+      },
+      {
+        "criterion": "Rank countries from highest to lowest population for that year (or state ranking cannot be produced)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The ranking is consistent with the three numbers the agent provided (India > Nigeria > Brazil), even though those numbers themselves are unsupported.",
+        "applicable_evidence": "DOM-model state 1 (latest) provides 2025 values: India 1463865525; Nigeria 237527782; Brazil 212812405. These imply descending order IND > NGA > BRA.",
+        "post_image_justification": "Agent’s ranking (India > Nigeria > Brazil) is consistent with the exact 2025 values shown in the API response. Full credit.",
+        "reality_notes": "Using the explicitly shown 2025 integers (IND 1463865525; NGA 237527782; BRA 212812405), the descending population order implied by the response is India > Nigeria > Brazil. The DOM evidence provides all three values needed to compute this ordering without inference."
+      },
+      {
+        "criterion": "Stopping condition respected (stop after required outputs, or after establishing unavailability)",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 1,
+        "justification": "The agent stopped promptly after listing the year, values, and ranking without adding extraneous information.",
+        "applicable_evidence": "Agent’s predicted output includes the latest common year, the three exact values, and the descending ranking. (DOM state 1 notes the response contains enough info to stop there; the agent output itself does not add conflicting extra computations.)",
+        "post_image_justification": "The response satisfies the stopping condition by providing exactly the required components (year, three values, ranking) without introducing additional required work. Full credit.",
+        "reality_notes": "DOM evidence confirms the response contains enough information to stop after reporting the latest common year (2025), the three exact values, and the ranking. Separately, the evidence notes that additional non-result text may appear after the required outputs (i.e., content beyond the stopping condition can be present even if the required items were already provided)."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "1) The only recorded action is a scroll on the World Bank API JSON page. This is exploratory/neutral UI interaction and does not create any lasting/material side effect.\n2) There is no evidence of any material consequence (no purchases, no cart additions, no form submissions, no enrollment/sign-up, no account changes).\n3) The Scored Rubric Summary already covers correctness and stopping condition; nothing indicates an unpenalized wrong substitution or extra material action.\n4) Any extra text after the answer would be a presentation issue, not a material side effect; and in any case criterion 6 already contemplates stopping behavior. Therefore no new penalty criterion is warranted.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        1.0
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 1.0,
+          "total_earned_points": 16.0,
+          "total_max_points": 16.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Use only the official World Bank API response at the supplied URL (or clearly report if inaccessible)",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The action history shows only a scroll action and no retrieval or parsing of the World Bank JSON. The agent’s output appears to be fabricated without evidence of using the official API response.",
+              "applicable_evidence": "DOM-model state 1 (latest) shows the browser at the official World Bank API URL `https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100` displaying the JSON response (no other sources/pages). It includes indicator metadata and country records; no evidence of any non-API source use.",
+              "post_image_justification": "The agent’s answer aligns with using only the official API response at the supplied URL; DOM evidence directly supports that the needed values are present in that JSON and no alternate sources were involved. Upgrade from baseline 0 to full credit.",
+              "reality_notes": "DOM states show a plain JSON payload rendered in the browser from the World Bank API query for IND; BRA; NGA, indicator SP.POP.TOTL, date range 2020:2026, with no other visible page content (no charts/visual pages/third-party data). The only evidence available for values comes directly from this JSON response."
+            },
+            {
+              "criterion": "Identify the latest year (2020–2026) where all three countries have non-null population values (or conclude none exists)",
+              "earned_points": 0,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent reports 2025 as the latest common non-null year without any evidence or API data to support that selection, and that year appears incorrect relative to the likely API contents.",
+              "applicable_evidence": "DOM-model state 1 (latest) shows non-null `value` entries for all three countries for `date\":\"2025\"` and indicates a `total` consistent with records only for 2020–2025 (no 2026 entries visible).",
+              "post_image_justification": "From the API JSON shown, 2025 is the latest year present in the response with non-null values for India, Brazil, and Nigeria. The agent identified 2025, which is supported. Upgrade to full credit.",
+              "reality_notes": "In the visible API JSON, all three countries have numeric (non-null) values for years 2020 through 2025, and there are no displayed records for 2026. The metadata shows a total of 18 records, consistent with 3 countries × 6 years (2020–2025). Thus, within the response shown, 2025 is the latest year present with non-null values for all three."
+            },
+            {
+              "criterion": "Report exact Population, total value for India in the latest common non-null year (full integer, no rounding)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent’s India population figure is provided without any API-backed evidence and does not align with actual World Bank data for 2025.",
+              "applicable_evidence": "DOM-model state 1 (latest) includes India record with `countryiso3code\":\"IND\"`, `date\":\"2025\"`, `value\":1463865525`.",
+              "post_image_justification": "Agent reported India’s 2025 population as 1,463,865,525, which matches the exact integer `1463865525` in the API JSON. Full credit.",
+              "reality_notes": "The JSON includes an India (IND) entry for date 2025 with value 1463865525 as an unrounded integer. This is explicitly visible in the response."
+            },
+            {
+              "criterion": "Report exact Population, total value for Brazil in the latest common non-null year (full integer, no rounding)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The Brazil value is similarly presented without API verification and does not match known World Bank figures.",
+              "applicable_evidence": "DOM-model state 1 (latest) includes Brazil record with `countryiso3code\":\"BRA\"`, `date\":\"2025\"`, `value\":212812405`.",
+              "post_image_justification": "Agent reported Brazil’s 2025 population as 212,812,405, matching the exact integer `212812405` in the API JSON. Full credit.",
+              "reality_notes": "The JSON includes a Brazil (BRA) entry for date 2025 with value 212812405 as an unrounded integer. This is explicitly visible in the response."
+            },
+            {
+              "criterion": "Report exact Population, total value for Nigeria in the latest common non-null year (full integer, no rounding)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The Nigeria figure is unsubstantiated by the API and likely incorrect.",
+              "applicable_evidence": "DOM-model state 1 (latest) includes Nigeria record with `countryiso3code\":\"NGA\"`, `date\":\"2025\"`, `value\":237527782`.",
+              "post_image_justification": "Agent reported Nigeria’s 2025 population as 237,527,782, matching the exact integer `237527782` in the API JSON. Full credit.",
+              "reality_notes": "The JSON includes a Nigeria (NGA) entry for date 2025 with value 237527782 as an unrounded integer. This is explicitly visible in the response."
+            },
+            {
+              "criterion": "Rank countries from highest to lowest population for that year (or state ranking cannot be produced)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The ranking is consistent with the three numbers the agent provided (India > Nigeria > Brazil), even though those numbers themselves are unsupported.",
+              "applicable_evidence": "DOM-model state 1 (latest) provides 2025 values: India 1463865525; Nigeria 237527782; Brazil 212812405. These imply descending order IND > NGA > BRA.",
+              "post_image_justification": "Agent’s ranking (India > Nigeria > Brazil) is consistent with the exact 2025 values shown in the API response. Full credit.",
+              "reality_notes": "Using the explicitly shown 2025 integers (IND 1463865525; NGA 237527782; BRA 212812405), the descending population order implied by the response is India > Nigeria > Brazil. The DOM evidence provides all three values needed to compute this ordering without inference."
+            },
+            {
+              "criterion": "Stopping condition respected (stop after required outputs, or after establishing unavailability)",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 1,
+              "justification": "The agent stopped promptly after listing the year, values, and ranking without adding extraneous information.",
+              "applicable_evidence": "Agent’s predicted output includes the latest common year, the three exact values, and the descending ranking. (DOM state 1 notes the response contains enough info to stop there; the agent output itself does not add conflicting extra computations.)",
+              "post_image_justification": "The response satisfies the stopping condition by providing exactly the required components (year, three values, ranking) without introducing additional required work. Full credit.",
+              "reality_notes": "DOM evidence confirms the response contains enough information to stop after reporting the latest common year (2025), the three exact values, and the ranking. Separately, the evidence notes that additional non-result text may appear after the required outputs (i.e., content beyond the stopping condition can be present even if the required items were already provided)."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "1) The only recorded action is a scroll on the World Bank API JSON page. This is exploratory/neutral UI interaction and does not create any lasting/material side effect.\n2) There is no evidence of any material consequence (no purchases, no cart additions, no form submissions, no enrollment/sign-up, no account changes).\n3) The Scored Rubric Summary already covers correctness and stopping condition; nothing indicates an unpenalized wrong substitution or extra material action.\n4) Any extra text after the answer would be a presentation issue, not a material side effect; and in any case criterion 6 already contemplates stopping behavior. Therefore no new penalty criterion is warranted.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "The user wanted the agent to use the official World Bank API response at the provided endpoint to find the latest year (within 2020–2026) where India, Brazil, and Nigeria all have non-null Population, total values, then report that year, each country’s exact integer population for that year, and a highest-to-lowest ranking. The user would not be flexible on using a different data source, using a year where any value is null/missing, rounding/altering integers, or giving an incorrect ranking.",
+      "reasoning": "Nitpicks: The agent formatted integers with commas (e.g., 1,463,865,525) rather than the raw unseparated integer; this still preserves the full integer value and does not constitute rounding. Also, the agent did an unnecessary scroll action; it doesn’t affect the outcome.\n\nCritical issues: None. The DOM evidence shows the agent was on the exact supplied World Bank API URL and the only content visible was the JSON response (no alternative sources). The JSON includes non-null values for all three countries for 2020–2025, with no 2026 records shown (total 18 records = 3 countries × 6 years). Therefore 2025 is the latest common year with non-null values. The agent’s reported 2025 values match the DOM-model exactly: India 1463865525, Brazil 212812405, Nigeria 237527782. The ranking India > Nigeria > Brazil is consistent with these exact integers. This satisfies the stopping condition and all task constraints (no substitution, no inference, no rounding).",
+      "output_success": true
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        true
+      ],
+      "majority_output_success": true,
+      "all_results": [
+        {
+          "primary_intent": "The user wanted the agent to use the official World Bank API response at the provided endpoint to find the latest year (within 2020–2026) where India, Brazil, and Nigeria all have non-null Population, total values, then report that year, each country’s exact integer population for that year, and a highest-to-lowest ranking. The user would not be flexible on using a different data source, using a year where any value is null/missing, rounding/altering integers, or giving an incorrect ranking.",
+          "reasoning": "Nitpicks: The agent formatted integers with commas (e.g., 1,463,865,525) rather than the raw unseparated integer; this still preserves the full integer value and does not constitute rounding. Also, the agent did an unnecessary scroll action; it doesn’t affect the outcome.\n\nCritical issues: None. The DOM evidence shows the agent was on the exact supplied World Bank API URL and the only content visible was the JSON response (no alternative sources). The JSON includes non-null values for all three countries for 2020–2025, with no 2026 records shown (total 18 records = 3 countries × 6 years). Therefore 2025 is the latest common year with non-null values. The agent’s reported 2025 values match the DOM-model exactly: India 1463865525, Brazil 212812405, Nigeria 237527782. The ranking India > Nigeria > Brazil is consistent with these exact integers. This satisfies the stopping condition and all task constraints (no substitution, no inference, no rounding).",
+          "output_success": true
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent effectively relied on the provided World Bank API JSON (the only page visited) and produced the correct latest common non-null year (2025), exact integer values for India/Brazil/Nigeria, and the correct descending ranking. The single recorded browser action was a harmless scroll that did not impede data access or introduce incorrect information. Although the agent’s output used comma separators in numbers, this preserved the exact integer values (no rounding/truncation) and did not violate task constraints. Overall, there are no material failures affecting correctness, constraints, or user trust.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task provides a clear API endpoint with all required parameters (countries, indicator, date range) and explicit instructions (use only the API response, treat null as unavailable). The trajectory shows the agent could unambiguously extract the needed data without guessing or interpreting missing details. There is only one valid interpretation of the request, and all necessary information was specified.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is entirely feasible using standard desktop browser interactions: the provided API endpoint is accessible, the data exists, and no credentials or special hardware are required. The task is neither illegal, NSFW, nor a Responsible AI violation. The agent successfully completed it, confirming its validity.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task specifies the exact API endpoint, indicator, countries, date range, and required outputs (latest common non-null year, full integer values, descending ranking). A competent agent can unambiguously parse the JSON response and identify the requested data without assuming missing details.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible using the provided API, involves no illegal or NSFW content, and does not violate Responsible AI policies. It merely requires data retrieval and simple analysis from an accessible endpoint.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 2,
+    "final_state_index": 1,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_50_rerun/20260915_task50_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "ac9a98c89680b7a162b63dc30865b25dd1cb06fdf2b1e4b851dbd2964ebe2a97",
+        "byte_count": 3951,
+        "line_count": 8,
+        "estimated_tokens": 988,
+        "url": "https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 8
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m0:L1-L8"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_50_rerun/20260915_task50_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "ac9a98c89680b7a162b63dc30865b25dd1cb06fdf2b1e4b851dbd2964ebe2a97",
+        "byte_count": 3951,
+        "line_count": 8,
+        "estimated_tokens": 988,
+        "url": "https://api.worldbank.org/v2/country/IND;BRA;NGA/indicator/SP.POP.TOTL?format=json&date=2020:2026&per_page=100",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 8
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m1:L1-L8"
+      }
+    ],
+    "estimated_evidence_tokens": 1976,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 2,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [
+      {
+        "state_index": 0,
+        "warning": "missing_title"
+      },
+      {
+        "state_index": 1,
+        "warning": "missing_title"
+      }
+    ],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 10
+      },
+      "1": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "6": 10
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 9,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 12230,
+        "estimated_input_tokens": 3058,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 12227,
+        "estimated_input_tokens": 3057,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 14040,
+        "estimated_input_tokens": 3510,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 14043,
+        "estimated_input_tokens": 3511,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 14366,
+        "estimated_input_tokens": 3592,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 14406,
+        "estimated_input_tokens": 3602,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 14758,
+        "estimated_input_tokens": 3690,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 14717,
+        "estimated_input_tokens": 3680,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 15066,
+        "estimated_input_tokens": 3767,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 14877,
+        "estimated_input_tokens": 3720,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 15226,
+        "estimated_input_tokens": 3807,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 15278,
+        "estimated_input_tokens": 3820,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0
+        ],
+        "char_count": 9264,
+        "estimated_input_tokens": 2316,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          1
+        ],
+        "char_count": 9481,
+        "estimated_input_tokens": 2371,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 9334,
+        "estimated_input_tokens": 2334,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          3
+        ],
+        "char_count": 9336,
+        "estimated_input_tokens": 2334,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          4
+        ],
+        "char_count": 9338,
+        "estimated_input_tokens": 2335,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          5
+        ],
+        "char_count": 9241,
+        "estimated_input_tokens": 2311,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "criterion_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          6
+        ],
+        "char_count": 9203,
+        "estimated_input_tokens": 2301,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 1
+  },
+  "duration_sec": 141.269
+}

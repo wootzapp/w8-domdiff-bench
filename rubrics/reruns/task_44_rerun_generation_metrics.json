@@ -1,0 +1,1039 @@
+{
+  "phase": "A",
+  "origin": "validated_import",
+  "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+  "frozen_rubric_sha256": "91a73e9ce7cbb9cfa0fb89a1c190e63915795fb801c4c3a183f71d4b2fc9165d",
+  "criterion_count": 5,
+  "criterion_denominator": 16.0,
+  "criteria": [
+    "Apply correct USGS query filters (UTC range, worldwide, magnitude threshold)",
+    "Order results by magnitude (largest to smallest)",
+    "Report top three results with required fields (preserve USGS order for ties, UTC times)",
+    "Handle fewer-than-three results correctly",
+    "Respect constraints: no alerts/notifications and proper UTC handling disclosure"
+  ],
+  "maximum_points": [
+    5.0,
+    2.0,
+    5.0,
+    2.0,
+    2.0
+  ],
+  "rubric_generation_calls": 0,
+  "api_attempts": 0,
+  "retries": 0,
+  "call_metrics": {
+    "gpt-5.2": {
+      "logical_calls": 0,
+      "api_attempts": 0,
+      "retries": 0
+    },
+    "o4-mini": {
+      "logical_calls": 0,
+      "api_attempts": 0,
+      "retries": 0
+    }
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    },
+    "o4-mini": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    },
+    "combined": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "reasoning_tokens": 0,
+      "total_tokens": 0
+    }
+  },
+  "preflight": {
+    "status": "ready",
+    "phase": "A",
+    "paid_calls_authorized": false,
+    "writes_authorized": true,
+    "dataset": {
+      "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+      "task_alias": "task_44_rerun",
+      "actions": 14,
+      "screenshots": 15,
+      "dom_model_states": 15,
+      "alignment": {
+        "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+        "action_count": 14,
+        "state_count": 15,
+        "initial_state": 0,
+        "final_state": 14,
+        "actions": [
+          {
+            "ordinal": 1,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e58",
+              "target": {
+                "ref": "e58",
+                "role": "LabelText",
+                "name": "4.5+"
+              },
+              "thoughts": "Change the magnitude filter from the default 2.5+ to the required 4.5+ using the provided radio label."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "ordinal": 2,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e70",
+              "target": {
+                "ref": "e70",
+                "role": "LabelText",
+                "name": "Custom"
+              },
+              "thoughts": "Need to switch Date & Time to Custom so I can enter a 24-hour UTC range before running the search."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "ordinal": 3,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e72",
+              "target": {
+                "ref": "e72",
+                "role": "textbox",
+                "name": "Date & Time Start (UTC)"
+              },
+              "thoughts": "Focus the Start (UTC) textbox so I can overwrite it with the correct preceding-24-hours UTC start time in subsequent steps."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "ordinal": 4,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e72",
+              "target": {
+                "ref": "e72",
+                "role": "textbox",
+                "name": "Date & Time Start (UTC)"
+              },
+              "text": "2026-09-14 00:00:00",
+              "thoughts": "Set the Start (UTC) field to 24 hours before the current End value to define the preceding 24-hour custom range."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "ordinal": 5,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e74",
+              "target": {
+                "ref": "e74",
+                "role": "textbox",
+                "name": "Date & Time End (UTC)"
+              },
+              "thoughts": "Need to focus the End (UTC) textbox before typing the custom end time for the 24-hour window."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "ordinal": 6,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e74",
+              "target": {
+                "ref": "e74",
+                "role": "textbox",
+                "name": "Date & Time End (UTC)"
+              },
+              "text": "2026-09-15 00:00:00",
+              "thoughts": "Set the End (UTC) time to 24 hours after the specified start so the custom range covers the preceding 24 hours before running the search."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "ordinal": 7,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e11",
+              "target": {
+                "ref": "e11",
+                "role": "heading",
+                "name": "+ Output Options"
+              },
+              "thoughts": "Now I need to open Output Options so I can change ordering to magnitude before running the search."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "ordinal": 8,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e95",
+              "target": {
+                "ref": "e95",
+                "role": "LabelText",
+                "name": "Magnitude - Largest First"
+              },
+              "thoughts": "Set the output ordering to “Magnitude - Largest First” before running the search so results are sorted as required."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "ordinal": 9,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e36",
+              "target": {
+                "ref": "e36",
+                "role": "button",
+                "name": "Search"
+              },
+              "thoughts": "Filters and ordering are configured; now I need to run the query by clicking the Search button to load the results table."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+          },
+          {
+            "ordinal": 10,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e3",
+              "target": {
+                "ref": "e3",
+                "role": "link",
+                "name": "MODIFY SEARCH"
+              },
+              "thoughts": "Need to reopen the Modify Search panel or settings to adjust the query so results load correctly and then access the list view for top three events."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+          },
+          {
+            "ordinal": 11,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e72",
+              "target": {
+                "ref": "e72",
+                "role": "textbox",
+                "name": "Date & Time Start (UTC)"
+              },
+              "text": "2026-09-14 00:00:00",
+              "thoughts": "The start time textbox has malformed concatenated content; I should overwrite it with the intended UTC start time before running the search again."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+          },
+          {
+            "ordinal": 12,
+            "name": "type",
+            "arguments": {
+              "action": "type",
+              "ref": "e74",
+              "target": {
+                "ref": "e74",
+                "role": "textbox",
+                "name": "Date & Time End (UTC)"
+              },
+              "text": "2026-09-15 00:00:00",
+              "thoughts": "The end datetime field still has a malformed concatenated value; I’ll overwrite it with the correct UTC end time before rerunning the search."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+          },
+          {
+            "ordinal": 13,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e33",
+              "target": {
+                "ref": "e33",
+                "role": "button",
+                "name": "Search"
+              },
+              "thoughts": "Dates and magnitude filters are set; now I need to run the query by clicking the Search button to get the ordered results list."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+          },
+          {
+            "ordinal": 14,
+            "name": "left_click",
+            "arguments": {
+              "action": "left_click",
+              "ref": "e3",
+              "target": {
+                "ref": "e3",
+                "role": "generic",
+                "name": "List"
+              },
+              "thoughts": "Switch to the List view so the individual earthquake results (with magnitude, place, and UTC time) become visible for extraction."
+            },
+            "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-300.23438&extent=88.93202,660.23438&range=search&sort=largest&timeZone=utc&list=false&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+          }
+        ],
+        "transitions": [
+          {
+            "from_state": 0,
+            "action_ordinal": 1,
+            "to_state": 1,
+            "before_sha256": "60759b44791a92555cc5d1321aa9bd9b333362db9c7bbcd5b73581df1525a7e5",
+            "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "from_state": 1,
+            "action_ordinal": 2,
+            "to_state": 2,
+            "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+            "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "from_state": 2,
+            "action_ordinal": 3,
+            "to_state": 3,
+            "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+            "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "from_state": 3,
+            "action_ordinal": 4,
+            "to_state": 4,
+            "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+            "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "from_state": 4,
+            "action_ordinal": 5,
+            "to_state": 5,
+            "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+            "after_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "from_state": 5,
+            "action_ordinal": 6,
+            "to_state": 6,
+            "before_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+            "after_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "from_state": 6,
+            "action_ordinal": 7,
+            "to_state": 7,
+            "before_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+            "after_sha256": "c901e9bcd928d3a92e2f5d66f818f21541d8c104acf527d1eb68cbc9ac0c7028",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "from_state": 7,
+            "action_ordinal": 8,
+            "to_state": 8,
+            "before_sha256": "c901e9bcd928d3a92e2f5d66f818f21541d8c104acf527d1eb68cbc9ac0c7028",
+            "after_sha256": "da207ce51ede484804681c6905dafa765f4d5ea937922802f8052d0664a0b62f",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+          },
+          {
+            "from_state": 8,
+            "action_ordinal": 9,
+            "to_state": 9,
+            "before_sha256": "da207ce51ede484804681c6905dafa765f4d5ea937922802f8052d0664a0b62f",
+            "after_sha256": "240259e4f7697528120507947a548c7009e55b9a77794faf0d94fc69595eac82",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+          },
+          {
+            "from_state": 9,
+            "action_ordinal": 10,
+            "to_state": 10,
+            "before_sha256": "240259e4f7697528120507947a548c7009e55b9a77794faf0d94fc69595eac82",
+            "after_sha256": "223258b38387337ede25ee5f1ec4caf906ffbc2fa61d384a5372e89dcc8a3c47",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+          },
+          {
+            "from_state": 10,
+            "action_ordinal": 11,
+            "to_state": 11,
+            "before_sha256": "223258b38387337ede25ee5f1ec4caf906ffbc2fa61d384a5372e89dcc8a3c47",
+            "after_sha256": "8b124fcb6bd4a1a4b9ae06a736c5fa86129086740c551b04d9a57477c248652b",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+          },
+          {
+            "from_state": 11,
+            "action_ordinal": 12,
+            "to_state": 12,
+            "before_sha256": "8b124fcb6bd4a1a4b9ae06a736c5fa86129086740c551b04d9a57477c248652b",
+            "after_sha256": "7053a7b247292afdf84f21c5aa99393d95e460311792515b7b1149f083f34178",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+          },
+          {
+            "from_state": 12,
+            "action_ordinal": 13,
+            "to_state": 13,
+            "before_sha256": "7053a7b247292afdf84f21c5aa99393d95e460311792515b7b1149f083f34178",
+            "after_sha256": "2f46554b6b6b16208f550c6d6c5c01ed7fc45e9bc9ec559a6c46f1a3e7bfd486",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+          },
+          {
+            "from_state": 13,
+            "action_ordinal": 14,
+            "to_state": 14,
+            "before_sha256": "2f46554b6b6b16208f550c6d6c5c01ed7fc45e9bc9ec559a6c46f1a3e7bfd486",
+            "after_sha256": "051e484e11f38fc383808f65b8bb285dbbb0d60a252ee23c1b27551197722dd4",
+            "before_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+            "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-300.23438&extent=88.93202,660.23438&range=search&sort=largest&timeZone=utc&list=false&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+          }
+        ],
+        "warnings": [
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e58' is not exposed by dom_model0",
+            "action_ordinal": 1,
+            "state_index": 0
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e70' is not exposed by dom_model1",
+            "action_ordinal": 2,
+            "state_index": 1
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e72' is not exposed by dom_model2",
+            "action_ordinal": 3,
+            "state_index": 2
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e72' is not exposed by dom_model3",
+            "action_ordinal": 4,
+            "state_index": 3
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e74' is not exposed by dom_model4",
+            "action_ordinal": 5,
+            "state_index": 4
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e74' is not exposed by dom_model5",
+            "action_ordinal": 6,
+            "state_index": 5
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e11' is not exposed by dom_model6",
+            "action_ordinal": 7,
+            "state_index": 6
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e95' is not exposed by dom_model7",
+            "action_ordinal": 8,
+            "state_index": 7
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e36' is not exposed by dom_model8",
+            "action_ordinal": 9,
+            "state_index": 8
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e3' is not exposed by dom_model9",
+            "action_ordinal": 10,
+            "state_index": 9
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e72' is not exposed by dom_model10",
+            "action_ordinal": 11,
+            "state_index": 10
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e74' is not exposed by dom_model11",
+            "action_ordinal": 12,
+            "state_index": 11
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e33' is not exposed by dom_model12",
+            "action_ordinal": 13,
+            "state_index": 12
+          },
+          {
+            "code": "target_ref_not_found_in_pre_state",
+            "message": "ref 'e3' is not exposed by dom_model13",
+            "action_ordinal": 14,
+            "state_index": 13
+          }
+        ]
+      }
+    },
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    },
+    "rubric_output": "/data/isha/msexecute/evidence-error-experiment/rubrics/reruns/task_44_rerun.json",
+    "metrics_output": "/data/isha/msexecute/evidence-error-experiment/rubrics/reruns/task_44_rerun_generation_metrics.json",
+    "sidecar_outputs": [
+      "/data/isha/msexecute/evidence-error-experiment/data/data-ss/task_44_rerun/task_data_with_canonical_rubric.json",
+      "/data/isha/msexecute/evidence-error-experiment/data/data-dom/task_44_rerun/task_data_with_canonical_rubric.json"
+    ],
+    "models": [
+      "gpt-5.2",
+      "o4-mini"
+    ],
+    "verifier_packages": {
+      "microsoft_verifier": {
+        "package": "microsoft_verifier",
+        "root": "/data/isha/msexecute/evidence-error-experiment/microsoft_verifier",
+        "file_count": 33,
+        "tree_sha256": "90af71daf5ecc0770643ce9bc8552eaefa792fef198682dc10c36e288e9c5802",
+        "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/microsoft_verifier.json"
+      },
+      "dom_model": {
+        "package": "dom_model",
+        "root": "/data/isha/msexecute/evidence-error-experiment/dom_model",
+        "file_count": 52,
+        "tree_sha256": "66f01ab44f5e28fa377aff439b786a3ca995db77c6fd1057a2143216ad4d886b",
+        "manifest": "/data/isha/msexecute/evidence-error-experiment/manifests/dom_model.json"
+      }
+    },
+    "import_source": "/tmp/evidence_rerun_31_60/task_44.json"
+  },
+  "note": "Phase A usage is separate; reasoning tokens are a subset of completion tokens.",
+  "final_preflight": {
+    "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+    "task_alias": "task_44_rerun",
+    "actions": 14,
+    "screenshots": 15,
+    "dom_model_states": 15,
+    "alignment": {
+      "task_id": "browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z",
+      "action_count": 14,
+      "state_count": 15,
+      "initial_state": 0,
+      "final_state": 14,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e58",
+            "target": {
+              "ref": "e58",
+              "role": "LabelText",
+              "name": "4.5+"
+            },
+            "thoughts": "Change the magnitude filter from the default 2.5+ to the required 4.5+ using the provided radio label."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 2,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e70",
+            "target": {
+              "ref": "e70",
+              "role": "LabelText",
+              "name": "Custom"
+            },
+            "thoughts": "Need to switch Date & Time to Custom so I can enter a 24-hour UTC range before running the search."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e72",
+            "target": {
+              "ref": "e72",
+              "role": "textbox",
+              "name": "Date & Time Start (UTC)"
+            },
+            "thoughts": "Focus the Start (UTC) textbox so I can overwrite it with the correct preceding-24-hours UTC start time in subsequent steps."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 4,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e72",
+            "target": {
+              "ref": "e72",
+              "role": "textbox",
+              "name": "Date & Time Start (UTC)"
+            },
+            "text": "2026-09-14 00:00:00",
+            "thoughts": "Set the Start (UTC) field to 24 hours before the current End value to define the preceding 24-hour custom range."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 5,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e74",
+            "target": {
+              "ref": "e74",
+              "role": "textbox",
+              "name": "Date & Time End (UTC)"
+            },
+            "thoughts": "Need to focus the End (UTC) textbox before typing the custom end time for the 24-hour window."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 6,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e74",
+            "target": {
+              "ref": "e74",
+              "role": "textbox",
+              "name": "Date & Time End (UTC)"
+            },
+            "text": "2026-09-15 00:00:00",
+            "thoughts": "Set the End (UTC) time to 24 hours after the specified start so the custom range covers the preceding 24 hours before running the search."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 7,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e11",
+            "target": {
+              "ref": "e11",
+              "role": "heading",
+              "name": "+ Output Options"
+            },
+            "thoughts": "Now I need to open Output Options so I can change ordering to magnitude before running the search."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 8,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e95",
+            "target": {
+              "ref": "e95",
+              "role": "LabelText",
+              "name": "Magnitude - Largest First"
+            },
+            "thoughts": "Set the output ordering to “Magnitude - Largest First” before running the search so results are sorted as required."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "ordinal": 9,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e36",
+            "target": {
+              "ref": "e36",
+              "role": "button",
+              "name": "Search"
+            },
+            "thoughts": "Filters and ordering are configured; now I need to run the query by clicking the Search button to load the results table."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        },
+        {
+          "ordinal": 10,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e3",
+            "target": {
+              "ref": "e3",
+              "role": "link",
+              "name": "MODIFY SEARCH"
+            },
+            "thoughts": "Need to reopen the Modify Search panel or settings to adjust the query so results load correctly and then access the list view for top three events."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "ordinal": 11,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e72",
+            "target": {
+              "ref": "e72",
+              "role": "textbox",
+              "name": "Date & Time Start (UTC)"
+            },
+            "text": "2026-09-14 00:00:00",
+            "thoughts": "The start time textbox has malformed concatenated content; I should overwrite it with the intended UTC start time before running the search again."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "ordinal": 12,
+          "name": "type",
+          "arguments": {
+            "action": "type",
+            "ref": "e74",
+            "target": {
+              "ref": "e74",
+              "role": "textbox",
+              "name": "Date & Time End (UTC)"
+            },
+            "text": "2026-09-15 00:00:00",
+            "thoughts": "The end datetime field still has a malformed concatenated value; I’ll overwrite it with the correct UTC end time before rerunning the search."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "ordinal": 13,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e33",
+            "target": {
+              "ref": "e33",
+              "role": "button",
+              "name": "Search"
+            },
+            "thoughts": "Dates and magnitude filters are set; now I need to run the query by clicking the Search button to get the ordered results list."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        },
+        {
+          "ordinal": 14,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e3",
+            "target": {
+              "ref": "e3",
+              "role": "generic",
+              "name": "List"
+            },
+            "thoughts": "Switch to the List view so the individual earthquake results (with magnitude, place, and UTC time) become visible for extraction."
+          },
+          "observed_after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-300.23438&extent=88.93202,660.23438&range=search&sort=largest&timeZone=utc&list=false&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "60759b44791a92555cc5d1321aa9bd9b333362db9c7bbcd5b73581df1525a7e5",
+          "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "after_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "bcb36966b0c0c10b00d1dff55019cd55041174f8a7b3873f472161ae73465a89",
+          "after_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+          "after_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 6,
+          "action_ordinal": 7,
+          "to_state": 7,
+          "before_sha256": "1b899fde1ef026dbd76aa345562fbc0b69e75179543f8b1f1aaa9d58d34bc3c8",
+          "after_sha256": "c901e9bcd928d3a92e2f5d66f818f21541d8c104acf527d1eb68cbc9ac0c7028",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 7,
+          "action_ordinal": 8,
+          "to_state": 8,
+          "before_sha256": "c901e9bcd928d3a92e2f5d66f818f21541d8c104acf527d1eb68cbc9ac0c7028",
+          "after_sha256": "da207ce51ede484804681c6905dafa765f4d5ea937922802f8052d0664a0b62f",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/"
+        },
+        {
+          "from_state": 8,
+          "action_ordinal": 9,
+          "to_state": 9,
+          "before_sha256": "da207ce51ede484804681c6905dafa765f4d5ea937922802f8052d0664a0b62f",
+          "after_sha256": "240259e4f7697528120507947a548c7009e55b9a77794faf0d94fc69595eac82",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        },
+        {
+          "from_state": 9,
+          "action_ordinal": 10,
+          "to_state": 10,
+          "before_sha256": "240259e4f7697528120507947a548c7009e55b9a77794faf0d94fc69595eac82",
+          "after_sha256": "223258b38387337ede25ee5f1ec4caf906ffbc2fa61d384a5372e89dcc8a3c47",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-08%2000:00:002026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2023:59:592026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "from_state": 10,
+          "action_ordinal": 11,
+          "to_state": 11,
+          "before_sha256": "223258b38387337ede25ee5f1ec4caf906ffbc2fa61d384a5372e89dcc8a3c47",
+          "after_sha256": "8b124fcb6bd4a1a4b9ae06a736c5fa86129086740c551b04d9a57477c248652b",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "from_state": 11,
+          "action_ordinal": 12,
+          "to_state": 12,
+          "before_sha256": "8b124fcb6bd4a1a4b9ae06a736c5fa86129086740c551b04d9a57477c248652b",
+          "after_sha256": "7053a7b247292afdf84f21c5aa99393d95e460311792515b7b1149f083f34178",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D"
+        },
+        {
+          "from_state": 12,
+          "action_ordinal": 13,
+          "to_state": 13,
+          "before_sha256": "7053a7b247292afdf84f21c5aa99393d95e460311792515b7b1149f083f34178",
+          "after_sha256": "2f46554b6b6b16208f550c6d6c5c01ed7fc45e9bc9ec559a6c46f1a3e7bfd486",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/search/#%7B%22currentfeatureid%22%3Anull%2C%22mapposition%22%3A%5B%5B%22-88.94504%22%2C%22-187.73438%22%5D%2C%5B%2288.93202%22%2C%22547.73438%22%5D%5D%2C%22autoUpdate%22%3A%5B%22autoUpdate%22%5D%2C%22listFormat%22%3A%22default%22%2C%22restrictListToMap%22%3A%5B%5D%2C%22sort%22%3A%22largest%22%2C%22basemap%22%3A%22grayscale%22%2C%22overlays%22%3A%5B%22plates%22%5D%2C%22distanceUnit%22%3A%22km%22%2C%22timezone%22%3A%22utc%22%2C%22viewModes%22%3A%5B%22list%22%2C%22map%22%5D%2C%22event%22%3Anull%2C%22search%22%3A%7B%22name%22%3A%22Search%20Results%22%2C%22params%22%3A%7B%22starttime%22%3A%222026-09-08%2000%3A00%3A002026-09-14%2000%3A00%3A00%22%2C%22endtime%22%3A%222026-09-15%2023%3A59%3A592026-09-15%2000%3A00%3A00%22%2C%22minmagnitude%22%3A4.5%2C%22orderby%22%3A%22magnitude%22%7D%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        },
+        {
+          "from_state": 13,
+          "action_ordinal": 14,
+          "to_state": 14,
+          "before_sha256": "2f46554b6b6b16208f550c6d6c5c01ed7fc45e9bc9ec559a6c46f1a3e7bfd486",
+          "after_sha256": "051e484e11f38fc383808f65b8bb285dbbb0d60a252ee23c1b27551197722dd4",
+          "before_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-187.73438&extent=88.93202,547.73438&range=search&sort=largest&timeZone=utc&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D",
+          "after_url": "https://earthquake.usgs.gov/earthquakes/map/?extent=-88.94504,-300.23438&extent=88.93202,660.23438&range=search&sort=largest&timeZone=utc&list=false&search=%7B%22name%22:%22Search%20Results%22,%22params%22:%7B%22starttime%22:%222026-09-14%2000:00:00%22,%22endtime%22:%222026-09-15%2000:00:00%22,%22minmagnitude%22:4.5,%22orderby%22:%22magnitude%22%7D%7D"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e58' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e70' is not exposed by dom_model1",
+          "action_ordinal": 2,
+          "state_index": 1
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e72' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e72' is not exposed by dom_model3",
+          "action_ordinal": 4,
+          "state_index": 3
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e74' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e74' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e11' is not exposed by dom_model6",
+          "action_ordinal": 7,
+          "state_index": 6
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e95' is not exposed by dom_model7",
+          "action_ordinal": 8,
+          "state_index": 7
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e36' is not exposed by dom_model8",
+          "action_ordinal": 9,
+          "state_index": 8
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e3' is not exposed by dom_model9",
+          "action_ordinal": 10,
+          "state_index": 9
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e72' is not exposed by dom_model10",
+          "action_ordinal": 11,
+          "state_index": 10
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e74' is not exposed by dom_model11",
+          "action_ordinal": 12,
+          "state_index": 11
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e33' is not exposed by dom_model12",
+          "action_ordinal": 13,
+          "state_index": 12
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e3' is not exposed by dom_model13",
+          "action_ordinal": 14,
+          "state_index": 13
+        }
+      ]
+    },
+    "frozen_rubric": "/data/isha/msexecute/evidence-error-experiment/rubrics/reruns/task_44_rerun.json",
+    "frozen_rubric_sha256": "91a73e9ce7cbb9cfa0fb89a1c190e63915795fb801c4c3a183f71d4b2fc9165d",
+    "criterion_order": [
+      "Apply correct USGS query filters (UTC range, worldwide, magnitude threshold)",
+      "Order results by magnitude (largest to smallest)",
+      "Report top three results with required fields (preserve USGS order for ties, UTC times)",
+      "Handle fewer-than-three results correctly",
+      "Respect constraints: no alerts/notifications and proper UTC handling disclosure"
+    ],
+    "criterion_descriptions": [
+      "On the USGS Search Earthquake Catalog page, set a custom date-and-time range intended to cover the preceding 24 hours in UTC (or, if the UI does not provide an explicit UTC control/label, use the site’s default time basis and clearly note what the site indicates). Keep the geographic region worldwide (do not apply limiting map/region filters) and set minimum magnitude to 4.5 or greater. Full credit if these filters are correctly applied OR if the agent is blocked by site errors/CAPTCHA/outage after making a reasonable attempt and explicitly reports the issue. Partial credit if one element is slightly wrong but the overall intent is followed (e.g., correct 24h range but unclear UTC basis, or min magnitude slightly off). No credit if filters are largely not applied or a clear geographic restriction is inadvertently used.",
+      "Ensure results are sorted by magnitude descending (largest to smallest) as displayed by USGS. Full credit if sorting is correctly set/apparent OR if the interface does not allow changing sort order and the agent clearly states this and uses the best available method (e.g., manual interpretation from displayed magnitudes). Partial credit if sorting is attempted but not clearly applied/verified. No credit if results are left sorted by a different key when magnitude sorting is available.",
+      "Record and report up to the first three earthquakes after filters and magnitude-desc ordering are applied, including magnitude, place, and event time in UTC. For equal magnitudes, preserve the order displayed by USGS. Full credit if all reported entries match the displayed list and include all required fields; if the page only displays times in a non-UTC format or does not clearly label the timezone, full credit if the agent reports exactly what USGS displays and explicitly notes the timezone ambiguity/limitation. Partial credit if one field is missing for one entry or if one entry is incorrect. No credit if entries are fabricated or not traceable to the filtered/sorted list.",
+      "If fewer than three earthquakes match the criteria, report every available result without inventing additional entries. Full credit if the agent reports all available matches or explicitly states there are none. Partial credit if the agent reports fewer than are available. No credit if the agent invents entries to reach three.",
+      "Do not enable alerts or notifications during the process. Full credit if no alerts/notifications are enabled and the agent does not claim to have enabled them. Also, the agent should clearly indicate UTC usage for reported event times; if UTC cannot be confirmed from the UI, the agent must explicitly disclose that limitation rather than implying UTC. Partial credit if UTC is not clearly labeled but no alerts are enabled and the agent does not misrepresent timezone. No credit if alerts/notifications are enabled or if the agent falsely claims UTC when the page indicates otherwise."
+    ],
+    "maximum_points": [
+      5.0,
+      2.0,
+      5.0,
+      2.0,
+      2.0
+    ],
+    "criterion_denominator": 16.0,
+    "screenshot_sidecar_validated": true,
+    "dom_model_sidecar_validated": true,
+    "generation_metrics": "/data/isha/msexecute/evidence-error-experiment/rubrics/reruns/task_44_rerun_generation_metrics.json",
+    "rubric_generation_calls_during_scoring": 0,
+    "endpoint_config": {
+      "models": [
+        "gpt-5.2",
+        "o4-mini"
+      ],
+      "files": [
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_gpt5_2.json",
+          "model": "gpt-5.2"
+        },
+        {
+          "path": "/data/isha/msexecute/evidence-error-experiment/config/endpoints/openai/canonical/openai_o4_mini.json",
+          "model": "o4-mini"
+        }
+      ]
+    }
+  }
+}

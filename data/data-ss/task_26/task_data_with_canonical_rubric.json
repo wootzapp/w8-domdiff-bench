@@ -1,0 +1,62 @@
+[
+  {
+    "task_id": "browser_task_026-shopping-constraint-satisfaction-20260915T073402Z",
+    "confirmed_task": "On Amazon, search for ‘wireless mouse’. Filter results to products rated at least 4 stars, Prime eligible, and priced below $40; sort by average rating. Report the top three products with title, price, rating, and review count.\n\nStopping condition: Stop after the search, filters, sort order, and three product records have been recorded.\n\nConstraints:\n- Do not sign in.\n- Do not add products to a cart.\n- Do not purchase anything.\n- If Amazon presents a bot check, stop and record the block rather than bypassing it.",
+    "website": "https://www.amazon.com/",
+    "level": "manual_new_verifier_task",
+    "precomputed_rubric": {
+      "items": [
+        {
+          "criterion": "Search Amazon for 'wireless mouse'",
+          "description": "Use Amazon (starting from amazon.com) to run a product search for the query 'wireless mouse' (or a clearly equivalent query like 'wireless mice') without signing in. Full credit if the search is performed and results (or an access-block page) are reached. Full credit if Amazon blocks access (CAPTCHA/bot check/login wall) and the agent clearly reports being blocked (no need to proceed further). Partial credit if the query is meaningfully different but still clearly targets wireless computer mice.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Apply required filters and sort order",
+          "description": "From the search results, apply all specified constraints using Amazon’s available UI (or closest equivalent): (1) rating at least 4 stars (e.g., '4 Stars & Up'), (2) Prime eligible (Prime checkbox/toggle), and (3) price below $40 (max price $40), then sort by average rating (e.g., 'Avg. Customer Review'). Full credit if all are applied OR if the agent clearly states that a required filter/sort is unavailable in the UI/session and applies the closest available alternative while preserving intent. Full credit if the agent cannot apply filters/sort due to an access block encountered after search and it reports that block. Partial credit if one filter is missed or implemented imperfectly but the agent clearly states what was applied.",
+          "max_points": 4,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report top product (rank #1 after sort)",
+          "description": "From the filtered + sorted results, record the first-listed product (or any product tied for highest position if ties/indistinguishable ordering occur) and report: title, price, star rating, and review count. Full credit if all fields are captured as shown on the results page and the product appears to satisfy the constraints. If fewer than 1 qualifying product is visible after applying filters/sort, full credit for clearly stating that no qualifying product is available/visible. If price is variable/hidden (e.g., coupon/variant price not shown), partial credit if the agent reports the visible price information and notes the limitation.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report second product (rank #2 after sort)",
+          "description": "From the filtered + sorted results, record the second-listed product (or any product tied within the top results if ties/indistinguishable ordering occur) and report: title, price, star rating, and review count. Full credit if all fields are captured as shown and the product appears to satisfy the constraints. If fewer than 2 qualifying products are visible after applying filters/sort, full credit for clearly stating that only 1 qualifying product was available/visible (and not fabricating a second). If price is variable/hidden, partial credit if the agent reports the visible price information and notes the limitation.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Report third product (rank #3 after sort)",
+          "description": "From the filtered + sorted results, record the third-listed product (or any product tied within the top results if ties/indistinguishable ordering occur) and report: title, price, star rating, and review count. Full credit if all fields are captured as shown and the product appears to satisfy the constraints. If fewer than 3 qualifying products are visible after applying filters/sort, full credit for clearly stating that fewer than 3 qualifying products were available/visible (and not fabricating a third). If price is variable/hidden, partial credit if the agent reports the visible price information and notes the limitation.",
+          "max_points": 3,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Respect constraints and stopping condition",
+          "description": "Do not sign in, do not add products to cart, and do not purchase anything. Stop after recording the search, applied filters, sort order, and the three product records (or after recording an access block / insufficient qualifying results). Full credit if all constraints are followed and the agent stops at the appropriate point. Partial credit if the agent takes extra non-harmful steps (e.g., opens product pages) but still avoids sign-in/cart/purchase and completes the reporting as far as possible.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        },
+        {
+          "criterion": "Handle bot check / access block appropriately",
+          "condition": "Only applies if Amazon presents a bot check/CAPTCHA/login wall that blocks access to results or filtering/sorting.",
+          "description": "If blocked by a bot check or similar access restriction, the agent should stop and record the block (e.g., noting CAPTCHA encountered) rather than attempting to bypass it, and must not fabricate product records. Full credit if the agent clearly reports the block and stops. Partial credit if the agent reports the block but makes minor additional attempts that do not amount to bypassing.",
+          "max_points": 2,
+          "justification": "",
+          "earned_points": ""
+        }
+      ]
+    }
+  }
+]

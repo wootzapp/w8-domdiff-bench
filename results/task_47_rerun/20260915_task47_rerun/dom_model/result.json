@@ -1,0 +1,598 @@
+{
+  "task_id": "browser_task_047-regulatory-api-search-20260915T075303Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.1,
+  "rubric_total_max_points": 20.0,
+  "rubric_total_earned_points": 2.0,
+  "rubric_is_success": false,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: None to assess, since the agent produced no substantive output.\n\nCritical issues: The agent failed to provide the primary deliverable—an extracted report of the first three API results with the required fields (title, every agency, type, publication_date) in returned order. The DOM evidence shows the exact API endpoint and query succeeded and returned a top-level results array containing exactly three items (with the needed fields present). However, the agent’s predicted output is only an error/status statement (\"model did not produce an executable action after four generic retries\") and does not record any of the three results or their fields. There is also no action history indicating any extraction was performed. From a user perspective, despite the data being available in the API response page, the agent did not actually complete the task because it did not deliver the requested three-result summary.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Use the specified official Federal Register documents API query (term=\"artificial intelligence\", publication date 2026-08-03 to 2026-09-02, newest first, per_page=3) and report the first three returned items in order, each with title, all listed agencies, document type, and publication date. A reasonable user would be flexible about formatting, but not about missing any of the three items, changing the order, omitting agencies, or not providing the requested fields."
+  },
+  "preflight": {
+    "task_id": "browser_task_047-regulatory-api-search-20260915T075303Z",
+    "actions": 0,
+    "dom_model_states": 1,
+    "initial_state": 0,
+    "final_state": 0,
+    "alignment": {
+      "task_id": "browser_task_047-regulatory-api-search-20260915T075303Z",
+      "action_count": 0,
+      "state_count": 1,
+      "initial_state": 0,
+      "final_state": 0,
+      "actions": [],
+      "transitions": [],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "77f681aa2e64f1e70e5391e7218bc122c01fbe9a0f59bdf56758b7fd900be0af",
+    "criterion_order": [
+      "Use the specified official Federal Register API endpoint with the exact query (or clearly report access failure)",
+      "Rely only on the response top-level \"results\" array (no link-following or extra sources)",
+      "Report the first up to three API results in returned order (newest first) and stop",
+      "Result 1: Provide title, every listed agency, document type, and publication date (as present in API payload)",
+      "Result 2: Provide title, every listed agency, document type, and publication date (as present in API payload)",
+      "Result 3: Provide title, every listed agency, document type, and publication date (as present in API payload)"
+    ],
+    "maximum_points": [
+      2.0,
+      2.0,
+      4.0,
+      4.0,
+      4.0,
+      4.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_47_rerun/20260915_task47_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_47_rerun/20260915_task47_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "77f681aa2e64f1e70e5391e7218bc122c01fbe9a0f59bdf56758b7fd900be0af",
+  "criterion_denominator": 20,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 54464,
+      "completion_tokens": 6152,
+      "reasoning_tokens": 0,
+      "total_tokens": 60616
+    },
+    "action_judge": {
+      "prompt_tokens": 14911,
+      "completion_tokens": 3068,
+      "reasoning_tokens": 1536,
+      "total_tokens": 17979
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 9,
+      "api_attempts": 9,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 1,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10,
+        "screenshot_idx": 0
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        0
+      ],
+      "1": [
+        0
+      ],
+      "2": [
+        0
+      ],
+      "3": [
+        0
+      ],
+      "4": [
+        0
+      ],
+      "5": [
+        0
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM state explicitly shows the agent context on the official Federal Register API endpoint `/api/v1/documents.json` with the exact query parameters required (term=artificial intelligence; publication_date gte=2026-08-03; lte=2026-09-02; order=newest; per_page=3). The payload appears to have been successfully returned (includes `results`).",
+          "discrepancies": "Action history says: `model did not produce an executable action after four generic retries`. However, the DOM model already contains the API response content, so there is no evidence of query parameter deviation or use of CAPTCHA UI in the shown state.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL `https://www.federalregister.gov/api/v1/documents.json?conditions%5Bterm%5D=artificial%20intelligence&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-03&conditions%5Bpublication_date%5D%5Blte%5D=2026-09-02&order=newest&per_page=3` and a JSON payload under VISIBLE CONTENT containing keys like `description`, `count`, `results`.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: UNKNOWN\nThe DOM provides the API response with a top-level `results` array, but there is no agent-produced report/output shown that demonstrates the agent actually restricted itself to only those `results` fields when answering. The action history indicates no executable action and no final extraction answer, so reliance cannot be verified.",
+          "discrepancies": "No extracted/report content is present to confirm the agent used only the top-level `results` array (vs. following `html_url`/`pdf_url`).",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 VISIBLE CONTENT includes a top-level object with `results` array containing 3 objects, each with `title`, `type`, `publication_date`, and `agencies` arrays. No other fetched pages or followed links are shown.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nAlthough the API response contains three results in returned order, there is no agent output recording “the first three results” and stopping. The action history explicitly states the model did not produce an executable action after retries, implying the required reporting did not occur.",
+          "discrepancies": "Missing required reporting of the first three results; no evidence the agent stopped after three because no results were reported at all.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows `order=newest&per_page=3` in the URL and a `results` array with exactly three items in this order: (1) \"Heightened Import Disclosures for Supply Chain Visibility\" (publication_date 2026-09-02), (2) \"Declaring a National Emergency To Secure the United States Bulk-Power System\" (publication_date 2026-08-31), (3) \"Maximizing Efficiencies in Universal Service Administration\" (publication_date 2026-08-31).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe DOM contains all required fields for result 1 (title, all agencies, type, publication_date), but the agent did not record/report them in a final answer (no produced output; action history indicates generic retries and no executable action). Therefore, the criterion requiring provision of those fields is not met.",
+          "discrepancies": "No agent-produced listing of result 1’s title, every agency, document type, and publication date, despite the data being present in the API response.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 first `results` entry includes: `title`: \"Heightened Import Disclosures for Supply Chain Visibility\"; `type`: \"Proposed Rule\"; `publication_date`: \"2026-09-02\"; `agencies`: [{\"name\":\"Homeland Security Department\"...}, {\"name\":\"U.S. Customs and Border Protection\"...}].",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nThe DOM contains all required fields for result 2, but there is no evidence the agent actually reported them as required. Action history indicates failure to produce an executable action and no extracted report is shown.",
+          "discrepancies": "No agent-produced listing of result 2’s title, every agency, document type, and publication date.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 second `results` entry includes: `title`: \"Declaring a National Emergency To Secure the United States Bulk-Power System\"; `type`: \"Presidential Document\"; `publication_date`: \"2026-08-31\"; `agencies`: [{\"name\":\"Executive Office of the President\"...}].",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: CONTRADICTED\nWhile the DOM contains the required fields for result 3, the agent did not record/report them in an answer per the rubric. The action history indicates the model failed to proceed to an executable action/output.",
+          "discrepancies": "No agent-produced listing of result 3’s title, every agency, document type, and publication date.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 third `results` entry includes: `title`: \"Maximizing Efficiencies in Universal Service Administration\"; `type`: \"Proposed Rule\"; `publication_date`: \"2026-08-31\"; `agencies`: [{\"name\":\"Federal Communications Commission\"...}].",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM evidence shows a JSON response page with the documents API path and the exact encoded query parameters (term=artificial intelligence; publication_date gte=2026-08-03; lte=2026-09-02; order=newest; per_page=3). The payload includes top-level keys like count/results, indicating the API returned data (not a UI page).",
+      "1": "The only content shown in the DOM is the single API JSON payload, including a top-level results array with 3 result objects that already contain title, type, publication_date, and agencies. No DOM evidence shows any navigation to result html_url/pdf_url or any other external source; however, there is also no captured agent-written extraction demonstrating exclusive reliance on results.",
+      "2": "The DOM’s results array contains exactly three items and the request includes order=newest and per_page=3; the three entries appear in descending publication_date order (2026-09-02, then 2026-08-31, 2026-08-31). The DOM does not show any agent-generated report confirming it listed exactly these three and stopped.",
+      "3": "For the first results element, the DOM explicitly includes the needed fields: title 'Heightened Import Disclosures for Supply Chain Visibility', type 'Proposed Rule', publication_date '2026-09-02', and an agencies array with two listed agencies (Homeland Security Department; U.S. Customs and Border Protection).",
+      "4": "For the second results element, the DOM explicitly includes: title 'Declaring a National Emergency To Secure the United States Bulk-Power System', type 'Presidential Document', publication_date '2026-08-31', and an agencies array listing Executive Office of the President.",
+      "5": "For the third results element, the DOM explicitly includes: title 'Maximizing Efficiencies in Universal Service Administration', type 'Proposed Rule', publication_date '2026-08-31', and an agencies array listing Federal Communications Commission."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Use the specified official Federal Register API endpoint with the exact query (or clearly report access failure)",
+        "earned_points": 0,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent did not perform any API request or report use of the specified official Federal Register API endpoint. Instead, it returned an error message without attempting the required API call.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 shows the exact official Federal Register API endpoint and query: https://www.federalregister.gov/api/v1/documents.json?conditions%5Bterm%5D=artificial%20intelligence&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-03&conditions%5Bpublication_date%5D%5Blte%5D=2026-09-02&order=newest&per_page=3, with a returned JSON payload containing top-level keys including count/results.",
+        "post_image_justification": "Even though the action history says no executable action was produced, the DOM evidence explicitly confirms the specified API request was accessed and returned data. This satisfies the criterion’s requirement to use the specified official API endpoint with the exact query (no access failure to report).",
+        "reality_notes": "DOM evidence shows a JSON response page with the documents API path and the exact encoded query parameters (term=artificial intelligence; publication_date gte=2026-08-03; lte=2026-09-02; order=newest; per_page=3). The payload includes top-level keys like count/results, indicating the API returned data (not a UI page)."
+      },
+      {
+        "criterion": "Rely only on the response top-level \"results\" array (no link-following or extra sources)",
+        "earned_points": 0,
+        "post_image_earned_points": 0.0,
+        "max_points": 2,
+        "justification": "The agent provided no data from any API response, and did not rely on the top-level \"results\" array or any other source.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 contains the API JSON payload with a top-level results array where each result object includes title, type, publication_date, and agencies. There is no DOM evidence of navigating to html_url/pdf_url or any other pages, but also no agent-produced extraction output to confirm exclusive reliance.",
+        "post_image_justification": "The agent’s predicted final answer contains no extracted fields at all, so it cannot be verified that the agent relied only on the top-level results array when producing its answer. Presence of the results array in DOM alone is insufficient to award credit for correct sourcing in the agent’s output.",
+        "reality_notes": "The only content shown in the DOM is the single API JSON payload, including a top-level results array with 3 result objects that already contain title, type, publication_date, and agencies. No DOM evidence shows any navigation to result html_url/pdf_url or any other external source; however, there is also no captured agent-written extraction demonstrating exclusive reliance on results."
+      },
+      {
+        "criterion": "Report the first up to three API results in returned order (newest first) and stop",
+        "earned_points": 0,
+        "post_image_earned_points": 0.0,
+        "max_points": 4,
+        "justification": "The agent did not report any API results or indicate fewer than three results were returned; it immediately output an error message.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 shows the API results array has exactly 3 items in returned order (newest first): publication_date 2026-09-02, then 2026-08-31, then 2026-08-31. However, the agent’s predicted output reports it did not produce an answer listing them.",
+        "post_image_justification": "This criterion evaluates whether the agent reported the first three results in order and stopped. The agent did not report any results, so it did not satisfy the requirement despite the DOM containing the needed data.",
+        "reality_notes": "The DOM’s results array contains exactly three items and the request includes order=newest and per_page=3; the three entries appear in descending publication_date order (2026-09-02, then 2026-08-31, 2026-08-31). The DOM does not show any agent-generated report confirming it listed exactly these three and stopped."
+      },
+      {
+        "criterion": "Result 1: Provide title, every listed agency, document type, and publication date (as present in API payload)",
+        "earned_points": 0,
+        "post_image_earned_points": 0.0,
+        "max_points": 4,
+        "justification": "No information was provided for the first result; the agent did not attempt to retrieve or report any fields.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 first results entry includes: title \"Heightened Import Disclosures for Supply Chain Visibility\"; type \"Proposed Rule\"; publication_date \"2026-09-02\"; agencies list includes \"Homeland Security Department\" and \"U.S. Customs and Border Protection\". Agent output provided none of these.",
+        "post_image_justification": "Although the DOM contains all required fields for result 1, the agent’s predicted final answer did not record/report them. Therefore no credit.",
+        "reality_notes": "For the first results element, the DOM explicitly includes the needed fields: title 'Heightened Import Disclosures for Supply Chain Visibility', type 'Proposed Rule', publication_date '2026-09-02', and an agencies array with two listed agencies (Homeland Security Department; U.S. Customs and Border Protection)."
+      },
+      {
+        "criterion": "Result 2: Provide title, every listed agency, document type, and publication date (as present in API payload)",
+        "earned_points": 0,
+        "post_image_earned_points": 0.0,
+        "max_points": 4,
+        "justification": "No information was provided for the second result; the agent did not attempt to retrieve or report any fields.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 second results entry includes: title \"Declaring a National Emergency To Secure the United States Bulk-Power System\"; type \"Presidential Document\"; publication_date \"2026-08-31\"; agencies list includes \"Executive Office of the President\". Agent output provided none of these.",
+        "post_image_justification": "The agent did not provide the required fields for the second result, so it does not meet this criterion.",
+        "reality_notes": "For the second results element, the DOM explicitly includes: title 'Declaring a National Emergency To Secure the United States Bulk-Power System', type 'Presidential Document', publication_date '2026-08-31', and an agencies array listing Executive Office of the President."
+      },
+      {
+        "criterion": "Result 3: Provide title, every listed agency, document type, and publication date (as present in API payload)",
+        "earned_points": 0,
+        "post_image_earned_points": 0.0,
+        "max_points": 4,
+        "justification": "No information was provided for the third result; the agent did not attempt to retrieve or report any fields.",
+        "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 third results entry includes: title \"Maximizing Efficiencies in Universal Service Administration\"; type \"Proposed Rule\"; publication_date \"2026-08-31\"; agencies list includes \"Federal Communications Commission\". Agent output provided none of these.",
+        "post_image_justification": "The agent did not provide the required fields for the third result, so it does not meet this criterion.",
+        "reality_notes": "For the third results element, the DOM explicitly includes: title 'Maximizing Efficiencies in Universal Service Administration', type 'Proposed Rule', publication_date '2026-08-31', and an agencies array listing Federal Communications Commission."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "1) Review for extraneous/unsolicited actions with material side effects: The task is read-only—inspect a Federal Register API JSON response and report fields for the first three results. Material side effects would be things like submitting comments, opening document links, or interacting with non-API interfaces. 2) Evidence indicates the agent only accessed the official API URL and viewed the JSON payload; there is no evidence of opening html_url/pdf_url links, submitting comments, or using the CAPTCHA-protected UI. 3) The poor performance reflected in the rubric (failure to extract/report results) is already penalized by Criteria 1–5 scoring 0, but that is not an extraneous side-effect issue anyway. 4) No critical-point actions (transactions, submissions) occurred. Conclusion: No unpenalized extraneous actions with lasting consequences are present; no new penalty criterion is warranted.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.1
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.1,
+          "total_earned_points": 2.0,
+          "total_max_points": 20.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Use the specified official Federal Register API endpoint with the exact query (or clearly report access failure)",
+              "earned_points": 0,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent did not perform any API request or report use of the specified official Federal Register API endpoint. Instead, it returned an error message without attempting the required API call.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 shows the exact official Federal Register API endpoint and query: https://www.federalregister.gov/api/v1/documents.json?conditions%5Bterm%5D=artificial%20intelligence&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-03&conditions%5Bpublication_date%5D%5Blte%5D=2026-09-02&order=newest&per_page=3, with a returned JSON payload containing top-level keys including count/results.",
+              "post_image_justification": "Even though the action history says no executable action was produced, the DOM evidence explicitly confirms the specified API request was accessed and returned data. This satisfies the criterion’s requirement to use the specified official API endpoint with the exact query (no access failure to report).",
+              "reality_notes": "DOM evidence shows a JSON response page with the documents API path and the exact encoded query parameters (term=artificial intelligence; publication_date gte=2026-08-03; lte=2026-09-02; order=newest; per_page=3). The payload includes top-level keys like count/results, indicating the API returned data (not a UI page)."
+            },
+            {
+              "criterion": "Rely only on the response top-level \"results\" array (no link-following or extra sources)",
+              "earned_points": 0,
+              "post_image_earned_points": 0.0,
+              "max_points": 2,
+              "justification": "The agent provided no data from any API response, and did not rely on the top-level \"results\" array or any other source.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 contains the API JSON payload with a top-level results array where each result object includes title, type, publication_date, and agencies. There is no DOM evidence of navigating to html_url/pdf_url or any other pages, but also no agent-produced extraction output to confirm exclusive reliance.",
+              "post_image_justification": "The agent’s predicted final answer contains no extracted fields at all, so it cannot be verified that the agent relied only on the top-level results array when producing its answer. Presence of the results array in DOM alone is insufficient to award credit for correct sourcing in the agent’s output.",
+              "reality_notes": "The only content shown in the DOM is the single API JSON payload, including a top-level results array with 3 result objects that already contain title, type, publication_date, and agencies. No DOM evidence shows any navigation to result html_url/pdf_url or any other external source; however, there is also no captured agent-written extraction demonstrating exclusive reliance on results."
+            },
+            {
+              "criterion": "Report the first up to three API results in returned order (newest first) and stop",
+              "earned_points": 0,
+              "post_image_earned_points": 0.0,
+              "max_points": 4,
+              "justification": "The agent did not report any API results or indicate fewer than three results were returned; it immediately output an error message.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 shows the API results array has exactly 3 items in returned order (newest first): publication_date 2026-09-02, then 2026-08-31, then 2026-08-31. However, the agent’s predicted output reports it did not produce an answer listing them.",
+              "post_image_justification": "This criterion evaluates whether the agent reported the first three results in order and stopped. The agent did not report any results, so it did not satisfy the requirement despite the DOM containing the needed data.",
+              "reality_notes": "The DOM’s results array contains exactly three items and the request includes order=newest and per_page=3; the three entries appear in descending publication_date order (2026-09-02, then 2026-08-31, 2026-08-31). The DOM does not show any agent-generated report confirming it listed exactly these three and stopped."
+            },
+            {
+              "criterion": "Result 1: Provide title, every listed agency, document type, and publication date (as present in API payload)",
+              "earned_points": 0,
+              "post_image_earned_points": 0.0,
+              "max_points": 4,
+              "justification": "No information was provided for the first result; the agent did not attempt to retrieve or report any fields.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 first results entry includes: title \"Heightened Import Disclosures for Supply Chain Visibility\"; type \"Proposed Rule\"; publication_date \"2026-09-02\"; agencies list includes \"Homeland Security Department\" and \"U.S. Customs and Border Protection\". Agent output provided none of these.",
+              "post_image_justification": "Although the DOM contains all required fields for result 1, the agent’s predicted final answer did not record/report them. Therefore no credit.",
+              "reality_notes": "For the first results element, the DOM explicitly includes the needed fields: title 'Heightened Import Disclosures for Supply Chain Visibility', type 'Proposed Rule', publication_date '2026-09-02', and an agencies array with two listed agencies (Homeland Security Department; U.S. Customs and Border Protection)."
+            },
+            {
+              "criterion": "Result 2: Provide title, every listed agency, document type, and publication date (as present in API payload)",
+              "earned_points": 0,
+              "post_image_earned_points": 0.0,
+              "max_points": 4,
+              "justification": "No information was provided for the second result; the agent did not attempt to retrieve or report any fields.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 second results entry includes: title \"Declaring a National Emergency To Secure the United States Bulk-Power System\"; type \"Presidential Document\"; publication_date \"2026-08-31\"; agencies list includes \"Executive Office of the President\". Agent output provided none of these.",
+              "post_image_justification": "The agent did not provide the required fields for the second result, so it does not meet this criterion.",
+              "reality_notes": "For the second results element, the DOM explicitly includes: title 'Declaring a National Emergency To Secure the United States Bulk-Power System', type 'Presidential Document', publication_date '2026-08-31', and an agencies array listing Executive Office of the President."
+            },
+            {
+              "criterion": "Result 3: Provide title, every listed agency, document type, and publication date (as present in API payload)",
+              "earned_points": 0,
+              "post_image_earned_points": 0.0,
+              "max_points": 4,
+              "justification": "No information was provided for the third result; the agent did not attempt to retrieve or report any fields.",
+              "applicable_evidence": "DOM_MODEL_STATE_INDEX 0 third results entry includes: title \"Maximizing Efficiencies in Universal Service Administration\"; type \"Proposed Rule\"; publication_date \"2026-08-31\"; agencies list includes \"Federal Communications Commission\". Agent output provided none of these.",
+              "post_image_justification": "The agent did not provide the required fields for the third result, so it does not meet this criterion.",
+              "reality_notes": "For the third results element, the DOM explicitly includes: title 'Maximizing Efficiencies in Universal Service Administration', type 'Proposed Rule', publication_date '2026-08-31', and an agencies array listing Federal Communications Commission."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "1) Review for extraneous/unsolicited actions with material side effects: The task is read-only—inspect a Federal Register API JSON response and report fields for the first three results. Material side effects would be things like submitting comments, opening document links, or interacting with non-API interfaces. 2) Evidence indicates the agent only accessed the official API URL and viewed the JSON payload; there is no evidence of opening html_url/pdf_url links, submitting comments, or using the CAPTCHA-protected UI. 3) The poor performance reflected in the rubric (failure to extract/report results) is already penalized by Criteria 1–5 scoring 0, but that is not an extraneous side-effect issue anyway. 4) No critical-point actions (transactions, submissions) occurred. Conclusion: No unpenalized extraneous actions with lasting consequences are present; no new penalty criterion is warranted.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Use the specified official Federal Register documents API query (term=\"artificial intelligence\", publication date 2026-08-03 to 2026-09-02, newest first, per_page=3) and report the first three returned items in order, each with title, all listed agencies, document type, and publication date. A reasonable user would be flexible about formatting, but not about missing any of the three items, changing the order, omitting agencies, or not providing the requested fields.",
+      "reasoning": "Nitpicks: None to assess, since the agent produced no substantive output.\n\nCritical issues: The agent failed to provide the primary deliverable—an extracted report of the first three API results with the required fields (title, every agency, type, publication_date) in returned order. The DOM evidence shows the exact API endpoint and query succeeded and returned a top-level results array containing exactly three items (with the needed fields present). However, the agent’s predicted output is only an error/status statement (\"model did not produce an executable action after four generic retries\") and does not record any of the three results or their fields. There is also no action history indicating any extraction was performed. From a user perspective, despite the data being available in the API response page, the agent did not actually complete the task because it did not deliver the requested three-result summary.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Use the specified official Federal Register documents API query (term=\"artificial intelligence\", publication date 2026-08-03 to 2026-09-02, newest first, per_page=3) and report the first three returned items in order, each with title, all listed agencies, document type, and publication date. A reasonable user would be flexible about formatting, but not about missing any of the three items, changing the order, omitting agencies, or not providing the requested fields.",
+          "reasoning": "Nitpicks: None to assess, since the agent produced no substantive output.\n\nCritical issues: The agent failed to provide the primary deliverable—an extracted report of the first three API results with the required fields (title, every agency, type, publication_date) in returned order. The DOM evidence shows the exact API endpoint and query succeeded and returned a top-level results array containing exactly three items (with the needed fields present). However, the agent’s predicted output is only an error/status statement (\"model did not produce an executable action after four generic retries\") and does not record any of the three results or their fields. There is also no action history indicating any extraction was performed. From a user perspective, despite the data being available in the API response page, the agent did not actually complete the task because it did not deliver the requested three-result summary.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The task required extracting and reporting (title, all agencies, document type, publication date) for the first three items in the Federal Register Documents API response for a specific query. DOM evidence shows the exact API endpoint and query were successfully loaded and returned a results array with exactly three items containing all required fields. However, the agent produced no substantive extraction/report at all—its final output is only a status/error message indicating it failed to produce an executable action after retries. Thus the failure is not about selecting the wrong source or violating constraints; it is a failure to complete and deliver the required structured summary despite the needed data being available.",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent never performed the required extraction/reporting workflow (listing the first three API results with required fields) and instead terminated with a generic retry/status failure.",
+          "agent_reasoning": "Not available in the provided trajectory; the only observed outcome is that the model repeatedly failed to produce an executable action and did not proceed to extract fields from the already-loaded API response.",
+          "evidence": "Predicted Output: \"model did not produce an executable action after four generic retries\". Action History is empty (\"Action History: >>> <<<\"). DOM_MODEL_STATE_INDEX 0 shows the API JSON with a top-level results array containing the needed fields, indicating the task was achievable but not executed.",
+          "impact": "Primary deliverable was never produced; user receives no titles/agencies/types/dates for any of the three results, causing overall task failure."
+        },
+        {
+          "step_numbers": "1",
+          "error_code": "3.3",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete delivery",
+          "what_happened": "Despite the API response containing all required information for the first three results, the agent did not deliver any of the requested fields in its final answer.",
+          "agent_reasoning": "Not available in the provided trajectory; the agent effectively failed to translate available page content (the JSON results) into the required summarized output.",
+          "evidence": "DOM_MODEL_STATE_INDEX 0 includes three results with explicit fields (e.g., result 1 title/type/publication_date/agencies; likewise for results 2 and 3). Rubric criteria 2-5 all scored 0 because the agent reported no results/fields. Final output contains no extracted data, only a failure status line.",
+          "impact": "Even though the correct data was present and accessible, the agent output was unusable for the task, fully failing the user request."
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[3.5] Incomplete task execution: The agent never performed the required extraction/reporting workflow (listing the first three API results with required fields) and instead terminated with a generic retry/status failure."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task specification is precise: it provides the exact API endpoint (or starting URL), required query parameters (term, date range, order, per_page), and explicitly lists the fields to extract (title, all agencies, document type, publication date) for the first three results in order. There is no missing or conflicting detail, nor any multiple plausible interpretations that the agent could not resolve from the given context. The agent’s failure to produce the summary reflects an execution error, not ambiguity in the task description.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully feasible using standard desktop browsing or API requests. It does not ask for illegal, NSFW, or harmful actions, nor does it violate Responsible AI policies. There are no inherent constraints or contradictions preventing a competent agent from completing it.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task provides a precise API URL with all query parameters, specifies exactly which fields to extract (title, agencies, document type, publication date), the order (newest first), pagination (per_page=3), and a clear stopping condition. No critical details are missing or open to multiple interpretations.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task involves querying a public government API for freely available documents within a specified date range. There are no legal, NSFW, credentialed, or technically impossible requirements.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 1,
+    "final_state_index": 0,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_47_rerun/20260915_task47_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "d2aa839388b3a3477009809ca27692a295e7df35c2589013a6b33239f8f3206f",
+        "byte_count": 6860,
+        "line_count": 9,
+        "estimated_tokens": 1715,
+        "url": "https://www.federalregister.gov/api/v1/documents.json?conditions%5Bterm%5D=artificial%20intelligence&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-03&conditions%5Bpublication_date%5D%5Blte%5D=2026-09-02&order=newest&per_page=3",
+        "title": "",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 9
+          }
+        ],
+        "control_refs": [],
+        "warnings": [
+          "missing_title"
+        ],
+        "provenance": "m0:L1-L9"
+      }
+    ],
+    "estimated_evidence_tokens": 1715,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 1,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [
+      {
+        "state_index": 0,
+        "warning": "missing_title"
+      }
+    ],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 10,
+        "2": 10,
+        "3": 10,
+        "4": 10,
+        "5": 10
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 2,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 14005,
+        "estimated_input_tokens": 3502,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 15015,
+        "estimated_input_tokens": 3754,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 15392,
+        "estimated_input_tokens": 3848,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "char_count": 15882,
+        "estimated_input_tokens": 3971,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 125.091
+}

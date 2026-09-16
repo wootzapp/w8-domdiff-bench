@@ -1,0 +1,2166 @@
+{
+  "task_id": "browser_task_033-software-package-metadata-20260915T074218Z",
+  "verifier": "dom_model",
+  "evidence_mode": "dom_model",
+  "score": 0,
+  "success_criterion": "outcome",
+  "rubric_score": 0.8,
+  "rubric_total_max_points": 20.0,
+  "rubric_total_earned_points": 16.0,
+  "rubric_is_success": true,
+  "outcome": {
+    "result_type": "mm_rubric_outcome",
+    "score": 0.0,
+    "reasoning": "Nitpicks: The agent labels the date as \"Upload / release date\" and reports it as a date-only (May 14, 2026) rather than the precise timestamp also shown in PyPI Key dates; this is a minor precision/labeling issue because the date itself matches the page.\n\nCritical issues: The agent’s reported number of files under \"Download files\" is incorrect per the provided DOM evidence. DOM-model states 1 and 3 explicitly show \"Showing 1 of 1 file.\" alongside the visible source distribution (requests-2.34.2.tar.gz), which directly contradicts the agent’s claim of \"2 files total (1 sdist and 1 wheel).\" Since the task explicitly requires counting files listed for the latest release and forbids inference, this wrong count is a substantive failure of one of the five required fields.\n\nWhat was completed correctly: The agent did reach the PyPI Requests project and release pages without signing in. The latest displayed release is consistently shown as requests 2.34.2 (DOM states 0/2/6). The date May 14, 2026 is supported by Key dates and/or file upload rows (e.g., DOM state 2 and state 1). Requires Python is supported as \"Python >=3.10\" (DOM state 7), and License is supported as \"Apache Software License (Apache-2.0)\" (DOM state 7). However, because one required field (download files count) is wrong, the stopping condition (“all five metadata fields have been verified for the same latest displayed release”) is not met from the user’s perspective.",
+    "verifier_name": "mm_rubric_outcome",
+    "metadata": {},
+    "output_success": false,
+    "primary_intent": "Verify and report five specific metadata fields for the single latest Requests release shown on the official PyPI project page: version, upload date, Requires Python, license, and the count of download files for that same release. A reasonable user would be flexible about minor date formatting (timestamp vs date-only) but not flexible about mixing releases, guessing missing values, or getting the download-file count wrong."
+  },
+  "preflight": {
+    "task_id": "browser_task_033-software-package-metadata-20260915T074218Z",
+    "actions": 7,
+    "dom_model_states": 8,
+    "initial_state": 0,
+    "final_state": 7,
+    "alignment": {
+      "task_id": "browser_task_033-software-package-metadata-20260915T074218Z",
+      "action_count": 7,
+      "state_count": 8,
+      "initial_state": 0,
+      "final_state": 7,
+      "actions": [
+        {
+          "ordinal": 1,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e59",
+            "target": {
+              "ref": "e59",
+              "role": "tab",
+              "name": "Files. Focus will be moved to the project files."
+            },
+            "thoughts": "Need Files tab to see Requires Python, license, and file list for latest release."
+          },
+          "observed_after_url": "https://pypi.org/project/requests/#files"
+        },
+        {
+          "ordinal": 2,
+          "name": "visit_url",
+          "arguments": {
+            "action": "visit_url",
+            "url": "https://pypi.org/project/requests/",
+            "thoughts": "Need Requires Python and license for latest release; these are on main project page metadata, not the Files tab."
+          },
+          "observed_after_url": "https://pypi.org/project/requests/"
+        },
+        {
+          "ordinal": 3,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e59",
+            "target": {
+              "ref": "e59",
+              "role": "tab",
+              "name": "Files. Focus will be moved to the project files."
+            },
+            "thoughts": "Need Requires Python, license, and file count from latest release; these are under the Files tab, so click the Files tab control."
+          },
+          "observed_after_url": "https://pypi.org/project/requests/#files"
+        },
+        {
+          "ordinal": 4,
+          "name": "visit_url",
+          "arguments": {
+            "action": "visit_url",
+            "url": "https://pypi.org/project/requests/2.34.2/",
+            "thoughts": "Need to open the specific 2.34.2 release page to read its Requires Python and License metadata for the same latest version."
+          },
+          "observed_after_url": "https://pypi.org/project/requests/2.34.2/"
+        },
+        {
+          "ordinal": 5,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e59",
+            "target": {
+              "ref": "e59",
+              "role": "tab",
+              "name": "Files. Focus will be moved to the project files."
+            },
+            "thoughts": "Need to open the Files tab for version 2.34.2 to verify Requires Python, license, and count files under Download files for this specific release."
+          },
+          "observed_after_url": "https://pypi.org/project/requests/2.34.2/#files"
+        },
+        {
+          "ordinal": 6,
+          "name": "left_click",
+          "arguments": {
+            "action": "left_click",
+            "ref": "e48",
+            "target": {
+              "ref": "e48",
+              "role": "tab",
+              "name": "Project description. Focus will be moved to the description."
+            },
+            "thoughts": "Need Requires Python and License, which are on the Project description tab, so switch from Files to Project description."
+          },
+          "observed_after_url": "https://pypi.org/project/requests/2.34.2/#description"
+        },
+        {
+          "ordinal": 7,
+          "name": "scroll",
+          "arguments": {
+            "action": "scroll",
+            "pixels": 800,
+            "thoughts": "Need to locate the specific Requires Python and License metadata fields in the Project description panel, which are likely further down the page."
+          },
+          "observed_after_url": "https://pypi.org/project/requests/2.34.2/#description"
+        }
+      ],
+      "transitions": [
+        {
+          "from_state": 0,
+          "action_ordinal": 1,
+          "to_state": 1,
+          "before_sha256": "8c49b1cfff149bb80470eb3bb6b25af838870555f8c6eb5d86fb1fc49fc810b3",
+          "after_sha256": "590309a58f9314524f1c3a2f1a6355ddb10771a15a50ac9d27a0ecfd1ae24f8e",
+          "before_url": "https://pypi.org/project/requests/",
+          "after_url": "https://pypi.org/project/requests/#files"
+        },
+        {
+          "from_state": 1,
+          "action_ordinal": 2,
+          "to_state": 2,
+          "before_sha256": "590309a58f9314524f1c3a2f1a6355ddb10771a15a50ac9d27a0ecfd1ae24f8e",
+          "after_sha256": "30d307a6d9b60754b867052b814dac16b954208ba5550630383d759fef919f69",
+          "before_url": "https://pypi.org/project/requests/#files",
+          "after_url": "https://pypi.org/project/requests/"
+        },
+        {
+          "from_state": 2,
+          "action_ordinal": 3,
+          "to_state": 3,
+          "before_sha256": "30d307a6d9b60754b867052b814dac16b954208ba5550630383d759fef919f69",
+          "after_sha256": "a095788902381c60694d86b5d234b122364a5de4e0ab64b93e815bc1340128b0",
+          "before_url": "https://pypi.org/project/requests/",
+          "after_url": "https://pypi.org/project/requests/#files"
+        },
+        {
+          "from_state": 3,
+          "action_ordinal": 4,
+          "to_state": 4,
+          "before_sha256": "a095788902381c60694d86b5d234b122364a5de4e0ab64b93e815bc1340128b0",
+          "after_sha256": "03422018f6561d2e180d398785bc3901470157882873a4c0d5bb1e14b06c6643",
+          "before_url": "https://pypi.org/project/requests/#files",
+          "after_url": "https://pypi.org/project/requests/2.34.2/"
+        },
+        {
+          "from_state": 4,
+          "action_ordinal": 5,
+          "to_state": 5,
+          "before_sha256": "03422018f6561d2e180d398785bc3901470157882873a4c0d5bb1e14b06c6643",
+          "after_sha256": "cbe14fea112774884a445eb49f5d48ade929ac34935f4083e6f42666d895a9ce",
+          "before_url": "https://pypi.org/project/requests/2.34.2/",
+          "after_url": "https://pypi.org/project/requests/2.34.2/#files"
+        },
+        {
+          "from_state": 5,
+          "action_ordinal": 6,
+          "to_state": 6,
+          "before_sha256": "cbe14fea112774884a445eb49f5d48ade929ac34935f4083e6f42666d895a9ce",
+          "after_sha256": "e47bfebf96bcbbcce7a26459b6450560d321f2f6fc70e26ca6c7aaac4af00344",
+          "before_url": "https://pypi.org/project/requests/2.34.2/#files",
+          "after_url": "https://pypi.org/project/requests/2.34.2/#description"
+        },
+        {
+          "from_state": 6,
+          "action_ordinal": 7,
+          "to_state": 7,
+          "before_sha256": "e47bfebf96bcbbcce7a26459b6450560d321f2f6fc70e26ca6c7aaac4af00344",
+          "after_sha256": "583b6df012b238a80db0d387acdc8b5ae7832d9391eb329deb69c3f9f0259eb2",
+          "before_url": "https://pypi.org/project/requests/2.34.2/#description",
+          "after_url": "https://pypi.org/project/requests/2.34.2/#description"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e59' is not exposed by dom_model0",
+          "action_ordinal": 1,
+          "state_index": 0
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e59' is not exposed by dom_model2",
+          "action_ordinal": 3,
+          "state_index": 2
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e59' is not exposed by dom_model4",
+          "action_ordinal": 5,
+          "state_index": 4
+        },
+        {
+          "code": "target_ref_not_found_in_pre_state",
+          "message": "ref 'e48' is not exposed by dom_model5",
+          "action_ordinal": 6,
+          "state_index": 5
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "e987f50a1508388eff19029c26216ddd2da448997aefb8b1e786319631b301d5",
+    "criterion_order": [
+      "Access the Requests project page on PyPI (no sign-in)",
+      "Identify the latest displayed Requests release on the PyPI project page",
+      "Report version and upload date for the latest displayed release",
+      "Report Requires Python value for the latest displayed release",
+      "Report license for the latest displayed release",
+      "Count number of Download files listed for the latest displayed release",
+      "Respect constraints: no sign-in, no downloading/installing, no inference for missing metadata"
+    ],
+    "maximum_points": [
+      2.0,
+      2.0,
+      4.0,
+      3.0,
+      3.0,
+      4.0,
+      2.0
+    ],
+    "criterion_denominator": 20.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 0,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/msexecute/evidence-error-experiment/dom_model/src/dom_model",
+      "files": 32,
+      "sha256": "69ce5a61753cb8900c9976d77aa0f54ff66887b595589ae06a79f301fbe5bfc5"
+    }
+  },
+  "rubric_path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/frozen_rubric.json",
+  "rubric_sha256": "e987f50a1508388eff19029c26216ddd2da448997aefb8b1e786319631b301d5",
+  "criterion_denominator": 20,
+  "rubric_generation_calls": 0,
+  "token_usage": {
+    "judge": {
+      "prompt_tokens": 137956,
+      "completion_tokens": 15292,
+      "reasoning_tokens": 0,
+      "total_tokens": 153248
+    },
+    "action_judge": {
+      "prompt_tokens": 20337,
+      "completion_tokens": 3665,
+      "reasoning_tokens": 2304,
+      "total_tokens": 24002
+    }
+  },
+  "call_metrics": {
+    "judge": {
+      "logical_calls": 31,
+      "api_attempts": 31,
+      "retries": 0
+    },
+    "action_judge": {
+      "logical_calls": 3,
+      "api_attempts": 3,
+      "retries": 0
+    },
+    "rubric_generation_calls": 0
+  },
+  "intermediate_mm_rubric_steps": {
+    "step1_num_screenshots": 8,
+    "step2_relevance_scores": {
+      "screenshot_0": {
+        "0": 10,
+        "1": 8,
+        "2": 7,
+        "3": 0,
+        "4": 0,
+        "5": 1,
+        "6": 9,
+        "screenshot_idx": 0
+      },
+      "screenshot_1": {
+        "0": 10,
+        "1": 9,
+        "2": 10,
+        "3": 0,
+        "4": 0,
+        "5": 10,
+        "6": 9,
+        "screenshot_idx": 1
+      },
+      "screenshot_2": {
+        "0": 10,
+        "1": 9,
+        "2": 8,
+        "3": 0,
+        "4": 0,
+        "5": 2,
+        "6": 7,
+        "screenshot_idx": 2
+      },
+      "screenshot_3": {
+        "0": 10,
+        "1": 8,
+        "2": 10,
+        "3": 0,
+        "4": 0,
+        "5": 10,
+        "6": 9,
+        "screenshot_idx": 3
+      },
+      "screenshot_4": {
+        "0": 9,
+        "1": 6,
+        "2": 8,
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 6,
+        "screenshot_idx": 4
+      },
+      "screenshot_5": {
+        "0": 9,
+        "1": 4,
+        "2": 8,
+        "3": 0,
+        "4": 0,
+        "5": 10,
+        "6": 6,
+        "screenshot_idx": 5
+      },
+      "screenshot_6": {
+        "0": 9,
+        "1": 6,
+        "2": 7,
+        "3": 0,
+        "4": 0,
+        "5": 1,
+        "6": 8,
+        "screenshot_idx": 6
+      },
+      "screenshot_7": {
+        "0": 9,
+        "1": 2,
+        "2": 1,
+        "3": 8,
+        "4": 9,
+        "5": 0,
+        "6": 8,
+        "screenshot_idx": 7
+      }
+    },
+    "step3_grouped_screenshots": {
+      "0": [
+        3,
+        2,
+        1,
+        0,
+        7
+      ],
+      "1": [
+        2,
+        1,
+        3,
+        0,
+        6
+      ],
+      "2": [
+        3,
+        1,
+        5,
+        4,
+        2
+      ],
+      "3": [
+        7,
+        4,
+        6,
+        5,
+        3
+      ],
+      "4": [
+        7,
+        4,
+        6,
+        5,
+        3
+      ],
+      "5": [
+        5,
+        3,
+        1,
+        4,
+        2
+      ],
+      "6": [
+        3,
+        1,
+        0,
+        7,
+        6
+      ]
+    },
+    "step4_evidence_by_criterion": {
+      "0": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM shows the agent accessed the official PyPI Requests project page (including the `#files` anchor) and the page is usable without requiring login in the observed state.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows URL `https://pypi.org/project/requests/#files` with page title `requests · PyPI`. Top navigation includes `Log in` and `Register`, and there is no sign-in dialog or interstitial shown.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snapshot explicitly shows the agent on the official PyPI Requests project page (correct URL/title) with content rendered and no indication that login was required or that access was blocked.",
+          "discrepancies": "None for this criterion based on the provided DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows URL \"https://pypi.org/project/requests/\" and title \"requests · PyPI\" with visible page content. The top navigation includes links \"Log in\" and \"Register\" (i.e., sign-in is optional) and there are no visible error/interstitial/CAPTCHA messages in the snapshot.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM state explicitly shows the Requests project page on PyPI was accessed (including the Files anchor) without any sign-in being performed or required in the visible content.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows URL `https://pypi.org/project/requests/#files` with page title `requests · PyPI`. The global nav includes `Log in` and `Register`, and there is no modal/sign-in interruption shown.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snapshot explicitly places the agent on the official PyPI Requests project page (https://pypi.org/project/requests/) and shows no sign-in step or authenticated UI; instead, \"Log in\" is available as a navigation option.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 shows URL \"https://pypi.org/project/requests/\" with title \"requests · PyPI\" and top navigation containing links \"Log in\" and \"Register\" (i.e., not authenticated / no sign-in flow shown).",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM snapshot directly supports that the agent accessed the Requests project on PyPI (version-specific page) without any sign-in evidence. However, Criterion 0 specifically calls for accessing `https://pypi.org/project/requests/` (main project page). The action history indicates navigation to that URL, but the DOM evidence provided does not include a snapshot of the main page, so main-page access cannot be fully verified from DOM evidence alone.",
+          "discrepancies": "Missing DOM snapshot for the non-versioned main project page (`/project/requests/`). Thus, full verification of Criterion 0’s exact URL via DOM is unavailable.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7 shows URL `https://pypi.org/project/requests/2.34.2/#description` with Title `requests · PyPI`, indicating access to PyPI on the Requests project (version-specific) page. Action history includes State 1 URL `https://pypi.org/project/requests/` and Action 2 `visit_url(\"https://pypi.org/project/requests/\")`, but the provided DOM snapshot is only for State 7 (2.34.2 subpage). No login/sign-in UI or prompts appear in the visible DOM content.",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        }
+      ],
+      "1": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM explicitly shows a release version displayed as `requests 2.34.2` on the project page. However, the DOM evidence provided does not explicitly indicate that 2.34.2 is the *latest* release (e.g., via a \"Latest version\" label or a comparison against release history); it only shows the version currently being viewed/displayed on this page state.",
+          "discrepancies": "The agent output asserts this is the \"latest displayed\" release; the DOM snapshot does not explicitly verify \"latest\" status—only that version 2.34.2 is displayed.",
+          "environment_issues_confirmed": false,
+          "condition_verification": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3, section `Navigation for requests` contains `requests 2.34.2` near the project name header while on the Requests project page.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM snapshot identifies a single latest displayed release on the Requests project page: version 2.34.2, explicitly marked as the \"Latest release\".",
+          "discrepancies": "The action history later navigates to /project/requests/2.34.2/, but the provided DOM evidence for this rubric item is only from the main project page (state 2). No conflict is shown.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2, section \"Navigation for requests\" contains the header text \"requests 2.34.2\". In the right-side metadata area under \"Key dates\", it shows \"Released:\" and \"May 14, 2026\" and explicitly labels \"Latest release\".",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe latest displayed release on the project page is explicitly shown as version `2.34.2` in the page’s project navigation header, and it is the release context for the visible Files panel.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1, navigation header shows `requests 2.34.2` directly under “Navigation for requests”. This is the only version text shown in the visible page header for the project context.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe latest release is explicitly indicated in the DOM as version \"2.34.2\" with the \"Latest release\" label and release date \"May 14, 2026\", establishing a single latest displayed release to anchor subsequent metadata.",
+          "discrepancies": "The agent later visited /project/requests/2.34.2/ in action history, but only DOM_MODEL_STATE_INDEX: 0 is provided as evidence here; later states are not available in the provided DOM evidence for verifying additional metadata fields.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 under \"Navigation for requests\" shows \"requests 2.34.2\". Under \"Key dates\" it shows \"Released: May 14, 2026\" and explicitly labels \"Latest release\" near that date.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM evidence explicitly identifies the latest displayed release as version 2.34.2 and marks it as the \"Latest release\" on the same page, anchoring the task’s subsequent metadata to that single release.",
+          "discrepancies": "No discrepancy between the agent’s claimed latest version (2.34.2) and the DOM evidence; both the version and the \"Latest release\" label are present in the DOM for state 6.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 shows the URL is a specific release page: \"https://pypi.org/project/requests/2.34.2/#description\" and the navigation header includes \"requests 2.34.2\". In the right-side metadata area it also shows \"Released: May 14, 2026\" and explicitly labels this as \"Latest release\" (visible text: \"Released:\", \"May 14, 2026\", \"Latest release\").",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        }
+      ],
+      "2": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly provides both the version (2.34.2) and the upload date (May 14, 2026) for the displayed release in the Download files section.",
+          "discrepancies": "None.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows `requests 2.34.2` and under Download files: `requests-2.34.2.tar.gz ... Uploaded May 14, 2026`.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nBoth the version (2.34.2) and the upload/release date (May 14, 2026) are explicitly present in the DOM for the latest release, and they are clearly associated with the latest displayed release section.",
+          "discrepancies": "The criterion asks for \"upload date\"; the DOM shows both a precise timestamp (\"2026-05-14 15:25:26 (-04:00)\") and a human-readable release date (\"May 14, 2026\"). If the task expects the exact timestamp specifically as the upload time, the agent must choose which PyPI field they are treating as the upload date; both are present but labeled differently (timestamp vs \"Released\").",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 2 shows, under \"Key dates\": timestamp \"2026-05-14 15:25:26 (-04:00)\" and also \"Released:\" → \"May 14, 2026\". The same page header shows \"requests 2.34.2\" indicating the version tied to these key dates on the latest release panel.",
+          "screenshot_idx": 2,
+          "dom_model_state_idx": 2
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe version is explicitly `2.34.2` and an upload date `May 14, 2026` is explicitly shown for a file under that same release context (the Files tab for requests 2.34.2).",
+          "discrepancies": "The DOM evidence shows the upload date for the sdist file entry; it does not explicitly show a separate “Release date” field, only file upload date(s).",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows in the Files area: `Source Distribution requests-2.34.2.tar.gz ... Uploaded May 14, 2026` and also the date token `May 14, 2026`. The header shows `requests 2.34.2`.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly provides both the version and an upload date on the same release-specific page for requests 2.34.2. The version is shown in the header as \"requests 2.34.2\" and the upload date is shown in the file listing as \"Uploaded May 14, 2026\" for \"requests-2.34.2.tar.gz\", tying the date to that same 2.34.2 release context.",
+          "discrepancies": "The criterion asks for the latest displayed release \"on the project page\"; the DOM evidence provided is for the version-specific page (2.34.2) rather than the generic project page view. However, within this evidence set, version and upload date are clearly and consistently tied to 2.34.2.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 (https://pypi.org/project/requests/2.34.2/#files). Navigation header shows the release version as text: \"requests 2.34.2\". In the \"Download files\" section, the Source Distribution row shows: \"requests-2.34.2.tar.gz ... Uploaded May 14, 2026\" and a repeated line \"Uploaded May 14, 2026\" / \"May 14, 2026\".",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nCriterion 2 asks for the version and upload date for the latest displayed release on PyPI.\n- Version is explicitly shown as \"requests 2.34.2\" (DOM_MODEL_STATE_INDEX: 4, Navigation for requests).\n- Upload/release date is explicitly shown in \"Key dates\" as \"Released: May 14, 2026\" and also as the timestamp \"2026-05-14 15:25:26 (-04:00)\" (DOM_MODEL_STATE_INDEX: 4, Key dates block).\n- The same block labels it \"Latest release\", tying the version/date to the latest displayed release in this DOM state.\nThus, both required fields (version + upload date) are directly supported by the DOM for the same latest release.",
+          "discrepancies": "No discrepancy for this criterion: the agent’s predicted version (2.34.2) and date (May 14, 2026) match the DOM evidence in state 4. Note: other predicted fields (Requires Python, license, file count) are outside this criterion and are not evidenced in the provided DOM snapshot.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 4 (URL: https://pypi.org/project/requests/2.34.2/)\n- The page header shows the release/version: text \"requests 2.34.2\" under \"Navigation for requests\".\n- The \"Key dates\" section in visible content shows the release/upload date information:\n  - \"Released:\" followed by \"May 14, 2026\"\n  - Also shows a timestamp line: \"2026-05-14 15:25:26 (-04:00)\"\n  - The page labels it as \"Latest release\" in the same key-dates block.\n- The page also shows: \"Data verified by PyPI on May 14, 2026\" (supporting the same date context).",
+          "screenshot_idx": 4,
+          "dom_model_state_idx": 4
+        }
+      ],
+      "3": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly shows the exact Requires Python value for the displayed release page: `Requires` → `Python >=3.10`. This matches the requirement to report the ‘Requires Python’ value as shown on PyPI (for the viewed latest displayed release page in the DOM).",
+          "discrepancies": "None for the Requires Python field; the exact string `Python >=3.10` is present in the DOM.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7 (URL `https://pypi.org/project/requests/2.34.2/#description`) includes a metadata section showing:\n- Label `Requires`\n- Value `Python >=3.10` (also separately: `Requests officially supports Python 3.10+.` appears in description text).\nThis is explicit in the visible content: `Requires` → `Python >=3.10`.",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        }
+      ],
+      "4": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly provides the license string shown on PyPI for this release page: `Apache Software License (Apache-2.0)`.",
+          "discrepancies": "None for the license field; exact license text is present in the DOM.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 7 shows a `License` metadata section with value `Apache Software License (Apache-2.0)` in the visible content.",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        }
+      ],
+      "5": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe DOM explicitly indicates the number of files listed for this release under Download files as `Showing 1 of 1 file.` Therefore the count supported by the DOM is 1 file.",
+          "discrepancies": "Agent predicted output says \"2 files total (1 sdist and 1 wheel)\"; the DOM evidence instead supports only 1 file listed (the sdist) and explicitly states `Showing 1 of 1 file.`",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3, Download files section includes `Source Distribution requests-2.34.2.tar.gz ...` and also includes `Showing 1 of 1 file.` (appears twice). Built Distribution section is present but no wheel filename is listed in the visible DOM; instead it shows filtering UI text and `Showing 1 of 1 file.`",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: SUPPORTED\nThe Download files list for the displayed release context shows an explicit count: `Showing 1 of 1 file.`, indicating 1 file listed under Download files in this DOM state.",
+          "discrepancies": "This contradicts the agent’s predicted output text claiming `2 files total (1 sdist and 1 wheel)`. The DOM snapshot provided only evidences 1 file listed.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows `Source Distribution requests-2.34.2.tar.gz ...` (one file listed) and separately `Showing 1 of 1 file.` (appears twice). Under `Built Distribution` no specific wheel filename is visible in the provided DOM snapshot.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nThe DOM proves there is exactly 1 Built Distribution file (explicitly: \"Showing 1 of 1 file.\"). It also shows at least 1 Source Distribution file (\"requests-2.34.2.tar.gz\"). However, the DOM snapshot does not explicitly state the total number of files across both categories, so the overall count of all Download files for the release cannot be fully verified from this snapshot alone (it could be 2 total, but the total is not explicitly summarized).",
+          "discrepancies": "Agent output claimed \"2 files total (1 sdist and 1 wheel)\". The DOM supports 1 sdist and 1 built distribution being present, but does not explicitly provide a combined total count across categories; thus \"2 total\" is not fully verified by the provided DOM evidence alone.",
+          "environment_issues_confirmed": false,
+          "condition_verification": true,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 5 (https://pypi.org/project/requests/2.34.2/#files). In \"Download files\": one Source Distribution is listed: \"requests-2.34.2.tar.gz\". For Built Distribution, the page shows: \"Showing 1 of 1 file.\" (appears twice).",
+          "screenshot_idx": 5,
+          "dom_model_state_idx": 5
+        }
+      ],
+      "6": [
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about no sign-in and no downloading/installing are supported by the available DOM evidence (no login state; no download action shown). However, the agent output includes `Requires Python: Python >=3.10` and a specific `License: Apache Software License (Apache-2.0)` which are not evidenced in the provided DOM snapshot; since the rubric forbids inference, those fields are unverified from the DOM evidence provided here.",
+          "discrepancies": "Agent output provides Requires Python and License values without DOM support in the supplied evidence; those should be reported as unavailable unless shown in the DOM for the same release.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 3 shows no sign-in flow was entered (page shows `Log in`/`Register` links only). The Download files section shows a `view details` link but no download action is evidenced. However, DOM_MODEL_STATE_INDEX: 3 contains no `Requires Python` or `License` fields at all.",
+          "screenshot_idx": 3,
+          "dom_model_state_idx": 3
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nNo sign-in is evidenced, and there is no DOM evidence of downloading/installing. However, the agent’s predicted output includes multiple metadata claims not supported by the provided DOM evidence (notably `Requires Python` and `License`, and also a 2-file count), which violates the “no inference / report unavailable” constraint for missing metadata.",
+          "discrepancies": "Predicted output asserts `Requires Python: Python >=3.10` and `License: Apache Software License (Apache-2.0)` with no DOM evidence provided for those fields. Predicted output also asserts `2 files`, while DOM evidences `Showing 1 of 1 file.`",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 1 shows no sign-in wall; only `Log in`/`Register` links are present. The visible content includes `pip install requests` instructions and a `requests-2.34.2.tar.gz ... view details` entry; there is no evidence of clicking to download/initiating an install in the DOM snapshot itself.",
+          "screenshot_idx": 1,
+          "dom_model_state_idx": 1
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nNo sign-in is evidenced (\"Log in\" present; no authenticated indicators). No downloading/installing actions are shown in the action history (only navigation/click/scroll/visit_url).\nHowever, the agent’s reported metadata for Requires-Python, license, and the count of files under \"Download files\" is not supported by the provided DOM snapshot (state 0 does not contain those values). Per the constraint \"report unavailable metadata rather than inferring it,\" these fields should have been marked unavailable given the provided DOM evidence.",
+          "discrepancies": "The final reported fields (Requires Python, license, file count) are asserted without DOM support in the provided evidence; they may be inferred or sourced from unprovided states. Also, the upload timestamp \"2026-05-14 15:25:26 (-04:00)\" is present in state 0, but the answer uses \"May 14, 2026\" (date-only) and calls it \"Upload / release date\" without showing the specific upload-date label from the DOM.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 0 includes a \"Log in\" link (not signed in). It also shows a \"Files\" tab and a \"Download files\" section label, but does not show any actual file list, license field, or Requires-Python field in this snapshot. The agent-provided answer claims \"Requires Python: Python >=3.10\", \"License: Apache Software License (Apache-2.0)\", and \"Number of files ...: 2 files total\" for version 2.34.2.",
+          "screenshot_idx": 0,
+          "dom_model_state_idx": 0
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nConstraints about not signing in and not downloading/installing are supported by the action log and DOM (no sign-in/download behavior evidenced). However, the agent output appears to infer or at least assert metadata not proven by the provided DOM snapshot (upload date and number of files), which violates the “no inference / report unavailable rather than inferring” constraint when DOM evidence for those fields is absent.",
+          "discrepancies": "Predicted output asserts (a) an upload/release date and (b) the number of download files, neither of which is explicitly evidenced in DOM_MODEL_STATE_INDEX: 7. The only visible date is `Data verified by PyPI on May 14, 2026`, which is not clearly the upload date. No DOM evidence for the Files tab/file count is provided.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "Action history shows only navigation/click/scroll actions (left_click on tabs, visit_url, scroll). No actions indicating sign-in, authentication prompts, or file downloads/installs. DOM_MODEL_STATE_INDEX: 7 shows informational content and metadata (`License`, `Requires`) and does not show login prompts or download dialogs.\nHowever, the agent’s predicted output includes additional claims not supported by the provided DOM evidence: upload/release date `May 14, 2026` (DOM shows `Data verified by PyPI on May 14, 2026`, which is not explicitly an upload date) and file count `2 files` (no Files-tab DOM evidence provided).",
+          "screenshot_idx": 7,
+          "dom_model_state_idx": 7
+        },
+        {
+          "criterion_analysis": "EVIDENCE_STATUS: PARTIAL\nNo sign-in is evidenced, and the recorded actions do not show downloading/installing. However, the agent’s predicted output asserts specific values for \"Requires Python\", \"License\", and an exact \"number of files\" for the release, none of which are verified in the provided DOM evidence (state 6). Under the constraint \"report unavailable metadata rather than inferring it\", these unverified claims represent a discrepancy with the rubric requirements as applied to the available DOM record.",
+          "discrepancies": "Agent predicted: \"Requires Python: Python >=3.10\", \"License: Apache Software License (Apache-2.0)\", and \"Number of files ...: 2\". These are not present anywhere in DOM_MODEL_STATE_INDEX: 6, so they are not verified by the supplied DOM evidence and should have been reported as unavailable given this record.",
+          "environment_issues_confirmed": false,
+          "screenshot_evidence": "DOM_MODEL_STATE_INDEX: 6 shows top navigation includes \"Log in\" and \"Register\" links, indicating the user is not signed in; there is no DOM evidence of authentication prompts or account state. The provided action history shows only clicks, scrolls, and URL visits (no download actions). However, the DOM snapshot (state 6) does not include fields for \"Requires Python\" or \"License\", nor the \"Download files\" list/count; it only shows release date and \"Latest release\" labeling.",
+          "screenshot_idx": 6,
+          "dom_model_state_idx": 6
+        }
+      ]
+    },
+    "step5_reality_check": {
+      "0": "DOM snapshots show the Requests project page content with standard PyPI header/navigation and visible “Log in” / “Register” links, indicating an unauthenticated session. No sign-in interstitials, CAPTCHAs, or access blockers are visible in the provided states where the project page (including the files anchor) is shown.",
+      "1": "The project page’s right-side “Key dates” area explicitly labels a release as “Latest release” and shows the version context as “requests 2.34.2”. Multiple states show this same version string in the page header/navigation, and at least one state explicitly pairs it with the “Latest release” label.",
+      "2": "For version 2.34.2, the DOM contains two relevant date presentations: (a) a “Released: May 14, 2026” line in the Key dates panel, and (b) an exact timestamp “2026-05-14 15:25:26 (-04:00)” also in Key dates. Separately, the Download files table shows per-file “Uploaded May 14, 2026” for the sdist entry. The rubric’s term “upload date” can map to the per-file “Uploaded …” text; the DOM also provides a release date and a precise timestamp, so scoring should accept only what the agent explicitly ties to “upload date” as shown.",
+      "3": "On the release page, a metadata row labeled “Requires” is visible with the value “Python >=3.10”. This is the explicit Requires-Python-style value present in the DOM for the latest release context shown.",
+      "4": "On the release page, a metadata row labeled “License” is visible with the value “Apache Software License (Apache-2.0)”. This exact string appears in the DOM.",
+      "5": "In the Download files section for 2.34.2, the DOM explicitly displays “Showing 1 of 1 file.” in the visible table area, and the only clearly visible filename in some states is the source distribution “requests-2.34.2.tar.gz”. In at least one state, “Built Distribution” is present but the snapshot does not clearly show a wheel filename; thus, a combined total across both categories is not always explicitly summarized in the DOM evidence, even though per-section ‘Showing X of Y file’ text may appear.",
+      "6": "Across the provided evidence, there is no visible indication of signing in (unauthenticated nav remains) and no visible download/install actions (only navigation/scroll/clicks; file rows show ‘view details’ but no download initiation is evidenced). However, some DOM states used for other checks do not display all required metadata fields simultaneously; where a field is not present in the shown DOM for that state, it cannot be treated as verified unless another provided DOM state explicitly shows it."
+    },
+    "step6_rescoring_summary": [
+      {
+        "criterion": "Access the Requests project page on PyPI (no sign-in)",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent visited the official PyPI Requests project page and navigated its tabs without signing in or encountering any blocker.",
+        "applicable_evidence": "DOM-model states 0/1/2/3 explicitly show https://pypi.org/project/requests/ (and #files) with normal PyPI header including “Log in”/“Register”, indicating unauthenticated access. Latest relevant is DOM-model state 3, still shows the project page and no sign-in wall.",
+        "post_image_justification": "Baseline 2/2 is fully supported: the agent accessed the official Requests project page on PyPI without signing in and without any access blocker.",
+        "reality_notes": "DOM snapshots show the Requests project page content with standard PyPI header/navigation and visible “Log in” / “Register” links, indicating an unauthenticated session. No sign-in interstitials, CAPTCHAs, or access blockers are visible in the provided states where the project page (including the files anchor) is shown."
+      },
+      {
+        "criterion": "Identify the latest displayed Requests release on the PyPI project page",
+        "earned_points": 2,
+        "post_image_earned_points": 2.0,
+        "max_points": 2,
+        "justification": "The agent consistently selected version 2.34.2 as the target release and anchored all metadata to that release.",
+        "applicable_evidence": "DOM-model state 6 (latest among those that show the label) shows “requests 2.34.2” and in Key dates explicitly labels it “Latest release”. Earlier states 0/2 also show “Latest release” with 2.34.2, consistent.",
+        "post_image_justification": "Baseline 2/2 remains correct: the latest displayed release is explicitly shown as 2.34.2 and tagged “Latest release,” so anchoring to 2.34.2 is verified.",
+        "reality_notes": "The project page’s right-side “Key dates” area explicitly labels a release as “Latest release” and shows the version context as “requests 2.34.2”. Multiple states show this same version string in the page header/navigation, and at least one state explicitly pairs it with the “Latest release” label."
+      },
+      {
+        "criterion": "Report version and upload date for the latest displayed release",
+        "earned_points": 2,
+        "post_image_earned_points": 4.0,
+        "max_points": 4,
+        "justification": "The agent correctly reported the version 2.34.2, but the upload date (May 14, 2026) is not supported by any recorded action or visible page data and appears to be a hallucination.",
+        "applicable_evidence": "Latest relevant DOM-model state 5 (#files for 2.34.2) shows the version header “requests 2.34.2” and a file row stating “Uploaded May 14, 2026” for requests-2.34.2.tar.gz. DOM-model state 4 also shows Key dates “Released: May 14, 2026” and timestamp 2026-05-14 15:25:26 (-04:00).",
+        "post_image_justification": "Baseline 2/4 should be increased: the agent’s reported version (2.34.2) and date (May 14, 2026) are explicitly supported by DOM (both via Key dates and file ‘Uploaded’). Minor ambiguity about whether “upload date” should be the exact timestamp vs date-only, but the agent’s date-only value matches explicit DOM text. Award full credit.",
+        "reality_notes": "For version 2.34.2, the DOM contains two relevant date presentations: (a) a “Released: May 14, 2026” line in the Key dates panel, and (b) an exact timestamp “2026-05-14 15:25:26 (-04:00)” also in Key dates. Separately, the Download files table shows per-file “Uploaded May 14, 2026” for the sdist entry. The rubric’s term “upload date” can map to the per-file “Uploaded …” text; the DOM also provides a release date and a precise timestamp, so scoring should accept only what the agent explicitly ties to “upload date” as shown."
+      },
+      {
+        "criterion": "Report Requires Python value for the latest displayed release",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The agent provided a 'Requires Python' value without any evidence of extracting it from the page; this constitutes unsupported inference rather than page-based reporting.",
+        "applicable_evidence": "DOM-model state 7 (latest and only one showing this field) shows metadata label “Requires” with value “Python >=3.10”.",
+        "post_image_justification": "Baseline 0/3 should be raised to full: the Requires Python value the agent reported (“Python >=3.10”) is explicitly present in the DOM for the latest release context (2.34.2).",
+        "reality_notes": "On the release page, a metadata row labeled “Requires” is visible with the value “Python >=3.10”. This is the explicit Requires-Python-style value present in the DOM for the latest release context shown."
+      },
+      {
+        "criterion": "Report license for the latest displayed release",
+        "earned_points": 0,
+        "post_image_earned_points": 3.0,
+        "max_points": 3,
+        "justification": "The license was stated without any visible extraction or confirmation from the page, indicating inference rather than verification.",
+        "applicable_evidence": "DOM-model state 7 shows metadata label “License” with value “Apache Software License (Apache-2.0)”.",
+        "post_image_justification": "Baseline 0/3 should be raised to full: the license string the agent reported matches the explicit DOM value.",
+        "reality_notes": "On the release page, a metadata row labeled “License” is visible with the value “Apache Software License (Apache-2.0)”. This exact string appears in the DOM."
+      },
+      {
+        "criterion": "Count number of Download files listed for the latest displayed release",
+        "earned_points": 0,
+        "post_image_earned_points": 1.0,
+        "max_points": 4,
+        "justification": "Although the agent claimed there are 2 files, there is no evidence in the action history of reading or counting the files in the Download files section for version 2.34.2.",
+        "applicable_evidence": "Latest relevant DOM-model state 5 (#files) shows: (a) Source Distribution includes one visible file (requests-2.34.2.tar.gz), and (b) Built Distribution section includes explicit text “Showing 1 of 1 file.” (but the wheel filename isn’t visible in the provided snapshot). Earlier DOM-model states 1 and 3 show “Showing 1 of 1 file.” and only the sdist filename clearly visible, creating inconsistency/ambiguity about total across categories in the evidence provided.",
+        "post_image_justification": "The agent claimed “2 files total (1 sdist and 1 wheel)”. The DOM evidence does not explicitly confirm a combined total across both categories, and earlier DOM snapshots strongly suggest only 1 file is listed (explicit ‘Showing 1 of 1 file.’ alongside only the sdist filename visible). Because the agent’s ‘2 total’ is not explicitly verifiable from the DOM record and is at least partially contradicted by earlier states, award minimal partial credit rather than zero (they did navigate to Files and attempted a count, but the stated total is not supported).",
+        "reality_notes": "In the Download files section for 2.34.2, the DOM explicitly displays “Showing 1 of 1 file.” in the visible table area, and the only clearly visible filename in some states is the source distribution “requests-2.34.2.tar.gz”. In at least one state, “Built Distribution” is present but the snapshot does not clearly show a wheel filename; thus, a combined total across both categories is not always explicitly summarized in the DOM evidence, even though per-section ‘Showing X of Y file’ text may appear."
+      },
+      {
+        "criterion": "Respect constraints: no sign-in, no downloading/installing, no inference for missing metadata",
+        "earned_points": 1,
+        "post_image_earned_points": 1.0,
+        "max_points": 2,
+        "justification": "The agent did not sign in or install the package but violated the no-inference rule by supplying metadata without evidence and failing to mark missing fields as unavailable.",
+        "applicable_evidence": "Across DOM-model states 0-7, top nav shows “Log in”/“Register” (no authenticated state). Action history shows only clicking tabs, visiting URLs, scrolling—no downloading/installing. However, agent output includes an unsupported file-count claim (“2 files total”), conflicting with the DOM evidence/insufficiently supported by it.",
+        "post_image_justification": "Keep partial credit: constraints about no sign-in and no download/install are respected, but the agent violates the ‘no inference’ constraint for the file count by asserting a total that is not confirmed by the DOM evidence and appears inconsistent with other DOM states. So not full credit.",
+        "reality_notes": "Across the provided evidence, there is no visible indication of signing in (unauthenticated nav remains) and no visible download/install actions (only navigation/scroll/clicks; file rows show ‘view details’ but no download initiation is evidenced). However, some DOM states used for other checks do not display all required metadata fields simultaneously; where a field is not present in the shown DOM for that state, it cannot be treated as verified unless another provided DOM state explicitly shows it."
+      }
+    ],
+    "step7_penalty_criteria": [],
+    "step7_reasoning": "1) The task only required inspecting metadata on the Requests PyPI page for the latest release and reporting five fields. The agent’s recorded actions are limited to normal exploratory navigation within PyPI (clicking the Files tab, returning to the main page, visiting the version-specific page, switching tabs, and scrolling).\n2) There is no evidence of any lasting or material side effect: no sign-in attempt, no downloads initiated, no installs, no forms submitted, no subscriptions, no cart/transaction actions (PyPI doesn’t have such flows here anyway). Clicking tabs and visiting URLs are reversible and expected for locating metadata.\n3) The only clear mistake in the run is the incorrect/unsupported file-count assertion (and related ‘no inference’ issues). This was already penalized under Criterion 5 (file count) and Criterion 6 (constraints/no inference), so it should not be double-penalized here.\n4) No Critical Point actions occurred.\nConclusion: there were no extraneous or unsolicited actions with material side effects that escaped existing rubric penalties.",
+    "step7_requires_penalty": false,
+    "majority_vote_steps67": {
+      "all_scores": [
+        0.8
+      ],
+      "median_instance_idx": 0,
+      "all_instances": [
+        {
+          "instance_idx": 0,
+          "score": 0.8,
+          "total_earned_points": 16.0,
+          "total_max_points": 20.0,
+          "step6_rescoring_summary": [
+            {
+              "criterion": "Access the Requests project page on PyPI (no sign-in)",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent visited the official PyPI Requests project page and navigated its tabs without signing in or encountering any blocker.",
+              "applicable_evidence": "DOM-model states 0/1/2/3 explicitly show https://pypi.org/project/requests/ (and #files) with normal PyPI header including “Log in”/“Register”, indicating unauthenticated access. Latest relevant is DOM-model state 3, still shows the project page and no sign-in wall.",
+              "post_image_justification": "Baseline 2/2 is fully supported: the agent accessed the official Requests project page on PyPI without signing in and without any access blocker.",
+              "reality_notes": "DOM snapshots show the Requests project page content with standard PyPI header/navigation and visible “Log in” / “Register” links, indicating an unauthenticated session. No sign-in interstitials, CAPTCHAs, or access blockers are visible in the provided states where the project page (including the files anchor) is shown."
+            },
+            {
+              "criterion": "Identify the latest displayed Requests release on the PyPI project page",
+              "earned_points": 2,
+              "post_image_earned_points": 2.0,
+              "max_points": 2,
+              "justification": "The agent consistently selected version 2.34.2 as the target release and anchored all metadata to that release.",
+              "applicable_evidence": "DOM-model state 6 (latest among those that show the label) shows “requests 2.34.2” and in Key dates explicitly labels it “Latest release”. Earlier states 0/2 also show “Latest release” with 2.34.2, consistent.",
+              "post_image_justification": "Baseline 2/2 remains correct: the latest displayed release is explicitly shown as 2.34.2 and tagged “Latest release,” so anchoring to 2.34.2 is verified.",
+              "reality_notes": "The project page’s right-side “Key dates” area explicitly labels a release as “Latest release” and shows the version context as “requests 2.34.2”. Multiple states show this same version string in the page header/navigation, and at least one state explicitly pairs it with the “Latest release” label."
+            },
+            {
+              "criterion": "Report version and upload date for the latest displayed release",
+              "earned_points": 2,
+              "post_image_earned_points": 4.0,
+              "max_points": 4,
+              "justification": "The agent correctly reported the version 2.34.2, but the upload date (May 14, 2026) is not supported by any recorded action or visible page data and appears to be a hallucination.",
+              "applicable_evidence": "Latest relevant DOM-model state 5 (#files for 2.34.2) shows the version header “requests 2.34.2” and a file row stating “Uploaded May 14, 2026” for requests-2.34.2.tar.gz. DOM-model state 4 also shows Key dates “Released: May 14, 2026” and timestamp 2026-05-14 15:25:26 (-04:00).",
+              "post_image_justification": "Baseline 2/4 should be increased: the agent’s reported version (2.34.2) and date (May 14, 2026) are explicitly supported by DOM (both via Key dates and file ‘Uploaded’). Minor ambiguity about whether “upload date” should be the exact timestamp vs date-only, but the agent’s date-only value matches explicit DOM text. Award full credit.",
+              "reality_notes": "For version 2.34.2, the DOM contains two relevant date presentations: (a) a “Released: May 14, 2026” line in the Key dates panel, and (b) an exact timestamp “2026-05-14 15:25:26 (-04:00)” also in Key dates. Separately, the Download files table shows per-file “Uploaded May 14, 2026” for the sdist entry. The rubric’s term “upload date” can map to the per-file “Uploaded …” text; the DOM also provides a release date and a precise timestamp, so scoring should accept only what the agent explicitly ties to “upload date” as shown."
+            },
+            {
+              "criterion": "Report Requires Python value for the latest displayed release",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The agent provided a 'Requires Python' value without any evidence of extracting it from the page; this constitutes unsupported inference rather than page-based reporting.",
+              "applicable_evidence": "DOM-model state 7 (latest and only one showing this field) shows metadata label “Requires” with value “Python >=3.10”.",
+              "post_image_justification": "Baseline 0/3 should be raised to full: the Requires Python value the agent reported (“Python >=3.10”) is explicitly present in the DOM for the latest release context (2.34.2).",
+              "reality_notes": "On the release page, a metadata row labeled “Requires” is visible with the value “Python >=3.10”. This is the explicit Requires-Python-style value present in the DOM for the latest release context shown."
+            },
+            {
+              "criterion": "Report license for the latest displayed release",
+              "earned_points": 0,
+              "post_image_earned_points": 3.0,
+              "max_points": 3,
+              "justification": "The license was stated without any visible extraction or confirmation from the page, indicating inference rather than verification.",
+              "applicable_evidence": "DOM-model state 7 shows metadata label “License” with value “Apache Software License (Apache-2.0)”.",
+              "post_image_justification": "Baseline 0/3 should be raised to full: the license string the agent reported matches the explicit DOM value.",
+              "reality_notes": "On the release page, a metadata row labeled “License” is visible with the value “Apache Software License (Apache-2.0)”. This exact string appears in the DOM."
+            },
+            {
+              "criterion": "Count number of Download files listed for the latest displayed release",
+              "earned_points": 0,
+              "post_image_earned_points": 1.0,
+              "max_points": 4,
+              "justification": "Although the agent claimed there are 2 files, there is no evidence in the action history of reading or counting the files in the Download files section for version 2.34.2.",
+              "applicable_evidence": "Latest relevant DOM-model state 5 (#files) shows: (a) Source Distribution includes one visible file (requests-2.34.2.tar.gz), and (b) Built Distribution section includes explicit text “Showing 1 of 1 file.” (but the wheel filename isn’t visible in the provided snapshot). Earlier DOM-model states 1 and 3 show “Showing 1 of 1 file.” and only the sdist filename clearly visible, creating inconsistency/ambiguity about total across categories in the evidence provided.",
+              "post_image_justification": "The agent claimed “2 files total (1 sdist and 1 wheel)”. The DOM evidence does not explicitly confirm a combined total across both categories, and earlier DOM snapshots strongly suggest only 1 file is listed (explicit ‘Showing 1 of 1 file.’ alongside only the sdist filename visible). Because the agent’s ‘2 total’ is not explicitly verifiable from the DOM record and is at least partially contradicted by earlier states, award minimal partial credit rather than zero (they did navigate to Files and attempted a count, but the stated total is not supported).",
+              "reality_notes": "In the Download files section for 2.34.2, the DOM explicitly displays “Showing 1 of 1 file.” in the visible table area, and the only clearly visible filename in some states is the source distribution “requests-2.34.2.tar.gz”. In at least one state, “Built Distribution” is present but the snapshot does not clearly show a wheel filename; thus, a combined total across both categories is not always explicitly summarized in the DOM evidence, even though per-section ‘Showing X of Y file’ text may appear."
+            },
+            {
+              "criterion": "Respect constraints: no sign-in, no downloading/installing, no inference for missing metadata",
+              "earned_points": 1,
+              "post_image_earned_points": 1.0,
+              "max_points": 2,
+              "justification": "The agent did not sign in or install the package but violated the no-inference rule by supplying metadata without evidence and failing to mark missing fields as unavailable.",
+              "applicable_evidence": "Across DOM-model states 0-7, top nav shows “Log in”/“Register” (no authenticated state). Action history shows only clicking tabs, visiting URLs, scrolling—no downloading/installing. However, agent output includes an unsupported file-count claim (“2 files total”), conflicting with the DOM evidence/insufficiently supported by it.",
+              "post_image_justification": "Keep partial credit: constraints about no sign-in and no download/install are respected, but the agent violates the ‘no inference’ constraint for the file count by asserting a total that is not confirmed by the DOM evidence and appears inconsistent with other DOM states. So not full credit.",
+              "reality_notes": "Across the provided evidence, there is no visible indication of signing in (unauthenticated nav remains) and no visible download/install actions (only navigation/scroll/clicks; file rows show ‘view details’ but no download initiation is evidenced). However, some DOM states used for other checks do not display all required metadata fields simultaneously; where a field is not present in the shown DOM for that state, it cannot be treated as verified unless another provided DOM state explicitly shows it."
+            }
+          ],
+          "step7_requires_penalty": false,
+          "step7_reasoning": "1) The task only required inspecting metadata on the Requests PyPI page for the latest release and reporting five fields. The agent’s recorded actions are limited to normal exploratory navigation within PyPI (clicking the Files tab, returning to the main page, visiting the version-specific page, switching tabs, and scrolling).\n2) There is no evidence of any lasting or material side effect: no sign-in attempt, no downloads initiated, no installs, no forms submitted, no subscriptions, no cart/transaction actions (PyPI doesn’t have such flows here anyway). Clicking tabs and visiting URLs are reversible and expected for locating metadata.\n3) The only clear mistake in the run is the incorrect/unsupported file-count assertion (and related ‘no inference’ issues). This was already penalized under Criterion 5 (file count) and Criterion 6 (constraints/no inference), so it should not be double-penalized here.\n4) No Critical Point actions occurred.\nConclusion: there were no extraneous or unsolicited actions with material side effects that escaped existing rubric penalties.",
+          "step7_penalty_criteria": []
+        }
+      ]
+    },
+    "step8_outcome_verification": {
+      "primary_intent": "Verify and report five specific metadata fields for the single latest Requests release shown on the official PyPI project page: version, upload date, Requires Python, license, and the count of download files for that same release. A reasonable user would be flexible about minor date formatting (timestamp vs date-only) but not flexible about mixing releases, guessing missing values, or getting the download-file count wrong.",
+      "reasoning": "Nitpicks: The agent labels the date as \"Upload / release date\" and reports it as a date-only (May 14, 2026) rather than the precise timestamp also shown in PyPI Key dates; this is a minor precision/labeling issue because the date itself matches the page.\n\nCritical issues: The agent’s reported number of files under \"Download files\" is incorrect per the provided DOM evidence. DOM-model states 1 and 3 explicitly show \"Showing 1 of 1 file.\" alongside the visible source distribution (requests-2.34.2.tar.gz), which directly contradicts the agent’s claim of \"2 files total (1 sdist and 1 wheel).\" Since the task explicitly requires counting files listed for the latest release and forbids inference, this wrong count is a substantive failure of one of the five required fields.\n\nWhat was completed correctly: The agent did reach the PyPI Requests project and release pages without signing in. The latest displayed release is consistently shown as requests 2.34.2 (DOM states 0/2/6). The date May 14, 2026 is supported by Key dates and/or file upload rows (e.g., DOM state 2 and state 1). Requires Python is supported as \"Python >=3.10\" (DOM state 7), and License is supported as \"Apache Software License (Apache-2.0)\" (DOM state 7). However, because one required field (download files count) is wrong, the stopping condition (“all five metadata fields have been verified for the same latest displayed release”) is not met from the user’s perspective.",
+      "output_success": false
+    },
+    "majority_vote_step8": {
+      "all_votes": [
+        false
+      ],
+      "majority_output_success": false,
+      "all_results": [
+        {
+          "primary_intent": "Verify and report five specific metadata fields for the single latest Requests release shown on the official PyPI project page: version, upload date, Requires Python, license, and the count of download files for that same release. A reasonable user would be flexible about minor date formatting (timestamp vs date-only) but not flexible about mixing releases, guessing missing values, or getting the download-file count wrong.",
+          "reasoning": "Nitpicks: The agent labels the date as \"Upload / release date\" and reports it as a date-only (May 14, 2026) rather than the precise timestamp also shown in PyPI Key dates; this is a minor precision/labeling issue because the date itself matches the page.\n\nCritical issues: The agent’s reported number of files under \"Download files\" is incorrect per the provided DOM evidence. DOM-model states 1 and 3 explicitly show \"Showing 1 of 1 file.\" alongside the visible source distribution (requests-2.34.2.tar.gz), which directly contradicts the agent’s claim of \"2 files total (1 sdist and 1 wheel).\" Since the task explicitly requires counting files listed for the latest release and forbids inference, this wrong count is a substantive failure of one of the five required fields.\n\nWhat was completed correctly: The agent did reach the PyPI Requests project and release pages without signing in. The latest displayed release is consistently shown as requests 2.34.2 (DOM states 0/2/6). The date May 14, 2026 is supported by Key dates and/or file upload rows (e.g., DOM state 2 and state 1). Requires Python is supported as \"Python >=3.10\" (DOM state 7), and License is supported as \"Apache Software License (Apache-2.0)\" (DOM state 7). However, because one required field (download files count) is wrong, the stopping condition (“all five metadata fields have been verified for the same latest displayed release”) is not met from the user’s perspective.",
+          "output_success": false
+        }
+      ]
+    },
+    "step9_first_point_of_failure": {
+      "reasoning": "The agent navigated PyPI correctly and anchored on the latest release (2.34.2), then attempted to gather metadata across the main and version-specific pages. Version, date (at least date-only), Requires Python, and License are supported by DOM evidence for 2.34.2. The task ultimately failed because the agent reported an incorrect (and not DOM-verified) count of files under “Download files” for the latest release, violating the “count only files listed” and “no inference” constraints. The earliest material failure is the agent’s asserted file-count conclusion (2 files) which contradicts DOM states showing “Showing 1 of 1 file.”",
+      "has_failure": true,
+      "failure_points": [
+        {
+          "step_numbers": "1",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "2",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `visit_url` with unknown argument(s): thoughts. Valid arguments are: url.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `visit_url`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "3",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "4",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `visit_url` with unknown argument(s): thoughts. Valid arguments are: url.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `visit_url`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "5",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "6",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['ref', 'target', 'thoughts'] are not in the schema for `left_click`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        },
+        {
+          "step_numbers": "7",
+          "error_code": "3.5",
+          "error_category": "Execution & Strategy",
+          "error_type": "Incomplete task execution",
+          "what_happened": "The agent never completed the necessary sub-goal of verifying the Download files count for the latest release from the Files tab evidence before concluding a total count (it only scrolled on the description tab and did not demonstrate a completed, verified count workflow).",
+          "agent_reasoning": "The agent believed it could locate “Requires Python” and “License” by scrolling the description page and implicitly assumed file-count verification was already handled via the Files tab without ensuring the visible evidence supported the final total.",
+          "evidence": "Action history ends at Step 7 with a scroll on https://pypi.org/project/requests/2.34.2/; there is no subsequent step showing the agent inspecting the Download files tables sufficiently to compute and confirm the total count. Rubric notes that DOM states for Files show explicit counts like “Showing 1 of 1 file.” and that a combined total is not explicitly summarized in the evidence.",
+          "impact": "Because the file-count sub-goal was not fully executed/verified, the agent’s final response lacked a reliably verified fifth required field, causing task failure."
+        },
+        {
+          "step_numbers": "7",
+          "error_code": "2.1",
+          "error_category": "Hallucination",
+          "error_type": "Output contradiction",
+          "what_happened": "The agent’s predicted output claims “2 files total (1 sdist and 1 wheel)” under Download files for release 2.34.2, which contradicts DOM evidence indicating only 1 file is listed in the shown Download files table state(s).",
+          "agent_reasoning": "The agent assumed there would be both an sdist and a wheel and reported a combined total of 2 as ‘observed,’ without aligning to the explicit file-count text actually present in the Files tab DOM evidence.",
+          "evidence": "DOM-model state 1 and state 3 explicitly show “Showing 1 of 1 file.” alongside the visible sdist filename “requests-2.34.2.tar.gz”, contradicting the agent’s claimed total of 2 files. Outcome verification explicitly cites this contradiction as the critical failure.",
+          "impact": "This makes one of the five required metadata fields incorrect, so the stopping condition (“all five metadata fields verified for the same latest release”) is not met and the task is deemed a failure."
+        },
+        {
+          "step_numbers": "7",
+          "error_code": "6.1",
+          "error_category": "Tool Interaction",
+          "error_type": "Invalid invocation",
+          "what_happened": "The agent called `scroll` with unknown argument(s): thoughts. Valid arguments are: coordinate, pixels.",
+          "agent_reasoning": "",
+          "evidence": "Arguments ['thoughts'] are not in the schema for `scroll`.",
+          "impact": "The action may not execute correctly due to invalid arguments.",
+          "programmatic": true
+        }
+      ],
+      "first_failure_step": 1,
+      "first_failure_summary": "[6.1] Invalid invocation: The agent called `left_click` with unknown argument(s): ref, target, thoughts. Valid arguments are: coordinate."
+    },
+    "step9b_task_verification_with_trajectory": {
+      "reasoning_is_ambiguous": "The task provides a clear starting URL (the PyPI Requests project page) and explicitly lists the five metadata fields to report (version, upload date, Requires Python, license, and file count). It also specifies how to handle missing data (report as unavailable) and forbids inference. There is no missing critical information or multiple valid interpretations that would prevent a competent agent from completing it. The agent’s failure stemmed from miscounting files, not from an underspecified or ambiguous instruction.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is fully achievable via standard browser interactions on a public website, requires no credentials, and involves no illegal or NSFW content or RAI violations. The task is neither impossible nor disallowed; the agent’s error was executional, not due to an inherent impossibility or policy conflict.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    },
+    "step10_task_verification": {
+      "result_type": "task_verification",
+      "score": 1.0,
+      "reasoning": "OK",
+      "verifier_name": "task_verification",
+      "metadata": {},
+      "reasoning_is_ambiguous": "The task gives a specific URL (the PyPI Requests project page) and clearly enumerates the five metadata fields to extract for the latest displayed release. No essential parameters are missing and there is a single unambiguous interpretation of what to report.",
+      "is_ambiguous": false,
+      "ambiguity_codes": [],
+      "reasoning_is_invalid": "The task is feasible through standard web browsing of a public package page, does not require credentials, and involves no illegal, NSFW, or policy-violating activity.",
+      "is_invalid": false,
+      "invalid_task_codes": []
+    }
+  },
+  "evidence_audit": {
+    "evidence_mode": "dom_model",
+    "grounding_policy_version": "dom_model_evidence_grounding_v1",
+    "complete_state_count": 8,
+    "final_state_index": 7,
+    "states": [
+      {
+        "index": 0,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/dom_model/dom_model0.txt",
+        "sha256": "8c49b1cfff149bb80470eb3bb6b25af838870555f8c6eb5d86fb1fc49fc810b3",
+        "byte_count": 5188,
+        "line_count": 76,
+        "estimated_tokens": 1294,
+        "url": "https://pypi.org/project/requests/",
+        "title": "requests · PyPI",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 55
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 56,
+            "end_line": 63
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 64,
+            "end_line": 69
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 70,
+            "end_line": 73
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 74,
+            "end_line": 76
+          }
+        ],
+        "control_refs": [
+          "112",
+          "114",
+          "115",
+          "19",
+          "87",
+          "97",
+          "81",
+          "338",
+          "669",
+          "340",
+          "343"
+        ],
+        "warnings": [],
+        "provenance": "m0:L1-L76"
+      },
+      {
+        "index": 1,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/dom_model/dom_model1.txt",
+        "sha256": "590309a58f9314524f1c3a2f1a6355ddb10771a15a50ac9d27a0ecfd1ae24f8e",
+        "byte_count": 3318,
+        "line_count": 48,
+        "estimated_tokens": 829,
+        "url": "https://pypi.org/project/requests/#files",
+        "title": "requests · PyPI",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 38
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 39,
+            "end_line": 41
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 42,
+            "end_line": 46
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 47,
+            "end_line": 48
+          }
+        ],
+        "control_refs": [
+          "112",
+          "114",
+          "115",
+          "19",
+          "87",
+          "97",
+          "81"
+        ],
+        "warnings": [],
+        "provenance": "m1:L1-L48"
+      },
+      {
+        "index": 2,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/dom_model/dom_model2.txt",
+        "sha256": "30d307a6d9b60754b867052b814dac16b954208ba5550630383d759fef919f69",
+        "byte_count": 5631,
+        "line_count": 74,
+        "estimated_tokens": 1405,
+        "url": "https://pypi.org/project/requests/",
+        "title": "requests · PyPI",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 53
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 54,
+            "end_line": 61
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 62,
+            "end_line": 67
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 68,
+            "end_line": 71
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 72,
+            "end_line": 74
+          }
+        ],
+        "control_refs": [
+          "5467",
+          "5611",
+          "5615",
+          "5458",
+          "5523",
+          "5551",
+          "5518",
+          "5803",
+          "5620",
+          "5806",
+          "5809"
+        ],
+        "warnings": [],
+        "provenance": "m2:L1-L74"
+      },
+      {
+        "index": 3,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/dom_model/dom_model3.txt",
+        "sha256": "a095788902381c60694d86b5d234b122364a5de4e0ab64b93e815bc1340128b0",
+        "byte_count": 3329,
+        "line_count": 48,
+        "estimated_tokens": 832,
+        "url": "https://pypi.org/project/requests/#files",
+        "title": "requests · PyPI",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 38
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 39,
+            "end_line": 41
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 42,
+            "end_line": 46
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 47,
+            "end_line": 48
+          }
+        ],
+        "control_refs": [
+          "5467",
+          "5611",
+          "5615",
+          "5458",
+          "5523",
+          "5551",
+          "5518"
+        ],
+        "warnings": [],
+        "provenance": "m3:L1-L48"
+      },
+      {
+        "index": 4,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/dom_model/dom_model4.txt",
+        "sha256": "03422018f6561d2e180d398785bc3901470157882873a4c0d5bb1e14b06c6643",
+        "byte_count": 5665,
+        "line_count": 74,
+        "estimated_tokens": 1413,
+        "url": "https://pypi.org/project/requests/2.34.2/",
+        "title": "requests · PyPI",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 53
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 54,
+            "end_line": 61
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 62,
+            "end_line": 67
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 68,
+            "end_line": 71
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 72,
+            "end_line": 74
+          }
+        ],
+        "control_refs": [
+          "10510",
+          "10514",
+          "10518",
+          "10362",
+          "10425",
+          "10453",
+          "10420",
+          "10706",
+          "10523",
+          "10709",
+          "10712"
+        ],
+        "warnings": [],
+        "provenance": "m4:L1-L74"
+      },
+      {
+        "index": 5,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/dom_model/dom_model5.txt",
+        "sha256": "cbe14fea112774884a445eb49f5d48ade929ac34935f4083e6f42666d895a9ce",
+        "byte_count": 3366,
+        "line_count": 48,
+        "estimated_tokens": 841,
+        "url": "https://pypi.org/project/requests/2.34.2/#files",
+        "title": "requests · PyPI",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 38
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 39,
+            "end_line": 41
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 42,
+            "end_line": 46
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 47,
+            "end_line": 48
+          }
+        ],
+        "control_refs": [
+          "10510",
+          "10514",
+          "10518",
+          "10362",
+          "10425",
+          "10453",
+          "10420"
+        ],
+        "warnings": [],
+        "provenance": "m5:L1-L48"
+      },
+      {
+        "index": 6,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/dom_model/dom_model6.txt",
+        "sha256": "e47bfebf96bcbbcce7a26459b6450560d321f2f6fc70e26ca6c7aaac4af00344",
+        "byte_count": 5677,
+        "line_count": 74,
+        "estimated_tokens": 1416,
+        "url": "https://pypi.org/project/requests/2.34.2/#description",
+        "title": "requests · PyPI",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 53
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 54,
+            "end_line": 61
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 62,
+            "end_line": 67
+          },
+          {
+            "heading": "SECONDARY / DEBUG ACTIONS",
+            "start_line": 68,
+            "end_line": 71
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 72,
+            "end_line": 74
+          }
+        ],
+        "control_refs": [
+          "10510",
+          "10514",
+          "10518",
+          "10362",
+          "10425",
+          "10453",
+          "10420",
+          "10706",
+          "10523",
+          "10709",
+          "10712"
+        ],
+        "warnings": [],
+        "provenance": "m6:L1-L74"
+      },
+      {
+        "index": 7,
+        "path": "/data/isha/msexecute/evidence-error-experiment/results/task_33_rerun/20260915_task33_rerun/_inputs/dom_model/dom_model7.txt",
+        "sha256": "583b6df012b238a80db0d387acdc8b5ae7832d9391eb329deb69c3f9f0259eb2",
+        "byte_count": 5275,
+        "line_count": 87,
+        "estimated_tokens": 1314,
+        "url": "https://pypi.org/project/requests/2.34.2/#description",
+        "title": "requests · PyPI",
+        "source_truncated": false,
+        "sections": [
+          {
+            "heading": "VISIBLE CONTENT",
+            "start_line": 6,
+            "end_line": 74
+          },
+          {
+            "heading": "MEDIA / IMAGE LABELS",
+            "start_line": 75,
+            "end_line": 79
+          },
+          {
+            "heading": "USEFUL PAGE ACTIONS",
+            "start_line": 80,
+            "end_line": 84
+          },
+          {
+            "heading": "COMPLETE READ-ONLY CONTROL TEXT",
+            "start_line": 85,
+            "end_line": 87
+          }
+        ],
+        "control_refs": [
+          "10749",
+          "10753",
+          "10523",
+          "10706",
+          "10709",
+          "10712"
+        ],
+        "warnings": [],
+        "provenance": "m7:L1-L87"
+      }
+    ],
+    "estimated_evidence_tokens": 9344,
+    "context_omissions": [],
+    "coverage_limited": false,
+    "limitations": [
+      "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, not false; source-declared truncation further limits coverage."
+    ],
+    "state_selection_policy": "all_states_0_through_n",
+    "source_complete_state_count": 8,
+    "excluded_source_states": [],
+    "context_char_budget_per_state": 350000,
+    "context_omitted_estimated_tokens": 0,
+    "warnings": [],
+    "relevance": {
+      "0": {
+        "0": 10,
+        "1": 8,
+        "2": 7,
+        "3": 0,
+        "4": 0,
+        "5": 1,
+        "6": 9
+      },
+      "1": {
+        "0": 10,
+        "1": 9,
+        "2": 10,
+        "3": 0,
+        "4": 0,
+        "5": 10,
+        "6": 9
+      },
+      "2": {
+        "0": 10,
+        "1": 9,
+        "2": 8,
+        "3": 0,
+        "4": 0,
+        "5": 2,
+        "6": 7
+      },
+      "3": {
+        "0": 10,
+        "1": 8,
+        "2": 10,
+        "3": 0,
+        "4": 0,
+        "5": 10,
+        "6": 9
+      },
+      "4": {
+        "0": 9,
+        "1": 6,
+        "2": 8,
+        "3": 1,
+        "4": 1,
+        "5": 2,
+        "6": 6
+      },
+      "5": {
+        "0": 9,
+        "1": 4,
+        "2": 8,
+        "3": 0,
+        "4": 0,
+        "5": 10,
+        "6": 6
+      },
+      "6": {
+        "0": 9,
+        "1": 6,
+        "2": 7,
+        "3": 0,
+        "4": 0,
+        "5": 1,
+        "6": 8
+      },
+      "7": {
+        "0": 9,
+        "1": 2,
+        "2": 1,
+        "3": 8,
+        "4": 9,
+        "5": 0,
+        "6": 8
+      }
+    },
+    "selection": {
+      "0": [
+        {
+          "state_index": 0,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 9,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 9,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 9,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "1": [
+        {
+          "state_index": 0,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 4,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 6,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "2": [
+        {
+          "state_index": 0,
+          "relevance_score": 7,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 7,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "3": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "4": [
+        {
+          "state_index": 0,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        }
+      ],
+      "5": [
+        {
+          "state_index": 0,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 2,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 10,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 1,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 0,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        }
+      ],
+      "6": [
+        {
+          "state_index": 0,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 1,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 2,
+          "relevance_score": 7,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 3,
+          "relevance_score": 9,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 4,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 5,
+          "relevance_score": 6,
+          "selected": false,
+          "omission_reason": "outside_top_k_or_filtered"
+        },
+        {
+          "state_index": 6,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        },
+        {
+          "state_index": 7,
+          "relevance_score": 8,
+          "selected": true,
+          "omission_reason": null
+        }
+      ]
+    },
+    "validation_retries": 10,
+    "packed_requests": [
+      {
+        "request_ordinal": 1,
+        "stage": "relevance",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 11065,
+        "estimated_input_tokens": 2767,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 2,
+        "stage": "relevance",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 9126,
+        "estimated_input_tokens": 2282,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 3,
+        "stage": "relevance",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 11495,
+        "estimated_input_tokens": 2874,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 4,
+        "stage": "relevance",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 9137,
+        "estimated_input_tokens": 2285,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 5,
+        "stage": "relevance",
+        "state_index": 4,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 11529,
+        "estimated_input_tokens": 2883,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 6,
+        "stage": "relevance",
+        "state_index": 5,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 9174,
+        "estimated_input_tokens": 2294,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 7,
+        "stage": "relevance",
+        "state_index": 6,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 11541,
+        "estimated_input_tokens": 2886,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 8,
+        "stage": "relevance",
+        "state_index": 7,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "char_count": 11126,
+        "estimated_input_tokens": 2782,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 9,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 12311,
+        "estimated_input_tokens": 3078,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 10,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 13497,
+        "estimated_input_tokens": 3375,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 11,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 12300,
+        "estimated_input_tokens": 3075,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 12,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          6
+        ],
+        "char_count": 13013,
+        "estimated_input_tokens": 3254,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 13,
+        "stage": "batched_analysis",
+        "state_index": 7,
+        "criterion_indices": [
+          0,
+          3,
+          4,
+          6
+        ],
+        "char_count": 13400,
+        "estimated_input_tokens": 3350,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 14,
+        "stage": "batched_analysis",
+        "state_index": 6,
+        "criterion_indices": [
+          1,
+          6
+        ],
+        "char_count": 13020,
+        "estimated_input_tokens": 3255,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 15,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          2,
+          5
+        ],
+        "char_count": 10709,
+        "estimated_input_tokens": 2678,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 16,
+        "stage": "criterion_analysis",
+        "state_index": 4,
+        "criterion_indices": [
+          2
+        ],
+        "char_count": 12216,
+        "estimated_input_tokens": 3054,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 17,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 13778,
+        "estimated_input_tokens": 3445,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 18,
+        "stage": "batched_analysis",
+        "state_index": 5,
+        "criterion_indices": [
+          2,
+          5
+        ],
+        "char_count": 11091,
+        "estimated_input_tokens": 2773,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 19,
+        "stage": "batched_analysis",
+        "state_index": 6,
+        "criterion_indices": [
+          1,
+          6
+        ],
+        "char_count": 13403,
+        "estimated_input_tokens": 3351,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 20,
+        "stage": "batched_analysis",
+        "state_index": 0,
+        "criterion_indices": [
+          0,
+          1,
+          6
+        ],
+        "char_count": 13388,
+        "estimated_input_tokens": 3347,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 21,
+        "stage": "batched_analysis",
+        "state_index": 7,
+        "criterion_indices": [
+          0,
+          3,
+          4,
+          6
+        ],
+        "char_count": 13728,
+        "estimated_input_tokens": 3432,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 22,
+        "stage": "batched_analysis",
+        "state_index": 1,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 12605,
+        "estimated_input_tokens": 3152,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 23,
+        "stage": "batched_analysis",
+        "state_index": 3,
+        "criterion_indices": [
+          0,
+          1,
+          2,
+          5,
+          6
+        ],
+        "char_count": 12557,
+        "estimated_input_tokens": 3140,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 24,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 14113,
+        "estimated_input_tokens": 3529,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 25,
+        "stage": "batched_analysis",
+        "state_index": 2,
+        "criterion_indices": [
+          0,
+          1,
+          2
+        ],
+        "char_count": 14503,
+        "estimated_input_tokens": 3626,
+        "context_omission_count": 0
+      },
+      {
+        "request_ordinal": 26,
+        "stage": "batched_analysis",
+        "state_index": 7,
+        "criterion_indices": [
+          0,
+          3,
+          4,
+          6
+        ],
+        "char_count": 14173,
+        "estimated_input_tokens": 3544,
+        "context_omission_count": 0
+      }
+    ],
+    "fallback_invocations": 0
+  },
+  "duration_sec": 128.982
+}

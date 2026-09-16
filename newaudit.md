@@ -5095,6 +5095,1910 @@ Task 97 is unrun and excluded. Across the other nine tasks:
 
 These results are intentionally separate from the canonical 98-task aggregate above. Tasks 61–76 and 78–90 reuse the exact criterion order, descriptions, maximum points, and normalized rubric hash from their original runs. Only the rubric wrapper task ID was rebound to each rerun ID. Task 77 had no original run or frozen rubric, so one new canonical rubric was generated for that task only; its Phase A usage is reported separately from scoring. Every scoring run reports `rubric_generation_calls: 0`.
 
+## Task 1 rerun — Reddit ranking
+
+Task ID: `browser_task_001-reddit-ranking-20260915T065615Z`  
+Run: `20260915T104323Z_task01_rerun`  
+Reused rubric SHA-256: `08053dc4514113054566c6ea9f0a4a9e785428805d5e8f12c9f129ddcf7b8fbb`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 17/17 (100%) | 17/17 (100%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 0 / 1 | 0 / 1 |
+| LLM calls / retries | 10 / 0 | 12 / 0 |
+| Duration | 74.442 s | 114.042 s |
+| Scoring tokens | 60,490 | 63,135 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access r/LocalLLaMA without signing in | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Verify Top and This Week filters | Blocked / correctly recognized | Blocked / correctly recognized | 4/4 / 4/4 | BOTH_CAUGHT |
+| Identify #1 post title and score | Blocked / correctly recognized | Blocked / correctly recognized | 5/5 / 5/5 | BOTH_CAUGHT |
+| Respect interaction constraints | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Stop after result or documented limitation | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both representations contain the same Reddit network-security blocker, and both verifiers recover it correctly. The blocker-aware rubric awards full process credit, but both outcome checks fail because the requested Top/This Week post title and score were not obtained. There is no asymmetric source-evidence loss or confirmed verifier miss. DOM used 2,645 more scoring tokens than screenshots, a 4.4% increase.
+
+- [Comparison](results/task_01_rerun/20260915T104323Z_task01_rerun/comparison.md)
+- [Offline audit](results/task_01_rerun/20260915T104323Z_task01_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 2 rerun — Xbox best-seller game metadata
+
+Task ID: `browser_task_002-cross-site-research-20260915T065638Z`  
+Run: `20260915_task02_rerun`  
+Reused rubric SHA-256: `2157f3abcd304f7618cb600205bd1f4ac17cb9bfeb93fd0b39f1da3c1e795d6a`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 13/15 (86.7%) | 11/15 (73.3%) |
+| Rubric / outcome | Pass / Pass | Fail / Fail |
+| Actions / states | 7 / 8 | 7 / 8 |
+| LLM calls / retries | 22 / 0 | 32 / 0 |
+| Duration | 91.862 s | 129.826 s |
+| Scoring tokens | 120,325 | 163,136 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Navigate Xbox.com to the 'Best sellers' section and select a listed game | No / absence caught | No / absence caught | 2/4 / 2/4 | BOTH_CAUGHT |
+| Open the selected game's product page | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report publisher, developer, and release date from the product page | Yes / Yes | Partial / Yes | 5/5 / 3/5 | DOM_EVIDENCE_MISSING |
+| Comply with constraints (no sign-in; no buying/downloading; stop after recording details) | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+
+**Summary:** Both verifiers confirm the Xbox product page and developer/date. The screenshot explicitly shows “Published by: Electronic Arts”; the DOM retains “Electronic Arts” elsewhere but loses its direct association with the “Published by” label, producing the only DOM source-evidence loss in this batch. DOM used 42,811 more scoring tokens than screenshots (35.6% increase).
+
+- [Comparison](results/task_02_rerun/20260915_task02_rerun/comparison.md)
+- [Offline audit](results/task_02_rerun/20260915_task02_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 3 rerun — Microsoft Careers job extraction
+
+Task ID: `browser_task_003-job-listing-extraction-20260915T065726Z`  
+Run: `20260915_task03_rerun`  
+Reused rubric SHA-256: `6cb1ce774b4da7e22243c6a0ae5ffb597dc341935f8a53dfbce2c309d01e3fb2`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 18/20 (90.0%) | 17.5/20 (87.5%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 5 / 6 | 5 / 6 |
+| LLM calls / retries | 20 / 0 | 27 / 0 |
+| Duration | 111.074 s | 130.345 s |
+| Scoring tokens | 126,431 | 145,402 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use Microsoft Careers to search for an Applied Scientist role in/associated with Redmond, WA (or clearly report access blockers) | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Open one relevant listing and stop after opening one (or report that no exact match exists) | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report the job number from the listing (or state it is not shown) | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report the work-site arrangement from the listing (or state it is not shown) | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report two key responsibilities from the listing | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report two preferred qualifications from the listing (or clearly state preferred qualifications are not listed) | No / absence caught | No / absence caught | 1/3 / 0.5/3 | BOTH_CAUGHT |
+| Respect constraints (no sign-in, no application, no form submission) | Yes / Yes | Yes / Yes | 4/4 / 4/4 | BOTH_CAUGHT |
+
+**Summary:** Both modalities contain and recover the search, listing metadata, responsibilities, and constraint evidence. Neither source contains two preferred-qualification bullets. The 0.5-point gap is scoring interpretation, not evidence loss. DOM used 18,971 more scoring tokens than screenshots (15.0% increase).
+
+- [Comparison](results/task_03_rerun/20260915_task03_rerun/comparison.md)
+- [Offline audit](results/task_03_rerun/20260915_task03_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 4 rerun — DMNS film lookup
+
+Task ID: `browser_task_004-museum-film-lookup-20260915T065809Z`  
+Run: `20260915_task04_rerun`  
+Reused rubric SHA-256: `81ae2fa388b310f12bcd2015339158be8169f748f3fd281893eb5bec3606ab77`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 4/15 (26.7%) | 5/15 (33.3%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 5 / 6 | 5 / 6 |
+| LLM calls / retries | 19 / 0 | 39 / 0 |
+| Duration | 96.375 s | 173.989 s |
+| Scoring tokens | 112,838 | 176,700 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Navigate DMNS site to Sturm Infinity Theater 'currently playing' information | Partial / Yes | Partial / Yes | 1/3 / 2/3 | BOTH_CAUGHT |
+| Identify one film currently playing (title) | No / absence caught | No / absence caught | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report what the film is about (description/summary) | No / absence caught | No / absence caught | 0/2 / 0/2 | BOTH_CAUGHT |
+| Report scheduled showtimes for the selected film | No / absence caught | No / absence caught | 0/4 / 0/4 | BOTH_CAUGHT |
+| Respect constraints (no sign-in, no purchase, no seat reservation) and stop after one film | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+
+**Summary:** Neither modality contains a film title, synopsis, or showtimes; both verifiers correctly identify those absences. DOM awards one additional navigation point, so the score gap is judgment variance rather than representation loss. DOM used 63,862 more scoring tokens than screenshots (56.6% increase).
+
+- [Comparison](results/task_04_rerun/20260915_task04_rerun/comparison.md)
+- [Offline audit](results/task_04_rerun/20260915_task04_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 5 rerun — Bush Library event lookup
+
+Task ID: `browser_task_005-event-lookup-20260915T070749Z`  
+Run: `20260915_task05_rerun`  
+Reused rubric SHA-256: `1d9fb62eb123094877e0d4f2d9defa7dfd985148ce7c88e3efa589b359e1671c`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 13/15 (86.7%) | 12/15 (80.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 2 / 3 | 2 / 3 |
+| LLM calls / retries | 14 / 0 | 15 / 0 |
+| Duration | 77.811 s | 101.788 s |
+| Scoring tokens | 80,285 | 76,995 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the George H. W. Bush Presidential Library website (bush41.org) and navigate to events listings | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Determine the next upcoming event (chronologically soonest future event) from available official listings | Partial / Yes | Yes / Yes | 2/4 / 3/4 | SCREENSHOT_EVIDENCE_MISSING |
+| Report required event details: title, date, time, and location | Partial / Yes | Partial / Yes | 5/5 / 3/5 | BOTH_CAUGHT |
+| Respect constraints (no sign-in, no registration, no ticket purchase) | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+
+**Summary:** The screenshot shows only the September 17 event, while the DOM also preserves the September 24 event needed to compare chronology; this is the batch’s only screenshot source-evidence loss. The total still favors screenshots because the two scorers apply different partial-credit judgments to chronology and the unavailable location. DOM used 3,290 fewer scoring tokens than screenshots (4.1% reduction).
+
+- [Comparison](results/task_05_rerun/20260915_task05_rerun/comparison.md)
+- [Offline audit](results/task_05_rerun/20260915_task05_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 6 rerun — Search Engine Land earliest article
+
+Task ID: `browser_task_006-article-metadata-lookup-20260915T070813Z`  
+Run: `20260915_task06_rerun`  
+Reused rubric SHA-256: `fd4b6e5db6e3942d425c795d4667da54104038119a8cacb7e2817b6505e2c2a1`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 7.5/12 (62.5%) | 6/12 (50.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 12 / 13 | 12 / 13 |
+| LLM calls / retries | 31 / 0 | 44 / 0 |
+| Duration | 86.551 s | 182.132 s |
+| Scoring tokens | 165,611 | 266,971 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access Search Engine Land and attempt to locate the earliest available article using on-site methods | Yes / Yes | Yes / Yes | 4/4 / 4/4 | BOTH_CAUGHT |
+| Identify the earliest available article and capture required metadata (or report inability to confirm) | Partial / Yes | Partial / Yes | 1.5/5 / 0/5 | BOTH_CAUGHT |
+| Stop after finding the earliest available article (or after reaching a clear external blocker) | No / absence caught | No / absence caught | 0/1 / 0/1 | BOTH_CAUGHT |
+| Respect constraints (no sign-in, no publishing/editing/commenting) | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities show pagination only through page 10 of 722 and no verified earliest article. Both verifiers catch that limitation; the 1.5-point difference comes from screenshot partial credit for visible article cards, not missing evidence. DOM used 101,360 more scoring tokens than screenshots (61.2% increase).
+
+- [Comparison](results/task_06_rerun/20260915_task06_rerun/comparison.md)
+- [Offline audit](results/task_06_rerun/20260915_task06_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 7 rerun — Amazon/AllRecipes recipe lookup
+
+Task ID: `browser_task_007-cross-site-recipe-lookup-20260915T071555Z`  
+Run: `20260915_task07_rerun`  
+Reused rubric SHA-256: `92aa9a35c900cfea9df77683c49e2d406af0a68c5cafd9169458a5c81323c15b`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 12/12 (100.0%) | 12/12 (100.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 17 / 0 |
+| Duration | 88.951 s | 119.328 s |
+| Scoring tokens | 80,017 | 86,305 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access Amazon India Grocery & Gourmet Foods bestsellers list (or report block) | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Verify and record the item ranked #2 in Amazon India Grocery & Gourmet Foods bestsellers | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Access AllRecipes and locate a recipe that uses the identified ingredient (or report access/search failure) | Blocked / Yes | Blocked / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report the AllRecipes recipe title | Blocked / absence caught | Blocked / absence caught | 1/1 / 1/1 | BOTH_CAUGHT |
+| Report the full ingredient list from the AllRecipes recipe | Blocked / absence caught | Blocked / absence caught | 2/2 / 2/2 | BOTH_CAUGHT |
+| Comply with constraints (no sign-in, no cart, no purchase; stop on bot check) | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities recover the Amazon #2 item and the AllRecipes Cloudflare blocker. Every criterion is caught in both representations and the process totals match. DOM used 6,288 more scoring tokens than screenshots (7.9% increase).
+
+- [Comparison](results/task_07_rerun/20260915_task07_rerun/comparison.md)
+- [Offline audit](results/task_07_rerun/20260915_task07_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 8 rerun — Playwright release research
+
+Task ID: `browser_task_008-software-release-research-20260915T071616Z`  
+Run: `20260915_task08_rerun`  
+Reused rubric SHA-256: `dbd97e8cc89d447ae6e4e451a73e26b3eacff43e05f39ea4d84a8ce8e496ffa0`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 7.5/17 (44.1%) | 7/17 (41.2%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 5 / 6 | 5 / 6 |
+| LLM calls / retries | 20 / 0 | 30 / 0 |
+| Duration | 108.192 s | 226.668 s |
+| Scoring tokens | 125,497 | 175,142 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access Playwright GitHub Releases page (or reasonable official fallback) without signing in | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Identify the newest non-preview (non-pre-release) release | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record release metadata (tag and publication date) for the identified stable release | Partial / Yes | Partial / Yes | 1.5/3 / 1/3 | BOTH_CAUGHT |
+| Extract three distinct changes from the release notes of that stable release | Yes / Yes | Yes / Yes | 0.5/4 / 0/4 | BOTH_CAUGHT |
+| Verify one of the listed changes using official Playwright documentation | No / absence caught | No / absence caught | 0/4 / 0/4 | BOTH_CAUGHT |
+| Comply with constraints and stopping condition | Yes / Yes | Yes / Yes | 1.5/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both verifiers catch the correct v1.63.0 release, the unsupported publication date/changes, and the failed documentation verification. The 0.5-point gap is scoring interpretation, not evidence loss. DOM used 49,645 more scoring tokens than screenshots (39.6% increase).
+
+- [Comparison](results/task_08_rerun/20260915_task08_rerun/comparison.md)
+- [Offline audit](results/task_08_rerun/20260915_task08_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 9 rerun — NASA Artemis mission lookup
+
+Task ID: `browser_task_009-nasa-mission-lookup-20260915T071704Z`  
+Run: `20260915_task09_rerun`  
+Reused rubric SHA-256: `d8501aa855b5b07aec67fd374fcfe17455c57c18ab59a631d96ed88fe1d6fe4d`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 13/20 (65.0%) | 17/20 (85.0%) |
+| Rubric / outcome | Fail / Fail | Pass / Fail |
+| Actions / states | 2 / 3 | 2 / 3 |
+| LLM calls / retries | 14 / 0 | 28 / 0 |
+| Duration | 105.066 s | 195.624 s |
+| Scoring tokens | 96,877 | 133,629 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use NASA’s website as the source of truth | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Identify the next planned Artemis mission | Yes / Yes | Yes / Yes | 0/4 / 1/4 | BOTH_CAUGHT |
+| Report mission name | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report planned launch year | Yes / Yes | Yes / Yes | 1/3 / 3/3 | BOTH_CAUGHT |
+| Report destination | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report primary objective | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Respect constraints (no sign-in, no registration) and stopping condition | Yes / Yes | Yes / Yes | 2/3 / 3/3 | BOTH_CAUGHT |
+
+**Summary:** Both modalities expose that Artemis II is marked as already occurred, and both analyses notice it. DOM nevertheless awards more partial/full credit on related fields, so the four-point gap is scoring leniency rather than evidence availability. DOM used 36,752 more scoring tokens than screenshots (37.9% increase).
+
+- [Comparison](results/task_09_rerun/20260915_task09_rerun/comparison.md)
+- [Offline audit](results/task_09_rerun/20260915_task09_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 10 rerun — Gemini documentation lookup
+
+Task ID: `browser_task_010-official-documentation-lookup-20260915T071727Z`  
+Run: `20260915_task10_rerun`  
+Reused rubric SHA-256: `a8d84181ec0fe09d117995b4c001e182821ba5ac9631538a68d8a8bf32054f90`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 17/18 (94.4%) | 3/18 (16.7%) |
+| Rubric / outcome | Pass / Fail | Fail / Fail |
+| Actions / states | 3 / 4 | 3 / 4 |
+| LLM calls / retries | 16 / 0 | 30 / 0 |
+| Duration | 107.838 s | 186.398 s |
+| Scoring tokens | 110,041 | 164,343 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use Google Search to locate Gemini API documentation (attempt and navigation) | Blocked / Yes | Blocked / Yes | 3/3 / 2/3 | BOTH_CAUGHT |
+| Documentation source is an official Google domain and no sign-in is performed | No / absence caught | No / absence caught | 3/3 / 1/3 | BOTH_CAUGHT |
+| Record the documentation page title | No / absence caught | No / absence caught | 2/2 / 0/2 | BOTH_CAUGHT |
+| Record the documentation domain | No / absence caught | No / absence caught | 2/2 / 0/2 | BOTH_CAUGHT |
+| Identify the Python SDK shown in the documentation example | No / absence caught | No / absence caught | 3/3 / 0/3 | BOTH_CAUGHT |
+| Identify the model used in the Python example | No / absence caught | No / absence caught | 3/3 / 0/3 | BOTH_CAUGHT |
+| Stop after opening the official documentation and recording required fields | No / absence caught | No / absence caught | 1/2 / 0/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities show the same Google CAPTCHA and no documentation page. The screenshot scorer applies the blocker allowance broadly while the DOM scorer requires an alternative path to the official documentation, causing a large scoring-policy disagreement with no source-evidence loss. DOM used 54,302 more scoring tokens than screenshots (49.3% increase).
+
+- [Comparison](results/task_10_rerun/20260915_task10_rerun/comparison.md)
+- [Offline audit](results/task_10_rerun/20260915_task10_rerun/evidence_error_audit/criterion_audit.json)
+
+
+## Task 11 rerun — Arxiv Literature Search
+
+Task ID: `browser_task_011-arxiv-literature-search-20260915T071755Z`  
+Run: `20260915_task11_rerun`  
+Reused rubric SHA-256: `8154a1385faa60d8797d38cd3790be785d2a99dc77c1de0f22ef29f1e639920b`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 9/20 (45.0%) | 7/20 (35.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 26 / 27 | 26 / 27 |
+| LLM calls / retries | 45 / 0 | 54 / 0 |
+| Duration | 176.360 s | 175.852 s |
+| Scoring tokens | 277,107 | 351,188 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use arXiv Advanced Search with required filters (cs.LG, last 30 days, exact-title phrase, newest first) | Limited / correctly identified | Limited / correctly identified | 2/4 / 3/4 | BOTH_CAUGHT |
+| Report the most recent matching paper (Paper #1) with required metadata | Limited / correctly identified | Limited / correctly identified | 1/3 / 1/3 | BOTH_CAUGHT |
+| Report the 2nd most recent matching paper (Paper #2) with required metadata | Limited / correctly identified | Limited / correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report the 3rd most recent matching paper (Paper #3) with required metadata | Limited / correctly identified | Limited / correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Verification checks recorded for each reported paper (category, date window, exact title phrase) | Limited / correctly identified | Limited / correctly identified | 5/5 / 2/5 | BOTH_CAUGHT |
+| Stopping condition and constraints compliance (stop after 3; no login; no submissions/modifications) | Limited / correctly identified | Limited / correctly identified | 1/2 / 1/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities expose the same arXiv query and single verified paper. The two-point gap comes from different partial-credit treatment of the incomplete three-paper requirement, not evidence loss. DOM used 74,081 more scoring tokens than screenshots (26.7% increase).
+
+- [Comparison](results/task_11_rerun/20260915_task11_rerun/comparison.md)
+- [Offline audit](results/task_11_rerun/20260915_task11_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 12 rerun — Arxiv Paper Metadata
+
+Task ID: `browser_task_012-arxiv-paper-metadata-20260915T072143Z`  
+Run: `20260915_task12_rerun`  
+Reused rubric SHA-256: `0ba8db17cb7a714de473b135020ece47b0a8098f986ce2fc4f86e50d3dde449f`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 13/13 (100.0%) | 13/13 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 33 / 0 |
+| Duration | 81.304 s | 161.999 s |
+| Scoring tokens | 76,010 | 152,697 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Attempt to access the correct arXiv entry (1706.03762) using arXiv pages | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Comply with constraints (no sign-in; do not download or edit the paper) | Limited / correctly identified | Limited / correctly identified | 1/1 / 1/1 | BOTH_CAUGHT |
+| Report total number of versions | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record the exact publication date string for version 1 | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record the exact publication date string for the latest version | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Stopping condition satisfied (only version count + both dates, then stop) | Limited / correctly identified | Yes / Yes | 1/1 / 1/1 | BOTH_CAUGHT |
+
+**Summary:** Both modalities recover all requested arXiv version metadata and both verifiers award full credit. DOM used 76,687 more scoring tokens than screenshots (100.9% increase).
+
+- [Comparison](results/task_12_rerun/20260915_task12_rerun/comparison.md)
+- [Offline audit](results/task_12_rerun/20260915_task12_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 13 rerun — Chess Profile Lookup
+
+Task ID: `browser_task_013-chess-profile-lookup-20260915T072216Z`  
+Run: `20260915_task13_rerun`  
+Reused rubric SHA-256: `1db9087c848d5ad336f7c063babff47c82c0d673cec6184a853a62ab5e162c17`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 13/13 (100.0%) | 13/13 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 13 / 0 | 17 / 0 |
+| Duration | 72.304 s | 124.162 s |
+| Scoring tokens | 72,450 | 100,636 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access Magnus Carlsen’s Chess.com profile page (without signing in) | Yes / Yes | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record Blitz rating exactly as displayed | Limited / correctly identified | Yes / Yes | 4/4 / 4/4 | BOTH_CAUGHT |
+| Record Bullet rating exactly as displayed | Limited / correctly identified | Yes / Yes | 4/4 / 4/4 | BOTH_CAUGHT |
+| Respect constraints: no sign-in and no interaction with another player; stop after recording ratings | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities recover the Chess.com profile and exact Blitz/Bullet ratings; scores and outcomes match. DOM used 28,186 more scoring tokens than screenshots (38.9% increase).
+
+- [Comparison](results/task_13_rerun/20260915_task13_rerun/comparison.md)
+- [Offline audit](results/task_13_rerun/20260915_task13_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 14 rerun — Reddit Post Lookup
+
+Task ID: `browser_task_014-reddit-post-lookup-20260915T072245Z`  
+Run: `20260915_task14_rerun`  
+Reused rubric SHA-256: `c8d413abd02711e0a624ff57822d29e0edd9802c5c75a62c9d86a86d76b9962a`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 17/17 (100.0%) | 17/17 (100.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 0 / 1 | 0 / 1 |
+| LLM calls / retries | 10 / 0 | 12 / 0 |
+| Duration | 88.954 s | 103.594 s |
+| Scoring tokens | 63,312 | 65,608 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Apply required Reddit sorting and time filter (Top + past month) in r/MachineLearning | Limited / correctly identified | Limited / correctly identified | 4/4 / 4/4 | BOTH_CAUGHT |
+| Open the highest-ranked post under the applied filters | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report exact post details: title, author, score, and comment count | Yes / Yes | Yes / Yes | 5/5 / 5/5 | BOTH_CAUGHT |
+| Respect constraints: no sign-in and no interactions (vote/comment/save/create) | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Stop at the specified stopping condition | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities show the same Reddit access blocker and both apply the frozen rubric consistently. DOM used 2,296 more scoring tokens than screenshots (3.6% increase).
+
+- [Comparison](results/task_14_rerun/20260915_task14_rerun/comparison.md)
+- [Offline audit](results/task_14_rerun/20260915_task14_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 15 rerun — Reddit Community Comparison
+
+Task ID: `browser_task_015-reddit-community-comparison-20260915T072513Z`  
+Run: `20260915_task15_rerun`  
+Reused rubric SHA-256: `002aa1d1eda9e7069a08c8bbb68a6d7c9e6e1ecf1dd4fd815d396f69641e6158`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 15/15 (100.0%) | 15/15 (100.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 0 / 1 | 0 / 1 |
+| LLM calls / retries | 10 / 0 | 11 / 0 |
+| Duration | 81.226 s | 116.121 s |
+| Scoring tokens | 62,721 | 64,945 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Record subscriber count for r/Python | Yes / Yes | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record subscriber count for r/learnpython | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record subscriber count for r/django | Yes / Yes | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Rank the three communities from largest to smallest and present as a table | Yes / Yes | Limited / correctly identified | 4/4 / 4/4 | BOTH_CAUGHT |
+| Comply with constraints and stopping condition | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities show the same Reddit platform blocker; all downstream criteria are handled consistently. DOM used 2,224 more scoring tokens than screenshots (3.5% increase).
+
+- [Comparison](results/task_15_rerun/20260915_task15_rerun/comparison.md)
+- [Offline audit](results/task_15_rerun/20260915_task15_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 16 rerun — Hugging Face Model Metadata
+
+Task ID: `browser_task_016-hugging-face-model-metadata-20260915T072538Z`  
+Run: `20260915_task16_rerun`  
+Reused rubric SHA-256: `3ae38854ed411b9031803fe22503d5d4c10c2cf432936e9016379e99e0ae71fd`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 13/13 (100.0%) | 13/13 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 17 / 0 |
+| Duration | 69.296 s | 92.793 s |
+| Scoring tokens | 70,306 | 102,212 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Open the correct Hugging Face repository page | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report license name from visible metadata | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report current likes count from visible metadata | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Determine and report whether the repository is gated (from visible cues) | Yes / Yes | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities recover the Hugging Face model metadata and both verifiers award full credit. DOM used 31,906 more scoring tokens than screenshots (45.4% increase).
+
+- [Comparison](results/task_16_rerun/20260915_task16_rerun/comparison.md)
+- [Offline audit](results/task_16_rerun/20260915_task16_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 17 rerun — Hugging Face Dataset Inspection
+
+Task ID: `browser_task_017-hugging-face-dataset-inspection-20260915T072611Z`  
+Run: `20260915_task17_rerun`  
+Reused rubric SHA-256: `432739090bfbc188d44079a449ae58637894eaf19a08f1d997ece6a4385e886c`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 3/12 (25.0%) | 7/12 (58.3%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 0 / 1 | 0 / 1 |
+| LLM calls / retries | 10 / 0 | 10 / 0 |
+| Duration | 73.065 s | 73.300 s |
+| Scoring tokens | 58,512 | 64,725 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the Hugging Face SQuAD dataset page and Dataset Viewer | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record Dataset Viewer row count for the train split (exact split name and rows) | Yes / Yes | Yes / Yes | 0/4 / 4/4 | BOTH_CAUGHT |
+| Record Dataset Viewer row count for the validation split (exact split name and rows) | Limited / correctly identified | Limited / correctly identified | 0/4 / 0/4 | BOTH_CAUGHT |
+| Follow constraints and stopping condition | Limited / correctly identified | Limited / correctly identified | 1/2 / 1/2 | BOTH_CAUGHT |
+
+**Summary:** Both inputs show “train · 87.6k rows,” but the final answer omits it. The screenshot scorer correctly assigns zero while the DOM scorer awards full evidence credit; this is DOM scoring overcredit, not representation loss. DOM used 6,213 more scoring tokens than screenshots (10.6% increase).
+
+- [Comparison](results/task_17_rerun/20260915_task17_rerun/comparison.md)
+- [Offline audit](results/task_17_rerun/20260915_task17_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 18 rerun — Github Issue Search
+
+Task ID: `browser_task_018-github-issue-search-20260915T072646Z`  
+Run: `20260915_task18_rerun`  
+Reused rubric SHA-256: `1070898bbbc7964a59520ec21c339408ad17d6faca93bcb2306f1ef43249e9a0`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 10.5/11 (95.5%) | 11/11 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 3 / 4 | 3 / 4 |
+| LLM calls / retries | 16 / 0 | 16 / 0 |
+| Duration | 101.396 s | 93.959 s |
+| Scoring tokens | 108,098 | 109,772 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access GitHub issues for huggingface/transformers and verify the date basis for the 30-day window | Limited / correctly identified | Limited / correctly identified | 1/1 / 1/1 | BOTH_CAUGHT |
+| Apply exact GitHub issue search filters (open + label: bug + created in last 30 days) for huggingface/transformers | Limited / correctly identified | Limited / correctly identified | 3.5/4 / 4/4 | BOTH_CAUGHT |
+| Report total count of matching issues | Limited / correctly identified | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Provide the three newest matching issue records (issue number + title) | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Comply with constraints (no sign-in; no issue interactions; stop after verification) | Limited / correctly identified | Limited / correctly identified | 1/1 / 1/1 | BOTH_CAUGHT |
+
+**Summary:** Both modalities recover the GitHub issue query and count. The half-point gap is a minor query-exactness judgment, not source evidence loss. DOM used 1,674 more scoring tokens than screenshots (1.5% increase).
+
+- [Comparison](results/task_18_rerun/20260915_task18_rerun/comparison.md)
+- [Offline audit](results/task_18_rerun/20260915_task18_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 19 rerun — Github Release Research
+
+Task ID: `browser_task_019-github-release-research-20260915T072726Z`  
+Run: `20260915_task19_rerun`  
+Reused rubric SHA-256: `b6de0067c9d19eb4956371b6c427ccb33bacfad0dbf9df5d089946db8cfcac71`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 14/16 (87.5%) | 16/16 (100.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 24 / 0 |
+| Duration | 83.129 s | 151.318 s |
+| Scoring tokens | 74,401 | 119,435 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the pytorch/pytorch releases listing (or report access blocker) | Yes / Yes | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Identify the latest pytorch/pytorch release | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report release tag for the latest release | Limited / correctly identified | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report release date for the latest release | Relative date only / Yes | Exact date / Yes | 0/2 / 2/2 | SCREENSHOT_EVIDENCE_MISSING |
+| Extract the first three highlight bullets in displayed order | Limited / correctly identified | Yes / Yes | 5/5 / 5/5 | BOTH_CAUGHT |
+| Stop after required metadata and first three highlights (or after reporting an unavoidable blocker) | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** DOM preserves the exact “02 Sep 17:40” release timestamp while the screenshot shows only “2 weeks ago.” This is a genuine screenshot-source evidence gap; all other requested release evidence is available in both. DOM used 45,034 more scoring tokens than screenshots (60.5% increase).
+
+- [Comparison](results/task_19_rerun/20260915_task19_rerun/comparison.md)
+- [Offline audit](results/task_19_rerun/20260915_task19_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 20 rerun — Github Code Search
+
+Task ID: `browser_task_020-github-code-search-20260915T072801Z`  
+Run: `20260915_task20_rerun`  
+Reused rubric SHA-256: `5cc681d5bdaf6c0792b0062db6a687c29b6f9006c30dbbf35a077eac02df6060`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 12/12 (100.0%) | 12/12 (100.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 7 / 8 | 7 / 8 |
+| LLM calls / retries | 24 / 0 | 44 / 0 |
+| Duration | 82.723 s | 149.392 s |
+| Scoring tokens | 142,469 | 428,028 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Attempt repository-scoped code search (fastapi/fastapi) for the Depends definition | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Correctly identify the true definition location (not just a usage/import) of Depends | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report exact file path and line number containing the Depends definition | Limited / correctly identified | Limited / correctly identified | 4/4 / 4/4 | BOTH_CAUGHT |
+| Provide definition context (declaration header / surrounding symbol) as confirmation | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities expose the same GitHub code-search trajectory and produce the same total; there is no asymmetric source-evidence loss. DOM used 285,559 more scoring tokens than screenshots (200.4% increase).
+
+- [Comparison](results/task_20_rerun/20260915_task20_rerun/comparison.md)
+- [Offline audit](results/task_20_rerun/20260915_task20_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 21 rerun — Github Repository Comparison
+
+Task ID: `browser_task_021-github-repository-comparison-20260915T072903Z`  
+Run: `20260915_task21_rerun`  
+Reused rubric SHA-256: `debcba8462f7fdd11da93321b7a54b61c17e70bd24a971559faa0669d7264395`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 20/20 (100.0%) | 20/20 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 2 / 3 | 2 / 3 |
+| LLM calls / retries | 14 / 0 | 16 / 0 |
+| Duration | 94.181 s | 104.905 s |
+| Scoring tokens | 93,170 | 119,066 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Record GitHub metrics for vllm-project/vllm | Yes / Yes | Yes / Yes | 4/4 / 4/4 | BOTH_CAUGHT |
+| Record GitHub metrics for ggml-org/llama.cpp | Yes / Yes | Yes / Yes | 4/4 / 4/4 | BOTH_CAUGHT |
+| Record GitHub metrics for sgl-project/sglang | Yes / Yes | Yes / Yes | 4/4 / 4/4 | BOTH_CAUGHT |
+| Present results in a table | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Rank repositories by stars | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Respect constraints (no sign-in and no repository interactions) | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities recover the complete repository-comparison evidence and both verifiers award full credit. DOM used 25,896 more scoring tokens than screenshots (27.8% increase).
+
+- [Comparison](results/task_21_rerun/20260915_task21_rerun/comparison.md)
+- [Offline audit](results/task_21_rerun/20260915_task21_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 22 rerun — Stackoverflow Search
+
+Task ID: `browser_task_022-stackoverflow-search-20260915T072938Z`  
+Run: `20260915_task22_rerun`  
+Reused rubric SHA-256: `686ac06cb94ab6ea86b0b6d34f7a460778f78a64d2bf8d39a666c8ee5bc3ceee`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 6/16 (37.5%) | 7/16 (43.8%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 8 / 9 | 8 / 9 |
+| LLM calls / retries | 24 / 0 | 30 / 0 |
+| Duration | 113.390 s | 145.545 s |
+| Scoring tokens | 153,060 | 202,359 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use Stack Overflow tagged search for python+pandas (no sign-in) | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Apply required filters and sort order | Limited / correctly identified | Limited / correctly identified | 2/5 / 2/5 | BOTH_CAUGHT |
+| Report top 3 matching questions (title, score, view count) | Limited / correctly identified | Limited / correctly identified | 0/6 / 0/6 | BOTH_CAUGHT |
+| Respect interaction constraints and stopping condition | Limited / correctly identified | Limited / correctly identified | 1/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities contain the same Stack Overflow state. The one-point gap is whether stopping early should reduce the constraint criterion, not evidence loss. DOM used 49,299 more scoring tokens than screenshots (32.2% increase).
+
+- [Comparison](results/task_22_rerun/20260915_task22_rerun/comparison.md)
+- [Offline audit](results/task_22_rerun/20260915_task22_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 23 rerun — Scholar Literature Search
+
+Task ID: `browser_task_023-scholar-literature-search-20260915T073109Z`  
+Run: `20260915_task23_rerun`  
+Reused rubric SHA-256: `be2cf947b51ee43a5254de444eeb65eb7d175fbcc7ea08f53ad322637e49fc4b`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 4/17 (23.5%) | 7/17 (41.2%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 10 / 11 | 10 / 11 |
+| LLM calls / retries | 28 / 0 | 34 / 0 |
+| Duration | 121.776 s | 184.481 s |
+| Scoring tokens | 182,881 | 219,813 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use Google Scholar without signing in and handle access blocks appropriately | System error absent / Yes | System error explicit / Yes | 3/3 / 2/3 | SCREENSHOT_EVIDENCE_MISSING |
+| Record the original Google Scholar citation count for 'Attention Is All You Need' | Yes / Yes | Yes / Yes | 0/3 / 3/3 | BOTH_CAUGHT |
+| Open 'Cited by' results and apply date filter to 2024 onward | Cited-by context unclear / Yes | Cited-by URL explicit / Yes | 0/3 / 1/3 | SCREENSHOT_EVIDENCE_MISSING |
+| Most-cited citing paper (2024+): title, authors, citation count | Limited / correctly identified | Limited / correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Second most-cited citing paper (2024+): title, authors, citation count | Limited / correctly identified | Limited / correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+| Third most-cited citing paper (2024+): title, authors, citation count | Limited / correctly identified | Limited / correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+| Respect stopping condition (no extra records beyond what is requested) | Limited / correctly identified | Limited / correctly identified | 1/1 / 1/1 | BOTH_CAUGHT |
+
+**Summary:** DOM uniquely preserves the Scholar system-error text and cited-by URL context that are not recoverable from the screenshots. Separately, DOM overcredits the citation count even though the final answer never reports it; that is a scoring error, not evidence recovery. DOM used 36,932 more scoring tokens than screenshots (20.2% increase).
+
+- [Comparison](results/task_23_rerun/20260915_task23_rerun/comparison.md)
+- [Offline audit](results/task_23_rerun/20260915_task23_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 24 rerun — Hacker News Inspection
+
+Task ID: `browser_task_024-hacker-news-inspection-20260915T073240Z`  
+Run: `20260915_task24_rerun`  
+Reused rubric SHA-256: `c3c7c4d619065b4c6191ec5934aa1368727ebecdba8fd35a44bb32f42ce4e196`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 8/15 (53.3%) | 15/15 (100.0%) |
+| Rubric / outcome | Fail / Fail | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 15 / 0 |
+| Duration | 88.977 s | 109.750 s |
+| Scoring tokens | 73,950 | 116,845 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access Hacker News front page and view story list | Limited / correctly identified | Yes / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+| Inspect exactly the first 30 front-page stories (or clearly report inability) | Ranks 1–29 / Yes | Ranks 1–30 / Yes | 1/4 / 4/4 | SCREENSHOT_EVIDENCE_MISSING |
+| Identify GitHub-linked stories among the 30 (count + titles) | Incomplete top-30 / Yes | Complete top-30 / Yes | 3/7 / 7/7 | SCREENSHOT_EVIDENCE_MISSING |
+| Respect constraints (no sign-in and no interactive actions) | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** DOM contains the full ranked list through story 30 and therefore supports the complete GitHub-linked-story count; screenshots stop at rank 29. Both affected criteria are genuine screenshot-source gaps. DOM used 42,895 more scoring tokens than screenshots (58.0% increase).
+
+- [Comparison](results/task_24_rerun/20260915_task24_rerun/comparison.md)
+- [Offline audit](results/task_24_rerun/20260915_task24_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 25 rerun — Hacker News Search
+
+Task ID: `browser_task_025-hacker-news-search-20260915T073312Z`  
+Run: `20260915_task25_rerun`  
+Reused rubric SHA-256: `10d8137e689425c914ae0a893656b68a76d41e713d5413a3983bfa3b7d0fda40`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 20/20 (100.0%) | 19.5/20 (97.5%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 5 / 6 | 5 / 6 |
+| LLM calls / retries | 20 / 0 | 28 / 0 |
+| Duration | 84.934 s | 174.088 s |
+| Scoring tokens | 122,261 | 177,937 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use Algolia Hacker News search for query 'LLM' | Limited / correctly identified | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Apply required filters: Show HN posts and past-year time window | Limited / correctly identified | Limited / correctly identified | 4/4 / 3.5/4 | BOTH_CAUGHT |
+| Sort results by points (descending) and verify sort order | Limited / correctly identified | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report top matching results with required fields | Limited / correctly identified | Limited / correctly identified | 6/6 / 6/6 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Limited / correctly identified | Limited / correctly identified | 4/4 / 4/4 | BOTH_CAUGHT |
+
+**Summary:** Both modalities recover the Algolia query, filters, and point ordering. The half-point gap comes from DOM not proving the browser-current-date instruction, not source loss between modalities. DOM used 55,676 more scoring tokens than screenshots (45.5% increase).
+
+- [Comparison](results/task_25_rerun/20260915_task25_rerun/comparison.md)
+- [Offline audit](results/task_25_rerun/20260915_task25_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 26 rerun — Shopping Constraint Satisfaction
+
+Task ID: `browser_task_026-shopping-constraint-satisfaction-20260915T073402Z`  
+Run: `20260915_task26_rerun`  
+Reused rubric SHA-256: `b98cd8fd5da1831ceb7d0ff89fd58c491c1ee5ba1c2f9636ae58f15e809db13a`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 6/18 (33.3%) | 9/18 (50.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 4 / 5 | 4 / 5 |
+| LLM calls / retries | 18 / 0 | 31 / 0 |
+| Duration | 140.126 s | 200.832 s |
+| Scoring tokens | 131,593 | 197,422 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Search Amazon for 'wireless mouse' | Limited / correctly identified | Yes / Yes | 3/3 / 3/3 | BOTH_CAUGHT |
+| Apply required filters and sort order | Active 4-star filter unclear / Yes | Active filter explicit / Yes | 1/4 / 3/4 | SCREENSHOT_EVIDENCE_MISSING |
+| Report top product (rank #1 after sort) | Limited / correctly identified | Limited / correctly identified | 0/3 / 1/3 | BOTH_CAUGHT |
+| Report second product (rank #2 after sort) | Limited / correctly identified | Limited / correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report third product (rank #3 after sort) | Limited / correctly identified | Limited / correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Handle bot check / access block appropriately | Limited / correctly identified | Limited / correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+
+**Summary:** DOM explicitly marks the 4-stars filter active while the screenshot only shows the filter option without a clear selected state. The remaining score difference is partial-credit treatment of the incorrect top product. DOM used 65,829 more scoring tokens than screenshots (50.0% increase).
+
+- [Comparison](results/task_26_rerun/20260915_task26_rerun/comparison.md)
+- [Offline audit](results/task_26_rerun/20260915_task26_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 27 rerun — Shopping Constraint Satisfaction
+
+Task ID: `browser_task_027-shopping-constraint-satisfaction-20260915T073457Z`  
+Run: `20260915_task27_rerun`  
+Reused rubric SHA-256: `2212291f68520b789f988e7484e561cb893b90ec6481965020f5f65c8540c648`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 2/18 (11.1%) | 2/18 (11.1%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 2 / 3 | 2 / 3 |
+| LLM calls / retries | 14 / 0 | 16 / 0 |
+| Duration | 101.128 s | 104.703 s |
+| Scoring tokens | 85,952 | 96,833 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Browse eBay without restricted actions (no sign-in, no bid/cart/purchase) | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Find a laptop listing in the $600–$900 range that appears to meet RAM/SSD thresholds | Limited / correctly identified | Limited / correctly identified | 0/4 / 0/4 | BOTH_CAUGHT |
+| Open product detail page and verify RAM and SSD from the item specifics/detail table when available | Limited / correctly identified | Limited / correctly identified | 0/6 / 0/6 | BOTH_CAUGHT |
+| Report model, price, RAM, and SSD capacity (with confirmation source) | Yes / Yes | Limited / correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Stop after one qualifying laptop is verified, and handle bot-check/CAPTCHA appropriately | Limited / correctly identified | Limited / correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+
+**Summary:** Neither modality contains the requested eBay product details; both verifiers correctly score the incomplete trajectory. DOM used 10,881 more scoring tokens than screenshots (12.7% increase).
+
+- [Comparison](results/task_27_rerun/20260915_task27_rerun/comparison.md)
+- [Offline audit](results/task_27_rerun/20260915_task27_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 28 rerun — News Monitoring
+
+Task ID: `browser_task_028-news-monitoring-20260915T073852Z`  
+Run: `20260915_task28_rerun`  
+Reused rubric SHA-256: `ecbe8f31750b2f052bb63998de33a2ea569f9d4c48902231f80cc943eac91636`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 7/18 (38.9%) | 7/18 (38.9%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 17 / 0 |
+| Duration | 86.015 s | 155.716 s |
+| Scoring tokens | 77,354 | 93,458 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access BBC Technology section (bbc.com/technology) without signing in | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record the five most recent BBC Technology headlines | Limited / correctly identified | Limited / correctly identified | 0/5 / 0/5 | BOTH_CAUGHT |
+| Record publication timestamps exactly as displayed for each of the five headlines | Limited / correctly identified | Limited / correctly identified | 0/6 / 0/6 | BOTH_CAUGHT |
+| Stop after recording five newest headlines and timestamps | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Respect constraints: no sign-in and no ad interaction | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Neither modality contains the five requested BBC headlines/timestamps; both verifiers agree on the same evidence and score. DOM used 16,104 more scoring tokens than screenshots (20.8% increase).
+
+- [Comparison](results/task_28_rerun/20260915_task28_rerun/comparison.md)
+- [Offline audit](results/task_28_rerun/20260915_task28_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 29 rerun — Course Search And Filtering
+
+Task ID: `browser_task_029-course-search-and-filtering-20260915T073923Z`  
+Run: `20260915_task29_rerun`  
+Reused rubric SHA-256: `3daffb68fd3e0e8bf3aed4b5b7a36a638215f13377b5964ac7a3093aad4e3094`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 14/18 (77.8%) | 17/18 (94.4%) |
+| Rubric / outcome | Fail / Fail | Pass / Pass |
+| Actions / states | 6 / 7 | 6 / 7 |
+| LLM calls / retries | 20 / 0 | 34 / 0 |
+| Duration | 146.734 s | 192.851 s |
+| Scoring tokens | 143,248 | 273,631 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access Coursera Data Science browse/search results without signing in | Limited / correctly identified | Limited / correctly identified | 1/1 / 1/1 | BOTH_CAUGHT |
+| Apply all requested Coursera filters (Data Science subject, Beginner level, English language, 1–3 months duration) or document unavoidable UI limitations | Limited / correctly identified | Limited / correctly identified | 4/4 / 4/4 | BOTH_CAUGHT |
+| Identify the three highest-rated matching courses (or report fewer if not available) | Two selected courses / Yes | Three selected courses / Yes | 2/4 / 3/4 | SCREENSHOT_EVIDENCE_MISSING |
+| Report required fields for Course #1 (title, rating, enrollment count if displayed) | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report required fields for Course #2 (title, rating, enrollment count if displayed) | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report required fields for Course #3 (title, rating, enrollment count if displayed) | Course #3 absent / Yes | Course #3 explicit / Yes | 0/2 / 2/2 | SCREENSHOT_EVIDENCE_MISSING |
+| Comply with constraints (no sign-in; no enroll/purchase/start trial; stop after verification) | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+
+**Summary:** DOM preserves “AI Mastery for Professionals” and its rating, while that selected third course is absent from screenshots. This creates screenshot-source loss for both the top-three selection and Course #3 reporting criteria. DOM used 130,383 more scoring tokens than screenshots (91.0% increase).
+
+- [Comparison](results/task_29_rerun/20260915_task29_rerun/comparison.md)
+- [Offline audit](results/task_29_rerun/20260915_task29_rerun/evidence_error_audit/criterion_audit.json)
+
+## Task 30 rerun — Course Detail Inspection
+
+Task ID: `browser_task_030-course-detail-inspection-20260915T074021Z`  
+Run: `20260915_task30_rerun`  
+Reused rubric SHA-256: `d72d9b5be1488b333321130e761a98f676847890a290a6b5fe324b932028a2e6`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 14/16 (87.5%) | 14/16 (87.5%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 29 / 0 |
+| Duration | 109.270 s | 199.064 s |
+| Scoring tokens | 79,224 | 139,829 |
+
+### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the specified Coursera course page without signing in/enrolling (or record unavailability state) | Limited / correctly identified | Limited / correctly identified | 2/4 / 3/4 | BOTH_CAUGHT |
+| Record instructor name(s) | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record institution/partner | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record number of modules/weeks shown in the syllabus | Limited / correctly identified | Limited / correctly identified | 3/3 / 2/3 | BOTH_CAUGHT |
+| Determine whether a free audit option is available | Limited / correctly identified | Limited / correctly identified | 3/3 / 3/3 | BOTH_CAUGHT |
+| Stop after recording overview and syllabus details (respect stopping condition and constraints) | Limited / correctly identified | Limited / correctly identified | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both modalities show the same related Coursera course and “5 modules.” The point gaps reflect partial-credit interpretation, not evidence availability. DOM used 60,605 more scoring tokens than screenshots (76.5% increase).
+
+- [Comparison](results/task_30_rerun/20260915_task30_rerun/comparison.md)
+- [Offline audit](results/task_30_rerun/20260915_task30_rerun/evidence_error_audit/criterion_audit.json)
+
+
+## Rerun batch result — Tasks 31–60 (2026-09-15)
+
+This section audits the completed `task_31_rerun`–`task_60_rerun` artifacts only. It uses existing verifier outputs plus direct inspection of staged screenshots and raw `dom_modelN.txt` states; no new LLM calls were made. All 30 runs passed pipeline validation, used identical per-task frozen-rubric hashes and criterion order across modalities, and reported zero rubric-generation calls during scoring.
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Tasks | 30 | 30 |
+| Criteria | 194 | 194 |
+| Aggregate process points | 341.5/546 (62.5%) | 382.5/546 (70.1%) |
+| Outcome passes | 8/30 | 11/30 |
+| Scoring tokens | 3,101,625 | 4,198,186 |
+| Asymmetric source-evidence loss | 10/194 (5.2%) | 0/194 (0.0%) |
+| Confirmed verifier evidence/grounding misses | 0/194 (0.0%) | 2/194 (1.0%) |
+
+`Asymmetric source-evidence loss` counts only criterion facts absent from the staged screenshot frames but explicit in staged DOM text (or vice versa). Facts already recoverable from the shared action history, and negative claims that need full-page coverage, are excluded. Shared absence is not counted. Score differences alone are never counted as evidence loss. Caught means the verifier identified/assessed available evidence; it does not mean the agent earned full credit.
+
+
+### Task 31 rerun — Table Lookup And Extraction
+
+Task ID: `browser_task_031-table-lookup-and-extraction-20260915T074102Z`  
+Run: `20260915_task31_rerun`  
+Frozen rubric SHA-256: `1f258ed34b24d9908e533b69708ef9ff958f65a514ffc2a461789d2905a7a372`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 3/15 (20.0%) | 3/15 (20.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 0 / 1 | 0 / 1 |
+| LLM calls / retries | 10 / 0 | 10 / 0 |
+| Duration | 81.786 s | 88.486 s |
+| Scoring tokens | 59,467 | 57,794 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Record complete 1921 Nobel Physics table entry | No / Correctly identified | No / Correctly identified | 0/4 / 0/4 | BOTH_CAUGHT |
+| Record complete 1922 Nobel Physics table entry | No / Correctly identified | No / Correctly identified | 0/4 / 0/4 | BOTH_CAUGHT |
+| Record complete 1923 Nobel Physics table entry | No / Correctly identified | No / Correctly identified | 0/4 / 0/4 | BOTH_CAUGHT |
+| Adherence to explicit constraints and stopping condition | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+
+**Summary:** Both representations contain only the Wikipedia introduction/statistics area; the requested 1921–1923 table rows are absent from both. Scores match.
+
+- [Comparison](results/task_31_rerun/20260915_task31_rerun/comparison.md)
+- [Offline audit](results/task_31_rerun/20260915_task31_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 32 rerun — Technical Documentation Inspection
+
+Task ID: `browser_task_032-technical-documentation-inspection-20260915T074143Z`  
+Run: `20260915_task32_rerun`  
+Frozen rubric SHA-256: `694dab3808aea3a9751b6e53ef19bee73f42a8c06b3be48a3b1c415cd8170d46`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 6/20 (30.0%) | 4/20 (20.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 23 / 0 |
+| Duration | 121.082 s | 213.943 s |
+| Scoring tokens | 83,138 | 138,436 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Record formal definition: initial value | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Record formal definition: applies to | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| List all keyword values shown in the current formal syntax | Yes / Assessed | Yes / Assessed | 4/4 / 2/4 | BOTH_CAUGHT |
+| Report earliest supported desktop Chrome version for base property | No / Correctly identified | No / Correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+| Report earliest supported desktop Firefox version for base property | No / Correctly identified | No / Correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+| Report earliest supported desktop Safari version for base property | No / Correctly identified | No / Correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+| Respect task constraints and stopping condition | Yes / Assessed | Yes / Assessed | 2/4 / 2/4 | BOTH_CAUGHT |
+
+**Summary:** Both representations expose the same keyword values but not the formal-definition or browser-compatibility tables. The two-point gap is stricter DOM scoring of “formal syntax,” not evidence loss.
+
+- [Comparison](results/task_32_rerun/20260915_task32_rerun/comparison.md)
+- [Offline audit](results/task_32_rerun/20260915_task32_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 33 rerun — Software Package Metadata
+
+Task ID: `browser_task_033-software-package-metadata-20260915T074218Z`  
+Run: `20260915_task33_rerun`  
+Frozen rubric SHA-256: `e987f50a1508388eff19029c26216ddd2da448997aefb8b1e786319631b301d5`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 15/20 (75.0%) | 16/20 (80.0%) |
+| Rubric / outcome | Fail / Fail | Pass / Fail |
+| Actions / states | 7 / 8 | 7 / 8 |
+| LLM calls / retries | 24 / 0 | 34 / 0 |
+| Duration | 117.976 s | 128.982 s |
+| Scoring tokens | 154,937 | 177,250 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the Requests project page on PyPI (no sign-in) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Identify the latest displayed Requests release on the PyPI project page | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report version and upload date for the latest displayed release | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+| Report Requires Python value for the latest displayed release | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report license for the latest displayed release | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Count number of Download files listed for the latest displayed release | No / Correctly rejected | Yes / Partial | 0/4 / 1/4 | SCREENSHOT_EVIDENCE_MISSING |
+| Respect constraints: no sign-in, no downloading/installing, no inference for missing metadata | Yes / Assessed | Yes / Assessed | 1/2 / 1/2 | BOTH_CAUGHT |
+
+**Summary:** The screenshot shows one source-distribution row but never exposes the built-distribution count. DOM explicitly says “Showing 1 of 1 file” in the built section; the DOM verifier recognized this only partially.
+
+- [Comparison](results/task_33_rerun/20260915_task33_rerun/comparison.md)
+- [Offline audit](results/task_33_rerun/20260915_task33_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 34 rerun — Dependency Inspection
+
+Task ID: `browser_task_034-dependency-inspection-20260915T074318Z`  
+Run: `20260915_task34_rerun`  
+Frozen rubric SHA-256: `bff329749131a4a0d59fe780a228d6d7277fea87b8202c6904f5168b64267bf6`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 19/20 (95.0%) | 20/20 (100.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 29 / 0 |
+| Duration | 100.051 s | 143.772 s |
+| Scoring tokens | 79,710 | 146,405 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access RubyGems rails gem page (without sign-in) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Respect constraints: no sign-in, no download/install | Yes / Assessed | Yes / Assessed | 1/1 / 1/1 | BOTH_CAUGHT |
+| Identify the latest displayed Rails version | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record latest version metadata (version, release date, required Ruby, license) | Partial / Assessed | Yes / Assessed | 3/4 / 4/4 | SCREENSHOT_EVIDENCE_MISSING |
+| Runtime dependency #1 in displayed order (name + requirement) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Runtime dependency #2 in displayed order (name + requirement) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Runtime dependency #3 in displayed order (name + requirement) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Runtime dependency #4 in displayed order (name + requirement) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Runtime dependency #5 in displayed order (name + requirement) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both show the Rails version and dependency table, but only DOM exposes the MIT license. The one-point score gap follows that screenshot-source omission.
+
+- [Comparison](results/task_34_rerun/20260915_task34_rerun/comparison.md)
+- [Offline audit](results/task_34_rerun/20260915_task34_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 35 rerun — Container Image Tag Comparison
+
+Task ID: `browser_task_035-container-image-tag-comparison-20260915T074341Z`  
+Run: `20260915_task35_rerun`  
+Frozen rubric SHA-256: `003b90014d5fed37a6292b1c5ce248284dabbaa1bc85dec01fd756fba5b5bc02`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 10/20 (50.0%) | 17/20 (85.0%) |
+| Rubric / outcome | Fail / Fail | Pass / Fail |
+| Actions / states | 3 / 4 | 3 / 4 |
+| LLM calls / retries | 16 / 0 | 25 / 0 |
+| Duration | 110.035 s | 191.078 s |
+| Scoring tokens | 108,902 | 155,246 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the official Python image Tags page on Docker Hub and search for '3.12-slim' | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Filter to only tag names that begin exactly with '3.12-slim' (exact-prefix match) | Yes / Assessed | Yes / Assessed | 2/3 / 3/3 | BOTH_CAUGHT |
+| Identify the three most recently updated tags among the exact-prefix matches (or report limitations) | Partial / Assessed | Yes / Assessed | 2/8 / 7/8 | SCREENSHOT_EVIDENCE_MISSING |
+| Report required displayed fields for each of the (up to) three selected tags (no guessing) | Partial / Assessed | Yes / Partial | 1/4 / 2/4 | SCREENSHOT_EVIDENCE_MISSING |
+| Respect task constraints (no sign-in; no pulling/running images) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** DOM exposes all three exact-prefix tag cards and more linux/amd64 rows; screenshots expose only two qualifying tag cards and incomplete size coverage. DOM still correctly penalized the unsupported duplicated 44.04 MB value for `3.12-slim`.
+
+- [Comparison](results/task_35_rerun/20260915_task35_rerun/comparison.md)
+- [Offline audit](results/task_35_rerun/20260915_task35_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 36 rerun — Package Dependency Lookup
+
+Task ID: `browser_task_036-package-dependency-lookup-20260915T074421Z`  
+Run: `20260915_task36_rerun`  
+Frozen rubric SHA-256: `21c4811a4e548e87e00a1e3531cb01097dc7c0680f13eb540ec9481d4dd05203`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 16/16 (100.0%) | 16/16 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 15 / 0 |
+| Duration | 85.089 s | 103.199 s |
+| Scoring tokens | 76,212 | 84,548 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the Debian Bookworm curl package page (packages.debian.org/bookworm/curl) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report the Bookworm curl package version | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| List every architecture in the 'Download curl' table | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| List all required dependencies under 'Depends' with displayed version constraints | Yes / Assessed | Yes / Assessed | 6/6 / 6/6 | BOTH_CAUGHT |
+| Respect constraints (no download/install; remain on Bookworm package page; stop after recording required info) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both representations contain the same Bookworm version, complete architecture table, and three Depends entries. Both receive full credit.
+
+- [Comparison](results/task_36_rerun/20260915_task36_rerun/comparison.md)
+- [Offline audit](results/task_36_rerun/20260915_task36_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 37 rerun — Package Platform Availability
+
+Task ID: `browser_task_037-package-platform-availability-20260915T074457Z`  
+Run: `20260915_task37_rerun`  
+Frozen rubric SHA-256: `9d32a5e889be0c21958c7736140181e10f8caa992f0f6d4a53f28324d0e74646`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 17/22 (77.3%) | 21.5/22 (97.7%) |
+| Rubric / outcome | Fail / Fail | Pass / Pass |
+| Actions / states | 2 / 3 | 2 / 3 |
+| LLM calls / retries | 15 / 0 | 29 / 0 |
+| Duration | 112.101 s | 151.999 s |
+| Scoring tokens | 93,296 | 130,513 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access Homebrew Formulae page for ffmpeg | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record stable version exactly as displayed | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record license exactly as displayed | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| List all regular dependencies under 'Depends on' (excluding build-only and 'Uses from macOS') | Yes / Assessed | Yes / Missed | 6/8 / 8/8 | DOM_MISSED_SCREENSHOT_CAUGHT |
+| Report bottle availability for macOS on Apple Silicon exactly as displayed | Yes / Assessed | Yes / Assessed | 2/3 / 2.5/3 | BOTH_CAUGHT |
+| Report bottle availability for Linux exactly as displayed | Yes / Assessed | Yes / Assessed | 2/3 / 3/3 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Yes / Assessed | Yes / Overcredited | 1/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** The evidence coverage is equivalent. The DOM verifier incorrectly treated `pkgconf`, shown in a separate build-only table, as a regular dependency and was more lenient on exact bottle wording; this is a DOM-verifier interpretation/scoring issue.
+
+- [Comparison](results/task_37_rerun/20260915_task37_rerun/comparison.md)
+- [Offline audit](results/task_37_rerun/20260915_task37_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 38 rerun — Software Release Inspection
+
+Task ID: `browser_task_038-software-release-inspection-20260915T074527Z`  
+Run: `20260915_task38_rerun`  
+Frozen rubric SHA-256: `ba30b78805709c6d54a42713b2764923163d272ac3e0bdf2f524ce31b6d06a9f`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 14/14 (100.0%) | 12/14 (85.7%) |
+| Rubric / outcome | Pass / Pass | Pass / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 17 / 0 |
+| Duration | 85.292 s | 114.849 s |
+| Scoring tokens | 71,216 | 98,949 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access GitLab Runner releases list (no sign-in) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Select the first qualifying non-prerelease tag | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+| Record the qualifying release tag and exact created date | No / Correctly identified | No / Correctly identified | 3/3 / 1/3 | BOTH_CAUGHT |
+| Record first three 'Other' asset link names (exclude Source code archives, preserve order, no downloads) | Yes / Assessed | Yes / Assessed | 5/5 / 5/5 | BOTH_CAUGHT |
+
+**Summary:** Both sources show `v19.1.3`, the exact relative text “Released 18 hours ago,” and the same first three Other links. The score gap is DOM scoring strictness, not evidence loss.
+
+- [Comparison](results/task_38_rerun/20260915_task38_rerun/comparison.md)
+- [Offline audit](results/task_38_rerun/20260915_task38_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 39 rerun — Technical Parameter Extraction
+
+Task ID: `browser_task_039-technical-parameter-extraction-20260915T074609Z`  
+Run: `20260915_task39_rerun`  
+Frozen rubric SHA-256: `e09a0ab5237e118cd5f3c386ff2a529e59b9248793cb3808834b1af12137779e`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 10/12 (83.3%) | 12/12 (100.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Pass |
+| Actions / states | 3 / 4 | 3 / 4 |
+| LLM calls / retries | 14 / 0 | 14 / 0 |
+| Duration | 68.014 s | 79.139 s |
+| Scoring tokens | 73,614 | 78,085 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Report meaning and default for .spec.strategy.rollingUpdate.maxUnavailable | Yes / Assessed | Yes / Assessed | 3/4 / 4/4 | BOTH_CAUGHT |
+| Report meaning and default for .spec.strategy.rollingUpdate.maxSurge | Yes / Assessed | Yes / Assessed | 3/4 / 4/4 | BOTH_CAUGHT |
+| Report meaning and default for .spec.progressDeadlineSeconds | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+
+**Summary:** Both sources contain the three Kubernetes field descriptions and defaults. Different partial-credit treatment creates the two-point gap.
+
+- [Comparison](results/task_39_rerun/20260915_task39_rerun/comparison.md)
+- [Offline audit](results/task_39_rerun/20260915_task39_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 40 rerun — Map Entity Inspection
+
+Task ID: `browser_task_040-map-entity-inspection-20260915T074649Z`  
+Run: `20260915_task40_rerun`  
+Frozen rubric SHA-256: `2f5a5cab05458d03a0e495ac223e152659863ab23a1d08ce8b9ad6bfd8dcac8e`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 12/16 (75.0%) | 12/16 (75.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 13 / 0 | 18 / 0 |
+| Duration | 113.091 s | 174.479 s |
+| Scoring tokens | 88,798 | 112,790 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access OpenStreetMap search for 'British Museum, London' | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Navigate to the exact British Museum OSM object page | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+| Record displayed OSM object type and ID | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report addr:street tag value | Yes / Assessed | Yes / Assessed | 1/1 / 1/1 | BOTH_CAUGHT |
+| Report addr:city tag value | Yes / Assessed | Yes / Assessed | 1/1 / 1/1 | BOTH_CAUGHT |
+| Report addr:postcode tag value | Yes / Assessed | Yes / Assessed | 1/1 / 1/1 | BOTH_CAUGHT |
+| Report tourism tag value | No / Correctly identified | No / Correctly identified | 0/1 / 0/1 | BOTH_CAUGHT |
+| Report museum tag value | No / Correctly identified | No / Correctly identified | 0/1 / 0/1 | BOTH_CAUGHT |
+| Report website tag value | No / Correctly identified | No / Correctly identified | 0/1 / 0/1 | BOTH_CAUGHT |
+| Respect constraints (no sign-in/edit; stop after recording requested info) | Yes / Assessed | Yes / Assessed | 1/2 / 1/2 | BOTH_CAUGHT |
+
+**Summary:** Both representations expose the same visible OSM tags. `tourism`, `museum`, and `website` are absent from both captured states, and both verifiers reject those unsupported claims.
+
+- [Comparison](results/task_40_rerun/20260915_task40_rerun/comparison.md)
+- [Offline audit](results/task_40_rerun/20260915_task40_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 41 rerun — Standards Metadata Extraction
+
+Task ID: `browser_task_041-standards-metadata-extraction-20260915T074717Z`  
+Run: `20260915_task41_rerun`  
+Frozen rubric SHA-256: `390ac55adb7f6723236d47e498f5810fea3795edbb61e9dc073887d520bf5558`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 1/20 (5.0%) | 7/20 (35.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 0 / 1 | 0 / 1 |
+| LLM calls / retries | 10 / 0 | 12 / 0 |
+| Duration | 94.518 s | 107.544 s |
+| Scoring tokens | 64,001 | 71,309 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the RFC Editor record for RFC 9110 (info page) and base answers on it | Yes / Assessed | Yes / Overcredited | 1/2 / 2/2 | BOTH_CAUGHT |
+| Report RFC 9110 core metadata from the RFC Editor record | Yes / Assessed | Yes / Overcredited | 0/6 / 3/6 | BOTH_CAUGHT |
+| List every RFC obsoleted by RFC 9110 (as shown in the RFC Editor record) | Yes / Assessed | Yes / Overcredited | 0/4 / 1/4 | BOTH_CAUGHT |
+| Preserve full vs partial obsolescence for each obsoleted RFC (per RFC Editor record) | Yes / Assessed | Yes / Overcredited | 0/6 / 1/6 | BOTH_CAUGHT |
+| Stopping condition met (no extra actions beyond recording required info) | Yes / Assessed | Yes / Assessed | 0/2 / 0/2 | BOTH_CAUGHT |
+
+**Summary:** The shared action history proves the `/info/rfc9110/` URL, while DOM also states it explicitly. Both sources contain RFC metadata, but the agent final answer contains no requested fields; the DOM verifier nevertheless awarded source-derived partial credit, which is overcredit rather than evidence recovery.
+
+- [Comparison](results/task_41_rerun/20260915_task41_rerun/comparison.md)
+- [Offline audit](results/task_41_rerun/20260915_task41_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 42 rerun — Domain Registry Lookup
+
+Task ID: `browser_task_042-domain-registry-lookup-20260915T074756Z`  
+Run: `20260915_task42_rerun`  
+Frozen rubric SHA-256: `44708721e982b01a34e3cbe39681e8a0cce591c3ea119bb299b4d51cb5019375`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 15/15 (100.0%) | 15/15 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 23 / 0 |
+| Duration | 83.514 s | 99.301 s |
+| Scoring tokens | 73,557 | 96,080 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use IANA Root Zone Database .museum delegation page | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record TLD type | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record sponsoring organization | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record registration date (not last updated) | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record WHOIS server | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record registration services website | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both sources contain every requested IANA `.museum` field. Scores and outcomes match at full credit.
+
+- [Comparison](results/task_42_rerun/20260915_task42_rerun/comparison.md)
+- [Offline audit](results/task_42_rerun/20260915_task42_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 43 rerun — Vulnerability Record Inspection
+
+Task ID: `browser_task_043-vulnerability-record-inspection-20260915T074932Z`  
+Run: `20260915_task43_rerun`  
+Frozen rubric SHA-256: `7e5d21731cdafb6d81afa53ddfb0e64f8a842e2fe3cf70a3e5c5d9040dc003e7`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 18/20 (90.0%) | 18/20 (90.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 22 / 0 |
+| Duration | 99.644 s | 150.453 s |
+| Scoring tokens | 80,181 | 122,548 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the CVE.org record for CVE-2021-44228 (CNA record context) | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report required CVE metadata (status, publication date, CNA, vendor, product) | Yes / Assessed | Yes / Assessed | 3/5 / 3/5 | BOTH_CAUGHT |
+| Quote the affected-version statement exactly as written in the CNA Description | Yes / Assessed | Yes / Assessed | 6/6 / 6/6 | BOTH_CAUGHT |
+| Record the first reference URL displayed in the CNA record | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Respect constraints: do not follow/download external references; do not combine third-party version ranges; stop after requested items | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+
+**Summary:** Both sources contain the same CVE status/date/CNA, affected-version sentence, and first reference. Scores match; the shared two-point deduction is for vendor/product fields not explicitly displayed.
+
+- [Comparison](results/task_43_rerun/20260915_task43_rerun/comparison.md)
+- [Offline audit](results/task_43_rerun/20260915_task43_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 44 rerun — Earthquake Filtering And Ranking
+
+Task ID: `browser_task_044-earthquake-filtering-and-ranking-20260915T075010Z`  
+Run: `20260915_task44_rerun`  
+Frozen rubric SHA-256: `91a73e9ce7cbb9cfa0fb89a1c190e63915795fb801c4c3a183f71d4b2fc9165d`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 9/16 (56.2%) | 16/16 (100.0%) |
+| Rubric / outcome | Fail / Fail | Pass / Pass |
+| Actions / states | 14 / 15 | 14 / 15 |
+| LLM calls / retries | 32 / 0 | 35 / 0 |
+| Duration | 125.780 s | 102.170 s |
+| Scoring tokens | 181,957 | 174,106 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Apply correct USGS query filters (UTC range, worldwide, magnitude threshold) | Yes / Assessed | Yes / Assessed | 5/5 / 5/5 | BOTH_CAUGHT |
+| Order results by magnitude (largest to smallest) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report top three results with required fields (preserve USGS order for ties, UTC times) | No / Correctly rejected | Yes / Assessed | 0/5 / 5/5 | SCREENSHOT_EVIDENCE_MISSING |
+| Handle fewer-than-three results correctly | No / Correctly rejected | Yes / Assessed | 0/2 / 2/2 | SCREENSHOT_EVIDENCE_MISSING |
+| Respect constraints: no alerts/notifications and proper UTC handling disclosure | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** The final screenshot shows only the USGS map markers, while `dom_model14` explicitly contains the ordered 20-result list and the first three magnitude/place/UTC rows. This is confirmed screenshot-source loss on two criteria.
+
+- [Comparison](results/task_44_rerun/20260915_task44_rerun/comparison.md)
+- [Offline audit](results/task_44_rerun/20260915_task44_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 45 rerun — Weather Forecast Extraction
+
+Task ID: `browser_task_045-weather-forecast-extraction-20260915T075136Z`  
+Run: `20260915_task45_rerun`  
+Frozen rubric SHA-256: `3ef97ba5958cfe041448d9d42a54ac4ad18b27d24a7a7bfbf0b4e4d15ec878ee`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 20/20 (100.0%) | 20/20 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 18 / 0 |
+| Duration | 90.681 s | 129.636 s |
+| Scoring tokens | 75,840 | 98,854 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use National Weather Service forecast page for Downtown Seattle (or report access blocker) | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Identify the first displayed daytime forecast period and the immediately following nighttime period (or report ambiguity) | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+| Report required fields for the daytime period (with unavailable handling) | Yes / Assessed | Yes / Assessed | 5/5 / 5/5 | BOTH_CAUGHT |
+| Report required fields for the nighttime period (with unavailable handling) | Yes / Assessed | Yes / Assessed | 5/5 / 5/5 | BOTH_CAUGHT |
+| Respect constraints and stopping condition (no guessing; one pair only; no permissions) | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+
+**Summary:** Both representations contain the same Seattle daytime/nighttime pair and detailed forecasts. Both receive full credit.
+
+- [Comparison](results/task_45_rerun/20260915_task45_rerun/comparison.md)
+- [Offline audit](results/task_45_rerun/20260915_task45_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 46 rerun — Park Operational Status
+
+Task ID: `browser_task_046-park-operational-status-20260915T075217Z`  
+Run: `20260915_task46_rerun`  
+Frozen rubric SHA-256: `e24fd31de542dbb9ecf85ffa9e52387f76f4eba36181c54daaeb2de5917686b9`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 12/20 (60.0%) | 9/20 (45.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 2 / 3 | 2 / 3 |
+| LLM calls / retries | 14 / 0 | 19 / 0 |
+| Duration | 118.312 s | 154.861 s |
+| Scoring tokens | 99,903 | 106,326 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access Yosemite Current Conditions page (NPS) and locate the Active Alerts module | Yes / Assessed | Yes / Assessed | 2/2 / 1/2 | BOTH_CAUGHT |
+| Active park-alert count on Yosemite Current Conditions page | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report the first two active park-alert titles (or all if fewer than two) | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report displayed Tioga Road status | No / Correctly identified | No / Correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+| Access Yosemite Entrance Reservations page (NPS) | Yes / Assessed | Yes / Assessed | 1/1 / 1/1 | BOTH_CAUGHT |
+| Determine 2026 entrance timed-reservation requirement from Entrance Reservations page | No / Blocker credited | No / Blocker credited | 5/5 / 5/5 | BOTH_CAUGHT |
+| Follow constraints and stopping condition | Yes / Assessed | Yes / Assessed | 4/4 / 2/4 | BOTH_CAUGHT |
+
+**Summary:** Both representations omit the alert count/titles and Tioga status and both show the reservations 404. The three-point gap comes from different blocker/stopping-condition scoring, not evidence coverage.
+
+- [Comparison](results/task_46_rerun/20260915_task46_rerun/comparison.md)
+- [Offline audit](results/task_46_rerun/20260915_task46_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 47 rerun — Regulatory Api Search
+
+Task ID: `browser_task_047-regulatory-api-search-20260915T075303Z`  
+Run: `20260915_task47_rerun`  
+Frozen rubric SHA-256: `77f681aa2e64f1e70e5391e7218bc122c01fbe9a0f59bdf56758b7fd900be0af`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 3/20 (15.0%) | 2/20 (10.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 0 / 1 | 0 / 1 |
+| LLM calls / retries | 10 / 0 | 12 / 0 |
+| Duration | 96.085 s | 125.091 s |
+| Scoring tokens | 71,222 | 78,595 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use the specified official Federal Register API endpoint with the exact query (or clearly report access failure) | Yes / Assessed | Yes / Assessed | 1/2 / 2/2 | BOTH_CAUGHT |
+| Rely only on the response top-level "results" array (no link-following or extra sources) | Yes / Assessed | Yes / Assessed | 2/2 / 0/2 | BOTH_CAUGHT |
+| Report the first up to three API results in returned order (newest first) and stop | Yes / Assessed | Yes / Assessed | 0/4 / 0/4 | BOTH_CAUGHT |
+| Result 1: Provide title, every listed agency, document type, and publication date (as present in API payload) | Yes / Assessed | Yes / Assessed | 0/4 / 0/4 | BOTH_CAUGHT |
+| Result 2: Provide title, every listed agency, document type, and publication date (as present in API payload) | Yes / Assessed | Yes / Assessed | 0/4 / 0/4 | BOTH_CAUGHT |
+| Result 3: Provide title, every listed agency, document type, and publication date (as present in API payload) | Yes / Assessed | Yes / Assessed | 0/4 / 0/4 | BOTH_CAUGHT |
+
+**Summary:** Both representations contain the same exact Federal Register JSON with three results, while the agent produced no extraction. The one-point gap is constraint/access scoring calibration.
+
+- [Comparison](results/task_47_rerun/20260915_task47_rerun/comparison.md)
+- [Offline audit](results/task_47_rerun/20260915_task47_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 48 rerun — Corporate Filing Filtering
+
+Task ID: `browser_task_048-corporate-filing-filtering-20260915T075349Z`  
+Run: `20260915_task48_rerun`  
+Frozen rubric SHA-256: `c8197d17535a38a70b94467043e3b15de71f9f6afc6ce6cacf16ebc253dfbecb`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 4/20 (20.0%) | 6/20 (30.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 14 / 0 |
+| Duration | 105.533 s | 112.440 s |
+| Scoring tokens | 81,414 | 83,150 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Navigate to Tesco PLC Companies House filing history (correct company/page) | Yes / Assessed | Yes / Assessed | 2/3 / 3/3 | BOTH_CAUGHT |
+| Apply the 'Accounts' category filter via the page interface | No / Correctly identified | No / Correctly identified | 0/4 / 1/4 | BOTH_CAUGHT |
+| Record newest (most recent) account filing #1 details | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Record newest account filing #2 details | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Record newest account filing #3 details | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Yes / Assessed | Yes / Assessed | 2/4 / 2/4 | BOTH_CAUGHT |
+
+**Summary:** The shared action history and DOM prove the exact Tesco filing-history URL; screenshots show the correct company header but not the filing-history page/list. Neither representation shows the Accounts filter applied or any filing rows.
+
+- [Comparison](results/task_48_rerun/20260915_task48_rerun/comparison.md)
+- [Offline audit](results/task_48_rerun/20260915_task48_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 49 rerun — Economic Time Series Extraction
+
+Task ID: `browser_task_049-economic-time-series-extraction-20260915T075416Z`  
+Run: `20260915_task49_rerun`  
+Frozen rubric SHA-256: `e7d920165717bb854ffc6669291fce77cdb6a22a09c2c21c07c0bf59a111708c`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 15/15 (100.0%) | 15/15 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 4 / 5 | 4 / 5 |
+| LLM calls / retries | 18 / 0 | 29 / 0 |
+| Duration | 86.217 s | 112.258 s |
+| Scoring tokens | 113,347 | 144,169 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the FRED UNRATE series page (or clearly report access blocking) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Use the correct series content (UNRATE) rather than a different unemployment series | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record series metadata exactly as displayed (units, frequency, seasonal adjustment) | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+| Record the three latest displayed observation months and values exactly | Yes / Assessed | Yes / Assessed | 5/5 / 5/5 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Limited / Yes | Limited / Yes | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both representations expose the UNRATE series metadata and latest three observations. Scores and outcomes match at full credit.
+
+- [Comparison](results/task_49_rerun/20260915_task49_rerun/comparison.md)
+- [Offline audit](results/task_49_rerun/20260915_task49_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 50 rerun — International Data Comparison
+
+Task ID: `browser_task_050-international-data-comparison-20260915T075458Z`  
+Run: `20260915_task50_rerun`  
+Frozen rubric SHA-256: `377507b06bf488f2fc4bdd475a2237f2433f27381fb1757339a5f7a3b9633638`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 16/16 (100.0%) | 16/16 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 27 / 0 |
+| Duration | 90.928 s | 141.269 s |
+| Scoring tokens | 86,317 | 141,422 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use only the official World Bank API response at the supplied URL (or clearly report if inaccessible) | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Identify the latest year (2020–2026) where all three countries have non-null population values (or conclude none exists) | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+| Report exact Population, total value for India in the latest common non-null year (full integer, no rounding) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report exact Population, total value for Brazil in the latest common non-null year (full integer, no rounding) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report exact Population, total value for Nigeria in the latest common non-null year (full integer, no rounding) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Rank countries from highest to lowest population for that year (or state ranking cannot be produced) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Stopping condition respected (stop after required outputs, or after establishing unavailability) | Yes / Assessed | Yes / Assessed | 1/1 / 1/1 | BOTH_CAUGHT |
+
+**Summary:** Both representations contain the same World Bank API response and values. Scores and outcomes match at full credit.
+
+- [Comparison](results/task_50_rerun/20260915_task50_rerun/comparison.md)
+- [Offline audit](results/task_50_rerun/20260915_task50_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 51 rerun — Cultural Object Metadata
+
+Task ID: `browser_task_051-cultural-object-metadata-20260915T075529Z`  
+Run: `20260915_task51_rerun`  
+Frozen rubric SHA-256: `5a2c65783a6ed51812d8b45896ecebb899378a1aeb5f24f624b632a401658fbd`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 9/18 (50.0%) | 15/18 (83.3%) |
+| Rubric / outcome | Fail / Fail | Pass / Fail |
+| Actions / states | 2 / 3 | 2 / 3 |
+| LLM calls / retries | 14 / 0 | 30 / 0 |
+| Duration | 115.867 s | 179.391 s |
+| Scoring tokens | 95,991 | 141,721 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use the exact Europeana record 90402/SK_A_2344 (The Milkmaid) or report access failure | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record the Title exactly as displayed (or state not displayed/unavailable) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record the Creation date exactly as displayed (or state not displayed/unavailable) | No / Correctly rejected | Yes / Assessed | 0/2 / 2/2 | SCREENSHOT_EVIDENCE_MISSING |
+| Record the Providing institution as shown on the record (without following external link), or state not displayed/unavailable | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record the Type of item exactly as displayed (or state not displayed/unavailable) | Yes / Assessed | Yes / Assessed | 1/2 / 2/2 | BOTH_CAUGHT |
+| Record the displayed Rights statement exactly (or state not displayed/unavailable) | No / Correctly rejected | Yes / Assessed | 0/2 / 2/2 | SCREENSHOT_EVIDENCE_MISSING |
+| Record the Identifier exactly as displayed (or state not displayed/unavailable) | No / Correctly identified | No / Correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+| Respect task constraints (no external link navigation, no creator inference, no substitution, stop after six fields) and handle missing/blocked data appropriately | Yes / Assessed | Yes / Assessed | 1/3 / 2/3 | BOTH_CAUGHT |
+
+**Summary:** DOM exposes `Creation date 2013` and the exact Creative Commons rights URI; neither is visible in screenshots. The claimed Identifier is absent from both sources and correctly receives no credit.
+
+- [Comparison](results/task_51_rerun/20260915_task51_rerun/comparison.md)
+- [Offline audit](results/task_51_rerun/20260915_task51_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 52 rerun — Museum Object Metadata
+
+Task ID: `browser_task_052-museum-object-metadata-20260915T075604Z`  
+Run: `20260915_task52_rerun`  
+Frozen rubric SHA-256: `c02904ee56b52f562119b176de2bac1fc28485b26acb5f9b7abc0bc96bd4a09e`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 21/22 (95.5%) | 21.5/22 (97.7%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 3 / 4 | 3 / 4 |
+| LLM calls / retries | 16 / 0 | 49 / 0 |
+| Duration | 108.291 s | 168.781 s |
+| Scoring tokens | 102,469 | 220,233 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the specified Smithsonian/NASM object record (Apollo 11 Command Module Columbia) | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record the object name | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record the museum | Yes / Assessed | Yes / Assessed | 2/2 / 1.5/2 | BOTH_CAUGHT |
+| Extract mission month and year from Brief Description | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record complete Primary Materials field (verbatim) | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+| Record complete Overall Dimensions field (verbatim, exact measurements) | Yes / Assessed | Yes / Assessed | 3/4 / 4/4 | BOTH_CAUGHT |
+| Record Inventory Number | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Respect stopping condition and scope constraints (single-record only; no extras) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both representations contain the NASM object fields. The half-point gap is exactness/partial-credit calibration for museum and dimensions, not source loss.
+
+- [Comparison](results/task_52_rerun/20260915_task52_rerun/comparison.md)
+- [Offline audit](results/task_52_rerun/20260915_task52_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 53 rerun — Book Edition Resolution
+
+Task ID: `browser_task_053-book-edition-resolution-20260915T075646Z`  
+Run: `20260915_task53_rerun`  
+Frozen rubric SHA-256: `e15710db7702bbbb56d6f2791c1fbc501b338de2f93ebe1f777dd4dc0b9e8735`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 13/13 (100.0%) | 13/13 (100.0%) |
+| Rubric / outcome | Pass / Fail | Pass / Fail |
+| Actions / states | 0 / 1 | 0 / 1 |
+| LLM calls / retries | 10 / 0 | 14 / 0 |
+| Duration | 93.088 s | 177.889 s |
+| Scoring tokens | 67,080 | 82,262 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Resolve the supplied ISBN-13 on Open Library to the correct edition | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Record the resolved edition's title | No / Blocker credited | No / Blocker credited | 1/1 / 1/1 | BOTH_CAUGHT |
+| Record the resolved edition's displayed author | No / Blocker credited | No / Blocker credited | 1/1 / 1/1 | BOTH_CAUGHT |
+| Record the resolved edition's Publish Date (displayed) | No / Blocker credited | No / Blocker credited | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record the resolved edition's publisher | No / Blocker credited | No / Blocker credited | 1/1 / 1/1 | BOTH_CAUGHT |
+| Record the resolved edition's language | No / Blocker credited | No / Blocker credited | 1/1 / 1/1 | BOTH_CAUGHT |
+| Record the resolved edition's page count (exactly as displayed) | No / Blocker credited | No / Blocker credited | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record the resolved edition's ISBN-13 (exactly as displayed) | No / Blocker credited | No / Blocker credited | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both sources show the same Open Library human-verification blocker and no edition metadata. Full rubric credit is blocker-conditioned; outcome remains false in both.
+
+- [Comparison](results/task_53_rerun/20260915_task53_rerun/comparison.md)
+- [Offline audit](results/task_53_rerun/20260915_task53_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 54 rerun — Ebook Format Inspection
+
+Task ID: `browser_task_054-ebook-format-inspection-20260915T075712Z`  
+Run: `20260915_task54_rerun`  
+Frozen rubric SHA-256: `57a93ea7329943cb745b1d9a93d4314261802441f146263f525ee38ef06f7cf3`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 9/20 (45.0%) | 13/20 (65.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 35 / 0 |
+| Duration | 132.233 s | 209.616 s |
+| Scoring tokens | 93,417 | 177,989 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use the correct Project Gutenberg eBook page (eBook #1342, Pride and Prejudice) | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report the Author | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report the Release Date (using the page label and exact displayed date) | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report the Last Update (using the page label and exact displayed date) | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report the Language | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Check availability of format label: EPUB3 | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Check availability of format label: Plain Text (accessible) | Yes / Assessed | Yes / Assessed | 0/2 / 2/2 | BOTH_CAUGHT |
+| Check availability of format label: Download HTML (zip) | No / Correctly rejected | Yes / Assessed | 0/2 / 2/2 | SCREENSHOT_EVIDENCE_MISSING |
+| Respect task constraints and stopping condition | Yes / Assessed | Yes / Assessed | 1/2 / 1/2 | BOTH_CAUGHT |
+
+**Summary:** DOM exposes `Download HTML (zip)` while the screenshots do not. Both captures lack a link labeled exactly `Plain Text (accessible)`; treating that negative claim as proved from a partial capture would be unsafe. Release Date and Last Update are absent from both captures.
+
+- [Comparison](results/task_54_rerun/20260915_task54_rerun/comparison.md)
+- [Offline audit](results/task_54_rerun/20260915_task54_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 55 rerun — Archive Item Metadata
+
+Task ID: `browser_task_055-archive-item-metadata-20260915T075743Z`  
+Run: `20260915_task55_rerun`  
+Frozen rubric SHA-256: `eef1854613f6306024c699a31af39fe9e4a073bd967c6ebb96affd9f8e80b25d`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 21/21 (100.0%) | 21/21 (100.0%) |
+| Rubric / outcome | Pass / Pass | Pass / Pass |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 32 / 0 |
+| Duration | 99.205 s | 161.813 s |
+| Scoring tokens | 82,128 | 148,016 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use the specified Internet Archive item (prideprejudice00aust) | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report publication year | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report publisher | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report language | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| List all displayed Topics | Yes / Assessed | Yes / Assessed | 4/4 / 4/4 | BOTH_CAUGHT |
+| Check Download Options for EPUB availability | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Check Download Options for FULL TEXT availability | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Check Download Options for B/W PDF availability | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Respect constraints (no download, borrow, sign in, or add to collection) | Yes / Assessed | Yes / Assessed | 1/1 / 1/1 | BOTH_CAUGHT |
+| Stop after recording requested information (stopping condition) | Yes / Assessed | Yes / Assessed | 1/1 / 1/1 | BOTH_CAUGHT |
+
+**Summary:** Both sources expose all requested Internet Archive metadata and download-option labels. Both receive full credit.
+
+- [Comparison](results/task_55_rerun/20260915_task55_rerun/comparison.md)
+- [Offline audit](results/task_55_rerun/20260915_task55_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 56 rerun — Biomedical Literature Filtering
+
+Task ID: `browser_task_056-biomedical-literature-filtering-20260915T075812Z`  
+Run: `20260915_task56_rerun`  
+Frozen rubric SHA-256: `83c4e2c84cb3b2f4835b4a922e0786ea608b99630dde345ce70b66463ede74ef`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 8/20 (40.0%) | 6/20 (30.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 29 / 30 | 29 / 30 |
+| LLM calls / retries | 53 / 0 | 58 / 0 |
+| Duration | 152.603 s | 157.138 s |
+| Scoring tokens | 315,326 | 442,915 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Run PubMed Title-field search for the exact phrase | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Apply required PubMed filters | Yes / Assessed | Yes / Assessed | 1/4 / 1/4 | BOTH_CAUGHT |
+| Sort results by Most Recent | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Record first result with all required fields | Yes / Assessed | Yes / Missed | 2/3 / 0/3 | DOM_MISSED_SCREENSHOT_CAUGHT |
+| Record second result with all required fields | Yes / Assessed | Yes / Assessed | 0/3 / 0/3 | BOTH_CAUGHT |
+| Record third result with all required fields | Yes / Assessed | Yes / Assessed | 0/3 / 0/3 | BOTH_CAUGHT |
+| Stop after capturing the first three results (stopping condition) | Yes / Assessed | Yes / Assessed | 0/2 / 0/2 | BOTH_CAUGHT |
+
+**Summary:** Both sources contain the final PubMed result state, but the DOM verifier weighted older selected result states and failed to credit the reported first result that `dom_model24/25` supports. This is a confirmed DOM-verifier grounding miss, not DOM-source loss.
+
+- [Comparison](results/task_56_rerun/20260915_task56_rerun/comparison.md)
+- [Offline audit](results/task_56_rerun/20260915_task56_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 57 rerun — Clinical Trial Filtering
+
+Task ID: `browser_task_057-clinical-trial-filtering-20260915T080033Z`  
+Run: `20260915_task57_rerun`  
+Frozen rubric SHA-256: `1ee0926b0edcdcc789f7b4f26568b5f9d84824be172b8387c267c7bef3072441`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 3/20 (15.0%) | 9/20 (45.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 16 / 17 | 16 / 17 |
+| LLM calls / retries | 32 / 0 | 40 / 0 |
+| Duration | 152.909 s | 202.701 s |
+| Scoring tokens | 213,210 | 290,450 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Apply specified search and filters on ClinicalTrials.gov | Yes / Assessed | Yes / Assessed | 2/4 / 3/4 | BOTH_CAUGHT |
+| Sort results by Last Update Posted (newest first) | Yes / Assessed | Yes / Assessed | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report first displayed result (in displayed order) with required fields | Yes / Assessed | Yes / Assessed | 0/3 / 0.5/3 | BOTH_CAUGHT |
+| Report second displayed result (in displayed order) with required fields | Yes / Assessed | Yes / Assessed | 0/3 / 1.5/3 | BOTH_CAUGHT |
+| Report third displayed result (in displayed order) with required fields | Yes / Assessed | Yes / Assessed | 0/3 / 2/3 | BOTH_CAUGHT |
+| Respect task constraints and stopping condition | Yes / Assessed | Yes / Assessed | 1/4 / 2/4 | BOTH_CAUGHT |
+
+**Summary:** Both sources show incomplete/unstable filter and sort state and lack Last Update Posted values. The six-point gap is lenient DOM partial-credit treatment of result cards, not confirmed asymmetric evidence loss.
+
+- [Comparison](results/task_57_rerun/20260915_task57_rerun/comparison.md)
+- [Offline audit](results/task_57_rerun/20260915_task57_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 58 rerun — Food Product Nutrition Lookup
+
+Task ID: `browser_task_058-food-product-nutrition-lookup-20260915T080226Z`  
+Run: `20260915_task58_rerun`  
+Frozen rubric SHA-256: `ae2b0f4ffaaeffc8722627003c7d60317a3aa3d5479d92f2c544b84e631281ac`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 8.5/20 (42.5%) | 10/20 (50.0%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 1 / 2 | 1 / 2 |
+| LLM calls / retries | 12 / 0 | 17 / 0 |
+| Duration | 130.157 s | 157.917 s |
+| Scoring tokens | 91,710 | 103,227 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the exact Open Food Facts product record for barcode 3017620422003 | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report product name and barcode | Yes / Assessed | Yes / Assessed | 1.5/2 / 2/2 | BOTH_CAUGHT |
+| Report displayed Nutri-Score | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report NOVA processing card classification and marker count (visible wording) | Partial / Assessed | Yes / Assessed | 1.5/3 / 3/3 | SCREENSHOT_EVIDENCE_MISSING |
+| Report energy per 100 g (preserving displayed units) | No / Correctly identified | No / Correctly identified | 0/3 / 0/3 | BOTH_CAUGHT |
+| Report sugars per 100 g (exact value) | No / Correctly identified | No / Correctly identified | 0/2 / 0/2 | BOTH_CAUGHT |
+| Report complete displayed English ingredients text | No / Correctly identified | No / Correctly identified | 0/4 / 0/4 | BOTH_CAUGHT |
+| Respect constraints and stopping condition | Yes / Assessed | Yes / Assessed | 0.5/1 / 0/1 | BOTH_CAUGHT |
+
+**Summary:** The shared task/action URL already supplies the barcode. DOM explicitly exposes “2 ultra-processing markers,” while screenshots show only the NOVA class. Nutrition and ingredients are absent from both captures.
+
+- [Comparison](results/task_58_rerun/20260915_task58_rerun/comparison.md)
+- [Offline audit](results/task_58_rerun/20260915_task58_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 59 rerun — Software Product Requirements
+
+Task ID: `browser_task_059-software-product-requirements-20260915T080320Z`  
+Run: `20260915_task59_rerun`  
+Frozen rubric SHA-256: `7435c18812ab17285e1090f30e18253e9571625c88d16876d37126706fdf9d97`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 10/17 (58.8%) | 11.5/17 (67.6%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 5 / 6 | 5 / 6 |
+| LLM calls / retries | 20 / 0 | 26 / 0 |
+| Duration | 108.561 s | 114.010 s |
+| Scoring tokens | 126,923 | 142,338 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Access the correct Steam store page for Portal 2 | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+| Report Release Date, Developer, and Publisher | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Report complete displayed 'All Reviews' summary (not Recent Reviews) | No / Correctly identified | No / Correctly identified | 0/3 / 0.5/3 | BOTH_CAUGHT |
+| Record System Requirements OS headings shown and each heading’s minimum Storage requirement | Yes / Assessed | Yes / Assessed | 3/7 / 4/7 | BOTH_CAUGHT |
+| Respect constraints: no sign-in and no purchase-related actions | Yes / Assessed | Yes / Assessed | 2/2 / 2/2 | BOTH_CAUGHT |
+
+**Summary:** Both sources show Windows storage but not Linux storage or an All Reviews aggregate. The 1.5-point gap is partial-credit calibration, not evidence loss.
+
+- [Comparison](results/task_59_rerun/20260915_task59_rerun/comparison.md)
+- [Offline audit](results/task_59_rerun/20260915_task59_rerun/evidence_error_audit/criterion_audit.json)
+
+
+### Task 60 rerun — Discography Chronology
+
+Task ID: `browser_task_060-discography-chronology-20260915T080415Z`  
+Run: `20260915_task60_rerun`  
+Frozen rubric SHA-256: `cd27cd3e128211e168513b2ec40fd1ad5174ff28626caad1b4176c6432d59dcd`
+
+| Metric | Screenshot | DOM model |
+|---|---:|---:|
+| Process score | 4/18 (22.2%) | 5/18 (27.8%) |
+| Rubric / outcome | Fail / Fail | Fail / Fail |
+| Actions / states | 2 / 3 | 2 / 3 |
+| LLM calls / retries | 14 / 0 | 23 / 0 |
+| Duration | 99.657 s | 188.048 s |
+| Scoring tokens | 96,342 | 152,460 |
+
+#### Evidence audit
+
+| Criterion | Screenshot present/caught | DOM present/caught | Score SS / DOM | Classification |
+|---|---|---|---:|---|
+| Use correct source scope: Daft Punk MusicBrainz artist page → official release groups → Album section only (or clearly report inability to access it) | Yes / Assessed | Yes / Assessed | 3/3 / 3/3 | BOTH_CAUGHT |
+| Correctly identify the first three qualifying dated Album entries in displayed chronological order (or explain why this cannot be determined) | Yes / Assessed | Yes / Assessed | 0/4 / 1/4 | BOTH_CAUGHT |
+| Entry #1: Open release-group page and report title + release-group 'First release date' as shown (including partial dates if that is all MusicBrainz provides) | Yes / Assessed | Yes / Assessed | 1/3 / 1/3 | BOTH_CAUGHT |
+| Entry #2: Open release-group page and report title + release-group 'First release date' as shown (including partial dates if that is all MusicBrainz provides) | Yes / Assessed | Yes / Assessed | 0/3 / 0/3 | BOTH_CAUGHT |
+| Entry #3: Open release-group page and report title + release-group 'First release date' as shown (including partial dates if that is all MusicBrainz provides) | Yes / Assessed | Yes / Assessed | 0/3 / 0/3 | BOTH_CAUGHT |
+| Stopping condition and exclusion rules followed (as far as the site allows determination) | Yes / Assessed | Yes / Assessed | 0/2 / 0/2 | BOTH_CAUGHT |
+
+**Summary:** Both sources show the Album chronology and only the Homework detail visit; the agent stops before entries two and three. The one-point gap is partial-credit calibration.
+
+- [Comparison](results/task_60_rerun/20260915_task60_rerun/comparison.md)
+- [Offline audit](results/task_60_rerun/20260915_task60_rerun/evidence_error_audit/criterion_audit.json)
+
 ## Rerun batch result — Tasks 61–70
 
 | Metric | Screenshot | DOM model |
