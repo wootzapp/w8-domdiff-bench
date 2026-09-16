@@ -1,5 +1,7 @@
 # Data-New Tasks 1–100: Screenshot vs DOM-Model Results
 
+Retained artifacts for each final task are stored under `results/task_XX_rerun/<run-id>/`: `comparison.json`, `microsoft_verifier/result.json`, and `dom_model/result.json`.
+
 
 ## Task 1 — Reddit ranking
 
@@ -60,13 +62,7 @@ Manual source check confirmed that `screenshot0.png` visibly says “You've been
 
 **Summary:** Both modalities and both verifiers behaved consistently. The task failed because of a genuine website access blocker, not because either evidence representation or verifier missed available information.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_001-reddit-ranking-20260909T070105Z.json)
-- [Comparison report](results/browser_task_001-reddit-ranking-20260909T070105Z/20260909T_task001_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_001-reddit-ranking-20260909T070105Z/20260909T_task001_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_001-reddit-ranking-20260909T070105Z/20260909T_task001_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_001-reddit-ranking-20260909T070105Z/20260909T_task001_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -127,13 +123,7 @@ Manual inspection confirmed that no screenshot displays a “Best sellers” sec
 
 **Summary:** DOM recovered developer and release-date evidence that the screenshot sequence did not capture, producing the higher process score. This was screenshot capture loss, not a screenshot-verifier reading error. DOM used more tokens and still lacked a reliable publisher label–value relationship.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_002-cross-site-research-20260909T070119Z.json)
-- [Comparison report](results/browser_task_002-cross-site-research-20260909T070119Z/20260909T_task002_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_002-cross-site-research-20260909T070119Z/20260909T_task002_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_002-cross-site-research-20260909T070119Z/20260909T_task002_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_002-cross-site-research-20260909T070119Z/20260909T_task002_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -198,13 +188,7 @@ Manual inspection confirmed the job metadata in `screenshot4.png` and `dom_model
 
 **Summary:** Both representations contained the required evidence and both verifiers interpreted it consistently. The task failed because the agent reported incorrect responsibilities, not because screenshot or DOM evidence was missing or overlooked. DOM used 37.1% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_003-job-listing-extraction-20260909T070258Z.json)
-- [Comparison report](results/browser_task_003-job-listing-extraction-20260909T070258Z/20260909T_task003_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_003-job-listing-extraction-20260909T070258Z/20260909T_task003_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_003-job-listing-extraction-20260909T070258Z/20260909T_task003_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_003-job-listing-extraction-20260909T070258Z/20260909T_task003_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -266,13 +250,7 @@ Manual inspection confirmed that `screenshot1.png` visibly shows the DMNS “Fil
 
 **Summary:** Both modalities captured the same incomplete state and both verifiers correctly recognized what was and was not available. The one-point DOM advantage reflects scoring variance, not extra DOM evidence. Token usage was effectively equal, with DOM using 0.2% more.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_004-museum-film-lookup-20260909T071414Z.json)
-- [Comparison report](results/browser_task_004-museum-film-lookup-20260909T071414Z/20260909T_task004_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_004-museum-film-lookup-20260909T071414Z/20260909T_task004_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_004-museum-film-lookup-20260909T071414Z/20260909T_task004_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_004-museum-film-lookup-20260909T071414Z/20260909T_task004_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -333,13 +311,7 @@ Manual inspection confirmed that `screenshot2.png` shows the September 11, 2026 
 
 **Summary:** DOM preserved a second event outside the screenshot viewport and therefore supported a stronger chronological comparison. Both verifiers correctly handled the evidence available to them; the equal 12/15 totals hide one genuine screenshot source gap and one offsetting point of scoring variance. DOM used 4.8% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_005-event-lookup-20260909T094331Z.json)
-- [Comparison report](results/browser_task_005-event-lookup-20260909T094331Z/20260909T_task005_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_005-event-lookup-20260909T094331Z/20260909T_task005_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_005-event-lookup-20260909T094331Z/20260909T_task005_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_005-event-lookup-20260909T094331Z/20260909T_task005_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -400,13 +372,7 @@ Manual inspection confirmed that `screenshot8.png` shows a normally loaded Searc
 
 **Summary:** Both modalities and verifiers reached the same conclusion: the agent made a valid on-site attempt but never found or reported the earliest article. There was no verifier perception miss or asymmetric loss of the required evidence. DOM used 36.9% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_006-article-metadata-lookup-20260909T071913Z.json)
-- [Comparison report](results/browser_task_006-article-metadata-lookup-20260909T071913Z/20260909T_task006_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_006-article-metadata-lookup-20260909T071913Z/20260909T_task006_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_006-article-metadata-lookup-20260909T071913Z/20260909T_task006_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_006-article-metadata-lookup-20260909T071913Z/20260909T_task006_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -469,13 +435,7 @@ Manual inspection confirmed that screenshot0.png visibly shows the Amazon India 
 
 **Summary:** Both evidence representations contained and recovered the same decisive facts: Tata Salt was ranked #2 and AllRecipes was blocked by a verification interstitial. Both verifiers scored the constrained task as successfully completed. DOM used 55.4% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_007-cross-site-recipe-lookup-20260909T072810Z.json)
-- [Comparison report](results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_007-cross-site-recipe-lookup-20260909T072810Z/20260909T_task007_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -538,13 +498,7 @@ Manual inspection confirmed two distinct effects. First, the screenshots show on
 
 **Summary:** DOM recovered one third release-note change that was visibly present but overlooked by the screenshot verifier, and it preserved an exact date that was outside the screenshot viewport. The agent's date was nevertheless wrong, so both final outcomes failed. DOM used 51.9% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_008-software-release-research-20260909T072902Z.json)
-- [Comparison report](results/browser_task_008-software-release-research-20260909T072902Z/20260909T_task008_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_008-software-release-research-20260909T072902Z/20260909T_task008_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_008-software-release-research-20260909T072902Z/20260909T_task008_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_008-software-release-research-20260909T072902Z/20260909T_task008_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -609,13 +563,7 @@ Manual inspection confirmed that `screenshot5.png` and `dom_model5.txt` both sta
 
 **Summary:** Both modalities preserved and both verifiers found the decisive evidence that Artemis II had already occurred. The 3-point and outcome disagreement came from DOM-side overcrediting after the evidence was found, not from a difference in evidence availability. DOM used 21.3% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_009-nasa-mission-lookup-20260909T073151Z.json)
-- [Comparison report](results/browser_task_009-nasa-mission-lookup-20260909T073151Z/20260909T_task009_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_009-nasa-mission-lookup-20260909T073151Z/20260909T_task009_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_009-nasa-mission-lookup-20260909T073151Z/20260909T_task009_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_009-nasa-mission-lookup-20260909T073151Z/20260909T_task009_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -679,13 +627,7 @@ Manual inspection confirmed that `screenshot3.png` visibly shows the reCAPTCHA c
 
 **Summary:** Both representations captured the same Google CAPTCHA blocker and omitted the same unavailable documentation details. Both verifiers reached the correct failed outcome; the 1.5-point process-score difference reflects scoring variance only. DOM used 73.7% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_010-official-documentation-lookup-20260909T073335Z.json)
-- [Comparison report](results/browser_task_010-official-documentation-lookup-20260909T073335Z/20260909T_task010_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_010-official-documentation-lookup-20260909T073335Z/20260909T_task010_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_010-official-documentation-lookup-20260909T073335Z/20260909T_task010_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_010-official-documentation-lookup-20260909T073335Z/20260909T_task010_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -750,13 +692,7 @@ The 1-point process-score difference is not an evidence miss. The DOM judge awar
 
 **Summary:** Both modalities contained and both verifiers recovered the same decisive search and result evidence. The DOM verifier scored 1 point higher through more generous partial-credit judgments, not because it recovered evidence missed by the screenshot verifier. DOM used 28.3% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_011-arxiv-literature-search-20260909T073439Z.json)
-- [Comparison report](results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_011-arxiv-literature-search-20260909T073439Z/20260909T_task011_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -821,13 +757,7 @@ The audit script flagged minor wording differences about constraint evidence, bu
 
 **Summary:** Screenshot and DOM contained the same required metadata, both verifiers recovered it correctly, and both produced the identical passing score. There was no evidence loss or verifier perception miss. DOM used 18.9% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_012-arxiv-paper-metadata-20260909T073715Z.json)
-- [Comparison report](results/browser_task_012-arxiv-paper-metadata-20260909T073715Z/20260909T_task012_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_012-arxiv-paper-metadata-20260909T073715Z/20260909T_task012_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_012-arxiv-paper-metadata-20260909T073715Z/20260909T_task012_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_012-arxiv-paper-metadata-20260909T073715Z/20260909T_task012_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -891,13 +821,7 @@ Manual inspection confirmed that `screenshot2.png` visibly displays Blitz `3316`
 
 **Summary:** Both modalities and verifiers recovered the correct Blitz and Bullet rating numbers. Screenshot evidence additionally preserved the downward-change indicators, while DOM flattened away their arrow semantics; this produced two extra DOM points under the rubric’s exact-display requirement. DOM used 75.5% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_013-chess-profile-lookup-20260909T073812Z.json)
-- [Comparison report](results/browser_task_013-chess-profile-lookup-20260909T073812Z/20260909T_task013_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_013-chess-profile-lookup-20260909T073812Z/20260909T_task013_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_013-chess-profile-lookup-20260909T073812Z/20260909T_task013_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_013-chess-profile-lookup-20260909T073812Z/20260909T_task013_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -961,13 +885,7 @@ The DOM file’s missing page-title warning did not remove any criterion-relevan
 
 **Summary:** Screenshot and DOM captured the same Reddit network-security blocker, and both verifiers interpreted it consistently. Process scores were perfect under blocker-aware rubric rules, but both outcome checks failed because the requested post metadata was unavailable. There was no evidence loss or perception miss; DOM used 2.5% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_014-reddit-post-lookup-20260909T073959Z.json)
-- [Comparison report](results/browser_task_014-reddit-post-lookup-20260909T073959Z/20260909T_task014_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_014-reddit-post-lookup-20260909T073959Z/20260909T_task014_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_014-reddit-post-lookup-20260909T073959Z/20260909T_task014_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_014-reddit-post-lookup-20260909T073959Z/20260909T_task014_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1031,13 +949,7 @@ The DOM file’s missing page-title warning does not affect criterion evidence b
 
 **Summary:** Both modalities captured and both verifiers recognized the same Reddit-wide access blocker. There was no evidence loss or perception miss. Both received full blocker-aware process credit but failed the outcome because no subscriber counts or ranking were obtained. DOM used 32.4% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_015-reddit-community-comparison-20260909T074040Z.json)
-- [Comparison report](results/browser_task_015-reddit-community-comparison-20260909T074040Z/20260909T_task015_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_015-reddit-community-comparison-20260909T074040Z/20260909T_task015_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_015-reddit-community-comparison-20260909T074040Z/20260909T_task015_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_015-reddit-community-comparison-20260909T074040Z/20260909T_task015_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1104,13 +1016,7 @@ The offline audit flagged two intermediate `environment_issues_confirmed` wordin
 
 **Summary:** Screenshot and DOM contained the same required Hugging Face metadata, both verifiers recovered it correctly, and both produced the identical passing score. There was no evidence loss or verifier perception miss. DOM used 34.8% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_016-hugging-face-model-metadata-20260909T074128Z.json)
-- [Comparison report](results/browser_task_016-hugging-face-model-metadata-20260909T074128Z/20260909T_task016_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_016-hugging-face-model-metadata-20260909T074128Z/20260909T_task016_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_016-hugging-face-model-metadata-20260909T074128Z/20260909T_task016_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_016-hugging-face-model-metadata-20260909T074128Z/20260909T_task016_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1175,13 +1081,7 @@ Both verifiers correctly extracted the train evidence. The screenshot scorer the
 
 **Summary:** Both representations exposed the same relevant evidence and both verifiers recovered it. The 4-point score gap is not evidence loss: the DOM scorer overcredited a train count that the agent never reported. Both final outcomes correctly failed, and DOM used 46.9% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_017-hugging-face-dataset-inspection-20260909T074239Z.json)
-- [Comparison report](results/browser_task_017-hugging-face-dataset-inspection-20260909T074239Z/20260909T_task017_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_017-hugging-face-dataset-inspection-20260909T074239Z/20260909T_task017_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_017-hugging-face-dataset-inspection-20260909T074239Z/20260909T_task017_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_017-hugging-face-dataset-inspection-20260909T074239Z/20260909T_task017_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1248,13 +1148,7 @@ The differing action-only points for the count and newest-issues criteria are in
 
 **Summary:** Both verifiers recovered all rubric-required issue-search evidence and passed the task. DOM additionally preserved exact opened dates that the screenshot represented only as relative times, avoiding a 0.5-point screenshot deduction. This is screenshot representation loss, not a screenshot-verifier perception miss. DOM used 13.1% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_018-github-issue-search-20260909T074333Z.json)
-- [Comparison report](results/browser_task_018-github-issue-search-20260909T074333Z/20260909T_task018_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_018-github-issue-search-20260909T074333Z/20260909T_task018_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_018-github-issue-search-20260909T074333Z/20260909T_task018_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_018-github-issue-search-20260909T074333Z/20260909T_task018_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1322,13 +1216,7 @@ The action-only point differences are independent judge variance and were resolv
 
 **Summary:** Both verifiers recovered all shared release evidence correctly. DOM additionally preserved the exact absolute release timestamp, while the screenshot showed only “last week”; this caused the screenshot’s 2-point deduction and failed outcome. It is screenshot representation loss, not verifier perception failure. DOM used 51.8% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_019-github-release-research-20260909T074525Z.json)
-- [Comparison report](results/browser_task_019-github-release-research-20260909T074525Z/20260909T_task019_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_019-github-release-research-20260909T074525Z/20260909T_task019_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_019-github-release-research-20260909T074525Z/20260909T_task019_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_019-github-release-research-20260909T074525Z/20260909T_task019_data_new/evidence_error_audit/evidence_error_report.md)
 
 
 ---
@@ -1397,13 +1285,7 @@ Manual inspection of `screenshot0.png` through `screenshot6.png` confirmed that 
 
 **Summary:** Both modalities preserved and both verifiers recovered the same task-relevant evidence. The screenshot verifier scored 12/12 and the DOM verifier scored 5/12 because they applied the frozen rubric's blocker allowance differently, not because either modality lost evidence. DOM used 91.4% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_020-github-code-search-20260909T074624Z.json)
-- [Comparison report](results/browser_task_020-github-code-search-20260909T074624Z/20260912T_task020_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_020-github-code-search-20260909T074624Z/20260912T_task020_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_020-github-code-search-20260909T074624Z/20260912T_task020_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_020-github-code-search-20260909T074624Z/20260912T_task020_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1467,13 +1349,7 @@ Manual inspection confirmed that `screenshot0.png`, `screenshot1.png`, and `scre
 
 **Summary:** Both representations contained the complete criterion-relevant evidence, and both verifiers recovered and scored it consistently. There was no source-evidence loss or confirmed verifier miss in either modality. DOM used 29.5% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_021-github-repository-comparison-20260909T074816Z.json)
-- [Comparison report](results/browser_task_021-github-repository-comparison-20260909T074816Z/20260912T_task021_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_021-github-repository-comparison-20260909T074816Z/20260912T_task021_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_021-github-repository-comparison-20260909T074816Z/20260912T_task021_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_021-github-repository-comparison-20260909T074816Z/20260912T_task021_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1537,13 +1413,7 @@ The one-point process-score difference is not evidence loss. Both verifiers reco
 
 **Summary:** Both modalities contained and both verifiers recovered the same criterion-relevant evidence. The task failed because the agent did not enforce all required constraints or provide the requested records. The one-point difference is scoring variance, and DOM used 45.0% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_022-stackoverflow-search-20260909T074929Z.json)
-- [Comparison report](results/browser_task_022-stackoverflow-search-20260909T074929Z/20260912T_task022_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_022-stackoverflow-search-20260909T074929Z/20260912T_task022_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_022-stackoverflow-search-20260909T074929Z/20260912T_task022_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_022-stackoverflow-search-20260909T074929Z/20260912T_task022_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1608,13 +1478,7 @@ Manual inspection confirmed that `screenshot0.png` and `screenshot1.png` show Go
 
 **Summary:** Both representations captured the same genuine Google Scholar access block, and both verifiers handled it consistently. There was no evidence loss or verifier miss. DOM used 3.7% fewer scoring tokens, but neither mode could verify the requested research result because the website blocked access.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_023-scholar-literature-search-20260909T075058Z.json)
-- [Comparison report](results/browser_task_023-scholar-literature-search-20260909T075058Z/20260912T_task023_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_023-scholar-literature-search-20260909T075058Z/20260912T_task023_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_023-scholar-literature-search-20260909T075058Z/20260912T_task023_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_023-scholar-literature-search-20260909T075058Z/20260912T_task023_data_new/evidence_error_audit/evidence_error_report.md)
 
 
 
@@ -1681,13 +1545,7 @@ The DOM deductions are not source-evidence loss. They are confirmed verifier agg
 
 **Summary:** Both inputs preserved the necessary evidence. Screenshot scored 15/15; DOM scored 7/15 because its verifier failed to aggregate complementary evidence from states 0 and 1. DOM also used 60.5% more scoring tokens.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_024-hacker-news-inspection-20260909T075133Z.json)
-- [Comparison report](results/browser_task_024-hacker-news-inspection-20260909T075133Z/20260912T_task024_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_024-hacker-news-inspection-20260909T075133Z/20260912T_task024_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_024-hacker-news-inspection-20260909T075133Z/20260912T_task024_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_024-hacker-news-inspection-20260909T075133Z/20260912T_task024_data_new/evidence_error_audit/evidence_error_report.md)
 
 
 ---
@@ -1730,7 +1588,6 @@ Rubric SHA-256: `10d8137e689425c914ae0a893656b68a76d41e713d5413a3983bfa3b7d0fda4
 
 **Evidence-error result:** no source loss and no verifier miss (0/5 for both). Both modes recovered the same evidence and scored 19/20.
 
-Artifacts: [rubric](rubrics/browser_task_025-hacker-news-search-20260909T075205Z.json) Â· [comparison](results/browser_task_025-hacker-news-search-20260909T075205Z/20260912T_task025_data_new/comparison.md) Â· [audit](results/browser_task_025-hacker-news-search-20260909T075205Z/20260912T_task025_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1774,7 +1631,6 @@ Rubric SHA-256: `b98cd8fd5da1831ceb7d0ff89fd58c491c1ee5ba1c2f9636ae58f15e809db13
 
 **Evidence-error result:** no source loss and no verifier miss (0/7 for both). Both verifiers scored the same incomplete trajectory identically.
 
-Artifacts: [rubric](rubrics/browser_task_026-shopping-constraint-satisfaction-20260909T075313Z.json) Â· [comparison](results/browser_task_026-shopping-constraint-satisfaction-20260909T075313Z/20260912T_task026_data_new/comparison.md) Â· [audit](results/browser_task_026-shopping-constraint-satisfaction-20260909T075313Z/20260912T_task026_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1816,7 +1672,6 @@ Rubric SHA-256: `2212291f68520b789f988e7484e561cb893b90ec6481965020f5f65c8540c64
 
 **Evidence-error result:** no source loss and no verifier miss (0/5 for both). The 1.5-point difference is scoring variance, not missing evidence.
 
-Artifacts: [rubric](rubrics/browser_task_027-shopping-constraint-satisfaction-20260909T075513Z.json) Â· [comparison](results/browser_task_027-shopping-constraint-satisfaction-20260909T075513Z/20260912T_task027_data_new/comparison.md) Â· [audit](results/browser_task_027-shopping-constraint-satisfaction-20260909T075513Z/20260912T_task027_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1858,7 +1713,6 @@ Rubric SHA-256: `ecbe8f31750b2f052bb63998de33a2ea569f9d4c48902231f80cc943eac9163
 
 **Evidence-error result:** no source loss and no verifier miss (0/5 for both). Both captured the same incorrect navigation and scored it identically.
 
-Artifacts: [rubric](rubrics/browser_task_028-news-monitoring-20260909T075747Z.json) Â· [comparison](results/browser_task_028-news-monitoring-20260909T075747Z/20260912T_task028_data_new/comparison.md) Â· [audit](results/browser_task_028-news-monitoring-20260909T075747Z/20260912T_task028_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1904,7 +1758,6 @@ Manual inspection confirmed that `screenshot12.png` visibly contains qualifying 
 
 **Evidence-error result:** source loss 0/7 for both; screenshot-verifier miss 1/7; DOM-verifier miss 0/7; DOM recovered 1/1 confirmed screenshot miss.
 
-Artifacts: [rubric](rubrics/browser_task_029-course-search-and-filtering-20260909T075844Z.json) Â· [comparison](results/browser_task_029-course-search-and-filtering-20260909T075844Z/20260912T_task029_data_new/comparison.md) Â· [audit](results/browser_task_029-course-search-and-filtering-20260909T075844Z/20260912T_task029_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1947,7 +1800,6 @@ Rubric SHA-256: `d72d9b5be1488b333321130e761a98f676847890a290a6b5fe324b932028a2e
 
 **Evidence-error result:** no source loss and no verifier miss (0/6 for both). Both recovered the same evidence; the half-point difference is scoring severity.
 
-Artifacts: [rubric](rubrics/browser_task_030-course-detail-inspection-20260909T080218Z.json) Â· [comparison](results/browser_task_030-course-detail-inspection-20260909T080218Z/20260912T_task030_data_new/comparison.md) Â· [audit](results/browser_task_030-course-detail-inspection-20260909T080218Z/20260912T_task030_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -1978,7 +1830,6 @@ Rubric SHA-256: `1f258ed34b24d9908e533b69708ef9ff958f65a514ffc2a461789d2905a7a37
 
 **Summary:** Both sources stopped above the requested 1921–1923 rows. The two-point difference is scoring interpretation, not asymmetric evidence loss.
 
-Artifacts: [rubric](rubrics/browser_task_031-table-lookup-and-extraction-20260909T080306Z.json) · [comparison](results/browser_task_031-table-lookup-and-extraction-20260909T080306Z/20260914T_task031_data_new/comparison.md) · [criterion audit](results/browser_task_031-table-lookup-and-extraction-20260909T080306Z/20260914T_task031_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2012,7 +1863,6 @@ Rubric SHA-256: `694dab3808aea3a9751b6e53ef19bee73f42a8c06b3be48a3b1c415cd8170d4
 
 **Summary:** Both modes received the syntax/default-value material but neither received the Formal definition or Browser compatibility tables. Score differences reflect judgment, not source loss.
 
-Artifacts: [rubric](rubrics/browser_task_032-technical-documentation-inspection-20260909T080346Z.json) · [comparison](results/browser_task_032-technical-documentation-inspection-20260909T080346Z/20260914T_task032_data_new/comparison.md) · [criterion audit](results/browser_task_032-technical-documentation-inspection-20260909T080346Z/20260914T_task032_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2046,7 +1896,6 @@ Rubric SHA-256: `e987f50a1508388eff19029c26216ddd2da448997aefb8b1e786319631b301d
 
 **Summary:** The screenshot showed one source-distribution row and the Built Distribution heading, but not the second file/count. DOM explicitly preserved the additional `Showing 1 of 1 file` evidence.
 
-Artifacts: [rubric](rubrics/browser_task_033-software-package-metadata-20260909T080442Z.json) · [comparison](results/browser_task_033-software-package-metadata-20260909T080442Z/20260914T_task033_data_new/comparison.md) · [criterion audit](results/browser_task_033-software-package-metadata-20260909T080442Z/20260914T_task033_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2082,7 +1931,6 @@ Rubric SHA-256: `bff329749131a4a0d59fe780a228d6d7277fea87b8202c6904f5168b64267bf
 
 **Summary:** The screenshot captured the version, date, and Ruby requirement but not the off-viewport license. DOM explicitly preserved `License: MIT`.
 
-Artifacts: [rubric](rubrics/browser_task_034-dependency-inspection-20260909T080508Z.json) · [comparison](results/browser_task_034-dependency-inspection-20260909T080508Z/20260914T_task034_data_new/comparison.md) · [criterion audit](results/browser_task_034-dependency-inspection-20260909T080508Z/20260914T_task034_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2114,7 +1962,6 @@ Rubric SHA-256: `003b90014d5fed37a6292b1c5ce248284dabbaa1bc85dec01fd756fba5b5bc0
 
 **Summary:** Neither representation proved three complete tag cards. DOM contained contradictory flattened tag/table relationships, and its verifier explicitly reported that limitation; no asymmetric source loss was confirmed.
 
-Artifacts: [rubric](rubrics/browser_task_035-container-image-tag-comparison-20260909T080532Z.json) · [comparison](results/browser_task_035-container-image-tag-comparison-20260909T080532Z/20260914T_task035_data_new/comparison.md) · [criterion audit](results/browser_task_035-container-image-tag-comparison-20260909T080532Z/20260914T_task035_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2146,7 +1993,6 @@ Rubric SHA-256: `21c4811a4e548e87e00a1e3531cb01097dc7c0680f13eb540ec9481d4dd0520
 
 **Summary:** Both modes preserved and recovered all requested Debian package evidence.
 
-Artifacts: [rubric](rubrics/browser_task_036-package-dependency-lookup-20260909T080606Z.json) · [comparison](results/browser_task_036-package-dependency-lookup-20260909T080606Z/20260914T_task036_data_new/comparison.md) · [criterion audit](results/browser_task_036-package-dependency-lookup-20260909T080606Z/20260914T_task036_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2180,7 +2026,6 @@ Rubric SHA-256: `9d32a5e889be0c21958c7736140181e10f8caa992f0f6d4a53f28324d0e7464
 
 **Summary:** Both representations and verifiers recovered the complete Homebrew formula evidence.
 
-Artifacts: [rubric](rubrics/browser_task_037-package-platform-availability-20260909T080647Z.json) · [comparison](results/browser_task_037-package-platform-availability-20260909T080647Z/20260914T_task037_data_new/comparison.md) · [criterion audit](results/browser_task_037-package-platform-availability-20260909T080647Z/20260914T_task037_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2211,7 +2056,6 @@ Rubric SHA-256: `ba30b78805709c6d54a42713b2764923163d272ac3e0bdf2f524ce31b6d06a9
 
 **Summary:** Both sources contained the same visible release entry and asset evidence. The lower DOM score reflects confidence about proving global ordering, not missing evidence.
 
-Artifacts: [rubric](rubrics/browser_task_038-software-release-inspection-20260909T080722Z.json) · [comparison](results/browser_task_038-software-release-inspection-20260909T080722Z/20260914T_task038_data_new/comparison.md) · [criterion audit](results/browser_task_038-software-release-inspection-20260909T080722Z/20260914T_task038_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2241,7 +2085,6 @@ Rubric SHA-256: `e09a0ab5237e118cd5f3c386ff2a529e59b9248793cb3808834b1af12137779
 
 **Summary:** Both modalities contained the first two parameters but lacked the complete `progressDeadlineSeconds` description/default. Evidence availability and scores matched.
 
-Artifacts: [rubric](rubrics/browser_task_039-technical-parameter-extraction-20260909T080752Z.json) · [comparison](results/browser_task_039-technical-parameter-extraction-20260909T080752Z/20260914T_task039_data_new/comparison.md) · [criterion audit](results/browser_task_039-technical-parameter-extraction-20260909T080752Z/20260914T_task039_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2278,7 +2121,6 @@ Rubric SHA-256: `2f5a5cab05458d03a0e495ac223e152659863ab23a1d08ce8b9ad6bfd8dcac8
 
 **Summary:** Both sources contained the same object/address evidence and omitted the same three tags. The half-point difference is scoring severity, not evidence loss.
 
-Artifacts: [rubric](rubrics/browser_task_040-map-entity-inspection-20260909T080852Z.json) · [comparison](results/browser_task_040-map-entity-inspection-20260909T080852Z/20260914T_task040_data_new/comparison.md) · [criterion audit](results/browser_task_040-map-entity-inspection-20260909T080852Z/20260914T_task040_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2325,7 +2167,6 @@ Rubric SHA-256: `390ac55adb7f6723236d47e498f5810fea3795edbb61e9dc073887d520bf555
 
 The publication date is below the screenshot viewport but explicit in `dom_model1.txt`. Both sources contain the same “portions of 7230” sentence; the DOM criterion-4 deduction is a verifier interpretation miss, while criterion 5 differs only in scoring severity. Rubric generation used 12,772 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 74,952 more scoring tokens (88.5%).
 
-Artifacts: [rubric](rubrics/browser_task_041-standards-metadata-extraction-20260909T080918Z.json) · [comparison](results/browser_task_041-standards-metadata-extraction-20260909T080918Z/20260914T_task041_data_new/comparison.md) · [audit](results/browser_task_041-standards-metadata-extraction-20260909T080918Z/20260914T_task041_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2359,7 +2200,6 @@ Rubric SHA-256: `44708721e982b01a34e3cbe39681e8a0cce591c3ea119bb299b4d51cb501937
 
 Both sources and verifiers preserve/recover every required IANA field. Rubric generation used 12,896 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 36,762 more scoring tokens (52.0%).
 
-Artifacts: [rubric](rubrics/browser_task_042-domain-registry-lookup-20260909T081023Z.json) · [comparison](results/browser_task_042-domain-registry-lookup-20260909T081023Z/20260914T_task042_data_new/comparison.md) · [audit](results/browser_task_042-domain-registry-lookup-20260909T081023Z/20260914T_task042_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2391,7 +2231,6 @@ Rubric SHA-256: `7e5d21731cdafb6d81afa53ddfb0e64f8a842e2fe3cf70a3e5c5d9040dc003e
 
 Both sources omit explicit Vendor/Product fields, and both verifiers recognize that limitation. Rubric generation used 13,098 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 56,769 more scoring tokens (61.4%).
 
-Artifacts: [rubric](rubrics/browser_task_043-vulnerability-record-inspection-20260909T081051Z.json) · [comparison](results/browser_task_043-vulnerability-record-inspection-20260909T081051Z/20260914T_task043_data_new/comparison.md) · [audit](results/browser_task_043-vulnerability-record-inspection-20260909T081051Z/20260914T_task043_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2423,7 +2262,6 @@ Rubric SHA-256: `91a73e9ce7cbb9cfa0fb89a1c190e63915795fb801c4c3a183f71d4b2fc9165
 
 The final screenshot omits the clean query parameters and the M5.1 result row. The DOM contains both, while also preserving the contradictory “Newest First” control, so the DOM verifier correctly withholds full ranking credit. Rubric generation used 12,918 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 26,199 more scoring tokens (14.8%).
 
-Artifacts: [rubric](rubrics/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z.json) · [comparison](results/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z/20260914T_task044_data_new/comparison.md) · [audit](results/browser_task_044-earthquake-filtering-and-ranking-20260909T081131Z/20260914T_task044_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2455,7 +2293,6 @@ Rubric SHA-256: `3ef97ba5958cfe041448d9d42a54ac4ad18b27d24a7a7bfbf0b4e4d15ec878e
 
 Both modalities and verifiers preserve/recover the same forecast evidence. Rubric generation used 13,020 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 20,602 more scoring tokens (18.3%).
 
-Artifacts: [rubric](rubrics/browser_task_045-weather-forecast-extraction-20260909T081343Z.json) · [comparison](results/browser_task_045-weather-forecast-extraction-20260909T081343Z/20260914T_task045_data_new/comparison.md) · [audit](results/browser_task_045-weather-forecast-extraction-20260909T081343Z/20260914T_task045_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2489,7 +2326,6 @@ Rubric SHA-256: `e24fd31de542dbb9ecf85ffa9e52387f76f4eba36181c54daaeb2de5917686b
 
 Both sources contain the same page state and omit the same requested content. The score difference is judgment severity for access/stopping, not evidence loss. Rubric generation used 13,281 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 9,914 more scoring tokens (10.0%).
 
-Artifacts: [rubric](rubrics/browser_task_046-park-operational-status-20260909T081451Z.json) · [comparison](results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/comparison.md) · [audit](results/browser_task_046-park-operational-status-20260909T081451Z/20260914T_task046_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2522,7 +2358,6 @@ Rubric SHA-256: `77f681aa2e64f1e70e5391e7218bc122c01fbe9a0f59bdf56758b7fd900be0a
 
 Both representations stop near the beginning of the response, and both verifiers identify the same limitation. The completed result is the `_retry` run; the interrupted first directory contains only staged inputs. Rubric generation used 13,768 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 21,988 more scoring tokens (15.6%).
 
-Artifacts: [rubric](rubrics/browser_task_047-regulatory-api-search-20260909T100115Z.json) · [comparison](results/browser_task_047-regulatory-api-search-20260909T100115Z/20260914T_task047_data_new_retry/comparison.md) · [audit](results/browser_task_047-regulatory-api-search-20260909T100115Z/20260914T_task047_data_new_retry/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2555,7 +2390,6 @@ Rubric SHA-256: `c8197d17535a38a70b94467043e3b15de71f9f6afc6ce6cacf16ebc253dfbec
 
 The raw sources end at the company header and preserve neither filter state nor filing rows. DOM's extra point comes from the shared click action, not extra DOM evidence. Rubric generation used 13,262 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 3,433 more scoring tokens (4.2%).
 
-Artifacts: [rubric](rubrics/browser_task_048-corporate-filing-filtering-20260909T081902Z.json) · [comparison](results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/comparison.md) · [audit](results/browser_task_048-corporate-filing-filtering-20260909T081902Z/20260914T_task048_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2587,7 +2421,6 @@ Rubric SHA-256: `e7d920165717bb854ffc6669291fce77cdb6a22a09c2c21c07c0bf59a111708
 
 The screenshot preserves the displayed punctuation/layout, while DOM serializes `Percent , Seasonally Adjusted`; the DOM scorer therefore treats the answer's normalized spacing as exact. Both sources show only the August 2026 observation. Rubric generation used 12,464 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 78,665 more scoring tokens (76.4%).
 
-Artifacts: [rubric](rubrics/browser_task_049-economic-time-series-extraction-20260909T081927Z.json) · [comparison](results/browser_task_049-economic-time-series-extraction-20260909T081927Z/20260914T_task049_data_new/comparison.md) · [audit](results/browser_task_049-economic-time-series-extraction-20260909T081927Z/20260914T_task049_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2621,7 +2454,6 @@ Rubric SHA-256: `377507b06bf488f2fc4bdd475a2237f2433f27381fb1757339a5f7a3b963363
 
 `screenshot0.png` contains complete 2020–2025 records for all three countries. Every DOM state is the same fixed 790-byte prefix ending during Brazil 2024, before India and Nigeria. This source truncation explains why the DOM verifier accepts the agent's unavailability claim. Rubric generation used 14,067 tokens across 2 separate calls; scoring generated no rubric calls. DOM used 94,078 more scoring tokens (64.7%).
 
-Artifacts: [rubric](rubrics/browser_task_050-international-data-comparison-20260909T082032Z.json) · [comparison](results/browser_task_050-international-data-comparison-20260909T082032Z/20260914T_task050_data_new/comparison.md) · [audit](results/browser_task_050-international-data-comparison-20260909T082032Z/20260914T_task050_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -2681,11 +2513,7 @@ Rubric SHA-256: `5a2c65783a6ed51812d8b45896ecebb899378a1aeb5f24f624b632a401658fb
 
 **Summary:** DOM preserved the hidden media creation date. The screenshot visibly showed `painting ; Art of painting`, but its verifier did not use it, creating one confirmed screenshot-verifier miss.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_051-cultural-object-metadata-20260909T082146Z.json)
-- [Comparison report](results/browser_task_051-cultural-object-metadata-20260909T082146Z/20260914T_task051_data_new/comparison.md)
-- [Offline evidence audit](results/browser_task_051-cultural-object-metadata-20260909T082146Z/20260914T_task051_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3115,13 +2943,7 @@ Rubric SHA-256: `51d85ccf1ea752a69f80236d568acd7c68dbea30f14b67afb334ca03e1873af
 
 **Summary:** Screenshot preserved all requested npm values. DOM clipped out license, engines.node, and dist.unpackedSize, causing three DOM source-evidence gaps.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_061-npm-package-metadata-20260909T084033Z.json)
-- [Comparison report](results/browser_task_061-npm-package-metadata-20260909T084033Z/20260912T_task061_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_061-npm-package-metadata-20260909T084033Z/20260912T_task061_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_061-npm-package-metadata-20260909T084033Z/20260912T_task061_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_061-npm-package-metadata-20260909T084033Z/20260912T_task061_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3176,13 +2998,7 @@ Rubric SHA-256: `2139b52faa8bdae9dcac138b145be3103e9afb0237adea7d35a65b5878477ec
 
 **Summary:** Both modalities preserved and both verifiers recovered every requested crates.io field.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_062-rust-crate-metadata-20260909T084058Z.json)
-- [Comparison report](results/browser_task_062-rust-crate-metadata-20260909T084058Z/20260912T_task062_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_062-rust-crate-metadata-20260909T084058Z/20260912T_task062_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_062-rust-crate-metadata-20260909T084058Z/20260912T_task062_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_062-rust-crate-metadata-20260909T084058Z/20260912T_task062_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3236,13 +3052,7 @@ Rubric SHA-256: `2b6d742bc4854ebed327a519c46a92c0e11d5a011131e16c97c5839cabd5f8a
 
 **Summary:** The protein molecule name and ZN ligand were below/outside the captured screenshots but explicit in DOM, producing two screenshot source-evidence gaps.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_063-protein-structure-inspection-20260909T084134Z.json)
-- [Comparison report](results/browser_task_063-protein-structure-inspection-20260909T084134Z/20260912T_task063_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_063-protein-structure-inspection-20260909T084134Z/20260912T_task063_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_063-protein-structure-inspection-20260909T084134Z/20260912T_task063_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_063-protein-structure-inspection-20260909T084134Z/20260912T_task063_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3293,13 +3103,7 @@ Rubric SHA-256: `29761b5dc27ac06d69d581fbc838bb739d73b4f0da27ce219174f8ebc715e52
 
 **Summary:** Both modes had the same criterion-relevant evidence. The one-point difference on the Parts count is scoring severity, not evidence loss.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_064-legislation-structure-inspection-20260909T084207Z.json)
-- [Comparison report](results/browser_task_064-legislation-structure-inspection-20260909T084207Z/20260912T_task064_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_064-legislation-structure-inspection-20260909T084207Z/20260912T_task064_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_064-legislation-structure-inspection-20260909T084207Z/20260912T_task064_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_064-legislation-structure-inspection-20260909T084207Z/20260912T_task064_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3352,13 +3156,7 @@ Rubric SHA-256: `543008185397c93552f530d9f11bfcefcbae78868854f88a68ac4f0697038ac
 
 **Summary:** Neither modality exposed the required top-level TfL fields sufficiently; both verifiers caught the incomplete extraction. The two-point difference is scoring severity.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_065-public-transport-interchange-inspection-20260909T084306Z.json)
-- [Comparison report](results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_065-public-transport-interchange-inspection-20260909T084306Z/20260912T_task065_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3409,13 +3207,7 @@ Rubric SHA-256: `968c547760de5254b62f0c731bf1ac922008b64893841d0bd4bc9c4da5c8b24
 
 **Summary:** The recurrence and initial-condition formulas were visible pixels, but the DOM text dropped the rendered mathematical notation, producing two DOM source-evidence gaps.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_066-mathematical-sequence-reference-20260909T085130Z.json)
-- [Comparison report](results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_066-mathematical-sequence-reference-20260909T085130Z/20260912T_task066_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3464,13 +3256,7 @@ Rubric SHA-256: `1cf91356f00e3863c1d3520912f1db9c10bd6dbb0ff4e94e142d2f02e4d2392
 
 **Summary:** Both modalities preserved the same identity fields and both lacked the requested CODATA row. The one-point difference is scoring severity.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_067-chemical-reference-data-20260909T085226Z.json)
-- [Comparison report](results/browser_task_067-chemical-reference-data-20260909T085226Z/20260912T_task067_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_067-chemical-reference-data-20260909T085226Z/20260912T_task067_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_067-chemical-reference-data-20260909T085226Z/20260912T_task067_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_067-chemical-reference-data-20260909T085226Z/20260912T_task067_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3527,13 +3313,7 @@ Rubric SHA-256: `0b31852b1b0027ad6fd0446aa26d8eab82e58cefa4dc503e87d599200e64de2
 
 **Summary:** The screenshot sequence visibly preserved all ten requested VIN fields. Every DOM state clipped the JSON near AdditionalErrorText before those fields, producing ten DOM source-evidence gaps.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_068-vehicle-vin-decoding-20260909T085259Z.json)
-- [Comparison report](results/browser_task_068-vehicle-vin-decoding-20260909T085259Z/20260912T_task068_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_068-vehicle-vin-decoding-20260909T085259Z/20260912T_task068_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_068-vehicle-vin-decoding-20260909T085259Z/20260912T_task068_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_068-vehicle-vin-decoding-20260909T085259Z/20260912T_task068_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3587,13 +3367,7 @@ Rubric SHA-256: `2e9f94d2e3c2b0d218506eacceb5a1cdbaf8c8feae59e06a46df40b539ee5e9
 
 **Summary:** Both modalities exposed the same incomplete RDAP view, and both verifiers rejected the unreported requested fields consistently.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_069-ip-network-registration-20260909T085410Z.json)
-- [Comparison report](results/browser_task_069-ip-network-registration-20260909T085410Z/20260912T_task069_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_069-ip-network-registration-20260909T085410Z/20260912T_task069_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_069-ip-network-registration-20260909T085410Z/20260912T_task069_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_069-ip-network-registration-20260909T085410Z/20260912T_task069_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3648,14 +3422,7 @@ Rubric SHA-256: `d0ffe495ad2e47d67d52c42148e989a21aba2a4aa8fd88b63ab4a62c2b792f5
 
 **Summary:** Both modalities preserved the same visible portion of the Unihan record and lacked the requested lower-page readings. The three-point difference is scoring severity.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_070-unicode-ideograph-inspection-20260909T085438Z.json)
-- [Comparison report](results/browser_task_070-unicode-ideograph-inspection-20260909T085438Z/20260912T_task070_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_070-unicode-ideograph-inspection-20260909T085438Z/20260912T_task070_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_070-unicode-ideograph-inspection-20260909T085438Z/20260912T_task070_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_070-unicode-ideograph-inspection-20260909T085438Z/20260912T_task070_data_new/evidence_error_audit/evidence_error_report.md)
-- [Offline evidence audit](results/browser_task_070-unicode-ideograph-inspection-20260909T085438Z/20260912T_task070_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3707,13 +3474,7 @@ Rubric SHA-256: `549ae13c1406f1148bdbc102555365301e39694363e504bdd26ea03262b5520
 
 **Summary:** Both representations contained the complete compact SATCAT record, and both verifiers awarded identical full credit.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_071-satellite-catalog-inspection-20260909T085517Z.json)
-- [Comparison report](results/browser_task_071-satellite-catalog-inspection-20260909T085517Z/20260913T_task071_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_071-satellite-catalog-inspection-20260909T085517Z/20260913T_task071_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_071-satellite-catalog-inspection-20260909T085517Z/20260913T_task071_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_071-satellite-catalog-inspection-20260909T085517Z/20260913T_task071_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3764,13 +3525,7 @@ Rubric SHA-256: `231a2296aa6a12b6ac225c3ca067a8b4ec03f032f694482c3b3796132483bfa
 
 **Summary:** Screenshots captured the requested 2026 events across scrolled frames; every DOM snapshot repeated a clipped 2019 prefix, creating four DOM source gaps.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_072-regional-calendar-comparison-20260909T085558Z.json)
-- [Comparison report](results/browser_task_072-regional-calendar-comparison-20260909T085558Z/20260913T_task072_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_072-regional-calendar-comparison-20260909T085558Z/20260913T_task072_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_072-regional-calendar-comparison-20260909T085558Z/20260913T_task072_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_072-regional-calendar-comparison-20260909T085558Z/20260913T_task072_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3819,13 +3574,7 @@ Rubric SHA-256: `d4a151184f452268c309515f8df93743958ec6050655eb59d4badc4a9368eb4
 
 **Summary:** Screenshot3 contained all seven daily records, while every DOM state ended during the fourth record. DOM’s slightly higher score reflects scoring leniency over incomplete evidence, not better source coverage.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_073-pageview-time-series-analysis-20260909T090358Z.json)
-- [Comparison report](results/browser_task_073-pageview-time-series-analysis-20260909T090358Z/20260913T_task073_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_073-pageview-time-series-analysis-20260909T090358Z/20260913T_task073_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_073-pageview-time-series-analysis-20260909T090358Z/20260913T_task073_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_073-pageview-time-series-analysis-20260909T090358Z/20260913T_task073_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3879,13 +3628,7 @@ Rubric SHA-256: `dd3422752f1fa816da9a0f682de0c82e2ba8cdb298e19108b5d9486950da035
 
 **Summary:** Both modalities showed the same reached sections and the same missing wage/employment section. The one-point difference is stopping-criterion severity, not evidence loss.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_074-occupational-profile-analysis-20260909T090500Z.json)
-- [Comparison report](results/browser_task_074-occupational-profile-analysis-20260909T090500Z/20260913T_task074_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_074-occupational-profile-analysis-20260909T090500Z/20260913T_task074_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_074-occupational-profile-analysis-20260909T090500Z/20260913T_task074_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_074-occupational-profile-analysis-20260909T090500Z/20260913T_task074_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3936,13 +3679,7 @@ Rubric SHA-256: `6f14affeb38c269013e39e45b0490af6aae0f1273b38089a71952b4518441c0
 
 **Summary:** Screenshots preserved the card identity, oracle text, reserved flag, and legalities; DOM clipped after early metadata, creating four criterion-level source gaps.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_075-collectible-card-rules-20260909T090552Z.json)
-- [Comparison report](results/browser_task_075-collectible-card-rules-20260909T090552Z/20260913T_task075_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_075-collectible-card-rules-20260909T090552Z/20260913T_task075_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_075-collectible-card-rules-20260909T090552Z/20260913T_task075_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_075-collectible-card-rules-20260909T090552Z/20260913T_task075_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -3994,13 +3731,7 @@ Rubric SHA-256: `256cf48db6dc6362d093dcf836d688dbfe7cc5f2c89f278d9c8a5c5b966e3a0
 
 **Summary:** Screenshots exposed title, type, and author content that DOM clipped before reaching. DOM’s six-point advantage is scoring leniency for omissions, not superior evidence coverage.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_076-doi-metadata-20260909T090704Z.json)
-- [Comparison report](results/browser_task_076-doi-metadata-20260909T090704Z/20260913T_task076_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_076-doi-metadata-20260909T090704Z/20260913T_task076_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_076-doi-metadata-20260909T090704Z/20260913T_task076_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_076-doi-metadata-20260909T090704Z/20260913T_task076_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4057,13 +3788,7 @@ Rubric SHA-256: `fc0553ae76f7d38f74791ed0b8d2518a353fa3a7bbc068449bdc7ffe0bd460e
 
 **Summary:** Screenshots reached the PokÃ©mon types and stats arrays; DOM repeatedly clipped within early abilities data. Neither modality evidenced a species-endpoint visit.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_078-cross-endpoint-game-data-20260909T094544Z.json)
-- [Comparison report](results/browser_task_078-cross-endpoint-game-data-20260909T094544Z/20260913T_task078_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_078-cross-endpoint-game-data-20260909T094544Z/20260913T_task078_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_078-cross-endpoint-game-data-20260909T094544Z/20260913T_task078_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_078-cross-endpoint-game-data-20260909T094544Z/20260913T_task078_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4114,13 +3839,7 @@ Rubric SHA-256: `ebb9b172975df6aba5a6fdef96a7a5c172e30600f78d7899c84c675fda1f2ce
 
 **Summary:** Screenshot2 contained the race date, winner result, and FastestLap object; all DOM states clipped in the Circuit object before those fields.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_079-motor-race-result-analysis-20260909T090855Z.json)
-- [Comparison report](results/browser_task_079-motor-race-result-analysis-20260909T090855Z/20260913T_task079_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_079-motor-race-result-analysis-20260909T090855Z/20260913T_task079_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_079-motor-race-result-analysis-20260909T090855Z/20260913T_task079_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_079-motor-race-result-analysis-20260909T090855Z/20260913T_task079_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4174,13 +3893,7 @@ Rubric SHA-256: `da6c0c2e585c969c9e8a4722f03ca6e9a3c22ecc5bd5ce27271a367fa424c12
 
 **Summary:** Both sources clearly contained all six UniProt values, but the agent's final answer contained only an API context-window error. The screenshot evidence analysis noticed the omissions and then contradicted itself by awarding full delivery credit for C2–C7 merely because the values were visible. The DOM verifier correctly assigned zero to those six output criteria. These are six confirmed screenshot-verifier evidence-use misses, not source-capture losses.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_080-protein-record-inspection-20260909T090935Z.json)
-- [Comparison report](results/browser_task_080-protein-record-inspection-20260909T090935Z/20260913T_task080_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_080-protein-record-inspection-20260909T090935Z/20260913T_task080_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_080-protein-record-inspection-20260909T090935Z/20260913T_task080_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_080-protein-record-inspection-20260909T090935Z/20260913T_task080_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4232,13 +3945,7 @@ Rubric SHA-256: `3e3d33a6f5ea8e4d4e131ac6c0c0240e9d1ffcfcdb84761486dde623915d279
 
 **Summary:** The screenshot preserved the prose etymology that DOM omitted. Separately, the DOM verifier misread the preserved Standard Southern British IPA label/value sequence; that is a verifier grounding miss, not source loss.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_081-lexical-entry-inspection-20260909T090959Z.json)
-- [Comparison report](results/browser_task_081-lexical-entry-inspection-20260909T090959Z/20260913T_task081_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_081-lexical-entry-inspection-20260909T090959Z/20260913T_task081_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_081-lexical-entry-inspection-20260909T090959Z/20260913T_task081_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_081-lexical-entry-inspection-20260909T090959Z/20260913T_task081_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4289,13 +3996,7 @@ Rubric SHA-256: `2080808bbccbe3444a4d2234275a959221a249014904721553df11db85c833d
 
 **Summary:** Both modalities contained enough explicit facts to associate Reini with White, but the DOM verifier failed to combine “White is victorious” with “Reini won”; this is a confirmed DOM-verifier miss.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_082-chess-game-result-inspection-20260909T091031Z.json)
-- [Comparison report](results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_082-chess-game-result-inspection-20260909T091031Z/20260913T_task082_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4347,13 +4048,7 @@ Rubric SHA-256: `220c4bbaf2708ab9dd1684f51db25d10dabb735d5bfbac6a340dd33641cd8d8
 
 **Summary:** Both verifiers used the available text correctly, but DOM flattened the normal-versus-struck-through Environment styling required by the task.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_083-marine-taxonomy-20260909T091056Z.json)
-- [Comparison report](results/browser_task_083-marine-taxonomy-20260909T091056Z/20260913T_task083_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_083-marine-taxonomy-20260909T091056Z/20260913T_task083_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_083-marine-taxonomy-20260909T091056Z/20260913T_task083_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_083-marine-taxonomy-20260909T091056Z/20260913T_task083_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4409,13 +4104,7 @@ Rubric SHA-256: `86405cadd21cd92c4b3494960aa9c7d29a6466ae18e9c2484e3a5850e1ba7be
 
 **Summary:** Both representations contained all criterion evidence and both verifiers caught it. The equal total hides only minor differences in typography scoring.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_084-exoplanet-discovery-record-20260909T091127Z.json)
-- [Comparison report](results/browser_task_084-exoplanet-discovery-record-20260909T091127Z/20260913T_task084_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_084-exoplanet-discovery-record-20260909T091127Z/20260913T_task084_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_084-exoplanet-discovery-record-20260909T091127Z/20260913T_task084_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_084-exoplanet-discovery-record-20260909T091127Z/20260913T_task084_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4469,13 +4158,7 @@ Rubric SHA-256: `30a92a02be1e3cbe99d28189166d1f6ad37b51219014af78d6ca5d00a9d4040
 
 **Summary:** Screenshots exposed the requested SBDB object and physical-parameter fields, while every DOM state remained a short fixed prefix ending inside the orbit data; five criteria therefore have genuine DOM source loss.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_085-asteroid-record-20260909T091202Z.json)
-- [Comparison report](results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_085-asteroid-record-20260909T091202Z/20260913T_task085_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4525,13 +4208,7 @@ Rubric SHA-256: `fb4c8bce0a8e20dfd3bf5838b788bee3eb643563bcc1244ad72ea94a9b686a3
 
 **Summary:** Both sources were incomplete for the bundled base-field criterion: the screenshot omitted longitude, while DOM omitted most base fields. Because neither modality contained the complete criterion, this mixed case is excluded from asymmetric evidence-loss counting.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_086-cross-endpoint-tide-station-inspection-20260909T091255Z.json)
-- [Comparison report](results/browser_task_086-cross-endpoint-tide-station-inspection-20260909T091255Z/20260913T_task086_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_086-cross-endpoint-tide-station-inspection-20260909T091255Z/20260913T_task086_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_086-cross-endpoint-tide-station-inspection-20260909T091255Z/20260913T_task086_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_086-cross-endpoint-tide-station-inspection-20260909T091255Z/20260913T_task086_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4582,13 +4259,7 @@ Rubric SHA-256: `d6936e2ce99610f826aa5b76541407e58617a7aeee59041b81839605a3a8d94
 
 **Summary:** DOM state 2 preserved the latest Discharge readout (1980 ft^3/s with timestamp), while the screenshots showed only the series-selection state and never the numeric readout. Both verifiers otherwise used their available evidence correctly.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_087-river-monitoring-20260909T091320Z.json)
-- [Comparison report](results/browser_task_087-river-monitoring-20260909T091320Z/20260913T_task087_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_087-river-monitoring-20260909T091320Z/20260913T_task087_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_087-river-monitoring-20260909T091320Z/20260913T_task087_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_087-river-monitoring-20260909T091320Z/20260913T_task087_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4640,13 +4311,7 @@ Rubric SHA-256: `d2fdb96b6054746d69994126190fbfb081d8e7b2a8f1e5d5a29a41f39492c3a
 
 **Summary:** Screenshots preserved the episode sequence and ratings through the season boundary; all 24 DOM states repeated a prefix containing only S1E1. Five criteria therefore have genuine DOM source loss.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_088-television-season-analysis-20260909T091436Z.json)
-- [Comparison report](results/browser_task_088-television-season-analysis-20260909T091436Z/20260913T_task088_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_088-television-season-analysis-20260909T091436Z/20260913T_task088_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_088-television-season-analysis-20260909T091436Z/20260913T_task088_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_088-television-season-analysis-20260909T091436Z/20260913T_task088_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4696,13 +4361,7 @@ Rubric SHA-256: `31a747cbdae946437d32ce2f8ae2ec81d89d1c630bd4ee658425f925b698509
 
 **Summary:** Screenshots contained all eleven postcode fields, while both DOM states truncated before admin_district, admin_ward, and codes.admin_district, affecting three criteria.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_089-postcode-civic-geography-20260909T091806Z.json)
-- [Comparison report](results/browser_task_089-postcode-civic-geography-20260909T091806Z/20260913T_task089_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_089-postcode-civic-geography-20260909T091806Z/20260913T_task089_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_089-postcode-civic-geography-20260909T091806Z/20260913T_task089_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_089-postcode-civic-geography-20260909T091806Z/20260913T_task089_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -4756,13 +4415,7 @@ Rubric SHA-256: `316185411a39bbb1b56e98d74c7dbc4d4714dc2022a91c98a872a1b80669e08
 
 **Summary:** DOM preserved enough evidence for the first constant when the table row and surrounding BIPM text are read together. For constants 2–7, it omitted required powers or inverse-unit exponents that remain visible in the screenshot table.
 
-### Artifacts
 
-- [Frozen rubric](rubrics/browser_task_090-si-defining-constant-table-20260909T091833Z.json)
-- [Comparison report](results/browser_task_090-si-defining-constant-table-20260909T091833Z/20260913T_task090_data_new/comparison.md)
-- [Screenshot metrics](results/browser_task_090-si-defining-constant-table-20260909T091833Z/20260913T_task090_data_new/microsoft_verifier/run_metrics.json)
-- [DOM metrics](results/browser_task_090-si-defining-constant-table-20260909T091833Z/20260913T_task090_data_new/dom_model/run_metrics.json)
-- [Offline evidence audit](results/browser_task_090-si-defining-constant-table-20260909T091833Z/20260913T_task090_data_new/evidence_error_audit/evidence_error_report.md)
 
 ---
 
@@ -5107,8 +4760,6 @@ Reused rubric SHA-256: `08053dc4514113054566c6ea9f0a4a9e785428805d5e8f12c9f129dd
 
 **Summary:** Both representations contain the same Reddit network-security blocker, and both verifiers recover it correctly. The blocker-aware rubric awards full process credit, but both outcome checks fail because the requested Top/This Week post title and score were not obtained. There is no asymmetric source-evidence loss or confirmed verifier miss. DOM used 2,645 more scoring tokens than screenshots, a 4.4% increase.
 
-- [Comparison](results/task_01_rerun/20260915T104323Z_task01_rerun/comparison.md)
-- [Offline audit](results/task_01_rerun/20260915T104323Z_task01_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 2 rerun — Xbox best-seller game metadata
 
@@ -5136,8 +4787,6 @@ Reused rubric SHA-256: `2157f3abcd304f7618cb600205bd1f4ac17cb9bfeb93fd0b39f1da3c
 
 **Summary:** Both verifiers confirm the Xbox product page and developer/date. The screenshot explicitly shows “Published by: Electronic Arts”; the DOM retains “Electronic Arts” elsewhere but loses its direct association with the “Published by” label, producing the only DOM source-evidence loss in this batch. DOM used 42,811 more scoring tokens than screenshots (35.6% increase).
 
-- [Comparison](results/task_02_rerun/20260915_task02_rerun/comparison.md)
-- [Offline audit](results/task_02_rerun/20260915_task02_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 3 rerun — Microsoft Careers job extraction
 
@@ -5168,8 +4817,6 @@ Reused rubric SHA-256: `6cb1ce774b4da7e22243c6a0ae5ffb597dc341935f8a53dfbce2c309
 
 **Summary:** Both modalities contain and recover the search, listing metadata, responsibilities, and constraint evidence. Neither source contains two preferred-qualification bullets. The 0.5-point gap is scoring interpretation, not evidence loss. DOM used 18,971 more scoring tokens than screenshots (15.0% increase).
 
-- [Comparison](results/task_03_rerun/20260915_task03_rerun/comparison.md)
-- [Offline audit](results/task_03_rerun/20260915_task03_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 4 rerun — DMNS film lookup
 
@@ -5198,8 +4845,6 @@ Reused rubric SHA-256: `81ae2fa388b310f12bcd2015339158be8169f748f3fd281893eb5bec
 
 **Summary:** Neither modality contains a film title, synopsis, or showtimes; both verifiers correctly identify those absences. DOM awards one additional navigation point, so the score gap is judgment variance rather than representation loss. DOM used 63,862 more scoring tokens than screenshots (56.6% increase).
 
-- [Comparison](results/task_04_rerun/20260915_task04_rerun/comparison.md)
-- [Offline audit](results/task_04_rerun/20260915_task04_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 5 rerun — Bush Library event lookup
 
@@ -5227,8 +4872,6 @@ Reused rubric SHA-256: `1d9fb62eb123094877e0d4f2d9defa7dfd985148ce7c88e3efa589b3
 
 **Summary:** The screenshot shows only the September 17 event, while the DOM also preserves the September 24 event needed to compare chronology; this is the batch’s only screenshot source-evidence loss. The total still favors screenshots because the two scorers apply different partial-credit judgments to chronology and the unavailable location. DOM used 3,290 fewer scoring tokens than screenshots (4.1% reduction).
 
-- [Comparison](results/task_05_rerun/20260915_task05_rerun/comparison.md)
-- [Offline audit](results/task_05_rerun/20260915_task05_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 6 rerun — Search Engine Land earliest article
 
@@ -5256,8 +4899,6 @@ Reused rubric SHA-256: `fd4b6e5db6e3942d425c795d4667da54104038119a8cacb7e2817b65
 
 **Summary:** Both modalities show pagination only through page 10 of 722 and no verified earliest article. Both verifiers catch that limitation; the 1.5-point difference comes from screenshot partial credit for visible article cards, not missing evidence. DOM used 101,360 more scoring tokens than screenshots (61.2% increase).
 
-- [Comparison](results/task_06_rerun/20260915_task06_rerun/comparison.md)
-- [Offline audit](results/task_06_rerun/20260915_task06_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 7 rerun — Amazon/AllRecipes recipe lookup
 
@@ -5287,8 +4928,6 @@ Reused rubric SHA-256: `92aa9a35c900cfea9df77683c49e2d406af0a68c5cafd9169458a5c8
 
 **Summary:** Both modalities recover the Amazon #2 item and the AllRecipes Cloudflare blocker. Every criterion is caught in both representations and the process totals match. DOM used 6,288 more scoring tokens than screenshots (7.9% increase).
 
-- [Comparison](results/task_07_rerun/20260915_task07_rerun/comparison.md)
-- [Offline audit](results/task_07_rerun/20260915_task07_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 8 rerun — Playwright release research
 
@@ -5318,8 +4957,6 @@ Reused rubric SHA-256: `dbd97e8cc89d447ae6e4e451a73e26b3eacff43e05f39ea4d84a8ce8
 
 **Summary:** Both verifiers catch the correct v1.63.0 release, the unsupported publication date/changes, and the failed documentation verification. The 0.5-point gap is scoring interpretation, not evidence loss. DOM used 49,645 more scoring tokens than screenshots (39.6% increase).
 
-- [Comparison](results/task_08_rerun/20260915_task08_rerun/comparison.md)
-- [Offline audit](results/task_08_rerun/20260915_task08_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 9 rerun — NASA Artemis mission lookup
 
@@ -5350,8 +4987,6 @@ Reused rubric SHA-256: `d8501aa855b5b07aec67fd374fcfe17455c57c18ab59a631d96ed88f
 
 **Summary:** Both modalities expose that Artemis II is marked as already occurred, and both analyses notice it. DOM nevertheless awards more partial/full credit on related fields, so the four-point gap is scoring leniency rather than evidence availability. DOM used 36,752 more scoring tokens than screenshots (37.9% increase).
 
-- [Comparison](results/task_09_rerun/20260915_task09_rerun/comparison.md)
-- [Offline audit](results/task_09_rerun/20260915_task09_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 10 rerun — Gemini documentation lookup
 
@@ -5382,8 +5017,6 @@ Reused rubric SHA-256: `a8d84181ec0fe09d117995b4c001e182821ba5ac9631538a68d8a8bf
 
 **Summary:** Both modalities show the same Google CAPTCHA and no documentation page. The screenshot scorer applies the blocker allowance broadly while the DOM scorer requires an alternative path to the official documentation, causing a large scoring-policy disagreement with no source-evidence loss. DOM used 54,302 more scoring tokens than screenshots (49.3% increase).
 
-- [Comparison](results/task_10_rerun/20260915_task10_rerun/comparison.md)
-- [Offline audit](results/task_10_rerun/20260915_task10_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ## Task 11 rerun — Arxiv Literature Search
@@ -5414,8 +5047,6 @@ Reused rubric SHA-256: `8154a1385faa60d8797d38cd3790be785d2a99dc77c1de0f22ef29f1
 
 **Summary:** Both modalities expose the same arXiv query and single verified paper. The two-point gap comes from different partial-credit treatment of the incomplete three-paper requirement, not evidence loss. DOM used 74,081 more scoring tokens than screenshots (26.7% increase).
 
-- [Comparison](results/task_11_rerun/20260915_task11_rerun/comparison.md)
-- [Offline audit](results/task_11_rerun/20260915_task11_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 12 rerun — Arxiv Paper Metadata
 
@@ -5445,8 +5076,6 @@ Reused rubric SHA-256: `0ba8db17cb7a714de473b135020ece47b0a8098f986ce2fc4f86e50d
 
 **Summary:** Both modalities recover all requested arXiv version metadata and both verifiers award full credit. DOM used 76,687 more scoring tokens than screenshots (100.9% increase).
 
-- [Comparison](results/task_12_rerun/20260915_task12_rerun/comparison.md)
-- [Offline audit](results/task_12_rerun/20260915_task12_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 13 rerun — Chess Profile Lookup
 
@@ -5474,8 +5103,6 @@ Reused rubric SHA-256: `1db9087c848d5ad336f7c063babff47c82c0d673cec6184a853a62ab
 
 **Summary:** Both modalities recover the Chess.com profile and exact Blitz/Bullet ratings; scores and outcomes match. DOM used 28,186 more scoring tokens than screenshots (38.9% increase).
 
-- [Comparison](results/task_13_rerun/20260915_task13_rerun/comparison.md)
-- [Offline audit](results/task_13_rerun/20260915_task13_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 14 rerun — Reddit Post Lookup
 
@@ -5504,8 +5131,6 @@ Reused rubric SHA-256: `c8d413abd02711e0a624ff57822d29e0edd9802c5c75a62c9d86a86d
 
 **Summary:** Both modalities show the same Reddit access blocker and both apply the frozen rubric consistently. DOM used 2,296 more scoring tokens than screenshots (3.6% increase).
 
-- [Comparison](results/task_14_rerun/20260915_task14_rerun/comparison.md)
-- [Offline audit](results/task_14_rerun/20260915_task14_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 15 rerun — Reddit Community Comparison
 
@@ -5534,8 +5159,6 @@ Reused rubric SHA-256: `002aa1d1eda9e7069a08c8bbb68a6d7c9e6e1ecf1dd4fd815d396f69
 
 **Summary:** Both modalities show the same Reddit platform blocker; all downstream criteria are handled consistently. DOM used 2,224 more scoring tokens than screenshots (3.5% increase).
 
-- [Comparison](results/task_15_rerun/20260915_task15_rerun/comparison.md)
-- [Offline audit](results/task_15_rerun/20260915_task15_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 16 rerun — Hugging Face Model Metadata
 
@@ -5564,8 +5187,6 @@ Reused rubric SHA-256: `3ae38854ed411b9031803fe22503d5d4c10c2cf432936e9016379e99
 
 **Summary:** Both modalities recover the Hugging Face model metadata and both verifiers award full credit. DOM used 31,906 more scoring tokens than screenshots (45.4% increase).
 
-- [Comparison](results/task_16_rerun/20260915_task16_rerun/comparison.md)
-- [Offline audit](results/task_16_rerun/20260915_task16_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 17 rerun — Hugging Face Dataset Inspection
 
@@ -5593,8 +5214,6 @@ Reused rubric SHA-256: `432739090bfbc188d44079a449ae58637894eaf19a08f1d997ece6a4
 
 **Summary:** Both inputs show “train · 87.6k rows,” but the final answer omits it. The screenshot scorer correctly assigns zero while the DOM scorer awards full evidence credit; this is DOM scoring overcredit, not representation loss. DOM used 6,213 more scoring tokens than screenshots (10.6% increase).
 
-- [Comparison](results/task_17_rerun/20260915_task17_rerun/comparison.md)
-- [Offline audit](results/task_17_rerun/20260915_task17_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 18 rerun — Github Issue Search
 
@@ -5623,8 +5242,6 @@ Reused rubric SHA-256: `1070898bbbc7964a59520ec21c339408ad17d6faca93bcb2306f1ef4
 
 **Summary:** Both modalities recover the GitHub issue query and count. The half-point gap is a minor query-exactness judgment, not source evidence loss. DOM used 1,674 more scoring tokens than screenshots (1.5% increase).
 
-- [Comparison](results/task_18_rerun/20260915_task18_rerun/comparison.md)
-- [Offline audit](results/task_18_rerun/20260915_task18_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 19 rerun — Github Release Research
 
@@ -5654,8 +5271,6 @@ Reused rubric SHA-256: `b6de0067c9d19eb4956371b6c427ccb33bacfad0dbf9df5d089946db
 
 **Summary:** DOM preserves the exact “02 Sep 17:40” release timestamp while the screenshot shows only “2 weeks ago.” This is a genuine screenshot-source evidence gap; all other requested release evidence is available in both. DOM used 45,034 more scoring tokens than screenshots (60.5% increase).
 
-- [Comparison](results/task_19_rerun/20260915_task19_rerun/comparison.md)
-- [Offline audit](results/task_19_rerun/20260915_task19_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 20 rerun — Github Code Search
 
@@ -5684,8 +5299,6 @@ Reused rubric SHA-256: `5cc681d5bdaf6c0792b0062db6a687c29b6f9006c30dbbf35a077eac
 
 **Summary:** Both modalities expose the same GitHub code-search trajectory and produce the same total; there is no asymmetric source-evidence loss. DOM used 285,559 more scoring tokens than screenshots (200.4% increase).
 
-- [Comparison](results/task_20_rerun/20260915_task20_rerun/comparison.md)
-- [Offline audit](results/task_20_rerun/20260915_task20_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 21 rerun — Github Repository Comparison
 
@@ -5715,8 +5328,6 @@ Reused rubric SHA-256: `debcba8462f7fdd11da93321b7a54b61c17e70bd24a971559faa0669
 
 **Summary:** Both modalities recover the complete repository-comparison evidence and both verifiers award full credit. DOM used 25,896 more scoring tokens than screenshots (27.8% increase).
 
-- [Comparison](results/task_21_rerun/20260915_task21_rerun/comparison.md)
-- [Offline audit](results/task_21_rerun/20260915_task21_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 22 rerun — Stackoverflow Search
 
@@ -5744,8 +5355,6 @@ Reused rubric SHA-256: `686ac06cb94ab6ea86b0b6d34f7a460778f78a64d2bf8d39a666c8ee
 
 **Summary:** Both modalities contain the same Stack Overflow state. The one-point gap is whether stopping early should reduce the constraint criterion, not evidence loss. DOM used 49,299 more scoring tokens than screenshots (32.2% increase).
 
-- [Comparison](results/task_22_rerun/20260915_task22_rerun/comparison.md)
-- [Offline audit](results/task_22_rerun/20260915_task22_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 23 rerun — Scholar Literature Search
 
@@ -5776,8 +5385,6 @@ Reused rubric SHA-256: `be2cf947b51ee43a5254de444eeb65eb7d175fbcc7ea08f53ad32263
 
 **Summary:** DOM uniquely preserves the Scholar system-error text and cited-by URL context that are not recoverable from the screenshots. Separately, DOM overcredits the citation count even though the final answer never reports it; that is a scoring error, not evidence recovery. DOM used 36,932 more scoring tokens than screenshots (20.2% increase).
 
-- [Comparison](results/task_23_rerun/20260915_task23_rerun/comparison.md)
-- [Offline audit](results/task_23_rerun/20260915_task23_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 24 rerun — Hacker News Inspection
 
@@ -5805,8 +5412,6 @@ Reused rubric SHA-256: `c3c7c4d619065b4c6191ec5934aa1368727ebecdba8fd35a44bb32f4
 
 **Summary:** DOM contains the full ranked list through story 30 and therefore supports the complete GitHub-linked-story count; screenshots stop at rank 29. Both affected criteria are genuine screenshot-source gaps. DOM used 42,895 more scoring tokens than screenshots (58.0% increase).
 
-- [Comparison](results/task_24_rerun/20260915_task24_rerun/comparison.md)
-- [Offline audit](results/task_24_rerun/20260915_task24_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 25 rerun — Hacker News Search
 
@@ -5835,8 +5440,6 @@ Reused rubric SHA-256: `10d8137e689425c914ae0a893656b68a76d41e713d5413a3983bfa3b
 
 **Summary:** Both modalities recover the Algolia query, filters, and point ordering. The half-point gap comes from DOM not proving the browser-current-date instruction, not source loss between modalities. DOM used 55,676 more scoring tokens than screenshots (45.5% increase).
 
-- [Comparison](results/task_25_rerun/20260915_task25_rerun/comparison.md)
-- [Offline audit](results/task_25_rerun/20260915_task25_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 26 rerun — Shopping Constraint Satisfaction
 
@@ -5867,8 +5470,6 @@ Reused rubric SHA-256: `b98cd8fd5da1831ceb7d0ff89fd58c491c1ee5ba1c2f9636ae58f15e
 
 **Summary:** DOM explicitly marks the 4-stars filter active while the screenshot only shows the filter option without a clear selected state. The remaining score difference is partial-credit treatment of the incorrect top product. DOM used 65,829 more scoring tokens than screenshots (50.0% increase).
 
-- [Comparison](results/task_26_rerun/20260915_task26_rerun/comparison.md)
-- [Offline audit](results/task_26_rerun/20260915_task26_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 27 rerun — Shopping Constraint Satisfaction
 
@@ -5897,8 +5498,6 @@ Reused rubric SHA-256: `2212291f68520b789f988e7484e561cb893b90ec6481965020f5f65c
 
 **Summary:** Neither modality contains the requested eBay product details; both verifiers correctly score the incomplete trajectory. DOM used 10,881 more scoring tokens than screenshots (12.7% increase).
 
-- [Comparison](results/task_27_rerun/20260915_task27_rerun/comparison.md)
-- [Offline audit](results/task_27_rerun/20260915_task27_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 28 rerun — News Monitoring
 
@@ -5927,8 +5526,6 @@ Reused rubric SHA-256: `ecbe8f31750b2f052bb63998de33a2ea569f9d4c48902231f80cc943
 
 **Summary:** Neither modality contains the five requested BBC headlines/timestamps; both verifiers agree on the same evidence and score. DOM used 16,104 more scoring tokens than screenshots (20.8% increase).
 
-- [Comparison](results/task_28_rerun/20260915_task28_rerun/comparison.md)
-- [Offline audit](results/task_28_rerun/20260915_task28_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 29 rerun — Course Search And Filtering
 
@@ -5959,8 +5556,6 @@ Reused rubric SHA-256: `3daffb68fd3e0e8bf3aed4b5b7a36a638215f13377b5964ac7a3093a
 
 **Summary:** DOM preserves “AI Mastery for Professionals” and its rating, while that selected third course is absent from screenshots. This creates screenshot-source loss for both the top-three selection and Course #3 reporting criteria. DOM used 130,383 more scoring tokens than screenshots (91.0% increase).
 
-- [Comparison](results/task_29_rerun/20260915_task29_rerun/comparison.md)
-- [Offline audit](results/task_29_rerun/20260915_task29_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Task 30 rerun — Course Detail Inspection
 
@@ -5990,8 +5585,6 @@ Reused rubric SHA-256: `d72d9b5be1488b333321130e761a98f676847890a290a6b5fe324b93
 
 **Summary:** Both modalities show the same related Coursera course and “5 modules.” The point gaps reflect partial-credit interpretation, not evidence availability. DOM used 60,605 more scoring tokens than screenshots (76.5% increase).
 
-- [Comparison](results/task_30_rerun/20260915_task30_rerun/comparison.md)
-- [Offline audit](results/task_30_rerun/20260915_task30_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ## Rerun batch result — Tasks 31–60 (2026-09-15)
@@ -6037,8 +5630,6 @@ Frozen rubric SHA-256: `1f258ed34b24d9908e533b69708ef9ff958f65a514ffc2a461789d29
 
 **Summary:** Both representations contain only the Wikipedia introduction/statistics area; the requested 1921–1923 table rows are absent from both. Scores match.
 
-- [Comparison](results/task_31_rerun/20260915_task31_rerun/comparison.md)
-- [Offline audit](results/task_31_rerun/20260915_task31_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 32 rerun — Technical Documentation Inspection
@@ -6070,8 +5661,6 @@ Frozen rubric SHA-256: `694dab3808aea3a9751b6e53ef19bee73f42a8c06b3be48a3b1c415c
 
 **Summary:** Both representations expose the same keyword values but not the formal-definition or browser-compatibility tables. The two-point gap is stricter DOM scoring of “formal syntax,” not evidence loss.
 
-- [Comparison](results/task_32_rerun/20260915_task32_rerun/comparison.md)
-- [Offline audit](results/task_32_rerun/20260915_task32_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 33 rerun — Software Package Metadata
@@ -6103,8 +5692,6 @@ Frozen rubric SHA-256: `e987f50a1508388eff19029c26216ddd2da448997aefb8b1e7863196
 
 **Summary:** The screenshot shows one source-distribution row but never exposes the built-distribution count. DOM explicitly says “Showing 1 of 1 file” in the built section; the DOM verifier recognized this only partially.
 
-- [Comparison](results/task_33_rerun/20260915_task33_rerun/comparison.md)
-- [Offline audit](results/task_33_rerun/20260915_task33_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 34 rerun — Dependency Inspection
@@ -6138,8 +5725,6 @@ Frozen rubric SHA-256: `bff329749131a4a0d59fe780a228d6d7277fea87b8202c6904f5168b
 
 **Summary:** Both show the Rails version and dependency table, but only DOM exposes the MIT license. The one-point score gap follows that screenshot-source omission.
 
-- [Comparison](results/task_34_rerun/20260915_task34_rerun/comparison.md)
-- [Offline audit](results/task_34_rerun/20260915_task34_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 35 rerun — Container Image Tag Comparison
@@ -6169,8 +5754,6 @@ Frozen rubric SHA-256: `003b90014d5fed37a6292b1c5ce248284dabbaa1bc85dec01fd756fb
 
 **Summary:** DOM exposes all three exact-prefix tag cards and more linux/amd64 rows; screenshots expose only two qualifying tag cards and incomplete size coverage. DOM still correctly penalized the unsupported duplicated 44.04 MB value for `3.12-slim`.
 
-- [Comparison](results/task_35_rerun/20260915_task35_rerun/comparison.md)
-- [Offline audit](results/task_35_rerun/20260915_task35_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 36 rerun — Package Dependency Lookup
@@ -6200,8 +5783,6 @@ Frozen rubric SHA-256: `21c4811a4e548e87e00a1e3531cb01097dc7c0680f13eb540ec9481d
 
 **Summary:** Both representations contain the same Bookworm version, complete architecture table, and three Depends entries. Both receive full credit.
 
-- [Comparison](results/task_36_rerun/20260915_task36_rerun/comparison.md)
-- [Offline audit](results/task_36_rerun/20260915_task36_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 37 rerun — Package Platform Availability
@@ -6233,8 +5814,6 @@ Frozen rubric SHA-256: `9d32a5e889be0c21958c7736140181e10f8caa992f0f6d4a53f28324
 
 **Summary:** The evidence coverage is equivalent. The DOM verifier incorrectly treated `pkgconf`, shown in a separate build-only table, as a regular dependency and was more lenient on exact bottle wording; this is a DOM-verifier interpretation/scoring issue.
 
-- [Comparison](results/task_37_rerun/20260915_task37_rerun/comparison.md)
-- [Offline audit](results/task_37_rerun/20260915_task37_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 38 rerun — Software Release Inspection
@@ -6263,8 +5842,6 @@ Frozen rubric SHA-256: `ba30b78805709c6d54a42713b2764923163d272ac3e0bdf2f524ce31
 
 **Summary:** Both sources show `v19.1.3`, the exact relative text “Released 18 hours ago,” and the same first three Other links. The score gap is DOM scoring strictness, not evidence loss.
 
-- [Comparison](results/task_38_rerun/20260915_task38_rerun/comparison.md)
-- [Offline audit](results/task_38_rerun/20260915_task38_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 39 rerun — Technical Parameter Extraction
@@ -6292,8 +5869,6 @@ Frozen rubric SHA-256: `e09a0ab5237e118cd5f3c386ff2a529e59b9248793cb3808834b1af1
 
 **Summary:** Both sources contain the three Kubernetes field descriptions and defaults. Different partial-credit treatment creates the two-point gap.
 
-- [Comparison](results/task_39_rerun/20260915_task39_rerun/comparison.md)
-- [Offline audit](results/task_39_rerun/20260915_task39_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 40 rerun — Map Entity Inspection
@@ -6328,8 +5903,6 @@ Frozen rubric SHA-256: `2f5a5cab05458d03a0e495ac223e152659863ab23a1d08ce8b9ad6bf
 
 **Summary:** Both representations expose the same visible OSM tags. `tourism`, `museum`, and `website` are absent from both captured states, and both verifiers reject those unsupported claims.
 
-- [Comparison](results/task_40_rerun/20260915_task40_rerun/comparison.md)
-- [Offline audit](results/task_40_rerun/20260915_task40_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 41 rerun — Standards Metadata Extraction
@@ -6359,8 +5932,6 @@ Frozen rubric SHA-256: `390ac55adb7f6723236d47e498f5810fea3795edbb61e9dc073887d5
 
 **Summary:** The shared action history proves the `/info/rfc9110/` URL, while DOM also states it explicitly. Both sources contain RFC metadata, but the agent final answer contains no requested fields; the DOM verifier nevertheless awarded source-derived partial credit, which is overcredit rather than evidence recovery.
 
-- [Comparison](results/task_41_rerun/20260915_task41_rerun/comparison.md)
-- [Offline audit](results/task_41_rerun/20260915_task41_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 42 rerun — Domain Registry Lookup
@@ -6392,8 +5963,6 @@ Frozen rubric SHA-256: `44708721e982b01a34e3cbe39681e8a0cce591c3ea119bb299b4d51c
 
 **Summary:** Both sources contain every requested IANA `.museum` field. Scores and outcomes match at full credit.
 
-- [Comparison](results/task_42_rerun/20260915_task42_rerun/comparison.md)
-- [Offline audit](results/task_42_rerun/20260915_task42_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 43 rerun — Vulnerability Record Inspection
@@ -6423,8 +5992,6 @@ Frozen rubric SHA-256: `7e5d21731cdafb6d81afa53ddfb0e64f8a842e2fe3cf70a3e5c5d904
 
 **Summary:** Both sources contain the same CVE status/date/CNA, affected-version sentence, and first reference. Scores match; the shared two-point deduction is for vendor/product fields not explicitly displayed.
 
-- [Comparison](results/task_43_rerun/20260915_task43_rerun/comparison.md)
-- [Offline audit](results/task_43_rerun/20260915_task43_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 44 rerun — Earthquake Filtering And Ranking
@@ -6454,8 +6021,6 @@ Frozen rubric SHA-256: `91a73e9ce7cbb9cfa0fb89a1c190e63915795fb801c4c3a183f71d4b
 
 **Summary:** The final screenshot shows only the USGS map markers, while `dom_model14` explicitly contains the ordered 20-result list and the first three magnitude/place/UTC rows. This is confirmed screenshot-source loss on two criteria.
 
-- [Comparison](results/task_44_rerun/20260915_task44_rerun/comparison.md)
-- [Offline audit](results/task_44_rerun/20260915_task44_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 45 rerun — Weather Forecast Extraction
@@ -6485,8 +6050,6 @@ Frozen rubric SHA-256: `3ef97ba5958cfe041448d9d42a54ac4ad18b27d24a7a7bfbf0b4e4d1
 
 **Summary:** Both representations contain the same Seattle daytime/nighttime pair and detailed forecasts. Both receive full credit.
 
-- [Comparison](results/task_45_rerun/20260915_task45_rerun/comparison.md)
-- [Offline audit](results/task_45_rerun/20260915_task45_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 46 rerun — Park Operational Status
@@ -6518,8 +6081,6 @@ Frozen rubric SHA-256: `e24fd31de542dbb9ecf85ffa9e52387f76f4eba36181c54daaeb2de5
 
 **Summary:** Both representations omit the alert count/titles and Tioga status and both show the reservations 404. The three-point gap comes from different blocker/stopping-condition scoring, not evidence coverage.
 
-- [Comparison](results/task_46_rerun/20260915_task46_rerun/comparison.md)
-- [Offline audit](results/task_46_rerun/20260915_task46_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 47 rerun — Regulatory Api Search
@@ -6550,8 +6111,6 @@ Frozen rubric SHA-256: `77f681aa2e64f1e70e5391e7218bc122c01fbe9a0f59bdf56758b7fd
 
 **Summary:** Both representations contain the same exact Federal Register JSON with three results, while the agent produced no extraction. The one-point gap is constraint/access scoring calibration.
 
-- [Comparison](results/task_47_rerun/20260915_task47_rerun/comparison.md)
-- [Offline audit](results/task_47_rerun/20260915_task47_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 48 rerun — Corporate Filing Filtering
@@ -6582,8 +6141,6 @@ Frozen rubric SHA-256: `c8197d17535a38a70b94467043e3b15de71f9f6afc6ce6cacf16ebc2
 
 **Summary:** The shared action history and DOM prove the exact Tesco filing-history URL; screenshots show the correct company header but not the filing-history page/list. Neither representation shows the Accounts filter applied or any filing rows.
 
-- [Comparison](results/task_48_rerun/20260915_task48_rerun/comparison.md)
-- [Offline audit](results/task_48_rerun/20260915_task48_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 49 rerun — Economic Time Series Extraction
@@ -6613,8 +6170,6 @@ Frozen rubric SHA-256: `e7d920165717bb854ffc6669291fce77cdb6a22a09c2c21c07c0bf59
 
 **Summary:** Both representations expose the UNRATE series metadata and latest three observations. Scores and outcomes match at full credit.
 
-- [Comparison](results/task_49_rerun/20260915_task49_rerun/comparison.md)
-- [Offline audit](results/task_49_rerun/20260915_task49_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 50 rerun — International Data Comparison
@@ -6646,8 +6201,6 @@ Frozen rubric SHA-256: `377507b06bf488f2fc4bdd475a2237f2433f27381fb1757339a5f7a3
 
 **Summary:** Both representations contain the same World Bank API response and values. Scores and outcomes match at full credit.
 
-- [Comparison](results/task_50_rerun/20260915_task50_rerun/comparison.md)
-- [Offline audit](results/task_50_rerun/20260915_task50_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 51 rerun — Cultural Object Metadata
@@ -6680,8 +6233,6 @@ Frozen rubric SHA-256: `5a2c65783a6ed51812d8b45896ecebb899378a1aeb5f24f624b632a4
 
 **Summary:** DOM exposes `Creation date 2013` and the exact Creative Commons rights URI; neither is visible in screenshots. The claimed Identifier is absent from both sources and correctly receives no credit.
 
-- [Comparison](results/task_51_rerun/20260915_task51_rerun/comparison.md)
-- [Offline audit](results/task_51_rerun/20260915_task51_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 52 rerun — Museum Object Metadata
@@ -6714,8 +6265,6 @@ Frozen rubric SHA-256: `c02904ee56b52f562119b176de2bac1fc28485b26acb5f9b7abc0bc9
 
 **Summary:** Both representations contain the NASM object fields. The half-point gap is exactness/partial-credit calibration for museum and dimensions, not source loss.
 
-- [Comparison](results/task_52_rerun/20260915_task52_rerun/comparison.md)
-- [Offline audit](results/task_52_rerun/20260915_task52_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 53 rerun — Book Edition Resolution
@@ -6748,8 +6297,6 @@ Frozen rubric SHA-256: `e15710db7702bbbb56d6f2791c1fbc501b338de2f93ebe1f777dd4dc
 
 **Summary:** Both sources show the same Open Library human-verification blocker and no edition metadata. Full rubric credit is blocker-conditioned; outcome remains false in both.
 
-- [Comparison](results/task_53_rerun/20260915_task53_rerun/comparison.md)
-- [Offline audit](results/task_53_rerun/20260915_task53_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 54 rerun — Ebook Format Inspection
@@ -6783,8 +6330,6 @@ Frozen rubric SHA-256: `57a93ea7329943cb745b1d9a93d4314261802441f146263f525ee38e
 
 **Summary:** DOM exposes `Download HTML (zip)` while the screenshots do not. Both captures lack a link labeled exactly `Plain Text (accessible)`; treating that negative claim as proved from a partial capture would be unsafe. Release Date and Last Update are absent from both captures.
 
-- [Comparison](results/task_54_rerun/20260915_task54_rerun/comparison.md)
-- [Offline audit](results/task_54_rerun/20260915_task54_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 55 rerun — Archive Item Metadata
@@ -6819,8 +6364,6 @@ Frozen rubric SHA-256: `eef1854613f6306024c699a31af39fe9e4a073bd967c6ebb96affd9f
 
 **Summary:** Both sources expose all requested Internet Archive metadata and download-option labels. Both receive full credit.
 
-- [Comparison](results/task_55_rerun/20260915_task55_rerun/comparison.md)
-- [Offline audit](results/task_55_rerun/20260915_task55_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 56 rerun — Biomedical Literature Filtering
@@ -6852,8 +6395,6 @@ Frozen rubric SHA-256: `83c4e2c84cb3b2f4835b4a922e0786ea608b99630dde345ce70b6646
 
 **Summary:** Both sources contain the final PubMed result state, but the DOM verifier weighted older selected result states and failed to credit the reported first result that `dom_model24/25` supports. This is a confirmed DOM-verifier grounding miss, not DOM-source loss.
 
-- [Comparison](results/task_56_rerun/20260915_task56_rerun/comparison.md)
-- [Offline audit](results/task_56_rerun/20260915_task56_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 57 rerun — Clinical Trial Filtering
@@ -6884,8 +6425,6 @@ Frozen rubric SHA-256: `1ee0926b0edcdcc789f7b4f26568b5f9d84824be172b8387c267c7be
 
 **Summary:** Both sources show incomplete/unstable filter and sort state and lack Last Update Posted values. The six-point gap is lenient DOM partial-credit treatment of result cards, not confirmed asymmetric evidence loss.
 
-- [Comparison](results/task_57_rerun/20260915_task57_rerun/comparison.md)
-- [Offline audit](results/task_57_rerun/20260915_task57_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 58 rerun — Food Product Nutrition Lookup
@@ -6918,8 +6457,6 @@ Frozen rubric SHA-256: `ae2b0f4ffaaeffc8722627003c7d60317a3aa3d5479d92f2c544b84e
 
 **Summary:** The shared task/action URL already supplies the barcode. DOM explicitly exposes “2 ultra-processing markers,” while screenshots show only the NOVA class. Nutrition and ingredients are absent from both captures.
 
-- [Comparison](results/task_58_rerun/20260915_task58_rerun/comparison.md)
-- [Offline audit](results/task_58_rerun/20260915_task58_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 59 rerun — Software Product Requirements
@@ -6949,8 +6486,6 @@ Frozen rubric SHA-256: `7435c18812ab17285e1090f30e18253e9571625c88d16876d3712670
 
 **Summary:** Both sources show Windows storage but not Linux storage or an All Reviews aggregate. The 1.5-point gap is partial-credit calibration, not evidence loss.
 
-- [Comparison](results/task_59_rerun/20260915_task59_rerun/comparison.md)
-- [Offline audit](results/task_59_rerun/20260915_task59_rerun/evidence_error_audit/criterion_audit.json)
 
 
 ### Task 60 rerun — Discography Chronology
@@ -6981,8 +6516,6 @@ Frozen rubric SHA-256: `cd27cd3e128211e168513b2ec40fd1ad5174ff28626caad1b4176c64
 
 **Summary:** Both sources show the Album chronology and only the Homework detail visit; the agent stops before entries two and three. The one-point gap is partial-credit calibration.
 
-- [Comparison](results/task_60_rerun/20260915_task60_rerun/comparison.md)
-- [Offline audit](results/task_60_rerun/20260915_task60_rerun/evidence_error_audit/criterion_audit.json)
 
 ## Rerun batch result — Tasks 61–70
 
@@ -7027,8 +6560,6 @@ Reused rubric SHA-256: `51d85ccf1ea752a69f80236d568acd7c68dbea30f14b67afb334ca03
 
 **Summary:** Both representations contained all requested npm fields and both verifiers recovered them correctly.
 
-- [Comparison](results/task_61_rerun/20260914T_task61_rerun_data_new/comparison.md)
-- [Offline audit](results/task_61_rerun/20260914T_task61_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 62 rerun — Rust crate metadata
 
@@ -7062,8 +6593,6 @@ Reused rubric SHA-256: `2139b52faa8bdae9dcac138b145be3103e9afb0237adea7d35a65b58
 
 **Summary:** Both sources fully preserved the requested crate metadata and statistics.
 
-- [Comparison](results/task_62_rerun/20260914T_task62_rerun_data_new/comparison.md)
-- [Offline audit](results/task_62_rerun/20260914T_task62_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 63 rerun — Protein structure inspection
 
@@ -7096,8 +6625,6 @@ Reused rubric SHA-256: `2b6d742bc4854ebed327a519c46a92c0e11d5a011131e16c97c5839c
 
 **Summary:** The screenshots stopped at the Macromolecules tabs and did not display the protein row or ligand ID. DOM explicitly preserved `PROTEIN (P53 TUMOR SUPPRESSOR)` and `Ligand Interaction (ZN)`.
 
-- [Comparison](results/task_63_rerun/20260914T_task63_rerun_data_new/comparison.md)
-- [Offline audit](results/task_63_rerun/20260914T_task63_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 64 rerun — Legislation structure inspection
 
@@ -7127,8 +6654,6 @@ Reused rubric SHA-256: `29761b5dc27ac06d69d581fbc838bb739d73b4f0da27ce219174f8eb
 
 **Summary:** Neither representation enumerated the Schedules, so the reported count of 20 was unsupported. The DOM scorer recognized that absence but still awarded one point merely because the correct page had been opened; this is a verifier evidence-use miss, not DOM source recovery.
 
-- [Comparison](results/task_64_rerun/20260914T_task64_rerun_data_new/comparison.md)
-- [Offline audit](results/task_64_rerun/20260914T_task64_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 65 rerun — Public transport interchange inspection
 
@@ -7160,8 +6685,6 @@ Reused rubric SHA-256: `543008185397c93552f530d9f11bfcefcbae78868854f88a68ac4f06
 
 **Summary:** The one-point mode difference is partial-credit calibration, not evidence loss: both sources showed four modes and both verifiers caught that the final answer omitted `international-rail`.
 
-- [Comparison](results/task_65_rerun/20260914T_task65_rerun_data_new/comparison.md)
-- [Offline audit](results/task_65_rerun/20260914T_task65_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 66 rerun — Mathematical sequence reference
 
@@ -7191,8 +6714,6 @@ Reused rubric SHA-256: `968c547760de5254b62f0c731bf1ac922008b64893841d0bd4bc9c4d
 
 **Summary:** Both sources contained the recurrence. The half-point difference reflects notation-format strictness, not missing evidence.
 
-- [Comparison](results/task_66_rerun/20260914T_task66_rerun_data_new/comparison.md)
-- [Offline audit](results/task_66_rerun/20260914T_task66_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 67 rerun — Chemical reference data
 
@@ -7220,8 +6741,6 @@ Reused rubric SHA-256: `1cf91356f00e3863c1d3520912f1db9c10bd6dbb0ff4e94e142d2f02
 
 **Summary:** Both sources preserved the four identity fields and omitted the thermochemistry table. The half-point difference is formatting calibration around the formula, not asymmetric evidence loss.
 
-- [Comparison](results/task_67_rerun/20260914T_task67_rerun_data_new/comparison.md)
-- [Offline audit](results/task_67_rerun/20260914T_task67_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 68 rerun — Vehicle VIN decoding
 
@@ -7257,8 +6776,6 @@ Reused rubric SHA-256: `0b31852b1b0027ad6fd0446aa26d8eab82e58cefa4dc503e87d59920
 
 **Summary:** Both formats preserved and verified all requested VIN fields.
 
-- [Comparison](results/task_68_rerun/20260914T_task68_rerun_data_new/comparison.md)
-- [Offline audit](results/task_68_rerun/20260914T_task68_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 69 rerun — IP network registration
 
@@ -7291,8 +6808,6 @@ Reused rubric SHA-256: `2e9f94d2e3c2b0d218506eacceb5a1cdbaf8c8feae59e06a46df40b5
 
 **Summary:** Both captures stopped within nested entity data before most top-level fields and the registrant vCard. Both verifiers correctly rejected the final answer's claim that the visible `endAddress` could not be read.
 
-- [Comparison](results/task_69_rerun/20260914T_task69_rerun_data_new/comparison.md)
-- [Offline audit](results/task_69_rerun/20260914T_task69_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 70 rerun — Unicode ideograph inspection
 
@@ -7326,8 +6841,6 @@ Reused rubric SHA-256: `d0ffe495ad2e47d67d52c42148e989a21aba2a4aa8fd88b63ab4a62c
 
 **Summary:** The screenshot rendered the target glyph as a tofu/missing-font box, while DOM explicitly preserved `一`. Both representations lacked the requested definition and reading rows; the constraint-score difference is ordinary severity variance.
 
-- [Comparison](results/task_70_rerun/20260914T_task70_rerun_data_new/comparison.md)
-- [Offline audit](results/task_70_rerun/20260914T_task70_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -7375,8 +6888,6 @@ Reused rubric SHA-256: `549ae13c1406f1148bdbc102555365301e39694363e504bdd26ea032
 
 **Summary:** Both representations preserved every requested SATCAT field and both verifiers recovered them correctly.
 
-- [Comparison](results/task_71_rerun/20260914T_task71_rerun_data_new/comparison.md)
-- [Offline audit](results/task_71_rerun/20260914T_task71_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 72 rerun — Regional calendar comparison
 
@@ -7406,8 +6917,6 @@ Reused rubric SHA-256: `231a2296aa6a12b6ac225c3ca067a8b4ec03f032f694482c3b379613
 
 **Summary:** Both sources contained the requested 2026 events and both verifiers recovered the values correctly.
 
-- [Comparison](results/task_72_rerun/20260914T_task72_rerun_data_new/comparison.md)
-- [Offline audit](results/task_72_rerun/20260914T_task72_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 73 rerun — Pageview time-series analysis
 
@@ -7435,8 +6944,6 @@ Reused rubric SHA-256: `d4a151184f452268c309515f8df93743958ec6050655eb59d4badc4a
 
 **Summary:** Both inputs contained the seven API records, but the agent produced only a generic execution-error response. Both verifiers correctly awarded zero.
 
-- [Comparison](results/task_73_rerun/20260914T_task73_rerun_data_new/comparison.md)
-- [Offline audit](results/task_73_rerun/20260914T_task73_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 74 rerun — Occupational profile analysis
 
@@ -7469,8 +6976,6 @@ Reused rubric SHA-256: `dd3422752f1fa816da9a0f682de0c82e2ba8cdb298e19108b5d94869
 
 **Summary:** Both representations captured only the profile header fields and omitted the lower-page workforce values. The two-point score difference is partial-credit calibration, not evidence loss.
 
-- [Comparison](results/task_74_rerun/20260914T_task74_rerun_data_new/comparison.md)
-- [Offline audit](results/task_74_rerun/20260914T_task74_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 75 rerun — Collectible card rules
 
@@ -7500,8 +7005,6 @@ Reused rubric SHA-256: `6f14affeb38c269013e39e45b0490af6aae0f1273b38089a71952b45
 
 **Summary:** Both captured the card data. Only the DOM header preserved the exact request URL; the screenshot viewport did not expose browser chrome or the complete endpoint.
 
-- [Comparison](results/task_75_rerun/20260914T_task75_rerun_data_new/comparison.md)
-- [Offline audit](results/task_75_rerun/20260914T_task75_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 76 rerun — DOI metadata
 
@@ -7532,8 +7035,6 @@ Reused rubric SHA-256: `256cf48db6dc6362d093dcf836d688dbfe7cc5f2c89f278d9c8a5c5b
 
 **Summary:** Screenshot 0 visibly contains `message.published.date-parts: [[2024,1,17]]`; the DOM capture contains nearby `published-online` and `published-print` fields but omits the exact required `message.published` field. Other score differences are calibration, not evidence loss.
 
-- [Comparison](results/task_76_rerun/20260914T_task76_rerun_data_new/comparison.md)
-- [Offline audit](results/task_76_rerun/20260914T_task76_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 77 rerun — Patent record inspection
 
@@ -7569,8 +7070,6 @@ Newly generated rubric SHA-256: `b074ef487637c1bc30d9d5aa9f3006c69baaff8696ed2f1
 
 **Summary:** Both sources preserved the same patent header, assignees, application details, event dates, and status; neither explicitly labeled an Original Assignee. The two-point total difference is strictness/format calibration, not asymmetric evidence loss.
 
-- [Comparison](results/task_77_rerun/20260914T_task77_rerun_data_new/comparison.md)
-- [Offline audit](results/task_77_rerun/20260914T_task77_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 78 rerun — Cross-endpoint game data
 
@@ -7600,8 +7099,6 @@ Reused rubric SHA-256: `fc0553ae76f7d38f74791ed0b8d2518a353fa3a7bbc068449bdc7ffe
 
 **Summary:** Both initial captures stop before the `types` and `stats` arrays, while both species captures contain the requested species values. Both verifiers handled those same limitations consistently.
 
-- [Comparison](results/task_78_rerun/20260914T_task78_rerun_data_new/comparison.md)
-- [Offline audit](results/task_78_rerun/20260914T_task78_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 79 rerun — Motor-race result analysis
 
@@ -7631,8 +7128,6 @@ Reused rubric SHA-256: `ebb9b172975df6aba5a6fdef96a7a5c172e30600f78d7899c84c675f
 
 **Summary:** Both formats preserved the complete single-race result and both verifiers recovered every requested field.
 
-- [Comparison](results/task_79_rerun/20260914T_task79_rerun_data_new/comparison.md)
-- [Offline audit](results/task_79_rerun/20260914T_task79_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 80 rerun — Protein record inspection
 
@@ -7664,8 +7159,6 @@ Reused rubric SHA-256: `da6c0c2e585c969c9e8a4722f03ca6e9a3c22ecc5bd5ce27271a367f
 
 **Summary:** Both inputs clearly show all six UniProt fields, but the agent's final answer contains only a context-length API error. The screenshot verifier correctly withheld credit; the DOM scorer found the page values but incorrectly treated source visibility as if the agent had reported them.
 
-- [Comparison](results/task_80_rerun/20260914T_task80_rerun_data_new/comparison.md)
-- [Offline audit](results/task_80_rerun/20260914T_task80_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ---
 
@@ -7712,8 +7205,6 @@ Reused rubric SHA-256: `3e3d33a6f5ea8e4d4e131ac6c0c0240e9d1ffcfcdb84761486dde623
 
 **Summary:** Both sources contain the same etymology chain. The screenshot judge read `al-ḵawārizmiyy` as `al-kawārizmiyy` and deducted a point even though the four requested language stages were correctly reported; DOM preserved the exact text.
 
-- [Comparison](results/task_81_rerun/20260914T_task81_rerun_data_new/comparison.md)
-- [Offline audit](results/task_81_rerun/20260914T_task81_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 82 rerun — Chess game result inspection
 
@@ -7742,8 +7233,6 @@ Reused rubric SHA-256: `2080808bbccbe3444a4d2234275a959221a249014904721553df11db
 
 **Summary:** The DOM contains explicit PGN fields for White/Black names, ratings, and rating changes, but the DOM judge said the color association was unproven. Both verifiers correctly treated the reported move count as unsupported by the displayed summary.
 
-- [Comparison](results/task_82_rerun/20260914T_task82_rerun_data_new/comparison.md)
-- [Offline audit](results/task_82_rerun/20260914T_task82_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 83 rerun — Marine taxonomy
 
@@ -7773,8 +7262,6 @@ Reused rubric SHA-256: `220c4bbaf2708ab9dd1684f51db25d10dabb735d5bfbac6a340dd336
 
 **Summary:** DOM state 0 explicitly contains `marine, ~~terrestrial~~`. The DOM judge relied only on state 1, where `marine` had scrolled out of the captured text, and incorrectly treated the affirmed marine state as unsupported.
 
-- [Comparison](results/task_83_rerun/20260914T_task83_rerun_data_new/comparison.md)
-- [Offline audit](results/task_83_rerun/20260914T_task83_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 84 rerun — Exoplanet discovery record
 
@@ -7808,8 +7295,6 @@ Reused rubric SHA-256: `86405cadd21cd92c4b3494960aa9c7d29a6466ae18e9c2484e3a5850
 
 **Summary:** The identical screenshots visibly show the planet-size unit, but the screenshot analyses inconsistently read it as `R♃` and `R⊕`. DOM explicitly preserves U+2A01 (`R⨁`), matching the final answer.
 
-- [Comparison](results/task_84_rerun/20260914T_task84_rerun_data_new/comparison.md)
-- [Offline audit](results/task_84_rerun/20260914T_task84_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 85 rerun — Asteroid record
 
@@ -7841,8 +7326,6 @@ Reused rubric SHA-256: `30a92a02be1e3cbe99d28189166d1f6ad37b51219014af78d6ca5d00
 
 **Summary:** Both representations preserved every requested asteroid field and both verifiers recovered them correctly.
 
-- [Comparison](results/task_85_rerun/20260914T_task85_rerun_data_new/comparison.md)
-- [Offline audit](results/task_85_rerun/20260914T_task85_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 86 rerun — Cross-endpoint tide-station inspection
 
@@ -7870,8 +7353,6 @@ Reused rubric SHA-256: `fb4c8bce0a8e20dfd3bf5838b788bee3eb643563bcc1244ad72ea94a
 
 **Summary:** Both captures omit longitude and both verifiers identify its omission from the final answer. The one-point stopping-condition difference is penalty calibration, not evidence loss.
 
-- [Comparison](results/task_86_rerun/20260914T_task86_rerun_data_new/comparison.md)
-- [Offline audit](results/task_86_rerun/20260914T_task86_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 87 rerun — River monitoring
 
@@ -7900,8 +7381,6 @@ Reused rubric SHA-256: `d6936e2ce99610f826aa5b76541407e58617a7aeee59041b81839605
 
 **Summary:** None of the seven screenshots shows the discharge value or timestamp. DOM state 6 contains `1680 ft^3/s - Sep 14, 2026 04:50:00 AM EDT`; both sources show that the agent's separately reported gage-height value was wrong.
 
-- [Comparison](results/task_87_rerun/20260914T_task87_rerun_data_new/comparison.md)
-- [Offline audit](results/task_87_rerun/20260914T_task87_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 88 rerun — Television season analysis
 
@@ -7931,8 +7410,6 @@ Reused rubric SHA-256: `d2fdb96b6054746d69994126190fbfb081d8e7b2a8f1e5d5a29a41f3
 
 **Summary:** Both formats preserved the complete season-one episode list and both verifiers recovered the count, boundaries, and rating maximum correctly.
 
-- [Comparison](results/task_88_rerun/20260914T_task88_rerun_data_new/comparison.md)
-- [Offline audit](results/task_88_rerun/20260914T_task88_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 89 rerun — Postcode civic geography
 
@@ -7960,8 +7437,6 @@ Reused rubric SHA-256: `31a747cbdae946437d32ce2f8ae2ec81d89d1c630bd4ee658425f925
 
 **Summary:** Both sources contained the complete postcode result object and both verifiers recovered every requested field.
 
-- [Comparison](results/task_89_rerun/20260914T_task89_rerun_data_new/comparison.md)
-- [Offline audit](results/task_89_rerun/20260914T_task89_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 90 rerun — SI defining constants
 
@@ -7993,8 +7468,6 @@ Reused rubric SHA-256: `316185411a39bbb1b56e98d74c7dbc4d4714dc2022a91c98a872a1b8
 
 **Summary:** Both verifiers identified that the final answer collapsed `× 10^23` into `x 1023`. The 1.5-point difference is partial-credit severity, not evidence loss.
 
-- [Comparison](results/task_90_rerun/20260914T_task90_rerun_data_new/comparison.md)
-- [Offline audit](results/task_90_rerun/20260914T_task90_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Rerun batch result — Tasks 91–100
 
@@ -8038,8 +7511,6 @@ Reused rubric SHA-256: `c594cfe6a041f7fc5690e1f8f8f8fc13f658d4743fcc53b14c72a5bb
 
 **Summary:** Both representations preserved the endpoint sequence, resolved hash, and complete block record. No evidence loss or verifier miss was confirmed.
 
-- [Comparison](results/task_91_rerun/20260914T_task91_rerun_data_new/comparison.md)
-- [Offline audit](results/task_91_rerun/20260914T_task91_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 92 rerun — Legislative roll-call inspection
 
@@ -8073,8 +7544,6 @@ Reused rubric SHA-256: `a890f41cead00360c390707224de60ae9e238a221b233e127832d42e
 
 **Summary:** Both verifier analyses recovered the visible roll-call evidence. The score gap comes from different treatment of the failed final response, not evidence loss.
 
-- [Comparison](results/task_92_rerun/20260914T_task92_rerun_data_new/comparison.md)
-- [Offline audit](results/task_92_rerun/20260914T_task92_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 93 rerun — Supreme Court case analysis
 
@@ -8105,8 +7574,6 @@ Reused rubric SHA-256: `c49eaa21d4a9edd5fde2cc07d823703bf25320782831a5f91ca52c9c
 
 **Summary:** Both sources and analyses contain the same conclusion-card wording. The one-point difference is interpretation of whether “unanimous” satisfies the rubric's requested vote-count detail, not evidence loss.
 
-- [Comparison](results/task_93_rerun/20260914T_task93_rerun_data_new/comparison.md)
-- [Offline audit](results/task_93_rerun/20260914T_task93_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 94 rerun — EU regulation metadata
 
@@ -8136,8 +7603,6 @@ Reused rubric SHA-256: `dd3cc482d818e64a490ac97ab93402bf440a770eca29c4aca54cb37a
 
 **Summary:** Both inputs expose the requested EUR-Lex metadata and both analyses recover it. The near-zero scores reflect the agent's error-only final answer; the half-point difference is partial-credit calibration.
 
-- [Comparison](results/task_94_rerun/20260914T_task94_rerun_data_new/comparison.md)
-- [Offline audit](results/task_94_rerun/20260914T_task94_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 95 rerun — Electricity generation mix
 
@@ -8165,8 +7630,6 @@ Reused rubric SHA-256: `7d5a5a273e604a77efabed606d75705b44c94f7111244a300e7c2a6f
 
 **Summary:** Both representations preserve the complete selected interval and both verifiers recover every requested value correctly.
 
-- [Comparison](results/task_95_rerun/20260914T_task95_rerun_data_new/comparison.md)
-- [Offline audit](results/task_95_rerun/20260914T_task95_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 96 rerun — Medication label lookup
 
@@ -8197,8 +7660,6 @@ Reused rubric SHA-256: `f654e9ea48250723c3b05e69989ab730a13e96913fc51272cf10af72
 
 **Summary:** Screenshots never show the approval year or Section 3 strengths. DOM state 3 explicitly preserves `Initial U.S. Approval: 1996` and the 10 mg/20 mg entries plus a truncated 40 mg entry, but not all four strengths. Neither modality contains the requested Ingredients and Appearance fields.
 
-- [Comparison](results/task_96_rerun/20260914T_task96_rerun_data_new/comparison.md)
-- [Offline audit](results/task_96_rerun/20260914T_task96_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 97 rerun — DNS record resolution
 
@@ -8229,8 +7690,6 @@ Frozen rubric maximum: 16 points; effective scored denominator: 14 points becaus
 
 **Summary:** Both final states contain the same DNS JSON and both verifiers recover it. The response explicitly contains numeric type 15 but not the `MX` mnemonic; score differences reflect inference and penalty severity, not evidence loss. The unsupported `select` log alias was normalized to canonical `type` only in the isolated staged copies.
 
-- [Comparison](results/task_97_rerun/20260914T_task97_rerun_data_new/comparison.md)
-- [Offline audit](results/task_97_rerun/20260914T_task97_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 98 rerun — Solar/lunar ephemeris
 
@@ -8262,8 +7721,6 @@ Reused rubric SHA-256: `5ce36d2eff177b2341d7b5591e6c6cffe5385ac37029b1673c22a7e2
 
 **Summary:** Both captures contain the complete returned object. Both verifiers identify the final answer's incorrect `closestphase` date and extra fields; no evidence loss was found.
 
-- [Comparison](results/task_98_rerun/20260914T_task98_rerun_data_new/comparison.md)
-- [Offline audit](results/task_98_rerun/20260914T_task98_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 99 rerun — Consumer-product recall inspection
 
@@ -8295,8 +7752,6 @@ Reused rubric SHA-256: `f525c5189c79ff820071b6074d55eef71ded39a4ffa09746ef1f5c23
 
 **Summary:** Both formats preserve the arrays that the final answer incorrectly labels absent, and both verifier analyses identify those contradictions. The one-point difference is scoring severity, not evidence loss.
 
-- [Comparison](results/task_99_rerun/20260914T_task99_rerun_data_new/comparison.md)
-- [Offline audit](results/task_99_rerun/20260914T_task99_rerun_data_new/evidence_error_audit/criterion_audit.json)
 
 ## Task 100 rerun — Earthquake impact record
 
@@ -8326,5 +7781,3 @@ Reused rubric SHA-256: `09b96da6445a00cd31d5960838b5e2b955b3c8f8c71da1313c4436b2
 
 **Summary:** Screenshot 0 clearly displays the red `IX` badge in the Did You Feel It? card, but the screenshot verifier states that no legible MMI value is shown. DOM explicitly exposes `IX mmi` and its verifier uses it correctly. This is a confirmed screenshot-verifier miss, not screenshot-source loss. The Origin-card difference is partial-credit calibration.
 
-- [Comparison](results/task_100_rerun/20260914T_task100_rerun_data_new/comparison.md)
-- [Offline audit](results/task_100_rerun/20260914T_task100_rerun_data_new/evidence_error_audit/criterion_audit.json)
