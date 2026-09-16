@@ -6,7 +6,7 @@ We used [**Microsoft’s Universal Verifier**](https://www.microsoft.com/en-us/r
 
 Both verifiers receive the exact same frozen rubric (including criteria, ordering, and maximum scores) and follow the same scoring pipeline. This comparison holds the agent’s actions and definition of success constant, allowing us to measure how the evidence format affects verification.
 
-The [dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) contains 100 recorded browser tasks. In an initial audit of 44 tasks spanning 227 evaluation criteria, our DOM representation reduced evidence-loss cases from 14 to 6 compared with screenshots, **a 57% relative reduction.**
+The [dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) contains 100 recorded browser tasks. Across all 100 reruns and 639 evaluation criteria, our DOM representation reduced evidence-loss cases from 26 to 2 compared with screenshots, **a 92% relative reduction.**
 
 Browser-agent evaluation depends on what the recording preserves. A correct answer alone does not establish whether the agent visited the right page, applied the requested filter, or read the relevant information. Screenshots provide a visual record, but text can be clipped, URLs shortened, and control states difficult to distinguish. We built our browser infrastructure to capture these details explicitly and retain them throughout the agent’s execution.
 
@@ -24,9 +24,9 @@ Our initial audit measures **evidence loss**: whether the recording preserves th
 
 | Evidence format | Criteria with missing evidence | Evidence-loss rate |
 | ----- | ----: | ----: |
-| Screenshots : Microsoft Universal Verifier baseline | 14 / 227 | 6.2% |
-| DOMDiff : our DOM-based verifier | 6 / 227 | 2.6% |
+| Screenshots: Microsoft Universal Verifier baseline | 26 / 639 | 4.1% |
+| DOMDiff: our DOM-based verifier | 2 / 639 | 0.3% |
 
-We manually audit missing evidence separately from verifier reasoning errors. These results measure evidence preservation across the audited tasks; they do not represent an agent success rate. 
-Task based results are stored in:  
-[https://github.com/wootzapp/w8-domdiff-bench/blob/main/results.md](https://github.com/wootzapp/w8-domdiff-bench/blob/main/results.md)
+We manually audit missing evidence separately from verifier reasoning errors. These results measure evidence preservation across the audited tasks; they do not represent an agent success rate.
+
+The final rerun outputs are stored under `results/task_01_rerun/` through `results/task_100_rerun/`. Each task retains the screenshot-verifier result, DOM-verifier result, and consolidated comparison JSON.
