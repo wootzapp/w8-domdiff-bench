@@ -5,10 +5,10 @@ from dom_model.rubric_agent import MMRubricAgent
 
 
 EVIDENCE_HOOKS = {
-    "_load_screenshots",
-    "_score_screenshot_criterion_relevance",
-    "_analyze_screenshot_evidence",
-    "_analyze_screenshot_evidence_batched",
+    "_load_dom_states",
+    "_score_dom_state_criterion_relevance",
+    "_analyze_dom_evidence",
+    "_analyze_dom_evidence_batched",
 }
 
 
@@ -18,7 +18,7 @@ def test_only_evidence_hooks_override_microsoft_pipeline():
     assert EVIDENCE_HOOKS <= overrides
     for method in (
         "_disambiguate_conditional_criteria", "_rubric_reality_check",
-        "_rescore_rubric_with_screenshots", "_detect_unsolicited_side_effects",
+        "_rescore_rubric_with_dom_evidence", "_detect_unsolicited_side_effects",
         "_outcome_verification", "_first_point_of_failure_analysis",
         "_classify_task_with_trajectory", "_classify_task", "_compute_final_scores",
     ):

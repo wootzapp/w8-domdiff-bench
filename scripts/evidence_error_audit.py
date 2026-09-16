@@ -109,6 +109,7 @@ def _analysis_rows(intermediate: dict[str, Any], index: int) -> list[dict[str, A
         "screenshot_idx",
         "dom_model_state_idx",
         "screenshot_evidence",
+        "dom_model_evidence",
         "criterion_analysis",
         "discrepancies",
         "environment_issues_confirmed",
@@ -118,7 +119,10 @@ def _analysis_rows(intermediate: dict[str, Any], index: int) -> list[dict[str, A
 
 
 def _selected_indices(intermediate: dict[str, Any], index: int) -> list[int]:
-    raw = _criterion_value(intermediate.get("step3_grouped_screenshots"), index, [])
+    grouped = intermediate.get("step3_grouped_dom_states")
+    if grouped is None:
+        grouped = intermediate.get("step3_grouped_screenshots")
+    raw = _criterion_value(grouped, index, [])
     if not isinstance(raw, list):
         return []
     return [int(value) for value in raw if isinstance(value, (int, float, str)) and str(value).isdigit()]
@@ -132,7 +136,7 @@ def _relevance_rows(intermediate: dict[str, Any], index: int) -> list[dict[str, 
     for key, scores in raw.items():
         if not isinstance(scores, dict):
             continue
-        source_index = scores.get("screenshot_idx")
+        source_index = scores.get("dom_model_state_idx", scores.get("screenshot_idx"))
         if source_index is None:
             match = re.search(r"(\d+)$", str(key))
             source_index = int(match.group(1)) if match else None
@@ -147,7 +151,7 @@ def _status_signals(analyses: list[dict[str, Any]], scoring: dict[str, Any]) -> 
     for analysis in analyses:
         fields.extend(
             str(analysis.get(key) or "")
-            for key in ("screenshot_evidence", "criterion_analysis", "discrepancies")
+            for key in ("screenshot_evidence", "dom_model_evidence", "criterion_analysis", "discrepancies")
         )
     fields.extend(
         str(scoring.get(key) or "")

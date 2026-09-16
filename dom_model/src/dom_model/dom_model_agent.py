@@ -29,19 +29,14 @@ class DomModelRubricAgent(MMRubricAgent):
     evidence_audit: dict[str, Any]
 
     @staticmethod
-    def _normalize_dom_model_analysis(analysis: dict[str, Any]) -> dict[str, Any]:
-        """Map the DOM-facing model response onto Microsoft's internal schema."""
+    def _validate_dom_model_analysis(analysis: dict[str, Any]) -> dict[str, Any]:
+        """Validate the DOM-native evidence response schema."""
         if "dom_model_evidence" not in analysis:
             raise ValueError("Missing required field: dom_model_evidence")
-        if "screenshot_evidence" in analysis:
-            raise ValueError("Unexpected legacy evidence field; use dom_model_evidence")
-        analysis["screenshot_evidence"] = analysis.pop("dom_model_evidence")
         return analysis
-
-
-    def _load_screenshots(self, screenshots_dir: str, actions_list: list) -> list[DomModelState]:
+    def _load_dom_states(self, evidence_dir: str, actions_list: list) -> list[DomModelState]:
         action_count = len(actions_list)
-        all_states = load_dom_model_states(screenshots_dir, action_count=action_count)
+        all_states = load_dom_model_states(evidence_dir, action_count=action_count)
         states = all_states
         if len(states) != action_count + 1:
             raise ValueError(
@@ -97,9 +92,9 @@ class DomModelRubricAgent(MMRubricAgent):
         )
 
 
-    async def _score_screenshot_criterion_relevance(
+    async def _score_dom_state_criterion_relevance(
         self,
-        screenshots: list[DomModelState],
+        dom_states: list[DomModelState],
         rubric: dict,
         task: str,
         init_url_context: str,
@@ -110,7 +105,7 @@ class DomModelRubricAgent(MMRubricAgent):
             for idx, criterion in enumerate(rubric["items"])
         )
         criterion_count = len(rubric["items"])
-        action_count = getattr(self, "_dom_action_count", max(0, len(screenshots) - 1))
+        action_count = getattr(self, "_dom_action_count", max(0, len(dom_states) - 1))
 
         async def score_state(state: DomModelState) -> dict:
             prompt = relevance_prompt(
@@ -166,7 +161,7 @@ class DomModelRubricAgent(MMRubricAgent):
                         raise ValueError(
                             f"Incomplete/invalid relevance scores; missing={missing}, invalid={invalid}"
                         )
-                    result["screenshot_idx"] = state.index
+                    result["dom_model_state_idx"] = state.index
                     return result
                 except Exception as exc:
                     last_error = str(exc)
@@ -195,14 +190,14 @@ class DomModelRubricAgent(MMRubricAgent):
             )
             self.evidence_audit["fallback_invocations"] += 1
             fallback = {index: 0 for index in range(criterion_count)}
-            fallback["screenshot_idx"] = state.index
+            fallback["dom_model_state_idx"] = state.index
             return fallback
 
-        results = await asyncio.gather(*(score_state(state) for state in screenshots))
-        by_state = {result["screenshot_idx"]: result for result in results}
+        results = await asyncio.gather(*(score_state(state) for state in dom_states))
+        by_state = {result["dom_model_state_idx"]: result for result in results}
         self.evidence_audit["relevance"] = {
             str(state_idx): {
-                str(key): value for key, value in scores.items() if key != "screenshot_idx"
+                str(key): value for key, value in scores.items() if key != "dom_model_state_idx"
             }
             for state_idx, scores in by_state.items()
         }
@@ -297,10 +292,9 @@ class DomModelRubricAgent(MMRubricAgent):
                 response_text = await self._call_llm(
                     messages, self._gpt5_client, json_output=True
                 )
-                analysis = self._normalize_dom_model_analysis(json.loads(response_text))
+                analysis = self._validate_dom_model_analysis(json.loads(response_text))
                 self._validate_evidence_analysis(analysis, is_conditional)
                 validate_grounded_analysis(analysis)
-                analysis["screenshot_idx"] = state_idx
                 analysis["dom_model_state_idx"] = state_idx
                 return criterion_idx, analysis
             except Exception as exc:
@@ -329,37 +323,36 @@ class DomModelRubricAgent(MMRubricAgent):
         )
         self.evidence_audit["fallback_invocations"] += 1
         return criterion_idx, {
-            "screenshot_evidence": f"Error: Analysis failed after {self.config.max_iters} attempts",
+            "dom_model_evidence": f"Error: Analysis failed after {self.config.max_iters} attempts",
             "criterion_analysis": "Unable to analyze due to repeated errors",
             "discrepancies": "N/A",
             "environment_issues_confirmed": False,
-            "screenshot_idx": state_idx,
             "dom_model_state_idx": state_idx,
         }
 
-    async def _analyze_screenshot_evidence(
+    async def _analyze_dom_evidence(
         self,
-        screenshots: list[DomModelState],
+        dom_states: list[DomModelState],
         rubric: dict,
-        grouped_screenshots: dict[int, list[int]],
+        grouped_dom_states: dict[int, list[int]],
         task: str,
         init_url_context: str,
         action_history: str,
         predicted_output: str,
     ) -> dict[int, list[dict]]:
-        self._record_selection(grouped_screenshots)
+        self._record_selection(grouped_dom_states)
         tasks = [
             self._analyze_pair(
                 criterion_idx=criterion_idx,
                 state_idx=state_idx,
-                states=screenshots,
+                states=dom_states,
                 rubric=rubric,
                 task=task,
                 init_url_context=init_url_context,
                 action_history=action_history,
                 predicted_output=predicted_output,
             )
-            for criterion_idx, state_indices in grouped_screenshots.items()
+            for criterion_idx, state_indices in grouped_dom_states.items()
             for state_idx in state_indices
         ]
         results = await asyncio.gather(*tasks)
@@ -368,11 +361,11 @@ class DomModelRubricAgent(MMRubricAgent):
             evidence[criterion_idx].append(analysis)
         return evidence
 
-    async def _analyze_screenshot_evidence_batched(
+    async def _analyze_dom_evidence_batched(
         self,
-        screenshots: list[DomModelState],
+        dom_states: list[DomModelState],
         rubric: dict,
-        grouped_screenshots: dict[int, list[int]],
+        grouped_dom_states: dict[int, list[int]],
         task: str,
         init_url_context: str,
         action_history: str,
@@ -380,7 +373,7 @@ class DomModelRubricAgent(MMRubricAgent):
         relevance_scores: dict[int, dict] | None = None,
         min_relevance_threshold: int = 0,
     ) -> dict[int, list[dict]]:
-        states_to_criteria = self._invert_grouped_screenshots(grouped_screenshots)
+        states_to_criteria = self._invert_grouped_dom_states(grouped_dom_states)
         if min_relevance_threshold > 0 and relevance_scores is not None:
             for state_idx in list(states_to_criteria):
                 filtered = [
@@ -405,7 +398,7 @@ class DomModelRubricAgent(MMRubricAgent):
                     await self._analyze_pair(
                         criterion_idx=criterion_indices[0],
                         state_idx=state_idx,
-                        states=screenshots,
+                        states=dom_states,
                         rubric=rubric,
                         task=task,
                         init_url_context=init_url_context,
@@ -432,7 +425,7 @@ class DomModelRubricAgent(MMRubricAgent):
                 predicted_output=predicted_output,
                 criteria_info=criteria_info,
                 state=self._dom_states_by_index[state_idx],
-                action_count=getattr(self, "_dom_action_count", len(screenshots) - 1),
+                action_count=getattr(self, "_dom_action_count", len(dom_states) - 1),
                 rendered_state=self._dom_rendered_states[state_idx],
             )
             messages = self.DEFAULT_SYSTEM_MESSAGES + [{"role": "user", "content": prompt}]
@@ -464,7 +457,7 @@ class DomModelRubricAgent(MMRubricAgent):
                         if not isinstance(analysis, dict):
                             raise ValueError(f"Entry {position} is not an object")
                         returned_idx = analysis.get("criterion_idx")
-                        self._normalize_dom_model_analysis(analysis)
+                        self._validate_dom_model_analysis(analysis)
                         if returned_idx is None:
                             analysis["criterion_idx"] = expected_idx
                         elif returned_idx != expected_idx:
@@ -475,7 +468,6 @@ class DomModelRubricAgent(MMRubricAgent):
                         validate_grounded_analysis(analysis)
                     for analysis, expected_idx in zip(analyses, criterion_indices):
                         analysis.pop("criterion_idx", None)
-                        analysis["screenshot_idx"] = state_idx
                         analysis["dom_model_state_idx"] = state_idx
                         results.append((expected_idx, analysis))
                     return results
@@ -511,7 +503,7 @@ class DomModelRubricAgent(MMRubricAgent):
                     self._analyze_pair(
                         criterion_idx=criterion_idx,
                         state_idx=state_idx,
-                        states=screenshots,
+                        states=dom_states,
                         rubric=rubric,
                         task=task,
                         init_url_context=init_url_context,

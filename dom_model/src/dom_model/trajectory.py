@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 from dataclasses import dataclass, asdict, field
-from typing import List, Dict
+from typing import Dict
 import os
 from collections import defaultdict
 from .clients import RequestUsage
@@ -18,7 +18,6 @@ class FinalAnswer:
     env_state_json: str = "<no_answer>"
     env_state_raw: str = "<no_answer>"
 
-    screenshots: List[str] = field(default_factory=list)
     is_aborted: bool = False
     is_rel_paths: bool = True   # True as default, but missing value is interpreted
     token_usage: Dict[str, Dict[str, int]] = field(default_factory=dict)
@@ -128,15 +127,10 @@ class Trajectory:
         else:
             with open(self.path / 'web_surfer.log') as f:
                 self.events = [json.loads(l) for l in f.readlines()]
-        self.latest_screenshot = self.path / 'screenshot_scaled.png'
         answer_files = list(self.path.glob('*_answer.json'))
         if len(answer_files) != 1:
             raise ValueError(f"Expected exactly one answer file in {self.path}, found {len(answer_files)}")
         self.answer = FinalAnswer.load(answer_files[0])
-        if self.answer and self.answer.is_rel_paths:
-            self.answer.screenshots = [self.path / f for f in self.answer.screenshots]
-        self.screenshots = self.answer.screenshots
-        
         # Load metadata for instruction following compatibility (is_action field)
         self.is_action = False
         metadata_path = self.path / "metadata.json"
@@ -183,6 +177,6 @@ class Trajectory:
             return None
         
     def __repr__(self):
-        return f'Trajectory("{self.path.name}: {len(self.screenshots)} screenshots, {len(self.actions)} actions")'
+        return f'Trajectory("{self.path.name}: {len(self.actions)} actions")'
 
 

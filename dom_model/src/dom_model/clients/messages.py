@@ -35,7 +35,7 @@ class AssistantMessage(LLMMessage):
 
 @dataclass
 class ImageObj:
-    """Image wrapper for handling screenshots and images."""
+    """Image wrapper retained for generic client message compatibility."""
 
     image: Image.Image
 

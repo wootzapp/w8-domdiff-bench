@@ -1,4 +1,3 @@
-import re
 
 from .grounding import REALITY_CHECK_GROUNDING_POLICY, RESCORING_GROUNDING_POLICY
 from .utils.error_taxonomy import (
@@ -83,7 +82,7 @@ RUBRIC_GENERATION_PROMPT_TEMPLATE = """Task: $task_id$init_url_context
     **SubGoal Definition**:
     A **subgoal** is a critical element, condition, or step **explicitly** mentioned in the task description required for success.
     - Do not infer or add any unstated subgoals or criteria, e.g. if the task is "what standard length of vinyl outside corner trim does HomeDepot sell?", do NOT add a criterion requiring the URL of the product, because it was not asked.
-    - **Intermediate Discovery vs. Required Output**: Criteria may verify that the agent *found, viewed, or interacted with* the correct intermediate results during navigation (e.g., "searched for and reviewed relevant Azure courses on Coursera"), but should NOT require the agent to *output or list* those intermediate results unless the task explicitly asks for them. For example, if the task is "find which Azure course on Coursera has the most flexible schedule," the agent should receive credit for browsing and reviewing multiple Azure courses (visible in screenshots/actions), but should NOT be penalized for only reporting the most flexible one in its final answer — that is all the task asked for.
+    - **Intermediate Discovery vs. Required Output**: Criteria may verify that the agent *found, viewed, or interacted with* the correct intermediate results during navigation (e.g., "searched for and reviewed relevant Azure courses on Coursera"), but should NOT require the agent to *output or list* those intermediate results unless the task explicitly asks for them. For example, if the task is "find which Azure course on Coursera has the most flexible schedule," the agent should receive credit for browsing and reviewing multiple Azure courses (visible in DOM-models/actions), but should NOT be penalized for only reporting the most flexible one in its final answer — that is all the task asked for.
     - Do not make redundant or overlapping criteria (e.g. for the task "book a flight on air asia", do NOT make separate criteria for "access airasia.com" and "ensure AirAsia as the booking platform" since they are redundant)
     - Separate **what** the subgoals are from **how** to evaluate them
 
@@ -426,7 +425,7 @@ RUBRIC_DEPENDENCY_CHECKING_PROMPT = """Input Task: "$task_id"$init_url_context
     - If the task requests "find a restaurant," do not penalize for finding multiple restaurants when only one was implicitly expected but not explicitly stated
     - If the task is to "review a publication," do not require a formal structured review — a reasonable summary of the content found on the page is sufficient
     - If the task is to "pull up standings" or "locate socks," the agent should find and present the relevant information, not output a URL
-    - **Intermediate Discovery vs. Required Output**: If the agent browsed, viewed, or interacted with correct intermediate results during navigation but did not explicitly list them in its final output, do NOT penalize — unless the task explicitly asked for those intermediate results to be reported. Evidence that the agent made an informed decision can come from the agent's stated reasoning OR from what is apparent in screenshots (e.g., a "Flexible schedule" label visible on a course page, or a doctor's photo showing they match a requested demographic). As long as the final output is correct and the justification is apparent from some source (agent output, action log, or screenshots), the agent should receive full credit.
+    - **Intermediate Discovery vs. Required Output**: If the agent browsed, viewed, or interacted with correct intermediate results during navigation but did not explicitly list them in its final output, do NOT penalize — unless the task explicitly asked for those intermediate results to be reported. Evidence that the agent made an informed decision can come from the agent's stated reasoning OR from what is apparent in DOM-models (e.g., a "Flexible schedule" label visible on a course page, or a doctor's photo showing they match a requested demographic). As long as the final output is correct and the justification is apparent from some source (agent output, action log, or DOM-models), the agent should receive full credit.
     - **Ambiguous Data or Task Wording — Do Not Penalize for Picking One Valid Interpretation**: When the task or criterion uses language that has multiple reasonable interpretations, or the underlying data is genuinely ambiguous, do NOT penalize the agent for picking one defensible interpretation and proceeding. The agent's job is to make progress toward the user's end goal, not to stall on ambiguity. As long as the agent's choice is defensible, award full credit. Only penalize if the agent picks an interpretation that is clearly wrong when a clearly correct one exists. Examples: multiple materials each at 100% of different garment components (picking any as "primary" is valid); "first row" of a table meaning the header row vs. the first data row (both are valid); multiple items tied on a ranking metric (picking any is valid).
     - Do not penalize for using different but equivalent methods to achieve the same outcome (e.g., using search vs. navigation menus)
     - Do not penalize for reasonable variations in presentation format when the core information is complete and correct
@@ -545,13 +544,13 @@ The rubric is missing "earned_points" and "justification" fields for each criter
 4. **Tasks with Explicit Constraints**: When a task has explicit constraints (e.g., "requiring a Master's degree," "with at least 4.5 stars," "non-stop flights only"), distinguish between the agent **searching for** the constraint and actually **finding results that satisfy** it. The agent's effort to search is worth something, but the primary value is whether the constraint was actually met in the final answer.
    - Determine which constraints are **hard/primary** (the user is serious about them and they most narrowly define what counts as a correct result) versus **soft/secondary** (nice-to-have, or the user would be flexible). Hard constraints typically include specific qualifications, product attributes, or explicit filtering criteria that the user called out. Soft constraints might include the exact platform used or minor preferences.
    - If the agent searched for a hard constraint but the results do NOT actually satisfy it (e.g., a filter label says "Having Master's degree" but no posting's actual text confirms this requirement), the constraint is not verified. Award only minimal partial credit for the search effort — do NOT award substantial credit as if the constraint were satisfied.
-   - Conversely, if the constraint IS satisfied in the evidence (screenshots confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
-   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is visually apparent in screenshots (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same visual evidence principles used elsewhere — especially "visual confirmation without explicit statement": if screenshots visually confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
+   - Conversely, if the constraint IS satisfied in the evidence (DOM-models confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
+   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
 
    **Example 1 — Search constraint attempted but not satisfied:**
    Task: "When was the most recent teaching career opportunity requiring a minimum of a Master's degree posted on Garland ISD Careers?"
    Criterion: "Identify whether any teaching postings require a minimum of a Master's degree" (max 4 points)
-   - The agent used a "Having Master's degree" filter and found 125 openings listed under that filter. However, no screenshot shows an individual posting's qualification section actually stating "Master's degree required" — the filter label is the only evidence, and other visible postings show "Bachelor's degree" as the minimum.
+   - The agent used a "Having Master's degree" filter and found 125 openings listed under that filter. However, no DOM-model shows an individual posting's qualification section actually stating "Master's degree required" — the filter label is the only evidence, and other visible postings show "Bachelor's degree" as the minimum.
    - **Correct scoring**: 1/4 — minimal credit for attempting the search and using the filter, but the hard constraint (explicit Master's requirement in posting text) was never verified.
    - **WRONG scoring**: 3/4 because "the agent found the filter and there were results" — this conflates searching for the constraint with actually confirming it was met.
 
@@ -559,7 +558,7 @@ The rubric is missing "earned_points" and "justification" fields for each criter
    Task: "Use the Office of Financial Readiness college savings calculator and input: 3% education cost inflation, $$50,000 in current savings, $$250 in monthly contributions with 6% rate of return."
    - Each user-specified input value (3%, $$50,000, $$250, 6%) is a hard constraint. The agent must enter these exact values into the form fields.
    - If the agent navigated to the calculator and filled in some fields but entered $$500 instead of $$250 for monthly contributions, the constraint for that field is NOT met — penalize accordingly even though the agent found and used the correct tool.
-   - If screenshots visually confirm all fields match the user's specified values, award full credit even if the agent's output text doesn't restate every value.
+   - If DOM-models explicitly confirm all fields match the user's specified values, award full credit even if the agent's output text doesn't restate every value.
 
 5. **Ambiguous Data or Task Wording — Do Not Penalize for Picking One Valid Interpretation**: When a criterion or the task itself uses language that has multiple reasonable interpretations, or the underlying data is genuinely ambiguous, do NOT penalize the agent for picking one defensible interpretation and proceeding. The agent's job is to make progress toward the user's end goal, not to stall on ambiguity. As long as the agent's choice is defensible, award full credit. Only penalize if the agent picks an interpretation that is clearly wrong when a clearly correct one exists. Examples:
    - Ambiguous data: Multiple materials each listed as 100% of different garment components — picking any one as "primary" is defensible.
@@ -729,251 +728,33 @@ Your response must be an exact copy of the Rubric with "earned_points" and "just
 # MULTIMODAL RUBRIC VERIFICATION PROMPTS
 # ============================================================================
 
-MM_SCREENSHOT_CRITERION_RELEVANCE_PROMPT = """Task: $task_definition$init_url_context
-
-You are analyzing a screenshot from an agent's trajectory to determine which rubric criteria this screenshot is most relevant to.
-
-**Rubric Criteria:**
-$rubric_criteria
-
-**Your Task:**
-For EACH criterion listed above, assign a relevance score from 0-10 indicating how much this screenshot helps evaluate that specific criterion.
-
-**Scoring Guidelines:**
-- **10**: Screenshot directly shows critical evidence for this criterion (e.g., shows the exact item being searched, cart contents, confirmation page)
-- **7-9**: Screenshot shows important contextual information for this criterion (e.g., search results, filters applied, navigation state)
-- **4-6**: Screenshot shows somewhat relevant information for this criterion (e.g., related page, partial information)
-- **1-3**: Screenshot shows minimal relevance to this criterion (e.g., wrong page, unrelated content)
-- **0**: Screenshot is completely irrelevant to this criterion
-
-**Important:**
-- A screenshot can be highly relevant to multiple criteria
-- Focus on what is VISIBLE in the screenshot, not what the agent claimed to do
-- Consider whether the screenshot confirms or contradicts criterion requirements
-
-Please output a JSON object with scores for ALL criteria:
-
-{{
-  "criterion_0": <score_0_to_10>,
-  "criterion_1": <score_0_to_10>,
-  ...
-  "criterion_N": <score_0_to_10>
-}}
-
-DO NOT OUTPUT ANYTHING OTHER THAN JSON.
-"""
-
-
-MM_SCREENSHOT_EVIDENCE_ANALYSIS_PROMPT = """Task: $task_definition$init_url_context
-
-**Action History:**
-$action_history
-
-**Agent's Predicted Output (Final Answer):**
-$agent_predicted_output
-
-**Criterion Being Evaluated:**
-$criterion_info
-
-**Your Task:**
-Analyze the provided screenshot to extract visual evidence relevant to evaluating this specific criterion.
-
-**CRITICAL — Ground Your Analysis in the ACTUAL Screenshot Pixels:**
-You MUST describe ONLY what is LITERALLY VISIBLE in this specific screenshot. Do NOT assume, infer, or fill in content based on the Action History or Predicted Output.
-- READ the actual text rendered in the screenshot: dropdown/filter labels, table headers, column values, date ranges, page titles.
-- If a dropdown says "Regular Season", do NOT describe it as "Postseason". If dates only go up to March, do NOT claim April dates are visible.
-- If the screenshot does not show information relevant to this criterion, say so explicitly — do NOT fabricate evidence to match the agent's claims.
-- The Action History and Predicted Output are provided for COMPARISON purposes only — to help you identify discrepancies between what the agent claimed and what the screenshot actually shows. They are NOT a description of the screenshot content.
-
-**IMPORTANT — Criteria About the Agent's Output:**
-Some criteria evaluate the quality, correctness, or completeness of the agent's final output (e.g., "Provide a step-by-step summary," "Report the price," "List the results"). For these criteria:
-- The agent's output IS provided above in "Agent's Predicted Output." This is also typically the message associated with the agent's last action.
-- Use the screenshots to VERIFY whether the output is correct, accurate, and supported by what is visible on screen — NOT to determine whether an output exists.
-- If the criterion is about the agent's output, check whether the predicted output matches, contradicts, or is unsupported by the visual evidence in the screenshot.
-- Only penalize if the output is factually wrong, hallucinated, or contradicted by the screenshots — NOT because the output is "not visible in the screenshot" (outputs are delivered as text, not rendered on-screen).
-
-**Analysis Requirements:**
-
-1. **screenshot_evidence**: Describe what information is ACTUALLY VISIBLE in the screenshot that relates to this criterion. Be specific and objective. You MUST read and transcribe the actual text from the image — do not paraphrase from the Action History. Include:
-   - What text, images, UI elements are visible? (Read them from the pixels.)
-   - What state is the page/interface in? (What do the dropdowns, filters, tabs actually say?)
-   - What data or information is displayed? (What are the actual date ranges, values, labels shown?)
-
-2. **criterion_analysis**: Based on the screenshot, the agent's intermediate thoughts/actions, and especially the agent's predicted output, analyze how the evidence indicates:
-   - Success: Does the screenshot confirm the criterion was fully satisfied? Does the agent's predicted output correctly reflect what is shown?
-   - Partial success: Does it show partial progress or partial satisfaction?
-   - Failure: Does it show the criterion was not satisfied, or that the agent's output is incorrect/hallucinated?
-   - Provide specific reasoning based on visible evidence
-   - **For output-quality criteria**: If the agent delivered a predicted output that addresses the criterion, evaluate whether that output is accurate and consistent with what the screenshots show. Do NOT give zero credit simply because the output text is not rendered on screen.
-
-3. **discrepancies**: Compare what the agent CLAIMED to do (from Action History and Predicted Output) versus what the screenshot ACTUALLY SHOWS. Identify any mismatches:
-   - Did the agent claim something that isn't visible in the screenshot?
-   - Did the agent miss information that IS visible in the screenshot?
-   - Does the agent's predicted output contain information that is contradicted by the screenshot?
-   - Does the agent's predicted output contain hallucinated information not supported by any screenshot?
-   - Example: Agent says "no videos over 20 mins found" but screenshot shows video thumbnails with "1:36:00" duration visible
-   - Example: Agent's predicted output lists steps from a guide, and the screenshot confirms those steps are on the page — this is CONSISTENT, not a discrepancy
-
-4. **environment_issues_confirmed**: Does the screenshot show environmental blockers that prevented task completion? Check for:
-   - CAPTCHAs or bot detection pages
-   - Login walls or authentication requirements
-   - Out of stock / unavailable messages
-   - Error pages or server issues
-   - Site downtime or access restrictions
-   - IMPORTANT: Only mark as confirmed if VISUALLY PRESENT in screenshot
-
-$conditional_check
-
-**Output Format:**
-{{
-  "screenshot_evidence": "Detailed description of what is visible...",
-  "criterion_analysis": "Analysis of how the evidence indicates success/partial/failure...",
-  "discrepancies": "Any mismatches between agent claims and visual evidence...",
-  "environment_issues_confirmed": true/false$conditional_output
-}}
-
-DO NOT OUTPUT ANYTHING OTHER THAN JSON.
-"""
-
-
-MM_SCREENSHOT_BATCHED_EVIDENCE_ANALYSIS_PROMPT = """Task: $task_definition$init_url_context
-
-**Action History:**
-$action_history
-
-**Agent's Predicted Output (Final Answer):**
-$agent_predicted_output
-
-**You are given a SINGLE screenshot (the image attached to this message). You must analyze this ONE screenshot against MULTIPLE rubric criteria listed below. Produce one analysis entry per criterion, all based on the SAME screenshot image.**
-
-**Criteria to evaluate against this screenshot:**
-$criteria_info_block
-
-**CRITICAL — Ground Your Analysis in the ACTUAL Screenshot Pixels:**
-You MUST describe ONLY what is LITERALLY VISIBLE in the attached screenshot image. Do NOT assume, infer, or fill in content based on the Action History or Predicted Output.
-- READ the actual text rendered in the screenshot: dropdown/filter labels, table headers, column values, date ranges, page titles.
-- If a dropdown says "Regular Season", do NOT describe it as "Postseason". If dates only go up to March, do NOT claim April dates are visible.
-- If the screenshot does not show information relevant to a criterion, say so explicitly — do NOT fabricate evidence to match the agent's claims.
-- The Action History and Predicted Output are provided for COMPARISON purposes only — to help you identify discrepancies between what the agent claimed and what the screenshot actually shows. They are NOT a description of the screenshot content.
-
-**IMPORTANT — Criteria About the Agent's Output:**
-Some criteria evaluate the quality, correctness, or completeness of the agent's final output (e.g., "Provide a step-by-step summary," "Report the price," "List the results"). For these criteria:
-- The agent's output IS provided above in "Agent's Predicted Output." This is also typically the message associated with the agent's last action.
-- Use the screenshots to VERIFY whether the output is correct, accurate, and supported by what is visible on screen — NOT to determine whether an output exists.
-- If the criterion is about the agent's output, check whether the predicted output matches, contradicts, or is unsupported by the visual evidence in the screenshot.
-- Only penalize if the output is factually wrong, hallucinated, or contradicted by the screenshots — NOT because the output is "not visible in the screenshot" (outputs are delivered as text, not rendered on-screen).
-
-**Analysis Requirements (produce these for EACH criterion listed above, all from the SAME attached screenshot):**
-
-1. **screenshot_evidence**: Describe what information is ACTUALLY VISIBLE in the screenshot that relates to this criterion. Be specific and objective. You MUST read and transcribe the actual text from the image — do not paraphrase from the Action History. Include:
-   - What text, images, UI elements are visible? (Read them from the pixels.)
-   - What state is the page/interface in? (What do the dropdowns, filters, tabs actually say?)
-   - What data or information is displayed? (What are the actual date ranges, values, labels shown?)
-
-2. **criterion_analysis**: Based on the screenshot, the agent's intermediate thoughts/actions, and especially the agent's predicted output, analyze how the evidence indicates:
-   - Success: Does the screenshot confirm the criterion was fully satisfied? Does the agent's predicted output correctly reflect what is shown?
-   - Partial success: Does it show partial progress or partial satisfaction?
-   - Failure: Does it show the criterion was not satisfied, or that the agent's output is incorrect/hallucinated?
-   - Provide specific reasoning based on visible evidence
-   - **For output-quality criteria**: If the agent delivered a predicted output that addresses the criterion, evaluate whether that output is accurate and consistent with what the screenshots show. Do NOT give zero credit simply because the output text is not rendered on screen.
-
-3. **discrepancies**: Compare what the agent CLAIMED to do (from Action History and Predicted Output) versus what the screenshot ACTUALLY SHOWS. Identify any mismatches:
-   - Did the agent claim something that isn't visible in the screenshot?
-   - Did the agent miss information that IS visible in the screenshot?
-   - Does the agent's predicted output contain information that is contradicted by the screenshot?
-   - Does the agent's predicted output contain hallucinated information not supported by any screenshot?
-   - Example: Agent says "no videos over 20 mins found" but screenshot shows video thumbnails with "1:36:00" duration visible
-   - Example: Agent's predicted output lists steps from a guide, and the screenshot confirms those steps are on the page — this is CONSISTENT, not a discrepancy
-
-4. **environment_issues_confirmed**: Does the screenshot show environmental blockers that prevented task completion? Check for:
-   - CAPTCHAs or bot detection pages
-   - Login walls or authentication requirements
-   - Out of stock / unavailable messages
-   - Error pages or server issues
-   - Site downtime or access restrictions
-   - IMPORTANT: Only mark as confirmed if VISUALLY PRESENT in screenshot
-
-5. **condition_verification** (ONLY for criteria marked as CONDITIONAL above): Based on what you see in the screenshot, verify whether the condition is actually met.
-   - Output true if the condition IS met (criterion should be evaluated)
-   - Output false if the condition is NOT met (criterion should be skipped)
-   - OMIT this field entirely for non-conditional criteria
-
-**Output Format:**
-Output a JSON object with a single key "analyses" containing a list. The list must have exactly one entry per criterion above, in order.
-
-{{
-  "analyses": [
-    {{
-      "criterion_idx": <criterion number>,
-      "screenshot_evidence": "...",
-      "criterion_analysis": "...",
-      "discrepancies": "...",
-      "environment_issues_confirmed": true/false
-    }},
-    ...one object per criterion...
-  ]
-}}
-
-For CONDITIONAL criteria (marked above), also include "condition_verification": true/false in that entry.
-
-Example — 3 criteria (0, 1, 2) evaluated against ONE screenshot:
-{{
-  "analyses": [
-    {{
-      "criterion_idx": 0,
-      "screenshot_evidence": "The screenshot shows a search results page with...",
-      "criterion_analysis": "The results confirm the agent found the correct item...",
-      "discrepancies": "None — the agent's claims match the visual evidence.",
-      "environment_issues_confirmed": false
-    }},
-    {{
-      "criterion_idx": 1,
-      "screenshot_evidence": "The same screenshot also shows a price label reading $$24.99...",
-      "criterion_analysis": "The price matches the agent's predicted output...",
-      "discrepancies": "None.",
-      "environment_issues_confirmed": false
-    }},
-    {{
-      "criterion_idx": 2,
-      "screenshot_evidence": "The screenshot does not show any checkout page or cart...",
-      "criterion_analysis": "No evidence of checkout completion is visible...",
-      "discrepancies": "Agent claimed checkout was completed but this screenshot shows search results.",
-      "environment_issues_confirmed": false
-    }}
-  ]
-}}
-
-DO NOT OUTPUT ANYTHING OTHER THAN JSON.
-"""
-
-
 RUBRIC_REALITY_CHECK_PROMPT = """Task: $task_definition$init_url_context
 
-You are a rubric auditor. The rubric below was generated from the task description BEFORE any screenshots were examined. Each criterion has a "description" field that may contain assumptions about real-world entities, products, websites, or availability. Now that we have screenshot evidence from the agent's actual trajectory, your job is to provide **interpretive context** for each criterion — clarifying, nuancing, or correcting the description in light of what the screenshots actually show.
+You are a rubric auditor. The rubric below was generated from the task description BEFORE any DOM-models were examined. Each criterion has a "description" field that may contain assumptions about real-world entities, products, websites, or availability. Now that we have DOM-model evidence from the agent's actual trajectory, your job is to provide **interpretive context** for each criterion — clarifying, nuancing, or correcting the description in light of what the DOM-models actually show.
 
-**Your goal:** For each criterion, write a `reality_notes` field that helps a downstream scorer correctly interpret the criterion's description given what the real world (as seen in screenshots) actually looks like. This is NOT about whether the agent succeeded or failed — it is about providing factual grounding so the criterion can be scored fairly.
+**Your goal:** For each criterion, write a `reality_notes` field that helps a downstream scorer correctly interpret the criterion's description given what the real world (as seen in DOM-models) actually looks like. This is NOT about whether the agent succeeded or failed — it is about providing factual grounding so the criterion can be scored fairly.
 
 **Examples of useful reality notes:**
-- "The description refers to 'Audien Atom' as a specific product. Screenshots show 'Atom' is actually a product *line* containing Atom 2, Atom Pro 2, and Atom ONE. The original 'Atom' model appears to no longer be sold. Any product within the Atom line should be considered a match for 'Audien Atom hearing aids'."
-- "The description assumes a 'Filter by date' option exists on the site. Screenshots show the site uses a calendar-based navigation instead — there is no explicit filter widget, but the same functionality is available through the calendar."
-- "Screenshots confirm the rubric's assumptions: the product page exists as described, with the expected name and pricing visible."
-- "The description refers to 'checkout page' but screenshots show this site uses a multi-step wizard (shipping → payment → review). The 'checkout initiation stage' in this context corresponds to reaching the shipping step."
+- "The description refers to 'Audien Atom' as a specific product. DOM-models show 'Atom' is actually a product *line* containing Atom 2, Atom Pro 2, and Atom ONE. The original 'Atom' model appears to no longer be sold. Any product within the Atom line should be considered a match for 'Audien Atom hearing aids'."
+- "The description assumes a 'Filter by date' option exists on the site. DOM-models show the site uses a calendar-based navigation instead — there is no explicit filter widget, but the same functionality is available through the calendar."
+- "DOM-models confirm the rubric's assumptions: the product page exists as described, with the expected name and pricing visible."
+- "The description refers to 'checkout page' but DOM-models show this site uses a multi-step wizard (shipping → payment → review). The 'checkout initiation stage' in this context corresponds to reaching the shipping step."
 
 **What reality_notes should NOT contain:**
 - Evaluation of whether the agent succeeded or failed (that is the scorer's job).
 - Opinions on whether the agent's workaround was reasonable.
 - Any suggestion to change max_points or scoring standards.
-- **HARD RULE — No URL/domain commentary:** You MUST NOT mention URLs, domain names, website addresses, DNS errors, redirects, or whether the agent visited the correct website. The browser address bar is NEVER visible in these screenshots. URL/navigation verification is handled separately by the action history — it is not your job. Even if a criterion is specifically about accessing a URL, your reality_notes for that criterion should ONLY describe what the page content looks like (e.g., branding, products shown), NOT whether a particular domain was accessed. Violating this rule invalidates the entire output.
+- **HARD RULE — No URL/domain commentary:** You MUST NOT mention URLs, domain names, website addresses, DNS errors, redirects, or whether the agent visited the correct website. The browser address bar is NEVER visible in these DOM-models. URL/navigation verification is handled separately by the action history — it is not your job. Even if a criterion is specifically about accessing a URL, your reality_notes for that criterion should ONLY describe what the page content looks like (e.g., branding, products shown), NOT whether a particular domain was accessed. Violating this rule invalidates the entire output.
 
 **Rules:**
 1. Do NOT change max_points values. Reality notes clarify facts; they do not make the rubric easier or harder.
 2. Do NOT rename criteria. The criterion field must remain untouched.
 3. Do NOT add or remove criteria.
 4. Keep reality_notes concise and factual.
-5. Every criterion MUST have a reality_notes entry. If the screenshots don't reveal anything that changes how the criterion should be interpreted, you can simply describe what the screenshots show relevant to that criterion. 
+5. Every criterion MUST have a reality_notes entry. If the DOM-models don't reveal anything that changes how the criterion should be interpreted, you can simply describe what the DOM-models show relevant to that criterion. 
 6. You MUST output exactly $num_criteria entries, one per criterion, in order from index 0 to $last_criterion_idx.
 
-**Criteria with their screenshot evidence:**
+**Criteria with their DOM-model evidence:**
 $criteria_with_evidence
 
 **Output Format:**
@@ -981,7 +762,7 @@ $criteria_with_evidence
   "reality_checks": [
     {
       "criterion_idx": 0,
-      "reality_notes": "Interpretive context for this criterion based on screenshot evidence."
+      "reality_notes": "Interpretive context for this criterion based on DOM-model evidence."
     },
     ...one entry per criterion...
   ]
@@ -993,7 +774,7 @@ DO NOT OUTPUT ANYTHING OTHER THAN JSON.
 
 CONDITIONAL_CRITERIA_DISAMBIGUATION_PROMPT = """Task: $task_definition$init_url_context
 
-You are a rubric condition auditor. The rubric below contains $num_conditional **conditional** criteria — criteria that only apply when a specific real-world condition is met. Each conditional criterion was verified against screenshots **independently** in a prior step, but those per-criterion checks can produce **contradictory** results because each criterion only saw its own subset of screenshots.
+You are a rubric condition auditor. The rubric below contains $num_conditional **conditional** criteria — criteria that only apply when a specific real-world condition is met. Each conditional criterion was verified against DOM-models **independently** in a prior step, but those per-criterion checks can produce **contradictory** results because each criterion only saw its own subset of DOM-models.
 
 Your job is to look at ALL conditional criteria and ALL of their evidence **together** and determine the correct `is_condition_met` value for each one.
 
@@ -1001,12 +782,12 @@ Your job is to look at ALL conditional criteria and ALL of their evidence **toge
 Some conditional criteria are mutually exclusive (they have logically opposite conditions, e.g., "only if metrics ARE available" vs "only if metrics are NOT available"). When you identify such pairs/groups:
 - Determine which condition is ACTUALLY true based on the totality of evidence.
 - Set `is_condition_met` to `true` for ONLY the condition(s) that are actually true, and `false` for the rest.
-- It is logically impossible for mutually exclusive conditions to ALL be true. If the evidence is ambiguous, choose the condition best supported by the **latest** (highest-numbered) screenshot evidence.
+- It is logically impossible for mutually exclusive conditions to ALL be true. If the evidence is ambiguous, choose the condition best supported by the **latest** (highest-numbered) DOM-model evidence.
 
 **Non-mutually-exclusive conditions:**
 Not all conditional criteria are mutually exclusive. Some may be independently conditional (e.g., "only if the site has a search bar" and "only if the product is in stock"). For these, evaluate each independently — both can legitimately be true or false.
 
-**Evidence timeline rule:** Screenshots are numbered in chronological order. When evidence conflicts, the **latest** (highest-numbered) screenshot takes precedence as it reflects the final state.
+**Evidence timeline rule:** DOM-models are numbered in chronological order. When evidence conflicts, the **latest** (highest-numbered) DOM-model takes precedence as it reflects the final state.
 
 **Conditional criteria and their evidence:**
 $conditional_criteria_with_evidence
@@ -1038,26 +819,26 @@ $action_history
 $agent_predicted_output
 
 **Full Rubric (all criteria):**
-The complete rubric is shown below. Criteria already rescored with screenshot evidence show their updated scores.
+The complete rubric is shown below. Criteria already rescored with DOM-model evidence show their updated scores.
 Criteria not yet rescored show only their baseline (action-history-only) scores.
 The criterion you must score is clearly marked with ">>> SCORE THIS CRITERION <<<".
 
 $full_rubric_context
 
-**Screenshot Evidence Analyses for the Target Criterion:**
-$concatenated_screenshot_analyses
+**DOM-model Evidence Analyses for the Target Criterion:**
+$concatenated_dom_model_analyses
 
 **Your Task:**
 You are rescoring **ONLY** the criterion marked with ">>> SCORE THIS CRITERION <<<" above.
 The full rubric is provided for context — especially so you can see the rescored results of upstream criteria
 and correctly handle cascading dependencies. Do NOT output scores for any other criterion.
 
-Based on the screenshot evidence, the agent's intermediate thoughts/actions, and especially the agent's predicted output,
+Based on the DOM-model evidence, the agent's intermediate thoughts/actions, and especially the agent's predicted output,
 determine if the baseline score for the target criterion should be adjusted.
 
 **Reality Notes:**
-- Some criteria in the rubric context above may include a "Reality Notes" annotation just below their Description. These notes were generated by comparing the rubric's original assumptions against what the screenshots actually show. They provide interpretive context — clarifying, nuancing, or correcting the Description's **factual claims** in light of reality. When Reality Notes are present for the target criterion, they take precedence over the Description **only for conflicting factual claims** (e.g., what products exist, what a website actually shows, what options are available). For example, if the Description says "Find the exact Audien Atom product" but the Reality Notes say "Screenshots show 'Atom' is a product line containing Atom 2, Atom Pro 2, and Atom ONE — the original Atom model is no longer sold", you must evaluate the criterion using the corrected factual understanding from Reality Notes. However, Reality Notes do NOT override the Core Evaluation Principles below (cascading dependencies, uncontrollable blockers, best-effort evaluation, etc.). If an upstream criterion already identified an uncontrollable blocker (e.g., login wall), Reality Notes stating "no screenshot shows a search for X" do not change the fact that the agent was blocked — the cascading dependency rules still apply and the agent should still receive full credit for downstream criteria blocked by the upstream failure.
-- Reality Notes limitations: Reality Notes were generated from screenshot evidence ONLY — they did not have access to the Action History. This means Reality Notes may express uncertainty about URLs, domains, or navigation (e.g., "cannot confirm which URL was loaded"). For URL and navigation information, the **Action History is authoritative**. If the Action History says the agent visited a URL, encountered a DNS error, or was redirected, trust that — do not penalize or express doubt about URL-related claims based on Reality Notes that lacked this information.
+- Some criteria in the rubric context above may include a "Reality Notes" annotation just below their Description. These notes were generated by comparing the rubric's original assumptions against what the DOM-models actually show. They provide interpretive context — clarifying, nuancing, or correcting the Description's **factual claims** in light of reality. When Reality Notes are present for the target criterion, they take precedence over the Description **only for conflicting factual claims** (e.g., what products exist, what a website actually shows, what options are available). For example, if the Description says "Find the exact Audien Atom product" but the Reality Notes say "DOM-models show 'Atom' is a product line containing Atom 2, Atom Pro 2, and Atom ONE — the original Atom model is no longer sold", you must evaluate the criterion using the corrected factual understanding from Reality Notes. However, Reality Notes do NOT override the Core Evaluation Principles below (cascading dependencies, uncontrollable blockers, best-effort evaluation, etc.). If an upstream criterion already identified an uncontrollable blocker (e.g., login wall), Reality Notes stating "no DOM-model shows a search for X" do not change the fact that the agent was blocked — the cascading dependency rules still apply and the agent should still receive full credit for downstream criteria blocked by the upstream failure.
+- Reality Notes limitations: Reality Notes were generated from DOM-model evidence ONLY — they did not have access to the Action History. This means Reality Notes may express uncertainty about URLs, domains, or navigation (e.g., "cannot confirm which URL was loaded"). For URL and navigation information, the **Action History is authoritative**. If the Action History says the agent visited a URL, encountered a DNS error, or was redirected, trust that — do not penalize or express doubt about URL-related claims based on Reality Notes that lacked this information.
 
 **Agent Output Format:** The agent's predicted output above may be a structured dictionary (e.g., `{"target_name": "...", "target_id": "...", "url": "..."}`) rather than free-text prose. This is a valid and complete answer format. The `target_name` and `url` fields represent the agent's intended answer to the user's query — a URL pointing to the result the agent found. Information present in these fields (product name, company, job title, listing URL, etc.) counts as the agent having identified and presented that information. Do NOT penalize the agent for using a structured output format instead of prose.
 
@@ -1073,24 +854,24 @@ determine if the baseline score for the target criterion should be adjusted.
    - Availability constraints: Out of stock, no reservations available, sold out
    - Platform limitations: Platform doesn't list entity, platform requires critical point crossing (e.g., login required to add to cart)
    - Search result limitations: No results matching all specified criteria
-   - IMPORTANT: If screenshots CONFIRM an uncontrollable blocker, you must award full credit for this criterion (and any dependent downstream criteria), regardless of the baseline score.
+   - IMPORTANT: If DOM-models CONFIRM an uncontrollable blocker, you must award full credit for this criterion (and any dependent downstream criteria), regardless of the baseline score.
 
 3. **Controllable Failures** (Should be penalized):
    - Wrong selections when correct options are available (wrong product, wrong date, wrong location)
    - Poor execution: Not using available filters, not attempting specified platforms
-   - Hallucinations: Claiming success without evidence in Action History or screenshots
+   - Hallucinations: Claiming success without evidence in Action History or DOM-models
    - Insufficient effort: Giving up prematurely without reasonable attempt
 
 4. **Tasks with Explicit Constraints**: When a task has explicit constraints (e.g., "requiring a Master's degree," "with at least 4.5 stars," "non-stop flights only"), distinguish between the agent **searching for** the constraint and actually **finding results that satisfy** it. The agent's effort to search is worth something, but the primary value is whether the constraint was actually met in the final answer.
    - Determine which constraints are **hard/primary** (the user is serious about them and they most narrowly define what counts as a correct result) versus **soft/secondary** (nice-to-have, or the user would be flexible). Hard constraints typically include specific qualifications, product attributes, or explicit filtering criteria that the user called out. Soft constraints might include the exact platform used or minor preferences.
    - If the agent searched for a hard constraint but the results do NOT actually satisfy it (e.g., a filter label says "Having Master's degree" but no posting's actual text confirms this requirement), the constraint is not verified. Award only minimal partial credit for the search effort — do NOT award substantial credit as if the constraint were satisfied.
-   - Conversely, if the constraint IS satisfied in the evidence (screenshots confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
-   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is visually apparent in screenshots (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same visual evidence principles used elsewhere — especially "visual confirmation without explicit statement": if screenshots visually confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
+   - Conversely, if the constraint IS satisfied in the evidence (DOM-models confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
+   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
 
    **Example 1 — Search constraint attempted but not satisfied:**
    Task: "When was the most recent teaching career opportunity requiring a minimum of a Master's degree posted on Garland ISD Careers?"
    Criterion: "Identify whether any teaching postings require a minimum of a Master's degree" (max 4 points)
-   - The agent used a "Having Master's degree" filter and found 125 openings listed under that filter. However, no screenshot shows an individual posting's qualification section actually stating "Master's degree required" — the filter label is the only evidence, and other visible postings show "Bachelor's degree" as the minimum.
+   - The agent used a "Having Master's degree" filter and found 125 openings listed under that filter. However, no DOM-model shows an individual posting's qualification section actually stating "Master's degree required" — the filter label is the only evidence, and other visible postings show "Bachelor's degree" as the minimum.
    - **Correct scoring**: 1/4 — minimal credit for attempting the search and using the filter, but the hard constraint (explicit Master's requirement in posting text) was never verified.
    - **WRONG scoring**: 3/4 because "the agent found the filter and there were results" — this conflates searching for the constraint with actually confirming it was met.
 
@@ -1098,7 +879,7 @@ determine if the baseline score for the target criterion should be adjusted.
    Task: "Use the Office of Financial Readiness college savings calculator and input: 3% education cost inflation, $$50,000 in current savings, $$250 in monthly contributions with 6% rate of return."
    - Each user-specified input value (3%, $$50,000, $$250, 6%) is a hard constraint. The agent must enter these exact values into the form fields.
    - If the agent navigated to the calculator and filled in some fields but entered $$500 instead of $$250 for monthly contributions, the constraint for that field is NOT met — penalize accordingly even though the agent found and used the correct tool.
-   - If screenshots visually confirm all fields match the user's specified values, award full credit even if the agent's output text doesn't restate every value.
+   - If DOM-models explicitly confirm all fields match the user's specified values, award full credit even if the agent's output text doesn't restate every value.
 
 5. **Ambiguous Data or Task Wording — Do Not Penalize for Picking One Valid Interpretation**: When a criterion or the task itself uses language that has multiple reasonable interpretations, or the underlying data is genuinely ambiguous, do NOT penalize the agent for picking one defensible interpretation and proceeding. The agent's job is to make progress toward the user's end goal, not to stall on ambiguity. As long as the agent's choice is defensible, award full credit. Only penalize if the agent picks an interpretation that is clearly wrong when a clearly correct one exists. Examples:
    - Ambiguous data: Multiple materials each listed as 100% of different garment components — picking any one as "primary" is defensible.
@@ -1122,7 +903,7 @@ determine if the baseline score for the target criterion should be adjusted.
    Criterion 1 (upstream): "Use the official Dyson website" — already rescored to 1/2 (partial credit because the agent encountered a CAPTCHA on dyson.com, then used Amazon while noting the source change).
    Criterion 2 (this criterion): "Report the correct price for the Dyson V15" (max 3 points)
    - The agent reported "$$749.99" sourced from Amazon.
-   - Screenshots of the Amazon listing confirm the price is exactly $$749.99.
+   - DOM-models of the Amazon listing confirm the price is exactly $$749.99.
    - **Correct scoring**: 3/3 — the price is accurate for the product found and not fabricated. The source deviation was already penalized in criterion 1. Criterion 2 evaluates price accuracy, not source selection.
    - **WRONG scoring**: 0/3 because "the price was not sourced from the official Dyson website." This double-penalizes for the same upstream issue and ignores that the price is factually correct.
 
@@ -1130,11 +911,11 @@ determine if the baseline score for the target criterion should be adjusted.
    Task: "List all players on two sports teams. Find the one with the most career home runs and report their batting average."
    Criterion 1 (upstream): "Identify the player with the most career home runs" — rescored to 2/4 (correct approach, wrong answer: agent listed all players and compared stats but misread a value and picked the wrong player).
    Criterion 2 (this criterion): "Report the batting average of the identified player" (max 6 points)
-   - The agent correctly looked up the identified player's batting average and reported an accurate figure confirmed by screenshots.
+   - The agent correctly looked up the identified player's batting average and reported an accurate figure confirmed by DOM-models.
    - **Correct scoring**: 4-5/6 — the lookup was executed correctly for the player identified. The identification error is criterion 1's sole responsibility.
    - **WRONG scoring**: 0/6 because "it's the wrong player's batting average." This re-penalizes criterion 1's error.
 
-9. **Conditional Criteria**: If this criterion has a "condition" field, it only applies when that condition is met. The screenshots may provide additional evidence about whether the condition was actually met. If the screenshots show the condition was NOT met, the criterion should not count toward totals.
+9. **Conditional Criteria**: If this criterion has a "condition" field, it only applies when that condition is met. The DOM-models may provide additional evidence about whether the condition was actually met. If the DOM-models show the condition was NOT met, the criterion should not count toward totals.
 
 10. **Alternative Source Usage with Transparency**: When a criterion requires finding or extracting information from a specific source:
    - If the specified source has no relevant data or is inaccessible, and the agent uses an alternative source while **clearly disclosing this in its output**, award partial credit for the substantive work done — do NOT give zero credit.
@@ -1145,73 +926,73 @@ determine if the baseline score for the target criterion should be adjusted.
    **Example — Award partial credit (transparent alternative source):**
    Task: "What is the salary range for positions hiring immediately in McDonough, GA, according to the McDonough job openings page?"
    Criterion: "Identify positions hiring immediately in McDonough, GA (at least three)" (max 4 points)
-   - Screenshots confirm the official McDonough job openings page shows "0 jobs available."
+   - DOM-models confirm the official McDonough job openings page shows "0 jobs available."
    - The agent's predicted output says: "According to the City of McDonough's job openings page (via GovernmentJobs.com), the salary ranges for three immediate openings are: Judicial Case Manager, Deputy Clerk II, Deputy Clerk I."
    - The agent (a) attempted the specified page, (b) clearly stated it used GovernmentJobs.com, (c) listed real McDonough positions. However, it did not explicitly flag that the official page had zero jobs or verify "hiring immediately" status.
    - **Correct scoring**: 3/4 — substantial partial credit because the agent found real, relevant positions and transparently noted the alternative source. Deduct for not explicitly reporting the official page's limitation and not verifying "immediate hiring" status.
    - **WRONG scoring**: 0/4 because "the agent failed to identify positions on the specified page." This ignores the substantive, transparent work the agent did.
 
-**CRITICAL: Screenshots Are Chronologically Ordered — Always Trust the LATEST State:**
+**CRITICAL: DOM-models Are Chronologically Ordered — Always Trust the LATEST State:**
 
-Screenshots are numbered in chronological order: Screenshot 1 is the earliest, and higher-numbered screenshots are later in time. Web interfaces are **stateful** — the same UI element (date picker, cart, form field, search query, etc.) can show different values at different points in the trajectory as the agent interacts with it.
+DOM-models are numbered in chronological order: DOM-model 1 is the earliest, and higher-numbered DOM-models are later in time. Web interfaces are **stateful** — the same UI element (date picker, cart, form field, search query, etc.) can show different values at different points in the trajectory as the agent interacts with it.
 
-When multiple screenshots show the same UI element or page with different values:
-- The **LATEST** (highest-numbered) screenshot reflects the **final state** and MUST take precedence over earlier screenshots.
-- An earlier screenshot showing an incorrect or default value does NOT mean the criterion failed — the agent may have corrected it in a later action.
-- Only penalize if the **final/latest** relevant screenshot still shows the wrong value.
+When multiple DOM-models show the same UI element or page with different values:
+- The **LATEST** (highest-numbered) DOM-model reflects the **final state** and MUST take precedence over earlier DOM-models.
+- An earlier DOM-model showing an incorrect or default value does NOT mean the criterion failed — the agent may have corrected it in a later action.
+- Only penalize if the **final/latest** relevant DOM-model still shows the wrong value.
 
 **Example — DO NOT penalize (state was corrected):**
 Task: "Book a compact car on Rentalcars.com from December 15 to December 18, 2025."
-- Screenshot 5 shows the date picker with default dates of November 13–16, 2025 (wrong dates).
-- Screenshot 15 shows the date picker updated to December 15–18, 2025 (correct dates).
+- DOM-model 5 shows the date picker with default dates of November 13–16, 2025 (wrong dates).
+- DOM-model 15 shows the date picker updated to December 15–18, 2025 (correct dates).
 - The agent's predicted output confirms: "Pick-up Dec 15, drop-off Dec 18, 2025."
-- **Correct scoring**: Full credit — the agent initially saw default dates but corrected them. Screenshot 15 (later) supersedes Screenshot 5 (earlier).
-- **WRONG scoring**: Zero credit because "Screenshot 5 shows November dates" — this ignores that Screenshot 15 shows the corrected December dates.
+- **Correct scoring**: Full credit — the agent initially saw default dates but corrected them. DOM-model 15 (later) supersedes DOM-model 5 (earlier).
+- **WRONG scoring**: Zero credit because "DOM-model 5 shows November dates" — this ignores that DOM-model 15 shows the corrected December dates.
 
 **Example — DO penalize (final state is still wrong):**
-- Screenshot 5 shows the date picker with November 13–16, 2025.
-- No later screenshot shows the dates being changed to December 15–18.
-- The agent's predicted output claims "Dec 15–18" but no screenshot confirms this.
+- DOM-model 5 shows the date picker with November 13–16, 2025.
+- No later DOM-model shows the dates being changed to December 15–18.
+- The agent's predicted output claims "Dec 15–18" but no DOM-model confirms this.
 - **Correct scoring**: Zero or partial credit — the final visual state contradicts the agent's claim.
 
 **Re-scoring Guidelines:**
 
-1. **Trust visual evidence over action history**: If screenshots contradict what the agent claimed, the visual evidence takes precedence. But remember: always use the LATEST screenshot when multiple screenshots show the same element in different states.
+1. **Trust DOM-model evidence over action history**: If DOM-models contradict what the agent claimed, the DOM-model evidence takes precedence. But remember: always use the LATEST DOM-model when multiple DOM-models show the same element in different states.
 
 2. **For criteria evaluating the agent's output**: The agent's predicted output is provided above. This is the agent's final answer, which is also typically the message associated with the last action. When a criterion asks whether the agent provided a summary, reported a finding, listed results, etc.:
    - Check if the predicted output addresses the criterion's requirements
-   - Use screenshots to verify whether the output is accurate and consistent with what the agent actually found
-   - Do NOT give zero credit simply because the output text is not visible on screen — the output is delivered as text, not rendered in a browser
-   - The standard is simple: **either the agent's answer is consistent with the visual evidence, or it is not.** Do not invent subjective dimensions like "overconfidence" or "tone certainty" — these are not scoring criteria. Evaluate the agent's claims using these five categories:
-     * **Contradiction** (penalize): Screenshots show X, but the agent claims not-X. Example: screenshot shows a booking calendar exists, but the agent says "no booking system available." The visual evidence directly contradicts the claim.
-     * **Fabrication** (penalize): The agent claims X with zero evidentiary basis — nothing in the screenshots or action history supports the claim. Example: agent states a specific price that appears nowhere in any screenshot.
-     * **Omission** (penalize): The agent didn't view everything it needed to. Screenshots show no evidence of X, and the agent concludes X doesn't exist or ignores it — BUT X is commonly known to exist and the agent should have looked for it. Example: Task asks for "highest ranked NHL team in the Western Conference," but the agent only checked the Central Division and never viewed the Pacific Division. This is incomplete exploration, not a supported inference.
-     * **Supported inference from absence** (do NOT penalize): Screenshots consistently show NO evidence of X (e.g., no booking UI, no date picker, no ticket purchasing interface across all relevant pages visited), and the agent concludes "X does not exist," AND X is not commonly known to exist. This is a reasonable inference consistent with the visual evidence — not a hallucination. Only penalize if screenshots actually CONTRADICT the claim by showing X does exist. Absence of explicit textual confirmation (e.g., no banner saying "we don't offer online booking") is NOT the same as contradiction.
-     * **Visual confirmation without explicit statement** (do NOT penalize): If the agent's output omits an explicit justification for a claim but the screenshots visually confirm the correct result (e.g., the agent selected female cardiologists but didn't explicitly state "female" — yet their photos in the screenshots confirm they are female-presenting, or the agent chose a "flexible" course and the screenshot shows a "Flexible schedule" label), the visual evidence is sufficient and the agent should not be penalized for the omission.
+   - Use DOM-models to verify whether the output is accurate and consistent with what the agent actually found
+   - Do NOT give zero credit simply because the output text is not explicitly represented in the DOM-model state — the output is delivered as text, not rendered in a browser
+   - The standard is simple: **either the agent's answer is consistent with the DOM-model evidence, or it is not.** Do not invent subjective dimensions like "overconfidence" or "tone certainty" — these are not scoring criteria. Evaluate the agent's claims using these five categories:
+     * **Contradiction** (penalize): DOM-models show X, but the agent claims not-X. Example: DOM-model shows a booking calendar exists, but the agent says "no booking system available." The DOM-model evidence directly contradicts the claim.
+     * **Fabrication** (penalize): The agent claims X with zero evidentiary basis — nothing in the DOM-models or action history supports the claim. Example: agent states a specific price that appears nowhere in any DOM-model.
+     * **Omission** (penalize): The agent didn't view everything it needed to. DOM-models show no evidence of X, and the agent concludes X doesn't exist or ignores it — BUT X is commonly known to exist and the agent should have looked for it. Example: Task asks for "highest ranked NHL team in the Western Conference," but the agent only checked the Central Division and never viewed the Pacific Division. This is incomplete exploration, not a supported inference.
+     * **Supported inference from absence** (do NOT penalize): DOM-models consistently show NO evidence of X (e.g., no booking UI, no date picker, no ticket purchasing interface across all relevant pages visited), and the agent concludes "X does not exist," AND X is not commonly known to exist. This is a reasonable inference consistent with the DOM-model evidence — not a hallucination. Only penalize if DOM-models actually CONTRADICT the claim by showing X does exist. Absence of explicit textual confirmation (e.g., no banner saying "we don't offer online booking") is NOT the same as contradiction.
+     * **Explicit DOM-model confirmation without explicit statement** (do NOT penalize): If the agent's output omits an explicit justification for a claim but the DOM-models explicitly confirm the correct result (e.g., the agent selected female cardiologists but didn't explicitly state "female" — yet their photos in the DOM-models confirm they are female-presenting, or the agent chose a "flexible" course and the DOM-model shows a "Flexible schedule" label), the DOM-model evidence is sufficient and the agent should not be penalized for the omission.
 
-3. **Verify environment blockers**: If the agent claimed a blocker (CAPTCHA, out-of-stock, login wall), the screenshots must CONFIRM this blocker is actually visible. If not visible, penalize appropriately.
+3. **Verify environment blockers**: If the agent claimed a blocker (CAPTCHA, out-of-stock, login wall), the DOM-models must CONFIRM this blocker is actually visible. If not visible, penalize appropriately.
    - IMPORTANT — Reality-Notes-revealed platform limitations: When the Reality Notes for this criterion indicate that the criterion's assumed entity, interface, or feature DOES NOT EXIST on the site (e.g., "no admissions booking calendar/date-picker is visible," "no online ticketing UI exists"), this is an **uncontrollable platform limitation** — the agent cannot navigate to or interact with something that does not exist. In this case, the scorer MUST apply the criterion's own full-credit escape clause (most criteria include one, e.g., "OR clearly reports platform limitations such as site lacks date-based booking"). Check whether the agent's output reports this limitation; if so, award full credit per the criterion's own description. Do NOT score 0 for "did not navigate to X" when Reality Notes confirm X does not exist on the site.
 
-4. **Catch discrepancies**: If screenshots show information the agent missed or misinterpreted:
-   - Example: Agent says "no items found" but screenshot shows search results
-   - Example: Agent says "added to cart" but screenshot shows error message
+4. **Catch discrepancies**: If DOM-models show information the agent missed or misinterpreted:
+   - Example: Agent says "no items found" but DOM-model shows search results
+   - Example: Agent says "added to cart" but DOM-model shows error message
    - Penalize based on severity of the discrepancy
 
 5. **Respect max_points limit**: Your post_image_earned_points must be between 0 and $max_points (inclusive).
 
-6. **Provide clear justification**: Explain what changed (if anything) between the baseline score and the new score based on visual evidence.
+6. **Provide clear justification**: Explain what changed (if anything) between the baseline score and the new score based on DOM-model evidence.
 
 **Scoring the target criterion:**
 - First, review the already-rescored criteria above to check for upstream blockers or cascading dependencies
 - If an upstream uncontrollable blocker (confirmed by rescored criteria above) prevented this criterion: Award full credit and explain why
 - If an upstream controllable error prevented this criterion: Award appropriate partial/zero credit and explain why
-- If criterion was attempted: Score based on the quality of the attempt, the agent's predicted output, and the screenshot evidence
-- Penalize hallucinations where the agent's output or action history claims something contradicted by the LATEST screenshots
+- If criterion was attempted: Score based on the quality of the attempt, the agent's predicted output, and the DOM-model evidence
+- Penalize hallucinations where the agent's output or action history claims something contradicted by the LATEST DOM-models
 
 **Output Format:**
 {{
-  "applicable_evidence": "Explicitly state which Screenshot Evidence Analyses (by screenshot number) are applicable to this criterion. When multiple screenshots show the same UI element or state, identify whether a STATE CHANGE occurred and which screenshot is the LATEST (most recent). The latest screenshot's state supersedes any earlier conflicting screenshots. For example: 'Screenshot 5 shows the date picker with default November dates, but Screenshot 15 (later) shows the dates updated to December 15–18 — the latest state is correct.' If no screenshot evidence is applicable, state that clearly.",
-  "post_image_justification": "Based on the applicable evidence identified above — using the LATEST screenshot state when state changes occurred — reason about **how** the score should change (if at all). If keeping the same score, explain why the applicable screenshots confirm the action-history assessment. If changing the score, explain what specific visual evidence led to the change and why.",
+  "applicable_evidence": "Explicitly state which DOM-model Evidence Analyses (by DOM-model number) are applicable to this criterion. When multiple DOM-models show the same UI element or state, identify whether a STATE CHANGE occurred and which DOM-model is the LATEST (most recent). The latest DOM-model's state supersedes any earlier conflicting DOM-models. For example: 'DOM-model 5 shows the date picker with default November dates, but DOM-model 15 (later) shows the dates updated to December 15–18 — the latest state is correct.' If no DOM-model evidence is applicable, state that clearly.",
+  "post_image_justification": "Based on the applicable evidence identified above — using the LATEST DOM-model state when state changes occurred — reason about **how** the score should change (if at all). If keeping the same score, explain why the applicable DOM-models confirm the action-history assessment. If changing the score, explain what specific DOM-model evidence led to the change and why.",
   "post_image_earned_points": <number between 0 and $max_points>
 }}
 
@@ -1230,15 +1011,15 @@ $agent_predicted_output
 **Full Rubric with Baseline (Action-Only) Scores:**
 $full_rubric_with_baselines
 
-**Screenshot Evidence Analyses (grouped by criterion):**
-$all_screenshot_evidence
+**DOM-model Evidence Analyses (grouped by criterion):**
+$all_dom_model_evidence
 
 **Your Task:**
-You are rescoring the ENTIRE rubric in a single pass based on the screenshot evidence, the agent's action history, and the agent's predicted output. For each criterion, determine whether the baseline (action-only) score should be adjusted based on the visual evidence.
+You are rescoring the ENTIRE rubric in a single pass based on the DOM-model evidence, the agent's action history, and the agent's predicted output. For each criterion, determine whether the baseline (action-only) score should be adjusted based on the DOM-model evidence.
 
 **Reality Notes:**
-- Some criteria may include a "Reality Notes" annotation just below their Description. These notes were generated by comparing the rubric's original assumptions against what the screenshots actually show. They provide interpretive context — clarifying, nuancing, or correcting the Description's **factual claims** in light of reality. When Reality Notes are present, they take precedence over the Description **only for conflicting factual claims** (e.g., what products exist, what a website actually shows, what options are available). However, Reality Notes do NOT override the Core Evaluation Principles below (cascading dependencies, uncontrollable blockers, best-effort evaluation, etc.).
-- Reality Notes limitations: Reality Notes were generated from screenshot evidence ONLY — they did not have access to the Action History. For URL and navigation information, the **Action History is authoritative**.
+- Some criteria may include a "Reality Notes" annotation just below their Description. These notes were generated by comparing the rubric's original assumptions against what the DOM-models actually show. They provide interpretive context — clarifying, nuancing, or correcting the Description's **factual claims** in light of reality. When Reality Notes are present, they take precedence over the Description **only for conflicting factual claims** (e.g., what products exist, what a website actually shows, what options are available). However, Reality Notes do NOT override the Core Evaluation Principles below (cascading dependencies, uncontrollable blockers, best-effort evaluation, etc.).
+- Reality Notes limitations: Reality Notes were generated from DOM-model evidence ONLY — they did not have access to the Action History. For URL and navigation information, the **Action History is authoritative**.
 
 **Agent Output Format:** The agent's predicted output above may be a structured dictionary (e.g., `{"target_name": "...", "target_id": "...", "url": "..."}`) rather than free-text prose. This is a valid and complete answer format. Information present in these fields counts as the agent having identified and presented that information. Do NOT penalize the agent for using a structured output format instead of prose.
 
@@ -1254,24 +1035,24 @@ You are rescoring the ENTIRE rubric in a single pass based on the screenshot evi
    - Availability constraints: Out of stock, no reservations available, sold out
    - Platform limitations: Platform doesn't list entity, platform requires critical point crossing (e.g., login required to add to cart)
    - Search result limitations: No results matching all specified criteria
-   - IMPORTANT: If screenshots CONFIRM an uncontrollable blocker, you must award full credit for that criterion (and any dependent downstream criteria), regardless of the baseline score.
+   - IMPORTANT: If DOM-models CONFIRM an uncontrollable blocker, you must award full credit for that criterion (and any dependent downstream criteria), regardless of the baseline score.
 
 3. **Controllable Failures** (Should be penalized):
    - Wrong selections when correct options are available (wrong product, wrong date, wrong location)
    - Poor execution: Not using available filters, not attempting specified platforms
-   - Hallucinations: Claiming success without evidence in Action History or screenshots
+   - Hallucinations: Claiming success without evidence in Action History or DOM-models
    - Insufficient effort: Giving up prematurely without reasonable attempt
 
 4. **Tasks with Explicit Constraints**: When a task has explicit constraints (e.g., "requiring a Master's degree," "with at least 4.5 stars," "non-stop flights only"), distinguish between the agent **searching for** the constraint and actually **finding results that satisfy** it. The agent's effort to search is worth something, but the primary value is whether the constraint was actually met in the final answer.
    - Determine which constraints are **hard/primary** (the user is serious about them and they most narrowly define what counts as a correct result) versus **soft/secondary** (nice-to-have, or the user would be flexible). Hard constraints typically include specific qualifications, product attributes, or explicit filtering criteria that the user called out. Soft constraints might include the exact platform used or minor preferences.
    - If the agent searched for a hard constraint but the results do NOT actually satisfy it (e.g., a filter label says "Having Master's degree" but no posting's actual text confirms this requirement), the constraint is not verified. Award only minimal partial credit for the search effort — do NOT award substantial credit as if the constraint were satisfied.
-   - Conversely, if the constraint IS satisfied in the evidence (screenshots confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
-   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is visually apparent in screenshots (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same visual evidence principles used elsewhere — especially "visual confirmation without explicit statement": if screenshots visually confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
+   - Conversely, if the constraint IS satisfied in the evidence (DOM-models confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
+   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
 
    **Example 1 — Search constraint attempted but not satisfied:**
    Task: "When was the most recent teaching career opportunity requiring a minimum of a Master's degree posted on Garland ISD Careers?"
    Criterion: "Identify whether any teaching postings require a minimum of a Master's degree" (max 4 points)
-   - The agent used a "Having Master's degree" filter and found 125 openings listed under that filter. However, no screenshot shows an individual posting's qualification section actually stating "Master's degree required" — the filter label is the only evidence, and other visible postings show "Bachelor's degree" as the minimum.
+   - The agent used a "Having Master's degree" filter and found 125 openings listed under that filter. However, no DOM-model shows an individual posting's qualification section actually stating "Master's degree required" — the filter label is the only evidence, and other visible postings show "Bachelor's degree" as the minimum.
    - **Correct scoring**: 1/4 — minimal credit for attempting the search and using the filter, but the hard constraint (explicit Master's requirement in posting text) was never verified.
    - **WRONG scoring**: 3/4 because "the agent found the filter and there were results" — this conflates searching for the constraint with actually confirming it was met.
 
@@ -1279,7 +1060,7 @@ You are rescoring the ENTIRE rubric in a single pass based on the screenshot evi
    Task: "Use the Office of Financial Readiness college savings calculator and input: 3% education cost inflation, $$50,000 in current savings, $$250 in monthly contributions with 6% rate of return."
    - Each user-specified input value (3%, $$50,000, $$250, 6%) is a hard constraint. The agent must enter these exact values into the form fields.
    - If the agent navigated to the calculator and filled in some fields but entered $$500 instead of $$250 for monthly contributions, the constraint for that field is NOT met — penalize accordingly even though the agent found and used the correct tool.
-   - If screenshots visually confirm all fields match the user's specified values, award full credit even if the agent's output text doesn't restate every value.
+   - If DOM-models explicitly confirm all fields match the user's specified values, award full credit even if the agent's output text doesn't restate every value.
 
 5. **Ambiguous Data or Task Wording — Do Not Penalize for Picking One Valid Interpretation**: When a criterion or the task itself uses language that has multiple reasonable interpretations, or the underlying data is genuinely ambiguous, do NOT penalize the agent for picking one defensible interpretation and proceeding. The agent's job is to make progress toward the user's end goal, not to stall on ambiguity. As long as the agent's choice is defensible, award full credit. Only penalize if the agent picks an interpretation that is clearly wrong when a clearly correct one exists. Examples:
    - Ambiguous data: Multiple materials each listed as 100% of different garment components — picking any one as "primary" is defensible.
@@ -1323,7 +1104,7 @@ You are rescoring the ENTIRE rubric in a single pass based on the screenshot evi
 
    Example 3 (Correct approach, wrong answer — do NOT cascade to downstream criteria): Task is "List all players on two sports teams. Find the one with the most career home runs and report their batting average."
    - Criterion 1: "Identify the player with the most career home runs" (max 4) → Agent correctly lists all players from both teams, looks up career stats, compares home run totals, but misreads a stat and picks Player A (450 HRs) instead of Player B (475 HRs). Score: 2/4 — correct approach, wrong answer. The methodology was sound; only the final comparison was wrong.
-   - Criterion 2: "Report the batting average of the identified player" (max 6) → Agent correctly looked up Player A's batting average and reported the accurate figure confirmed by screenshots. Score: should be 4-5/6 — the lookup was executed correctly for the player the agent identified. The identification error is criterion 1's sole responsibility. Criterion 2 measures the quality of the net worth/stat lookup, which was done accurately.
+   - Criterion 2: "Report the batting average of the identified player" (max 6) → Agent correctly looked up Player A's batting average and reported the accurate figure confirmed by DOM-models. Score: should be 4-5/6 — the lookup was executed correctly for the player the agent identified. The identification error is criterion 1's sole responsibility. Criterion 2 measures the quality of the net worth/stat lookup, which was done accurately.
    - WRONG: Criterion 2 gives 0/6 because "it's the wrong player's batting average." This re-penalizes the identification error already captured by criterion 1.
 
    **Scenario D: Shared platform blockers across sibling criteria (DO NOT cascade penalties)**
@@ -1404,7 +1185,7 @@ You are rescoring the ENTIRE rubric in a single pass based on the screenshot evi
    Criterion: "Locate the JetBlue carry-on baggage policy page" (max 2 points)
    Agent: Navigated to the correct JetBlue baggage policy page and provided an accurate summary, but did not include the URL in its output.
    WRONG scoring: 0/2 — "The criterion requires locating the page, and the agent did not provide the URL."
-   CORRECT scoring: 2/2 — "Locate" means "find," not "output a URL." The agent navigated to the correct page (confirmed by screenshots) and extracted the correct information. Requiring a URL is an unstated requirement — the task never asked for one.
+   CORRECT scoring: 2/2 — "Locate" means "find," not "output a URL." The agent navigated to the correct page (confirmed by DOM-models) and extracted the correct information. Requiring a URL is an unstated requirement — the task never asked for one.
 
    Example D (critical error — DO penalize):
    Task: "I'm looking to buy Disney Grumpy stuffed plush toy from Amazon."
@@ -1426,40 +1207,40 @@ You are rescoring the ENTIRE rubric in a single pass based on the screenshot evi
    WRONG scoring: 0/4 — "The agent did not add anything to the cart, so the criterion is completely failed."
    CORRECT scoring: 2/4 — The agent did the research correctly: right recipe, right ingredients, right products on the right platform. But the task explicitly asked to "add them to the Target cart," and providing URLs is not the same as adding to cart. The core action was not performed. Award partial credit for the correct product discovery, but penalize for not executing the requested action.
 
-   Example G (nitpick — do NOT penalize when screenshots confirm the constraint was met):
+   Example G (nitpick — do NOT penalize when DOM-models confirm the constraint was met):
    Task: "Find a hotel in XYZ with a review score of 8/10 or higher on Booking.com for my dates."
    Criterion: "Apply and verify the 8/10+ review score constraint" (max 2 points)
-   Agent: Applied the "Very Good: 8+" filter on Booking.com, selected a property. Screenshots consistently show the selected hotel has a score of "Very Good 8.3." However, the agent's final output reports "8.0 / 10" — a minor inaccuracy in the reported number.
+   Agent: Applied the "Very Good: 8+" filter on Booking.com, selected a property. DOM-models consistently show the selected hotel has a score of "Very Good 8.3." However, the agent's final output reports "8.0 / 10" — a minor inaccuracy in the reported number.
    WRONG scoring: 1/2 — "The agent's output says 8.0 instead of 8.3, so the 8+ verification is unclear."
-   CORRECT scoring: 2/2 — The criterion asks whether the agent applied and verified the 8+ constraint. Screenshots confirm the agent applied the 8+ filter AND selected a hotel that actually scores 8.3 — the constraint is satisfied. The agent's output misreporting "8.0" vs "8.3" is a minor transcription error, not a failure to meet the constraint. The hotel still qualifies (8.3 > 8), and the screenshots are ground truth. This is a nitpick.
+   CORRECT scoring: 2/2 — The criterion asks whether the agent applied and verified the 8+ constraint. DOM-models confirm the agent applied the 8+ filter AND selected a hotel that actually scores 8.3 — the constraint is satisfied. The agent's output misreporting "8.0" vs "8.3" is a minor transcription error, not a failure to meet the constraint. The hotel still qualifies (8.3 > 8), and the DOM-models are ground truth. This is a nitpick.
 
-**CRITICAL: Screenshots Are Chronologically Ordered — Always Trust the LATEST State:**
+**CRITICAL: DOM-models Are Chronologically Ordered — Always Trust the LATEST State:**
 
-Screenshots are numbered in chronological order: Screenshot 1 is the earliest, and higher-numbered screenshots are later in time. When multiple screenshots show the same UI element or page with different values:
-- The **LATEST** (highest-numbered) screenshot reflects the **final state** and MUST take precedence over earlier screenshots.
-- Only penalize if the **final/latest** relevant screenshot still shows the wrong value.
+DOM-models are numbered in chronological order: DOM-model 1 is the earliest, and higher-numbered DOM-models are later in time. When multiple DOM-models show the same UI element or page with different values:
+- The **LATEST** (highest-numbered) DOM-model reflects the **final state** and MUST take precedence over earlier DOM-models.
+- Only penalize if the **final/latest** relevant DOM-model still shows the wrong value.
 
 **Re-scoring Guidelines:**
 
-1. **Trust visual evidence over action history**: If screenshots contradict what the agent claimed, the visual evidence takes precedence. But remember: always use the LATEST screenshot when multiple screenshots show the same element in different states.
+1. **Trust DOM-model evidence over action history**: If DOM-models contradict what the agent claimed, the DOM-model evidence takes precedence. But remember: always use the LATEST DOM-model when multiple DOM-models show the same element in different states.
 
 2. **For criteria evaluating the agent's output**: The agent's predicted output is provided above. When a criterion asks whether the agent provided a summary, reported a finding, listed results, etc.:
    - Check if the predicted output addresses the criterion's requirements
-   - Use screenshots to verify whether the output is accurate and consistent with what the agent actually found
-   - Do NOT give zero credit simply because the output text is not visible on screen — the output is delivered as text, not rendered in a browser
-   - The standard is simple: **either the agent's answer is consistent with the visual evidence, or it is not.** Do not invent subjective dimensions like "overconfidence" or "tone certainty" — these are not scoring criteria. Evaluate the agent's claims using these five categories:
-     * **Contradiction** (penalize): Screenshots show X, but the agent claims not-X. Example: screenshot shows a booking calendar exists, but the agent says "no booking system available." The visual evidence directly contradicts the claim.
-     * **Fabrication** (penalize): The agent claims X with zero evidentiary basis — nothing in the screenshots or action history supports the claim. Example: agent states a specific price that appears nowhere in any screenshot.
-     * **Omission** (penalize): The agent didn't view everything it needed to. Screenshots show no evidence of X, and the agent concludes X doesn't exist or ignores it — BUT X is commonly known to exist and the agent should have looked for it. Example: Task asks for "highest ranked NHL team in the Western Conference," but the agent only checked the Central Division and never viewed the Pacific Division. This is incomplete exploration, not a supported inference.
-     * **Supported inference from absence** (do NOT penalize): Screenshots consistently show NO evidence of X (e.g., no booking UI, no date picker, no ticket purchasing interface across all relevant pages visited), and the agent concludes "X does not exist," AND X is not commonly known to exist. This is a reasonable inference consistent with the visual evidence — not a hallucination. Only penalize if screenshots actually CONTRADICT the claim by showing X does exist. Absence of explicit textual confirmation (e.g., no banner saying "we don't offer online booking") is NOT the same as contradiction.
-     * **Visual confirmation without explicit statement** (do NOT penalize): If the agent's output omits an explicit justification for a claim but the screenshots visually confirm the correct result (e.g., the agent selected female cardiologists but didn't explicitly state "female" — yet their photos in the screenshots confirm they are female-presenting, or the agent chose a "flexible" course and the screenshot shows a "Flexible schedule" label), the visual evidence is sufficient and the agent should not be penalized for the omission.
+   - Use DOM-models to verify whether the output is accurate and consistent with what the agent actually found
+   - Do NOT give zero credit simply because the output text is not explicitly represented in the DOM-model state — the output is delivered as text, not rendered in a browser
+   - The standard is simple: **either the agent's answer is consistent with the DOM-model evidence, or it is not.** Do not invent subjective dimensions like "overconfidence" or "tone certainty" — these are not scoring criteria. Evaluate the agent's claims using these five categories:
+     * **Contradiction** (penalize): DOM-models show X, but the agent claims not-X. Example: DOM-model shows a booking calendar exists, but the agent says "no booking system available." The DOM-model evidence directly contradicts the claim.
+     * **Fabrication** (penalize): The agent claims X with zero evidentiary basis — nothing in the DOM-models or action history supports the claim. Example: agent states a specific price that appears nowhere in any DOM-model.
+     * **Omission** (penalize): The agent didn't view everything it needed to. DOM-models show no evidence of X, and the agent concludes X doesn't exist or ignores it — BUT X is commonly known to exist and the agent should have looked for it. Example: Task asks for "highest ranked NHL team in the Western Conference," but the agent only checked the Central Division and never viewed the Pacific Division. This is incomplete exploration, not a supported inference.
+     * **Supported inference from absence** (do NOT penalize): DOM-models consistently show NO evidence of X (e.g., no booking UI, no date picker, no ticket purchasing interface across all relevant pages visited), and the agent concludes "X does not exist," AND X is not commonly known to exist. This is a reasonable inference consistent with the DOM-model evidence — not a hallucination. Only penalize if DOM-models actually CONTRADICT the claim by showing X does exist. Absence of explicit textual confirmation (e.g., no banner saying "we don't offer online booking") is NOT the same as contradiction.
+     * **Explicit DOM-model confirmation without explicit statement** (do NOT penalize): If the agent's output omits an explicit justification for a claim but the DOM-models explicitly confirm the correct result (e.g., the agent selected female cardiologists but didn't explicitly state "female" — yet their photos in the DOM-models confirm they are female-presenting, or the agent chose a "flexible" course and the DOM-model shows a "Flexible schedule" label), the DOM-model evidence is sufficient and the agent should not be penalized for the omission.
 
-3. **Verify environment blockers**: If the agent claimed a blocker (CAPTCHA, out-of-stock, login wall), the screenshots must CONFIRM this blocker is actually visible. If not visible, penalize appropriately.
+3. **Verify environment blockers**: If the agent claimed a blocker (CAPTCHA, out-of-stock, login wall), the DOM-models must CONFIRM this blocker is actually visible. If not visible, penalize appropriately.
    - IMPORTANT — Reality-Notes-revealed platform limitations: When the Reality Notes for a criterion indicate that the criterion's assumed entity, interface, or feature DOES NOT EXIST on the site (e.g., "no admissions booking calendar/date-picker is visible," "no online ticketing UI exists"), this is an **uncontrollable platform limitation** — the agent cannot navigate to or interact with something that does not exist. In this case, the scorer MUST apply the criterion's own full-credit escape clause (most criteria include one, e.g., "OR clearly reports platform limitations such as site lacks date-based booking"). Check whether the agent's output reports this limitation; if so, award full credit per the criterion's own description. Do NOT score 0 for "did not navigate to X" when Reality Notes confirm X does not exist on the site.
 
-4. **Catch discrepancies**: If screenshots show information the agent missed or misinterpreted, penalize based on severity.
+4. **Catch discrepancies**: If DOM-models show information the agent missed or misinterpreted, penalize based on severity.
 
-5. **Provide clear justification**: For each criterion, explain what changed (if anything) between the baseline score and the new score based on visual evidence.
+5. **Provide clear justification**: For each criterion, explain what changed (if anything) between the baseline score and the new score based on DOM-model evidence.
 
 **Output Format:**
 Output a JSON object with an "items" list. Each item corresponds to a criterion (in order), and must contain:
@@ -1467,7 +1248,7 @@ Output a JSON object with an "items" list. Each item corresponds to a criterion 
   "items": [
     {{
       "criterion_idx": 0,
-      "applicable_evidence": "Which screenshot evidence analyses are applicable to this criterion and what they show. When multiple screenshots show the same element, identify which is the LATEST. If no evidence is applicable, state that clearly.",
+      "applicable_evidence": "Which DOM-model evidence analyses are applicable to this criterion and what they show. When multiple DOM-models show the same element, identify which is the LATEST. If no evidence is applicable, state that clearly.",
       "post_image_justification": "Reason about how the score should change (if at all) based on the applicable evidence. If keeping the same score, explain why.",
       "post_image_earned_points": <number between 0 and max_points for this criterion>
     }},
@@ -1489,7 +1270,7 @@ $action_history
 **Scored Rubric Summary (current scores for all existing criteria):**
 $scored_rubric_summary
 
-**All Screenshot Evidence Analyses (from all criteria):**
+**All DOM-model Evidence Analyses (from all criteria):**
 $all_concatenated_evidence
 
 **Your Task:**
@@ -1578,7 +1359,7 @@ This prompt should only penalize extraneous actions that produce lasting, materi
       "criterion": "Penalize <brief description of the extraneous action>",
       "description": "Detailed explanation of why this action was unsolicited and should be penalized",
       "max_points": <weight of this penalty, typically 1-3>,
-      "post_image_justification": "Evidence from action history and screenshots showing the extraneous action",
+      "post_image_justification": "Evidence from action history and DOM-models showing the extraneous action",
       "post_image_earned_points": 0
     }}
   ]
@@ -1588,16 +1369,16 @@ This prompt should only penalize extraneous actions that produce lasting, materi
 - The "reasoning" field MUST contain your chain-of-thought analysis before deciding on penalties
 - If requires_penalty is false, penalty_criteria should be an empty list []
 - Each penalty criterion must have all required fields
-- This step runs AFTER multimodal scoring, so only provide post_image_justification and post_image_earned_points (no earned_points or justification fields needed)
+- This step runs AFTER evidence-aware scoring, so only provide post_image_justification and post_image_earned_points (no earned_points or justification fields needed)
 - post_image_earned_points is ALWAYS 0 for penalties
 - max_points determines how much the penalty affects the overall score
 
 DO NOT OUTPUT ANYTHING OTHER THAN JSON.
 """
 
-OUTCOME_VERIFICATION_PROMPT = """You are to evaluate the performance of a web navigation agent. The agent is designed to help a human user navigate a website to complete a task. You are given the user's task, the agent's action history, the agent's predicted output, a scored rubric with screenshot evidence grouped by criterion, and the rubric's scores from a separate scoring system.
+OUTCOME_VERIFICATION_PROMPT = """You are to evaluate the performance of a web navigation agent. The agent is designed to help a human user navigate a website to complete a task. You are given the user's task, the agent's action history, the agent's predicted output, a scored rubric with DOM-model evidence grouped by criterion, and the rubric's scores from a separate scoring system.
 
-**Your role is to make an INDEPENDENT assessment.** The scored rubric is provided as reference context — it shows how a separate system scored individual criteria, and what screenshot evidence was gathered. However, you must form your OWN conclusion about whether the task was successfully completed. The rubric system can sometimes be too strict (penalizing nitpicks, over-reading requirements, cascading penalties) or too lenient (awarding credit for effort without results). Use the rubric's evidence and reasoning as input, but do NOT blindly adopt its verdict. A high rubric score does not guarantee success, and a low rubric score does not guarantee failure.
+**Your role is to make an INDEPENDENT assessment.** The scored rubric is provided as reference context — it shows how a separate system scored individual criteria, and what DOM-model evidence was gathered. However, you must form your OWN conclusion about whether the task was successfully completed. The rubric system can sometimes be too strict (penalizing nitpicks, over-reading requirements, cascading penalties) or too lenient (awarding credit for effort without results). Use the rubric's evidence and reasoning as input, but do NOT blindly adopt its verdict. A high rubric score does not guarantee success, and a low rubric score does not guarantee failure.
 
 Task Success:
 - success: Analyze to what extent the Agent, whose trajectory of actions is shown below, has successfully completed the task from the perspective of an average user who issued this task.
@@ -1605,9 +1386,9 @@ Task Success:
 - **Primary deliverable for multi-step tasks:** For tasks with multiple steps, the final step typically represents the **primary deliverable** — the thing the user actually wants. Intermediate steps are means to an end. If the agent completes intermediate steps but fails to output the result of the final step, the primary deliverable is missing and the task is a **failure**. Example: Task says "search LinkedIn for Data Scientist roles in Seattle, then use the top company name to find related music tracks on Spotify." The Spotify track names are the primary deliverable. If the agent found the company name (intermediate step) but only says "I found related tracks on Spotify" without naming any tracks, the user received nothing from the final step — mark as failure.
 - Reasonable user flexibility: A reasonable user would be flexible on the specific website/tool used (IF the task goal was still achieved), minor cosmetic differences, reasonable substitutions when the exact option is unavailable, and workarounds for uncontrollable blockers (CAPTCHAs, login walls, site errors). A reasonable user would NOT be flexible on: wrong item/product/service selected, wrong quantities/dates/times/recipients, missing critical actions (didn't actually complete the transaction), or wrong location/category/specifications that were explicitly stated.
 Some success criteria are more flexible than others: e.g. if the user asks for a 55 inch round dining tables on wayfair but wayfair no longer sells them and instead only shows 48 and 60 inch round tables, the agent should get full credit for finding the closest thing (the 60 inch round table). However, if the user specifies "under $$200" or "iphone 14 pro max" and the only thing available is $$2000 or "iphone 15 pro max", then it is NOT acceptable.
-- **Tasks with explicit constraints:** When a task has explicit constraints (e.g., "requiring a Master's degree," "with at least 4.5 stars," "non-stop flights only"), determine which constraints are hard/primary (the user is serious about them; they define what counts as a correct result) versus soft/secondary (nice-to-have, the user would be flexible). If the agent searched for a hard constraint but the final output does NOT present a result that actually satisfies it — supported by evidence — then the task's primary intent is NOT met. Searching for a constraint is not sufficient; the result must demonstrably meet it, whether confirmed by the agent's output, the action history, or what is visually apparent in screenshots (apply the same visual evidence principles — if screenshots visually confirm the constraint is satisfied, that counts even if the agent didn't explicitly state it).
+- **Tasks with explicit constraints:** When a task has explicit constraints (e.g., "requiring a Master's degree," "with at least 4.5 stars," "non-stop flights only"), determine which constraints are hard/primary (the user is serious about them; they define what counts as a correct result) versus soft/secondary (nice-to-have, the user would be flexible). If the agent searched for a hard constraint but the final output does NOT present a result that actually satisfies it — supported by evidence — then the task's primary intent is NOT met. Searching for a constraint is not sufficient; the result must demonstrably meet it, whether confirmed by the agent's output, the action history, or what is explicitly represented in DOM-models (apply the same DOM-model evidence principles — if DOM-models explicitly confirm the constraint is satisfied, that counts even if the agent didn't explicitly state it).
   Example 1 — Search constraint not satisfied: Task asks for "teaching positions requiring a Master's degree." The agent used a "Master's degree" filter but no posting actually confirms that requirement in its text — the user did NOT get what they asked for. Mark as failure.
-  Example 2 — User-specified form inputs are hard constraints: Task says "Use the college savings calculator and input: 3% education cost inflation, $$50,000 in current savings, $$250 monthly contributions with 6% rate of return." Each user-specified value is a hard constraint that must be entered exactly. If the agent navigated to the calculator but entered $$500 instead of $$250 for monthly contributions, the user's intent is NOT met for that input — the results will be wrong. If screenshots visually confirm all fields match the user's specified values, the constraints are satisfied even if the agent's output doesn't restate every value.
+  Example 2 — User-specified form inputs are hard constraints: Task says "Use the college savings calculator and input: 3% education cost inflation, $$50,000 in current savings, $$250 monthly contributions with 6% rate of return." Each user-specified value is a hard constraint that must be entered exactly. If the agent navigated to the calculator but entered $$500 instead of $$250 for monthly contributions, the user's intent is NOT met for that input — the results will be wrong. If DOM-models explicitly confirm all fields match the user's specified values, the constraints are satisfied even if the agent's output doesn't restate every value.
 
 NOTE: The Agent was instructed to fulfill the Task as far as it can up until a "Critical Point". A Critical Point, e.g. involving 'Checkout', 'Book', 'Purchase', 'Call', 'Email', etc, is a binding transaction/agreement that would require the user's permission to use personal or sensitive information (name, email, credit card, address, email, resume, etc) in order to complete a transaction (purchase, reservation, etc) or enter into a communication that a human would be expected to do (e.g. call or email).
 - For example, it is acceptable for the Agent to find a product and "Add to Cart", or select the desired timeslot to book a reservation, but it should **NOT** enter the user's name, address, credit card, or sign into their account, etc. Stopping on the "Cutomer Details" is generally acceptable. If some stores/restaurants require a location before showing the product or reservation, the agent can enter a location (e.g. city) if known, but should not enter any personal information (e.g. name, email, phone number, etc).
@@ -1656,15 +1437,15 @@ Your role is to evaluate whether the agent delivered results that satisfy the us
 - Do NOT penalize navigation path, workarounds, or which intermediate pages the agent visited. Only the final delivered result matters.
 - **The converse also holds: a correct process does NOT guarantee a successful outcome.** If the agent used the right approach but arrived at the wrong final answer (e.g., correctly enumerated options and compared them but miscounted/misread and selected the wrong one), the outcome is still a **FAILURE**. The rubric may award partial credit for correct methodology, but you must judge whether the user actually got a correct result. A wrong answer delivered via a sound process is still a wrong answer.
 
-**Trust visual evidence over agent claims.**
-Screenshots are ground truth. Evaluate the agent's claims using these categories:
-- **Contradiction** (penalize): Screenshots show X, but the agent claims not-X. Example: screenshot shows a booking calendar exists, but the agent says "no booking system available."
-- **Fabrication** (penalize): The agent claims X with zero evidentiary basis — nothing in the screenshots or action history supports the claim. Example: agent states a specific price that appears nowhere in any screenshot.
-- **Omission** (penalize): The agent didn't view everything it needed to. Screenshots show no evidence of X, and the agent concludes X doesn't exist or ignores it — BUT X is commonly known to exist and the agent should have looked for it. Example: Task asks for "highest ranked NHL team in the Western Conference," but the agent only checked the Central Division and never viewed the Pacific Division. This is incomplete exploration, not a supported inference.
-- **Supported inference from absence** (do NOT penalize): Screenshots consistently show NO evidence of X across all relevant pages visited, and the agent concludes "X does not exist," AND X is not commonly known to exist. This is a reasonable inference — not a hallucination. Only penalize if screenshots actually CONTRADICT the claim by showing X does exist.
-- **Visual confirmation without explicit statement** (do NOT penalize): If the agent's output omits a justification but the screenshots visually confirm the correct result (e.g., the agent found female cardiologists but didn't explicitly say "female" — yet their photos in the screenshots confirm they are female-presenting), the visual evidence is sufficient.
+**Trust DOM-model evidence over agent claims.**
+DOM-models are ground truth. Evaluate the agent's claims using these categories:
+- **Contradiction** (penalize): DOM-models show X, but the agent claims not-X. Example: DOM-model shows a booking calendar exists, but the agent says "no booking system available."
+- **Fabrication** (penalize): The agent claims X with zero evidentiary basis — nothing in the DOM-models or action history supports the claim. Example: agent states a specific price that appears nowhere in any DOM-model.
+- **Omission** (penalize): The agent didn't view everything it needed to. DOM-models show no evidence of X, and the agent concludes X doesn't exist or ignores it — BUT X is commonly known to exist and the agent should have looked for it. Example: Task asks for "highest ranked NHL team in the Western Conference," but the agent only checked the Central Division and never viewed the Pacific Division. This is incomplete exploration, not a supported inference.
+- **Supported inference from absence** (do NOT penalize): DOM-models consistently show NO evidence of X across all relevant pages visited, and the agent concludes "X does not exist," AND X is not commonly known to exist. This is a reasonable inference — not a hallucination. Only penalize if DOM-models actually CONTRADICT the claim by showing X does exist.
+- **Explicit DOM-model confirmation without explicit statement** (do NOT penalize): If the agent's output omits a justification but the DOM-models explicitly confirm the correct result (e.g., the agent found female cardiologists but didn't explicitly say "female" — yet their photos in the DOM-models confirm they are female-presenting), the DOM-model evidence is sufficient.
 
-When there is a discrepancy between the agent's output/logs and the screenshots, screenshots take precedence — the agent can hallucinate or misrepresent what it saw. Do NOT give zero credit simply because the output text is not visible on screen — the output is delivered as text, not rendered in a browser.
+When there is a discrepancy between the agent's output/logs and the DOM-models, DOM-models take precedence — the agent can hallucinate or misrepresent what it saw. Do NOT give zero credit simply because the output text is not explicitly represented in the DOM-model state — the output is delivered as text, not rendered in a browser.
 
 **Distinguish nitpicks from critical issues.**
 Before scoring, you MUST explicitly separate which aspects of the agent's output are **nitpicks** versus **critical issues**. Only critical issues should significantly reduce the score. Nitpicks alone should NOT reduce the score below 8.
@@ -1681,7 +1462,7 @@ A **nitpick** is a minor formatting, labeling, or precision difference that does
    - **"locate", "go to", "navigate to"**: The agent must find and reach the relevant page/content, but does NOT need to output a URL unless explicitly asked. "Locate" means "find," not "provide the link."
    - **"review", "read", "look at", "check", "explore"**: The agent must report useful information gleaned from the content — a reasonable summary is sufficient. Do NOT penalize for not writing a formal structured review or exhaustive analysis. But the agent must report *something* substantive from what it reviewed.
    - **NOTE: Failing to meet the above expectations is a critical issue, not a nitpick** — especially when the missing output is the task's primary deliverable (see "Primary deliverable for multi-step tasks" above). If the agent claims it performed the action but does not output the substantive result, the user received nothing.
-- Not explicitly outputting intermediate results that informed a correct final answer (**Intermediate Discovery vs. Required Output**): If the agent browsed, viewed, or compared multiple options during navigation but only reported the final answer the task asked for, this is correct behavior, not an omission. For example, if the task asks "find which courses teach cloud computing using Microsoft Azure and identify which has the most flexible schedule," the agent does not need to list every Azure course it found — those are intermediate discoveries. The agent should receive full credit for reporting just the most flexible one, as long as screenshots or actions show it browsed relevant courses to inform its choice. Similarly, if the task asks "find two female cardiologists" and the agent found them but didn't explicitly state "they are female" in its output, yet the screenshots show the doctors' photos confirming they are female-presenting, the evidence is apparent and the agent should receive full credit. Evidence supporting the agent's reasoning can come from the agent's output, action log, OR what is visually apparent in screenshots. When there is a discrepancy between screenshots and the agent's logs/output, screenshots take precedence — the agent can hallucinate or misrepresent what it saw, but screenshots are ground truth.
+- Not explicitly outputting intermediate results that informed a correct final answer (**Intermediate Discovery vs. Required Output**): If the agent browsed, viewed, or compared multiple options during navigation but only reported the final answer the task asked for, this is correct behavior, not an omission. For example, if the task asks "find which courses teach cloud computing using Microsoft Azure and identify which has the most flexible schedule," the agent does not need to list every Azure course it found — those are intermediate discoveries. The agent should receive full credit for reporting just the most flexible one, as long as DOM-models or actions show it browsed relevant courses to inform its choice. Similarly, if the task asks "find two female cardiologists" and the agent found them but didn't explicitly state "they are female" in its output, yet the DOM-models show the doctors' photos confirming they are female-presenting, the evidence is apparent and the agent should receive full credit. Evidence supporting the agent's reasoning can come from the agent's output, action log, OR what is explicitly represented in DOM-models. When there is a discrepancy between DOM-models and the agent's logs/output, DOM-models take precedence — the agent can hallucinate or misrepresent what it saw, but DOM-models are ground truth.
 - Paraphrasing or summarizing instead of quoting verbatim, when the meaning is fully preserved
 - Reasonable rounding or minor numerical imprecision that doesn't change the practical usefulness of the answer (e.g., $$49.97 vs $$49.99, or a slightly imprecise unit conversion)
 - Meeting the user's stated minimum without exceeding it (e.g., finding 3 options when more exist but the user asked for "at least 3")
@@ -1737,10 +1518,10 @@ Correct evaluation:
 
 Example 5 — Wrong product entirely (critical failure):
 Task: "I'm looking to buy Disney Grumpy stuffed plush toy from Amazon."
-Agent output: Claims "adding the selected Disney Grumpy plush to the cart," but screenshot evidence shows the agent actually added a "Care Bears 14-inch Grumpy Bear" (a completely different brand/franchise) to the cart after the Disney Grumpy plush was unavailable.
+Agent output: Claims "adding the selected Disney Grumpy plush to the cart," but DOM-model evidence shows the agent actually added a "Care Bears 14-inch Grumpy Bear" (a completely different brand/franchise) to the cart after the Disney Grumpy plush was unavailable.
 Correct evaluation:
 - Critical issue #1: Wrong product — "Care Bears Grumpy Bear" is an entirely different brand and franchise from "Disney Grumpy" (Snow White and the Seven Dwarfs). This is not a reasonable substitution; it's a different product from a different company.
-- Critical issue #2: Hallucination — The agent claimed in its output that it added "the selected Disney Grumpy plush" to the cart, but the screenshot evidence shows it was actually a Care Bears product. The agent misrepresented what it did.
+- Critical issue #2: Hallucination — The agent claimed in its output that it added "the selected Disney Grumpy plush" to the cart, but the DOM-model evidence shows it was actually a Care Bears product. The agent misrepresented what it did.
 - Outcome: The user wanted a Disney Grumpy plush. They got a Care Bears product in their cart and were told it was the Disney one. → Score: 0-1.
 
 Example 6 — Do not infer unstated requirements:
@@ -1756,7 +1537,7 @@ Correct evaluation:
 
 Example 7 — Wrong action taken (critical failure):
 Task: "Buy a Chanel bag on eBay."
-Agent output: Claims to have found a Chanel bag on eBay, but screenshot evidence shows the agent clicked "Add to Watchlist" instead of "Add to Cart" or initiating a Buy It Now/checkout flow.
+Agent output: Claims to have found a Chanel bag on eBay, but DOM-model evidence shows the agent clicked "Add to Watchlist" instead of "Add to Cart" or initiating a Buy It Now/checkout flow.
 Correct evaluation:
 - Critical issue: Adding to watchlist is NOT a purchase action — it is a bookmarking feature. The task said "buy," which requires adding to cart or starting checkout. The agent did not take the correct action toward purchasing. If the specific bag was unavailable for direct purchase, the agent should have searched for a different available Chanel bag rather than watchlisting an unavailable one.
 - Outcome: The user wanted to buy a Chanel bag. The bag was found but never put into a purchase state. → Score: 2-3 (partial credit for finding the right product, but the core action was wrong).
@@ -1774,7 +1555,7 @@ Correct evaluation:
 Example 9 — Subjective/preference-based claims (trust reasonable sources):
 Task: "Find one of Beyoncé's favorite soul food restaurants in Houston, go to their website, and find out when they opened. How much older are they than Beyoncé herself?"
 Agent output: Selected "This Is It Soul Food" (found via a Bing search for "Beyoncé favorite soul food Houston" which returned this restaurant in the results), navigated to the restaurant's website, found it opened in 1959, and correctly computed the age difference with Beyoncé (born 1981).
-WRONG evaluation: "The screenshots do not show any explicit, credible on-page proof that 'This Is It Soul Food' is documented as one of Beyoncé's favorites. The restaurant's own website does not mention Beyoncé. No credit for the restaurant selection." — This demands definitive proof for a claim that is inherently informal and undocumented. There is no authoritative database of celebrity restaurant preferences.
+WRONG evaluation: "The DOM-models do not show any explicit, credible on-page proof that 'This Is It Soul Food' is documented as one of Beyoncé's favorites. The restaurant's own website does not mention Beyoncé. No credit for the restaurant selection." — This demands definitive proof for a claim that is inherently informal and undocumented. There is no authoritative database of celebrity restaurant preferences.
 Correct evaluation:
 - The agent searched for "Beyoncé favorite soul food Houston" and the restaurant appeared in the search results. This is a reasonable source of authority for an inherently subjective claim. The restaurant is a real, well-known Houston soul food establishment, and the search engine associated it with the query. That is sufficient evidence.
 - The agent then correctly navigated to the restaurant's website, found the opening year, and computed the age difference accurately.
@@ -1797,13 +1578,13 @@ When the task requires selecting a value (date, year, quantity, etc.) that was n
 - Selecting a default room type or seat class when the task only specified the destination
 Only penalize default choices that contradict an explicit user requirement (e.g., the user said "2 tickets" and the agent selected 1).
 
-**Screenshots Are Chronologically Ordered — Always Trust the LATEST State:**
-Screenshots are numbered in chronological order: Screenshot 1 is the earliest, and higher-numbered screenshots are later in time. When multiple screenshots show the same UI element or page with different values:
-- The **LATEST** (highest-numbered) screenshot reflects the **final state** and MUST take precedence over earlier screenshots.
-- Only penalize if the **final/latest** relevant screenshot still shows the wrong value.
-- This is especially important for dynamic UI elements like booking calendars (dates may change as the agent interacts), search results (the agent may refine searches), restaurant/hotel selections (earlier screenshots may show browsing, but the final screenshot shows the actual choice), and shopping carts (items may be added/removed during the session).
-- When evaluating what the agent ultimately selected or accomplished, always base your assessment on the latest relevant screenshot, not intermediate states.
-- Example: If the agent first navigated to an "October 2024" calendar page, then switched to "October 2025" and selected the correct dates — the final state is October 2025, which is correct. Do NOT penalize because an earlier screenshot showed 2024.
+**DOM-models Are Chronologically Ordered — Always Trust the LATEST State:**
+DOM-models are numbered in chronological order: DOM-model 1 is the earliest, and higher-numbered DOM-models are later in time. When multiple DOM-models show the same UI element or page with different values:
+- The **LATEST** (highest-numbered) DOM-model reflects the **final state** and MUST take precedence over earlier DOM-models.
+- Only penalize if the **final/latest** relevant DOM-model still shows the wrong value.
+- This is especially important for dynamic UI elements like booking calendars (dates may change as the agent interacts), search results (the agent may refine searches), restaurant/hotel selections (earlier DOM-models may show browsing, but the final DOM-model shows the actual choice), and shopping carts (items may be added/removed during the session).
+- When evaluating what the agent ultimately selected or accomplished, always base your assessment on the latest relevant DOM-model, not intermediate states.
+- Example: If the agent first navigated to an "October 2024" calendar page, then switched to "October 2025" and selected the correct dates — the final state is October 2025, which is correct. Do NOT penalize because an earlier DOM-model showed 2024.
 
 Task: "$task_definition"$init_url_context
 
@@ -1812,7 +1593,7 @@ NOTE: This rubric was scored by a separate system. Use it as reference context (
 $rubric_summary
 <<<
 
-Screenshot Evidence by Criterion: >>>
+DOM-model Evidence by Criterion: >>>
 $evidence_summary
 <<<
 
@@ -1829,7 +1610,7 @@ Please output an answer in pure JSON format according to the following schema. T
 
 {{
     "primary_intent": str, # 1-2 sentence description of what the user fundamentally wanted to accomplish (strip away incidental details), AND what a reasonable user would or would not be flexible on for this specific task.
-    "reasoning": str, # First, explicitly identify which aspects of the agent's output are nitpicks (minor formatting/labeling/precision differences that don't affect usefulness) vs. critical issues (wrong info, missing key elements, hallucinations, fundamentally wrong result). Be specific — if there are no critical issues, say so. Then, analyze to what extent the agent satisfied the primary intent of the task based on the applicable screenshot evidence and actions. Focus on the OUTCOME: were the results relevant, correct, and accurately reported? To what extent would the user be ok with the choices the agent made? Do NOT penalize the agent for process details (which site it used, navigation path, workarounds) as long as the outcome is correct.
+    "reasoning": str, # First, explicitly identify which aspects of the agent's output are nitpicks (minor formatting/labeling/precision differences that don't affect usefulness) vs. critical issues (wrong info, missing key elements, hallucinations, fundamentally wrong result). Be specific — if there are no critical issues, say so. Then, analyze to what extent the agent satisfied the primary intent of the task based on the applicable DOM-model evidence and actions. Focus on the OUTCOME: were the results relevant, correct, and accurately reported? To what extent would the user be ok with the choices the agent made? Do NOT penalize the agent for process details (which site it used, navigation path, workarounds) as long as the outcome is correct.
     "output_success": bool # True if the Agent's actions largely complete the task as the user intended, False otherwise. Nitpicks alone (minor formatting, labeling, or precision differences) should NOT cause a False verdict — only critical issues should.
 }}
 """
@@ -1845,7 +1626,7 @@ You are given:
 - The agent's full step-by-step action history (each step has a step number, the agent's reasoning, \
 the action taken, the URL, and a human-readable description)
 - The agent's predicted output (final answer)
-- A scored rubric with multimodal screenshot evidence showing how the agent performed on each criterion
+- A scored rubric with DOM-model evidence showing how the agent performed on each criterion
 - The outcome verification result (whether the task was deemed successful overall)
 
 Your job is to identify **every distinct failure point** in the trajectory, pinpoint the \
@@ -1878,7 +1659,7 @@ Scored Rubric (post-multimodal verification): >>>
 $rubric_summary
 <<<
 
-Screenshot Evidence by Criterion: >>>
+DOM-model Evidence by Criterion: >>>
 $evidence_summary
 <<<
 
@@ -1907,7 +1688,7 @@ must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIA
             "error_type": str,  // Sub-category name (e.g. "Missing Intent", "Output contradiction", "Incomplete task execution").
             "what_happened": str,  // Brief description of what went wrong at this step.
             "agent_reasoning": str,  // What the agent was thinking or trying to do when the error occurred.
-            "evidence": str,  // Specific evidence from screenshots, tool output, or action history that supports this failure classification.
+            "evidence": str,  // Specific evidence from DOM-models, tool output, or action history that supports this failure classification.
             "impact": str  // How this failure affected task completion.
         }}
     ]
@@ -1925,7 +1706,7 @@ You are an expert failure analyst for computer-use web agents.
 
 You will analyze a single task **after execution**, using both the original task \
 specification and the full trajectory evidence (action history, rubric scores, \
-screenshot evidence, and outcome verification), to determine whether the task \
+DOM-model evidence, and outcome verification), to determine whether the task \
 suffers from task-level issues that contributed to or explain the observed outcome. \
 Specifically, you will classify the task along two axes drawn from a standardized \
 error taxonomy:
@@ -1996,7 +1777,7 @@ Scored Rubric (post-multimodal verification): >>>
 $rubric_summary
 <<<
 
-Screenshot Evidence by Criterion: >>>
+DOM-model Evidence by Criterion: >>>
 $evidence_summary
 <<<
 
@@ -2013,7 +1794,7 @@ only flag genuine issues that would materially affect task completion.
 **Guiding principles:**
 - A task that is merely difficult, tedious, or multi-step is NOT impossible.
 - A task that has minor formatting ambiguity is NOT ambiguous.
-- The trajectory evidence (action history, rubric, screenshots, outcome) should be used \
+- The trajectory evidence (action history, rubric, DOM-models, outcome) should be used \
 to corroborate or refute suspected task-level issues — not to penalize agent errors.
 - If the agent failed due to its own mistakes (selection errors, hallucinations, \
 execution bugs), the task is NOT ambiguous or invalid merely because the agent failed.
@@ -2254,60 +2035,6 @@ must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIA
 """
 )
 
-
-# Preserve Microsoft's instructions and output schemas while expressing every evidence
-# reference in the terminology of the representation actually supplied to this package.
-def _use_dom_model_terminology(prompt: str) -> str:
-    replacements = (
-        ("actual screenshot pixels", "explicit DOM-model content"),
-        ("ACTUAL Screenshot Pixels", "EXPLICIT DOM-MODEL CONTENT"),
-        ("ACTUAL SCREENSHOT PIXELS", "EXPLICIT DOM-MODEL CONTENT"),
-        ("attached screenshot image", "provided DOM-model state"),
-        ("attached screenshot", "provided DOM-model state"),
-        ("screenshot image", "DOM-model state"),
-        ("Screenshot/DOM state", "DOM-model state"),
-        ("Screenshot Evidence", "DOM-model Evidence"),
-        ("screenshot evidence", "DOM-model evidence"),
-        ("Visual evidence", "DOM-model evidence"),
-        ("visual evidence", "DOM-model evidence"),
-        ("Visual confirmation", "Explicit DOM-model confirmation"),
-        ("visual confirmation", "explicit DOM-model confirmation"),
-        ("visually apparent", "explicitly represented"),
-        ("visually confirm", "explicitly confirm"),
-        ("visually confirms", "explicitly confirms"),
-        ("visually present", "explicitly represented"),
-        ("VISUALLY PRESENT", "EXPLICITLY REPRESENTED"),
-        ("visible on screen", "explicitly represented in the DOM-model state"),
-        ("rendered on screen", "represented in the DOM-model state"),
-        ("multimodal DOM-model evidence", "DOM-model evidence"),
-        ("multimodal scoring", "evidence-aware scoring"),
-    )
-    for source, destination in replacements:
-        prompt = prompt.replace(source, destination)
-    prompt = re.sub(r"(?<![_])\bScreenshots\b(?![_])", "DOM-models", prompt)
-    prompt = re.sub(r"(?<![_])\bscreenshots\b(?![_])", "DOM-models", prompt)
-    prompt = re.sub(r"(?<![_])\bScreenshot\b(?![_])", "DOM-model", prompt)
-    prompt = re.sub(r"(?<![_])\bscreenshot\b(?![_])", "DOM-model", prompt)
-    return prompt
-
-
-for _prompt_name in (
-    "RUBRIC_GENERATION_PROMPT_TEMPLATE",
-    "RUBRIC_DEPENDENCY_CHECKING_PROMPT",
-    "ACTION_ONLY_RUBRIC_SCORER_PROMPT",
-    "MM_SCREENSHOT_CRITERION_RELEVANCE_PROMPT",
-    "MM_SCREENSHOT_EVIDENCE_ANALYSIS_PROMPT",
-    "MM_SCREENSHOT_BATCHED_EVIDENCE_ANALYSIS_PROMPT",
-    "MM_CRITERION_RESCORING_PROMPT",
-    "MM_RUBRIC_RESCORING_PROMPT",
-    "RUBRIC_REALITY_CHECK_PROMPT",
-    "CONDITIONAL_CRITERIA_DISAMBIGUATION_PROMPT",
-    "PENALIZE_UNSOLICITED_SIDE_EFFECTS_PROMPT",
-    "OUTCOME_VERIFICATION_PROMPT",
-    "FIRST_POINT_OF_FAILURE_PROMPT",
-    "CHECK_VALID_TASK_WITH_TRAJECTORY_PROMPT",
-):
-    globals()[_prompt_name] = _use_dom_model_terminology(globals()[_prompt_name])
 
 
 RUBRIC_REALITY_CHECK_PROMPT = (
