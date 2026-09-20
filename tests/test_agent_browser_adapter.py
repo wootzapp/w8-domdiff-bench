@@ -14,6 +14,7 @@ import capture  # noqa: E402
 import runner  # noqa: E402
 from recorder_support import RunnerError  # noqa: E402
 from agent_browser import AgentBrowserClient  # noqa: E402
+from agent_browser import container_agent_browser_command  # noqa: E402
 
 
 class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
@@ -89,6 +90,34 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertLess(len(first), 40)
         self.assertNotEqual(first, second)
         self.assertTrue(first.endswith("-1234"))
+
+    def test_container_command_uses_bundled_agent_browser(self) -> None:
+        self.assertEqual(
+            container_agent_browser_command("w8-core-browser-engine"),
+            "docker exec w8-core-browser-engine agent-browser",
+        )
+        with self.assertRaisesRegex(
+            runner.AgentBrowserBaseError, "container name must not be empty"
+        ):
+            container_agent_browser_command("  ")
+
+    def test_runner_defaults_to_w8_core_agent_browser(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            missing_env = Path(temporary) / "missing.env"
+            with patch.dict(
+                runner.os.environ,
+                {"CONTAINER_NAME": "fixture-browser"},
+                clear=True,
+            ):
+                args = runner.parse_args(
+                    ["--env-file", str(missing_env)]
+                )
+
+        self.assertEqual(
+            args.agent_browser_command,
+            "docker exec fixture-browser agent-browser",
+        )
+        self.assertEqual(args.agent_browser_cdp_url, "http://127.0.0.1:9222")
 
     def test_missing_layout_box_is_a_recoverable_action_error(self) -> None:
         error = runner.AgentBrowserError(

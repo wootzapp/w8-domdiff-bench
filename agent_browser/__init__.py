@@ -9,6 +9,7 @@ from .client import (
     AgentBrowserObservation,
     AgentBrowserPage,
     agent_browser_session_name,
+    container_agent_browser_command,
     normalized_http_url,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "AgentBrowserObservation",
     "AgentBrowserPage",
     "agent_browser_session_name",
+    "container_agent_browser_command",
     "normalized_http_url",
 ]
