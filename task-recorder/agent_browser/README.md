@@ -2,10 +2,12 @@
 
 ## What this is
 
-The recorder does not implement browser automation. It drives the official
-[agent-browser](https://github.com/vercel-labs/agent-browser) CLI as an external,
-version-pinned dependency, invoked per action via `subprocess.run`. Nothing from
-that project is vendored, forked, or reimplemented here.
+The recorder does not implement browser automation. w8-core, a new kind of
+browser engine, includes the official
+[agent-browser](https://github.com/vercel-labs/agent-browser) CLI at version
+0.27.3. The recorder invokes that command inside the browser container for each
+observation and action. Nothing from agent-browser is vendored, forked, or
+reimplemented here.
 
 The division of responsibility is fixed:
 
@@ -20,14 +22,14 @@ the whole contract, which is why it is one file: the boundary is narrow by
 design, and keeping it narrow is what makes the action driver replaceable and
 the recordings auditable.
 
-## Standalone use
+## Runtime use
 
-The Python package is self-contained and imports only the standard library. It
-does not import `runner.py`, `capture.py`, `recorder_support.py`, or any other recorder
-module. To use it independently, a consumer needs:
+The Python adapter is self-contained and imports only the standard library. It
+does not import `runner.py`, `capture.py`, `recorder_support.py`, or another
+recorder module. Its normal runtime needs:
 
-- the npm `agent-browser` package installed at the pinned version;
-- a browser exposing an HTTP(S) CDP endpoint; and
+- a running w8-core container;
+- the bundled `agent-browser` command; and
 - an `AgentBrowserClient` configured with `command`, `session`, `cdp_url`, and
   `timeout`.
 
@@ -35,7 +37,7 @@ module. To use it independently, a consumer needs:
 from agent_browser import AgentBrowserClient
 
 client = AgentBrowserClient(
-    "./node_modules/.bin/agent-browser",
+    "docker exec w8-core-browser-engine agent-browser",
     session="my-session",
     cdp_url="http://127.0.0.1:9222",
     timeout=30,
@@ -73,9 +75,11 @@ a known limitation.
 
 ## Version and provenance
 
-Pinned via `--agent-browser-command`, default `npx --yes agent-browser@0.27.3`.
-The exact version resolves to a fixed npm tarball with an integrity hash and
-declares no runtime dependencies, so it does not drift.
+The default command is `docker exec w8-core-browser-engine agent-browser`. The
+container name and command remain configurable through `CONTAINER_NAME` and
+`AGENT_BROWSER_COMMAND`. The task launcher reads `CDP_PORT` from the running
+container. Direct runner use can set `AGENT_BROWSER_CDP_URL`; its default is
+`http://127.0.0.1:9222`.
 
 The version in use is recorded in every run:
 

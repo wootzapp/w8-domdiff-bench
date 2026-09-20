@@ -18,6 +18,12 @@ Two systems interact with the browser:
   `getAgentObservation`, and builds a structured model-facing projection with
   `getModelDOM`.
 
+w8-core, a new kind of browser engine, provides the Chromium browser runtime,
+the ChromiumRL CDP domain, agent-browser 0.27.3, VNC, and noVNC in one Docker
+image. The recorder reaches ChromiumRL through the host CDP port and invokes
+agent-browser inside the same container. A host Node.js or npm installation is
+not required.
+
 For every captured snapshot, the recorder saves `dom.json`. It runs the full
 renderer to create `dom_full.txt`, saves the `getModelDOM` result as
 `dom_model.json`, and uses the deterministic model renderer to create
