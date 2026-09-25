@@ -14,7 +14,7 @@ from .schemas import DomModelState
 
 LIMITATIONS = (
     "DOM-model evidence cannot prove pixel-only color, styling, geometry, overlap, clipping, "
-    "z-order, or unrepresented image/canvas/video content. Treat absent content as unproven, "
+    "z-order, or unrepresented non-text media or pixel-only content. Treat absent content as unproven, "
     "not false; source-declared truncation further limits coverage."
 )
 

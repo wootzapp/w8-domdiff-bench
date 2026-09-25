@@ -281,7 +281,6 @@ class Task(Component):
 
     task_id: str
     instruction: str
-    images: List[str] = Field(default_factory=list)
     environment_config: Dict[str, Any] = Field(default_factory=dict)
     solver: SolverConfig = Field(default_factory=SolverConfig)
     verifier: VerifierConfig = Field(default_factory=VerifierConfig)
@@ -481,22 +480,6 @@ class VerificationResult(Component):
         return self.score >= 0.5
 
 
-class ImageScore(BaseModel):
-    """Score for a single evidence item against task key points."""
-
-    path: str = ""
-    llm_message: LLMMessage = Field(default_factory=LLMMessage)
-    score: int = 0
-
-
-class WebJudgeResult(VerificationResult):
-    """Structured result from WebJudge verification."""
-
-    result_type: Literal["web_judge"] = "web_judge"
-    key_points: str = ""
-    image_scores: list[ImageScore] = Field(default_factory=list)
-
-
 class MajorityVoteMetadata(BaseModel):
     """Metadata from majority voting in rubric scoring."""
 
@@ -583,7 +566,6 @@ VerificationResultEvent = Annotated[
     Union[
         MMRubricResult,
         MMRubricOutcomeResult,
-        WebJudgeResult,
         TrajectoryDiagnosticsResult,
         TaskAgentResult,
         VerificationResult,

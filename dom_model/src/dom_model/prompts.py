@@ -545,7 +545,7 @@ The rubric is missing "earned_points" and "justification" fields for each criter
    - Determine which constraints are **hard/primary** (the user is serious about them and they most narrowly define what counts as a correct result) versus **soft/secondary** (nice-to-have, or the user would be flexible). Hard constraints typically include specific qualifications, product attributes, or explicit filtering criteria that the user called out. Soft constraints might include the exact platform used or minor preferences.
    - If the agent searched for a hard constraint but the results do NOT actually satisfy it (e.g., a filter label says "Having Master's degree" but no posting's actual text confirms this requirement), the constraint is not verified. Award only minimal partial credit for the search effort — do NOT award substantial credit as if the constraint were satisfied.
    - Conversely, if the constraint IS satisfied in the evidence (DOM-models confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
-   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
+   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results explicitly representing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
 
    **Example 1 — Search constraint attempted but not satisfied:**
    Task: "When was the most recent teaching career opportunity requiring a minimum of a Master's degree posted on Garland ISD Careers?"
@@ -866,7 +866,7 @@ determine if the baseline score for the target criterion should be adjusted.
    - Determine which constraints are **hard/primary** (the user is serious about them and they most narrowly define what counts as a correct result) versus **soft/secondary** (nice-to-have, or the user would be flexible). Hard constraints typically include specific qualifications, product attributes, or explicit filtering criteria that the user called out. Soft constraints might include the exact platform used or minor preferences.
    - If the agent searched for a hard constraint but the results do NOT actually satisfy it (e.g., a filter label says "Having Master's degree" but no posting's actual text confirms this requirement), the constraint is not verified. Award only minimal partial credit for the search effort — do NOT award substantial credit as if the constraint were satisfied.
    - Conversely, if the constraint IS satisfied in the evidence (DOM-models confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
-   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
+   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results explicitly representing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
 
    **Example 1 — Search constraint attempted but not satisfied:**
    Task: "When was the most recent teaching career opportunity requiring a minimum of a Master's degree posted on Garland ISD Careers?"
@@ -953,7 +953,7 @@ Task: "Book a compact car on Rentalcars.com from December 15 to December 18, 202
 - DOM-model 5 shows the date picker with November 13–16, 2025.
 - No later DOM-model shows the dates being changed to December 15–18.
 - The agent's predicted output claims "Dec 15–18" but no DOM-model confirms this.
-- **Correct scoring**: Zero or partial credit — the final visual state contradicts the agent's claim.
+- **Correct scoring**: Zero or partial credit — the final DOM-model state contradicts the agent's claim.
 
 **Re-scoring Guidelines:**
 
@@ -978,7 +978,7 @@ Task: "Book a compact car on Rentalcars.com from December 15 to December 18, 202
    - Example: Agent says "added to cart" but DOM-model shows error message
    - Penalize based on severity of the discrepancy
 
-5. **Respect max_points limit**: Your post_image_earned_points must be between 0 and $max_points (inclusive).
+5. **Respect max_points limit**: Your post_dom_earned_points must be between 0 and $max_points (inclusive).
 
 6. **Provide clear justification**: Explain what changed (if anything) between the baseline score and the new score based on DOM-model evidence.
 
@@ -992,8 +992,8 @@ Task: "Book a compact car on Rentalcars.com from December 15 to December 18, 202
 **Output Format:**
 {{
   "applicable_evidence": "Explicitly state which DOM-model Evidence Analyses (by DOM-model number) are applicable to this criterion. When multiple DOM-models show the same UI element or state, identify whether a STATE CHANGE occurred and which DOM-model is the LATEST (most recent). The latest DOM-model's state supersedes any earlier conflicting DOM-models. For example: 'DOM-model 5 shows the date picker with default November dates, but DOM-model 15 (later) shows the dates updated to December 15–18 — the latest state is correct.' If no DOM-model evidence is applicable, state that clearly.",
-  "post_image_justification": "Based on the applicable evidence identified above — using the LATEST DOM-model state when state changes occurred — reason about **how** the score should change (if at all). If keeping the same score, explain why the applicable DOM-models confirm the action-history assessment. If changing the score, explain what specific DOM-model evidence led to the change and why.",
-  "post_image_earned_points": <number between 0 and $max_points>
+  "post_dom_justification": "Based on the applicable evidence identified above — using the LATEST DOM-model state when state changes occurred — reason about **how** the score should change (if at all). If keeping the same score, explain why the applicable DOM-models confirm the action-history assessment. If changing the score, explain what specific DOM-model evidence led to the change and why.",
+  "post_dom_earned_points": <number between 0 and $max_points>
 }}
 
 DO NOT OUTPUT ANYTHING OTHER THAN JSON.
@@ -1047,7 +1047,7 @@ You are rescoring the ENTIRE rubric in a single pass based on the DOM-model evid
    - Determine which constraints are **hard/primary** (the user is serious about them and they most narrowly define what counts as a correct result) versus **soft/secondary** (nice-to-have, or the user would be flexible). Hard constraints typically include specific qualifications, product attributes, or explicit filtering criteria that the user called out. Soft constraints might include the exact platform used or minor preferences.
    - If the agent searched for a hard constraint but the results do NOT actually satisfy it (e.g., a filter label says "Having Master's degree" but no posting's actual text confirms this requirement), the constraint is not verified. Award only minimal partial credit for the search effort — do NOT award substantial credit as if the constraint were satisfied.
    - Conversely, if the constraint IS satisfied in the evidence (DOM-models confirm a posting explicitly requires a Master's degree), award full or near-full credit even if the agent's search path was indirect.
-   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results visually showing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
+   - **The key question is: does the agent's final output present a result that actually meets the hard constraints, supported by evidence?** Evidence can come from the agent's output text, the action history, OR what is explicitly represented in DOM-models (e.g., search results explicitly representing a "Master's degree required" label, a product listing showing the correct specs, a filter result that clearly satisfies the constraint). Apply the same DOM-model evidence principles used elsewhere — especially "explicit DOM-model confirmation without explicit statement": if DOM-models explicitly confirm the constraint is met even though the agent didn't explicitly say so in its output, that counts as satisfied. If not, criteria measuring those constraints should receive low credit regardless of search effort.
 
    **Example 1 — Search constraint attempted but not satisfied:**
    Task: "When was the most recent teaching career opportunity requiring a minimum of a Master's degree posted on Garland ISD Careers?"
@@ -1249,8 +1249,8 @@ Output a JSON object with an "items" list. Each item corresponds to a criterion 
     {{
       "criterion_idx": 0,
       "applicable_evidence": "Which DOM-model evidence analyses are applicable to this criterion and what they show. When multiple DOM-models show the same element, identify which is the LATEST. If no evidence is applicable, state that clearly.",
-      "post_image_justification": "Reason about how the score should change (if at all) based on the applicable evidence. If keeping the same score, explain why.",
-      "post_image_earned_points": <number between 0 and max_points for this criterion>
+      "post_dom_justification": "Reason about how the score should change (if at all) based on the applicable evidence. If keeping the same score, explain why.",
+      "post_dom_earned_points": <number between 0 and max_points for this criterion>
     }},
     ...one entry per criterion, in order from criterion 0 to criterion {num_criteria_minus_1}...
   ]
@@ -1359,8 +1359,8 @@ This prompt should only penalize extraneous actions that produce lasting, materi
       "criterion": "Penalize <brief description of the extraneous action>",
       "description": "Detailed explanation of why this action was unsolicited and should be penalized",
       "max_points": <weight of this penalty, typically 1-3>,
-      "post_image_justification": "Evidence from action history and DOM-models showing the extraneous action",
-      "post_image_earned_points": 0
+      "post_dom_justification": "Evidence from action history and DOM-models showing the extraneous action",
+      "post_dom_earned_points": 0
     }}
   ]
 }}
@@ -1369,8 +1369,8 @@ This prompt should only penalize extraneous actions that produce lasting, materi
 - The "reasoning" field MUST contain your chain-of-thought analysis before deciding on penalties
 - If requires_penalty is false, penalty_criteria should be an empty list []
 - Each penalty criterion must have all required fields
-- This step runs AFTER evidence-aware scoring, so only provide post_image_justification and post_image_earned_points (no earned_points or justification fields needed)
-- post_image_earned_points is ALWAYS 0 for penalties
+- This step runs AFTER evidence-aware scoring, so only provide post_dom_justification and post_dom_earned_points (no earned_points or justification fields needed)
+- post_dom_earned_points is ALWAYS 0 for penalties
 - max_points determines how much the penalty affects the overall score
 
 DO NOT OUTPUT ANYTHING OTHER THAN JSON.
@@ -1588,7 +1588,7 @@ DOM-models are numbered in chronological order: DOM-model 1 is the earliest, and
 
 Task: "$task_definition"$init_url_context
 
-Scored Rubric (post-multimodal verification): >>>
+Scored Rubric (post-DOM evidence verification): >>>
 NOTE: This rubric was scored by a separate system. Use it as reference context (evidence, criterion descriptions, scores), but form your OWN independent conclusion. The rubric may be too strict or too lenient on individual criteria.
 $rubric_summary
 <<<
@@ -1655,7 +1655,7 @@ Predicted Output: >>>
 $predicted_output
 <<<
 
-Scored Rubric (post-multimodal verification): >>>
+Scored Rubric (post-DOM evidence verification): >>>
 $rubric_summary
 <<<
 
@@ -1773,7 +1773,7 @@ Predicted Output: >>>
 $predicted_output
 <<<
 
-Scored Rubric (post-multimodal verification): >>>
+Scored Rubric (post-DOM evidence verification): >>>
 $rubric_summary
 <<<
 

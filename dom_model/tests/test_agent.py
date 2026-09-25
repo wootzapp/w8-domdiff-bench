@@ -8,11 +8,7 @@ types correctly.
 
 from __future__ import annotations
 
-import base64
-import io
-
 import pytest
-from PIL import Image as PILImage
 
 
 def test_rubric_agent_imports_are_self_contained():
@@ -54,20 +50,12 @@ def test_wrapper_accepts_openai_dicts_without_conversion():
     must pass dicts through unchanged so no adapter is needed."""
     from dom_model.clients.wrapper import _to_oai_messages
 
-    buf = io.BytesIO()
-    PILImage.new("RGB", (4, 4), (255, 0, 0)).save(buf, format="PNG")
-    b64 = base64.b64encode(buf.getvalue()).decode()
-
     messages = [
         {"role": "system", "content": "You are a helpful AI assistant."},
         {
             "role": "user",
             "content": [
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "high"},
-                },
-                {"type": "text", "text": "score the image"},
+                {"type": "text", "text": "score the DOM-model state"},
             ],
         },
     ]

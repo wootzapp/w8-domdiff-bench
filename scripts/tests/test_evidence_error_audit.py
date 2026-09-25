@@ -26,6 +26,8 @@ def _result(*, dom: bool, final_points: float) -> dict:
     state_key = "dom_model_state_idx" if dom else "screenshot_idx"
     evidence_key = "dom_model_evidence" if dom else "screenshot_evidence"
     evidence = "DOM says Saved" if dom else "Screenshot says no readable value"
+    points_field = "post_dom_earned_points" if dom else "post_image_earned_points"
+    justification_field = "post_dom_justification" if dom else "post_image_justification"
     return {
         "task_id": "task-fixture",
         "rubric_sha256": "rubric-hash",
@@ -52,11 +54,11 @@ def _result(*, dom: bool, final_points: float) -> dict:
                 {
                     "criterion": "The saved value is visible",
                     "earned_points": 0,
-                    "post_image_earned_points": final_points,
+                    points_field: final_points,
                     "max_points": 2,
                     "justification": "action-only justification",
                     "applicable_evidence": evidence,
-                    "post_image_justification": f"final justification {evidence}",
+                    justification_field: f"final justification {evidence}",
                     "reality_notes": f"reality {evidence}",
                 }
             ],

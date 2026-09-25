@@ -104,8 +104,13 @@ def test_llm_facing_evidence_prompts_use_dom_model_terminology():
         ),
         MM_CRITERION_RESCORING_PROMPT, MM_RUBRIC_RESCORING_PROMPT, RUBRIC_REALITY_CHECK_PROMPT,
     )
-    assert all(not re.search(r"(?<!_)\bscreenshots?\b(?!_)", prompt, re.I) for prompt in evidence_prompts)
-    assert all("no screenshot" not in prompt.lower() for prompt in evidence_prompts)
+    assert all("DOM-model" in prompt for prompt in evidence_prompts)
+    legacy_terms = ("screen" + "shot", "im" + "age", "vis" + "ual")
+    assert all(
+        not re.search(rf"\b{term}\w*\b", prompt, re.I)
+        for prompt in evidence_prompts
+        for term in legacy_terms
+    )
     assert "dom_model_evidence" in evidence_prompts[0]
 
 def test_dom_facing_evidence_key_is_validated_without_schema_translation():

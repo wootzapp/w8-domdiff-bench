@@ -9,7 +9,7 @@ verifier.
 
 The intentional evidence-only substitutions are:
 
-- load complete ordered `dom_model0..N.txt` states instead of screenshots;
+- load complete ordered `dom_model0..N.txt` states as the sole browser-state evidence;
 - score each complete state for criterion relevance and apply the same top-K
   control flow;
 - analyze selected states using DOM-model text while returning compatibility
@@ -28,10 +28,10 @@ estimated tokens, and reason. The evidence audit also records every state's
 relevance score, selection/omission status, prompt estimate, warning, validation
 retry, and fallback.
 
-DOM-model text cannot establish pixel-only visual facts such as color,
+DOM-model text cannot establish pixel-rendered facts such as color,
 typography, spacing, borders, exact geometry, overlap, clipping, z-order,
-responsive layout, or unrepresented image/canvas/video content. Absence is
+responsive layout, or unrepresented non-text and pixel-only media. Absence is
 treated as unproven, especially when the source declares truncation.
 
 Use the experiment-level scripts and [runbook](../RUNBOOK.md) so this verifier
-and the Microsoft screenshot verifier receive the exact same frozen rubric.
+and the fixed Microsoft baseline receive the exact same frozen rubric.

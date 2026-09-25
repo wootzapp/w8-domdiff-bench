@@ -88,7 +88,10 @@ def validate_rubric(rubric: object) -> float:
         if isinstance(points, bool) or not isinstance(points, (int, float)) or not math.isfinite(float(points)) or float(points) <= 0:
             raise ValueError(f"Rubric item {index} max_points must be positive and finite")
         denominator += float(points)
-        for scored in ("justification", "earned_points", "post_image_earned_points", "post_evidence_earned_points"):
+        for scored in (
+            "justification", "earned_points", "post_image_earned_points",
+            "post_dom_earned_points", "post_evidence_earned_points",
+        ):
             if item.get(scored) not in (None, ""):
                 raise ValueError(f"Frozen rubric item {index} is already scored: {scored}")
     if not math.isfinite(denominator) or denominator <= 0:

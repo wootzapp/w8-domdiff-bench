@@ -155,7 +155,10 @@ def _status_signals(analyses: list[dict[str, Any]], scoring: dict[str, Any]) -> 
         )
     fields.extend(
         str(scoring.get(key) or "")
-        for key in ("applicable_evidence", "post_image_justification", "reality_notes")
+        for key in (
+            "applicable_evidence", "post_image_justification",
+            "post_dom_justification", "reality_notes",
+        )
     )
     text = "\n".join(fields)
     return {
@@ -168,22 +171,37 @@ def _extract_mode(result: dict[str, Any], mode: str, criterion_index: int) -> di
     intermediate = result.get("intermediate_mm_rubric_steps") or {}
     scoring_rows = intermediate.get("step6_rescoring_summary") or []
     scoring = scoring_rows[criterion_index]
+    points_field = "post_dom_earned_points" if mode == "dom_model" else "post_image_earned_points"
+    justification_field = (
+        "post_dom_justification" if mode == "dom_model" else "post_image_justification"
+    )
+    points_value = scoring.get(points_field)
+    justification_value = scoring.get(justification_field)
+    if mode == "dom_model":
+        if points_value is None:
+            points_value = scoring.get("post_image_earned_points")
+        if justification_value is None:
+            justification_value = scoring.get("post_image_justification")
     analyses = _analysis_rows(intermediate, criterion_index)
     extracted_scoring = {
         key: scoring.get(key)
         for key in (
             "criterion",
             "earned_points",
-            "post_image_earned_points",
+            points_field,
             "max_points",
             "justification",
             "applicable_evidence",
-            "post_image_justification",
+            justification_field,
             "reality_notes",
             "penalty",
         )
         if key in scoring
     }
+    if points_value is not None:
+        extracted_scoring[points_field] = points_value
+    if justification_value is not None:
+        extracted_scoring[justification_field] = justification_value
     return {
         "mode": mode,
         "relevance_scores": _relevance_rows(intermediate, criterion_index),
@@ -191,11 +209,15 @@ def _extract_mode(result: dict[str, Any], mode: str, criterion_index: int) -> di
         "evidence_analyses": analyses,
         "scoring": extracted_scoring,
         "verifier_evidence": scoring.get("applicable_evidence", ""),
-        "verifier_justification": scoring.get(
-            "post_image_justification", scoring.get("justification", "")
+        "verifier_justification": (
+            scoring.get("justification", "")
+            if justification_value is None
+            else justification_value
         ),
         "action_only_points": scoring.get("earned_points"),
-        "final_points": scoring.get("post_image_earned_points", scoring.get("earned_points")),
+        "final_points": (
+            scoring.get("earned_points") if points_value is None else points_value
+        ),
         "max_points": scoring.get("max_points"),
         "evidence_signals": _status_signals(analyses, scoring),
         "manual_review": {

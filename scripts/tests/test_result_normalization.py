@@ -5,7 +5,7 @@ import pytest
 
 from scripts.compare_results import compare
 from scripts.common import CANONICAL_SETTINGS, canonical_sha256
-from scripts.normalize_results import normalize_screenshot
+from scripts.normalize_results import normalize_dom_model, normalize_screenshot
 
 
 def _run(mode):
@@ -51,7 +51,18 @@ def test_comparison_rejects_frozen_contract_drift(drift):
 
 
 
-def test_normalizer_accepts_microsoft_conditional_denominator(tmp_path):
+@pytest.mark.parametrize(
+    ("points_field", "normalizer"),
+    [
+        ("post_image_earned_points", normalize_screenshot),
+        ("post_dom_earned_points", normalize_dom_model),
+        ("post_image_earned_points", normalize_dom_model),
+    ],
+    ids=("screenshot", "dom-native", "dom-historical"),
+)
+def test_normalizer_accepts_conditional_denominator(
+    tmp_path, points_field, normalizer
+):
     items = [
         {
             "criterion": "always",
@@ -89,13 +100,13 @@ def test_normalizer_accepts_microsoft_conditional_denominator(tmp_path):
                     "criterion": "always",
                     "max_points": 7,
                     "earned_points": 7,
-                    "post_image_earned_points": 7,
+                    points_field: 7,
                 },
                 {
                     "criterion": "conditional",
                     "max_points": 3,
                     "earned_points": 0,
-                    "post_image_earned_points": 0,
+                    points_field: 0,
                     "condition": "Only when unavailable",
                     "is_condition_met": False,
                 },
@@ -105,7 +116,7 @@ def test_normalizer_accepts_microsoft_conditional_denominator(tmp_path):
     result_file = tmp_path / "result.json"
     result_file.write_text(json.dumps(result))
 
-    normalized = normalize_screenshot(
+    normalized = normalizer(
         result_file,
         input_task=tmp_path,
         rubric_file=rubric_file,

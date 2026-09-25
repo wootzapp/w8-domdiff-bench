@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import logging
-import math
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Union
 
@@ -19,7 +18,6 @@ from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from .messages import (
     CreateResult,
-    ImageObj,
     LLMMessage,
     RequestUsage,
     ToolSchema,
@@ -86,20 +84,6 @@ def _resolve_token_provider(
 class ModelCapabilities:
     json_output: bool = True
     function_calling: bool = True
-    vision: bool = False
-
-
-def _image_token_cost(width: int = 1920, height: int = 1080) -> int:
-    """Approximate image token cost (OpenAI high-detail vision pricing)."""
-    w, h = float(width), float(height)
-    if max(w, h) > 2048:
-        scale = 2048 / max(w, h)
-        w, h = w * scale, h * scale
-    if min(w, h) > 768:
-        scale = 768 / min(w, h)
-        w, h = w * scale, h * scale
-    tiles = math.ceil(w / 512) * math.ceil(h / 512)
-    return tiles * 170 + 85
 
 
 _VLLM_ONLY_SAMPLING_KEYS = frozenset(
@@ -174,13 +158,9 @@ class ChatCompletionClient:
                 for item in content:
                     if isinstance(item, str):
                         total += len(encoding.encode(item))
-                    elif isinstance(item, ImageObj):
-                        total += _image_token_cost(item.image.width, item.image.height)
                     elif isinstance(item, dict):
                         item_type = item.get("type", "")
-                        if item_type in ("image_url", "image"):
-                            total += _image_token_cost()
-                        elif item_type == "text":
+                        if item_type == "text":
                             total += len(encoding.encode(item.get("text", "")))
                         else:
                             total += len(encoding.encode(str(item)))
@@ -453,7 +433,11 @@ class AzureMLClientWrapper(ChatCompletionClient):
         super().__init__(max_tokens=max_tokens)
         self.model = kwargs.pop("model", "unknown")
         self._score_url = kwargs.pop("score_url")
-        self._capabilities = ModelCapabilities(**kwargs.pop("model_capabilities", {}))
+        capability_config = kwargs.pop("model_capabilities", {})
+        self._capabilities = ModelCapabilities(
+            json_output=capability_config.get("json_output", True),
+            function_calling=capability_config.get("function_calling", True),
+        )
         self._max_completion_tokens = kwargs.pop("max_completion_tokens", 4096)
 
         self._token_scope = kwargs.pop("azure_ad_token_scope", "https://ml.azure.com")
@@ -482,7 +466,6 @@ class AzureMLClientWrapper(ChatCompletionClient):
         extra_create_args: Mapping[str, Any] = {},
     ) -> CreateResult:
         parts: list[str] = []
-        image_b64: Optional[str] = None
         for msg in messages:
             if isinstance(msg, dict):
                 role = msg.get("role", "user")
@@ -493,17 +476,11 @@ class AzureMLClientWrapper(ChatCompletionClient):
 
             if isinstance(content, list):
                 for item in content:
-                    if isinstance(item, ImageObj):
-                        image_b64 = item.to_base64()
-                    elif isinstance(item, str):
+                    if isinstance(item, str):
                         parts.append(item)
                     elif isinstance(item, dict):
                         if item.get("type") == "text":
                             parts.append(item["text"])
-                        elif item.get("type") == "image_url":
-                            url = item.get("image_url", {}).get("url", "")
-                            if url.startswith("data:"):
-                                image_b64 = url.split(",", 1)[-1]
             elif isinstance(content, str) and content:
                 prefix = f"[{role}] " if role == "system" else ""
                 parts.append(prefix + content)
@@ -512,9 +489,6 @@ class AzureMLClientWrapper(ChatCompletionClient):
             "user_prompt": "\n".join(parts),
             "max_new_tokens": self._max_completion_tokens,
         }
-        if image_b64:
-            data["image_input"] = image_b64
-
         token = self._token_provider() if self._token_provider else ""
         headers = {
             "Content-Type": "application/json",

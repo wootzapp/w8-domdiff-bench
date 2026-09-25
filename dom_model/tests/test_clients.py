@@ -17,7 +17,6 @@ import sys
 from types import SimpleNamespace
 
 import pytest
-from PIL import Image as PILImage
 
 
 def test_oai_clients_does_not_pull_autogen():
@@ -45,18 +44,16 @@ def test_message_to_openai_format_text_only():
     }
 
 
-def test_message_to_openai_format_multimodal():
-    from dom_model.clients import ImageObj, UserMessage, message_to_openai_format
+def test_message_to_openai_format_text_parts():
+    from dom_model.clients import UserMessage, message_to_openai_format
 
-    pil = PILImage.new("RGB", (4, 4), (10, 20, 30))
-    msg = UserMessage(content=["look", ImageObj.from_pil(pil)])
+    msg = UserMessage(content=["look", {"type": "text", "text": "DOM state"}])
     out = message_to_openai_format(msg)
     assert out["role"] == "user"
     parts = out["content"]
     assert len(parts) == 2
     assert parts[0] == {"type": "text", "text": "look"}
-    assert parts[1]["type"] == "image_url"
-    assert parts[1]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert parts[1] == {"type": "text", "text": "DOM state"}
 
 
 def test_request_usage_addition():
@@ -176,4 +173,3 @@ def test_client_wrapper_from_config_returns_chat_client(monkeypatch):
     assert isinstance(client, ChatCompletionClient)
     assert client.metadata["model"] == "gpt-4o"
     assert client.endpoint == "gpt-4o"
-

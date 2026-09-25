@@ -99,8 +99,16 @@ def preflight_dom_model_task(
     answer = json.loads((task_dir / "final_answer.json").read_text(encoding="utf-8"))
     if not isinstance(answer, dict) or not isinstance(answer.get("final_answer"), str):
         raise ValueError("final_answer.json must contain final_answer text")
-    if "screenshots" in answer or answer.get("token_usage") != {}:
-        raise ValueError("DOM-model final answer must omit screenshots and contain token_usage: {}")
+    allowed_answer_fields = {
+        "env_state_json", "env_state_raw", "final_answer", "is_aborted",
+        "is_rel_paths", "token_usage",
+    }
+    unexpected_answer_fields = sorted(set(answer) - allowed_answer_fields)
+    if unexpected_answer_fields or answer.get("token_usage") != {}:
+        raise ValueError(
+            "DOM-model final answer must contain only canonical fields and token_usage: {}; "
+            f"unexpected fields: {unexpected_answer_fields}"
+        )
     allowed = {
         "task_data.json", "web_surfer.log", "final_answer.json",
         "task_data_with_canonical_rubric.json", *(state.path.name for state in states),
@@ -236,7 +244,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-evidence-per-criterion", type=int, default=5)
     # Keep Microsoft's native evidence-analysis behavior. A positive value
     # drops low-relevance top-K states before analysis and would make the DOM
-    # verifier structurally different from the screenshot baseline.
+    # verifier structurally different from the fixed baseline.
     parser.add_argument("--min-relevance-threshold", type=int, default=0)
     parser.add_argument("--majority-vote-instances", type=int, default=1)
     parser.add_argument("--dom-model-state-char-budget", type=int, default=350000)

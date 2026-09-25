@@ -98,7 +98,7 @@ DOM Evidence Pipeline (9 Steps)
 
   Step 6 — Multimodal Rescoring:
     Rescore each criterion using DOM state evidence + action history + reality
-    notes. Produces post_image_earned_points and post_image_justification. Two
+    notes. Produces post_dom_earned_points and post_dom_justification. Two
     modes:
       * Whole-rubric (default): 1 gpt-5 call rescores all criteria in a single
         pass, seeing the full rubric context for better cascading-dependency
@@ -131,7 +131,7 @@ DOM Evidence Pipeline (9 Steps)
 
   Final — Compute Scores:
     Pure computation. Computes total_max_points and total_earned_points using
-    post_image_earned_points, respecting conditional criteria rules (unmet
+    post_dom_earned_points, respecting conditional criteria rules (unmet
     conditions excluded from both numerator and denominator).
 
   Step 8 — Outcome Verification:
@@ -227,7 +227,7 @@ Cross-Cutting Design Principles
      Chronologically ordered dom_states with latest-state-wins semantics.
      The reality check (Step 5) grounds rubric assumptions in observed reality.
 
-     Agent claims are evaluated against visual evidence using five categories:
+     Agent claims are evaluated against DOM-model evidence using five categories:
 
      ┌─────────────────────────────────────────┬──────────┬─────────────────────────────────────┐
      │ Category                                │ Penalize │ Example                             │
@@ -247,9 +247,9 @@ Cross-Cutting Design Principles
      │ dom_states show no evidence of X, AND   │          │ pages → agent concludes "no online  │
      │ X is not commonly known to exist         │          │ booking available"                  │
      ├─────────────────────────────────────────┼──────────┼─────────────────────────────────────┤
-     │ Visual confirmation without explicit    │    NO    │ Agent found female cardiologists    │
+     │ DOM confirmation without explicit       │    NO    │ Agent found female cardiologists    │
      │ statement: agent omits justification     │          │ but didn't say "female" — photos    │
-     │ but dom_states visually confirm result  │          │ in dom_states confirm it           │
+     │ but dom_states explicitly confirm result  │          │ in dom_states confirm it           │
      └─────────────────────────────────────────┴──────────┴─────────────────────────────────────┘
 
 Verifier Comparison — How Each Scoring Component Handles Different Scenarios
@@ -291,7 +291,7 @@ penalize and what they forgive:
   substitutions)          │              │  (Step 7)    │  failure     │
   ────────────────────────┼──────────────┼──────────────┼──────────────┤
   Hallucination /         │              │   PENALIZE   │   PENALIZE   │
-  grounding error         │   N/A        │  Visual      │  Wrong info  │
+  grounding error         │   N/A        │  DOM         │  Wrong info  │
   (claims contradicted    │              │  evidence    │  = failure   │
   by dom_states)         │              │  overrides   │              │
   └────────────────────────────────────────────────────────────────────┘
@@ -420,9 +420,9 @@ Each criterion in items contains:
   max_points : int              — Maximum possible points.
   earned_points : str/int       — Points from action-only scoring (Step 0c).
   justification : str           — Reasoning for action-only score.
-  post_image_earned_points : str/int — Rescored points after MM analysis
+  post_dom_earned_points : str/int — Rescored points after MM analysis
                                        (Step 6).
-  post_image_justification : str — Rescoring justification.
+  post_dom_justification : str — Rescoring justification.
   is_condition_met : bool       — (Conditional criteria only) Whether the
                                   condition applies.
   applicable_evidence : List[str] — DOM state IDs with relevant evidence.
@@ -651,18 +651,18 @@ def verify_rubric(d: dict) -> bool:
                 assert isinstance(
                     item["is_condition_met"], bool
                 ), f"'is_condition_met' must be a boolean for criterion '{item['criterion']}'"
-            if "post_image_justification" in item:
+            if "post_dom_justification" in item:
                 assert (
-                    isinstance(item["post_image_justification"], str)
-                    and item["post_image_justification"]
-                ), "'post_image_justification' should be a non-empty string"
-            if "post_image_earned_points" in item:
+                    isinstance(item["post_dom_justification"], str)
+                    and item["post_dom_justification"]
+                ), "'post_dom_justification' should be a non-empty string"
+            if "post_dom_earned_points" in item:
                 assert isinstance(
-                    item["post_image_earned_points"], (int, float)
-                ), "'post_image_earned_points' should be a number"
+                    item["post_dom_earned_points"], (int, float)
+                ), "'post_dom_earned_points' should be a number"
                 assert (
-                    0 <= item["post_image_earned_points"] <= item["max_points"]
-                ), f"'post_image_earned_points' ({item['post_image_earned_points']}) must be between 0 and max_points ({item['max_points']})"
+                    0 <= item["post_dom_earned_points"] <= item["max_points"]
+                ), f"'post_dom_earned_points' ({item['post_dom_earned_points']}) must be between 0 and max_points ({item['max_points']})"
     return True
 
 
@@ -1089,7 +1089,7 @@ class MMRubricAgent(VerifierAgent):
         """Call a :class:`ChatCompletionClient` and return the response text.
 
         ``messages`` is a list of OpenAI-chat-completion dicts (with
-        ``image_url`` blocks for dom_states). The wrappers in
+        text content blocks for DOM-model states). The wrappers in
         :mod:`dom_model.clients.wrapper` accept these dicts directly
         — no message-type conversion needed.
         """
@@ -1263,8 +1263,8 @@ class MMRubricAgent(VerifierAgent):
                 for key in [
                     "is_condition_met",
                     "applicable_evidence",
-                    "post_image_justification",
-                    "post_image_earned_points",
+                    "post_dom_justification",
+                    "post_dom_earned_points",
                     "reality_notes",
                 ]:
                     item.pop(key, None)
@@ -1740,10 +1740,10 @@ class MMRubricAgent(VerifierAgent):
                 criterion["applicable_evidence"] = (
                     "N/A — condition not met, criterion skipped."
                 )
-                criterion["post_image_justification"] = (
+                criterion["post_dom_justification"] = (
                     "Condition not met; criterion does not apply and was not rescored."
                 )
-                criterion["post_image_earned_points"] = 0.0
+                criterion["post_dom_earned_points"] = 0.0
                 continue
 
             analyses = sorted(
@@ -1793,11 +1793,11 @@ class MMRubricAgent(VerifierAgent):
                     rescore = json.loads(response_text)
                     self._validate_rescore(rescore, criterion["max_points"])
                     criterion["applicable_evidence"] = rescore["applicable_evidence"]
-                    criterion["post_image_justification"] = rescore[
-                        "post_image_justification"
+                    criterion["post_dom_justification"] = rescore[
+                        "post_dom_justification"
                     ]
-                    criterion["post_image_earned_points"] = float(
-                        rescore["post_image_earned_points"]
+                    criterion["post_dom_earned_points"] = float(
+                        rescore["post_dom_earned_points"]
                     )
                     break
                 except Exception as e:
@@ -1816,10 +1816,10 @@ class MMRubricAgent(VerifierAgent):
                 logger.warning(
                     f"Failed to rescore criterion {c_idx} after {self.config.max_iters} attempts. Last error: {last_error}"
                 )
-                criterion["post_image_justification"] = (
+                criterion["post_dom_justification"] = (
                     f"Rescoring failed after {self.config.max_iters} attempts, keeping baseline score. Last error: {last_error}"
                 )
-                criterion["post_image_earned_points"] = float(
+                criterion["post_dom_earned_points"] = float(
                     criterion.get("earned_points", 0)
                 )
         return rubric
@@ -1846,10 +1846,10 @@ class MMRubricAgent(VerifierAgent):
                 criterion["applicable_evidence"] = (
                     "N/A — condition not met, criterion skipped."
                 )
-                criterion["post_image_justification"] = (
+                criterion["post_dom_justification"] = (
                     "Condition not met; criterion does not apply and was not rescored."
                 )
-                criterion["post_image_earned_points"] = 0.0
+                criterion["post_dom_earned_points"] = 0.0
                 skipped.add(c_idx)
 
         full_rubric = self._build_full_rubric_with_baselines(rubric)
@@ -1898,8 +1898,8 @@ class MMRubricAgent(VerifierAgent):
                     # Validate required fields (inline with Item prefix, matching original)
                     required_fields = [
                         "applicable_evidence",
-                        "post_image_justification",
-                        "post_image_earned_points",
+                        "post_dom_justification",
+                        "post_dom_earned_points",
                     ]
                     missing_fields = []
                     type_errors = []
@@ -1910,7 +1910,7 @@ class MMRubricAgent(VerifierAgent):
                         if field not in item:
                             missing_fields.append(field)
                         elif field in (
-                            "post_image_justification",
+                            "post_dom_justification",
                             "applicable_evidence",
                         ):
                             if not isinstance(item[field], str):
@@ -1919,7 +1919,7 @@ class MMRubricAgent(VerifierAgent):
                                 )
                             elif not item[field]:
                                 type_errors.append(f"Item {i}: {field} cannot be empty")
-                        elif field == "post_image_earned_points":
+                        elif field == "post_dom_earned_points":
                             if not isinstance(item[field], (int, float)):
                                 type_errors.append(
                                     f"Item {i}: {field} must be a number, got {type(item[field]).__name__}"
@@ -1945,11 +1945,11 @@ class MMRubricAgent(VerifierAgent):
                     rubric["items"][i]["applicable_evidence"] = item[
                         "applicable_evidence"
                     ]
-                    rubric["items"][i]["post_image_justification"] = item[
-                        "post_image_justification"
+                    rubric["items"][i]["post_dom_justification"] = item[
+                        "post_dom_justification"
                     ]
-                    rubric["items"][i]["post_image_earned_points"] = float(
-                        item["post_image_earned_points"]
+                    rubric["items"][i]["post_dom_earned_points"] = float(
+                        item["post_dom_earned_points"]
                     )
                 return rubric
             except Exception as e:
@@ -1970,10 +1970,10 @@ class MMRubricAgent(VerifierAgent):
         )
         for i, criterion in enumerate(rubric["items"]):
             if i not in skipped:
-                criterion["post_image_justification"] = (
+                criterion["post_dom_justification"] = (
                     f"Rescoring failed after {self.config.max_iters} attempts, keeping baseline score. Last error: {last_error}"
                 )
-                criterion["post_image_earned_points"] = float(
+                criterion["post_dom_earned_points"] = float(
                     criterion.get("earned_points", 0)
                 )
         return rubric
@@ -1982,8 +1982,8 @@ class MMRubricAgent(VerifierAgent):
     def _validate_rescore(rescore: dict, max_points: float) -> None:
         required_fields = [
             "applicable_evidence",
-            "post_image_justification",
-            "post_image_earned_points",
+            "post_dom_justification",
+            "post_dom_earned_points",
         ]
         missing_fields = []
         type_errors = []
@@ -1991,14 +1991,14 @@ class MMRubricAgent(VerifierAgent):
         for field in required_fields:
             if field not in rescore:
                 missing_fields.append(field)
-            elif field in ("post_image_justification", "applicable_evidence"):
+            elif field in ("post_dom_justification", "applicable_evidence"):
                 if not isinstance(rescore[field], str):
                     type_errors.append(
                         f"{field} must be a string, got {type(rescore[field]).__name__}"
                     )
                 elif not rescore[field]:
                     type_errors.append(f"{field} cannot be empty")
-            elif field == "post_image_earned_points":
+            elif field == "post_dom_earned_points":
                 if not isinstance(rescore[field], (int, float)):
                     type_errors.append(
                         f"{field} must be a number, got {type(rescore[field]).__name__}"
@@ -2084,8 +2084,8 @@ class MMRubricAgent(VerifierAgent):
                         "criterion",
                         "description",
                         "max_points",
-                        "post_image_justification",
-                        "post_image_earned_points",
+                        "post_dom_justification",
+                        "post_dom_earned_points",
                     ]
                     missing_fields = [
                         f for f in required_penalty_fields if f not in penalty
@@ -2117,12 +2117,12 @@ class MMRubricAgent(VerifierAgent):
                         raise ValueError(
                             f"Penalty criterion {i}: 'max_points' must be a positive number"
                         )
-                    if penalty["post_image_earned_points"] != 0:
+                    if penalty["post_dom_earned_points"] != 0:
                         raise ValueError(
-                            f"Penalty criterion {i}: 'post_image_earned_points' must be 0 for penalties"
+                            f"Penalty criterion {i}: 'post_dom_earned_points' must be 0 for penalties"
                         )
-                    penalty["earned_points"] = penalty["post_image_earned_points"]
-                    penalty["justification"] = penalty["post_image_justification"]
+                    penalty["earned_points"] = penalty["post_dom_earned_points"]
+                    penalty["justification"] = penalty["post_dom_justification"]
 
                 if result.get("requires_penalty"):
                     for p in result["penalty_criteria"]:
@@ -2701,7 +2701,7 @@ class MMRubricAgent(VerifierAgent):
     # ------------------------------------------------------------------
     @staticmethod
     def _compute_final_scores(
-        rubric: dict, earned_points_field: str = "post_image_earned_points"
+        rubric: dict, earned_points_field: str = "post_dom_earned_points"
     ) -> Dict[str, float]:
         def sum_recursive(items):
             total_max, total_earned = 0.0, 0.0
@@ -2765,11 +2765,11 @@ class MMRubricAgent(VerifierAgent):
             {
                 "criterion": item.get("criterion", ""),
                 "earned_points": item.get("earned_points"),
-                "post_image_earned_points": item.get("post_image_earned_points"),
+                "post_dom_earned_points": item.get("post_dom_earned_points"),
                 "max_points": item.get("max_points"),
                 "justification": item.get("justification", ""),
                 "applicable_evidence": item.get("applicable_evidence", ""),
-                "post_image_justification": item.get("post_image_justification", ""),
+                "post_dom_justification": item.get("post_dom_justification", ""),
                 "reality_notes": item.get("reality_notes", ""),
                 **({"condition": item["condition"]} if "condition" in item else {}),
                 **(
@@ -2837,10 +2837,10 @@ class MMRubricAgent(VerifierAgent):
 
             if j < target_criterion_idx:
                 rescored_earned = criterion.get(
-                    "post_image_earned_points", baseline_earned
+                    "post_dom_earned_points", baseline_earned
                 )
                 rescored_justification = criterion.get(
-                    "post_image_justification", baseline_justification
+                    "post_dom_justification", baseline_justification
                 )
                 lines.append(f'--- Criterion {j}: "{name}" [ALREADY RESCORED] ---')
                 lines.append(f"Description: {description}")
@@ -2970,10 +2970,10 @@ class MMRubricAgent(VerifierAgent):
                 f"Baseline Score (action-only): {item.get('earned_points', 'N/A')}/{item.get('max_points', 0)}"
             )
             lines.append(
-                f"Final Score (post-image): {item.get('post_image_earned_points', 'N/A')}/{item.get('max_points', 0)}"
+                f"Final Score (post-DOM): {item.get('post_dom_earned_points', 'N/A')}/{item.get('max_points', 0)}"
             )
             lines.append(
-                f'Final Justification: "{item.get("post_image_justification", "N/A")}"'
+                f'Final Justification: "{item.get("post_dom_justification", "N/A")}"'
             )
             if item.get("penalty"):
                 lines.append("[PENALTY CRITERION]")

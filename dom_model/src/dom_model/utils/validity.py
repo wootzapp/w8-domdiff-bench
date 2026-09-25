@@ -11,7 +11,7 @@ evaluates **two axes** drawn from the error taxonomy:
   2. **Invalid Task**   (Category 8)  — impossible, illegal, NSFW, RAI
 
 Only the task description, starting URL/app, and current date are
-required — no screenshots, action history, or rubric context.
+required — no external evidence, action history, or rubric context.
 
 Usage
 -----

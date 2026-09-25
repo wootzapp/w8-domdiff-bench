@@ -16,7 +16,9 @@ from .common import (
 )
 
 
-def _criteria(items: list[dict[str, Any]], frozen_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _criteria(
+    items: list[dict[str, Any]], frozen_items: list[dict[str, Any]], *, mode: str
+) -> list[dict[str, Any]]:
     if len(items) != len(frozen_items):
         raise ValueError("Result lacks complete criterion rescoring details")
     rows: list[dict[str, Any]] = []
@@ -25,16 +27,30 @@ def _criteria(items: list[dict[str, Any]], frozen_items: list[dict[str, Any]]) -
             raise ValueError(f"Criterion order/name drift at index {index}")
         if float(item.get("max_points", 0)) != float(frozen["max_points"]):
             raise ValueError(f"Criterion maximum-point drift at index {index}")
+        points_field = "post_dom_earned_points" if mode == "dom_model" else "post_image_earned_points"
+        justification_field = (
+            "post_dom_justification" if mode == "dom_model" else "post_image_justification"
+        )
+        legacy_points = item.get("post_image_earned_points") if mode == "dom_model" else None
+        legacy_justification = item.get("post_image_justification") if mode == "dom_model" else None
+        final_points = item.get(points_field, legacy_points)
+        final_justification = item.get(justification_field, legacy_justification)
         rows.append(
             {
                 "criterion": item["criterion"],
                 "action_only_points": float(item.get("earned_points", 0) or 0),
-                "final_points": float(item.get("post_image_earned_points", item.get("earned_points", 0)) or 0),
+                "final_points": float(
+                    item.get("earned_points", 0) if final_points is None else final_points
+                ),
                 "max_points": float(item["max_points"]),
                 "condition": item.get("condition"),
                 "is_condition_met": item.get("is_condition_met"),
                 "is_applicable": item.get("is_condition_met") is not False,
-                "final_justification": item.get("post_image_justification", item.get("justification", "")),
+                "final_justification": (
+                    item.get("justification", "")
+                    if final_justification is None
+                    else final_justification
+                ),
                 "penalty": bool(item.get("penalty", False)),
             }
         )
@@ -63,7 +79,7 @@ def _normalize(
         raise ValueError(f"{mode} scoring artifact reports rubric generation")
     intermediate = raw.get("intermediate_mm_rubric_steps") or {}
     criterion_rows = intermediate.get("step6_rescoring_summary") or []
-    criteria = _criteria(criterion_rows, frozen.rubric["items"])
+    criteria = _criteria(criterion_rows, frozen.rubric["items"], mode=mode)
     frozen_denominator = sum(item["max_points"] for item in criteria)
     effective_denominator = sum(
         item["max_points"] for item in criteria if item["is_applicable"]
@@ -139,4 +155,3 @@ def normalize_screenshot(result_path: str | Path, **kwargs: Any) -> dict[str, An
 
 def normalize_dom_model(result_path: str | Path, **kwargs: Any) -> dict[str, Any]:
     return _normalize(result_path, mode="dom_model", **kwargs)
-

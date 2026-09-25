@@ -35,6 +35,8 @@ def _result(*, dom: bool) -> dict:
     }
     if dom:
         analysis["dom_model_state_idx"] = 1
+    points_field = "post_dom_earned_points" if dom else "post_image_earned_points"
+    justification_field = "post_dom_justification" if dom else "post_image_justification"
     return {
         "task_id": "task-item-fixture",
         "rubric_sha256": "item-rubric-hash",
@@ -49,11 +51,11 @@ def _result(*, dom: bool) -> dict:
                 {
                     "criterion": "Report the publisher",
                     "earned_points": 0,
-                    "post_image_earned_points": 0 if dom else 2,
+                    points_field: 0 if dom else 2,
                     "max_points": 2,
                     "justification": "Action-only output.",
                     "applicable_evidence": evidence,
-                    "post_image_justification": evidence,
+                    justification_field: evidence,
                     "reality_notes": evidence,
                 }
             ],
