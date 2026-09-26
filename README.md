@@ -40,3 +40,5 @@ The final rerun outputs are stored under `results/task_01_rerun/` through `resul
 
 The browser task recording harness lives in [`task-recorder/`](task-recorder/).
 See [`task-recorder/README.md`](task-recorder/README.md) for setup and usage.
+
+For comparison initialization and reproducible verifier runs, see [`comparison/README.md`](comparison/README.md).
