@@ -22,7 +22,7 @@ Python 3.10 or newer is required. From a fresh clone, enter the verifier
 folder, create its virtual environment, and install the pinned dependencies:
 
 ```bash
-cd w8-reproducible/verifier
+cd path/to/your/folder/verifier
 
 python3 -m venv .venv
 source .venv/bin/activate
