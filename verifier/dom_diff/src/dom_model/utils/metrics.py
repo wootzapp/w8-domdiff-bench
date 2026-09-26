@@ -1,4 +1,4 @@
-"""Run-receipt helpers shared by the standalone Microsoft runner."""
+"""Rubric receipt helpers for the standalone DOM-diff verifier."""
 
 from __future__ import annotations
 

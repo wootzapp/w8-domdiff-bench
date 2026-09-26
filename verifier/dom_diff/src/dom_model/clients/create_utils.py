@@ -19,8 +19,8 @@ from .wrapper import (
 ENVIRON_KEY_CHAT_COMPLETION_PROVIDER = "CHAT_COMPLETION_PROVIDER"
 ENVIRON_KEY_CHAT_COMPLETION_KWARGS_JSON = "CHAT_COMPLETION_KWARGS_JSON"
 
-# Backwards-compatible aliases for Microsoft baseline-private code that still uses the
-# legacy short names.
+# Backwards-compatible aliases for package-local code that still uses the legacy
+# short names.
 _KWARGS_JSON_KEY = ENVIRON_KEY_CHAT_COMPLETION_KWARGS_JSON
 _PROVIDER_KEY = ENVIRON_KEY_CHAT_COMPLETION_PROVIDER
 

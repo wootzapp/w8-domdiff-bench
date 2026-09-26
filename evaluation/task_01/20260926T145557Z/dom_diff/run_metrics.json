@@ -1,0 +1,158 @@
+{
+  "task_id": "browser_task_001-reddit-ranking-20260915T065615Z",
+  "evidence_mode": "dom_model",
+  "input_task": "/data/isha/w8-reproducible/verifier/.task_01-phase-a-fmt4g5ds/data-dom/task_01",
+  "frozen_rubric_path": "/data/isha/w8-reproducible/evaluation/task_01/20260926T145557Z/frozen_rubric.json",
+  "frozen_rubric_sha256": "cad0525181dcdc4a90bc5cf17f1c0edc766ae1d46f93bd2fda2742dfaf70c176",
+  "phase_a_generation_metrics": "/data/isha/w8-reproducible/evaluation/task_01/20260926T145557Z/rubric_generation_metrics.json",
+  "judge_models": {
+    "judge": "gpt-5.2",
+    "action_and_validity_judge": "o4-mini"
+  },
+  "pipeline_settings": {
+    "rubric_threshold": 0.8,
+    "max_evidence_items_per_criterion": 5,
+    "mm_keypoint_score_threshold": 3,
+    "min_relevance_threshold": 0,
+    "majority_vote_instances": 1,
+    "success_criterion": "outcome"
+  },
+  "trajectory": {
+    "task_id": "browser_task_001-reddit-ranking-20260915T065615Z",
+    "actions": 0,
+    "dom_model_states": 1,
+    "initial_state": 0,
+    "final_state": 0,
+    "alignment": {
+      "task_id": "browser_task_001-reddit-ranking-20260915T065615Z",
+      "action_count": 0,
+      "state_count": 1,
+      "initial_state": 0,
+      "final_state": 0,
+      "actions": [],
+      "transitions": [],
+      "warnings": [
+        {
+          "code": "missing_title",
+          "message": "dom_model0: missing_title",
+          "action_ordinal": null,
+          "state_index": 0
+        }
+      ]
+    },
+    "frozen_rubric_sha256": "cad0525181dcdc4a90bc5cf17f1c0edc766ae1d46f93bd2fda2742dfaf70c176",
+    "criterion_order": [
+      "Use r/LocalLLaMA and apply/verify 'Top' + 'This Week' sorting",
+      "Identify the #1 post under Top/This Week and record its title",
+      "Record the score of the #1 post",
+      "Comply with constraints and stopping condition"
+    ],
+    "maximum_points": [
+      4.0,
+      3.0,
+      2.0,
+      1.0
+    ],
+    "criterion_denominator": 10.0,
+    "sidecar_validated": true,
+    "phase_a_metrics": "/data/isha/w8-reproducible/evaluation/task_01/20260926T145557Z/_inputs/rubric_generation_metrics.json",
+    "phase_a_rubric_generation_calls": 2,
+    "rubric_generation_calls": 0,
+    "package_manifest": {
+      "package": "dom_model",
+      "root": "/data/isha/w8-reproducible/verifier/dom_diff/src/dom_model",
+      "files": 31,
+      "sha256": "3b7c6b1da1469696e01c8b6c9d6b5d240211ede92a6a7ac9499a027de0878916"
+    }
+  },
+  "result": {
+    "process_score": 1.0,
+    "total_earned_points": 10.0,
+    "total_max_points": 10.0,
+    "rubric_is_success": true,
+    "outcome_success": false,
+    "has_failure": true,
+    "first_failure_step": 1,
+    "is_ambiguous": false,
+    "ambiguity_codes": [],
+    "is_invalid": false,
+    "duration_seconds": 111.561
+  },
+  "criteria": [
+    {
+      "criterion": "Use r/LocalLLaMA and apply/verify 'Top' + 'This Week' sorting",
+      "action_only_points": 4.0,
+      "final_points": 4.0,
+      "max_points": 4.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "DOM confirms an uncontrollable access blocker on the subreddit page, preventing verifying/applying the “Top” and “This Week” filters. Under the rubric’s Uncontrollable Blockers principle, the agent should receive full credit for this criterion despite inability to verify the filters, because the UI needed to do so is replaced by the block screen.",
+      "penalty": false
+    },
+    {
+      "criterion": "Identify the #1 post under Top/This Week and record its title",
+      "action_only_points": 3.0,
+      "final_points": 3.0,
+      "max_points": 3.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Because the DOM confirms Reddit blocks access before any posts can be seen, identifying the #1 post title under Top/This Week is impossible due to an uncontrollable blocker. Per the rubric, this warrants full credit for the criterion when the agent reports the inability (which it did).",
+      "penalty": false
+    },
+    {
+      "criterion": "Record the score of the #1 post",
+      "action_only_points": 2.0,
+      "final_points": 2.0,
+      "max_points": 2.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "The blocker prevents viewing any post score. Under Uncontrollable Blockers, the agent earns full credit for reporting that the score cannot be obtained in this environment without signing in/token. (Even though the agent didn’t restate “score unavailable” as a field, it clearly stated it cannot read the title/score due to the block.)",
+      "penalty": false
+    },
+    {
+      "criterion": "Comply with constraints and stopping condition",
+      "action_only_points": 1.0,
+      "final_points": 1.0,
+      "max_points": 1.0,
+      "condition": null,
+      "is_condition_met": null,
+      "is_applicable": true,
+      "final_justification": "Nothing in the DOM suggests the agent violated constraints (no sign-in, no voting/commenting/saving/posting). Stopping after encountering the blocker is consistent with the stopping condition once it’s clear the task cannot proceed without violating constraints.",
+      "penalty": false
+    }
+  ],
+  "llm_calls": {
+    "gpt-5.2": 15,
+    "o4-mini": 3,
+    "total": 18,
+    "api_attempts": 18,
+    "retries": 0,
+    "rubric_generation_calls": 0
+  },
+  "token_usage": {
+    "gpt-5.2": {
+      "prompt_tokens": 51563,
+      "completion_tokens": 7368,
+      "reasoning_tokens": 0,
+      "total_tokens": 58931
+    },
+    "o4-mini": {
+      "prompt_tokens": 13808,
+      "completion_tokens": 3003,
+      "reasoning_tokens": 1920,
+      "total_tokens": 16811
+    },
+    "combined": {
+      "prompt_tokens": 65371,
+      "completion_tokens": 10371,
+      "reasoning_tokens": 1920,
+      "total_tokens": 75742
+    }
+  },
+  "score_artifact": "/data/isha/w8-reproducible/evaluation/task_01/20260926T145557Z/dom_diff/result.json",
+  "raw_instrumentation": "/data/isha/w8-reproducible/evaluation/task_01/20260926T145557Z/dom_diff/result.json",
+  "run_log": "/data/isha/w8-reproducible/evaluation/task_01/20260926T145557Z/dom_diff/run.log"
+}

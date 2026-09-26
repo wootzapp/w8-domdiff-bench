@@ -1,4 +1,4 @@
-"""Tests for ``webtailbench.shared_data_adapter.create_datapoint``.
+"""Tests for the package-local ``dom_model.adapter.create_datapoint``.
 
 Builds a minimal trajectory on disk (action log + FinalAnswer JSON) and verifies the DataPoint it produces
 matches what ``MMRubricAgent._extract_input_from_datapoint`` expects.

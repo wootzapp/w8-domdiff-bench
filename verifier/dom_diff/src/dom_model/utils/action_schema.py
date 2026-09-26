@@ -1,4 +1,4 @@
-"""Canonical Microsoft/FARA action argument schema used by failure analysis."""
+"""Canonical browser-action argument schema used by failure analysis."""
 
 FARA_ACTION_DEFINITIONS: dict[str, set[str]] = {
     "key": {"keys"},

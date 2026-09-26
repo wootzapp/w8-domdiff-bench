@@ -532,7 +532,8 @@ def _build_client_from_endpoint_config(cfg: Any) -> Any:
     """Turn an endpoint-config dict, dict-list, file path, or directory into
     a :class:`dom_model.clients.ChatCompletionClient`.
 
-    Plain dicts are handled by Microsoft baseline's ``create_completion_client_from_env``.
+    Plain dicts are handled by the package-local
+    ``create_completion_client_from_env``.
     Lists of dicts (or file paths resolving to a directory of JSON configs)
     are wrapped in a :class:`GracefulRetryClient` so multiple Azure
     endpoints can be load-balanced and retried — matching the pattern

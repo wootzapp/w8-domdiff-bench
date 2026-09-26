@@ -45,7 +45,7 @@ false. Do not penalize an answer merely because its text is not rendered.
 
 
 def validate_grounded_analysis(analysis: dict) -> str:
-    """Validate the DOM-only additions to Microsoft's evidence-analysis schema."""
+    """Validate the DOM-only additions to the baseline evidence-analysis schema."""
     first_line = analysis["criterion_analysis"].splitlines()[0].strip()
     prefix = "EVIDENCE_STATUS: "
     if not first_line.startswith(prefix):

@@ -1,4 +1,4 @@
-"""Call and provider-token accounting matching Microsoft's standalone runner."""
+"""Call and provider-token accounting for the standalone DOM-diff runner."""
 
 from __future__ import annotations
 
@@ -53,4 +53,3 @@ def usage_dict(client: Any) -> dict[str, int]:
         "reasoning_tokens": reasoning,
         "total_tokens": prompt + completion,
     }
-

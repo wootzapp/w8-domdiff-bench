@@ -1,4 +1,4 @@
-"""Microsoft verifier subclass changing only the four evidence-modality hooks."""
+"""DOM-diff verifier subclass implementing the evidence-modality hooks."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ logger = logging.getLogger("dom_model")
 
 
 class DomModelRubricAgent(MMRubricAgent):
-    """Run Microsoft's pipeline unchanged with full DOM-model states as evidence.
+    """Run the baseline scoring pipeline with full DOM-model states as evidence.
 
     ``_generate_reply`` is deliberately inherited. Only loading, relevance, and
     evidence-analysis hooks are rebound to text evidence.
