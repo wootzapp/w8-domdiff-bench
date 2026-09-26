@@ -218,7 +218,11 @@ def restart_browser_service(env_file: Path) -> None:
 
 
 def browser_container_cdp_url(container_name: str) -> str:
-    """Return the CDP endpoint declared inside the running browser container."""
+    """Return the CDP URL for agent-browser running inside w8-core.
+
+    Its loopback address is container-local and must not be used by host-side
+    CDP clients such as the recorder's direct ChromiumRL connection.
+    """
     completed = subprocess.run(
         [
             "docker",

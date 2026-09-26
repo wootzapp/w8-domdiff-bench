@@ -92,14 +92,59 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(first.endswith("-1234"))
 
     def test_container_command_uses_bundled_agent_browser(self) -> None:
+        command = container_agent_browser_command("w8-core-browser-engine")
         self.assertEqual(
-            container_agent_browser_command("w8-core-browser-engine"),
+            command,
             "docker exec w8-core-browser-engine agent-browser",
+        )
+        client = AgentBrowserClient(
+            command,
+            session="fixture",
+            cdp_url="http://127.0.0.1:9222",
+            timeout=5,
+        )
+        self.assertEqual(
+            client.command,
+            ["docker", "exec", "w8-core-browser-engine", "agent-browser"],
         )
         with self.assertRaisesRegex(
             runner.AgentBrowserBaseError, "container name must not be empty"
         ):
             container_agent_browser_command("  ")
+
+    def test_container_command_reaches_subprocess_as_separate_arguments(self) -> None:
+        client = AgentBrowserClient(
+            container_agent_browser_command("w8-core-browser-engine"),
+            session="fixture",
+            cdp_url="http://127.0.0.1:9222",
+            timeout=5,
+        )
+        completed = MagicMock(
+            returncode=0,
+            stdout="agent-browser 0.27.3\n",
+            stderr="",
+        )
+        with patch(
+            "agent_browser.client.subprocess.run",
+            return_value=completed,
+        ) as run:
+            version = client._invoke_sync(
+                ["--version"],
+                json_output=False,
+                use_session=False,
+            )
+
+        self.assertEqual(version, "agent-browser 0.27.3")
+        self.assertEqual(
+            run.call_args.args[0],
+            [
+                "docker",
+                "exec",
+                "w8-core-browser-engine",
+                "agent-browser",
+                "--version",
+            ],
+        )
 
     def test_runner_defaults_to_w8_core_agent_browser(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -107,8 +152,15 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
             with patch.dict(
                 runner.os.environ,
                 {"CONTAINER_NAME": "fixture-browser"},
-                clear=True,
+                clear=False,
             ):
+                for name in (
+                    "AGENT_BROWSER_COMMAND",
+                    "AGENT_BROWSER_CDP_URL",
+                    "CDP_HOST_PORT",
+                    "RUNNER_CDP_URL",
+                ):
+                    runner.os.environ.pop(name, None)
                 args = runner.parse_args(
                     ["--env-file", str(missing_env)]
                 )
@@ -117,6 +169,31 @@ class AgentBrowserAdapterTests(unittest.IsolatedAsyncioTestCase):
             args.agent_browser_command,
             "docker exec fixture-browser agent-browser",
         )
+        self.assertEqual(args.cdp_url, "http://127.0.0.1:49335")
+        self.assertEqual(args.agent_browser_cdp_url, "http://127.0.0.1:9222")
+
+    def test_runner_host_cdp_default_follows_compose_host_port(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            missing_env = Path(temporary) / "missing.env"
+            with patch.dict(
+                runner.os.environ,
+                {
+                    "CDP_HOST_PORT": "50444",
+                    "CONTAINER_NAME": "fixture-browser",
+                },
+                clear=False,
+            ):
+                for name in (
+                    "AGENT_BROWSER_COMMAND",
+                    "AGENT_BROWSER_CDP_URL",
+                    "RUNNER_CDP_URL",
+                ):
+                    runner.os.environ.pop(name, None)
+                args = runner.parse_args(
+                    ["--env-file", str(missing_env)]
+                )
+
+        self.assertEqual(args.cdp_url, "http://127.0.0.1:50444")
         self.assertEqual(args.agent_browser_cdp_url, "http://127.0.0.1:9222")
 
     def test_missing_layout_box_is_a_recoverable_action_error(self) -> None:

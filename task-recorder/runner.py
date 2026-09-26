@@ -1512,7 +1512,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Do not close other existing non-DevTools page targets on connect",
     )
-    parser.add_argument("--cdp-url", default=os.environ.get("RUNNER_CDP_URL", "http://127.0.0.1:49335"))
+    # The runner is host-side: Compose publishes container port 9222 on host
+    # port 49335. agent-browser runs inside the container and therefore uses a
+    # separate container-local CDP URL below.
+    default_host_cdp_url = (
+        "http://127.0.0.1:"
+        + os.environ.get("CDP_HOST_PORT", "49335")
+    )
+    parser.add_argument(
+        "--cdp-url",
+        default=os.environ.get("RUNNER_CDP_URL", default_host_cdp_url),
+    )
     default_container_name = os.environ.get(
         "CONTAINER_NAME", "w8-core-browser-engine"
     )
