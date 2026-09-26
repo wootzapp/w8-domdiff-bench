@@ -34,7 +34,7 @@ Our initial audit measures **evidence loss**: whether the recording preserves th
 
 We manually audit missing evidence separately from verifier reasoning errors. These results measure evidence preservation across the audited tasks; they do not represent an agent success rate.
 
-The final rerun outputs are stored under `evaluation/task_01_rerun/` through `evaluation/task_100_rerun/`. Each task retains the screenshot-verifier result, DOM-verifier result, and consolidated comparison JSON.
+The final outputs are stored under `evaluation/task_01/` through `evaluation/task_100/`. Each task retains the screenshot-verifier result, DOM-verifier result, and consolidated comparison JSON.
 
 ## Task Recorder
 

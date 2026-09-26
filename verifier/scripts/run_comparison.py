@@ -202,7 +202,7 @@ def commands(
     generation_metrics: Path, eval_config: Path, run_root: Path,
 ) -> dict[str, list[str]]:
     microsoft_output = run_root / "microsoft_verifier"
-    dom_output = run_root / "dom_model"
+    dom_output = run_root / "dom_diff"
     return {
         "microsoft_verifier": [
             sys.executable, "-m", "microsoft_verifier.runner",
@@ -392,7 +392,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     write_json(microsoft_root / "run_metrics.json", microsoft_metrics)
 
-    dom_root = run_root / "dom_model"
+    dom_root = run_root / "dom_diff"
     _run_logged(
         run_commands["dom_model"],
         dom_root / "run.log",

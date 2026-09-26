@@ -1,6 +1,6 @@
 # Data-New Tasks 1–100: Screenshot vs DOM-Model Results
 
-Retained artifacts for each final task are stored under `evaluation/task_XX_rerun/<run-id>/`: `comparison.json`, `microsoft_verifier/result.json`, and `dom_model/result.json`.
+Retained artifacts for each final task are stored under `evaluation/task_XX/<run-id>/`: `comparison.json`, `microsoft_verifier/result.json`, and `dom_diff/result.json`.
 
 
 ## Task 1 — Reddit ranking

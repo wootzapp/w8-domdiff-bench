@@ -78,4 +78,5 @@ calls, omit `--execute`:
 
 Completed runs are stored under `../evaluation/<task>/<run-id>/`. The final
 `comparison.json` and `comparison.md` contain only total and criterion-level
-scores.
+scores. Raw verifier artifacts are stored in the `microsoft_verifier/` and
+`dom_diff/` subfolders of that run.

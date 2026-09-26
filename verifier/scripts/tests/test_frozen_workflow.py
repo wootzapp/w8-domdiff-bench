@@ -139,6 +139,10 @@ def test_both_commands_share_exact_rubric_and_redo_eval(tmp_path):
         values.append(command[command.index("--rubric-file") + 1])
         assert "--redo-eval" in command
     assert values == [str(rubric), str(rubric)]
+    dom_command = built["dom_model"]
+    assert dom_command[dom_command.index("--output") + 1] == str(
+        tmp_path / "run" / "dom_diff"
+    )
     parity = validate_command_parity(built)
     assert parity["min_relevance_threshold"] == "0"
     assert parity["max_evidence_items_per_criterion"] == "5"
