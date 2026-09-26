@@ -44,7 +44,7 @@ def test_phase_b_cli_dry_preflight_writes_nothing(pair_factory, capsys):
         shutil.copy2(pair["rubric"], rubric)
         shutil.copy2(pair["metrics"], metrics)
         run_id = "offline-dry-preflight-must-not-exist"
-        output = repository / "results" / "task1" / run_id
+        output = repository / "evaluation" / "task1" / run_id
         assert not output.exists()
         rc = comparison_main(
             [
@@ -53,7 +53,7 @@ def test_phase_b_cli_dry_preflight_writes_nothing(pair_factory, capsys):
                 "--rubric-file", str(rubric),
                 "--generation-metrics", str(metrics),
                 "--eval-config", str(pair["config"]),
-                "--results-root", str(repository / "results"),
+                "--results-root", str(repository / "evaluation"),
                 "--run-id", run_id,
             ]
         )

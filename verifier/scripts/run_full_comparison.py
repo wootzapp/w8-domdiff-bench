@@ -35,7 +35,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--data-root", default=str(REPOSITORY_ROOT / "data"))
     parser.add_argument("--eval-config", default=str(ROOT / "config"))
     parser.add_argument("--env-file", default=str(ROOT / ".env"))
-    parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "results"))
+    parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
     parser.add_argument("--run-id")
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)

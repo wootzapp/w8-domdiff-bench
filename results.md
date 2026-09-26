@@ -1,6 +1,6 @@
 # Data-New Tasks 1–100: Screenshot vs DOM-Model Results
 
-Retained artifacts for each final task are stored under `results/task_XX_rerun/<run-id>/`: `comparison.json`, `microsoft_verifier/result.json`, and `dom_model/result.json`.
+Retained artifacts for each final task are stored under `evaluation/task_XX_rerun/<run-id>/`: `comparison.json`, `microsoft_verifier/result.json`, and `dom_model/result.json`.
 
 
 ## Task 1 — Reddit ranking
@@ -7780,4 +7780,3 @@ Reused rubric SHA-256: `09b96da6445a00cd31d5960838b5e2b955b3c8f8c71da1313c4436b2
 | Origin-card fields | Yes / Yes | Yes / Yes | 4/5 / 4.5/5 | BOTH_CAUGHT |
 
 **Summary:** Screenshot 0 clearly displays the red `IX` badge in the Did You Feel It? card, but the screenshot verifier states that no legible MMI value is shown. DOM explicitly exposes `IX mmi` and its verifier uses it correctly. This is a confirmed screenshot-verifier miss, not screenshot-source loss. The Origin-card difference is partial-credit calibration.
-

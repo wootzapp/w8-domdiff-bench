@@ -14,7 +14,7 @@ verifier/
 ```
 
 Paired task inputs live in the repository-level `data/` folder. Generated runs
-are written to the repository-level `results/` folder.
+are written to the repository-level `evaluation/` folder.
 
 ## Set up the comparison
 
@@ -66,7 +66,7 @@ The command automatically resolves:
 Screenshot input: ../data/data-ss/task_01
 DOM input:        ../data/data-dom/task_01
 Judge config:     config/
-Run output:       ../results/task_01/<run-id>/
+Run output:       ../evaluation/task_01/<run-id>/
 ```
 
 To validate configuration and paths without writing results or making paid
@@ -76,6 +76,6 @@ calls, omit `--execute`:
 ./run-comparison --task task_01
 ```
 
-Completed runs are stored under `../results/<task>/<run-id>/`. The final
+Completed runs are stored under `../evaluation/<task>/<run-id>/`. The final
 `comparison.json` and `comparison.md` contain only total and criterion-level
 scores.
