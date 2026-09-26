@@ -23,7 +23,7 @@ folder, create its virtual environment, and install the pinned dependencies:
 
 ```bash
 git clone https://github.com/wootzapp/w8-domdiff-bench.git
-cd w8-domdiff-bench/comparison
+cd w8-reproducible/comparison
 
 python3 -m venv .venv
 source .venv/bin/activate
