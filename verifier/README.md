@@ -3,7 +3,7 @@
 ## Structure
 
 ```text
-comparison/
+verifier/
 ├── dom_diff/              # Standalone DOM-evidence verifier package
 ├── microsoft_verifier/    # Fixed Microsoft screenshot baseline
 ├── manifests/             # Verifier-package integrity receipts
@@ -18,12 +18,11 @@ are written to the repository-level `results/` folder.
 
 ## Set up the comparison
 
-Python 3.10 or newer is required. From a fresh clone, enter the comparison
+Python 3.10 or newer is required. From a fresh clone, enter the verifier
 folder, create its virtual environment, and install the pinned dependencies:
 
 ```bash
-git clone https://github.com/wootzapp/w8-domdiff-bench.git
-cd w8-reproducible/comparison
+cd w8-reproducible/verifier
 
 python3 -m venv .venv
 source .venv/bin/activate

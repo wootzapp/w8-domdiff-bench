@@ -20,7 +20,7 @@ IGNORED_PARTS = {"__pycache__", ".pytest_cache", ".git", ".venv"}
 def tree_receipt(package: str) -> dict[str, Any]:
     root = PACKAGE_ROOTS[package].resolve(strict=True)
     if ROOT.resolve() not in root.parents:
-        raise RuntimeError(f"Package escaped comparison root: {root}")
+        raise RuntimeError(f"Package escaped verifier root: {root}")
     digest = hashlib.sha256()
     files = 0
     for path in sorted(root.rglob("*"), key=lambda value: value.relative_to(root).as_posix()):
