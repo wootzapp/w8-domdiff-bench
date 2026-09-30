@@ -99,7 +99,7 @@ from trajectory import (
 
 
 TASK_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
-DEFAULT_NOVNC_URL = "http://[::1]:39084/vnc.html?resize=scale&autoconnect=1&path=websockify"
+DEFAULT_NOVNC_URL = "http://127.0.0.1:16191/vnc.html?resize=scale&autoconnect=1&path=websockify"
 MAX_TASK_MEMORY_CHARS = 8000
 MAX_ACTION_THOUGHT_CHARS = 1200
 # These schema limits bound model-authored bookkeeping, not captured DOM evidence.

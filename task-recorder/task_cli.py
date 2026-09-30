@@ -648,7 +648,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     output_dir = args.output_dir.resolve()
     run_id = unique_run_id(task_id, task_name, output_dir)
-    novnc_url = args.novnc_url or os.environ.get("RUNNER_NOVNC_URL", DEFAULT_NOVNC_URL)
+    default_novnc_url = (
+        "http://127.0.0.1:"
+        + os.environ.get("NOVNC_HOST_PORT", "16191")
+        + "/vnc.html?resize=scale&autoconnect=1&path=websockify"
+    )
+    novnc_url = args.novnc_url or os.environ.get(
+        "RUNNER_NOVNC_URL", default_novnc_url
+    )
     command = build_runner_command(
         definition,
         task_id=task_id,
