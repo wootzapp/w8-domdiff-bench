@@ -18,6 +18,12 @@ Two systems interact with the browser:
   `getAgentObservation`, and builds a structured model-facing projection with
   `getModelDOM`.
 
+w8-core, a new kind of browser engine, provides the Chromium browser runtime,
+the ChromiumRL CDP domain, agent-browser 0.27.3, VNC, and noVNC in one Docker
+image. The recorder reaches ChromiumRL through the host CDP port and invokes
+agent-browser inside the same container. A host Node.js or npm installation is
+not required.
+
 For every captured snapshot, the recorder saves `dom.json`. It runs the full
 renderer to create `dom_full.txt`, saves the `getModelDOM` result as
 `dom_model.json`, and uses the deterministic model renderer to create
@@ -51,9 +57,54 @@ requests.
   browser-produced model projection.
 - `tests/` — recorder unit tests.
 
+## Setup
+
+Requirements:
+
+- Docker Engine with Docker Compose.
+- Python 3 with virtual environment support.
+- An OpenAI API key and a supported model name.
+
+Clone the repository and enter the recorder directory:
+
+```bash
+git clone https://github.com/wootzapp/w8-domdiff-bench.git
+cd w8-domdiff-bench/task-recorder
+```
+
+Create the Python environment and install the dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Create `.env` and replace the two placeholder values with your OpenAI
+credentials:
+
+```bash
+cat > .env <<'EOF'
+IMAGE=wootzapp/w8-core:latest
+OPENAI_API_KEY=replace-with-your-openai-api-key
+OPENAI_MODEL=replace-with-a-supported-model-name
+EOF
+```
+
+Download and start w8-core:
+
+```bash
+docker pull wootzapp/w8-core:latest
+docker compose --env-file .env up -d --wait w8-core
+```
+
+The w8-core image includes the browser, ChromiumRL CDP commands,
+agent-browser, VNC, and noVNC. No separate Node.js or agent-browser installation
+is needed.
+
 ## View the Browser Through an SSH Tunnel
 
-Run this on your local computer:
+If the recorder is running on a remote server, run this on your local computer:
 
 ```bash
 ssh -N -L "[::1]:39084:127.0.0.1:16191" ubuntu@SERVER_HOST
@@ -72,8 +123,8 @@ http://[::1]:39084/vnc.html?resize=scale&autoconnect=1&path=websockify
 Run a catalog task:
 
 ```bash
-cd /path/to/task-recorder
-./run-task task1 --output-dir /path/to/recordings
+mkdir -p recordings
+./run-task task8 --output-dir ./recordings --no-human-intervention
 ```
 
 Run a manual task:
@@ -88,6 +139,12 @@ Run a manual task:
 `--output-dir` is required. A timestamped run directory is created and an
 existing run is never overwritten. Use `--dry-run` to validate task selection
 without starting the browser.
+
+To stop the browser while keeping its container profile for the next run:
+
+```bash
+docker compose --env-file .env stop w8-core
+```
 
 ## State Layout
 

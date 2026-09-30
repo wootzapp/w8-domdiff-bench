@@ -84,10 +84,11 @@ from agent_browser import (
     AgentBrowserObservation,
     AgentBrowserPage,
     agent_browser_session_name,
+    container_agent_browser_command,
 )
 # Local prompt module: keeps model policy text separate from orchestration code.
 from prompts import SYSTEM_PROMPT
-# Recorder-local exception; standalone adapter errors are caught separately.
+# Recorder-local exception; agent-browser adapter errors are caught separately.
 from trajectory import (
     TRAJECTORY_SCHEMA_VERSION,
     WEBSURFER_ACTION_MAP,
@@ -777,7 +778,7 @@ async def run(args: argparse.Namespace) -> int:
     agent_browser = AgentBrowserClient(
         args.agent_browser_command,
         session=agent_browser_session_name(task_id, os.getpid()),
-        cdp_url=args.cdp_url,
+        cdp_url=args.agent_browser_cdp_url,
         timeout=args.agent_browser_timeout,
     )
     write_json(
@@ -802,7 +803,7 @@ async def run(args: argparse.Namespace) -> int:
         "task_name": args.task_name,
         "task": args.task or "capture-only",
         "created_at": utc_now(),
-        "browser_image": os.environ.get("IMAGE", "w8-core:chromium-desktop"),
+        "browser_image": os.environ.get("IMAGE", "wootzapp/w8-core:latest"),
         "browser_profile_provenance": browser_profile_provenance_from_environment(),
         "dom_capture_parameters": {
             "max_nodes": args.snapshot_max_nodes,
@@ -1511,14 +1512,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Do not close other existing non-DevTools page targets on connect",
     )
-    parser.add_argument("--cdp-url", default=os.environ.get("RUNNER_CDP_URL", "http://127.0.0.1:49335"))
+    # The runner is host-side: Compose publishes container port 9222 on host
+    # port 49335. agent-browser runs inside the container and therefore uses a
+    # separate container-local CDP URL below.
+    default_host_cdp_url = (
+        "http://127.0.0.1:"
+        + os.environ.get("CDP_HOST_PORT", "49335")
+    )
+    parser.add_argument(
+        "--cdp-url",
+        default=os.environ.get("RUNNER_CDP_URL", default_host_cdp_url),
+    )
+    default_container_name = os.environ.get(
+        "CONTAINER_NAME", "w8-core-browser-engine"
+    )
     parser.add_argument(
         "--agent-browser-command",
         default=os.environ.get(
             "AGENT_BROWSER_COMMAND",
-            "npx --yes agent-browser@0.27.3",
+            container_agent_browser_command(default_container_name),
         ),
-        help="Official agent-browser command used for all task interactions",
+        help="w8-core agent-browser command used for all task interactions",
+    )
+    parser.add_argument(
+        "--agent-browser-cdp-url",
+        default=os.environ.get(
+            "AGENT_BROWSER_CDP_URL",
+            "http://127.0.0.1:9222",
+        ),
+        help="CDP endpoint visible to agent-browser inside the w8-core runtime",
     )
     parser.add_argument(
         "--agent-browser-timeout",
