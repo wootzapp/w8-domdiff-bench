@@ -87,3 +87,5 @@ the complete setup, port and container isolation, task output, shutdown,
 profile lifetime, and troubleshooting.
 
 For comparison initialization and reproducible verifier runs, see [`verifier/README.md`](verifier/README.md).
+That workflow can fetch paired screenshot and DOM trajectories directly from
+the linked Hugging Face dataset before running the comparison.

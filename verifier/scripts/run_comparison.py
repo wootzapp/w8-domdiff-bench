@@ -38,6 +38,13 @@ from .common import (
     write_json,
 )
 from .compare_results import compare
+from .evidence_audit import (
+    AuditValidationError,
+    DEFAULT_AUDIT_MODEL,
+    append_audit_to_comparison,
+    render_markdown as render_evidence_audit,
+    run_evidence_audit,
+)
 from .normalize_results import normalize_dom_model, normalize_screenshot
 from .package_manifests import require_local_packages
 from .validate_inputs import ordered_screenshots, validate_pair
@@ -250,6 +257,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--env-file", default=str(ROOT / ".env"))
     parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
     parser.add_argument("--run-id")
+    parser.add_argument("--audit-model", default=DEFAULT_AUDIT_MODEL)
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
 
@@ -351,6 +359,12 @@ def main(argv: list[str] | None = None) -> int:
         },
         "phase_a_usage_separate_from_scoring": phase_a.get("token_usage", {}),
         "rubric_generation_calls_during_scoring": 0,
+        "evidence_audit": {
+            "enabled": True,
+            "method": "automated_llm",
+            "model": args.audit_model,
+            "runs_after_both_verifiers": True,
+        },
         "run_root": str(run_root),
     }
     if not args.execute:
@@ -407,18 +421,83 @@ def main(argv: list[str] | None = None) -> int:
     )
     write_json(dom_root / "run_metrics.json", dom_metrics)
     comparison_receipt, comparison_markdown = compare(microsoft_metrics, dom_metrics)
-    (run_root / "comparison.md").write_text(comparison_markdown, encoding="utf-8")
-    write_json(run_root / "comparison.json", comparison_receipt)
+    comparison_markdown_path = run_root / "comparison.md"
+    comparison_json_path = run_root / "comparison.json"
+    comparison_markdown_path.write_text(comparison_markdown, encoding="utf-8")
+    write_json(comparison_json_path, comparison_receipt)
+
+    common_outputs = {
+        "microsoft_metrics": str(microsoft_root / "run_metrics.json"),
+        "dom_model_metrics": str(dom_root / "run_metrics.json"),
+        "comparison_report": str(comparison_markdown_path),
+        "frozen_rubric": str(published_rubric),
+        "rubric_generation_metrics": str(published_generation),
+    }
+    try:
+        audit = run_evidence_audit(
+            screenshot_dir=isolated_screenshot,
+            dom_dir=isolated_dom,
+            rubric_file=published_rubric,
+            screenshot_result=microsoft_root / "result.json",
+            dom_result=dom_root / "result.json",
+            task_alias=args.task,
+            model=args.audit_model,
+        )
+    except Exception as exc:
+        error_path = run_root / "evidence_audit_error.json"
+        error_payload: dict[str, Any] = {
+            "status": "audit_failed",
+            "error_type": type(exc).__name__,
+            "message": str(exc),
+            "audit_model": args.audit_model,
+            "verifier_comparison_complete": True,
+        }
+        if isinstance(exc, AuditValidationError):
+            error_payload["details"] = exc.receipt()
+        write_json(error_path, error_payload)
+        comparison_receipt["evidence_audit"] = {
+            "status": "failed",
+            "error_file": str(error_path),
+            "message": str(exc),
+        }
+        write_json(comparison_json_path, comparison_receipt)
+        with comparison_markdown_path.open("a", encoding="utf-8") as handle:
+            handle.write(
+                "\n\n## Automated evidence audit\n\n"
+                "Audit validation failed after the verifier comparison completed. "
+                f"See `{error_path.name}` for the validation receipts.\n"
+            )
+        manifest.update(
+            {
+                "status": "complete_with_audit_error",
+                **common_outputs,
+                "evidence_audit_status": "failed",
+                "evidence_audit_error": str(error_path),
+            }
+        )
+        write_json(run_root / "run_manifest.json", manifest)
+        print(json.dumps(manifest, ensure_ascii=False, indent=2))
+        return 0
+
+    audit_json_path = run_root / "evidence_audit.json"
+    audit_markdown_path = run_root / "evidence_audit.md"
+    write_json(audit_json_path, audit)
+    audit_markdown_path.write_text(render_evidence_audit(audit), encoding="utf-8")
+    append_audit_to_comparison(
+        comparison_json=comparison_json_path,
+        comparison_markdown=comparison_markdown_path,
+        audit=audit,
+    )
     shutil.rmtree(isolated)
     manifest.pop("isolated_inputs", None)
     manifest.update(
         {
             "status": "complete",
-            "microsoft_metrics": str(microsoft_root / "run_metrics.json"),
-            "dom_model_metrics": str(dom_root / "run_metrics.json"),
-            "comparison_report": str(run_root / "comparison.md"),
-            "frozen_rubric": str(published_rubric),
-            "rubric_generation_metrics": str(published_generation),
+            **common_outputs,
+            "evidence_audit_status": "complete",
+            "evidence_audit_json": str(audit_json_path),
+            "evidence_audit_report": str(audit_markdown_path),
+            "evidence_loss": audit["metrics"],
         }
     )
     write_json(run_root / "run_manifest.json", manifest)
