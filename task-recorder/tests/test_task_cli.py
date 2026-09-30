@@ -177,6 +177,24 @@ class TaskCliTests(unittest.TestCase):
         self.assertNotIn("down", command)
         self.assertEqual(command[-1], "w8-core")
 
+    def test_browser_container_cdp_url_uses_runtime_port(self) -> None:
+        completed = SimpleNamespace(returncode=0, stdout="49335", stderr="")
+        with patch.object(task_cli.subprocess, "run", return_value=completed) as run:
+            url = task_cli.browser_container_cdp_url("fixture-browser")
+
+        self.assertEqual(url, "http://127.0.0.1:49335")
+        self.assertEqual(
+            run.call_args.args[0],
+            [
+                "docker",
+                "exec",
+                "fixture-browser",
+                "sh",
+                "-c",
+                'printf "%s" "${CDP_PORT:-9222}"',
+            ],
+        )
+
     def test_task_boundary_restart_preserves_container_and_waits_for_health(self) -> None:
         completed = SimpleNamespace(returncode=0, stdout="", stderr="")
         with patch.object(

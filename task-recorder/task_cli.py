@@ -217,6 +217,38 @@ def restart_browser_service(env_file: Path) -> None:
     ensure_browser_service(env_file)
 
 
+def browser_container_cdp_url(container_name: str) -> str:
+    """Return the CDP URL for agent-browser running inside w8-core.
+
+    Its loopback address is container-local and must not be used by host-side
+    CDP clients such as the recorder's direct ChromiumRL connection.
+    """
+    completed = subprocess.run(
+        [
+            "docker",
+            "exec",
+            container_name,
+            "sh",
+            "-c",
+            'printf "%s" "${CDP_PORT:-9222}"',
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        raise RunnerError(f"could not read browser container CDP port: {detail}")
+    try:
+        port = int(completed.stdout.strip())
+    except ValueError as error:
+        raise RunnerError("browser container CDP_PORT is not an integer") from error
+    if not 1 <= port <= 65535:
+        raise RunnerError("browser container CDP_PORT is outside the valid range")
+    return f"http://127.0.0.1:{port}"
+
+
 def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
     """Atomically claim one task slot for this container-lifetime profile."""
     profile_task_count_path = os.environ.get(
@@ -653,10 +685,15 @@ def main(argv: list[str] | None = None) -> int:
             )
         if not args.no_browser_start:
             restart_browser_service(args.env_file.resolve())
-        profile_provenance = claim_browser_profile_provenance(
-            os.environ.get("CONTAINER_NAME", "w8-core-browser-engine")
+        container_name = os.environ.get(
+            "CONTAINER_NAME", "w8-core-browser-engine"
         )
+        profile_provenance = claim_browser_profile_provenance(container_name)
         runner_environment = os.environ.copy()
+        if not runner_environment.get("AGENT_BROWSER_CDP_URL"):
+            runner_environment["AGENT_BROWSER_CDP_URL"] = (
+                browser_container_cdp_url(container_name)
+            )
         runner_environment["RUNNER_BROWSER_PROFILE_PROVENANCE"] = json.dumps(
             profile_provenance, separators=(",", ":")
         )
