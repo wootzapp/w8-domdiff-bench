@@ -32,7 +32,6 @@ def validate_alignment(
         if (
             task_url.scheme == state_url.scheme
             and task_url.netloc == state_url.netloc
-            and task_url.path == "/"
         ):
             warnings.append(
                 AlignmentWarning(
