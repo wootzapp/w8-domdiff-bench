@@ -14,7 +14,7 @@ from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = ROOT.parent
-DEFAULT_CACHE_ROOT = REPOSITORY_ROOT / ".cache" / "hf-trajectories"
+DEFAULT_DATASET_ROOT = REPOSITORY_ROOT / "dataset"
 DEFAULT_REPO_ID = "WootzappLab/browser-agent-tasks"
 DEFAULT_REVISION = "main"
 REMOTE_PREFIX = "trajectories"
@@ -112,7 +112,7 @@ def fetch_trajectories(
         f"{REMOTE_PREFIX}/data-dom/**",
     ]
     target.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".hf-trajectories-", dir=target.parent) as name:
+    with tempfile.TemporaryDirectory(prefix=".dataset-download-", dir=target.parent) as name:
         stage = Path(name)
         snapshot_root = Path(
             snapshot_download_fn(
@@ -224,8 +224,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     selection.add_argument("--all", action="store_true")
     parser.add_argument(
         "--output-dir",
-        default=str(DEFAULT_CACHE_ROOT),
-        help="Ignored local cache populated from Hugging Face",
+        default=str(DEFAULT_DATASET_ROOT),
+        help="Local dataset directory populated from Hugging Face",
     )
     parser.add_argument(
         "--source-dir",

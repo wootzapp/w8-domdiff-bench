@@ -14,7 +14,7 @@ verifier/
 ```
 
 Paired task inputs are resolved from Hugging Face into the ignored
-repository-level `.cache/hf-trajectories/` directory. They are not sourced from
+repository-level `dataset/` directory. They are not sourced from
 Git or from a repository-local dataset folder. Generated runs are written to
 the repository-level `evaluation/` folder.
 
@@ -121,14 +121,15 @@ evidence to the configured API endpoint.
 The command automatically resolves:
 
 ```text
-Screenshot input: ../.cache/hf-trajectories/data-ss/task_01
-DOM input:        ../.cache/hf-trajectories/data-dom/task_01
+Screenshot input: ../dataset/data-ss/task_01
+DOM input:        ../dataset/data-dom/task_01
 Judge config:     config/
 Run output:       ../evaluation/task_01/<run-id>/
 ```
 
 To validate configuration and paths without writing results or making paid
-calls, omit `--execute`. This may populate the ignored Hugging Face cache:
+calls, omit `--execute`. This may populate the ignored local `dataset/`
+directory from Hugging Face:
 
 ```bash
 ./run-comparison --task task_01

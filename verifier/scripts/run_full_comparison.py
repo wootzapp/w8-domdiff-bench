@@ -25,7 +25,7 @@ for package_src in (
 from .common import ensure_under
 from .common import load_json, write_json
 from .dataset_sync import (
-    DEFAULT_CACHE_ROOT,
+    DEFAULT_DATASET_ROOT,
     DEFAULT_REPO_ID,
     DEFAULT_REVISION,
     fetch_trajectories,
@@ -63,7 +63,7 @@ def _paired_tasks(data_root: Path) -> list[str]:
     screenshot_root = data_root / "data-ss"
     dom_root = data_root / "data-dom"
     if not screenshot_root.is_dir() or not dom_root.is_dir():
-        raise ValueError("Hugging Face cache lacks paired data-ss and data-dom directories")
+        raise ValueError("Hugging Face dataset lacks paired data-ss and data-dom directories")
     screenshot = {path.name for path in screenshot_root.iterdir() if path.is_dir()}
     dom = {path.name for path in dom_root.iterdir() if path.is_dir()}
     if screenshot != dom:
@@ -79,7 +79,7 @@ def _paired_tasks(data_root: Path) -> list[str]:
 
 
 def _run_all(args: argparse.Namespace) -> int:
-    data_root = DEFAULT_CACHE_ROOT.resolve(strict=True)
+    data_root = DEFAULT_DATASET_ROOT.resolve(strict=True)
     tasks = _paired_tasks(data_root)
     run_id = args.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     results_root = ensure_under(Path(args.results_root), REPOSITORY_ROOT, label="results root")
@@ -153,7 +153,7 @@ def _run_all(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     fetched = fetch_trajectories(
-        data_root=DEFAULT_CACHE_ROOT,
+        data_root=DEFAULT_DATASET_ROOT,
         task=None if args.all else args.task,
         repo_id=args.hf_repo,
         revision=args.hf_revision,
@@ -161,7 +161,7 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps({"dataset_fetch": fetched}, ensure_ascii=False, indent=2))
     if args.all:
         return _run_all(args)
-    data_root = DEFAULT_CACHE_ROOT.resolve(strict=True)
+    data_root = DEFAULT_DATASET_ROOT.resolve(strict=True)
     screenshot_source = _task_path(data_root, "data-ss", args.task)
     dom_source = _task_path(data_root, "data-dom", args.task)
 
