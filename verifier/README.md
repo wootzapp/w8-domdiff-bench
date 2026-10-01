@@ -38,6 +38,30 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
+`requirements.txt` installs the shared third-party dependencies. The
+`run-comparison` launcher loads the repository-local Microsoft and DOM verifier
+packages directly from `microsoft_verifier/src/` and `dom_diff/src/`; they do
+not need to be installed as separate packages.
+
+### Validate the installation offline
+
+Run the orchestration and package tests separately from the `verifier/`
+directory:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 \
+PYTHONPATH="$PWD/microsoft_verifier/src:$PWD/dom_diff/src:$PWD" \
+.venv/bin/python -m pytest -q scripts/tests -p no:cacheprovider
+
+PYTHONDONTWRITEBYTECODE=1 \
+PYTHONPATH="$PWD/microsoft_verifier/src:$PWD" \
+.venv/bin/python -m pytest -q microsoft_verifier/tests -p no:cacheprovider
+
+PYTHONDONTWRITEBYTECODE=1 \
+PYTHONPATH="$PWD/dom_diff/src:$PWD" \
+.venv/bin/python -m pytest -q dom_diff/tests -p no:cacheprovider
+```
+
 ## Fetch trajectory data
 
 Download one paired screenshot/DOM trajectory into the ignored cache:
@@ -81,10 +105,6 @@ run:
 ./run-comparison --task task_01 --execute
 ```
 
-The launcher always resolves the selected trajectory from Hugging Face before
-rubric generation. There is no local-dataset fallback or public local-task
-override. Downloaded files are cached only to provide concrete inputs to the
-unchanged verifier packages.
 
 This command generates one fresh Microsoft rubric, passes that exact frozen
 rubric to both verifiers, scores both evidence formats, and then runs an
@@ -95,8 +115,7 @@ verifier miss under stricter materiality and temporal-continuity rules. Only
 confirmed adjudications contribute to modality-specific evidence loss. The
 classification label is derived deterministically from the validated findings;
 the audit model is not asked to invent or reproduce classification names. The
-audit uses `gpt-5.6-sol` by default; this does not change the models
-used by either verifier. It makes paid model calls and submits the supplied task
+audit uses `gpt-5.6-sol` by default; It makes paid model calls and submits the supplied task
 evidence to the configured API endpoint.
 
 The command automatically resolves:
@@ -140,8 +159,7 @@ separately and are not silently included in the evidence-loss denominator.
 
 The audit is fully automated and requires no human decisions. Its percentages
 are therefore **LLM-audited evidence-loss rates**, not human-confirmed ground
-truth. Neither verifier's prompts, evidence handling, nor scoring behavior is
-changed by the post-verification audit.
+truth.
 
 ## Maintainer upload
 
