@@ -207,8 +207,11 @@ mkdir -p recordings
 Run a catalog task:
 
 ```bash
-./run-task task8 --output-dir ./recordings --no-human-intervention
+./run-task task8 --output-dir ./recordings
 ```
+
+Add `--no-human-intervention` when the task must run unattended and stop rather
+than ask for help.
 
 Run a manual task:
 
