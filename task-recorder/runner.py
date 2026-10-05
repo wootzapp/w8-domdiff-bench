@@ -129,9 +129,9 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
     if not isinstance(value, dict) or set(value) != expected:
         raise RunnerError("RUNNER_BROWSER_PROFILE_PROVENANCE has invalid fields")
     if not isinstance(value["container_id"], str) or not value["container_id"]:
-        raise RunnerError("browser container id is missing")
+        raise RunnerError("w8-core container id is missing")
     if not isinstance(value["container_created_at"], str) or not value["container_created_at"]:
-        raise RunnerError("browser container creation time is missing")
+        raise RunnerError("w8-core container creation time is missing")
     if not isinstance(value["profile_fresh_at_run_start"], bool):
         raise RunnerError("browser profile freshness must be boolean")
     count = value["tasks_previously_run_in_container"]

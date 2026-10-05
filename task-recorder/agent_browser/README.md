@@ -5,7 +5,7 @@
 The recorder does not implement browser automation. w8-core, a new kind of
 browser engine, includes the official
 [agent-browser](https://github.com/vercel-labs/agent-browser) CLI at version
-0.27.3. The recorder invokes that command inside the browser container for each
+0.27.3. The harness invokes that command inside the w8-core container for each
 observation and action. Nothing from agent-browser is vendored, forked, or
 reimplemented here.
 

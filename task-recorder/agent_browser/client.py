@@ -70,7 +70,7 @@ def container_agent_browser_command(container_name: str) -> str:
     """Build the command that invokes w8-core's bundled agent-browser."""
     name = container_name.strip()
     if not name:
-        raise AgentBrowserBaseError("browser container name must not be empty")
+        raise AgentBrowserBaseError("w8-core container name must not be empty")
     return shlex.join(["docker", "exec", name, "agent-browser"])
 
 

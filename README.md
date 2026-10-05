@@ -38,8 +38,8 @@ The final outputs are stored under `evaluation/task_01/` through `evaluation/tas
 
 ## Task Recorder
 
-The browser task recording harness lives in [`task-recorder/`](task-recorder/).
-It starts the visible w8-core browser in Docker, exposes the browser through
+The browser harness lives in [`task-recorder/`](task-recorder/).
+It starts visible w8-core in Docker, exposes w8-core through
 noVNC, and runs model-directed tasks while saving every observed state.
 
 ### Run and watch a task
@@ -51,13 +51,13 @@ git clone --branch w8-reproducible https://github.com/wootzapp/w8-domdiff-bench.
 cd w8-domdiff-bench/task-recorder
 ```
 
-Create the Python environment and an isolated browser configuration:
+Create the Python environment and an isolated w8-core configuration:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-./browser-runtime configure
+./w8-core-runtime configure
 ```
 
 Edit `.env` and replace `OPENAI_API_KEY` and `OPENAI_MODEL`. The configuration
@@ -65,13 +65,15 @@ command chooses a checkout-specific container name and available loopback ports,
 so another Docker project is not overwritten and occupied default ports do not
 prevent startup.
 
-Start and verify the browser:
+Start and verify w8-core:
 
 ```bash
 docker pull wootzapp/w8-core:latest
 docker compose --env-file .env up -d --wait w8-core
-./browser-runtime status
+./w8-core-runtime status
 ```
+
+`-d` runs w8-core in the background. `--wait` waits for its health check.
 
 The status command prints the local noVNC URL. Open it in a normal browser to
 watch w8-core, then run a task in another terminal:

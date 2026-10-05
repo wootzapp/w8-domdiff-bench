@@ -167,7 +167,7 @@ def clear_active_run(pid: int, path: Path = ACTIVE_RUN_PATH) -> None:
 
 
 def ensure_browser_service(env_file: Path) -> None:
-    """Start the existing browser container without recreating its profile."""
+    """Start the existing w8-core container without recreating its profile."""
     command = [
         "docker",
         "compose",
@@ -239,13 +239,13 @@ def browser_container_cdp_url(container_name: str) -> str:
     )
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip()
-        raise RunnerError(f"could not read browser container CDP port: {detail}")
+        raise RunnerError(f"could not read w8-core container CDP port: {detail}")
     try:
         port = int(completed.stdout.strip())
     except ValueError as error:
-        raise RunnerError("browser container CDP_PORT is not an integer") from error
+        raise RunnerError("w8-core container CDP_PORT is not an integer") from error
     if not 1 <= port <= 65535:
-        raise RunnerError("browser container CDP_PORT is outside the valid range")
+        raise RunnerError("w8-core container CDP_PORT is outside the valid range")
     return f"http://127.0.0.1:{port}"
 
 
@@ -264,7 +264,7 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
     )
     if inspected.returncode != 0:
         detail = inspected.stderr.strip() or inspected.stdout.strip()
-        raise RunnerError(f"could not inspect browser container provenance: {detail}")
+        raise RunnerError(f"could not inspect w8-core container provenance: {detail}")
     try:
         values = json.loads(inspected.stdout)
         container = values[0]

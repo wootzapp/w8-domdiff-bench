@@ -1,75 +1,68 @@
-# Browser Task Recorder
+# w8-core Browser Harness
 
-This recorder runs a model-directed browser task and stores each observed browser
-state once. A state contains the structured DOM capture, readable DOM text,
-model-facing DOM projection, screenshot, and agent-browser observations. The
-action selected from a state is saved in that state directory, and the following
-state records the result.
+This harness runs model-directed tasks in w8-core. It records each page state
+once and lets you watch the live w8-core window through noVNC.
+
+Each state can contain:
+
+- `dom.json` and `dom_full.txt`;
+- `dom_model.json` and `dom_model.txt`;
+- a screenshot;
+- agent-browser observations;
+- the action selected from that state.
+
+Screenshots are stored for evaluation. They are not sent to the model.
 
 ## How It Works
 
-Two systems interact with the browser:
+Two w8-core interfaces are used:
 
-- **agent-browser** observes accessible controls and executes the model's chosen
-  browser action. Its `@eN` references are executable only for the current
+- **agent-browser** observes accessible controls and executes the chosen
+  action. Its `@eN` references work only for the current
   interactive snapshot.
 - **ChromiumRL** captures the structured DOM with
   `captureStructuredSnapshot`, provides action coordinates through
   `getAgentObservation`, and builds a structured model-facing projection with
   `getModelDOM`.
 
-w8-core, a new kind of browser engine, provides the Chromium browser runtime,
-the ChromiumRL CDP domain, agent-browser 0.27.3, VNC, and noVNC in one Docker
-image. The recorder reaches ChromiumRL through the host CDP port and invokes
-agent-browser inside the same container. A host Node.js or npm installation is
-not required.
+w8-core provides Chromium, ChromiumRL, agent-browser 0.27.3, VNC, and noVNC in
+one Docker image. The harness reaches ChromiumRL through CDP and runs
+agent-browser inside the container. Host-side Node.js is not required.
 
-For every captured snapshot, the recorder saves `dom.json`. It runs the full
-renderer to create `dom_full.txt`, saves the `getModelDOM` result as
-`dom_model.json`, and uses the deterministic model renderer to create
-`dom_model.txt`.
+For each state, the harness:
 
-The model receives the task instruction, current `dom_model.txt`, the current
-interactive agent-browser snapshot, task memory, and recent action outcomes.
-Screenshots are captured as recording artifacts and are not attached to model
-requests.
+- saves ChromiumRL output as `dom.json`;
+- creates `dom_full.txt`;
+- saves `getModelDOM` output as `dom_model.json`;
+- creates `dom_model.txt`.
+
+The model receives the task, `dom_model.txt`, interactive controls, memory, and
+recent action results.
 
 ## Project Layout
 
-- `run-task` — shell wrapper for the command-line task launcher.
-- `task_cli.py` — loads a catalog or manual task, starts the browser service,
-  and launches `runner.py`.
-- `runner.py` — coordinates model decisions, validation, execution, capture,
-  state transitions, finalization, and command-line options.
-- `capture.py` — CDP connection, structured capture, screenshots, browser
-  coordinates, language checks, and agent-browser synchronization.
-- `trajectory.py` — validates recorded states and creates `trajectory.jsonl`
-  plus `web_surfer.log`.
-- `recorder_support.py` — common text normalization, URL helpers, timestamps,
-  errors, and atomic file writers.
-- `prompts.py` — model instructions and action policy.
-- `agent_browser/` — the adapter around the official agent-browser CLI.
-- `scripts/render_chromiumrl_snapshot_full.py` — turns `dom.json` into
-  readable `dom_full.txt`.
-- `scripts/render_chromiumrl_model_dom.py` — validates `dom_model.json` and
-  joins its ordered sections into `dom_model.txt`.
-- `scripts/render_chromiumrl_snapshot_model.py` — regression oracle for the
-  browser-produced model projection.
-- `tests/` — recorder unit tests.
+- `run-task`: task command.
+- `task_cli.py`: task loading and w8-core lifecycle.
+- `runner.py`: decisions, validation, execution, and finalization.
+- `capture.py`: ChromiumRL, screenshots, and synchronization.
+- `trajectory.py`: creates `trajectory.jsonl` and `web_surfer.log`.
+- `prompts.py`: model instructions and action policy.
+- `agent_browser/`: adapter for the bundled agent-browser.
+- `scripts/`: DOM text renderers.
+- `w8-core-runtime`: w8-core setup and health checks.
+- `tests/`: harness unit tests.
 
 ## Setup
 
 ### Requirements
 
 - Docker Engine with Docker Compose.
-- Python 3 with virtual environment support.
-- An OpenAI API key and a supported model name.
-- A machine capable of running a visible Chromium container. The default
-  shared-memory allocation is 2 GiB.
+- Python 3 with virtual environments.
+- An OpenAI API key and supported model.
+- At least 2 GiB shared memory for w8-core.
 
-The model runner executes on the host. The browser, VNC/noVNC server,
-ChromiumRL CDP implementation, and agent-browser executable run inside the
-w8-core container.
+The model runner stays on the host. w8-core, ChromiumRL, agent-browser, VNC,
+and noVNC run in Docker.
 
 ### Clone the reproducible branch
 
@@ -78,8 +71,7 @@ git clone --branch w8-reproducible https://github.com/wootzapp/w8-domdiff-bench.
 cd w8-domdiff-bench/task-recorder
 ```
 
-All remaining commands in this guide are run from `task-recorder/` unless a
-step explicitly says to run it on your local computer.
+Run the remaining commands from `task-recorder/`.
 
 ### Install the recorder dependency
 
@@ -89,29 +81,23 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-On Windows, run the recorder inside WSL or another Linux environment with
-Docker access. The SSH tunnel command shown later can be run directly from
-PowerShell when the recorder itself is hosted on a remote Linux server.
+On Windows, run the harness in WSL with Docker access. The later SSH command
+also works directly in PowerShell.
 
-### Create an isolated browser configuration
-
-Run:
+### Create the w8-core configuration
 
 ```bash
-./browser-runtime configure
+./w8-core-runtime configure
 ```
 
-This creates a private `.env` file for the checkout. The helper:
+This creates a private `.env`. It:
 
-- chooses a checkout-specific Compose project and container name;
-- uses ports `49335`, `16191`, and `15911` when they are free;
-- selects other free loopback ports when any preferred port is occupied;
-- keeps the ports bound to `127.0.0.1`, rather than exposing CDP or VNC to the
-  network;
-- refuses to overwrite an existing `.env` during a normal configure command.
+- gives this checkout unique Docker names;
+- selects available CDP, noVNC, and VNC ports;
+- binds those ports to `127.0.0.1`;
+- never overwrites an existing `.env`.
 
-The generated file is mode `0600` and ignored by Git. `.env.example` documents
-all values without containing credentials.
+The file is private and ignored by Git. `.env.example` lists all settings.
 
 Open `.env` in an editor and replace:
 
@@ -120,111 +106,100 @@ OPENAI_API_KEY=replace-with-your-openai-api-key
 OPENAI_MODEL=replace-with-a-supported-model-name
 ```
 
-Do not add quotes unless they are part of the actual value. The browser can be
-started without these values, but a model-directed task cannot.
+Do not add quotes unless they belong in the value. w8-core can start without
+these credentials, but a model-directed task cannot.
 
 ### Start and verify w8-core
-
-Download the image and start the service:
 
 ```bash
 docker pull wootzapp/w8-core:latest
 docker compose --env-file .env up -d --wait w8-core
 ```
 
-The w8-core image includes the browser, ChromiumRL CDP commands,
-agent-browser, VNC, and noVNC. No separate Node.js or agent-browser installation
-is needed.
+Here, `-d` runs in the background. `--wait` waits until w8-core reports healthy.
 
-Verify every required browser interface:
+Check the complete runtime:
 
 ```bash
-./browser-runtime status
+./w8-core-runtime status
 ```
 
-A successful check reports:
+A successful result shows:
 
-- the configured container name;
+- the container name;
 - `Running: yes` and `Health: healthy`;
-- the browser version returned by CDP;
-- the noVNC URL and HTTP readiness;
-- the bundled agent-browser version.
+- the w8-core version;
+- the noVNC URL;
+- the agent-browser version.
 
-Do not start a task until this command succeeds. This separates browser setup
-problems from recorder or model failures.
+Start tasks only after this check succeeds.
 
-## View the Browser
+## View w8-core
 
-### Browser running on your local machine
+Choose the local or remote case below.
 
-`./browser-runtime status` prints a URL similar to:
+### w8-core is on your computer
+
+Run:
+
+```bash
+./w8-core-runtime status
+```
+
+The last part of the output contains a line like this:
 
 ```text
-http://127.0.0.1:16191/vnc.html?resize=scale&autoconnect=1&path=websockify
+noVNC: ready (http://127.0.0.1:16191/vnc.html?resize=scale&autoconnect=1&path=websockify)
 ```
 
-The port can be different because configuration deliberately avoids occupied
-ports. Open the exact printed URL in Chrome, Firefox, or another normal web
-browser. Keep that tab open while the recorder runs. noVNC shows the live
-w8-core desktop, including navigation, scrolling, clicks, and typed values.
+Copy the URL inside the parentheses into your web browser. Keep it open to
+watch navigation, scrolling, clicks, and typing.
 
-The noVNC page is only a view of the browser. Closing the noVNC tab does not
-stop the task or the container.
+Your port may not be `16191`. Always use the URL printed by the status command.
 
-### Browser running on a remote server
+### w8-core is on a remote server
 
-First, verify w8-core on the server:
+On the server, enter the task-recorder folder and run:
 
 ```bash
-cd /path/to/w8-domdiff-bench/task-recorder
-./browser-runtime status
-grep '^NOVNC_HOST_PORT=' .env
+cd w8-domdiff-bench/task-recorder
+./w8-core-runtime status
 ```
 
-Remember the numeric `NOVNC_HOST_PORT`. The service intentionally listens only
-on the server's loopback interface, so it is not opened to the public network.
-
-On your local computer, create the tunnel. Replace all three placeholders and
-use the noVNC port printed on the server:
-
+Suppose its noVNC URL uses port `16191`. Run this on your own computer:
 
 ```bash
-ssh -o ExitOnForwardFailure=yes -N \
-  -L 127.0.0.1:39084:127.0.0.1:SERVER_NOVNC_PORT \
-  SERVER_USER@SERVER_HOST
+ssh -o ExitOnForwardFailure=yes -N -L 39084:127.0.0.1:16191 ubuntu@your-server-address
 ```
 
-For example, if the server reports `NOVNC_HOST_PORT=16191`, substitute `16191`
-for `SERVER_NOVNC_PORT`. On PowerShell, enter the same command on one line:
+Change:
 
-```powershell
-ssh -o ExitOnForwardFailure=yes -N -L 127.0.0.1:39084:127.0.0.1:SERVER_NOVNC_PORT SERVER_USER@SERVER_HOST
-```
+- Replace `ubuntu@your-server-address` with the SSH login you normally use.
+- Replace `16191` only if the server's `noVNC: ready` line shows a different
+  port.
 
-Then open:
+Keep SSH running. Open:
 
 ```text
 http://127.0.0.1:39084/vnc.html?resize=scale&autoconnect=1&path=websockify
 ```
 
-`ExitOnForwardFailure=yes` prevents SSH from appearing connected when the local
-forward could not be created. If local port `39084` is already occupied, change
-only the first port in `-L` to another unused local port, such as `39085`, and
-open the matching URL. Do not change `SERVER_NOVNC_PORT` unless `.env` on the
-server uses a different port.
+Port `16191` is on the server. Port `39084` is on your computer. If `39084` is
+busy, use `39085` in both the command and URL.
 
-If SSH prints `connect failed: Connection refused`, the tunnel reached the
-server but no service was listening on the specified server port. Run
-`./browser-runtime status` on the server and copy its noVNC port exactly before
-trying again.
+If SSH prints `connect failed: Connection refused`, run
+`./w8-core-runtime status` on the server. Check that w8-core is healthy and use
+the noVNC port it prints.
+
+The command works in PowerShell, macOS, and Linux. Closing noVNC or SSH closes
+only the view. It does not stop the task.
 
 ## Run a Task
 
-Open noVNC before starting the task. In a second terminal, activate the Python
-environment and return to the recorder directory:
+Open noVNC first. In another terminal:
 
 ```bash
-cd /path/to/w8-domdiff-bench/task-recorder
+cd w8-domdiff-bench/task-recorder
 source .venv/bin/activate
 mkdir -p recordings
 ```
@@ -235,74 +210,71 @@ Run a catalog task:
 ./run-task task8 --output-dir ./recordings --no-human-intervention
 ```
 
-The task ID is resolved through the configured task catalog. The launcher
-prints the selected task, starting URL, output directory, and intervention
-policy before the model starts.
-
 Run a manual task:
 
 ```bash
 ./run-task my-task "Readable task name" \
   --task "TASK INSTRUCTION, STOPPING CONDITION, AND CONSTRAINTS" \
   --start-url "https://example.com/" \
-  --output-dir /path/to/recordings
+  --output-dir ./recordings
 ```
 
-`--output-dir` is required. A timestamped run directory is created and an
-existing run is never overwritten. Use `--dry-run` to validate task selection
-without starting the browser.
+Rules:
+
+- `--output-dir` is required.
+- Each run gets a new timestamped folder.
+- Existing runs are never overwritten.
+- `--dry-run` validates a task without starting w8-core or the model.
+- The launcher prints the task, URL, output path, and intervention policy.
 
 ### What happens while a task runs
 
-1. The launcher ensures the configured w8-core container is available and
-   restarts its browser process at the task boundary.
-2. The initial URL opens in the visible browser.
-3. ChromiumRL and agent-browser capture the current page state.
-4. The model receives the task, model-facing DOM, interactive controls, memory,
+1. The launcher starts w8-core and opens the initial URL.
+2. ChromiumRL and agent-browser capture the current state.
+3. The model receives the task, model-facing DOM, interactive controls, memory,
    and recent action outcomes.
-5. The selected action is validated and executed in w8-core.
-6. The resulting browser state is captured in the next sequential step.
-7. The loop continues until the model terminates, a limit is reached, or an
+4. The chosen action is validated and executed.
+5. The resulting state is captured in the next step.
+6. The loop continues until the model terminates, a limit is reached, or an
    unrecoverable error occurs.
 
-The noVNC session may briefly reconnect when the browser process restarts at a
-task boundary. The container itself is retained, so cookies, history, and
-origin storage survive between tasks that use the same `.env` and container.
+noVNC may briefly reconnect when a task starts. The container remains, so its
+cookies, history, and origin storage survive between tasks.
 
-## Stop, Restart, or Remove the Browser
+## Stop or Remove w8-core
 
-Stop the browser container while preserving its writable layer and browser
-profile:
+Stop w8-core and keep its profile:
 
 ```bash
 docker compose --env-file .env stop w8-core
 ```
 
-Start the same container and profile again:
+Start it again:
 
 ```bash
 docker compose --env-file .env start w8-core
-./browser-runtime status
+./w8-core-runtime status
 ```
 
-Restart the service without recreating it:
+Restart it:
 
 ```bash
 docker compose --env-file .env restart w8-core
 ```
 
-Remove the container and its container-lifetime browser profile:
+Remove the container and profile:
 
 ```bash
 docker compose --env-file .env down
 ```
 
-There is intentionally no profile volume. `stop`, `start`, and `restart`
-preserve the profile because they retain the container. `down` removes it.
+Profile rules:
 
-## State Layout
+- `stop`, `start`, and `restart` preserve cookies and history.
+- `down` removes the container and profile.
+- No profile volume is created.
 
-A run uses direct sequential state folders:
+## Recording Layout
 
 ```text
 <run>/
@@ -321,119 +293,92 @@ A run uses direct sequential state folders:
       screenshot.png
       agent_browser.txt
       agent_browser_actions.txt
-      action.json                 # when an action is selected here
+      action.json
     step_002/
-      ...                         # state reached by action.json in step_001
+      ...
 ```
 
-`step_001` is the initial captured page state. Each executed action lives in
-its source state directory. The next sequential directory is the state reached
-after that action. A final state can therefore have no `action.json`.
+- `step_001` is the initial state.
+- `action.json` belongs to the state where the action was chosen.
+- The next step is the state reached after that action.
+- The final step can have no `action.json`.
+- `trajectory.jsonl` and `web_surfer.log` have one row per executed agent
+  action.
 
-`action.json` records the chosen action, execution receipt, target identity,
-coordinate lookup, progress signals, model response metadata, source-state
-paths, and next-state paths. The manifest lists both captured states and
-executed actions. `trajectory.jsonl` and `web_surfer.log` contain one row for
-each executed non-human action.
-
-Use this command to validate an existing run and regenerate only the two
-exported action logs:
+Validate a run and rebuild only its exported action logs:
 
 ```bash
 python runner.py --build-trajectory-run /path/to/recordings/<run-id>
 ```
 
-## Evidence Boundaries
+## Evidence Settings
 
-`dom.json` is the authoritative capture for the current viewport. The recorder
-uses `inViewportOnly=true` and `includeOffscreen=false`; content becomes
-eligible after scrolling brings it into view.
-
-The recorder requests 7,000 nodes and 200,000 text characters. Chromium also
-sets per-node direct text at 240 characters, subtree text at 500, selected
-attribute values at 160, selected attributes at 12, and child references at
-80. The host does not shorten a returned DOM snapshot or its text projections.
-
-The renderers create readable projections only. They do not modify `dom.json`.
+- `dom.json` is the authoritative viewport capture.
+- `inViewportOnly=true` and `includeOffscreen=false` are used.
+- Scrolling makes new content eligible for capture.
+- The harness requests up to 7,000 nodes and 200,000 text characters.
+- Chromium limits direct text to 240 characters per node.
+- Chromium limits subtree text to 500 characters per node.
+- Attribute values are limited to 160 characters.
+- Each node stores up to 12 attributes and 80 child references.
+- Host renderers do not shorten `dom.json`.
 
 ## Troubleshooting
 
-### Docker reports that a container name or host port is already in use
+### A port or container name is already used
 
-For a new checkout, use `./browser-runtime configure` instead of copying a
-configuration from another checkout. It chooses a unique container identity
-and currently available ports.
+New checkout:
 
-If an existing `.env` points to ports that later became occupied, stop and
-remove only this checkout's Compose service, then refresh its ports:
+```bash
+./w8-core-runtime configure
+```
+
+Existing `.env` with newly occupied ports:
 
 ```bash
 docker compose --env-file .env down
-./browser-runtime configure --refresh-ports
+./w8-core-runtime configure --refresh-ports
 docker compose --env-file .env up -d --wait w8-core
-./browser-runtime status
+./w8-core-runtime status
 ```
 
-The refresh preserves the configured image, container identity, API key, and
-model while replacing the three host ports and the printed noVNC URL. Because
-`down` removes the container, use this only when the service cannot start; it
-also removes that container's browser profile.
+This preserves the API key and model but replaces the ports. `down` removes
+this checkout's current container profile.
 
-### The noVNC page does not open locally
-
-Run `./browser-runtime status`. If it fails, inspect the service without
-guessing a different URL:
+### noVNC does not open
 
 ```bash
+./w8-core-runtime status
 docker compose --env-file .env ps
 docker compose --env-file .env logs --tail=100 w8-core
 ```
 
-Use the noVNC URL printed by the status command. A hard-coded port from another
-checkout may point at the wrong container or at no service.
+Use the URL printed by `status`. Do not reuse a URL from another checkout.
 
-### The SSH tunnel asks for a password and then prints connection refused
+### SSH prints `connect failed: Connection refused`
 
-This is a server-side noVNC reachability problem, not an SSH authentication
-failure. On the server, run `./browser-runtime status` and verify the value of
-`NOVNC_HOST_PORT` in `.env`. Use that exact number on the right side of the
-local `-L` argument.
+Run `./w8-core-runtime status` on the server. Confirm w8-core is healthy and
+copy its noVNC port into the SSH command.
 
-### SSH says the forwarding address is already in use
+### The local SSH port is already used
 
-The local tunnel port is occupied. Keep the server port unchanged and choose a
-different local port:
+Change `39084` to `39085` in both the SSH command and local noVNC URL. Keep the
+server noVNC port unchanged.
 
-```bash
-ssh -o ExitOnForwardFailure=yes -N \
-  -L 127.0.0.1:39085:127.0.0.1:SERVER_NOVNC_PORT \
-  SERVER_USER@SERVER_HOST
-```
+### A task does not start
 
-Then open the URL with port `39085`.
-
-### The browser is healthy but a task will not start
-
-Confirm that `.env` contains real values rather than placeholders:
-
-```text
-OPENAI_API_KEY=...
-OPENAI_MODEL=...
-```
-
-Run a dry check to separate catalog and argument validation from browser and
-model execution:
+Check that `.env` has real `OPENAI_API_KEY` and `OPENAI_MODEL` values. Then run:
 
 ```bash
 ./run-task task8 --output-dir ./recordings --no-human-intervention --dry-run
 ```
 
-### Confirm exactly which Docker resources belong to this checkout
+### List this checkout's Docker resources
 
 ```bash
 grep -E '^(COMPOSE_PROJECT_NAME|CONTAINER_NAME|CDP_HOST_PORT|NOVNC_HOST_PORT|VNC_HOST_PORT)=' .env
 docker compose --env-file .env ps
 ```
 
-Do not stop or remove another project's container to resolve a conflict. The
-isolated names and ports in this checkout are designed to make that unnecessary.
+Do not stop another project's container. This checkout has separate names and
+ports.
