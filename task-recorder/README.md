@@ -97,7 +97,7 @@ This creates a private `.env`. It:
 - binds those ports to `127.0.0.1`;
 - never overwrites an existing `.env`.
 
-The file is private and ignored by Git. `.env.example` lists all settings.
+The generated file is private and ignored by Git.
 
 Open `.env` in an editor and replace:
 
@@ -210,8 +210,11 @@ Run a catalog task:
 ./run-task task8 --output-dir ./recordings
 ```
 
-Add `--no-human-intervention` when the task must run unattended and stop rather
-than ask for help.
+- Human intervention is enabled unless `--no-human-intervention` is added.
+- Even when enabled, it may be used only for a visible CAPTCHA or similar
+  verification challenge through noVNC.
+- Enabled does not mean used. Any actual intervention is recorded.
+- Use `--no-human-intervention` for fully autonomous CUA based runs.
 
 Run a manual task:
 
