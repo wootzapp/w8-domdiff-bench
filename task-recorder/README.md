@@ -3,60 +3,14 @@
 This harness runs model-directed tasks in w8-core. It records each page state
 once and lets you watch the live w8-core window through noVNC.
 
-Each state can contain:
-
-- `dom.json` and `dom_full.txt`;
-- `dom_model.json` and `dom_model.txt`;
-- a screenshot;
-- agent-browser observations;
-- the action selected from that state.
-
-Screenshots are stored for evaluation. They are not sent to the model.
-
-## How It Works
-
-Two w8-core interfaces are used:
-
-- **agent-browser** observes accessible controls and executes the chosen
-  action. Its `@eN` references work only for the current
-  interactive snapshot.
-- **ChromiumRL** captures the structured DOM with
-  `captureStructuredSnapshot`, provides action coordinates through
-  `getAgentObservation`, and builds a structured model-facing projection with
-  `getModelDOM`.
-
-w8-core provides Chromium, ChromiumRL, agent-browser 0.27.3, VNC, and noVNC in
-one Docker image. The harness reaches ChromiumRL through CDP and runs
-agent-browser inside the container. Host-side Node.js is not required.
-
-For each state, the harness:
-
-- saves ChromiumRL output as `dom.json`;
-- creates `dom_full.txt`;
-- saves `getModelDOM` output as `dom_model.json`;
-- creates `dom_model.txt`.
-
-The model receives the task, `dom_model.txt`, interactive controls, memory, and
-recent action results.
-
-## Project Layout
-
-- `run-task`: task command.
-- `task_cli.py`: task loading and w8-core lifecycle.
-- `runner.py`: decisions, validation, execution, and finalization.
-- `capture.py`: ChromiumRL, screenshots, and synchronization.
-- `trajectory.py`: creates `trajectory.jsonl` and `web_surfer.log`.
-- `prompts.py`: model instructions and action policy.
-- `agent_browser/`: adapter for the bundled agent-browser.
-- `scripts/`: DOM text renderers.
-- `w8-core-runtime`: w8-core setup and health checks.
-- `tests/`: harness unit tests.
-
-## Setup
+## Browser Setup
 
 ### Requirements
 
-- Docker Engine with Docker Compose.
+- A 64-bit Linux system, or WSL 2 on Windows.
+- At least 32 GiB RAM and 200 GiB free disk space.
+- Git, Python 3, `rsync`, Docker Engine, Docker Compose, and Docker Buildx.
+- Network access to the public desktop `wootzapp/wootzapp-browser` repository.
 - Python 3 with virtual environments.
 - An OpenAI API key and supported model.
 - At least 2 GiB shared memory for w8-core.
@@ -64,18 +18,135 @@ recent action results.
 The model runner stays on the host. w8-core, ChromiumRL, agent-browser, VNC,
 and noVNC run in Docker.
 
-### Clone the reproducible branch
+### 1. Clone This Repository
 
 ```bash
-git clone --branch w8-reproducible https://github.com/wootzapp/w8-domdiff-bench.git
+git clone https://github.com/wootzapp/w8-domdiff-bench.git
 cd w8-domdiff-bench/task-recorder
+export W8_RECORDER_ROOT="$PWD"
 ```
 
-Run the remaining commands from `task-recorder/`.
+On WSL, keep the Chromium workspace in the Linux home directory rather than
+under `/mnt/c`.
 
-### Install the recorder dependency
+### 2. Fetch and Build Official Chromium
+
+Install Chromium `depot_tools`:
 
 ```bash
+export W8_BUILD_ROOT="$HOME/w8-browser-build"
+mkdir -p "$W8_BUILD_ROOT"
+cd "$W8_BUILD_ROOT"
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+export PATH="$W8_BUILD_ROOT/depot_tools:$PATH"
+```
+
+Fetch and pin the official desktop Chromium source:
+
+```bash
+mkdir -p "$W8_BUILD_ROOT/chromium"
+cd "$W8_BUILD_ROOT/chromium"
+fetch --nohooks --no-history chromium
+gclient sync --nohooks \
+  --revision src@refs/tags/152.0.7948.0 \
+  --reset --upstream -D --force --no-history --shallow
+```
+
+Install Chromium's Linux dependencies and run its hooks:
+
+```bash
+cd "$W8_BUILD_ROOT/chromium/src"
+./build/install-build-deps.sh
+gclient runhooks
+```
+
+Configure the Release build. The arguments remain visible so they can be
+reviewed and reproduced:
+
+```bash
+cd "$W8_BUILD_ROOT/chromium/src"
+gn gen out/Release --args='is_debug=false
+is_component_build=false
+symbol_level=0
+blink_symbol_level=0
+v8_symbol_level=0
+proprietary_codecs=true
+ffmpeg_branding="Chrome"'
+autoninja -C out/Release chrome
+./out/Release/chrome --version
+```
+
+This first build contains official Chromium only. Do not continue if it fails.
+If you open a new terminal, export `W8_RECORDER_ROOT`, `W8_BUILD_ROOT`, and
+`PATH` again.
+
+### 3. Apply the w8-core Desktop Modifications
+
+Clone the public desktop repository:
+
+```bash
+git clone --depth 1 \
+  https://github.com/wootzapp/wootzapp-browser.git \
+  "$W8_BUILD_ROOT/wootzapp-browser"
+```
+
+Copy its patch over the official Chromium checkout:
+
+```bash
+rsync -a \
+  "$W8_BUILD_ROOT/wootzapp-browser/chromium-patch/src/" \
+  "$W8_BUILD_ROOT/chromium/src/"
+```
+
+The separate `chromium-desktop/` directory is not used as the build source.
+Only `chromium-patch/src/` changes the official checkout.
+
+### 4. Rebuild w8-core and Create the Docker Image
+
+Run the hooks and build the patched source:
+
+```bash
+cd "$W8_BUILD_ROOT/chromium/src"
+gclient runhooks
+gn gen out/Release
+autoninja -C out/Release chrome
+./out/Release/chrome --version
+```
+
+The second build reuses the GN arguments already stored in `out/Release`.
+
+Copy the patched runtime into the desktop repository's Docker context:
+
+```bash
+export W8_IMAGE_ROOT="$W8_BUILD_ROOT/wootzapp-browser/chromium-image-docker"
+rm -rf -- "$W8_IMAGE_ROOT/build"
+mkdir -p "$W8_IMAGE_ROOT/build"
+cd "$W8_BUILD_ROOT/chromium/src"
+gn desc out/Release //chrome:chrome runtime_deps | \
+  rsync -aR --files-from=- out/Release/ "$W8_IMAGE_ROOT/build/"
+test -x "$W8_IMAGE_ROOT/build/chrome"
+```
+
+Build the local image with the desktop repository's existing Docker script:
+
+```bash
+cd "$W8_IMAGE_ROOT"
+CHROMIUM_IMAGE_NAME=w8-core:domdiff-bench \
+IMAGE_VERSION=chromium-152.0.7948.0 \
+IMAGE_VCS_REF="$(git -C "$W8_BUILD_ROOT/wootzapp-browser" rev-parse HEAD)" \
+  ./scripts/build_image.sh
+docker image inspect w8-core:domdiff-bench
+```
+
+The result is a local `w8-core:domdiff-bench` image. Compose is configured not
+to pull a hosted substitute.
+
+### 5. Set Up the Task Recorder
+
+Install the recorder dependencies:
+
+```bash
+cd "$W8_RECORDER_ROOT"
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -84,10 +155,10 @@ pip install -r requirements.txt
 On Windows, run the harness in WSL with Docker access. The later SSH command
 also works directly in PowerShell.
 
-### Create the w8-core configuration
+Create an isolated `.env` with unused local ports:
 
 ```bash
-./w8-core-runtime configure
+python3 browser_runtime.py configure
 ```
 
 This creates a private `.env`. It:
@@ -109,20 +180,16 @@ OPENAI_MODEL=replace-with-a-supported-model-name
 Do not add quotes unless they belong in the value. w8-core can start without
 these credentials, but a model-directed task cannot.
 
-### Start and verify w8-core
+Start and verify w8-core:
 
 ```bash
-docker pull wootzapp/w8-core:latest
 docker compose --env-file .env up -d --wait w8-core
+python3 browser_runtime.py status
 ```
 
-Here, `-d` runs in the background. `--wait` waits until w8-core reports healthy.
-
-Check the complete runtime:
-
-```bash
-./w8-core-runtime status
-```
+Compose uses the locally built `w8-core:domdiff-bench` image and has pulling
+disabled. `-d` runs in the background. `--wait` waits until w8-core reports
+healthy.
 
 A successful result shows:
 
@@ -134,6 +201,46 @@ A successful result shows:
 
 Start tasks only after this check succeeds.
 
+## How It Works
+
+Two w8-core interfaces are used:
+
+- **agent-browser** observes accessible controls and executes the chosen
+  action. Its `@eN` references work only for the current interactive snapshot.
+- **ChromiumRL** captures the structured DOM with
+  `captureStructuredSnapshot`, provides action coordinates through
+  `getAgentObservation`, and builds a structured model-facing projection with
+  `getModelDOM`.
+
+w8-core provides Chromium, ChromiumRL, agent-browser 0.27.3, VNC, and noVNC in
+one locally built Docker image. The harness reaches ChromiumRL through CDP and
+runs agent-browser inside the container. Host-side Node.js is not required.
+
+For each state, the harness:
+
+- saves ChromiumRL output as `dom.json`;
+- creates `dom_full.txt`;
+- saves `getModelDOM` output as `dom_model.json`;
+- creates `dom_model.txt`.
+
+The model receives the task, `dom_model.txt`, interactive controls, memory, and
+recent action results. Screenshots are stored for evaluation and are not sent
+to the model.
+
+## Project Layout
+
+- `run-task`: task command.
+- `task_cli.py`: task loading and w8-core lifecycle.
+- `runner.py`: decisions, validation, execution, and finalization.
+- `capture.py`: ChromiumRL, screenshots, and synchronization.
+- `trajectory.py`: creates `trajectory.jsonl` and `web_surfer.log`.
+- `prompts.py`: model instructions and action policy.
+- `agent_browser/`: adapter for the bundled agent-browser.
+- `scripts/`: DOM text renderers.
+- `browser_runtime.py`: creates an isolated runtime configuration and checks
+  w8-core, CDP, noVNC, and agent-browser.
+- `tests/`: harness unit tests.
+
 ## View w8-core
 
 Choose the local or remote case below.
@@ -143,7 +250,7 @@ Choose the local or remote case below.
 Run:
 
 ```bash
-./w8-core-runtime status
+python3 browser_runtime.py status
 ```
 
 The last part of the output contains a line like this:
@@ -163,7 +270,7 @@ On the server, enter the task-recorder folder and run:
 
 ```bash
 cd w8-domdiff-bench/task-recorder
-./w8-core-runtime status
+python3 browser_runtime.py status
 ```
 
 Suppose its noVNC URL uses port `16191`. Run this on your own computer:
@@ -188,7 +295,7 @@ Port `16191` is on the server. Port `39084` is on your computer. If `39084` is
 busy, use `39085` in both the command and URL.
 
 If SSH prints `connect failed: Connection refused`, run
-`./w8-core-runtime status` on the server. Check that w8-core is healthy and use
+`python3 browser_runtime.py status` on the server. Check that w8-core is healthy and use
 the noVNC port it prints.
 
 The command works in PowerShell, macOS, and Linux. Closing noVNC or SSH closes
@@ -259,7 +366,7 @@ Start it again:
 
 ```bash
 docker compose --env-file .env start w8-core
-./w8-core-runtime status
+python3 browser_runtime.py status
 ```
 
 Restart it:
@@ -336,16 +443,16 @@ python runner.py --build-trajectory-run /path/to/recordings/<run-id>
 New checkout:
 
 ```bash
-./w8-core-runtime configure
+python3 browser_runtime.py configure
 ```
 
 Existing `.env` with newly occupied ports:
 
 ```bash
 docker compose --env-file .env down
-./w8-core-runtime configure --refresh-ports
+python3 browser_runtime.py configure --refresh-ports
 docker compose --env-file .env up -d --wait w8-core
-./w8-core-runtime status
+python3 browser_runtime.py status
 ```
 
 This preserves the API key and model but replaces the ports. `down` removes
@@ -354,7 +461,7 @@ this checkout's current container profile.
 ### noVNC does not open
 
 ```bash
-./w8-core-runtime status
+python3 browser_runtime.py status
 docker compose --env-file .env ps
 docker compose --env-file .env logs --tail=100 w8-core
 ```
@@ -363,7 +470,7 @@ Use the URL printed by `status`. Do not reuse a URL from another checkout.
 
 ### SSH prints `connect failed: Connection refused`
 
-Run `./w8-core-runtime status` on the server. Confirm w8-core is healthy and
+Run `python3 browser_runtime.py status` on the server. Confirm w8-core is healthy and
 copy its noVNC port into the SSH command.
 
 ### The local SSH port is already used
@@ -378,6 +485,17 @@ Check that `.env` has real `OPENAI_API_KEY` and `OPENAI_MODEL` values. Then run:
 ```bash
 ./run-task task8 --output-dir ./recordings --no-human-intervention --dry-run
 ```
+
+### Docker says the local image does not exist
+
+Check the expected image:
+
+```bash
+docker image inspect w8-core:domdiff-bench
+```
+
+If it is missing, complete Browser Setup steps 3 through 9 before starting
+Compose.
 
 ### List this checkout's Docker resources
 

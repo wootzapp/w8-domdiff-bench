@@ -420,31 +420,46 @@ The task dataset is
 Operational setup, evaluation metadata, and artifact conventions are
 maintained in the repository.
 
-### 8 Run the Browser Harness
+### 8 Browser Setup
 
-The runnable harness is in [`task-recorder/`](task-recorder/). From a fresh
-checkout:
+The browser is built locally from official Chromium source. Building and
+patching are separate, visible steps:
+
+1. Fetch, configure, and build official Chromium `152.0.7948.0`.
+2. Clone the public desktop repository and apply `chromium-patch/src/`.
+3. Rebuild the patched source.
+4. Package it as the local `w8-core:domdiff-bench` image.
+
+The exact commands and GN arguments are in the
+[task-recorder Browser Setup guide](task-recorder/README.md#browser-setup).
+Start by cloning the repository:
 
 ```bash
-git clone --branch w8-reproducible https://github.com/wootzapp/w8-domdiff-bench.git
+git clone https://github.com/wootzapp/w8-domdiff-bench.git
 cd w8-domdiff-bench/task-recorder
+```
+
+After completing Browser Setup steps 2 through 4, install the recorder and
+create its isolated runtime configuration:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-./w8-core-runtime configure
+python3 browser_runtime.py configure
 ```
 
 Add `OPENAI_API_KEY` and `OPENAI_MODEL` to the generated `.env`, then run:
 
 ```bash
-docker pull wootzapp/w8-core:latest
 docker compose --env-file .env up -d --wait w8-core
-./w8-core-runtime status
+python3 browser_runtime.py status
 mkdir -p recordings
 ./run-task task8 --output-dir ./recordings
 ```
 
-`--wait` waits for w8-core to become healthy. Add
+Compose is configured to use only the locally built image and will not pull a
+hosted fallback. `--wait` waits for w8-core to become healthy. Add
 `--no-human-intervention` to the task command when it must run unattended.
 The status command prints the noVNC URL. See the
 [task-recorder guide](task-recorder/README.md) for remote viewing, isolated

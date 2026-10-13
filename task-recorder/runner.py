@@ -803,7 +803,7 @@ async def run(args: argparse.Namespace) -> int:
         "task_name": args.task_name,
         "task": args.task or "capture-only",
         "created_at": utc_now(),
-        "browser_image": os.environ.get("IMAGE", "wootzapp/w8-core:latest"),
+        "browser_image": os.environ.get("IMAGE", "w8-core:domdiff-bench"),
         "browser_profile_provenance": browser_profile_provenance_from_environment(),
         "dom_capture_parameters": {
             "max_nodes": args.snapshot_max_nodes,

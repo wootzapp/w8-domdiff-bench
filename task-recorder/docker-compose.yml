@@ -5,7 +5,8 @@ name: ${COMPOSE_PROJECT_NAME:-w8-core-harness}
 # OPENAI_MODEL are therefore not injected into this browser service.
 services:
   w8-core:
-    image: ${IMAGE:-wootzapp/w8-core:latest}
+    image: ${IMAGE:-w8-core:domdiff-bench}
+    pull_policy: never
     container_name: ${CONTAINER_NAME:-w8-core-browser-engine}
     restart: unless-stopped
     shm_size: "2gb"
@@ -28,7 +29,7 @@ services:
       CHROMIUM_RESET_PROFILE: ${CHROMIUM_RESET_PROFILE:-0}
       CDP_PORT: "9222"
       CHROMIUM_CDP_PORT: "9223"
-      START_URL: ${START_URL:-about:blank}
+      CHROMIUM_START_URL: ${START_URL:-about:blank}
     healthcheck:
       test:
         - CMD

@@ -14,6 +14,19 @@ import browser_runtime  # noqa: E402
 
 
 class BrowserRuntimeTests(unittest.TestCase):
+    def test_compose_uses_only_the_source_built_local_image(self) -> None:
+        compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+
+        self.assertIn("image: ${IMAGE:-w8-core:domdiff-bench}", compose)
+        self.assertIn("pull_policy: never", compose)
+        self.assertNotIn("wootzapp/w8-core", compose)
+        self.assertFalse((ROOT / "Dockerfile").exists())
+
+    def test_runtime_has_one_command_line_entry_point(self) -> None:
+        self.assertTrue((ROOT / "browser_runtime.py").is_file())
+        self.assertFalse((ROOT / "browser-runtime").exists())
+        self.assertFalse((ROOT / "w8-core-runtime").exists())
+
     def test_read_env_supports_comments_and_quoted_values(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             env_path = Path(temporary) / ".env"
@@ -52,6 +65,7 @@ class BrowserRuntimeTests(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(values["COMPOSE_PROJECT_NAME"], "w8-recorder-abc12345")
         self.assertEqual(values["CONTAINER_NAME"], "w8-core-browser-abc12345")
+        self.assertEqual(values["IMAGE"], "w8-core:domdiff-bench")
         self.assertEqual(values["CDP_HOST_PORT"], "49335")
         self.assertEqual(values["NOVNC_HOST_PORT"], "22001")
         self.assertEqual(values["VNC_HOST_PORT"], "15911")
@@ -75,7 +89,7 @@ class BrowserRuntimeTests(unittest.TestCase):
             env_path.write_text(
                 "\n".join(
                     [
-                        "IMAGE=wootzapp/w8-core:fixed",
+                        "IMAGE=w8-core:fixed",
                         "COMPOSE_PROJECT_NAME=existing-project",
                         "CONTAINER_NAME=existing-container",
                         "OPENAI_API_KEY=secret-value",
@@ -94,7 +108,7 @@ class BrowserRuntimeTests(unittest.TestCase):
             values = browser_runtime.read_env(env_path)
 
         self.assertEqual(result, 0)
-        self.assertEqual(values["IMAGE"], "wootzapp/w8-core:fixed")
+        self.assertEqual(values["IMAGE"], "w8-core:fixed")
         self.assertEqual(values["COMPOSE_PROJECT_NAME"], "existing-project")
         self.assertEqual(values["CONTAINER_NAME"], "existing-container")
         self.assertEqual(values["OPENAI_API_KEY"], "secret-value")
