@@ -21,20 +21,24 @@ and noVNC run in Docker.
 ### 1. Clone This Repository
 
 ```bash
-git clone https://github.com/wootzapp/w8-domdiff-bench.git
-cd w8-domdiff-bench/task-recorder
+export W8_WORKSPACE_ROOT="$PWD/w8-workspace"
+mkdir -p "$W8_WORKSPACE_ROOT"
+cd "$W8_WORKSPACE_ROOT"
+git clone --depth 1 https://github.com/wootzapp/w8-domdiff-bench.git
+cd "$W8_WORKSPACE_ROOT/w8-domdiff-bench/task-recorder"
 export W8_RECORDER_ROOT="$PWD"
+export W8_BUILD_ROOT="$W8_WORKSPACE_ROOT/w8-browser-build"
 ```
 
-On WSL, keep the Chromium workspace in the Linux home directory rather than
-under `/mnt/c`.
+This keeps `w8-domdiff-bench/` and `w8-browser-build/` beside each other. Use
+a fast Linux disk with at least 200 GiB free. On WSL, do not place the
+workspace under `/mnt/c`.
 
 ### 2. Fetch and Build Official Chromium
 
 Install Chromium `depot_tools`:
 
 ```bash
-export W8_BUILD_ROOT="$HOME/w8-browser-build"
 mkdir -p "$W8_BUILD_ROOT"
 cd "$W8_BUILD_ROOT"
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -494,7 +498,7 @@ Check the expected image:
 docker image inspect w8-core:domdiff-bench
 ```
 
-If it is missing, complete Browser Setup steps 3 through 9 before starting
+If it is missing, complete Browser Setup steps 2 through 4 before starting
 Compose.
 
 ### List this checkout's Docker resources

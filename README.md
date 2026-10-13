@@ -435,8 +435,13 @@ The exact commands and GN arguments are in the
 Start by cloning the repository:
 
 ```bash
-git clone https://github.com/wootzapp/w8-domdiff-bench.git
-cd w8-domdiff-bench/task-recorder
+export W8_WORKSPACE_ROOT="$PWD/w8-workspace"
+mkdir -p "$W8_WORKSPACE_ROOT"
+cd "$W8_WORKSPACE_ROOT"
+git clone --depth 1 https://github.com/wootzapp/w8-domdiff-bench.git
+cd "$W8_WORKSPACE_ROOT/w8-domdiff-bench/task-recorder"
+export W8_RECORDER_ROOT="$PWD"
+export W8_BUILD_ROOT="$W8_WORKSPACE_ROOT/w8-browser-build"
 ```
 
 After completing Browser Setup steps 2 through 4, install the recorder and
