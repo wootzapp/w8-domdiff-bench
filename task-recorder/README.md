@@ -10,7 +10,7 @@ once and lets you watch the live w8-core window through noVNC.
 - A 64-bit Linux system, or WSL 2 on Windows.
 - At least 32 GiB RAM and 200 GiB free disk space.
 - Git, Python 3, `rsync`, Docker Engine, Docker Compose, and Docker Buildx.
-- Network access to the public desktop `wootzapp/wootzapp-browser` repository.
+- Network access to Chromium's source and build dependencies.
 - Python 3 with virtual environments.
 - An OpenAI API key and supported model.
 - At least 2 GiB shared memory for w8-core.
@@ -86,23 +86,14 @@ If you open a new terminal, export `W8_RECORDER_ROOT`, `W8_BUILD_ROOT`, and
 
 ### 3. Apply the w8-core Desktop Modifications
 
-Clone the public desktop repository:
-
-```bash
-git clone --depth 1 \
-  https://github.com/wootzapp/wootzapp-browser.git \
-  "$W8_BUILD_ROOT/wootzapp-browser"
-```
-
-Copy its patch over the official Chromium checkout:
+Copy the maintained source overlay over the official Chromium checkout:
 
 ```bash
 rsync -a \
-  "$W8_BUILD_ROOT/wootzapp-browser/chromium-patch/src/" \
+  "$W8_RECORDER_ROOT/../chromium-patch/src/" \
   "$W8_BUILD_ROOT/chromium/src/"
 ```
 
-The separate `chromium-desktop/` directory is not used as the build source.
 Only `chromium-patch/src/` changes the official checkout.
 
 ### 4. Rebuild w8-core and Create the Docker Image
@@ -119,10 +110,10 @@ autoninja -C out/Release chrome
 
 The second build reuses the GN arguments already stored in `out/Release`.
 
-Copy the patched runtime into the desktop repository's Docker context:
+Copy the patched runtime into the Docker image context:
 
 ```bash
-export W8_IMAGE_ROOT="$W8_BUILD_ROOT/wootzapp-browser/chromium-image-docker"
+W8_IMAGE_ROOT="$W8_RECORDER_ROOT/../chromium-image-docker"
 rm -rf -- "$W8_IMAGE_ROOT/build"
 mkdir -p "$W8_IMAGE_ROOT/build"
 cd "$W8_BUILD_ROOT/chromium/src"
@@ -131,13 +122,11 @@ gn desc out/Release //chrome:chrome runtime_deps | \
 test -x "$W8_IMAGE_ROOT/build/chrome"
 ```
 
-Build the local image with the desktop repository's existing Docker script:
+Build the local image:
 
 ```bash
 cd "$W8_IMAGE_ROOT"
-CHROMIUM_IMAGE_NAME=w8-core:domdiff-bench \
 IMAGE_VERSION=chromium-152.0.7948.0 \
-IMAGE_VCS_REF="$(git -C "$W8_BUILD_ROOT/wootzapp-browser" rev-parse HEAD)" \
   ./scripts/build_image.sh
 docker image inspect w8-core:domdiff-bench
 ```
