@@ -24,13 +24,16 @@ class BrowserSourceLayoutTest(unittest.TestCase):
         )
         self.assertEqual(compose_files, [TASK_RECORDER_ROOT / "docker-compose.yml"])
 
-    def test_image_build_inputs_do_not_duplicate_runtime_launchers(self) -> None:
-        image_root = REPOSITORY_ROOT / "chromium-image-docker"
-        self.assertTrue((image_root / "Dockerfile").is_file())
-        self.assertTrue((image_root / "scripts/build_image.sh").is_file())
-        self.assertTrue((image_root / "agent-browser-runtime/package-lock.json").is_file())
-        self.assertFalse((image_root / "scripts/run_local.sh").exists())
-        self.assertFalse((image_root / "scripts/stop_local.sh").exists())
+    def test_image_build_inputs_have_one_owner(self) -> None:
+        self.assertFalse((REPOSITORY_ROOT / "chromium-image-docker").exists())
+        self.assertTrue((TASK_RECORDER_ROOT / "Dockerfile").is_file())
+        self.assertTrue((TASK_RECORDER_ROOT / "build-browser-image").is_file())
+        self.assertTrue(
+            (TASK_RECORDER_ROOT / "agent_browser/runtime/package-lock.json").is_file()
+        )
+        self.assertTrue(
+            (TASK_RECORDER_ROOT / "runtime/chromium-runtime-entrypoint").is_file()
+        )
 
 
 if __name__ == "__main__":

@@ -20,7 +20,36 @@ class BrowserRuntimeTests(unittest.TestCase):
         self.assertIn("image: ${IMAGE:-w8-core:domdiff-bench}", compose)
         self.assertIn("pull_policy: never", compose)
         self.assertNotIn("wootzapp/w8-core", compose)
-        self.assertFalse((ROOT / "Dockerfile").exists())
+        self.assertTrue((ROOT / "Dockerfile").is_file())
+
+    def test_image_contains_browser_runtime_and_pinned_agent_browser(self) -> None:
+        dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+        builder = (ROOT / "build-browser-image").read_text(encoding="utf-8")
+        entrypoint = (ROOT / "runtime/chromium-runtime-entrypoint").read_text(
+            encoding="utf-8"
+        )
+        package = (ROOT / "agent_browser/runtime/package.json").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("COPY --chown=wootz:wootz build/ /opt/wootzapp/", dockerfile)
+        self.assertIn("runtime/chromium-runtime-entrypoint", dockerfile)
+        self.assertIn("agent_browser/runtime/package.json", dockerfile)
+        self.assertIn("npm ci --omit=dev", dockerfile)
+        self.assertIn('"agent-browser": "0.27.3"', package)
+        self.assertNotIn("OPENAI_", dockerfile)
+        self.assertIn('BUILD_DIR="${RECORDER_ROOT}/build"', builder)
+        self.assertIn('AGENT_BROWSER_DIR="${RECORDER_ROOT}/agent_browser/runtime"', builder)
+        for command in ("serve)", "status)", "wait)", "version)"):
+            self.assertIn(command, entrypoint)
+
+    def test_image_build_context_excludes_recorder_state(self) -> None:
+        dockerignore = (ROOT / ".dockerignore").read_text(encoding="utf-8")
+
+        self.assertTrue(dockerignore.startswith("# The task-recorder directory"))
+        self.assertIn("!build/**", dockerignore)
+        self.assertIn("!runtime/**", dockerignore)
+        self.assertIn("!agent_browser/runtime/package-lock.json", dockerignore)
 
     def test_runtime_has_one_command_line_entry_point(self) -> None:
         self.assertTrue((ROOT / "browser_runtime.py").is_file())

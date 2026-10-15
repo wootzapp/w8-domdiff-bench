@@ -78,7 +78,9 @@ RUN groupadd --gid "${WOOTZ_GID}" wootz \
     && chown -R wootz:wootz /opt/wootzapp /opt/chromium-runtime /home/wootz /tmp/chromium-runtime
 
 COPY --chown=wootz:wootz build/ /opt/wootzapp/
-COPY --chmod=0755 image/ /
+COPY --chmod=0755 runtime/chromium-runtime-entrypoint /usr/local/bin/chromium-runtime-entrypoint
+COPY --chmod=0755 runtime/serve.sh /opt/chromium-runtime/serve.sh
+COPY --chmod=0644 runtime/status.py runtime/wait.py /opt/chromium-runtime/
 
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
 COPY --from=node-runtime /usr/local/lib/node_modules/ /usr/local/lib/node_modules/
@@ -89,7 +91,7 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && npm --version
 
 WORKDIR /opt/agent-browser
-COPY agent-browser-runtime/package.json agent-browser-runtime/package-lock.json ./
+COPY agent_browser/runtime/package.json agent_browser/runtime/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci --omit=dev \
     && ln -sf /opt/agent-browser/node_modules/.bin/agent-browser /usr/local/bin/agent-browser \

@@ -2,11 +2,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd -- "${IMAGE_DIR}/.." && pwd)"
-AGENT_BROWSER_DIR="${IMAGE_DIR}/agent-browser-runtime"
+RECORDER_ROOT="${SCRIPT_DIR}"
+REPO_ROOT="$(cd -- "${RECORDER_ROOT}/.." && pwd)"
+AGENT_BROWSER_DIR="${RECORDER_ROOT}/agent_browser/runtime"
 IMAGE_NAME="${CHROMIUM_IMAGE_NAME:-w8-core:domdiff-bench}"
-BUILD_DIR="${IMAGE_DIR}/build"
+BUILD_DIR="${RECORDER_ROOT}/build"
 IMAGE_VERSION="${IMAGE_VERSION:-dev}"
 VCS_REF="${IMAGE_VCS_REF:-$(git -C "${REPO_ROOT}" rev-parse HEAD)}"
 
@@ -26,7 +26,7 @@ done
 "${BUILD_DIR}/chrome" --version
 du -sh "${BUILD_DIR}"
 
-cd "${IMAGE_DIR}"
+cd "${RECORDER_ROOT}"
 docker buildx build \
   --load \
   --build-arg "IMAGE_VERSION=${IMAGE_VERSION}" \
