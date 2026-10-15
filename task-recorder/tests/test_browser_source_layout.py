@@ -4,25 +4,12 @@ import unittest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 TASK_RECORDER_ROOT = REPOSITORY_ROOT / "task-recorder"
-CHROMIUMRL_PDL = (
-    REPOSITORY_ROOT
-    / "chromium-patch/src/third_party/blink/public/devtools_protocol/domains/ChromiumRL.pdl"
-)
 
 
 class BrowserSourceLayoutTest(unittest.TestCase):
-    def test_chromiumrl_protocol_has_one_authoritative_source(self) -> None:
-        copies = sorted(REPOSITORY_ROOT.rglob("ChromiumRL.pdl"))
-        self.assertEqual(copies, [CHROMIUMRL_PDL])
-
-        protocol = CHROMIUMRL_PDL.read_text(encoding="utf-8")
-        for command in (
-            "captureStructuredSnapshot",
-            "compareStructuredSnapshots",
-            "captureSnapshotDiff",
-            "getModelDOM",
-        ):
-            self.assertIn(f"  command {command}\n", protocol)
+    def test_browser_source_is_not_duplicated_in_harness_repository(self) -> None:
+        self.assertFalse((REPOSITORY_ROOT / "chromium-patch").exists())
+        self.assertEqual(list(REPOSITORY_ROOT.rglob("ChromiumRL.pdl")), [])
 
     def test_runtime_has_one_compose_owner(self) -> None:
         compose_files = sorted(

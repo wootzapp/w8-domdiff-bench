@@ -426,7 +426,7 @@ The browser is built locally from official Chromium source. Building and
 patching are separate, visible steps:
 
 1. Fetch, configure, and build official Chromium `152.0.7948.0`.
-2. Apply `chromium-patch/src/` to that checkout.
+2. Clone `wootzapp-browser` and apply its `src/` overlay to that checkout.
 3. Rebuild the patched source.
 4. Package it as the local `w8-core:domdiff-bench` image.
 

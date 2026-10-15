@@ -21,18 +21,15 @@ and noVNC run in Docker.
 ### 1. Clone This Repository
 
 ```bash
-export W8_WORKSPACE_ROOT="$PWD/w8-workspace"
-mkdir -p "$W8_WORKSPACE_ROOT"
-cd "$W8_WORKSPACE_ROOT"
+mkdir -p w8-workspace
+cd w8-workspace
 git clone --depth 1 https://github.com/wootzapp/w8-domdiff-bench.git
-cd "$W8_WORKSPACE_ROOT/w8-domdiff-bench/task-recorder"
-export W8_RECORDER_ROOT="$PWD"
-export W8_BUILD_ROOT="$W8_WORKSPACE_ROOT/w8-browser-build"
+git clone --depth 1 https://github.com/wootzapp/wootzapp-browser.git
 ```
 
-This keeps `w8-domdiff-bench/` and `w8-browser-build/` beside each other. Use
-a fast Linux disk with at least 200 GiB free. On WSL, do not place the
-workspace under `/mnt/c`.
+This keeps `w8-domdiff-bench/`, `wootzapp-browser/`, and
+`w8-browser-build/` beside each other. Use a fast Linux disk with at least
+200 GiB free. On WSL, do not place the workspace under `/mnt/c`.
 
 After opening a new terminal, restore the setup variables and `depot_tools`
 path before continuing.
@@ -42,17 +39,17 @@ path before continuing.
 Install Chromium `depot_tools`:
 
 ```bash
-mkdir -p "$W8_BUILD_ROOT"
-cd "$W8_BUILD_ROOT"
+mkdir -p w8-browser-build
+cd w8-browser-build
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-export PATH="$W8_BUILD_ROOT/depot_tools:$PATH"
+export PATH="$PATH:$(pwd)/depot_tools"
 ```
 
 Fetch and pin the official desktop Chromium source:
 
 ```bash
-mkdir -p "$W8_BUILD_ROOT/chromium"
-cd "$W8_BUILD_ROOT/chromium"
+mkdir -p chromium
+cd chromium
 fetch --nohooks --no-history chromium
 gclient sync --nohooks \
   --revision src@refs/tags/152.0.7948.0 \
@@ -62,7 +59,7 @@ gclient sync --nohooks \
 Install Chromium's Linux dependencies and run its hooks:
 
 ```bash
-cd "$W8_BUILD_ROOT/chromium/src"
+cd src
 ./build/install-build-deps.sh
 gclient runhooks
 ```
@@ -71,7 +68,6 @@ Configure the Release build. The arguments remain visible so they can be
 reviewed and reproduced:
 
 ```bash
-cd "$W8_BUILD_ROOT/chromium/src"
 gn gen out/Release --args='is_debug=false
 is_component_build=false
 symbol_level=0
@@ -85,25 +81,27 @@ autoninja -C out/Release chrome
 
 This first build contains official Chromium only. Do not continue if it fails.
 
-### 3. Apply the w8-core Desktop Modifications
+### 3. Apply the w8-core Modifications
 
 Copy the maintained source overlay over the official Chromium checkout:
 
 ```bash
-rsync -a \
-  "$W8_RECORDER_ROOT/../chromium-patch/src/" \
-  "$W8_BUILD_ROOT/chromium/src/"
+cd ../../..
+sudo chmod -R u+w w8-browser-build/chromium/src/
+cp -r wootzapp-browser/src/* w8-browser-build/chromium/src/
 ```
 
-Only `chromium-patch/src/` changes the official checkout.
+Only files maintained under `wootzapp-browser/src/` change the official
+checkout.
 
 ### 4. Rebuild w8-core and Create the Docker Image
 
 Run the hooks and build the patched source:
 
 ```bash
-cd "$W8_BUILD_ROOT/chromium/src"
+cd w8-browser-build/chromium
 gclient runhooks
+cd src
 gn gen out/Release
 autoninja -C out/Release chrome
 ./out/Release/chrome --version
@@ -114,33 +112,34 @@ The second build reuses the GN arguments already stored in `out/Release`.
 Copy the patched runtime into the Docker image context:
 
 ```bash
-W8_IMAGE_ROOT="$W8_RECORDER_ROOT/../chromium-image-docker"
-rm -rf -- "$W8_IMAGE_ROOT/build"
-mkdir -p "$W8_IMAGE_ROOT/build"
-cd "$W8_BUILD_ROOT/chromium/src"
+cd ../../..
+rm -rf w8-domdiff-bench/chromium-image-docker/build
+mkdir -p w8-domdiff-bench/chromium-image-docker/build
+cd w8-browser-build/chromium/src
 gn desc out/Release //chrome:chrome runtime_deps | \
-  rsync -aR --files-from=- out/Release/ "$W8_IMAGE_ROOT/build/"
-test -x "$W8_IMAGE_ROOT/build/chrome"
+  rsync -aR --files-from=- out/Release/ \
+  ../../../w8-domdiff-bench/chromium-image-docker/build/
+test -x ../../../w8-domdiff-bench/chromium-image-docker/build/chrome
 ```
 
 Build the local image:
 
 ```bash
-cd "$W8_IMAGE_ROOT"
+cd ../../../w8-domdiff-bench/chromium-image-docker
 IMAGE_VERSION=chromium-152.0.7948.0 \
   ./scripts/build_image.sh
 docker image inspect w8-core:domdiff-bench
 ```
 
-The result is a local `w8-core:domdiff-bench` image. Compose is configured not
-to pull a hosted substitute.
+The result is a local `w8-core:domdiff-bench` image used by the browser
+harness.
 
 ### 5. Set Up the Task Recorder
 
 Install the recorder dependencies:
 
 ```bash
-cd "$W8_RECORDER_ROOT"
+cd ../task-recorder
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -181,9 +180,8 @@ docker compose --env-file .env up -d --wait w8-core
 python3 browser_runtime.py status
 ```
 
-Compose uses the locally built `w8-core:domdiff-bench` image and has pulling
-disabled. `-d` runs in the background. `--wait` waits until w8-core reports
-healthy.
+Compose starts the locally built `w8-core:domdiff-bench` image. `-d` runs in
+the background. `--wait` waits until w8-core reports healthy.
 
 A successful result shows:
 
