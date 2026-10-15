@@ -420,7 +420,7 @@ The task dataset is
 Operational setup, evaluation metadata, and artifact conventions are
 maintained in the repository.
 
-### 8 Browser Setup
+### 8 Browser Setup Overview
 
 The browser is built locally from official Chromium source. Building and
 patching are separate, visible steps:
@@ -430,45 +430,11 @@ patching are separate, visible steps:
 3. Rebuild the patched source.
 4. Package it as the local `w8-core:domdiff-bench` image.
 
-The exact commands and GN arguments are in the
+The complete and authoritative procedure is the
 [task-recorder Browser Setup guide](task-recorder/README.md#browser-setup).
-Start by cloning the repository:
-
-```bash
-export W8_WORKSPACE_ROOT="$PWD/w8-workspace"
-mkdir -p "$W8_WORKSPACE_ROOT"
-cd "$W8_WORKSPACE_ROOT"
-git clone --depth 1 https://github.com/wootzapp/w8-domdiff-bench.git
-cd "$W8_WORKSPACE_ROOT/w8-domdiff-bench/task-recorder"
-export W8_RECORDER_ROOT="$PWD"
-export W8_BUILD_ROOT="$W8_WORKSPACE_ROOT/w8-browser-build"
-```
-
-After completing Browser Setup steps 2 through 4, install the recorder and
-create its isolated runtime configuration:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python3 browser_runtime.py configure
-```
-
-Add `OPENAI_API_KEY` and `OPENAI_MODEL` to the generated `.env`, then run:
-
-```bash
-docker compose --env-file .env up -d --wait w8-core
-python3 browser_runtime.py status
-mkdir -p recordings
-./run-task task8 --output-dir ./recordings
-```
-
-Compose is configured to use only the locally built image and will not pull a
-hosted fallback. `--wait` waits for w8-core to become healthy. Add
-`--no-human-intervention` to the task command when it must run unattended.
-The status command prints the noVNC URL. See the
-[task-recorder guide](task-recorder/README.md) for remote viewing, isolated
-ports, recorded files, and troubleshooting.
+It covers prerequisites, source download, compilation, Docker image creation,
+runtime configuration, noVNC access, task execution, recorded files, and
+troubleshooting.
 
 ### References
 

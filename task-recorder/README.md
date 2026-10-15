@@ -34,6 +34,9 @@ This keeps `w8-domdiff-bench/` and `w8-browser-build/` beside each other. Use
 a fast Linux disk with at least 200 GiB free. On WSL, do not place the
 workspace under `/mnt/c`.
 
+After opening a new terminal, restore the setup variables and `depot_tools`
+path before continuing.
+
 ### 2. Fetch and Build Official Chromium
 
 Install Chromium `depot_tools`:
@@ -81,8 +84,6 @@ autoninja -C out/Release chrome
 ```
 
 This first build contains official Chromium only. Do not continue if it fails.
-If you open a new terminal, export `W8_RECORDER_ROOT`, `W8_BUILD_ROOT`, and
-`PATH` again.
 
 ### 3. Apply the w8-core Desktop Modifications
 
@@ -259,10 +260,9 @@ Your port may not be `16191`. Always use the URL printed by the status command.
 
 ### w8-core is on a remote server
 
-On the server, enter the task-recorder folder and run:
+On the server, run:
 
 ```bash
-cd w8-domdiff-bench/task-recorder
 python3 browser_runtime.py status
 ```
 
@@ -299,7 +299,6 @@ only the view. It does not stop the task.
 Open noVNC first. In another terminal:
 
 ```bash
-cd w8-domdiff-bench/task-recorder
 source .venv/bin/activate
 mkdir -p recordings
 ```
