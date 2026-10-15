@@ -18,32 +18,22 @@ once and lets you watch the live w8-core window through noVNC.
 The model runner stays on the host. w8-core, ChromiumRL, agent-browser, VNC,
 and noVNC run in Docker.
 
-### 1. Clone This Repository
+### 1. Fetch and Build Official Chromium
+
+Create the workspace and install Chromium `depot_tools`:
 
 ```bash
 mkdir -p w8-workspace
 cd w8-workspace
-git clone --depth 1 https://github.com/wootzapp/wootzapp-browser.git
-git clone --depth 1 https://github.com/wootzapp/w8-domdiff-bench.git
-```
-
-This keeps `w8-domdiff-bench/`, `wootzapp-browser/`, and
-`w8-browser-build/` beside each other. Use a fast Linux disk with at least
-200 GiB free. On WSL, do not place the workspace under `/mnt/c`.
-
-After opening a new terminal, restore the setup variables and `depot_tools`
-path before continuing.
-
-### 2. Fetch and Build Official Chromium
-
-Install Chromium `depot_tools`:
-
-```bash
 mkdir -p w8-browser-build
 cd w8-browser-build
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 export PATH="$PATH:$(pwd)/depot_tools"
 ```
+
+Use a fast Linux disk with at least 200 GiB free. On WSL, do not place the
+workspace under `/mnt/c`. After opening a new terminal, restore the
+`depot_tools` path before continuing.
 
 Fetch and pin the official desktop Chromium source:
 
@@ -81,12 +71,24 @@ autoninja -C out/Release chrome
 
 This first build contains official Chromium only. Do not continue if it fails.
 
+### 2. Clone the Project Repositories
+
+Return to the workspace and clone the browser overlay and harness:
+
+```bash
+cd ../../..
+git clone --depth 1 https://github.com/wootzapp/wootzapp-browser.git
+git clone --depth 1 https://github.com/wootzapp/w8-domdiff-bench.git
+```
+
+This keeps `w8-domdiff-bench/`, `wootzapp-browser/`, and
+`w8-browser-build/` beside each other.
+
 ### 3. Apply the w8-core Modifications
 
 Copy the maintained source overlay over the official Chromium checkout:
 
 ```bash
-cd ../../..
 sudo chmod -R u+w w8-browser-build/chromium/src/
 cp -r wootzapp-browser/src/* w8-browser-build/chromium/src/
 ```
@@ -483,7 +485,7 @@ Check the expected image:
 docker image inspect w8-core:domdiff-bench
 ```
 
-If it is missing, complete Browser Setup steps 2 through 4 before starting
+If it is missing, complete Browser Setup steps 1 through 4 before starting
 Compose.
 
 ### List this checkout's Docker resources
