@@ -23,8 +23,8 @@ and noVNC run in Docker.
 ```bash
 mkdir -p w8-workspace
 cd w8-workspace
-git clone --depth 1 https://github.com/wootzapp/w8-domdiff-bench.git
 git clone --depth 1 https://github.com/wootzapp/wootzapp-browser.git
+git clone --depth 1 https://github.com/wootzapp/w8-domdiff-bench.git
 ```
 
 This keeps `w8-domdiff-bench/`, `wootzapp-browser/`, and
@@ -113,21 +113,21 @@ Copy the patched runtime into the Docker image context:
 
 ```bash
 cd ../../..
-rm -rf w8-domdiff-bench/chromium-image-docker/build
-mkdir -p w8-domdiff-bench/chromium-image-docker/build
+rm -rf w8-domdiff-bench/task-recorder/build
+mkdir -p w8-domdiff-bench/task-recorder/build
 cd w8-browser-build/chromium/src
 gn desc out/Release //chrome:chrome runtime_deps | \
   rsync -aR --files-from=- out/Release/ \
-  ../../../w8-domdiff-bench/chromium-image-docker/build/
-test -x ../../../w8-domdiff-bench/chromium-image-docker/build/chrome
+  ../../../w8-domdiff-bench/task-recorder/build/
+test -x ../../../w8-domdiff-bench/task-recorder/build/chrome
 ```
 
 Build the local image:
 
 ```bash
-cd ../../../w8-domdiff-bench/chromium-image-docker
+cd ../../../w8-domdiff-bench/task-recorder
 IMAGE_VERSION=chromium-152.0.7948.0 \
-  ./scripts/build_image.sh
+  ./build-browser-image
 docker image inspect w8-core:domdiff-bench
 ```
 
@@ -139,7 +139,6 @@ harness.
 Install the recorder dependencies:
 
 ```bash
-cd ../task-recorder
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
