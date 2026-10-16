@@ -420,7 +420,7 @@ The task dataset is
 Operational setup, evaluation metadata, and artifact conventions are
 maintained in the repository.
 
-### 8 Browser Setup Overview
+### 8 Running the Benchmark
 
 The browser is built locally from official Chromium source. Building and
 patching are separate, visible steps:
@@ -430,10 +430,9 @@ patching are separate, visible steps:
 3. Rebuild the patched source.
 4. Package it as the local `w8-core:domdiff-bench` image.
 
-The complete and authoritative procedure is the
-[runbook](docs/runbook.md#browser-build).
-It covers prerequisites, source download, compilation, Docker image creation,
-runtime configuration, noVNC access, task execution, recorded files, and
+The commands below cover the complete supported path. The
+[runbook](docs/runbook.md) contains the same workflow with requirements,
+remote noVNC access, runtime checks, recorded-file descriptions, and
 troubleshooting.
 
 #### 8.1 Repository Layout
@@ -450,10 +449,95 @@ troubleshooting.
   downloaded to the ignored `dataset/` directory when needed.
 - `results/` contains the published aggregate result and supporting notes.
 
-#### 8.2 Running the Recorder and Evaluation
+#### 8.2 Browser Setup and Task Recording
 
-After creating the local `w8-core:domdiff-bench` image, install the Python
-package and create a conflict-free runtime configuration:
+The build requires 64-bit Linux or WSL 2, Docker with Compose and Buildx,
+Python 3.10 or newer, Git, `rsync`, approximately 32 GiB of RAM, and about
+200 GiB of free disk space. Keep the build workspace on a Linux filesystem.
+
+Clone the benchmark:
+
+```bash
+git clone https://github.com/wootzapp/w8-domdiff-bench.git
+cd w8-domdiff-bench
+```
+
+Install `depot_tools` beside the benchmark checkout:
+
+```bash
+cd ..
+mkdir -p w8-browser-build
+cd w8-browser-build
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+export PATH="$PATH:$(pwd)/depot_tools"
+```
+
+Fetch the pinned Chromium source:
+
+```bash
+mkdir -p chromium
+cd chromium
+fetch --nohooks --no-history chromium
+gclient sync --nohooks \
+  --revision src@refs/tags/152.0.7948.0 \
+  --reset --upstream -D --force --no-history --shallow
+```
+
+Configure and build the pinned Chromium revision:
+
+```bash
+cd src
+./build/install-build-deps.sh
+gclient runhooks
+gn gen out/Release --args='is_debug=false
+is_component_build=false
+symbol_level=0
+blink_symbol_level=0
+v8_symbol_level=0
+proprietary_codecs=true
+ffmpeg_branding="Chrome"'
+autoninja -C out/Release chrome
+./out/Release/chrome --version
+```
+
+Apply the maintained w8-core source overlay:
+
+```bash
+cd ../../..
+git clone https://github.com/wootzapp/wootzapp-browser.git
+sudo chmod -R u+w w8-browser-build/chromium/src
+cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
+```
+
+Rebuild w8-core:
+
+```bash
+cd w8-browser-build/chromium
+gclient runhooks
+cd src
+gn gen out/Release
+autoninja -C out/Release chrome
+./out/Release/chrome --version
+```
+
+Copy the runtime dependencies into the benchmark checkout and create the
+local browser image:
+
+```bash
+cd ../../../w8-domdiff-bench
+rm -rf build
+mkdir build
+cd ../w8-browser-build/chromium/src
+gn desc out/Release //chrome:chrome runtime_deps | \
+  rsync -aR --files-from=- out/Release/ ../../../w8-domdiff-bench/build/
+test -x ../../../w8-domdiff-bench/build/chrome
+cd ../../../w8-domdiff-bench
+IMAGE_VERSION=chromium-152.0.7948.0 ./scripts/build-browser-image
+docker image inspect w8-core:domdiff-bench
+```
+
+Install the benchmark package and create a conflict-free local runtime
+configuration:
 
 ```bash
 python3 -m venv .venv
@@ -462,25 +546,59 @@ python -m pip install -e ".[test]"
 python -m w8bench.task_recorder.browser_runtime configure
 ```
 
-Add `OPENAI_API_KEY` and `OPENAI_MODEL` to `.env`, then start the browser and
-record a catalog task:
+Add valid `OPENAI_API_KEY` and `OPENAI_MODEL` values to `.env`. Start w8-core
+and verify the browser, CDP, noVNC, and bundled `agent-browser` runtime:
 
 ```bash
 docker compose --env-file .env up -d --wait w8-core
 python -m w8bench.task_recorder.browser_runtime status
+```
+
+Record a catalog task:
+
+```bash
+mkdir -p recordings
 ./scripts/run-task task8 --output-dir recordings --no-human-intervention
 ```
 
-Download and validate one prepared evaluation pair without paid model calls:
+The recorder writes raw task artifacts under `recordings/`.
+
+#### 8.3 Verifier Pipeline
+
+The verifier uses prepared screenshot and DOM-model task pairs from the
+published dataset. Raw recordings are not passed directly to the scoring
+command because recording output and evaluation input are separate data
+contracts.
+
+Download and validate one prepared pair without model calls:
 
 ```bash
 ./scripts/run-comparison --task task_01
 ```
 
-Add `--execute` to run rubric generation, both evidence verifiers, and the
-paired evidence audit. The command downloads prepared task data from the
-published dataset before validation. Detailed commands and troubleshooting
-remain in the [runbook](docs/runbook.md).
+Run the complete verifier pipeline for one task:
+
+```bash
+./scripts/run-comparison --task task_01 --execute
+```
+
+This command freezes one rubric, runs the screenshot verifier and DOM-model
+verifier with the same controls, normalizes their results, and performs the
+paired evidence audit. Results are written under `evaluation/task_01/`.
+
+Run the same pipeline for every available prepared task:
+
+```bash
+./scripts/run-comparison --all --execute
+```
+
+#### 8.4 Tests
+
+Run the offline test suite with:
+
+```bash
+python -m pytest
+```
 
 ### References
 
