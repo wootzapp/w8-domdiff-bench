@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "w8-domdiff-bench"
+version = "0.1.0"
+description = "Record w8-core browser tasks and compare screenshot and DOM-model evidence."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+dependencies = [
+  "aiohttp>=3.9,<4",
+  "azure-identity==1.25.3",
+  "httpx==0.28.1",
+  "huggingface_hub==0.36.2",
+  "openai==2.53.0",
+  "Pillow==12.3.0",
+  "pydantic==2.13.4",
+  "tiktoken==0.13.0",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest==9.1.1",
+  "pytest-asyncio==1.3.0",
+]
+
+[project.scripts]
+w8-browser = "w8bench.task_recorder.browser_runtime:main"
+w8-record-task = "w8bench.task_recorder.task_cli:main"
+w8-run-comparison = "w8bench.verifier.run_full_comparison:main"
+w8-dataset-sync = "w8bench.verifier.dataset_sync:main"
+w8-dom-verify = "w8bench.dom_model.runner:main"
+w8-screenshot-verify = "w8bench.screenshot_verifier.runner:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["w8bench*"]
+
+[tool.setuptools.package-data]
+"w8bench.dom_model" = ["resources/*.md"]
+"w8bench.screenshot_verifier" = ["resources/*.md"]
+"w8bench.task_recorder" = ["runtime/*", "renderers/*.py"]
+"w8bench.task_recorder.agent_browser" = ["README.md", "runtime/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
