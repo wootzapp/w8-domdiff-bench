@@ -546,8 +546,16 @@ python -m pip install -e ".[test]"
 python -m w8bench.task_recorder.browser_runtime configure
 ```
 
-Add valid `OPENAI_API_KEY` and `OPENAI_MODEL` values to `.env`. Start w8-core
-and verify the browser, CDP, noVNC, and bundled `agent-browser` runtime:
+The configure command creates `.env` in the repository root. Its path is
+`w8-domdiff-bench/.env`, beside `docker-compose.yml`. Open that file and set:
+
+```text
+OPENAI_API_KEY=your-api-key
+OPENAI_MODEL=your-supported-model
+```
+
+Then start w8-core and verify the browser, CDP, noVNC, and bundled
+`agent-browser` runtime:
 
 ```bash
 docker compose --env-file .env up -d --wait w8-core
