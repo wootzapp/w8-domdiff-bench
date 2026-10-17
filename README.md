@@ -11,7 +11,7 @@ DOM-diff Optimized, a compact structured representation of captured page
 states, and `w8-domdiff-bench`, a paired evaluation suite for browser-agent
 evidence. The suite addresses a practical problem: verification cannot
 recover criterion-relevant information that the recorded trajectory failed
-to preserve. We use Microsoft's Universal Verifier as the screenshot-based
+to preserve. We use the screenshot verifier as the screenshot-based
 baseline and compare it with our DOM-based adaptation under the same task
 inputs, action history, final answer, frozen rubric, and scoring controls.
 The final evaluation contains one selected record for each of 100 tasks and
@@ -38,7 +38,7 @@ preserving page content, controls, relationships, and scroll context.
 trajectory, scores both against one frozen rubric, and audits source
 availability directly.
 
-Our screenshot baseline is Microsoft's Universal Verifier [[2]](#references). We retain
+Our screenshot baseline is the screenshot verifier [[2]](#references). We retain
 its rubric-based verification design, including criterion-specific relevance
 selection, process and outcome scoring, and failure analysis. Our
 contribution is the DOM-based adaptation, the browser-native evidence
@@ -57,7 +57,7 @@ Screenshot-based evaluation preserves the rendered page and is applicable to
 visually grounded tasks, but extracting exact values and associating them
 with rubric requirements remains a multimodal reasoning problem. WebVoyager
 introduced a multimodal automatic evaluation protocol for open-ended web
-tasks [[1]](#references). Microsoft's Universal Verifier develops a rubric-centered design
+tasks [[1]](#references). The screenshot verifier uses a rubric-centered design
 with process and outcome judgments, failure attribution, and
 criterion-specific evidence selection [[2]](#references); we use it as the
 screenshot-based baseline.
@@ -119,7 +119,7 @@ flowchart TB
     Action history and final answer`")
     dom("`**DOM-diff Optimized**
     Ordered structured states`")
-    uv("`**Microsoft Universal Verifier**
+    uv("`**Screenshot verifier**
     Screenshot baseline`")
     dv("`**WootzApp DOM Verifier**
     Structured evidence`")
@@ -420,35 +420,193 @@ The task dataset is
 Operational setup, evaluation metadata, and artifact conventions are
 maintained in the repository.
 
-### 8 Run the Browser Harness
+### 8 Running the Benchmark
 
-The runnable harness is in [`task-recorder/`](task-recorder/). From a fresh
-checkout:
+The browser is built locally from official Chromium source. Building and
+patching are separate, visible steps:
+
+1. Fetch, configure, and build official Chromium `152.0.7948.0`.
+2. Clone `wootzapp-browser` and apply its `src/` overlay to that checkout.
+3. Rebuild the patched source.
+4. Package it as the local `w8-core:domdiff-bench` image.
+
+The commands below cover the complete supported path. The
+[runbook](docs/runbook.md) contains the same workflow with requirements,
+remote noVNC access, runtime checks, recorded-file descriptions, and
+troubleshooting.
+
+#### 8.1 Repository Layout
+
+- `w8bench/task_recorder/` contains task loading, browser capture, action
+  execution, model prompts, text renderers, and trajectory export.
+- `w8bench/dom_model/` contains the structured-evidence verifier.
+- `w8bench/screenshot_verifier/` contains the screenshot-evidence verifier.
+- `w8bench/verifier/` contains dataset retrieval, rubric freezing, paired
+  execution, result normalization, and evidence auditing.
+- `protocol/ChromiumRL.pdl` is the pinned browser protocol definition.
+- `scripts/` contains the supported task-recording and evaluation commands.
+- `data/samples/` contains small examples. Complete paired task data is
+  downloaded to the ignored `dataset/` directory when needed.
+- `results/` contains the published aggregate result and supporting notes.
+
+#### 8.2 Browser Setup and Task Recording
+
+The build requires 64-bit Linux or WSL 2, Docker with Compose and Buildx,
+Python 3.10 or newer, Git, `rsync`, approximately 32 GiB of RAM, and about
+200 GiB of free disk space. Keep the build workspace on a Linux filesystem.
+
+Clone the benchmark:
 
 ```bash
-git clone --branch w8-reproducible https://github.com/wootzapp/w8-domdiff-bench.git
-cd w8-domdiff-bench/task-recorder
+git clone https://github.com/wootzapp/w8-domdiff-bench.git
+cd w8-domdiff-bench
+```
+
+Install `depot_tools` beside the benchmark checkout:
+
+```bash
+cd ..
+mkdir -p w8-browser-build
+cd w8-browser-build
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+export PATH="$PATH:$(pwd)/depot_tools"
+```
+
+Fetch the pinned Chromium source:
+
+```bash
+mkdir -p chromium
+cd chromium
+fetch --nohooks --no-history chromium
+gclient sync --nohooks \
+  --revision src@refs/tags/152.0.7948.0 \
+  --reset --upstream -D --force --no-history --shallow
+```
+
+Configure and build the pinned Chromium revision:
+
+```bash
+cd src
+./build/install-build-deps.sh
+gclient runhooks
+gn gen out/Release --args='is_debug=false
+is_component_build=false
+symbol_level=0
+blink_symbol_level=0
+v8_symbol_level=0
+proprietary_codecs=true
+ffmpeg_branding="Chrome"'
+autoninja -C out/Release chrome
+./out/Release/chrome --version
+```
+
+Apply the maintained w8-core source overlay:
+
+```bash
+cd ../../..
+git clone https://github.com/wootzapp/wootzapp-browser.git
+sudo chmod -R u+w w8-browser-build/chromium/src
+cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
+```
+
+Rebuild w8-core:
+
+```bash
+cd w8-browser-build/chromium
+gclient runhooks
+cd src
+gn gen out/Release
+autoninja -C out/Release chrome
+./out/Release/chrome --version
+```
+
+Copy the runtime dependencies into the benchmark checkout and create the
+local browser image:
+
+```bash
+cd ../../../w8-domdiff-bench
+rm -rf build
+mkdir build
+cd ../w8-browser-build/chromium/src
+gn desc out/Release //chrome:chrome runtime_deps | \
+  rsync -aR --files-from=- out/Release/ ../../../w8-domdiff-bench/build/
+test -x ../../../w8-domdiff-bench/build/chrome
+cd ../../../w8-domdiff-bench
+IMAGE_VERSION=chromium-152.0.7948.0 ./scripts/build-browser-image
+docker image inspect w8-core:domdiff-bench
+```
+
+Install the benchmark package and create a conflict-free local runtime
+configuration:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-./w8-core-runtime configure
+python -m pip install -e ".[test]"
+python -m w8bench.task_recorder.browser_runtime configure
 ```
 
-Add `OPENAI_API_KEY` and `OPENAI_MODEL` to the generated `.env`, then run:
+The configure command creates `.env` in the repository root. Its path is
+`w8-domdiff-bench/.env`, beside `docker-compose.yml`. Open that file and set:
+
+```text
+OPENAI_API_KEY=your-api-key
+OPENAI_MODEL=your-supported-model
+```
+
+Then start w8-core and verify the browser, CDP, noVNC, and bundled
+`agent-browser` runtime:
 
 ```bash
-docker pull wootzapp/w8-core:latest
 docker compose --env-file .env up -d --wait w8-core
-./w8-core-runtime status
-mkdir -p recordings
-./run-task task8 --output-dir ./recordings
+python -m w8bench.task_recorder.browser_runtime status
 ```
 
-`--wait` waits for w8-core to become healthy. Add
-`--no-human-intervention` to the task command when it must run unattended.
-The status command prints the noVNC URL. See the
-[task-recorder guide](task-recorder/README.md) for remote viewing, isolated
-ports, recorded files, and troubleshooting.
+Record a catalog task:
+
+```bash
+mkdir -p recordings
+./scripts/run-task task8 --output-dir recordings --no-human-intervention
+```
+
+The recorder writes raw task artifacts under `recordings/`.
+
+#### 8.3 Verifier Pipeline
+
+The verifier uses prepared screenshot and DOM-model task pairs from the
+published dataset. Raw recordings are not passed directly to the scoring
+command because recording output and evaluation input are separate data
+contracts.
+
+Download and validate one prepared pair without model calls:
+
+```bash
+./scripts/run-comparison --task task_01
+```
+
+Run the complete verifier pipeline for one task:
+
+```bash
+./scripts/run-comparison --task task_01 --execute
+```
+
+This command freezes one rubric, runs the screenshot verifier and DOM-model
+verifier with the same controls, normalizes their results, and performs the
+paired evidence audit. Results are written under `evaluation/task_01/`.
+
+Run the same pipeline for every available prepared task:
+
+```bash
+./scripts/run-comparison --all --execute
+```
+
+#### 8.4 Tests
+
+Run the offline test suite with:
+
+```bash
+python -m pytest
+```
 
 ### References
 
@@ -465,7 +623,7 @@ preprint arXiv:2604.06240*, 2026. doi: 10.48550/arXiv.2604.06240. URL
 
 \[3\] WootzApp. w8-domdiff-bench: Tasks 1–100 paired evaluation results. Evaluation
 results and criterion-level audit records, 2026. URL
-[`https://github.com/wootzapp/w8-domdiff-bench/blob/main/results.md`](https://github.com/wootzapp/w8-domdiff-bench/blob/main/results.md).
+[`https://github.com/wootzapp/w8-domdiff-bench/tree/main/results`](https://github.com/wootzapp/w8-domdiff-bench/tree/main/results).
 
 \[4\] Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek Sridhar,
 Xianyi Cheng, Tianyue Ou, Yonatan Bisk, Daniel Fried, Uri Alon, and Graham
