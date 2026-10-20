@@ -623,7 +623,7 @@ preprint arXiv:2604.06240*, 2026. doi: 10.48550/arXiv.2604.06240. URL
 
 \[3\] WootzApp. w8-domdiff-bench: Tasks 1–100 paired evaluation results. Evaluation
 results and criterion-level audit records, 2026. URL
-[`https://github.com/wootzapp/w8-domdiff-bench/tree/main/results`](https://github.com/wootzapp/w8-domdiff-bench/tree/main/results).
+[`https://github.com/wootzapp/w8-domdiff-bench/tree/w8-reproducible/results`](https://github.com/wootzapp/w8-domdiff-bench/tree/w8-reproducible/results).
 
 \[4\] Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek Sridhar,
 Xianyi Cheng, Tianyue Ou, Yonatan Bisk, Daniel Fried, Uri Alon, and Graham
