@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a manual or catalog-defined browser task in a chosen directory."""
+"""Run one browser task or the complete task catalog in a chosen directory."""
 
 from __future__ import annotations
 
@@ -438,18 +438,8 @@ def catalog_task_instruction(row: dict[str, Any]) -> str:
     return "\n\n".join(section for section in sections if section)
 
 
-def fetch_catalog_task(
-    catalog_url: str,
-    selector: str,
-    *,
-    token: str = "",
-) -> dict[str, str]:
-    """Fetch one task from the configured remote JSONL catalog.
-
-    The complete small catalog is downloaded for each invocation and is not
-    cached, so a command always reflects the configured remote source. Standard
-    HTTP redirects are handled by urllib. A token is sent only when configured.
-    """
+def fetch_task_catalog(catalog_url: str, *, token: str = "") -> list[dict[str, Any]]:
+    """Fetch and parse the configured JSONL catalog once per invocation."""
     url = catalog_url.strip()
     parsed = urlsplit(url)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
@@ -463,9 +453,11 @@ def fetch_catalog_task(
             payload = response.read().decode("utf-8")
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, UnicodeDecodeError) as error:
         raise RunnerError(f"could not fetch task catalog {url}: {error}") from error
-    # Parsing and selection are separate pure functions so malformed catalogs
-    # and alias collisions can be tested without making a network request.
-    row = select_catalog_task(parse_task_catalog(payload, source=url), selector)
+    return parse_task_catalog(payload, source=url)
+
+
+def catalog_task_definition(row: dict[str, Any], catalog_url: str) -> dict[str, str]:
+    """Preserve one catalog task's instruction, constraints, and provenance."""
     definition = validate_task_definition(
         catalog_task_instruction(row),
         str(row.get("start_url", "")),
@@ -474,10 +466,18 @@ def fetch_catalog_task(
         {
             "source_task_id": str(row.get("task_id", "")).strip(),
             "task_name": str(row.get("category", "")).strip(),
-            "source_catalog": url,
+            "source_catalog": catalog_url.strip(),
         }
     )
     return definition
+
+
+def fetch_catalog_task(
+    catalog_url: str, selector: str, *, token: str = ""
+) -> dict[str, str]:
+    """Fetch one task by its exact catalog ID or numeric alias."""
+    rows = fetch_task_catalog(catalog_url, token=token)
+    return catalog_task_definition(select_catalog_task(rows, selector), catalog_url)
 
 
 def unique_run_id(
@@ -554,9 +554,14 @@ def build_runner_command(
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse the generic task launcher options without starting any process."""
     parser = argparse.ArgumentParser(
-        description="Run a configured catalog task or a manually supplied task"
+        description="Run one catalog/manual task or every task with --all"
     )
-    parser.add_argument("task_id", help="run ID and configured-catalog task selector")
+    parser.add_argument("task_id", nargs="?", help="run ID and configured-catalog task selector")
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="run every catalog task sequentially, continuing after failures",
+    )
     parser.add_argument(
         "task_name",
         nargs="?",
@@ -610,19 +615,36 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_STOP_TIMEOUT_SECONDS,
         help="seconds to allow a previous task runner to shut down before it is killed",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.all:
+        if any(value is not None for value in (args.task_id, args.task_name, args.task, args.start_url)):
+            parser.error("--all cannot be combined with a task selector, task name, --task, or --start-url")
+    elif args.task_id is None:
+        parser.error("a task selector or --all is required")
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
     """Validate a task, preserve the browser, replace an old runner, and wait."""
     args = parse_args(argv)
-    task_id = safe_task_id(args.task_id.strip())
     if args.max_steps <= 0:
         raise RunnerError("--max-steps must be positive")
     if args.previous_run_stop_timeout < 0:
         raise RunnerError("--previous-run-stop-timeout must not be negative")
 
     load_env(args.env_file)
+    catalog_url = (
+        args.catalog_url
+        or os.environ.get("TASK_CATALOG_URL")
+        or DEFAULT_TASK_CATALOG_URL
+    )
+    token = os.environ.get("TASK_CATALOG_TOKEN", os.environ.get("HF_TOKEN", ""))
+    if args.all:
+        try:
+            return run_all_tasks(args, catalog_url, token=token)
+        except KeyboardInterrupt:
+            return 130
+    task_id = safe_task_id(args.task_id.strip())
     # Supplying either manual field selects manual mode and requires both. With
     # neither field, the positional task id is resolved through the catalog.
     manual_task = args.task is not None or args.start_url is not None
@@ -631,16 +653,59 @@ def main(argv: list[str] | None = None) -> int:
             raise RunnerError("manual tasks require both --task and --start-url")
         definition = validate_task_definition(args.task, args.start_url, model=args.model)
     else:
-        catalog_url = (
-            args.catalog_url
-            or os.environ.get("TASK_CATALOG_URL")
-            or DEFAULT_TASK_CATALOG_URL
-        )
         definition = fetch_catalog_task(
             catalog_url,
             task_id,
-            token=os.environ.get("TASK_CATALOG_TOKEN", os.environ.get("HF_TOKEN", "")),
+            token=token,
         )
+    try:
+        return run_task(args, definition, task_id=task_id)
+    except KeyboardInterrupt:
+        return 130
+
+
+def run_all_tasks(args: argparse.Namespace, catalog_url: str, *, token: str = "") -> int:
+    """Run catalog tasks in order using the same task-boundary lifecycle."""
+    rows = fetch_task_catalog(catalog_url, token=token)
+    results: list[dict[str, Any]] = []
+    interrupted = False
+    for ordinal, row in enumerate(rows, start=1):
+        source_id = str(row["task_id"]).strip()
+        print(f"[{ordinal}/{len(rows)}] {source_id}", flush=True)
+        result: dict[str, Any] = {"task_id": source_id}
+        try:
+            task_id = safe_task_id(source_id)
+            definition = catalog_task_definition(row, catalog_url)
+            code = run_task(args, definition, task_id=task_id)
+            result["return_code"] = code
+            interrupted = code in (130, -signal.SIGINT, -signal.SIGTERM)
+        except KeyboardInterrupt:
+            result["return_code"] = 130
+            interrupted = True
+        except (RunnerError, OSError) as error:
+            result.update({"return_code": 1, "error": str(error)})
+        results.append(result)
+        if interrupted:
+            break
+        if result["return_code"] != 0:
+            detail = result.get("error", f"exit status {result['return_code']}")
+            print(f"{source_id}: failed: {detail}", file=sys.stderr, flush=True)
+    failed = [result for result in results if result["return_code"] != 0]
+    print(json.dumps({
+        "mode": "dry_run" if args.dry_run else "recording",
+        "source_catalog": catalog_url,
+        "selected_tasks": len(rows),
+        "attempted_tasks": len(results),
+        "successful_tasks": len(results) - len(failed),
+        "failed_tasks": len(failed),
+        "interrupted": interrupted,
+        "results": results,
+    }, ensure_ascii=False, indent=2), flush=True)
+    return 130 if interrupted else int(bool(failed))
+
+
+def run_task(args: argparse.Namespace, definition: dict[str, Any], *, task_id: str) -> int:
+    """Launch one validated task and wait before another task may start."""
     task_name = (
         args.task_name.strip()
         if args.task_name
@@ -737,13 +802,14 @@ def main(argv: list[str] | None = None) -> int:
         except ProcessLookupError:
             pass
         try:
-            return process.wait(timeout=args.previous_run_stop_timeout)
+            process.wait(timeout=args.previous_run_stop_timeout)
         except subprocess.TimeoutExpired:
             try:
                 os.killpg(process.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-            return process.wait()
+            process.wait()
+        raise
     finally:
         clear_active_run(process.pid)
 

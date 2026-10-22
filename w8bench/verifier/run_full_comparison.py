@@ -21,6 +21,7 @@ from .dataset_sync import (
     DEFAULT_REPO_ID,
     DEFAULT_REVISION,
     fetch_trajectories,
+    validate_downloaded_pair,
 )
 from .evidence_audit import DEFAULT_AUDIT_MODEL, aggregate_audits, render_aggregate_markdown
 from .generate_frozen_rubric import main as generate_rubric
@@ -144,12 +145,21 @@ def _run_all(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    fetched = fetch_trajectories(
-        data_root=DEFAULT_DATASET_ROOT,
-        task=None if args.all else args.task,
-        repo_id=args.hf_repo,
-        revision=args.hf_revision,
-    )
+    local_paths = [DEFAULT_DATASET_ROOT / mode / (args.task or "") for mode in ("data-ss", "data-dom")]
+    if args.task and all(path.is_dir() for path in local_paths):
+        # Prepared recordings need not exist in the hosted dataset.
+        fetched = {
+            "status": "resolved_from_local_dataset",
+            "data_root": str(DEFAULT_DATASET_ROOT.resolve()),
+            "tasks": [validate_downloaded_pair(DEFAULT_DATASET_ROOT, args.task)],
+        }
+    else:
+        fetched = fetch_trajectories(
+            data_root=DEFAULT_DATASET_ROOT,
+            task=None if args.all else args.task,
+            repo_id=args.hf_repo,
+            revision=args.hf_revision,
+        )
     print(json.dumps({"dataset_fetch": fetched}, ensure_ascii=False, indent=2))
     if args.all:
         return _run_all(args)

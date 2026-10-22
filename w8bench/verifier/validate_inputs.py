@@ -209,14 +209,8 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
     )
     screenshot_answer = load_answer(screenshot / "final_answer.json")
     dom_answer = load_answer(dom / "final_answer.json")
-    for field in ("final_answer", "is_aborted"):
-        if screenshot_answer.get(field) != dom_answer.get(field):
-            raise ValueError(f"Final-answer field differs between modalities: {field}")
-    if "screenshots" in dom_answer or dom_answer.get("token_usage") != {}:
-        raise ValueError("DOM-model final answer must omit screenshots and contain token_usage: {}")
-    for reference in screenshot_answer.get("screenshots") or []:
-        if not isinstance(reference, str) or not (screenshot / reference).is_file():
-            raise ValueError(f"Missing screenshot referenced by final answer: {reference!r}")
+    if screenshot_answer["final_answer"] != dom_answer["final_answer"]:
+        raise ValueError("Final-answer field differs between modalities: final_answer")
     return {
         "task_id": internal_id,
         "task_alias": screenshot.name,

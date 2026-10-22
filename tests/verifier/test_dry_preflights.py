@@ -61,11 +61,12 @@ def test_phase_b_cli_dry_preflight_writes_nothing(pair_factory, capsys):
         assert not output.exists()
 
 
-def test_isolated_screenshot_input_declares_all_n_plus_one_states(
+def test_isolated_screenshot_input_preserves_minimal_answer_and_all_states(
     pair_factory, tmp_path
 ):
     pair = pair_factory()
     source_answer_path = pair["screenshot"] / "final_answer.json"
+    source_answer_path.write_text(json.dumps({"final_answer": "Saved"}), encoding="utf-8")
     source_answer_before = source_answer_path.read_bytes()
 
     screenshot_copy, _, _, _ = prepare_isolated_inputs(
@@ -80,7 +81,7 @@ def test_isolated_screenshot_input_declares_all_n_plus_one_states(
     isolated_answer = json.loads(
         (screenshot_copy / "final_answer.json").read_text(encoding="utf-8")
     )
-    assert isolated_answer["screenshots"] == ["screenshot0.png", "screenshot1.png"]
+    assert isolated_answer == {"final_answer": "Saved"}
     assert (screenshot_copy / "screenshot0.png").is_file()
     assert (screenshot_copy / "screenshot1.png").is_file()
     assert source_answer_path.read_bytes() == source_answer_before

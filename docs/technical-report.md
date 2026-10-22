@@ -317,6 +317,12 @@ links, or capture omissions affecting a larger region or structured field
 **Table 3:** Category counts for confirmed source-evidence-loss criteria.
 Each affected criterion appears exactly once.
 
+The [criterion-level audit table](../results/evidence-gaps.md) identifies all
+28 gap rows and links their historical rationale and paired source evidence.
+The [full audit CSV](../results/criterion-audit.csv) contains all 639 criteria.
+Per-row categories in this export are reconstructed from the historical
+descriptions; see [provenance and limitations](../results/audit/README.md).
+
 ```mermaid
 ---
 config:
@@ -450,8 +456,8 @@ preprint arXiv:2604.06240*, 2026. doi: 10.48550/arXiv.2604.06240. URL
 [`https://arxiv.org/abs/2604.06240`](https://arxiv.org/abs/2604.06240).
 
 \[3\] WootzApp. w8-domdiff-bench: Tasks 1–100 paired evaluation results. Evaluation
-results and criterion-level audit records, 2026. URL
-[`https://github.com/wootzapp/w8-domdiff-bench/tree/main/results`](https://github.com/wootzapp/w8-domdiff-bench/tree/main/results).
+results and [criterion-level audit records](../results/evidence-gaps.md), 2026.
+See [audit provenance](../results/audit/README.md) for the pinned historical sources.
 
 \[4\] Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek Sridhar,
 Xianyi Cheng, Tianyue Ou, Yonatan Bisk, Daniel Fried, Uri Alon, and Graham
