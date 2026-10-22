@@ -224,7 +224,8 @@ def test_categories_count_each_representation_and_exclude_rows_without_source_lo
     assert '**C1**' not in text
     assert result['counts']['selected'] == 1
     assert result['counts']['no_source_loss'] == 1
-    assert '(../task_01/20261022T090000Z/evidence_audit.json#L' in text
+    assert f'({report.DEFAULT_EVALUATION_URL}/task_01/20261022T090000Z/evidence_audit.json#L' in text
+    assert '[category annotations](../categories.json)' in text
     assert str(tmp_path) not in text
 
 
@@ -297,4 +298,24 @@ def test_cli_defaults_to_docs_even_with_custom_evaluation_dir(tmp_path, monkeypa
     summary = json.loads((tmp_path / 'docs/benchmark_statistics.json').read_text())
     assert summary['output'] == 'missed_evidence_table.md'
     assert summary['category_provenance'] == '../saved-runs/categories.json'
-    assert '(../saved-runs/task_01/' in output.read_text()
+    assert f'({report.DEFAULT_EVALUATION_URL}/task_01/' in output.read_text()
+
+
+def test_dataset_links_allow_revision_override_and_preserve_line_anchors(tmp_path, monkeypatch):
+    evaluation = tmp_path / 'evaluation'
+    saved_run(evaluation)
+    categories = category_annotations(evaluation)
+    output = tmp_path / 'docs/report.md'
+    statistics = tmp_path / 'docs/statistics.json'
+    base = 'https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/audit-revision/evaluation'
+    monkeypatch.setattr(sys, 'argv', [str(SCRIPT), '--evaluation-dir', str(evaluation),
+                                    '--categories', str(categories), '--output', str(output),
+                                    '--summary-output', str(statistics), '--evaluation-url', base])
+    report.main()
+    text = output.read_text()
+    assert f'({base}/task_01/20261022T090000Z/evidence_audit.json#L' in text
+    assert f'({base}/task_01/20261022T090000Z/run_manifest.json)' in text
+    assert '[category annotations](../evaluation/categories.json)' in text
+    assert '../evaluation/task_01/' not in text
+    assert report.DEFAULT_EVALUATION_URL not in text
+    assert json.loads(statistics.read_text())['evaluation_url'] == base

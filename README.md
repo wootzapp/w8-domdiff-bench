@@ -291,8 +291,8 @@ field relationships.
 
 The [generated statistics](docs/benchmark_statistics.json) contain the full
 counts, intervals, paired test, category totals, and run provenance.
-Detailed evidence links resolve into local `evaluation/` artifacts, which
-are excluded from Git.
+Evidence links point to the saved audit files in the
+[Hugging Face dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks).
 
 #### 5.3 Preserving the Details Agents Need
 
@@ -556,6 +556,8 @@ python scripts/generate_missed_evidence_report.py
 The default outputs are `docs/missed_evidence_table.md` and
 `docs/benchmark_statistics.json`. `--evaluation-dir`, `--output`,
 `--summary-output`, and `--categories` override the input/output paths.
+`--evaluation-url` selects the published evaluation URL, including the dataset
+revision used for evidence links.
 The generator uses `docs/evidence_categories.json` for the six evidence
 categories. Add an annotation for each new confirmed representation/criterion
 loss, or review and update its hash when the saved finding changes; the

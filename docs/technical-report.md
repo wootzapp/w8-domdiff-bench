@@ -289,8 +289,8 @@ field relationships.
 
 The [generated statistics](benchmark_statistics.json) contain the full
 counts, intervals, paired test, category totals, and run provenance.
-Detailed evidence links resolve into local `evaluation/` artifacts, which
-are excluded from Git.
+Evidence links point to the saved audit files in the
+[Hugging Face dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks).
 
 #### 5.3 Preserving the Details Agents Need
 

@@ -19,6 +19,7 @@ import math
 import os
 import re
 from statistics import NormalDist
+from urllib.parse import quote
 
 
 FLAGS = (
@@ -32,6 +33,9 @@ CATEGORIES = (
     'Label–value links', 'Capture omissions',
 )
 DEFAULT_CATEGORIES = REPOSITORY / 'docs' / 'evidence_categories.json'
+DEFAULT_EVALUATION_URL = (
+    'https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation'
+)
 
 
 def source_loss_label(criterion):
@@ -150,9 +154,11 @@ def rate_cell(stat, total):
     return f'**{stat["count"]}/{total}**; 95% CI **{100 * lower:.2f}–{100 * upper:.2f}%** (rate {100 * stat["rate"]:.2f}%)'
 
 
-def summary_lines(statistics, model_counts, sample_run, audited_tasks, report_dir):
+def summary_lines(statistics, model_counts, sample_run, audited_tasks, report_dir,
+                  evaluation_dir, evaluation_url):
     def link(label, path, line=None):
-        return file_link(label, path, line, relative_to=report_dir)
+        return file_link(label, path, line, relative_to=report_dir,
+                         evaluation_dir=evaluation_dir, evaluation_url=evaluation_url)
 
     stat = statistics['evidence_loss']
     total = stat['denominator']
@@ -228,13 +234,17 @@ def cell(value):
     return html.escape(' '.join(str(value).split()), quote=False).replace('|', '&#124;')
 
 
-def file_link(label, path, line=None, relative_to=None):
+def file_link(label, path, line=None, relative_to=None, evaluation_dir=None,
+              evaluation_url=DEFAULT_EVALUATION_URL):
     if not path.is_file():
         raise ValueError(f'Link target does not exist: {path}')
     if line is not None and not 1 <= line <= len(path.read_text(encoding='utf-8').splitlines()):
         raise ValueError(f'Link line does not exist: {path}:{line}')
     target = (Path(os.path.relpath(path.resolve(), relative_to)).as_posix()
               if relative_to is not None else str(path.resolve()))
+    if evaluation_dir is not None:
+        artifact = path.resolve().relative_to(evaluation_dir.resolve()).as_posix()
+        target = evaluation_url.rstrip('/') + '/' + quote(artifact, safe='/')
     target += f'#L{line}' if line is not None else ''
     return f'[{label}]({target})'
 
@@ -266,14 +276,15 @@ def source_locations(criterion, enabled):
     return '; '.join(f'`{source}` ({cell("; ".join(locations))})' for source, locations in citations.items())
 
 
-def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = DEFAULT_CATEGORIES) -> dict:
+def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = DEFAULT_CATEGORIES,
+                    evaluation_url: str = DEFAULT_EVALUATION_URL) -> dict:
     """Validate saved artifacts and write summary statistics and detailed findings."""
     ROOT = evaluation_dir.resolve()
     OUTPUT = output.resolve()
     annotations = load_categories(categories_path)
-    # Every exported link is relative to the report, including when --output moves it.
+    # Evaluation artifacts are published in the dataset; annotations stay beside the report.
     def link(label, path, line=None):
-        return file_link(label, path, line, relative_to=OUTPUT.parent)
+        return file_link(label, path, line, evaluation_dir=ROOT, evaluation_url=evaluation_url)
 
     category_counts = {category: {'screenshot': 0, 'dom': 0} for category in CATEGORIES}
     counts = Counter({key: 0 for key in ('selected', 'no_source_loss', 'both_evidence_loss',
@@ -444,7 +455,8 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
     lines = [
         '**Source-evidence gaps by task and criterion**',
         '',
-        *summary_lines(statistics, model_counts, sample_run, counts['audited_tasks'], OUTPUT.parent),
+        *summary_lines(statistics, model_counts, sample_run, counts['audited_tasks'], OUTPUT.parent,
+                       ROOT, evaluation_url),
         '**Source-evidence loss by category**',
         '',
         '| Category | Screenshots | DOM-diff Optimized |',
@@ -453,7 +465,8 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
         f'| **Total** | **{counts["screenshot_evidence_loss"]}** | **{counts["dom_model_evidence_loss"]}** |',
         '',
         'Categories match the README and describe the missing evidence. '
-        'Each confirmed representation/criterion loss receives one primary category from ' + link('category annotations', categories_path) + '. '
+        'Each confirmed representation/criterion loss receives one primary category from '
+        + file_link('category annotations', categories_path, relative_to=OUTPUT.parent) + '. '
         'Annotations interpret saved adjudication explanations and decisive evidence; they are not a new review of original source states. '
         'A changed finding invalidates its annotation. A criterion with loss in both representations can have a different category for each.',
         '',
@@ -462,6 +475,8 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
         f'There are {counts["tasks"]} tasks and {counts["runs"]} saved runs. The latest runs contain {counts["all_criteria"]} criteria; {counts["audited_tasks"]} tasks / {counts["audited_criteria"]} criteria have completed audits. The table contains **{counts["selected"]} criteria across {len(selected_tasks)} tasks** with confirmed source-evidence loss. The {counts["no_source_loss"]} audited criteria without source loss are omitted from the table and retained in the rate denominator. Findings below are the existing automated audit/adjudication judgments ({", ".join(sorted(audit_models))}), rather than a new manual review of original screenshots or DOM states. {len(excluded)} tasks lack completed audits and are listed after the table.',
         '',
         '**Files needed from the evaluation directory**',
+        '',
+        'Evaluation-file links point to the saved artifacts on Hugging Face and retain line anchors where available. The report generator validates the corresponding local files before exporting these URLs.',
         '',
         '- `task_*/<latest-run>/evidence_audit.json` is the primary source: final `criteria[*].adjudication` contains the confirmed source-loss findings, decisive evidence, and citations. Example: ' + link(f'{sample_task} audit', sample_run / 'evidence_audit.json') + '.',
         '- `task_*/<latest-run>/frozen_rubric.json` supplies the canonical criterion wording, order, and requirements. Example: ' + link(f'{sample_task} rubric', sample_run / 'frozen_rubric.json') + '.',
@@ -495,7 +510,7 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
         '',
         '**Verification and limits**',
         '',
-        f'- Directly verified: selected the latest run for every task; matched criterion names/order to the frozen rubric and comparison; verified canonical rubric hashes against both results and the audit; checked {verified_records} saved model/criterion records for matching evidence analyses, points, and final justifications; checked every included finding against its final adjudication flag. Every linked file and target line exists.',
+        f'- Directly verified: selected the latest run for every task; matched criterion names/order to the frozen rubric and comparison; verified canonical rubric hashes against both results and the audit; checked {verified_records} saved model/criterion records for matching evidence analyses, points, and final justifications; checked every included finding against its final adjudication flag. Linked evaluation files and target lines were validated against local saved artifacts.',
         '- Interpretation: source-loss judgments, decisive evidence, and citations are inherited from the automated audits. Labels describe the confirmed representation-loss pattern. The comparison measures source availability across paired records.',
         f'- Unverified boundary: independently confirming the automated findings requires the original screenshots/DOM states and shared trajectory. Resolving the {len(excluded)} coverage gaps requires a completed valid audit or a separate explicitly identified review.',
         f'- Run denominator: {older_note} {date_note} Exact timestamps are preserved in the linked paths.',
@@ -513,6 +528,7 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
         'statistics': statistics,
         'category_counts': category_counts,
         'category_provenance': str(categories_path.resolve()),
+        'evaluation_url': evaluation_url.rstrip('/'),
         'selected_runs': [p.relative_to(ROOT).as_posix() for p in selected_runs],
         'models': {role: dict(models) for role, models in model_counts.items()},
         'affected_tasks': len(selected_tasks),
@@ -536,6 +552,8 @@ def main() -> None:
     )
     parser.add_argument('--categories', type=Path, default=DEFAULT_CATEGORIES,
                         help='Reviewed source-gap category annotations.')
+    parser.add_argument('--evaluation-url', default=DEFAULT_EVALUATION_URL,
+                        help='Published file-browser URL for the evaluation directory; override to select a dataset revision.')
     parser.add_argument('--summary-output', type=Path, default=REPOSITORY / 'docs' / 'benchmark_statistics.json',
                         help='Machine-readable statistics for figure regeneration (default: docs/benchmark_statistics.json).')
     args = parser.parse_args()
@@ -543,7 +561,7 @@ def main() -> None:
         parser.error(f'Evaluation directory does not exist: {args.evaluation_dir}')
     if __debug__ is False:
         parser.error('Run without -O: integrity assertions must remain enabled.')
-    summary = generate_report(args.evaluation_dir, args.output, args.categories)
+    summary = generate_report(args.evaluation_dir, args.output, args.categories, args.evaluation_url)
     args.summary_output.parent.mkdir(parents=True, exist_ok=True)
     # Published metadata is independent of the machine's checkout path.
     published = dict(summary)
