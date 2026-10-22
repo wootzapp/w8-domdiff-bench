@@ -59,7 +59,10 @@ class FinalAnswer:
     def load(path: os.PathLike):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return FinalAnswer(**data)  
+        if not isinstance(data, dict) or not isinstance(data.get("final_answer"), str):
+            raise ValueError(f"Final answer must contain final_answer text: {path}")
+        # Only the recorded answer is input; all metadata uses local defaults.
+        return FinalAnswer(final_answer=data["final_answer"])
 
 def remap_action_names(action_name: str) -> str:
     """

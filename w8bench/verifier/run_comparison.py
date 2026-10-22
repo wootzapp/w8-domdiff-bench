@@ -152,23 +152,12 @@ def prepare_isolated_inputs(
     shutil.copytree(screenshot_task, screenshot_copy)
     shutil.copytree(dom_task, dom_copy)
 
-    # Keep every browser state available to the evidence selector. The real
-    # action history remains N actions; this staged answer only controls which
-    # screenshot files the verifier may inspect as evidence.
+    # Screenshot evidence is discovered from files, independently of answer metadata.
     screenshot_states = ordered_screenshots(screenshot_copy)
     if len(screenshot_states) != action_count + 1:
         raise ValueError(
             "Isolated screenshot task must contain exactly N+1 browser states"
         )
-    answer_files = list(screenshot_copy.glob("*_answer.json"))
-    if len(answer_files) != 1:
-        raise ValueError(
-            f"Expected exactly one isolated *_answer.json, found {len(answer_files)}"
-        )
-    answer = load_json(answer_files[0])
-    answer["screenshots"] = [path.name for path in screenshot_states]
-    write_json(answer_files[0], answer)
-
     rubric_copy = input_root / "frozen_rubric.json"
     metrics_copy = input_root / "rubric_generation_metrics.json"
     shutil.copy2(rubric_file, rubric_copy)

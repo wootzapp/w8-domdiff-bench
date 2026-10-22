@@ -96,19 +96,6 @@ def preflight_dom_model_task(
         actions=actions,
         states=states,
     )
-    answer = json.loads((task_dir / "final_answer.json").read_text(encoding="utf-8"))
-    if not isinstance(answer, dict) or not isinstance(answer.get("final_answer"), str):
-        raise ValueError("final_answer.json must contain final_answer text")
-    allowed_answer_fields = {
-        "env_state_json", "env_state_raw", "final_answer", "is_aborted",
-        "is_rel_paths", "token_usage",
-    }
-    unexpected_answer_fields = sorted(set(answer) - allowed_answer_fields)
-    if unexpected_answer_fields or answer.get("token_usage") != {}:
-        raise ValueError(
-            "DOM-model final answer must contain only canonical fields and token_usage: {}; "
-            f"unexpected fields: {unexpected_answer_fields}"
-        )
     allowed = {
         "task_data.json", "web_surfer.log", "final_answer.json",
         "task_data_with_canonical_rubric.json", *(state.path.name for state in states),

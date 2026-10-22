@@ -5,6 +5,7 @@ from typing import List, Dict
 import os
 from collections import defaultdict
 from .clients import RequestUsage
+from .utils.preflight import discover_screenshots
 
 
 @dataclass
@@ -60,7 +61,10 @@ class FinalAnswer:
     def load(path: os.PathLike):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            return FinalAnswer(**data)  
+        if not isinstance(data, dict) or not isinstance(data.get("final_answer"), str):
+            raise ValueError(f"Final answer must contain final_answer text: {path}")
+        # Legacy metadata is ignored; evidence comes from the task directory.
+        return FinalAnswer(final_answer=data["final_answer"])
 
 def remap_action_names(action_name: str) -> str:
     """
@@ -133,8 +137,7 @@ class Trajectory:
         if len(answer_files) != 1:
             raise ValueError(f"Expected exactly one answer file in {self.path}, found {len(answer_files)}")
         self.answer = FinalAnswer.load(answer_files[0])
-        if self.answer and self.answer.is_rel_paths:
-            self.answer.screenshots = [self.path / f for f in self.answer.screenshots]
+        self.answer.screenshots = discover_screenshots(self.path)
         self.screenshots = self.answer.screenshots
         
         # Load metadata for instruction following compatibility (is_action field)

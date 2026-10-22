@@ -206,6 +206,21 @@ mkdir -p recordings
 ./scripts/run-task task8 --output-dir recordings --no-human-intervention
 ```
 
+Run every task in the configured catalog sequentially:
+
+```bash
+./scripts/run-task --all --output-dir recordings --no-human-intervention
+```
+
+The batch downloads the catalog once and runs tasks in catalog order. Each
+task gets its own timestamped recording and the normal browser restart at
+the task boundary. Failed tasks are reported and the batch continues; the
+final summary lists every attempted task and exit status. The command exits
+with status 1 if any task failed. Ctrl+C stops the batch and exits with status
+130. Add `--dry-run` to preview all tasks without starting the browser or
+making model calls. Options such as `--model` and `--max-steps` apply to every
+task; the default step limit is 80 per task.
+
 Run a manual task:
 
 ```bash
@@ -270,11 +285,48 @@ dataset/
 Both sides must contain the same task, action history, and final answer. The
 state count must be the executed action count plus one.
 
-The supported scoring command obtains these prepared pairs from the hosted
-dataset. A raw directory under `recordings/` cannot be passed directly to
-`run-comparison`. Preparing and publishing a newly recorded run is a separate
-dataset-production operation and is not implemented by a public command in
-this repository.
+Each `final_answer.json` needs only the recorded answer:
+
+```json
+{"final_answer": "The agent's exact recorded answer"}
+```
+
+Both verifiers ignore other answer fields and use their local defaults.
+The screenshot verifier discovers `screenshot0.png` through `screenshotN.png`
+from the task directory in numeric order; no screenshot list is required.
+
+Prepare every run under `recordings/` without model calls:
+
+```bash
+./scripts/prepare-verifier-datasets
+```
+
+The command assigns the next unused `task_N` aliases under `dataset/data-ss/`
+and `dataset/data-dom/`. It treats each recording as one task, retaining the
+initial state and every after-action state, including duplicate frames. It
+copies the recorded WebSurfer log unchanged, preserves the reported answer
+even for failed runs, and validates both modalities before publishing them.
+Recordings with incomplete evidence are reported separately; the command
+returns a nonzero exit code if any recording fails preparation.
+
+To prepare one recording with an explicit alias:
+
+```bash
+./scripts/prepare-verifier-datasets \
+  --recording recordings/<run-id> \
+  --task task_101
+```
+
+Use `--recordings-dir`, `--output-dir`, or `--start-task` to select another
+source collection, destination, or starting task number. Existing task
+folders are never overwritten. Source mappings and SHA-256 hashes are saved
+under `dataset/preparation/<task>.json`, outside the strict verifier task
+folders. Source recordings and existing rubric artifacts are preserved;
+dataset preparation does not generate rubrics or scores.
+
+`run-comparison --task task_101` uses an existing local pair when present and
+otherwise downloads the requested pair from the hosted dataset. A raw
+recording must first be converted with the preparation command.
 
 ## Score a prepared task
 

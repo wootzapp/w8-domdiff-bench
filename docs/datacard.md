@@ -20,7 +20,8 @@ were not sent to the acting model.
 ## Main files
 
 - `task_data.json`: task text, start URL, and frozen rubric when available
-- `final_answer.json`: recorded answer and run outcome
+- `final_answer.json`: recorded answer in the required `final_answer` text field;
+  other fields are ignored and defaulted by the verifier
 - `web_surfer.log`: one normalized row per executed action
 - `screenshotN.png`: ordered screenshot state
 - `dom_modelN.txt`: ordered DOM-model state
