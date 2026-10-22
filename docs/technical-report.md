@@ -9,10 +9,7 @@ Technical report October 22, 2026
 Across 100 paired tasks and 642 audited rubric criteria, source-evidence
 loss affects **151 screenshot criteria (95% Wilson CI 20.40–26.95%)** and
 **5 DOM-diff Optimized criteria (95% CI 0.33–1.81%)**. The observed rates
-are 23.52% and 0.78%, respectively. Automated audits separately identify
-113 screenshot verifier misses (95% CI 14.85–20.74%) and 97 DOM verifier
-misses (95% CI 12.55–18.09%); the paired verifier-miss comparison does not
-establish a difference at the 0.05 level (exact McNemar p = 0.1982).
+are 23.52% and 0.78%, respectively.
 We built `w8-core`, our custom Chromium-based browser infrastructure,
 DOM-diff Optimized, a compact structured representation of captured page
 states, and `w8-domdiff-bench`, a paired evaluation suite for browser-agent
@@ -20,8 +17,8 @@ evidence. The suite addresses a practical problem: verification cannot
 recover criterion-relevant information that the recorded trajectory failed
 to preserve. Both verifiers receive the same task inputs, action history,
 final answer, frozen rubric, and scoring controls. These results describe
-source preservation and verifier findings in the selected runs. The
-criterion-level intervals do not adjust for correlation within tasks or
+source preservation in the selected runs. The criterion-level intervals
+do not adjust for correlation within tasks or
 automated-audit error; they are exploratory rather than evidence of
 acting-agent improvement.
 
@@ -53,12 +50,7 @@ for inspection and screenshot-based verification.
 
 Across the latest selected runs for 100 tasks, automated audits identify
 151/642 screenshot source losses (95% Wilson CI 20.40–26.95%) and 5/642
-DOM-diff Optimized losses (95% CI 0.33–1.81%). Source loss and verifier
-error are distinct: the same audits identify 113/642 screenshot verifier
-misses (95% CI 14.85–20.74%) and 97/642 DOM verifier misses (95% CI
-12.55–18.09%). A verifier miss can involve available evidence or rubric
-application and need not change the final score. The paired miss comparison
-is inconclusive at the 0.05 level (p = 0.1982). The source-loss counts
+DOM-diff Optimized losses (95% CI 0.33–1.81%). These source-loss counts
 motivate treating evidence capture and representation design as components
 of browser-agent evaluation; they do not measure agent success.
 
@@ -221,8 +213,8 @@ Each indicator is binary, so a criterion contributes at most one loss per
 representation even when several required items are missing. A partially
 preserved criterion counts as loss when at least one specific required item
 is absent from that representation and present in the other. Evidence that
-is present but overlooked or misinterpreted does not count. An item absent
-from both representations, or available in both, does not trigger loss. All
+is available in both representations does not trigger loss. An item absent
+from both representations does not trigger loss. All
 audited criteria remain in the denominator, and the rate for representation
 $`m`$ is
 
@@ -236,8 +228,7 @@ For criteria requiring exact website, record, or endpoint identity, the
 audit requires the URL in the representation itself. Branding and URLs in
 the shared action history do not substitute for a URL absent from a
 screenshot. This explicit identity rule accounts for many of the screenshot
-losses below; a representation gap need not imply that the verifier's final
-score is wrong.
+losses below.
 
 This metric measures evidence gaps between paired recorded representations.
 It does not measure absolute information loss against the live webpage,
@@ -247,46 +238,37 @@ verifier accuracy.
 
 ### 5 Benchmark Results
 
-#### 5.1 Counts, Confidence Intervals, and Paired Findings
+#### 5.1 Source-Evidence Loss: Counts and Confidence Intervals
 
 The latest selected runs contain **642 audited criteria across 100 tasks**.
 All tasks have completed automated audits. Counts and 95% Wilson confidence
 intervals lead the comparison; observed rates follow.
 
-| Finding | Representation | Count / audited criteria | 95% CI | Observed rate |
-| --- | --- | ---: | --- | ---: |
-| Source-evidence loss | Screenshots | **151/642** | **20.40–26.95%** | 23.52% |
-| Source-evidence loss | DOM-diff Optimized | **5/642** | **0.33–1.81%** | 0.78% |
-| Verifier miss | Screenshots | **113/642** | **14.85–20.74%** | 17.60% |
-| Verifier miss | DOM-diff Optimized | **97/642** | **12.55–18.09%** | 15.11% |
+| Representation | Count / audited criteria | 95% CI | Observed rate |
+| --- | ---: | --- | ---: |
+| Screenshots | **151/642** | **20.40–26.95%** | 23.52% |
+| DOM-diff Optimized | **5/642** | **0.33–1.81%** | 0.78% |
 
-The two measures answer different questions. Source-evidence loss identifies
-required information missing from one representation and preserved in the
-other. A verifier miss identifies overlooked or misused evidence, an
-unacknowledged limitation, or a misapplied criterion, even if the score is
-unchanged. The saved audit judgments are automated, not a new manual review
-of the original screenshots or DOM states.
+Source-evidence loss identifies required information missing from one
+representation and preserved in the other. The saved audit judgments are
+automated; the original screenshots and DOM states were not independently
+reviewed for this export.
 
-| Finding | Screenshot only | DOM only | Both | Neither | Two-sided exact McNemar p |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Source-evidence loss | 149 | 3 | 2 | 488 | 2.051 × 10⁻⁴⁰ |
-| Verifier miss | 76 | 60 | 37 | 469 | 0.1982 |
+| Screenshot only | DOM only | Both | Neither | Two-sided exact McNemar p |
+| ---: | ---: | ---: | ---: | ---: |
+| 149 | 3 | 2 | 488 | 2.051 × 10⁻⁴⁰ |
 
-The paired test uses discordant criterion pairs, not independent samples
-from the two representations. The two criteria with loss in both
-representations each lose different required items. Common findings are
-already included in both marginal counts. There are 154 unique criteria
-with source loss and 173 with a verifier miss; 55 have both, yielding 272
-reported criteria across 97 tasks.
+The paired test uses discordant criterion pairs. The two criteria with loss
+in both representations each lose different required items. Common losses
+are already included in both marginal counts, giving 154 unique criteria
+with source loss.
 
 These criterion-level intervals and tests assume independent criterion
 pairs. They do not adjust for correlation among criteria within a task,
 repeated model runs, or automated-audit error. Treat them as exploratory
-benchmark statistics. The source-loss asymmetry is large in these records;
-the verifier-miss comparison does not establish a difference at the 0.05
-level. As secondary point estimates, DOM has 96.7% fewer source-loss findings
-and 14.2% fewer verifier-miss findings than screenshots. Neither percentage
-measures acting-agent improvement.
+benchmark statistics. As a secondary point estimate, DOM has 96.7% fewer
+source-loss findings than screenshots. This percentage does not measure
+acting-agent improvement.
 
 ![Source-evidence loss counts and 95% Wilson confidence intervals](figures/evidence-rates.svg)
 
@@ -298,8 +280,7 @@ account for within-task correlation or automated-audit uncertainty.
 
 Each confirmed representation/criterion loss receives one primary evidence
 category from the saved adjudication's explanation and decisive evidence.
-Categories describe the missing item rather than the kind of verifier
-finding. [Category annotations](evidence_categories.json) record the
+[Category annotations](evidence_categories.json) record the
 rationale and a hash of each saved finding so changed findings require
 review before export. These annotations interpret automated findings;
 the original source states were not independently reviewed for this export.
@@ -316,8 +297,7 @@ the original source states were not independently reviewed for this export.
 
 **Table 3:** Primary source-gap categories. Each representation/criterion
 loss appears once; a criterion with losses in both representations can have
-different categories for the two missing items. These counts do not include
-verifier-only misses.
+different categories for the two missing items.
 
 URL gaps dominate the screenshot findings under the exact-identity rule in
 Section 4.2. They include endpoints, record URLs, and associations between a
@@ -326,11 +306,13 @@ records, list boundaries, regions, or substantial field descriptions.
 Label–value links describe disconnected labels and their values; table
 entries describe missing rows or row-level associations.
 
-The [criterion-level audit table](missed_evidence_table.md) contains all
-272 criteria with confirmed findings, including the 154 with source loss.
-It keeps the six evidence categories separate from the adjudicated verifier
-miss/loss flags. The [generated statistics](benchmark_statistics.json)
-include counts, intervals, paired tests, category totals, model provenance,
+The [criterion-level audit table](missed_evidence_table.md) documents
+all **154 criteria across 91 tasks** with confirmed source loss and their
+evidence categories. Every row has a primary category and a source-loss
+label: `SCREENSHOT_EVIDENCE_MISSING`, `DOM_EVIDENCE_MISSING`, or
+`BOTH_EVIDENCE_INCOMPLETE`. The
+[generated statistics](benchmark_statistics.json) include counts,
+intervals, paired tests, category totals, model provenance,
 and the selected run paths. Detailed links resolve into the local
 `evaluation/` artifacts, which are excluded from Git; regenerate the report
 after downloading or producing those runs.

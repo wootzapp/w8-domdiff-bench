@@ -47,12 +47,16 @@ def saved_run(root, task='task_01', timestamp='20261022T090000Z', *, patterns=No
     for i, (sm, dm, sl, dl) in enumerate(patterns):
         criterion = {
             'criterion_index': i, 'criterion': items[i]['criterion'], 'classification': 'SAVED_LABEL',
-            'explanation': 'Saved adjudication.', 'screenshot_evidence_loss': sl, 'dom_model_evidence_loss': dl,
+            'explanation': 'Both verifiers missed the shared relationship.',
+            'screenshot_evidence_loss': sl, 'dom_model_evidence_loss': dl,
             'adjudication': {key: {'confirmed': flag, 'citations': []} for key, flag in [
                 ('screenshot_verifier_miss', sm), ('dom_model_verifier_miss', dm),
                 ('screenshot_evidence_loss', sl), ('dom_model_evidence_loss', dl),
             ]},
         }
+        for key, decisive in [('screenshot_evidence_loss', 'Screenshots omit a URL retained by DOM.'),
+                               ('dom_model_evidence_loss', 'DOM omits a control state visible in screenshots.')]:
+            criterion['adjudication'][key]['decisive_evidence'] = decisive if criterion[key] else ''
         for mode, missed in [('dom_model', dm), ('screenshot', sm)]:
             suffix = 'dom' if mode == 'dom_model' else 'image'
             criterion[mode] = {'verifier_caught': not missed, 'verifier_output': {
@@ -147,7 +151,7 @@ def test_report_uses_all_audited_criteria_and_only_latest_runs(tmp_path):
     assert result['counts']['selected'] == 3
     assert result['counts']['both_evidence_loss'] == 1
     assert result['excluded_tasks'] == ['task_02']
-    assert result['statistics']['verifier_miss']['common'] == 1
+    assert result['statistics']['evidence_loss']['common'] == 1
     assert '**2/4**; 95% CI **15.00–85.00%** (rate 50.00%)' in text
     assert '1/4 (25.00%)' in text
     assert text.index('Absolute rates') < text.index('Paired comparison') < text.index('Relative comparison')
@@ -166,7 +170,7 @@ def test_no_findings_still_report_intervals_and_undefined_relative_rate(tmp_path
     text = (tmp_path / 'report.md').read_text()
     assert '**0/1**; 95% CI **0.00–79.35%** (rate 0.00%)' in text
     assert 'relative reduction is undefined' in text
-    assert result['statistics']['verifier_miss']['mcnemar_exact_p'] == 1
+    assert result['statistics']['evidence_loss']['mcnemar_exact_p'] == 1
 
 
 def test_report_lists_each_recorded_model_configuration(tmp_path):
@@ -208,7 +212,7 @@ def test_metadata_rejects_metrics_for_another_rubric(tmp_path):
         report.recorded_models(run, 'wrong-rubric-hash')
 
 
-def test_categories_count_each_representation_and_keep_findings_separate(tmp_path):
+def test_categories_count_each_representation_and_exclude_rows_without_source_loss(tmp_path):
     saved_run(tmp_path, patterns=[(True, False, True, True), (True, True, False, False)])
     result = generate_report(tmp_path, tmp_path / 'docs' / 'report.md')
     text = (tmp_path / 'docs/report.md').read_text()
@@ -216,10 +220,49 @@ def test_categories_count_each_representation_and_keep_findings_separate(tmp_pat
     assert result['category_counts']['Control states'] == {'screenshot': 0, 'dom': 1}
     assert list(result['category_counts']) == list(report.CATEGORIES)
     assert '| Category | Labels | Findings |' in text
-    assert '| Screenshot: URLs<br>DOM: Control states | `SAVED_LABEL` |' in text
-    assert '| — | `SAVED_LABEL` | DOM verifier miss<br>Screenshot verifier miss |' in text
+    assert '| Screenshot: URLs<br>DOM: Control states | `BOTH_EVIDENCE_INCOMPLETE` |' in text
+    assert '**C1**' not in text
+    assert result['counts']['selected'] == 1
+    assert result['counts']['no_source_loss'] == 1
     assert '(../task_01/20261022T090000Z/evidence_audit.json#L' in text
     assert str(tmp_path) not in text
+
+
+def test_export_uses_only_source_loss_labels_details_and_statistics(tmp_path):
+    run = saved_run(tmp_path, patterns=[(True, True, False, False),
+                                       (True, False, True, False),
+                                       (False, False, False, False)])
+    audit_path = run / 'evidence_audit.json'
+    audit = json.loads(audit_path.read_text())
+    audit['criteria'][1]['classification'] = 'BOTH_MISSED'
+    audit['criteria'][1]['adjudication']['screenshot_verifier_miss']['citations'] = [
+        {'source': 'excluded-verifier-citation.png', 'location': 'unrelated location'}]
+    write_json(audit_path, audit)
+    result = generate_report(tmp_path, tmp_path / 'report.md')
+    text = (tmp_path / 'report.md').read_text()
+    assert result['counts']['audited_criteria'] == 3
+    assert result['counts']['selected'] == 1
+    assert result['counts']['no_source_loss'] == 2
+    assert result['statistics'].keys() == {'evidence_loss'}
+    assert result['statistics']['evidence_loss']['denominator'] == 3
+    assert result['labels'] == {'SCREENSHOT_EVIDENCE_MISSING': 1}
+    assert '**C1**' in text
+    assert '**C0**' not in text and '**C2**' not in text
+    assert 'Screenshots omit a URL retained by DOM.' in text
+    for excluded in ('verifier miss', 'BOTH_MISSED', 'Both verifiers missed',
+                     'excluded-verifier-citation.png', 'SAVED_LABEL', 'Screenshot output'):
+        assert excluded not in text
+    assert not any('miss' in key for key in result['counts'])
+
+
+def test_source_loss_export_requires_decisive_evidence(tmp_path):
+    run = saved_run(tmp_path, patterns=[(False, False, True, False)])
+    path = run / 'evidence_audit.json'
+    audit = json.loads(path.read_text())
+    audit['criteria'][0]['adjudication']['screenshot_evidence_loss']['decisive_evidence'] = ''
+    write_json(path, audit)
+    with pytest.raises(ValueError, match='Missing decisive source evidence'):
+        generate_report(tmp_path, tmp_path / 'report.md')
 
 
 @pytest.mark.parametrize('change,error', [('missing', 'Missing evidence category'),

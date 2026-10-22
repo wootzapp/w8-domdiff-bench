@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Generate the missed-evidence Markdown report from saved v3 audits.
+"""Generate the source-evidence-loss Markdown report from saved v3 audits.
 
 Uses only the Python standard library and local files; makes no model/API calls.
 Defaults to <repository>/evaluation when installed in <repository>/scripts.
 Writes the report and machine-readable statistics to <repository>/docs.
-Selects the latest timestamped run per task, exports confirmed final findings,
+Selects the latest timestamped run per task, exports confirmed source gaps,
 and verifies rubric identity, saved model outputs, and evidence-file pointers.
 Leads with paired finding rates, 95% intervals, and saved AI-model provenance.
 """
@@ -22,8 +22,6 @@ from statistics import NormalDist
 
 
 FLAGS = (
-    ('dom_model_verifier_miss', 'DOM verifier miss'),
-    ('screenshot_verifier_miss', 'Screenshot verifier miss'),
     ('dom_model_evidence_loss', 'DOM evidence loss'),
     ('screenshot_evidence_loss', 'Screenshot evidence loss'),
 )
@@ -34,6 +32,19 @@ CATEGORIES = (
     'Label–value links', 'Capture omissions',
 )
 DEFAULT_CATEGORIES = REPOSITORY / 'docs' / 'evidence_categories.json'
+
+
+def source_loss_label(criterion):
+    """Classify source availability using only the confirmed representation losses."""
+    screenshot = criterion['adjudication']['screenshot_evidence_loss']['confirmed']
+    dom = criterion['adjudication']['dom_model_evidence_loss']['confirmed']
+    if screenshot and dom:
+        return 'BOTH_EVIDENCE_INCOMPLETE'
+    if screenshot:
+        return 'SCREENSHOT_EVIDENCE_MISSING'
+    if dom:
+        return 'DOM_EVIDENCE_MISSING'
+    raise ValueError('A source-loss label requires at least one confirmed source gap')
 
 
 def finding_digest(criterion, flag):
@@ -143,33 +154,26 @@ def summary_lines(statistics, model_counts, sample_run, audited_tasks, report_di
     def link(label, path, line=None):
         return file_link(label, path, line, relative_to=report_dir)
 
+    stat = statistics['evidence_loss']
+    total = stat['denominator']
     lines = [
         '**Absolute rates and common findings**',
         '',
-        f'The denominator is all **{statistics["verifier_miss"]["denominator"]} audited criteria across {audited_tasks} tasks**, including criteria with no finding. Only completed audits from each task’s latest selected run contribute; unaudited criteria are excluded. A verifier miss means the model overlooked or misused evidence or the rubric; source-evidence loss means required information was absent from a representation. The two measures are counted separately.',
+        f'The denominator is all **{total} audited criteria across {audited_tasks} tasks**, including criteria with no source gap. Only completed audits from each task’s latest selected run contribute; unaudited criteria are excluded. Source-evidence loss means required information was absent from one representation and preserved in the other.',
         '',
         '| Finding | Screenshot: count, 95% CI, rate | DOM: count, 95% CI, rate | Common to both: count and rate |',
         '|---|---|---|---|',
-    ]
-    for key, label in [('verifier_miss', 'Verifier miss'), ('evidence_loss', 'Source-evidence loss')]:
-        stat = statistics[key]
-        total = stat['denominator']
-        lines.append(f'| {label} | {rate_cell(stat["screenshot"], total)} | {rate_cell(stat["dom"], total)} | '
-                     f'{stat["common"]}/{total} ({100 * stat["common"] / total:.2f}%) |')
-    lines.extend([
+        f'| Source-evidence loss | {rate_cell(stat["screenshot"], total)} | {rate_cell(stat["dom"], total)} | '
+        f'{stat["common"]}/{total} ({100 * stat["common"] / total:.2f}%) |',
         '',
-        'Common findings concern the same task/criterion and are already included in both marginal counts; do not add them again.',
+        'Common losses concern the same task/criterion and are already included in both marginal counts. Each representation loses a different required item; do not add these criteria again.',
         '',
         '**Paired comparison**',
         '',
         '| Finding | Screenshot only | DOM only | Both | Neither | Exact McNemar p (two-sided) |',
         '|---|---|---|---|---|---|',
-    ])
-    for key, label in [('verifier_miss', 'Verifier miss'), ('evidence_loss', 'Source-evidence loss')]:
-        stat = statistics[key]
-        lines.append(f'| {label} | {stat["screenshot_only"]} | {stat["dom_only"]} | {stat["common"]} | '
-                     f'{stat["neither"]} | {stat["mcnemar_exact_p"]:.4g} |')
-    lines.extend([
+        f'| Source-evidence loss | {stat["screenshot_only"]} | {stat["dom_only"]} | {stat["common"]} | '
+        f'{stat["neither"]} | {stat["mcnemar_exact_p"]:.4g} |',
         '',
         'Intervals use the [95% Wilson score method](https://www.itl.nist.gov/div898/handbook/prc/section2/prc241.htm). '
         'The [two-sided exact McNemar test](https://www.statsmodels.org/stable/generated/statsmodels.stats.contingency_tables.mcnemar.html) '
@@ -177,18 +181,16 @@ def summary_lines(statistics, model_counts, sample_run, audited_tasks, report_di
         '`p = min(1, 2 × P[Binomial(screenshot_only + dom_only, 0.5) ≤ min(screenshot_only, dom_only)])`. '
         'These criterion-level intervals and tests assume independent criterion pairs; they do not adjust for correlation among criteria within a task, repeated model runs, or automated-audit error. Treat them as exploratory benchmark statistics.',
         '',
-        '**Relative comparison (secondary point estimates)**',
+        '**Relative comparison (secondary point estimate)**',
         '',
-    ])
-    for key, label in [('verifier_miss', 'verifier misses'), ('evidence_loss', 'source-evidence losses')]:
-        stat = statistics[key]
-        relative = stat['dom_relative_reduction']
-        if relative is None:
-            text = 'relative reduction is undefined because the screenshot baseline is zero'
-        else:
-            direction = 'fewer' if relative >= 0 else 'more'
-            text = f'DOM has {abs(relative) * 100:.1f}% {direction} than screenshots'
-        lines.append(f'- {label.capitalize()}: {text} ({stat["screenshot"]["count"]} screenshot, {stat["dom"]["count"]} DOM).')
+    ]
+    relative = stat['dom_relative_reduction']
+    if relative is None:
+        text = 'relative reduction is undefined because the screenshot baseline is zero'
+    else:
+        direction = 'fewer' if relative >= 0 else 'more'
+        text = f'DOM has {abs(relative) * 100:.1f}% {direction} than screenshots'
+    lines.append(f'Source-evidence losses: {text} ({stat["screenshot"]["count"]} screenshot, {stat["dom"]["count"]} DOM).')
     lines.extend([
         '',
         'Relative percentages can change sharply when counts are small; read the absolute counts, rate intervals, and paired tests first.',
@@ -274,11 +276,10 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
         return file_link(label, path, line, relative_to=OUTPUT.parent)
 
     category_counts = {category: {'screenshot': 0, 'dom': 0} for category in CATEGORIES}
-    counts = Counter()
+    counts = Counter({key: 0 for key in ('selected', 'no_source_loss', 'both_evidence_loss',
+                                         'dom_model_evidence_loss', 'screenshot_evidence_loss')})
     labels = Counter()
     selected_tasks = set()
-    miss_tasks = set()
-    loss_only_tasks = set()
     rows = []
     excluded = []
     older_runs = []
@@ -363,33 +364,21 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
                 assert embedded['final_points'] == summary[f'post_{suffix}_earned_points']
                 assert embedded['final_justification'] == summary[f'post_{suffix}_justification']
                 assert embedded['applicable_evidence'] == summary['applicable_evidence']
-                assert criterion['adjudication'][mode + '_verifier_miss']['confirmed'] is not criterion[mode]['verifier_caught']
                 verified_records += 1
             for key in ['dom_model_evidence_loss', 'screenshot_evidence_loss']:
                 assert criterion[key] == criterion['adjudication'][key]['confirmed']
 
             enabled = [(key, name) for key, name in FLAGS if criterion['adjudication'][key]['confirmed']]
             if not enabled:
-                counts['no_confirmed_finding'] += 1
+                counts['no_source_loss'] += 1
                 continue
             counts['selected'] += 1
             selected_tasks.add(task.name)
-            labels[criterion['classification']] += 1
+            classification = source_loss_label(criterion)
+            labels[classification] += 1
             for key, _ in enabled:
                 counts[key] += 1
-            dm = criterion['adjudication']['dom_model_verifier_miss']['confirmed']
-            sm = criterion['adjudication']['screenshot_verifier_miss']['confirmed']
-            loss = any(criterion['adjudication'][key]['confirmed'] for key in ['dom_model_evidence_loss', 'screenshot_evidence_loss'])
-            if dm or sm:
-                counts['miss'] += 1
-                miss_tasks.add(task.name)
-            else:
-                counts['loss_only'] += 1
-                loss_only_tasks.add(task.name)
-            counts['both_missed'] += int(dm and sm)
             counts['both_evidence_loss'] += int(criterion['dom_model_evidence_loss'] and criterion['screenshot_evidence_loss'])
-            counts['miss_and_loss'] += int((dm or sm) and loss)
-            counts['loss'] += int(loss)
 
             category_cells = []
             for flag, mode, label in [('screenshot_evidence_loss', 'screenshot', 'Screenshot'),
@@ -407,11 +396,15 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
                 offset = audit_text.index(json.dumps(key) + ':', adjudication_start, end)
                 flag_line = audit_text.count('\n', 0, offset) + 1
                 evidence_links.append(link(name, audit_file, flag_line))
-            for mode, missed, label in [('dom_model', dm, 'DOM output'), ('screenshot', sm, 'Screenshot output')]:
-                if missed:
-                    result_file, _, result_entries = results[mode]
-                    evidence_links.append(link(label, result_file, result_entries[index][3]))
-            detail = cell(criterion['explanation'])
+            # The criterion-wide explanation mixes different audit outcomes.
+            # Export only the decisive evidence for the confirmed source gaps.
+            details = []
+            for key, name in enabled:
+                decisive = criterion['adjudication'][key].get('decisive_evidence', '').strip()
+                if not decisive:
+                    raise ValueError(f'Missing decisive source evidence for {task.name}/C{index}/{key}')
+                details.append(f'{name}: {cell(decisive)}')
+            detail = '<br>'.join(details)
             cited = source_locations(criterion, enabled)
             evidence_cell = '; '.join(evidence_links) + '<br>' + detail
             if cited:
@@ -419,24 +412,21 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
             rows.append('| ' + ' | '.join([
                 task.name,
                 f'**C{index}** — {cell(criterion["criterion"])}',
-                '<br>'.join(category_cells) or '—',
-                f'`{cell(criterion["classification"])}`',
+                '<br>'.join(category_cells),
+                f'`{classification}`',
                 '<br>'.join(name for _, name in enabled),
                 evidence_cell,
             ]) + ' |')
 
     assert counts['selected'] == len(rows)
-    assert counts['audited_criteria'] == counts['selected'] + counts['no_confirmed_finding']
-    assert counts['miss'] + counts['loss_only'] == counts['selected']
-    assert counts['dom_model_verifier_miss'] + counts['screenshot_verifier_miss'] - counts['both_missed'] == counts['miss']
+    assert counts['audited_criteria'] == counts['selected'] + counts['no_source_loss']
+    assert counts['screenshot_evidence_loss'] + counts['dom_model_evidence_loss'] - counts['both_evidence_loss'] == counts['selected']
     for mode, flag in [('screenshot', 'screenshot_evidence_loss'), ('dom', 'dom_model_evidence_loss')]:
         assert sum(values[mode] for values in category_counts.values()) == counts[flag]
 
     if not audits:
         raise ValueError(f'No completed evidence audits found in {ROOT}')
     statistics = {
-        'verifier_miss': paired_statistics(counts['screenshot_verifier_miss'], counts['dom_model_verifier_miss'],
-                                           counts['both_missed'], counts['audited_criteria']),
         'evidence_loss': paired_statistics(counts['screenshot_evidence_loss'], counts['dom_model_evidence_loss'],
                                            counts['both_evidence_loss'], counts['audited_criteria']),
     }
@@ -452,7 +442,7 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
                   if older_runs else 'There are no older runs to exclude.')
     dominant_label = labels.most_common(1)[0][0] if labels else 'none'
     lines = [
-        '**Missed evidence by task and criterion**',
+        '**Source-evidence gaps by task and criterion**',
         '',
         *summary_lines(statistics, model_counts, sample_run, counts['audited_tasks'], OUTPUT.parent),
         '**Source-evidence loss by category**',
@@ -462,35 +452,32 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
         *(f'| {category} | {values["screenshot"]} | {values["dom"]} |' for category, values in category_counts.items()),
         f'| **Total** | **{counts["screenshot_evidence_loss"]}** | **{counts["dom_model_evidence_loss"]}** |',
         '',
-        'Categories match the README and describe the missing evidence, not the kind of verifier finding. '
+        'Categories match the README and describe the missing evidence. '
         'Each confirmed representation/criterion loss receives one primary category from ' + link('category annotations', categories_path) + '. '
         'Annotations interpret saved adjudication explanations and decisive evidence; they are not a new review of original source states. '
-        'A changed finding invalidates its annotation. A criterion with loss in both representations can have a different category for each. '
-        'Verifier-only findings have no source-gap category (—).',
+        'A changed finding invalidates its annotation. A criterion with loss in both representations can have a different category for each.',
         '',
-        f'This table consolidates the saved evidence audits for the latest timestamped run of each task in `{ROOT.name}/`. It contains one row per task/criterion with an adjudicated DOM or screenshot verifier miss, evidence loss in either representation, or both. Criterion IDs (`C0`, `C1`, …) use the zero-based `criterion_index` from the audit.',
+        f'This table consolidates the saved evidence audits for the latest timestamped run of each task in `{ROOT.name}/`. It contains one row per task/criterion with confirmed source-evidence loss in screenshots, DOM, or both. Criterion IDs (`C0`, `C1`, …) use the zero-based `criterion_index` from the audit.',
         '',
-        f'There are {counts["tasks"]} tasks and {counts["runs"]} saved runs. The latest runs contain {counts["all_criteria"]} criteria; {counts["audited_tasks"]} tasks / {counts["audited_criteria"]} criteria have completed audits. The table contains **{counts["selected"]} criteria across {len(selected_tasks)} tasks**: **{counts["miss"]} with a verifier miss** and **{counts["loss_only"]} with evidence loss only**. Findings below are the existing automated audit/adjudication judgments ({", ".join(sorted(audit_models))}), rather than a new manual review of original screenshots or DOM states. {len(excluded)} tasks lack completed audits and are listed after the table.',
+        f'There are {counts["tasks"]} tasks and {counts["runs"]} saved runs. The latest runs contain {counts["all_criteria"]} criteria; {counts["audited_tasks"]} tasks / {counts["audited_criteria"]} criteria have completed audits. The table contains **{counts["selected"]} criteria across {len(selected_tasks)} tasks** with confirmed source-evidence loss. The {counts["no_source_loss"]} audited criteria without source loss are omitted from the table and retained in the rate denominator. Findings below are the existing automated audit/adjudication judgments ({", ".join(sorted(audit_models))}), rather than a new manual review of original screenshots or DOM states. {len(excluded)} tasks lack completed audits and are listed after the table.',
         '',
         '**Files needed from the evaluation directory**',
         '',
-        '- `task_*/<latest-run>/evidence_audit.json` is the primary source: final `criteria[*]` contains the criterion, original classification, explanation, saved verifier analyses, and `adjudication` with confirmed findings, decisive evidence, and citations. Example: ' + link(f'{sample_task} audit', sample_run / 'evidence_audit.json') + '.',
+        '- `task_*/<latest-run>/evidence_audit.json` is the primary source: final `criteria[*].adjudication` contains the confirmed source-loss findings, decisive evidence, and citations. Example: ' + link(f'{sample_task} audit', sample_run / 'evidence_audit.json') + '.',
         '- `task_*/<latest-run>/frozen_rubric.json` supplies the canonical criterion wording, order, and requirements. Example: ' + link(f'{sample_task} rubric', sample_run / 'frozen_rubric.json') + '.',
-        '- `task_*/<latest-run>/dom_model/result.json` and `screenshot_verifier/result.json` supply each verifier’s actual evidence analysis, justification, and scores. Example: ' + link('DOM result', sample_run / 'dom_model/result.json') + ' and ' + link('screenshot result', sample_run / 'screenshot_verifier/result.json') + '.',
-        '- `task_*/<latest-run>/run_manifest.json` establishes the saved run status and provenance. `comparison.json` cross-checks criterion order and scores; its aggregate scores alone do not establish a missed-evidence finding. Example: ' + link('manifest', sample_run / 'run_manifest.json') + ' and ' + link('comparison', sample_run / 'comparison.json') + '.',
+        '- `task_*/<latest-run>/dom_model/result.json` and `screenshot_verifier/result.json` supply the saved result records used for rubric and audit consistency checks.',
+        '- `task_*/<latest-run>/run_manifest.json` establishes the saved run status and provenance. `comparison.json` cross-checks criterion order; source-loss findings come from the audit. Example: ' + link('manifest', sample_run / 'run_manifest.json') + ' and ' + link('comparison', sample_run / 'comparison.json') + '.',
         '- `task_*/<latest-run>/evidence_audit_error.json`, where present, explains why a task has no validated final audit. Failed attempt responses inside these files are excluded from the confirmed findings.',
         '',
         '**How to read the six columns**',
         '',
         '- **Task / criterion:** task alias and exact frozen-rubric criterion. The evidence path identifies the selected run.',
         '- **Category:** the primary source-gap type: Exact text and values, URLs, Control states, Table entries, Label–value links, or Capture omissions.',
-        '- **Labels:** the audit’s original `classification`, copied unchanged (for example, `SCREENSHOT_EVIDENCE_MISSING`, `DOM_MISSED_SCREENSHOT_CAUGHT`, or `DOM_EVIDENCE_MISSING`). Use Findings for all confirmed adjudication flags; one classification label can coexist with multiple findings.',
-        '- **Findings:** every final adjudication flag with `confirmed: true`. “DOM verifier miss” or “Screenshot verifier miss” means the verifier overlooked or materially misused available evidence, failed to acknowledge an evidence limitation, or misapplied the criterion. It can occur even when the final score is unchanged. “DOM evidence loss” or “Screenshot evidence loss” means decision-essential evidence was preserved by the other representation but lost in this one; it does not itself establish a verifier error.',
-        '- **Pointer to evidence file:** links to the exact adjudication blocks in `evidence_audit.json` and, for confirmed verifier misses, the corresponding criterion in the model’s `result.json`. The explanation is copied from the final audit. “Cited evidence” identifies the original source file and its location; the linked audit retains the quotations.',
+        '- **Labels:** source-loss tags derived from confirmed availability flags: `SCREENSHOT_EVIDENCE_MISSING`, `DOM_EVIDENCE_MISSING`, or `BOTH_EVIDENCE_INCOMPLETE`.',
+        '- **Findings:** confirmed “DOM evidence loss” and/or “Screenshot evidence loss.” Each means decision-essential evidence was preserved by the other representation but lost in this one.',
+        '- **Pointer to evidence file:** links to the exact source-loss adjudication blocks in `evidence_audit.json`. Each statement is copied from that finding’s `decisive_evidence`. “Cited evidence” identifies the original source file and its location; the linked audit retains the quotations.',
         '',
-        f'To read only model mistakes, select rows with a **verifier miss** finding: {counts["dom_model_verifier_miss"]} DOM misses and {counts["screenshot_verifier_miss"]} screenshot misses overlap on {counts["both_missed"]} criteria, giving {counts["miss"]} unique criteria across {len(miss_tasks)} tasks. Evidence loss affects {counts["loss"]} unique criteria; {counts["miss_and_loss"]} also have a verifier miss. These overlapping counts must not be added. The {counts["no_confirmed_finding"]} audited criteria with no confirmed flag are omitted.',
-        '',
-        f'**Evidence availability:** {without_inputs} of {len(audits)} completed latest-run audit folders lack `_inputs`. Cited `screenshotN.png` and `dom_modelN.txt` names identify sources recorded by the audits; they are not links to independently reviewed originals. The links below point to existing audit and result files that retain citations, quotations, and model reasoning.',
+        f'**Evidence availability:** {without_inputs} of {len(audits)} completed latest-run audit folders lack `_inputs`. Cited `screenshotN.png` and `dom_modelN.txt` names identify sources recorded by the audits; they are not links to independently reviewed originals. The links below point to existing audit files that retain source-loss citations and quotations.',
         '',
         '| Task | Criterion | Category | Labels | Findings | Pointer to evidence file |',
         '|---|---|---|---|---|---|',
@@ -498,7 +485,7 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
         '',
         '**Coverage gaps**',
         '',
-        ('The following latest runs have no completed, validated audit. Their criteria are excluded from the table, and their absence is not evidence that either model caught everything.'
+        ('The following latest runs have no completed, validated audit. Their criteria are excluded from the table and denominator; their absence does not establish source preservation.'
          if excluded else 'All latest runs have completed, validated audits.'),
         '',
     ]
@@ -509,11 +496,11 @@ def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = 
         '**Verification and limits**',
         '',
         f'- Directly verified: selected the latest run for every task; matched criterion names/order to the frozen rubric and comparison; verified canonical rubric hashes against both results and the audit; checked {verified_records} saved model/criterion records for matching evidence analyses, points, and final justifications; checked every included finding against its final adjudication flag. Every linked file and target line exists.',
-        '- Interpretation: the labels, explanations, and judgments are inherited from the automated audits. A verifier miss is not necessarily a failed browser task, a score disagreement, or a false negative; the linked justification specifies what was missed or overclaimed.',
+        '- Interpretation: source-loss judgments, decisive evidence, and citations are inherited from the automated audits. Labels describe the confirmed representation-loss pattern. The comparison measures source availability across paired records.',
         f'- Unverified boundary: independently confirming the automated findings requires the original screenshots/DOM states and shared trajectory. Resolving the {len(excluded)} coverage gaps requires a completed valid audit or a separate explicitly identified review.',
         f'- Run denominator: {older_note} {date_note} Exact timestamps are preserved in the linked paths.',
         '',
-        f'The most frequent saved label is `{dominant_label}`; the table separately identifies the {counts["miss"]} criteria with a verifier-miss finding. There are {len(excluded)} unaudited tasks; original evidence was not independently reviewed.',
+        f'The most frequent source-loss label is `{dominant_label}`. There are {len(excluded)} unaudited tasks; original evidence was not independently reviewed.',
         '',
     ])
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

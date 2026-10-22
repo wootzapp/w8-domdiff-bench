@@ -213,8 +213,8 @@ Each indicator is binary, so a criterion contributes at most one loss per
 representation even when several required items are missing. A partially
 preserved criterion counts as loss when at least one specific required item
 is absent from that representation and present in the other. Evidence that
-is present but overlooked or misinterpreted does not count. An item absent
-from both representations, or available in both, does not trigger loss. All
+is available in both representations does not trigger loss. An item absent
+from both representations does not trigger loss. All
 audited criteria remain in the denominator, and the rate for representation
 $`m`$ is
 
@@ -228,8 +228,7 @@ For criteria requiring exact website, record, or endpoint identity, the
 audit requires the URL in the representation itself. Branding and URLs in
 the shared action history do not substitute for a URL absent from a
 screenshot. This explicit identity rule accounts for many of the screenshot
-losses below; a representation gap need not imply that the verifier's final
-score is wrong.
+losses below.
 
 This metric measures evidence gaps between paired recorded representations.
 It does not measure absolute information loss against the live webpage,
@@ -308,7 +307,10 @@ Label–value links describe disconnected labels and their values; table
 entries describe missing rows or row-level associations.
 
 The [criterion-level audit table](docs/missed_evidence_table.md) documents
-the 154 criteria with source loss and their evidence categories. The
+all **154 criteria across 91 tasks** with confirmed source loss and their
+evidence categories. Every row has a primary category and a source-loss
+label: `SCREENSHOT_EVIDENCE_MISSING`, `DOM_EVIDENCE_MISSING`, or
+`BOTH_EVIDENCE_INCOMPLETE`. The
 [generated statistics](docs/benchmark_statistics.json) include counts,
 intervals, paired tests, category totals, model provenance,
 and the selected run paths. Detailed links resolve into the local
@@ -595,8 +597,9 @@ The generator uses `docs/evidence_categories.json` for the six evidence
 categories. Add an annotation for each new confirmed representation/criterion
 loss, or review and update its hash when the saved finding changes; the
 generator rejects missing or stale annotations rather than guessing from
-the criterion wording. Original automated classification labels remain in
-the linked audit JSON.
+the criterion wording. The Labels column derives its tags from confirmed
+source-loss flags; evidence statements come from each loss finding's
+`decisive_evidence`.
 
 Install the plotting extra and regenerate Figures 2–3 from those statistics:
 
