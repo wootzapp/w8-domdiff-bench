@@ -2,23 +2,28 @@
 
 WootzApp
 
-Technical report October 1, 2026
+Technical report October 22, 2026
 
 ##### Abstract
 
+Across 100 paired tasks and 642 audited rubric criteria, source-evidence
+loss affects **151 screenshot criteria (95% Wilson CI 20.40–26.95%)** and
+**5 DOM-diff Optimized criteria (95% CI 0.33–1.81%)**. The observed rates
+are 23.52% and 0.78%, respectively. Automated audits separately identify
+113 screenshot verifier misses (95% CI 14.85–20.74%) and 97 DOM verifier
+misses (95% CI 12.55–18.09%); the paired verifier-miss comparison does not
+establish a difference at the 0.05 level (exact McNemar p = 0.1982).
 We built `w8-core`, our custom Chromium-based browser infrastructure,
 DOM-diff Optimized, a compact structured representation of captured page
 states, and `w8-domdiff-bench`, a paired evaluation suite for browser-agent
 evidence. The suite addresses a practical problem: verification cannot
 recover criterion-relevant information that the recorded trajectory failed
-to preserve. We use the screenshot verifier as the screenshot-based
-baseline and compare it with our DOM-based adaptation under the same task
-inputs, action history, final answer, frozen rubric, and scoring controls.
-The final evaluation contains one selected record for each of 100 tasks and
-639 audited rubric criteria. Screenshot evidence is missing for 26/639
-criteria (4.1%), compared with 2/639 (0.3%) for DOM-diff Optimized. These
-results show that structured browser evidence substantially reduces
-source-evidence loss in this evaluation.
+to preserve. Both verifiers receive the same task inputs, action history,
+final answer, frozen rubric, and scoring controls. These results describe
+source preservation and verifier findings in the selected runs. The
+criterion-level intervals do not adjust for correlation within tasks or
+automated-audit error; they are exploratory rather than evidence of
+acting-agent improvement.
 
 ### 1 Introduction
 
@@ -46,10 +51,16 @@ pipeline, the paired comparison protocol, and the source-aware audit. The
 acting agent receives compact text observations; screenshots are retained
 for inspection and screenshot-based verification.
 
-Across the final 100-task evaluation, DOM-diff Optimized reduces asymmetric
-source-evidence loss from 26/639 audited criteria to 2/639. The result
-motivates treating evidence capture and representation design as first-class
-components of browser-agent evaluation.
+Across the latest selected runs for 100 tasks, automated audits identify
+151/642 screenshot source losses (95% Wilson CI 20.40–26.95%) and 5/642
+DOM-diff Optimized losses (95% CI 0.33–1.81%). Source loss and verifier
+error are distinct: the same audits identify 113/642 screenshot verifier
+misses (95% CI 14.85–20.74%) and 97/642 DOM verifier misses (95% CI
+12.55–18.09%). A verifier miss can involve available evidence or rubric
+application and need not change the final score. The paired miss comparison
+is inconclusive at the 0.05 level (p = 0.1982). The source-loss counts
+motivate treating evidence capture and representation design as components
+of browser-agent evaluation; they do not measure agent success.
 
 ### 2 Foundations and Baselines
 
@@ -159,9 +170,11 @@ final answer.
 | --- | --- |
 | Dataset | WootzApp browser-agent task dataset. |
 | Tasks | Tasks 1–100; one selected final record per task. |
-| Audited criteria | 639 rubric criteria. |
+| Audited criteria | 642 rubric criteria; completed automated audits for all 100 tasks. |
+| Selected runs | Latest timestamped run per task; October 21–22, 2026. |
+| Models | `gpt-5.2` evidence/rubric judge and rubric generation; `o4-mini` action/validity judge; `gpt-5.6-sol` automated evidence audit/adjudication. |
 | Comparison controls | Shared task inputs, executed actions, final answer, and frozen rubric, with screenshot and DOM records aligned by action step. |
-| Evidence-loss metric | Defined in Section 4.2 from direct review of the ordered source states. |
+| Evidence-loss metric | Defined in Section 4.2; saved automated audits review the ordered source states. |
 
 **Table 2:** Essential settings for the final evaluation [[3]](#references).
 
@@ -219,6 +232,13 @@ $`m`$ is
 \qquad m\in\{S,D\}.
 ```
 
+For criteria requiring exact website, record, or endpoint identity, the
+audit requires the URL in the representation itself. Branding and URLs in
+the shared action history do not substitute for a URL absent from a
+screenshot. This explicit identity rule accounts for many of the screenshot
+losses below; a representation gap need not imply that the verifier's final
+score is wrong.
+
 This metric measures evidence gaps between paired recorded representations.
 It does not measure absolute information loss against the live webpage,
 because evidence omitted from both representations is not detected. Rates
@@ -227,140 +247,98 @@ verifier accuracy.
 
 ### 5 Benchmark Results
 
-#### 5.1 Evidence Preservation Across 100 Tasks
+#### 5.1 Counts, Confidence Intervals, and Paired Findings
 
-For Tasks 1–100, the confirmed counts are
+The latest selected runs contain **642 audited criteria across 100 tasks**.
+All tasks have completed automated audits. Counts and 95% Wilson confidence
+intervals lead the comparison; observed rates follow.
 
-```math
-M=639,
-\qquad
-\sum_{c\in\mathcal{C}}\ell_{c,S}=26,
-\qquad
-\sum_{c\in\mathcal{C}}\ell_{c,D}=2.
-```
+| Finding | Representation | Count / audited criteria | 95% CI | Observed rate |
+| --- | --- | ---: | --- | ---: |
+| Source-evidence loss | Screenshots | **151/642** | **20.40–26.95%** | 23.52% |
+| Source-evidence loss | DOM-diff Optimized | **5/642** | **0.33–1.81%** | 0.78% |
+| Verifier miss | Screenshots | **113/642** | **14.85–20.74%** | 17.60% |
+| Verifier miss | DOM-diff Optimized | **97/642** | **12.55–18.09%** | 15.11% |
 
-Therefore,
+The two measures answer different questions. Source-evidence loss identifies
+required information missing from one representation and preserved in the
+other. A verifier miss identifies overlooked or misused evidence, an
+unacknowledged limitation, or a misapplied criterion, even if the score is
+unchanged. The saved audit judgments are automated, not a new manual review
+of the original screenshots or DOM states.
 
-```math
-\mathrm{ELR}_{S}=\frac{26}{639}\times100\approx4.07\%,
-\qquad
-\mathrm{ELR}_{D}=\frac{2}{639}\times100\approx0.31\%.
-```
+| Finding | Screenshot only | DOM only | Both | Neither | Two-sided exact McNemar p |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Source-evidence loss | 149 | 3 | 2 | 488 | 2.051 × 10⁻⁴⁰ |
+| Verifier miss | 76 | 60 | 37 | 469 | 0.1982 |
 
-```math
-\text{Relative reduction}
-=\frac{\mathrm{ELR}_{S}-\mathrm{ELR}_{D}}{\mathrm{ELR}_{S}}\times100
-=\frac{26-2}{26}\times100
-\approx92.3\%.
-```
+The paired test uses discordant criterion pairs, not independent samples
+from the two representations. The two criteria with loss in both
+representations each lose different required items. Common findings are
+already included in both marginal counts. There are 154 unique criteria
+with source loss and 173 with a verifier miss; 55 have both, yielding 272
+reported criteria across 97 tasks.
 
-DOM-diff Optimized therefore has 92.3% fewer criteria with confirmed paired
-source-evidence loss than screenshots across Tasks 1–100. This finding does
-not imply a corresponding improvement in agent performance.
+These criterion-level intervals and tests assume independent criterion
+pairs. They do not adjust for correlation among criteria within a task,
+repeated model runs, or automated-audit error. Treat them as exploratory
+benchmark statistics. The source-loss asymmetry is large in these records;
+the verifier-miss comparison does not establish a difference at the 0.05
+level. As secondary point estimates, DOM has 96.7% fewer source-loss findings
+and 14.2% fewer verifier-miss findings than screenshots. Neither percentage
+measures acting-agent improvement.
 
-```mermaid
----
-config:
-  xyChart:
-    width: 600
-    height: 420
-    xAxis:
-      showAxisLine: false
-      showTick: false
-  themeVariables:
-    xyChart:
-      backgroundColor: "#ffffff"
-      titleColor: "#111111"
-      xAxisLabelColor: "#111111"
-      xAxisTitleColor: "#111111"
-      xAxisTickColor: "#111111"
-      xAxisLineColor: "#111111"
-      yAxisLabelColor: "#111111"
-      yAxisTitleColor: "#111111"
-      yAxisTickColor: "#111111"
-      yAxisLineColor: "#111111"
-      plotColorPalette: "#E76F51, #2563EB"
----
-xychart-beta
-    %% Layout notes: labels that look empty are zero-width spaces (U+200B), used as blank
-    %% spacer slots between bar groups. The value axis starts just above 0 so that
-    %% zero-value bars are not drawn at all.
-    title "Evidence Preservation Across Browser Tasks"
-    x-axis "Tasks 1–100 · Coral: Screenshots · Blue: DOM-diff Optimized" ["​", "​​", "4.07%", "0.31%", "​​​", "​​​​"]
-    y-axis "Evidence loss (%)" 0.2 --> 5
-    bar [0, 0, 4.07, 0, 0, 0]
-    bar [0, 0, 0, 0.31, 0, 0]
-```
+![Source-evidence loss counts and 95% Wilson confidence intervals](figures/evidence-rates.svg)
 
-**Figure 2:** Percentage of audited criteria with missing source evidence in
-screenshots and DOM-diff Optimized. Lower is better.
+**Figure 2:** Source-evidence loss with absolute counts and 95% Wilson
+intervals over all 642 audited criteria. Lower is better. Intervals do not
+account for within-task correlation or automated-audit uncertainty.
 
 #### 5.2 Where Evidence Is Lost
 
-Each confirmed source gap is assigned one primary category so that the
-counts in Table 3 sum to the aggregate without double counting. The
-classification uses the audited criterion description and source inspection:
-scalar text and values, URLs, control states, table entries, label–value
-links, or capture omissions affecting a larger region or structured field
-[[3]](#references).
+Each confirmed representation/criterion loss receives one primary evidence
+category from the saved adjudication's explanation and decisive evidence.
+Categories describe the missing item rather than the kind of verifier
+finding. [Category annotations](evidence_categories.json) record the
+rationale and a hash of each saved finding so changed findings require
+review before export. These annotations interpret automated findings;
+the original source states were not independently reviewed for this export.
 
 | **Category** | **Screenshots** | **DOM-diff Optimized** |
 | :--- | :---: | :---: |
-| Exact text and values | 11 | 0 |
-| URLs | 3 | 0 |
-| Control states | 1 | 0 |
-| Table entries | 1 | 0 |
-| Label–value links | 0 | 1 |
-| Capture omissions | 10 | 1 |
-| **Total** | **26** | **2** |
+| Exact text and values | 16 | 1 |
+| URLs | 117 | 0 |
+| Control states | 0 | 1 |
+| Table entries | 4 | 0 |
+| Label–value links | 0 | 3 |
+| Capture omissions | 14 | 0 |
+| **Total** | **151** | **5** |
 
-**Table 3:** Category counts for confirmed source-evidence-loss criteria.
-Each affected criterion appears exactly once.
+**Table 3:** Primary source-gap categories. Each representation/criterion
+loss appears once; a criterion with losses in both representations can have
+different categories for the two missing items. These counts do not include
+verifier-only misses.
 
-The [criterion-level audit table](../results/evidence-gaps.md) identifies all
-28 gap rows and links their historical rationale and paired source evidence.
-The [full audit CSV](../results/criterion-audit.csv) contains all 639 criteria.
-Per-row categories in this export are reconstructed from the historical
-descriptions; see [provenance and limitations](../results/audit/README.md).
+URL gaps dominate the screenshot findings under the exact-identity rule in
+Section 4.2. They include endpoints, record URLs, and associations between a
+blocker or response and its source page. Capture omissions describe missing
+records, list boundaries, regions, or substantial field descriptions.
+Label–value links describe disconnected labels and their values; table
+entries describe missing rows or row-level associations.
 
-```mermaid
----
-config:
-  xyChart:
-    width: 900
-    height: 480
-    xAxis:
-      showAxisLine: false
-      showTick: false
-      labelFontSize: 13
-  themeVariables:
-    xyChart:
-      backgroundColor: "#ffffff"
-      titleColor: "#111111"
-      xAxisLabelColor: "#111111"
-      xAxisTitleColor: "#111111"
-      xAxisTickColor: "#111111"
-      xAxisLineColor: "#111111"
-      yAxisLabelColor: "#111111"
-      yAxisTitleColor: "#111111"
-      yAxisTickColor: "#111111"
-      yAxisLineColor: "#111111"
-      plotColorPalette: "#E76F51, #2563EB"
----
-xychart-beta
-    %% Layout notes: labels that look empty are zero-width spaces (U+200B), used as blank
-    %% spacer slots between bar groups. The value axis starts just above 0 so that
-    %% zero-value bars are not drawn at all.
-    title "Evidence Loss by Type"
-    x-axis "Coral: Screenshots · Blue: DOM-diff Optimized" ["Exact text and values", "​", "​​", "URLs", "​​​", "​​​​", "Control states", "​​​​​", "​​​​​​", "Table entries", "​​​​​​​", "​​​​​​​​", "Label–value links", "​​​​​​​​​", "​​​​​​​​​​", "Capture omissions", "​​​​​​​​​​​"]
-    y-axis "Criteria with missing evidence" 0.4 --> 12
-    bar [11, 0, 0, 3, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 10, 0]
-    bar [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1]
-```
+The [criterion-level audit table](missed_evidence_table.md) contains all
+272 criteria with confirmed findings, including the 154 with source loss.
+It keeps the six evidence categories separate from the adjudicated verifier
+miss/loss flags. The [generated statistics](benchmark_statistics.json)
+include counts, intervals, paired tests, category totals, model provenance,
+and the selected run paths. Detailed links resolve into the local
+`evaluation/` artifacts, which are excluded from Git; regenerate the report
+after downloading or producing those runs.
 
-**Figure 3:** Confirmed source-evidence gaps by category for screenshots and
-DOM-diff Optimized. Each affected criterion is assigned one primary category;
-lower is better.
+![Source-evidence loss counts using the six evidence categories](figures/evidence-categories.svg)
+
+**Figure 3:** Confirmed source-evidence losses by primary category for each
+representation, using the same counts as Table 3. Lower is better.
 
 #### 5.3 Preserving the Details Agents Need
 
@@ -396,12 +374,14 @@ action-tool observations can diverge on rapidly changing pages.
 Viewport-based capture also means scrolling remains part of evidence
 collection, and visibility tolerances are not identical to pixel cropping.
 
-The evaluation covers 100 browser research and extraction tasks and 639
-rubric criteria. It does not establish performance on all websites,
+The evaluation covers 100 browser research and extraction tasks and 642
+rubric criteria. Findings are automated audit/adjudication judgments; the
+reported intervals do not capture annotation error or within-task
+correlation. It does not establish performance on all websites,
 authenticated workflows, transactions, or visually intensive interaction.
-Criterion-level audit labels can also bundle multiple facts, and manual
-judgments about evidence availability and relationships remain a source of
-annotation uncertainty.
+Criterion-level audit labels can also bundle multiple facts, and judgments
+about evidence availability and relationships remain a source of annotation
+uncertainty.
 
 For model development, the practical value is diagnostic. Source gaps
 identify capture and representation work, while paired trajectories provide
@@ -412,9 +392,10 @@ downstream training gains or acting-agent improvement.
 ### 7 Building on `w8-domdiff-bench`
 
 WootzApp built `w8-core`, DOM-diff Optimized, and `w8-domdiff-bench` to make
-browser-agent evidence capture inspectable. In the final 100-task
-evaluation, structured evidence reduces source-evidence loss from 26/639
-criteria to 2/639. The suite provides a controlled, auditable foundation for
+browser-agent evidence capture inspectable. In the selected 100-task
+evaluation, source loss affects 151/642 screenshot criteria (95% Wilson CI
+20.40–26.95%) and 5/642 DOM criteria (95% CI 0.33–1.81%). The suite provides
+a controlled, auditable foundation for
 evaluating browser evidence, refining observations, and reviewing
 trajectories while keeping confirmed source gaps separate from evidence that
 was present in the recording.
@@ -456,8 +437,10 @@ preprint arXiv:2604.06240*, 2026. doi: 10.48550/arXiv.2604.06240. URL
 [`https://arxiv.org/abs/2604.06240`](https://arxiv.org/abs/2604.06240).
 
 \[3\] WootzApp. w8-domdiff-bench: Tasks 1–100 paired evaluation results. Evaluation
-results and [criterion-level audit records](../results/evidence-gaps.md), 2026.
-See [audit provenance](../results/audit/README.md) for the pinned historical sources.
+results and [criterion-level audit records](missed_evidence_table.md),
+October 21–22, 2026. See the [generated statistics](benchmark_statistics.json)
+for selected runs and model provenance and the
+[category annotations](evidence_categories.json) for category rationale.
 
 \[4\] Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek Sridhar,
 Xianyi Cheng, Tianyue Ou, Yonatan Bisk, Daniel Fried, Uri Alon, and Graham

@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import sys
 
 import pytest
 
@@ -82,6 +83,29 @@ def saved_run(root, task='task_01', timestamp='20261022T090000Z', *, patterns=No
     return run
 
 
+def category_annotations(root):
+    """Explicit annotations for synthetic findings, including different paired types."""
+    findings = {}
+    for task in root.glob('task_*'):
+        audit_file = sorted(task.iterdir())[-1] / 'evidence_audit.json'
+        if not audit_file.exists():
+            continue
+        for criterion in json.loads(audit_file.read_text())['criteria']:
+            for flag, category in [('screenshot_evidence_loss', 'URLs'),
+                                    ('dom_model_evidence_loss', 'Control states')]:
+                if criterion['adjudication'][flag]['confirmed']:
+                    key = f'{task.name}/C{criterion["criterion_index"]}/{flag}'
+                    findings[key] = {'category': category,
+                                     'finding_sha256': report.finding_digest(criterion, flag)}
+    path = root / 'categories.json'
+    write_json(path, {'categories': list(report.CATEGORIES), 'findings': findings})
+    return path
+
+
+def generate_report(root, output):
+    return report.generate_report(root, output, category_annotations(root))
+
+
 def test_wilson_interval_including_boundary_counts():
     assert report.wilson_interval(5, 100) == pytest.approx((0.021543679154367966, 0.11175046923191914))
     assert report.wilson_interval(0, 10) == pytest.approx((0, 0.2775327998628892))
@@ -116,7 +140,7 @@ def test_report_uses_all_audited_criteria_and_only_latest_runs(tmp_path):
     saved_run(tmp_path, timestamp='20261021T090000Z', patterns=[(True, True, True, True)])
     saved_run(tmp_path, task='task_02', audited=False)
     output = tmp_path / 'report.md'
-    result = report.generate_report(tmp_path, output)
+    result = generate_report(tmp_path, output)
     text = output.read_text()
     assert result['counts']['audited_criteria'] == 4
     assert result['counts']['all_criteria'] == 8
@@ -124,10 +148,10 @@ def test_report_uses_all_audited_criteria_and_only_latest_runs(tmp_path):
     assert result['counts']['both_evidence_loss'] == 1
     assert result['excluded_tasks'] == ['task_02']
     assert result['statistics']['verifier_miss']['common'] == 1
-    assert '**2/4 (50.00%)**; 95% CI 15.00–85.00%' in text
+    assert '**2/4**; 95% CI **15.00–85.00%** (rate 50.00%)' in text
     assert '1/4 (25.00%)' in text
     assert text.index('Absolute rates') < text.index('Paired comparison') < text.index('Relative comparison')
-    assert text.index('AI models used') < text.index('Files needed from this directory')
+    assert text.index('AI models used') < text.index('Files needed from the evaluation directory')
     assert 'configured-only-model' not in text
     assert 'screenshot-judge-v2' in text and 'dom-judge-v3' in text
     assert 'rubric-generator-v4' in text and 'audit-model-v5' in text
@@ -138,9 +162,9 @@ def test_report_uses_all_audited_criteria_and_only_latest_runs(tmp_path):
 
 def test_no_findings_still_report_intervals_and_undefined_relative_rate(tmp_path):
     saved_run(tmp_path, patterns=[(False, False, False, False)])
-    result = report.generate_report(tmp_path, tmp_path / 'report.md')
+    result = generate_report(tmp_path, tmp_path / 'report.md')
     text = (tmp_path / 'report.md').read_text()
-    assert '**0/1 (0.00%)**; 95% CI 0.00–79.35%' in text
+    assert '**0/1**; 95% CI **0.00–79.35%** (rate 0.00%)' in text
     assert 'relative reduction is undefined' in text
     assert result['statistics']['verifier_miss']['mcnemar_exact_p'] == 1
 
@@ -152,7 +176,7 @@ def test_report_lists_each_recorded_model_configuration(tmp_path):
     manifest = json.loads(manifest_file.read_text())
     manifest['commands']['dom_model'][2] = 'another-dom-judge'
     write_json(manifest_file, manifest)
-    result = report.generate_report(tmp_path, tmp_path / 'report.md')
+    result = generate_report(tmp_path, tmp_path / 'report.md')
     assert result['models']['DOM verification: evidence/rubric judge'] == {
         'dom-judge-v3': 1, 'another-dom-judge': 1,
     }
@@ -182,3 +206,52 @@ def test_metadata_rejects_metrics_for_another_rubric(tmp_path):
     run = saved_run(tmp_path)
     with pytest.raises(AssertionError):
         report.recorded_models(run, 'wrong-rubric-hash')
+
+
+def test_categories_count_each_representation_and_keep_findings_separate(tmp_path):
+    saved_run(tmp_path, patterns=[(True, False, True, True), (True, True, False, False)])
+    result = generate_report(tmp_path, tmp_path / 'docs' / 'report.md')
+    text = (tmp_path / 'docs/report.md').read_text()
+    assert result['category_counts']['URLs'] == {'screenshot': 1, 'dom': 0}
+    assert result['category_counts']['Control states'] == {'screenshot': 0, 'dom': 1}
+    assert list(result['category_counts']) == list(report.CATEGORIES)
+    assert '| Category | Labels | Findings |' in text
+    assert '| Screenshot: URLs<br>DOM: Control states | `SAVED_LABEL` |' in text
+    assert '| — | `SAVED_LABEL` | DOM verifier miss<br>Screenshot verifier miss |' in text
+    assert '(../task_01/20261022T090000Z/evidence_audit.json#L' in text
+    assert str(tmp_path) not in text
+
+
+@pytest.mark.parametrize('change,error', [('missing', 'Missing evidence category'),
+                                        ('stale', 'Stale evidence category'),
+                                        ('unknown', 'Unknown evidence category')])
+def test_report_rejects_missing_stale_or_unknown_category(tmp_path, change, error):
+    saved_run(tmp_path)
+    categories = category_annotations(tmp_path)
+    annotations = json.loads(categories.read_text())
+    key = next(iter(annotations['findings']))
+    if change == 'missing':
+        del annotations['findings'][key]
+    elif change == 'stale':
+        annotations['findings'][key]['finding_sha256'] = 'outdated'
+    else:
+        annotations['findings'][key]['category'] = 'Screenshot evidence loss'
+    write_json(categories, annotations)
+    with pytest.raises(ValueError, match=error):
+        report.generate_report(tmp_path, tmp_path / 'report.md', categories)
+
+
+def test_cli_defaults_to_docs_even_with_custom_evaluation_dir(tmp_path, monkeypatch):
+    evaluation = tmp_path / 'saved-runs'
+    saved_run(evaluation)
+    monkeypatch.setattr(report, 'REPOSITORY', tmp_path)
+    monkeypatch.setattr(report, 'DEFAULT_CATEGORIES', category_annotations(evaluation))
+    monkeypatch.setattr(sys, 'argv', [str(SCRIPT), '--evaluation-dir', str(evaluation)])
+    report.main()
+    output = tmp_path / 'docs/missed_evidence_table.md'
+    assert output.is_file()
+    assert not (evaluation / 'missed_evidence_table.md').exists()
+    summary = json.loads((tmp_path / 'docs/benchmark_statistics.json').read_text())
+    assert summary['output'] == 'missed_evidence_table.md'
+    assert summary['category_provenance'] == '../saved-runs/categories.json'
+    assert '(../saved-runs/task_01/' in output.read_text()

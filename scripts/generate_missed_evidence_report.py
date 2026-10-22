@@ -3,6 +3,7 @@
 
 Uses only the Python standard library and local files; makes no model/API calls.
 Defaults to <repository>/evaluation when installed in <repository>/scripts.
+Writes the report and machine-readable statistics to <repository>/docs.
 Selects the latest timestamped run per task, exports confirmed final findings,
 and verifies rubric identity, saved model outputs, and evidence-file pointers.
 Leads with paired finding rates, 95% intervals, and saved AI-model provenance.
@@ -15,6 +16,7 @@ import hashlib
 import html
 import json
 import math
+import os
 import re
 from statistics import NormalDist
 
@@ -25,6 +27,40 @@ FLAGS = (
     ('dom_model_evidence_loss', 'DOM evidence loss'),
     ('screenshot_evidence_loss', 'Screenshot evidence loss'),
 )
+
+REPOSITORY = Path(__file__).resolve().parent.parent
+CATEGORIES = (
+    'Exact text and values', 'URLs', 'Control states', 'Table entries',
+    'Label–value links', 'Capture omissions',
+)
+DEFAULT_CATEGORIES = REPOSITORY / 'docs' / 'evidence_categories.json'
+
+
+def finding_digest(criterion, flag):
+    """Bind a category annotation to the exact saved criterion and finding."""
+    payload = {'criterion': criterion['criterion'], 'finding': criterion['adjudication'][flag]}
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':'),
+                                     ensure_ascii=False).encode()).hexdigest()
+
+
+def load_categories(path):
+    annotations = json.loads(path.read_text(encoding='utf-8'))
+    if annotations['categories'] != list(CATEGORIES):
+        raise ValueError(f'Category vocabulary/order must match the README: {path}')
+    return annotations['findings']
+
+
+def evidence_category(annotations, task, criterion, flag):
+    """Require an explicit, current annotation; never guess from criterion keywords."""
+    key = f'{task}/C{criterion["criterion_index"]}/{flag}'
+    if key not in annotations:
+        raise ValueError(f'Missing evidence category for {key}; annotate the saved finding first')
+    annotation = annotations[key]
+    if annotation['category'] not in CATEGORIES:
+        raise ValueError(f'Unknown evidence category for {key}: {annotation["category"]}')
+    if annotation['finding_sha256'] != finding_digest(criterion, flag):
+        raise ValueError(f'Stale evidence category for {key}; review the changed finding')
+    return annotation['category']
 
 
 def wilson_interval(count, total):
@@ -100,16 +136,19 @@ def recorded_models(run, digest):
 
 def rate_cell(stat, total):
     lower, upper = stat['ci95']
-    return f'**{stat["count"]}/{total} ({100 * stat["rate"]:.2f}%)**; 95% CI {100 * lower:.2f}–{100 * upper:.2f}%'
+    return f'**{stat["count"]}/{total}**; 95% CI **{100 * lower:.2f}–{100 * upper:.2f}%** (rate {100 * stat["rate"]:.2f}%)'
 
 
-def summary_lines(statistics, model_counts, sample_run, audited_tasks):
+def summary_lines(statistics, model_counts, sample_run, audited_tasks, report_dir):
+    def link(label, path, line=None):
+        return file_link(label, path, line, relative_to=report_dir)
+
     lines = [
         '**Absolute rates and common findings**',
         '',
         f'The denominator is all **{statistics["verifier_miss"]["denominator"]} audited criteria across {audited_tasks} tasks**, including criteria with no finding. Only completed audits from each task’s latest selected run contribute; unaudited criteria are excluded. A verifier miss means the model overlooked or misused evidence or the rubric; source-evidence loss means required information was absent from a representation. The two measures are counted separately.',
         '',
-        '| Finding | Screenshot: fraction, rate, 95% CI | DOM: fraction, rate, 95% CI | Common to both: fraction and rate |',
+        '| Finding | Screenshot: count, 95% CI, rate | DOM: count, 95% CI, rate | Common to both: count and rate |',
         '|---|---|---|---|',
     ]
     for key, label in [('verifier_miss', 'Verifier miss'), ('evidence_loss', 'Source-evidence loss')]:
@@ -187,12 +226,14 @@ def cell(value):
     return html.escape(' '.join(str(value).split()), quote=False).replace('|', '&#124;')
 
 
-def link(label, path, line=None):
+def file_link(label, path, line=None, relative_to=None):
     if not path.is_file():
         raise ValueError(f'Link target does not exist: {path}')
     if line is not None and not 1 <= line <= len(path.read_text(encoding='utf-8').splitlines()):
         raise ValueError(f'Link line does not exist: {path}:{line}')
-    target = str(path.resolve()) + (f':{line}' if line is not None else '')
+    target = (Path(os.path.relpath(path.resolve(), relative_to)).as_posix()
+              if relative_to is not None else str(path.resolve()))
+    target += f'#L{line}' if line is not None else ''
     return f'[{label}]({target})'
 
 
@@ -223,10 +264,16 @@ def source_locations(criterion, enabled):
     return '; '.join(f'`{source}` ({cell("; ".join(locations))})' for source, locations in citations.items())
 
 
-def generate_report(evaluation_dir: Path, output: Path) -> dict:
+def generate_report(evaluation_dir: Path, output: Path, categories_path: Path = DEFAULT_CATEGORIES) -> dict:
     """Validate saved artifacts and write summary statistics and detailed findings."""
     ROOT = evaluation_dir.resolve()
     OUTPUT = output.resolve()
+    annotations = load_categories(categories_path)
+    # Every exported link is relative to the report, including when --output moves it.
+    def link(label, path, line=None):
+        return file_link(label, path, line, relative_to=OUTPUT.parent)
+
+    category_counts = {category: {'screenshot': 0, 'dom': 0} for category in CATEGORIES}
     counts = Counter()
     labels = Counter()
     selected_tasks = set()
@@ -344,6 +391,16 @@ def generate_report(evaluation_dir: Path, output: Path) -> dict:
             counts['miss_and_loss'] += int((dm or sm) and loss)
             counts['loss'] += int(loss)
 
+            category_cells = []
+            for flag, mode, label in [('screenshot_evidence_loss', 'screenshot', 'Screenshot'),
+                                      ('dom_model_evidence_loss', 'dom', 'DOM')]:
+                if criterion['adjudication'][flag]['confirmed']:
+                    category = evidence_category(annotations, task.name, criterion, flag)
+                    category_counts[category][mode] += 1
+                    category_cells.append(f'{label}: {category}' if
+                                          criterion['screenshot_evidence_loss'] and criterion['dom_model_evidence_loss']
+                                          else category)
+
             adjudication_start = audit_text.index('"adjudication":', start, end)
             evidence_links = []
             for key, name in enabled:
@@ -362,7 +419,8 @@ def generate_report(evaluation_dir: Path, output: Path) -> dict:
             rows.append('| ' + ' | '.join([
                 task.name,
                 f'**C{index}** — {cell(criterion["criterion"])}',
-                f'`{criterion["classification"]}`',
+                '<br>'.join(category_cells) or '—',
+                f'`{cell(criterion["classification"])}`',
                 '<br>'.join(name for _, name in enabled),
                 evidence_cell,
             ]) + ' |')
@@ -371,6 +429,8 @@ def generate_report(evaluation_dir: Path, output: Path) -> dict:
     assert counts['audited_criteria'] == counts['selected'] + counts['no_confirmed_finding']
     assert counts['miss'] + counts['loss_only'] == counts['selected']
     assert counts['dom_model_verifier_miss'] + counts['screenshot_verifier_miss'] - counts['both_missed'] == counts['miss']
+    for mode, flag in [('screenshot', 'screenshot_evidence_loss'), ('dom', 'dom_model_evidence_loss')]:
+        assert sum(values[mode] for values in category_counts.values()) == counts[flag]
 
     if not audits:
         raise ValueError(f'No completed evidence audits found in {ROOT}')
@@ -394,12 +454,25 @@ def generate_report(evaluation_dir: Path, output: Path) -> dict:
     lines = [
         '**Missed evidence by task and criterion**',
         '',
-        *summary_lines(statistics, model_counts, sample_run, counts['audited_tasks']),
-        f'This table consolidates the saved evidence audits for the latest timestamped run of each task in this directory. It contains one row per task/criterion with an adjudicated DOM or screenshot verifier miss, evidence loss in either representation, or both. Criterion IDs (`C0`, `C1`, …) use the zero-based `criterion_index` from the audit.',
+        *summary_lines(statistics, model_counts, sample_run, counts['audited_tasks'], OUTPUT.parent),
+        '**Source-evidence loss by category**',
+        '',
+        '| Category | Screenshots | DOM-diff Optimized |',
+        '|---|---:|---:|',
+        *(f'| {category} | {values["screenshot"]} | {values["dom"]} |' for category, values in category_counts.items()),
+        f'| **Total** | **{counts["screenshot_evidence_loss"]}** | **{counts["dom_model_evidence_loss"]}** |',
+        '',
+        'Categories match the README and describe the missing evidence, not the kind of verifier finding. '
+        'Each confirmed representation/criterion loss receives one primary category from ' + link('category annotations', categories_path) + '. '
+        'Annotations interpret saved adjudication explanations and decisive evidence; they are not a new review of original source states. '
+        'A changed finding invalidates its annotation. A criterion with loss in both representations can have a different category for each. '
+        'Verifier-only findings have no source-gap category (—).',
+        '',
+        f'This table consolidates the saved evidence audits for the latest timestamped run of each task in `{ROOT.name}/`. It contains one row per task/criterion with an adjudicated DOM or screenshot verifier miss, evidence loss in either representation, or both. Criterion IDs (`C0`, `C1`, …) use the zero-based `criterion_index` from the audit.',
         '',
         f'There are {counts["tasks"]} tasks and {counts["runs"]} saved runs. The latest runs contain {counts["all_criteria"]} criteria; {counts["audited_tasks"]} tasks / {counts["audited_criteria"]} criteria have completed audits. The table contains **{counts["selected"]} criteria across {len(selected_tasks)} tasks**: **{counts["miss"]} with a verifier miss** and **{counts["loss_only"]} with evidence loss only**. Findings below are the existing automated audit/adjudication judgments ({", ".join(sorted(audit_models))}), rather than a new manual review of original screenshots or DOM states. {len(excluded)} tasks lack completed audits and are listed after the table.',
         '',
-        '**Files needed from this directory**',
+        '**Files needed from the evaluation directory**',
         '',
         '- `task_*/<latest-run>/evidence_audit.json` is the primary source: final `criteria[*]` contains the criterion, original classification, explanation, saved verifier analyses, and `adjudication` with confirmed findings, decisive evidence, and citations. Example: ' + link(f'{sample_task} audit', sample_run / 'evidence_audit.json') + '.',
         '- `task_*/<latest-run>/frozen_rubric.json` supplies the canonical criterion wording, order, and requirements. Example: ' + link(f'{sample_task} rubric', sample_run / 'frozen_rubric.json') + '.',
@@ -407,19 +480,20 @@ def generate_report(evaluation_dir: Path, output: Path) -> dict:
         '- `task_*/<latest-run>/run_manifest.json` establishes the saved run status and provenance. `comparison.json` cross-checks criterion order and scores; its aggregate scores alone do not establish a missed-evidence finding. Example: ' + link('manifest', sample_run / 'run_manifest.json') + ' and ' + link('comparison', sample_run / 'comparison.json') + '.',
         '- `task_*/<latest-run>/evidence_audit_error.json`, where present, explains why a task has no validated final audit. Failed attempt responses inside these files are excluded from the confirmed findings.',
         '',
-        '**How to read the five columns**',
+        '**How to read the six columns**',
         '',
         '- **Task / criterion:** task alias and exact frozen-rubric criterion. The evidence path identifies the selected run.',
-        '- **Label:** the audit’s original `classification`, copied unchanged. A representation-loss label can coexist with verifier misses; use Category for the complete finding.',
-        '- **Category:** every final adjudication flag with `confirmed: true`. “DOM verifier miss” or “Screenshot verifier miss” means the verifier overlooked or materially misused available evidence, failed to acknowledge an evidence limitation, or misapplied the criterion. It can occur even when the final score is unchanged. “DOM evidence loss” or “Screenshot evidence loss” means decision-essential evidence was preserved by the other representation but lost in this one; it does not itself establish a verifier error.',
+        '- **Category:** the primary source-gap type: Exact text and values, URLs, Control states, Table entries, Label–value links, or Capture omissions.',
+        '- **Labels:** the audit’s original `classification`, copied unchanged (for example, `SCREENSHOT_EVIDENCE_MISSING`, `DOM_MISSED_SCREENSHOT_CAUGHT`, or `DOM_EVIDENCE_MISSING`). Use Findings for all confirmed adjudication flags; one classification label can coexist with multiple findings.',
+        '- **Findings:** every final adjudication flag with `confirmed: true`. “DOM verifier miss” or “Screenshot verifier miss” means the verifier overlooked or materially misused available evidence, failed to acknowledge an evidence limitation, or misapplied the criterion. It can occur even when the final score is unchanged. “DOM evidence loss” or “Screenshot evidence loss” means decision-essential evidence was preserved by the other representation but lost in this one; it does not itself establish a verifier error.',
         '- **Pointer to evidence file:** links to the exact adjudication blocks in `evidence_audit.json` and, for confirmed verifier misses, the corresponding criterion in the model’s `result.json`. The explanation is copied from the final audit. “Cited evidence” identifies the original source file and its location; the linked audit retains the quotations.',
         '',
-        f'To read only model mistakes, select rows with a **verifier miss** category: {counts["dom_model_verifier_miss"]} DOM misses and {counts["screenshot_verifier_miss"]} screenshot misses overlap on {counts["both_missed"]} criteria, giving {counts["miss"]} unique criteria across {len(miss_tasks)} tasks. Evidence loss affects {counts["loss"]} unique criteria; {counts["miss_and_loss"]} also have a verifier miss. These overlapping counts must not be added. The {counts["no_confirmed_finding"]} audited criteria with no confirmed flag are omitted.',
+        f'To read only model mistakes, select rows with a **verifier miss** finding: {counts["dom_model_verifier_miss"]} DOM misses and {counts["screenshot_verifier_miss"]} screenshot misses overlap on {counts["both_missed"]} criteria, giving {counts["miss"]} unique criteria across {len(miss_tasks)} tasks. Evidence loss affects {counts["loss"]} unique criteria; {counts["miss_and_loss"]} also have a verifier miss. These overlapping counts must not be added. The {counts["no_confirmed_finding"]} audited criteria with no confirmed flag are omitted.',
         '',
         f'**Evidence availability:** {without_inputs} of {len(audits)} completed latest-run audit folders lack `_inputs`. Cited `screenshotN.png` and `dom_modelN.txt` names identify sources recorded by the audits; they are not links to independently reviewed originals. The links below point to existing audit and result files that retain citations, quotations, and model reasoning.',
         '',
-        '| Task | Criterion | Label | Category | Pointer to evidence file |',
-        '|---|---|---|---|---|',
+        '| Task | Criterion | Category | Labels | Findings | Pointer to evidence file |',
+        '|---|---|---|---|---|---|',
         *rows,
         '',
         '**Coverage gaps**',
@@ -450,6 +524,9 @@ def generate_report(evaluation_dir: Path, output: Path) -> dict:
         'counts': dict(counts),
         'labels': dict(labels),
         'statistics': statistics,
+        'category_counts': category_counts,
+        'category_provenance': str(categories_path.resolve()),
+        'selected_runs': [p.relative_to(ROOT).as_posix() for p in selected_runs],
         'models': {role: dict(models) for role, models in model_counts.items()},
         'affected_tasks': len(selected_tasks),
         'verified_model_criterion_records': verified_records,
@@ -462,20 +539,30 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--evaluation-dir', type=Path,
-        default=Path(__file__).resolve().parent.parent / 'evaluation',
+        default=REPOSITORY / 'evaluation',
         help='Evaluation directory (default: ../evaluation relative to the script).',
     )
     parser.add_argument(
         '--output', type=Path,
-        help='Output Markdown path (default: <evaluation-dir>/missed_evidence_table.md).',
+        default=REPOSITORY / 'docs' / 'missed_evidence_table.md',
+        help='Output Markdown path (default: <repository>/docs/missed_evidence_table.md).',
     )
+    parser.add_argument('--categories', type=Path, default=DEFAULT_CATEGORIES,
+                        help='Reviewed source-gap category annotations.')
+    parser.add_argument('--summary-output', type=Path, default=REPOSITORY / 'docs' / 'benchmark_statistics.json',
+                        help='Machine-readable statistics for figure regeneration (default: docs/benchmark_statistics.json).')
     args = parser.parse_args()
     if not args.evaluation_dir.is_dir():
         parser.error(f'Evaluation directory does not exist: {args.evaluation_dir}')
-    output = args.output if args.output is not None else args.evaluation_dir / 'missed_evidence_table.md'
     if __debug__ is False:
         parser.error('Run without -O: integrity assertions must remain enabled.')
-    summary = generate_report(args.evaluation_dir, output)
+    summary = generate_report(args.evaluation_dir, args.output, args.categories)
+    args.summary_output.parent.mkdir(parents=True, exist_ok=True)
+    # Published metadata is independent of the machine's checkout path.
+    published = dict(summary)
+    for key in ('output', 'category_provenance'):
+        published[key] = os.path.relpath(summary[key], args.summary_output.parent)
+    args.summary_output.write_text(json.dumps(published, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     print(json.dumps(summary, indent=2))
 
 
