@@ -263,6 +263,10 @@ in both representations each lose different required items. Common losses
 are already included in both marginal counts, giving 154 unique criteria
 with source loss.
 
+The [missed-evidence table](docs/missed_evidence_table.md) details these
+154 cases across 91 tasks. Each row identifies the task and criterion,
+the source-loss category and label, and citations to the supporting evidence.
+
 These criterion-level intervals and tests assume independent criterion
 pairs. They do not adjust for correlation among criteria within a task,
 repeated model runs, or automated-audit error. Treat them as exploratory
@@ -306,7 +310,7 @@ records, list boundaries, regions, or substantial field descriptions.
 Label–value links describe disconnected labels and their values; table
 entries describe missing rows or row-level associations.
 
-The [criterion-level audit table](docs/missed_evidence_table.md) documents
+The [missed-evidence table](docs/missed_evidence_table.md) documents
 all **154 criteria across 91 tasks** with confirmed source loss and their
 evidence categories. Every row has a primary category and a source-loss
 label: `SCREENSHOT_EVIDENCE_MISSING`, `DOM_EVIDENCE_MISSING`, or
