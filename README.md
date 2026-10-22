@@ -271,8 +271,10 @@ than screenshots; this does not measure acting-agent improvement.
 Figure 3 assigns each confirmed representation/criterion loss one primary
 evidence category. A criterion with losses in both representations can have
 a different category for each missing item. The
-[category annotations](docs/evidence_categories.json) record the rationale
-for each assignment from the saved automated findings.
+[evidence category guide](docs/evidence-categories.md) explains the definitions,
+boundary rules, and audited examples; the
+[category annotations](docs/evidence_categories.json) record each assignment's
+rationale from the saved automated findings.
 
 ![Source-evidence loss counts using the six evidence categories](docs/figures/evidence-categories.svg)
 
