@@ -240,106 +240,67 @@ verifier accuracy.
 
 #### 5.1 Source-Evidence Loss: Counts and Confidence Intervals
 
-The latest selected runs contain **642 audited criteria across 100 tasks**.
-All tasks have completed automated audits. Counts and 95% Wilson confidence
-intervals lead the comparison; observed rates follow.
-
-| Representation | Count / audited criteria | 95% CI | Observed rate |
-| --- | ---: | --- | ---: |
-| Screenshots | **151/642** | **20.40–26.95%** | 23.52% |
-| DOM-diff Optimized | **5/642** | **0.33–1.81%** | 0.78% |
-
-Source-evidence loss identifies required information missing from one
-representation and preserved in the other. The saved audit judgments are
-automated; the original screenshots and DOM states were not independently
-reviewed for this export.
-
-| Screenshot only | DOM only | Both | Neither | Two-sided exact McNemar p |
-| ---: | ---: | ---: | ---: | ---: |
-| 149 | 3 | 2 | 488 | 2.051 × 10⁻⁴⁰ |
-
-The paired test uses discordant criterion pairs. The two criteria with loss
-in both representations each lose different required items. Common losses
-are already included in both marginal counts, giving 154 unique criteria
-with source loss.
-
-These criterion-level intervals and tests assume independent criterion
-pairs. They do not adjust for correlation among criteria within a task,
-repeated model runs, or automated-audit error. Treat them as exploratory
-benchmark statistics. As a secondary point estimate, DOM has 96.7% fewer
-source-loss findings than screenshots. This percentage does not measure
-acting-agent improvement.
+Figure 2 compares source-evidence loss over **642 audited criteria across
+100 tasks**, with absolute counts and 95% Wilson confidence intervals.
+All tasks have completed automated audits; the original screenshots and
+DOM states were not independently reviewed for this export.
 
 ![Source-evidence loss counts and 95% Wilson confidence intervals](figures/evidence-rates.svg)
 
 **Figure 2:** Source-evidence loss with absolute counts and 95% Wilson
-intervals over all 642 audited criteria. Lower is better. Intervals do not
-account for within-task correlation or automated-audit uncertainty.
+intervals. Lower is better.
+
+Loss affects 149 criteria only in screenshots, 3 only in DOM, and 2 in both
+representations, giving 154 unique criteria with source loss. The two shared
+criteria each lose different required items and are included in both
+marginal counts. The two-sided exact McNemar test on the discordant pairs
+gives p = 2.051 × 10⁻⁴⁰.
+
+The [missed-evidence table](missed_evidence_table.md) details these
+154 cases across 91 tasks, with source-loss categories, labels, and evidence
+citations. All 100 tasks remain in the statistical denominator.
+
+The criterion-level intervals and paired test assume independent criterion
+pairs and do not adjust for within-task correlation, repeated model runs,
+or automated-audit error. Treat them as exploratory benchmark statistics.
+As a secondary point estimate, DOM has 96.7% fewer source-loss findings
+than screenshots; this does not measure acting-agent improvement.
 
 #### 5.2 Where Evidence Is Lost
 
-Each confirmed representation/criterion loss receives one primary evidence
-category from the saved adjudication's explanation and decisive evidence.
-[Category annotations](evidence_categories.json) record the
-rationale and a hash of each saved finding so changed findings require
-review before export. These annotations interpret automated findings;
-the original source states were not independently reviewed for this export.
-
-| **Category** | **Screenshots** | **DOM-diff Optimized** |
-| :--- | :---: | :---: |
-| Exact text and values | 16 | 1 |
-| URLs | 117 | 0 |
-| Control states | 0 | 1 |
-| Table entries | 4 | 0 |
-| Label–value links | 0 | 3 |
-| Capture omissions | 14 | 0 |
-| **Total** | **151** | **5** |
-
-**Table 3:** Primary source-gap categories. Each representation/criterion
-loss appears once; a criterion with losses in both representations can have
-different categories for the two missing items.
-
-URL gaps dominate the screenshot findings under the exact-identity rule in
-Section 4.2. They include endpoints, record URLs, and associations between a
-blocker or response and its source page. Capture omissions describe missing
-records, list boundaries, regions, or substantial field descriptions.
-Label–value links describe disconnected labels and their values; table
-entries describe missing rows or row-level associations.
-
-The [criterion-level audit table](missed_evidence_table.md) documents
-all **154 criteria across 91 tasks** with confirmed source loss and their
-evidence categories. Every row has a primary category and a source-loss
-label: `SCREENSHOT_EVIDENCE_MISSING`, `DOM_EVIDENCE_MISSING`, or
-`BOTH_EVIDENCE_INCOMPLETE`. The
-[generated statistics](benchmark_statistics.json) include counts,
-intervals, paired tests, category totals, model provenance,
-and the selected run paths. Detailed links resolve into the local
-`evaluation/` artifacts, which are excluded from Git; regenerate the report
-after downloading or producing those runs.
+Figure 3 assigns each confirmed representation/criterion loss one primary
+evidence category. A criterion with losses in both representations can have
+a different category for each missing item. The
+[category annotations](evidence_categories.json) record the rationale
+for each assignment from the saved automated findings.
 
 ![Source-evidence loss counts using the six evidence categories](figures/evidence-categories.svg)
 
 **Figure 3:** Confirmed source-evidence losses by primary category for each
-representation, using the same counts as Table 3. Lower is better.
+representation. Each representation/criterion loss appears once. Lower is
+better.
+
+URL gaps dominate the screenshot findings under the exact-identity rule in
+Section 4.2. They include endpoints, record URLs, and associations between a
+blocker or response and its source page. Capture omissions describe missing
+records, list boundaries, regions, or substantial field descriptions;
+table entries and label–value links capture missing rows and disconnected
+field relationships.
+
+The [generated statistics](benchmark_statistics.json) contain the full
+counts, intervals, paired test, category totals, and run provenance.
+Detailed evidence links resolve into local `evaluation/` artifacts, which
+are excluded from Git.
 
 #### 5.3 Preserving the Details Agents Need
 
-DOM-diff Optimized organizes captured browser content into structured
-evidence that can be inspected directly. The examples below show how it
-preserves exact dates, additional ranked-list entries, and endpoint URLs
-missing from the corresponding screenshot records.
-
-| Information preserved | DOM-diff Optimized | Screenshot record |
-| --- | --- | --- |
-| Exact release date | The exact release date is explicit. | Only a relative release date is visible. |
-| Complete ranked list | Structured states preserve ranks 1–30. | Captured frames cover ranks 1–29. |
-| Exact endpoint URL | The exact endpoint URL is explicit in the structured header. | The exact endpoint is not visible in the captured frames. |
-
-**Table 4:** Preserved information from Tasks 19, 24, and 75 [[3]](#references).
-
-Preserving these details gives developers explicit values and list entries
-to inspect when reviewing agent answers and diagnosing failures. Each example
-connects the agent's output to the supporting browser state.
+Tasks 19, 24, and 75 illustrate the details preserved by DOM-diff Optimized:
+an exact release date, all 30 ranked-list entries, and an exact endpoint URL
+[[3]](#references). The corresponding screenshot records retain a relative
+date, ranks 1–29, and the response without its endpoint URL, respectively.
+These explicit values and entries connect the agent's output to its
+supporting browser state when developers review answers and diagnose
+capture gaps.
 
 ### 6 Capabilities and Boundaries
 
