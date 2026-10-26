@@ -32,6 +32,64 @@ source. It keeps missing source evidence separate from judge disagreement.
 The headline counts are therefore evidence-availability measurements, not a
 general claim that one verifier always scores tasks better.
 
+### Source-loss counting
+
+A representation loses evidence for a criterion when at least one required
+item is absent from that representation and present in the other, across
+the eligible ordered source states. A criterion contributes at most one
+loss per representation even when several required items are missing.
+Items absent from both representations, or present in both, do not trigger
+paired source loss. Evidence that a verifier overlooks or misinterprets is
+a separate interpretation error.
+
+Each representation/criterion loss receives one primary
+[category](EVIDENCE-CATEGORIES.md). A criterion can lose different items in
+both representations and have a different category on each side. Such a
+criterion contributes once to each marginal count; the counts overlap.
+Multiple criteria can also depend on the same capture omission.
+
+Rates divide confirmed criterion-level losses by all audited criteria in
+the selected cohort, including criteria with no loss. This measures paired
+availability differences rather than absolute information loss against the
+live webpage, since gaps shared by both representations remain undetected.
+
+### URL identity and sensitivity
+
+The saved audits require exact URL evidence within a representation where
+the rubric makes website, page, record, or endpoint identity essential.
+Visible branding and URLs in shared action history do not substitute under
+that identity rule. A URL missing from a screenshot is not automatically a
+loss for every criterion. The screenshot capture omits the browser’s
+address bar, which makes this rule material to the aggregate comparison.
+
+The primary URL-excluded analysis removes primary URL-category losses from
+each representation’s numerator and keeps all audited criteria in the
+cohort denominator. It preserves non-URL losses on the other side of the
+same criterion. The report separately shows alternatives removing entire
+criteria with URL findings; those have different denominators. These are
+recalculations of saved findings, not new audits or experiments adding URLs
+to screenshots.
+
+### Published evaluation snapshot
+
+The [technical report](technical-report.md) uses the latest selected saved
+run per task: 100 completed audits covering 642 criteria. It includes 151
+screenshot losses and 5 DOM losses, overlapping on two criteria. Findings
+are saved automated audit/adjudication judgments, rather than independent
+manual review of the original source states.
+
+The saved runs used `gpt-5.2` for rubric generation and evidence judgments,
+`o4-mini` for action/validity judgments, and `gpt-5.6-sol` for automated
+audit/adjudication. See [model provenance](technical-report.md#models-and-evaluation-provenance).
+These identities describe the saved runs; they do not freeze future CLI
+defaults.
+
+Exploratory 95% Wilson intervals assume independent criteria and do not
+adjust for correlation among criteria within a task, repeated model runs,
+or audit error. Website blockers, recorded execution failures, task scores,
+and source-loss counts are separate measurements. Recording and evaluation
+run versions can differ; check provenance before matching their artifacts.
+
 ## Commands
 
 Download and validate one pair without paid calls or evaluation output:
