@@ -109,7 +109,7 @@ S_t/S_t^{\max} & S_t^{\max}>0,\\
 \end{cases}
 ```
 
-Let $`\mathbf{1}\{\cdot\}`$ be 1 when a condition holds and 0 otherwise.
+The indicator function equals 1 when its condition holds and 0 otherwise.
 The process flag $`P_t`$ applies a rubric threshold $`\tau`$; the outcome flag
 $`O_t`$ records the outcome judge's Boolean decision:
 
