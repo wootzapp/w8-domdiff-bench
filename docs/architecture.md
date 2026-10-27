@@ -42,6 +42,15 @@ These stages describe the representation’s development. The published
 source-loss comparison evaluates the saved paired evidence; it is not an
 ablation measuring the effect of each engineering change.
 
+## Current observation size
+
+The latest collection-size summary reports **2,794,399 total bytes** of
+`dom_model.txt` observations, averaging **6,009.46 bytes (5.87 KiB;
+0.0057 MiB)** per observation. These supplied measurements describe stored
+text from the new run. The [report's size table](technical-report.md#current-representation-size)
+defines the averaging and unit conversions. Comparisons with screenshots
+or detailed snapshots require measurements from the same collection.
+
 ## Actions and recorded states
 
 The acting model receives compact page text, interactive control references,

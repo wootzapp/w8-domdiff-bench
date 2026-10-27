@@ -25,6 +25,30 @@ The comparison command fails if those controls drift.
 One rubric is generated or imported first. Its canonical SHA-256 and point
 denominator are recorded, then the unchanged object is passed to both sides.
 
+### Success rules
+
+The normalized rubric score is the earned point total divided by the maximum
+available points. `rubric_is_success` records whether that ratio meets the
+rubric threshold, currently **0.8** in the paired comparison. A strict
+full-score success means earning every available point (`x/x`).
+
+The standalone verifier runners select their binary `score` with `--success`:
+
+| Rule | Binary success condition |
+| --- | --- |
+| `outcome` | The outcome judge returns `output_success=true`. |
+| `process` | The normalized rubric score meets the rubric threshold. |
+| `both` | Both the outcome and process conditions hold. |
+
+The paired comparison currently fixes **`--success outcome`**. It separately
+retains rubric points, the normalized score, and `rubric_is_success`, so its
+binary result can differ from a strict full-score summary. The shared
+controls also fix five evidence items per criterion, a screenshot keypoint
+threshold of 3, a minimum relevance threshold of 0, and one voting instance.
+See the [implementation](../w8bench/verifier/common.py) and the
+[formal definitions](technical-report.md#rubric-scores-and-task-success-rules).
+Saved run manifests establish the settings used for a particular run.
+
 ## Evidence-loss audit
 
 The audit asks whether a rubric fact is present in each ordered evidence
@@ -52,6 +76,8 @@ Rates divide confirmed criterion-level losses by all audited criteria in
 the selected cohort, including criteria with no loss. This measures paired
 availability differences rather than absolute information loss against the
 live webpage, since gaps shared by both representations remain undetected.
+The report gives the [availability indicators and rate equations](technical-report.md#paired-source-evidence-loss)
+and their [current numerical values](technical-report.md#current-counts-and-relative-reduction).
 
 ### URL identity and sensitivity
 

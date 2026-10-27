@@ -4,7 +4,7 @@
 
 # Error Taxonomy for Computer-Use Agent Trajectories
 
-A classification of errors that can occur within a trajectory by a computer-use agent while attempting to complete a task. Derived from [human_annotator_guidelines.md](human_annotator_guidelines.md).
+A classification of errors that can occur within a trajectory by a computer-use agent while attempting to complete a task. Derived from `human_annotator_guidelines.md` in the source annotation materials, which are not bundled here. For verifier methodology and failure attribution, see [The Art of Building Verifiers for Computer Use Agents](https://arxiv.org/abs/2604.06240).
 
 The taxonomy enforces a strict two-level hierarchy: each top-level category contains numbered sub-categories, with an **Other** catch-all for errors that don't fit existing sub-categories.
 

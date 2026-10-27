@@ -1,10 +1,168 @@
 # Browser Evidence Evaluations: Technical Report
 
-WootzApp · Documentation synchronized October 26, 2026
+WootzApp · Evaluation findings synchronized October 26, 2026 · Methodology and collection-size update October 27, 2026
 
-This is the full evaluation report from the [browser-agent task dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/EVALUATIONS.md). See the [README](../README.md#evaluation-results) for selected results and the [results index](../results/README.md) for machine-readable counts.
+`w8-core` records browser-agent trajectories, DOM-diff Optimized renders compact structured page states, and `w8-domdiff-bench` compares those states with screenshots from the same execution. This report compares screenshot and DOM evidence for 100 browser tasks, retaining the full evaluation findings from the [browser-agent task dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/EVALUATIONS.md) and adding background, mathematical definitions, and the latest collection-size summary. See the [README](../README.md#evaluation-results) for selected results and the [results index](../results/README.md) for machine-readable counts.
 
-This report compares screenshot and DOM evidence for 100 browser tasks. Each saved verifier comparison uses the same task, executed action history, final answer, and frozen rubric for both representations. Automated evidence audits then identify required information that one representation preserves and the other loses.
+Each saved verifier comparison uses the same task, executed action history, final answer, and frozen rubric for both representations. All 100 selected runs have completed automated audits covering **642 criteria**, with **151 screenshot losses and 5 DOM losses**. These counts measure paired source-evidence availability. Task-success judgments, collection errors, and representation size are separate measurements, defined below.
+
+## Foundations and baselines
+
+WebVoyager introduced multimodal automatic evaluation for open-ended web tasks [[1]](#references). Our screenshot baseline follows the Universal Verifier's rubric-centered design: criterion-specific evidence selection, separate process and outcome judgments, and failure attribution [[2]](#references). WootzApp's contribution is the DOM-based adaptation, browser-native evidence capture, paired comparison protocol, and source-aware audit. The acting agent receives compact text observations; screenshots are retained for inspection and screenshot-based verification.
+
+WebArena provides screenshot, HTML DOM, and accessibility-tree observations and evaluates functional task completion in controlled websites [[4]](#references). These systems establish context for structured and visual browser evidence. This benchmark evaluates what paired recorded representations preserve under a shared rubric; it does not reproduce those benchmarks' task-success experiments. The [architecture guide](architecture.md) explains the browser stack and representation history.
+
+## Benchmark protocol and mathematical definitions
+
+The evaluation contains one selected saved run for each of 100 tasks and **642 audited rubric criteria** [[3]](#references). Screenshots and DOM states are aligned by action step, and both verifiers receive the same task inputs, executed actions, final answer, frozen rubric, and scoring controls. An execution with $N$ actions normally yields $N+1$ recorded states: the initial state and one state after each executed action.
+
+### Rubric scores and task-success rules
+
+For task $t$, let $s_{t,j}$ be the final awarded points for rubric criterion $j$, after the verifier's scoring and rescoring stages, and let $p_{t,j}$ be its maximum points. The earned total, maximum total, and normalized rubric score are
+
+```math
+S_t=\sum_j s_{t,j},
+\qquad
+S_t^{\max}=\sum_j p_{t,j},
+\qquad
+r_t=
+\begin{cases}
+S_t/S_t^{\max}, & S_t^{\max}>0,\\
+0, & S_t^{\max}=0.
+\end{cases}
+```
+
+For a valid rubric with a positive maximum total, a **strict full-score success** means earning every available point:
+
+```math
+\mathrm{Success}_{\mathrm{full}}(t)=
+\begin{cases}
+1, & S_t=S_t^{\max},\\
+0, & S_t<S_t^{\max}.
+\end{cases}
+```
+
+This defines the full-credit convention ($x/x$). The CLI also exposes distinct process and outcome rules. Let $P_t$ be the process pass flag at rubric threshold $\tau$, and let $O_t$ indicate that the outcome judge returned the Boolean `true`:
+
+```math
+P_t=\mathbf{1}\{r_t\ge\tau\},
+\qquad
+O_t=\mathbf{1}\{\texttt{output\_success}_t=\mathrm{true}\}.
+```
+
+The binary result selected by `--success` is
+
+```math
+\mathrm{Success}(t;q)=
+\begin{cases}
+O_t, & q=\texttt{outcome},\\
+P_t, & q=\texttt{process},\\
+P_t O_t, & q=\texttt{both}.
+\end{cases}
+```
+
+The paired command currently fixes **`--success outcome`** and **$\tau=0.8$**, so its binary `score` follows the outcome judgment; `rubric_is_success` separately records whether at least 80% of rubric points were earned. A strict full-score summary uses the first rule above. The standalone verifier runners support all three CLI rules. These definitions apply separately to each representation of a task.
+
+The [shared controls](../w8bench/verifier/common.py) also fix five evidence items per criterion, a screenshot keypoint threshold of 3, a minimum relevance threshold of 0, and one voting instance. The [screenshot runner](../w8bench/screenshot_verifier/runner.py) and [DOM runner](../w8bench/dom_model/runner.py) implement the binary rules. The [evaluation protocol](evaluation-protocol.md#success-rules) summarizes them, while saved run manifests establish the controls used by a particular evaluation. None of these success rules defines source-evidence loss.
+
+### Paired source-evidence loss
+
+Let $\mathcal{C}$ be the audited rubric criteria, $M=|\mathcal{C}|$, and $\mathcal{I}_c$ the concrete required values or states reviewed for criterion $c$. For required item $i\in\mathcal{I}_c$, let $a_{c,i,S},a_{c,i,D}\in\{0,1\}$ indicate its availability in screenshots ($S$) and DOM-diff Optimized ($D$), respectively, across the eligible ordered source states. Both representations use the same evidence requirements and review scope.
+
+```math
+\ell_{c,S}=\mathbf{1}\!\left\{\exists i\in\mathcal{I}_c:
+a_{c,i,S}=0\ \land\ a_{c,i,D}=1\right\},
+\qquad
+\ell_{c,D}=\mathbf{1}\!\left\{\exists i\in\mathcal{I}_c:
+a_{c,i,D}=0\ \land\ a_{c,i,S}=1\right\}.
+```
+
+Each indicator is binary: a criterion contributes at most one loss per representation, even if several required items are missing. Partial preservation still counts as loss when one specific required item is absent from that representation and present in the other. Items available in both or absent from both do not trigger paired loss. Evidence that a verifier overlooks or misinterprets is an interpretation error, separate from source availability.
+
+For representation $m$, the loss count and percentage rate are
+
+```math
+L_m=\sum_{c\in\mathcal{C}}\ell_{c,m},
+\qquad
+\mathrm{ELR}_m=\frac{100L_m}{M},
+\qquad m\in\{S,D\}.
+```
+
+All audited criteria remain in the denominator, including those without a gap. A criterion can lose different items in both representations, contributing to both marginal counts. Multiple criteria can depend on one capture omission. This metric measures differences between paired recorded sources; information omitted from both sources remains undetected.
+
+### Current counts and relative reduction
+
+The current saved audits give
+
+```math
+M=642,
+\qquad
+L_S=\sum_{c\in\mathcal{C}}\ell_{c,S}=151,
+\qquad
+L_D=\sum_{c\in\mathcal{C}}\ell_{c,D}=5.
+```
+
+Therefore,
+
+```math
+\mathrm{ELR}_S=\frac{151}{642}\times100\approx23.52\%,
+\qquad
+\mathrm{ELR}_D=\frac{5}{642}\times100\approx0.78\%.
+```
+
+For a shared denominator and $L_S>0$, the relative reduction is
+
+```math
+\mathrm{Relative\ reduction}
+=\frac{\mathrm{ELR}_S-\mathrm{ELR}_D}{\mathrm{ELR}_S}\times100
+=\frac{L_S-L_D}{L_S}\times100
+=\frac{151-5}{151}\times100
+\approx96.7\%.
+```
+
+Excluding primary URL-category losses retains all 642 criteria and gives
+
+```math
+L_S^{\mathrm{nonURL}}=151-117=34,
+\qquad
+L_D^{\mathrm{nonURL}}=5-0=5,
+```
+
+```math
+\mathrm{ELR}_S^{\mathrm{nonURL}}=\frac{34}{642}\times100\approx5.30\%,
+\qquad
+\mathrm{ELR}_D^{\mathrm{nonURL}}=\frac{5}{642}\times100\approx0.78\%,
+```
+
+```math
+\mathrm{Relative\ reduction}_{\mathrm{nonURL}}
+=\frac{34-5}{34}\times100
+\approx85.3\%.
+```
+
+These are relative reductions in criterion-level source-loss counts. Task-success rates, verifier accuracy, and acting-agent improvement require their own measurements. The [URL sensitivity analysis](#url-sensitivity-and-paired-comparison) explains the identity rule, overlapping findings, and alternatives that remove entire criteria.
+
+## Current representation size
+
+The latest collection-size summary for DOM-diff Optimized reports the following stored sizes for `dom_model.txt` observations:
+
+| Representation | Total bytes | Average bytes per observation | Average KiB per observation | Average MiB per observation |
+|---|---:|---:|---:|---:|
+| DOM-diff Optimized (`dom_model.txt`) | 2,794,399 | 6,009.46 | 5.87 | 0.0057 |
+
+For $n$ observations with stored byte sizes $B_1,\ldots,B_n$, the arithmetic mean and binary-unit conversions are
+
+```math
+\overline{B}=\frac{1}{n}\sum_{j=1}^{n}B_j,
+\qquad
+\overline{B}_{\mathrm{KiB}}=\frac{\overline{B}}{1024},
+\qquad
+\overline{B}_{\mathrm{MiB}}=\frac{\overline{B}}{1024^2}.
+```
+
+Provenance: these are the supplied measurements for the new collection run. The total and rounded mean are consistent with **465 observations** (`2,794,399 / 465 = 6,009.4602…` bytes). This is an observation-size summary, separate from the 100-task, 642-criterion evidence-loss evaluation. It measures stored text bytes; token counts and a size ratio against screenshots or detailed snapshots require corresponding measurements from the same collection.
+
+## Evidence preservation across 100 tasks
 
 All 100 selected evaluation runs have completed audits, covering **642 criteria**. The audits identify **151 screenshot losses and 5 DOM losses**. The table below presents the full results alongside a sensitivity calculation excluding the URL loss category. The next section explains when a missing URL counts as evidence loss and how that affects the comparison.
 
@@ -415,3 +573,21 @@ There are 100 tasks and 100 saved evaluation runs. All 642 criteria have complet
 ## Coverage gaps
 
 All latest runs have completed, validated audits.
+
+## Scope and limitations
+
+The evaluated tasks cover public-web research and extraction. These results do not establish performance across all websites, authenticated workflows, transactions, or visually intensive interaction. Public pages can change or block automation after recording.
+
+DOM text can lose visual form, control state, and label–value relationships; screenshots can omit off-viewport content and exact values. DOM state, screenshots, and action-tool observations are captured sequentially and can diverge on rapidly changing pages. The [architecture guide](architecture.md#verification-and-boundaries) describes these capture boundaries.
+
+The findings are saved automated audit/adjudication judgments. Criterion-level confidence intervals and paired tests do not account for within-task correlation or audit error, and the paired metric cannot detect items absent from both representations. The system supports evidence inspection and diagnosis; downstream training gains and acting-agent improvement have not been measured here.
+
+## References
+
+\[1\] Hongliang He, Wenlin Yao, Kaixin Ma, Wenhao Yu, Yong Dai, Hongming Zhang, Zhenzhong Lan, and Dong Yu. [WebVoyager: Building an End-to-End Web Agent with Large Multimodal Models](https://arxiv.org/abs/2401.13919). *arXiv:2401.13919*, 2024. doi: 10.48550/arXiv.2401.13919.
+
+\[2\] Corby Rosset, Pratyusha Sharma, Andrew Zhao, Miguel Gonzalez-Fernandez, and Ahmed Awadallah. [The Art of Building Verifiers for Computer Use Agents](https://arxiv.org/abs/2604.06240). *arXiv:2604.06240*, 2026. doi: 10.48550/arXiv.2604.06240. [Official code and data](https://github.com/microsoft/fara).
+
+\[3\] WootzApp. [Browser-agent task dataset: evaluation report and criterion-level audit records](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/EVALUATIONS.md), 2026. Current selected snapshot: 100 tasks, 642 audited criteria. [Local machine-readable summary](../results/summary.json) and [results index](../results/README.md).
+
+\[4\] Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek Sridhar, Xianyi Cheng, Tianyue Ou, Yonatan Bisk, Daniel Fried, Uri Alon, and Graham Neubig. [WebArena: A Realistic Web Environment for Building Autonomous Agents](https://arxiv.org/abs/2307.13854). *arXiv:2307.13854*, 2023. doi: 10.48550/arXiv.2307.13854.

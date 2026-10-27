@@ -110,6 +110,12 @@ for rubric generation and evidence judgments, `o4-mini` for action/validity
 judgments, and `gpt-5.6-sol` for automated evidence audit/adjudication.
 See [model provenance](docs/technical-report.md#models-and-evaluation-provenance).
 
+The screenshot baseline follows the Universal Verifier's rubric-based
+design; WootzApp adds the DOM adaptation, browser-native evidence pipeline,
+paired comparison, and source-aware audit. See the report's
+[background and attribution](docs/technical-report.md#foundations-and-baselines)
+and [references](docs/technical-report.md#references).
+
 Screenshots and DOM remain complementary: visual form, control state,
 label/value associations, viewport coverage, and sequential capture can
 produce gaps in either representation. Items missing from both are outside
@@ -151,7 +157,7 @@ python -m pytest
 
 | Resource | Contents |
 | --- | --- |
-| [Technical report](docs/technical-report.md) | Entire source `EVALUATIONS.md`: aggregate results, sensitivity analyses, blockers, execution failures, provenance, and all 154 affected criteria. |
+| [Technical report](docs/technical-report.md) | Full evaluation findings, mathematical definitions, success rules, current observation sizes, references, and all 154 affected criteria. |
 | [Results](results/README.md) · [JSON summary](results/summary.json) | Published aggregate counts and analysis definitions. |
 | [Evaluation protocol](docs/evaluation-protocol.md) | Shared inputs, scoring controls, source-loss definition, and counting rules. |
 | [Architecture](docs/architecture.md) | Browser capture, DOM-diff Optimized, verifier components, and boundaries. |

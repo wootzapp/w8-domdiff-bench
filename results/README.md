@@ -6,16 +6,17 @@ criteria**. Final automated adjudications identify **151 screenshot losses
 counts, rather than measurements of task success or answer correctness.
 
 Selected results are in the [repository README](../README.md#evaluation-results).
-The full source `EVALUATIONS.md` is preserved as the
-[technical report](../docs/technical-report.md), including all tables,
-sensitivities, blockers, execution failures, model provenance, and 154
-criterion-level findings. [EVALUATIONS.md](EVALUATIONS.md) points to that
-canonical report.
+The [technical report](../docs/technical-report.md) preserves the source
+`EVALUATIONS.md` tables, sensitivities, blockers, execution failures, model
+provenance, and 154 criterion-level findings. It also defines the success
+rules and source-loss equations, restores the research references, and
+records the latest collection-size summary. [EVALUATIONS.md](EVALUATIONS.md)
+points to that canonical report.
 
 | Artifact | Contents | How to verify |
 | --- | --- | --- |
 | [summary.json](summary.json) | Full-dataset counts, paired outcomes, category counts, and sensitivity analyses. Rates and confidence limits are fractions in `[0, 1]`. | Compare with the report’s aggregate and category tables. |
-| [Technical report](../docs/technical-report.md) | Entire evaluation write-up synchronized from the dataset’s `EVALUATIONS.md`. | Follow criterion citations to saved audits, frozen rubrics, and run manifests. |
+| [Technical report](../docs/technical-report.md) | Dataset evaluation findings, with protocol definitions, references, and current collection-size measurements. | Follow criterion citations to saved audits, frozen rubrics, and run manifests; inspect the method and size sections for definitions and provenance. |
 | [Evaluation figures](../docs/assets/evaluations/) | PNG images embedded in the report and SVG versions for export. | Regenerate from the report’s tables with the figure script below. |
 | [Hosted evaluations](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/evaluation) | Per-task verifier results, automated audits, and selected run provenance. | Check the latest selected run for each task and its final adjudications. |
 

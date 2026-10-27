@@ -49,6 +49,10 @@ layout, documented in [recordings.md](recordings.md).
 
 ## Limits and provenance
 
+The evaluated tasks cover public-web research and extraction. The results
+do not establish performance on authenticated workflows, transactions, or
+visually intensive interaction.
+
 The tasks reflect public web pages at recording time. Sites can change,
 block automation, require login, or return different content later. The
 data can contain text that was publicly visible on those pages. Users
