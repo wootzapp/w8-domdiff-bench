@@ -13,6 +13,9 @@ actions, final answer, and frozen rubric for each screenshot/DOM comparison.
 The [technical report](docs/technical-report.md) contains the full evaluation
 write-up and all criterion-level findings; selected results follow below.
 
+Jump to [results](#evaluation-results), [mathematical definitions](#mathematical-definitions),
+[architecture](#how-the-system-works), or [running instructions](#run-the-benchmark).
+
 ## Evaluation results
 
 A source-evidence loss means a required item is absent from one recorded
@@ -78,10 +81,121 @@ The detailed evidence links and saved findings are in the
 These findings combine model-generated audit/adjudication with verification
 by internal WootzApp employees.
 
+![Non-URL evidence losses by category for screenshots and DOM, for all tasks and the subset excluding listed access-blocked task IDs.](docs/assets/evaluations/non-url-loss-categories.png)
+
+Each bar counts criterion-level losses in one representation. The panels
+retain all 642 and 575 audited criteria, respectively; URL losses are omitted
+so the smaller categories remain readable. PNG and exportable SVG versions
+of both graphs are in [evaluation figures](docs/assets/evaluations/).
+
 Website access blockers, execution errors, and source-evidence gaps describe
 different events. The report lists 12 task IDs with access blockers and
 separately records 12 execution failures in the published trajectories.
 Those sets overlap; their counts cannot be added into a single failure rate.
+
+## Mathematical definitions
+
+### Rubric scores and task success
+
+For task $t$, let $s_{t,j}$ be the points awarded to criterion $j$ after
+scoring and rescoring, and $p_{t,j}$ its maximum points. For each
+representation separately, the total and normalized score are
+
+```math
+S_t=\sum_j s_{t,j},\qquad S_t^{\max}=\sum_j p_{t,j},\qquad
+r_t=\begin{cases}
+S_t/S_t^{\max} & S_t^{\max}>0,\\
+0 & S_t^{\max}=0.
+\end{cases}
+```
+
+Let $\mathbf{1}\{\cdot\}$ be 1 when a condition holds and 0 otherwise.
+The process flag $P_t$ applies a rubric threshold $\tau$; the outcome flag
+$O_t$ records the outcome judge's Boolean decision:
+
+```math
+P_t=\mathbf{1}\{r_t\ge\tau\},\qquad
+O_t=\mathbf{1}\{\texttt{output\_success}_t=\mathrm{true}\}.
+```
+
+The standalone verifier runners support three `--success` rules:
+
+```math
+\mathrm{Success}_{\mathrm{outcome}}(t)=O_t,\qquad
+\mathrm{Success}_{\mathrm{process}}(t)=P_t,\qquad
+\mathrm{Success}_{\mathrm{both}}(t)=P_t O_t.
+```
+
+The paired workflow fixes **`--success outcome`** and **$\tau=0.8$**.
+Its binary `score` follows $O_t$, while `rubric_is_success` records $P_t$.
+A strict full-score success instead requires $S_t=S_t^{\max}$ for a
+positive maximum total. The [shared controls](w8bench/verifier/common.py)
+and [success rules](docs/evaluation-protocol.md#success-rules) document these
+choices. Task success and source-evidence loss are separate measurements.
+
+### Paired source-evidence loss
+
+Let $\mathcal{C}$ contain the audited criteria, $M=|\mathcal{C}|$, and
+$\mathcal{I}_c$ contain the concrete required items reviewed for criterion
+$c$. Let $a_{c,i,S}$ and $a_{c,i,D}$ be binary indicators of item $i$'s
+availability in the eligible ordered screenshot ($S$) and DOM ($D$) states.
+Using the same requirements and review scope for both representations:
+
+```math
+\ell_{c,S}=\mathbf{1}\!\left\{\exists i\in\mathcal{I}_c:
+a_{c,i,S}=0\ \land\ a_{c,i,D}=1\right\},
+```
+
+```math
+\ell_{c,D}=\mathbf{1}\!\left\{\exists i\in\mathcal{I}_c:
+a_{c,i,D}=0\ \land\ a_{c,i,S}=1\right\}.
+```
+
+A criterion contributes at most one loss per representation. Different
+missing items can produce losses in both representations; items absent
+from both are undetected by this paired metric. A verifier overlooking
+available evidence is an interpretation error, rather than source loss.
+The count and percentage rate are
+
+```math
+L_m=\sum_{c\in\mathcal{C}}\ell_{c,m},\qquad
+\mathrm{ELR}_m=100\frac{L_m}{M},\qquad m\in\{S,D\}.
+```
+
+For the published findings, $M=642$, $L_S=151$, and $L_D=5$, giving
+**23.52%** and **0.78%**. The two overlapping criteria yield
+$151+5-2=154$ distinct affected criteria. With a shared denominator and
+$L_S>0$, the relative reduction in losses is
+
+```math
+\mathrm{Reduction}=100\frac{L_S-L_D}{L_S}
+=100\frac{151-5}{151}\approx96.7\%.
+```
+
+Excluding primary URL-category losses keeps $M=642$ and gives
+$L_S=151-117=34$, $L_D=5$: rates of **5.30%** and **0.78%**, and a relative
+reduction of $100(34-5)/34\approx85.3\%$. Excluding the listed blocked tasks
+instead removes their 67 criteria, giving $M=575$. These are descriptive
+sensitivity calculations on the saved findings.
+
+### Confidence intervals in the graph
+
+For a loss count $L$, denominator $M$, observed fraction $\hat p=L/M$,
+and $z=1.96$, the exploratory 95% Wilson interval is
+
+```math
+\mathrm{CI}_{95\%}=
+\frac{\hat p+\frac{z^2}{2M}
+\ \pm\ z\sqrt{\frac{\hat p(1-\hat p)}{M}+\frac{z^2}{4M^2}}}
+{1+\frac{z^2}{M}}.
+```
+
+Multiply the bounds by 100 for percentages. The graph uses these intervals;
+[summary.json](results/summary.json) stores them as fractions. They assume
+independent criteria and do not account for within-task correlation or
+annotation error. See the [full method](docs/technical-report.md#benchmark-protocol-and-mathematical-definitions)
+for definitions and the [paired analysis](docs/technical-report.md#url-sensitivity-and-paired-comparison)
+for overlap and sensitivity details.
 
 ## How the system works
 
@@ -94,18 +208,49 @@ The model-facing `dom_model.txt` observations average **5.87 KiB**; see
 [representation sizes](docs/technical-report.md#current-representation-size).
 
 ```mermaid
-flowchart LR
-    task[Task] --> record[w8-core recorder]
-    record --> screenshots[Ordered screenshots]
-    record --> dom[Ordered DOM text]
-    shared[Same actions, answer, and frozen rubric] --> ssjudge[Screenshot verifier]
-    shared --> domjudge[DOM verifier]
-    screenshots --> ssjudge
-    dom --> domjudge
-    ssjudge --> audit[Paired evidence audit]
-    domjudge --> audit
-    audit --> review[WootzApp human verification]
+flowchart TB
+    subgraph recording[Browser recording]
+        task[Task and start URL] --> actor[Acting model]
+        actor --> harness[Validate and execute via agent-browser]
+        harness --> browser[w8-core browser tab]
+        browser --> capture[ChromiumRL DOM capture and CDP screenshot]
+        capture --> observation[Compact DOM text and executable references]
+        observation --> actor
+        capture --> raw[Raw states and action logs in recordings/]
+    end
+    raw -. Separate dataset preparation .-> pairs[Prepared screenshot and DOM pairs]
+    subgraph evaluation[Paired evaluation]
+        pairs --> check[Validate shared inputs and state alignment]
+        check --> rubric[Generate and freeze one rubric]
+        rubric --> ssjudge[Screenshot verifier]
+        rubric --> domjudge[DOM verifier]
+        check --> screenshots[Ordered screenshots]
+        check --> dom[Ordered DOM text]
+        screenshots --> ssjudge
+        dom --> domjudge
+        ssjudge --> normalize[Normalize results]
+        domjudge --> normalize
+        normalize --> audit[Source-evidence audit and adjudication]
+        pairs --> audit
+        audit --> output[Results and provenance in evaluation/]
+    end
+    output --> review[Human verification of published findings]
 ```
+
+An execution with $N$ actions normally produces $N+1$ states: the initial
+state and one after each executed action. Raw states start at
+`steps/step_001/`; prepared evidence starts at `screenshot0.png` and
+`dom_model0.txt`. Rejected proposals do not add executed actions.
+The dotted connection is a dataset-production boundary: this repository
+has no public command that converts raw recordings into prepared pairs.
+
+| Component | Role and artifacts | Implementation | Verification |
+| --- | --- | --- | --- |
+| Browser runtime and recorder | Runs the action loop; saves snapshots, screenshots, decisions, and executed actions. | [task_recorder](w8bench/task_recorder/) · [ChromiumRL protocol](protocol/ChromiumRL.pdl) | Browser `status`; inspect `manifest.json` and `trajectory.jsonl`. |
+| DOM rendering | Renders browser-generated model DOM as compact `dom_model.txt`; retains detailed capture alongside it. | [capture.py](w8bench/task_recorder/capture.py) · [renderers](w8bench/task_recorder/renderers/) | Compare each state's DOM text, structured snapshot, and screenshot. |
+| Dataset and shared controls | Loads prepared pairs, checks alignment, and freezes one rubric with shared scoring settings. | [dataset_sync.py](w8bench/verifier/dataset_sync.py) · [validate_inputs.py](w8bench/verifier/validate_inputs.py) · [common.py](w8bench/verifier/common.py) | Check matching task inputs, action counts, and frozen rubric hashes. |
+| Paired verifiers | Scores image and text evidence against the same rubric. | [screenshot_verifier](w8bench/screenshot_verifier/) · [dom_model](w8bench/dom_model/) | Inspect per-criterion results and scoring controls in run receipts. |
+| Orchestration and audit | Normalizes results, audits source availability, and saves comparison provenance. | [run_full_comparison.py](w8bench/verifier/run_full_comparison.py) · [evidence_audit.py](w8bench/verifier/evidence_audit.py) | Inspect `evidence_audit.json` and its source citations. |
 
 Both verifiers use the same scoring controls. The benchmark uses `gpt-5.2`
 for action generation, rubric generation, and evidence judgments;
@@ -125,15 +270,43 @@ produce gaps in either representation. Items missing from both are outside
 the paired source-loss metric. The [architecture guide](docs/architecture.md)
 explains the capture pipeline and its boundaries.
 
+These contracts are established by the implementation and saved artifacts.
+Preflight checks establish input consistency; live replay and downstream
+agent improvements require separate evaluation. DOM and screenshots are
+captured sequentially, so rapidly changing pages can differ between captures.
+
 ## Run the benchmark
 
-Follow the [runbook](docs/runbook.md) for Python installation, API-key setup,
-browser builds, recording, and scoring. Scoring prepared data uses the
-published screenshot/DOM pairs. Recording new tasks additionally requires
-building Chromium, applying the `w8-core` source overlay, and creating the
-local browser image.
+### Install and configure
 
-After completing Python setup, download and validate one prepared pair:
+Prepared-pair evaluation requires **Python 3.10+**, Git, network access for
+dependencies and the dataset, and an OpenAI API key for executed model calls.
+It runs without building or starting the browser. From a new checkout:
+
+```bash
+git clone https://github.com/wootzapp/w8-domdiff-bench.git
+cd w8-domdiff-bench
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[test]"
+```
+
+The `scripts/` wrappers use this checkout's `.venv/bin/python`. For
+evaluation, create `.env` if it does not already exist:
+
+```bash
+test -f .env || cp .env.example .env
+```
+
+Edit `.env` to set `OPENAI_API_KEY`. Recording also needs `OPENAI_MODEL`
+(the published runs used `gpt-5.2`). Evaluation model settings are in
+[config/](config/); the default audit model is `gpt-5.6-sol`.
+The API account must have access to the configured models.
+
+### Evaluate prepared pairs
+
+Download a prepared pair, check required files and consecutive state indices, and
+print the planned workflow **without model calls**:
 
 ```bash
 ./scripts/run-comparison --task task_01
@@ -146,9 +319,58 @@ Run rubric generation, both verifiers, and the paired evidence audit:
 ```
 
 Run all prepared tasks with `./scripts/run-comparison --all --execute`.
-Generated runs are written to the ignored `evaluation/` directory. Raw
-recordings and prepared verifier pairs have different file contracts; see
-[recording and evaluation inputs](docs/runbook.md#recording-and-evaluation-inputs).
+Each execution generates a fresh rubric, freezes it for both verifiers,
+scores both representations, normalizes results, and audits source evidence.
+Full shared-input and action/state alignment checks run in the executed
+workflow before scoring.
+The `--execute` commands make paid model calls. A fresh run can differ from
+the published findings because rubric generation and model judgments are
+performed again.
+
+Prepared inputs are downloaded under `dataset/data-ss/<task>/` and
+`dataset/data-dom/<task>/`. Both contain `task_data.json`, `final_answer.json`,
+and `web_surfer.log`, plus ordered `screenshotN.png` or `dom_modelN.txt`
+evidence. Generated runs go to the ignored
+`evaluation/<task>/<run-id>/` directory, including `evidence_audit.json`.
+Batch summaries go to `evaluation/batches/<run-id>/`.
+
+### Record new tasks
+
+Recording requires 64-bit Linux or WSL 2, Docker Engine with Compose and
+Buildx, `rsync`, and a local `w8-core:domdiff-bench` image. Building that image
+requires about **32 GiB RAM and 200 GiB free disk space**. Follow the
+[browser build instructions](docs/runbook.md#browser-build) to build pinned
+Chromium `152.0.7948.0`, apply the `w8-core` overlay, and assemble the image.
+Then, from the repository root with the Python environment active:
+
+```bash
+python -m w8bench.task_recorder.browser_runtime configure
+# Set OPENAI_API_KEY and OPENAI_MODEL in .env before recording.
+docker compose --env-file .env up -d --wait w8-core
+python -m w8bench.task_recorder.browser_runtime status
+mkdir -p recordings
+./scripts/run-task task8 --output-dir recordings --no-human-intervention
+```
+
+The status command checks the container, CDP, browser, and bundled
+`agent-browser`, and prints the noVNC URL. To record a custom task:
+
+```bash
+./scripts/run-task local-check "Example page inspection" \
+  --task "Report the visible heading on the page." \
+  --start-url "https://example.com/" \
+  --output-dir recordings \
+  --no-human-intervention
+```
+
+Raw runs are saved under `recordings/<run-id>/`, including `manifest.json`,
+`trajectory.jsonl`, `final.json`, and `steps/step_001/` onward. These raw
+directories cannot be passed directly to `run-comparison`; see the
+[preparation boundary](docs/runbook.md#recording-and-evaluation-inputs).
+The [runbook](docs/runbook.md) also covers remote browser access and
+troubleshooting.
+
+### Run tests
 
 The offline test suite runs with:
 

@@ -1,9 +1,9 @@
 # Runbook
 
-This is the only operational guide for `w8-domdiff-bench`. It contains the
+This is the detailed operational guide for `w8-domdiff-bench`. It contains the
 commands for browser setup, task recording, prepared dataset retrieval, and
-verifier scoring. The other documents explain the method and results; they
-are not required to operate the repository.
+verifier scoring. The [README quickstart](../README.md#run-the-benchmark)
+summarizes installation and common recording and evaluation commands.
 
 Two workflows are available:
 
