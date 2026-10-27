@@ -174,3 +174,7 @@ Implementation lives in `w8bench/task_recorder/`, `w8bench/dom_model/`,
 `w8bench/screenshot_verifier/`, and `w8bench/verifier/`. The pinned browser
 protocol is [protocol/ChromiumRL.pdl](protocol/ChromiumRL.pdl); small example
 pairs are in [data/samples/](data/samples/).
+
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
