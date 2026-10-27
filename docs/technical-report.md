@@ -144,8 +144,6 @@ These are relative reductions in criterion-level source-loss counts. Task-succes
 
 The model-facing `dom_model.txt` files average **5.87 KiB** per captured observation in the evaluated collection.
 
-In a historical sample of 650 states, optimized text averaged **4.84 KiB**, versus **44.88 KiB** for detailed readable text and **191.32 KiB** for structured snapshots.
-
 ## Evidence preservation across 100 tasks
 
 All 100 tasks have completed evidence audits and internal human verification, covering **642 criteria**. The findings identify **151 screenshot losses and 5 DOM losses**. The table below presents the full results alongside a sensitivity calculation excluding the URL loss category. The next section explains when a missing URL counts as evidence loss and how that affects the comparison.
