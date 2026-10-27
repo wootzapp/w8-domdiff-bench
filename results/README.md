@@ -23,7 +23,7 @@ findings. [EVALUATIONS.md](EVALUATIONS.md) points to that report.
 | --- | --- | --- |
 | [summary.json](summary.json) | Full-dataset counts, paired outcomes, category counts, and sensitivity analyses. Rates and confidence limits are fractions in `[0, 1]`. | Compare with the report’s aggregate and category tables. |
 | [Technical report](../docs/technical-report.md) | Repository methods and evaluation findings, including model roles, human verification, references, and representation sizes. | Follow criterion citations to audits, frozen rubrics, and run manifests; inspect the method and size sections for definitions and context. |
-| [Evaluation figures](../docs/assets/evaluations/) | PNG images embedded in the report and SVG versions for export. | Regenerate from the report’s tables with the figure script below. |
+| [Evaluation figures](../docs/assets/evaluations/) | Published PNG images embedded in the report and SVG versions for export. | Compare their displayed counts and rates with the report tables and `summary.json`. |
 | [Hosted evaluations](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/evaluation) | Per-task verifier results, audit/adjudication findings, and provenance supporting this benchmark. | Follow task references to the audits and final adjudications cited by the report. |
 
 ## Counting and sensitivity
@@ -44,20 +44,6 @@ The audit/adjudication findings were verified by internal WootzApp employees.
 Criterion-level Wilson intervals do not adjust for correlation within tasks
 or audit errors. See the [protocol](../docs/evaluation-protocol.md) and
 [category guide](../docs/evidence-categories.md) for definitions and caveats.
-
-## Regenerate figures
-
-The figure script requires Matplotlib, which is separate from the core
-runtime dependencies. From the repository root, run:
-
-```bash
-python -m pip install matplotlib
-python scripts/generate_evaluation_figures.py
-```
-
-The script reads `docs/technical-report.md`, checks rates, Wilson intervals,
-and category totals, and writes PNG/SVG files to `docs/assets/evaluations/`.
-It recalculates figures from saved findings and does not rerun models.
 
 The complete paired trajectories and evaluation artifacts used by this
 repository are available from

@@ -13,8 +13,9 @@ The division of responsibility is fixed:
 
 - **agent-browser owns** observation (the accessibility snapshot and its `@eN`
   ref namespace) and action execution (click, fill, type, scroll, navigate).
-- **The recorder owns** ChromiumRL structured capture, screenshots, DOM diffing,
-  run artifacts, and the verifier dataset.
+- **The recorder owns** ChromiumRL structured capture, screenshots,
+  model-facing DOM artifacts, and the raw run artifacts consumed by the
+  dataset-preparation workflow.
 
 `client.py` is the entire integration surface. It translates one validated model
 action into one CLI invocation and validates the JSON that comes back. That is
@@ -34,7 +35,7 @@ recorder module. Its normal runtime needs:
   `timeout`.
 
 ```python
-from agent_browser import AgentBrowserClient
+from w8bench.task_recorder.agent_browser import AgentBrowserClient
 
 client = AgentBrowserClient(
     "docker exec w8-core-browser-engine agent-browser",
