@@ -2,8 +2,9 @@
 
 This is the detailed operational guide for `w8-domdiff-bench`. It contains the
 commands for browser setup, task recording, prepared dataset retrieval, and
-verifier scoring. The [README quickstart](../README.md#run-the-benchmark)
-summarizes installation and common recording and evaluation commands.
+verifier scoring. The [README operating section](../README.md#run-the-benchmark)
+contains the complete end-to-end flow; this runbook adds focused checks,
+artifact details, and troubleshooting.
 
 Two workflows are available:
 
@@ -12,46 +13,34 @@ Two workflows are available:
 
 | What you want to do | Sections to follow |
 | --- | --- |
-| Record a task | Get the repository → Requirements → Browser build → Python setup → Browser runtime → Record a task |
-| Score a prepared task | Get the repository → Requirements → Python setup → Score a prepared task |
+| Record a task | Requirements → Browser build → Get the benchmark and install Python → Create the local browser image → Environment configuration → Browser runtime → Record a task |
+| Score a prepared task | Requirements → Get the benchmark and install Python → Environment configuration → Score a prepared task |
 
 There is no direct raw-recording-to-scoring command. The repository does not
 currently convert a raw recording into a prepared verifier pair. The exact
 boundary is described in
 [Recording and evaluation inputs](#recording-and-evaluation-inputs).
 
-## Get the repository
-
-Run these commands from the directory where you want to keep the project:
-
-```bash
-git clone https://github.com/wootzapp/w8-domdiff-bench.git
-cd w8-domdiff-bench
-```
-
-The remaining repository commands start from this directory unless a section
-says otherwise.
-
 ## Requirements
 
-- 64-bit Linux or WSL 2
-- 32 GiB RAM and about 200 GiB of free disk space for Chromium
-- Git, Python 3.10 or newer, `rsync`, Docker Engine, Compose, and Buildx
-- Network access for Chromium source and Python dependencies
-- An OpenAI API key for model-driven recording or executed evaluation
+Prepared-pair evaluation requires 64-bit Linux or WSL 2, Git, Python 3.10 or
+newer, network access for dependencies and prepared data, and an OpenAI API
+key for executed model calls.
+
+Recording additionally requires Docker Engine with Compose and Buildx,
+`rsync`, approximately 32 GiB of RAM, and about 200 GiB of free disk space
+for Chromium.
 
 Keep the workspace on a Linux filesystem. Chromium builds under `/mnt/c` are
 considerably slower and can encounter filesystem compatibility problems.
 
 ## Browser build
 
-### 1. Install depot_tools
+### 1. Create the build workspace and install `depot_tools`
 
-From the repository root, move to its parent directory and create the browser
-build workspace:
+Create the browser build workspace:
 
 ```bash
-cd ..
 mkdir -p w8-browser-build
 cd w8-browser-build
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -94,15 +83,17 @@ autoninja -C out/Release chrome
 
 Do not continue unless this build succeeds.
 
-### 4. Apply the w8-core source overlay
+### 4. Fetch the Wootzapp Browser source overlay
 
 After the first build, return to the directory containing
-`w8-domdiff-bench` and `w8-browser-build`, then clone the browser repository:
+`w8-browser-build`, then clone the public browser repository:
 
 ```bash
 cd ../../..
 git clone https://github.com/wootzapp/wootzapp-browser.git
 ```
+
+### 5. Apply the overlay and rebuild
 
 Copy the maintained source overlay into Chromium:
 
@@ -113,8 +104,6 @@ cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
 
 Only files below `wootzapp-browser/src/` are applied.
 
-### 5. Rebuild w8-core
-
 ```bash
 cd w8-browser-build/chromium
 gclient runhooks
@@ -122,18 +111,38 @@ cd src
 gn gen out/Release
 autoninja -C out/Release chrome
 ./out/Release/chrome --version
+cd ../../..
 ```
 
 The existing `out/Release` directory retains the arguments from the first
-build.
+build. The final command returns to the shared workspace.
 
-### 6. Create the local browser image
+## Get the benchmark and install Python
 
-After rebuilding w8-core, return to the `w8-domdiff-bench` repository and
-prepare the runtime payload:
+The browser-build flow is now back in the shared workspace containing
+`w8-browser-build`. Evaluation-only users can run the following commands from
+the directory where they want to keep the benchmark:
 
 ```bash
-cd ../../../w8-domdiff-bench
+git clone https://github.com/wootzapp/w8-domdiff-bench.git
+cd w8-domdiff-bench
+```
+
+Create the Python environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[test]"
+```
+
+The `scripts/` wrappers use this checkout's `.venv/bin/python`.
+
+## Create the local browser image
+
+From the benchmark repository, prepare the browser runtime payload:
+
+```bash
 rm -rf build
 mkdir build
 cd ../w8-browser-build/chromium/src
@@ -151,27 +160,20 @@ docker image inspect w8-core:domdiff-bench
 ```
 
 The image remains in the local Docker engine after the terminal closes. It
-only needs to be rebuilt when Chromium, the w8-core overlay, or image runtime
-files change.
+only needs to be rebuilt when Chromium, the Wootzapp Browser overlay, or image
+runtime files change.
 
-## Python setup
+## Environment configuration
 
-Run these commands from the repository root:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e ".[test]"
-```
-
-If you will record tasks, create the browser configuration:
+If you will record tasks, create the browser configuration from the
+repository root:
 
 ```bash
 python -m w8bench.task_recorder.browser_runtime configure
 ```
 
-If you only need verifier scoring, create the configuration without starting
-the browser:
+If you only need verifier scoring, create the environment file without
+starting the browser:
 
 ```bash
 cp .env.example .env
@@ -386,6 +388,8 @@ python -m w8bench.task_recorder.browser_runtime configure --refresh-ports
 docker compose --env-file .env up -d --wait w8-core
 ```
 
-If Docker cannot find `w8-core:domdiff-bench`, repeat browser build steps 5
-and 6. If noVNC refuses the connection, use the current port printed by the
-status command instead of a saved URL.
+If Docker cannot find `w8-core:domdiff-bench`, repeat
+[Create the local browser image](#create-the-local-browser-image). Rebuild the
+patched browser first only when its source or build configuration changed. If
+noVNC refuses the connection, use the current port printed by the status
+command instead of a saved URL.

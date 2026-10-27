@@ -1,22 +1,115 @@
-# w8-domdiff-bench
+# `w8-domdiff-bench`: Browser Evidence Infrastructure for Agent Development
 
-`w8-domdiff-bench` records browser-agent runs in WootzApp’s Chromium-based
-`w8-core` browser and compares screenshot evidence with DOM-diff Optimized,
-a compact text representation of each captured page state. The recorder,
-paired verifiers, and evidence audit make it possible to inspect what a
-browser agent observed and which required information each representation
-preserved.
+## Abstract
 
-The benchmark contains 100 paired browser tasks. Its evaluation covers
-**642 rubric criteria**, using the same task, executed
-actions, final answer, and frozen rubric for each screenshot/DOM comparison.
-The [technical report](docs/technical-report.md) contains the full evaluation
-write-up and all criterion-level findings; selected results follow below.
+`w8-domdiff-bench` records browser-agent runs in Wootzapp Browser, powered by
+the Chromium-based `w8-core` engine, and compares screenshot evidence with
+DOM-diff Optimized, a compact text representation of each captured page
+state. The recorder, paired verifiers, and evidence audit make it possible
+to inspect what a browser agent observed and which required information each
+representation preserved.
 
-Jump to [results](#evaluation-results), [mathematical definitions](#mathematical-definitions),
-[architecture](#how-the-system-works), or [running instructions](#run-the-benchmark).
+The benchmark contains 100 paired browser tasks and **642 audited rubric
+criteria**. Under the same task, executed actions, final answer, frozen
+rubric, and scoring controls, the saved audit identifies **151 screenshot
+losses (23.52%)** and **5 DOM losses (0.78%)**. URLs account for 117 of the
+screenshot losses; excluding that category gives 34 screenshot losses and
+5 DOM losses while retaining all 642 criteria. These measurements describe
+evidence availability, not task success or acting-agent improvement.
 
-## Evaluation results
+The [technical report](docs/technical-report.md) contains the full method and
+all criterion-level findings. This README keeps the headline results,
+architecture, mathematical definitions, and complete operating instructions
+in one place.
+
+Jump to [results](#evaluation-results),
+[mathematical definitions](#mathematical-definitions),
+[architecture](#how-the-system-works), or
+[running instructions](#run-the-benchmark).
+
+## 1 Introduction
+
+Browser-agent verification is limited by the evidence retained during
+execution. A required value may appear only after scrolling, a control state
+may be visually unclear, or an exact URL may be outside a screenshot. If the
+recorded trajectory omits that information, a downstream verifier cannot
+recover it.
+
+The repository addresses this problem with three connected components:
+
+- Wootzapp Browser captures screenshots, structured page state, and
+  action-tool observations through `w8-core` and the ChromiumRL CDP domain.
+- DOM-diff Optimized turns each captured state into compact structured text
+  while preserving content, controls, relationships, and scroll context.
+- `w8-domdiff-bench` aligns screenshot and DOM evidence from the same
+  trajectory, scores both against one frozen rubric, and audits whether the
+  required source evidence was available.
+
+The acting agent receives text observations rather than screenshots.
+Screenshots remain recorded artifacts for the screenshot verifier and for
+human inspection. This separation lets the benchmark compare evidence
+representations without changing the executed action history or final answer.
+
+## 2 Foundations and Baselines
+
+Screenshot evidence preserves the rendered page and is useful for visual
+properties such as layout, styling, images, and spatial relationships. Its
+limits are viewport coverage and the difficulty of reading exact values,
+long tables, URLs, and small text from pixels alone.
+
+Structured browser observations preserve machine-readable text, roles,
+controls, relationships, and page identity. Their limits include visual
+notation, canvas or image content, and any source content that the browser
+capture itself does not expose. Screenshot and DOM evidence are therefore
+complementary rather than interchangeable.
+
+The screenshot verifier provides the visual baseline. The DOM verifier is
+the structured-evidence adaptation. Both use the same task inputs, action
+history, final answer, frozen rubric, and scoring controls. The comparison
+measures source-evidence availability separately from verifier reasoning and
+task success. Background and related systems are documented in the
+[technical report](docs/technical-report.md#foundations-and-baselines).
+
+## 3 Inside the Wootzapp Browser Stack
+
+### 3.1 Building DOM-diff Optimized
+
+The browser evidence pipeline developed in stages. Detailed DOM capture made
+page state inspectable; action-relative DOM diffing showed what changed; the
+current optimized representation removes repeated before/after content and
+describes each captured state directly.
+
+| Stage | Limitation addressed | Result |
+| --- | --- | --- |
+| Detailed DOM capture | Screenshots did not preserve enough structured page state for inspection. | Captured text, attributes, relationships, accessibility data, styles, and layout geometry. |
+| DOM diff | Detailed snapshots did not directly show the effect of an action. | Compared pre-action and post-action states to identify changed content and controls. |
+| DOM-diff Optimized | Before/after files repeated large amounts of unchanged content. | Organized each state into content, tables, media, actions, and scroll regions without requiring separate diff files. |
+| Browser-native processing | Re-reading the live page could differ from the snapshot that had been recorded. | Moved model-DOM selection and grouping into Chromium so structured JSON and rendered text describe the same captured state. |
+| Preservation refinements | Nested text, context, author labels, control state, and long content could be omitted. | Refined selection and removed the former subtree-text limit while retaining viewport-based capture. |
+
+The current model-facing `dom_model.txt` observations average **5.87 KiB**.
+A historical 650-state sample averaged **4.84 KiB** for optimized text,
+**44.88 KiB** for detailed readable text, and **191.32 KiB** for structured
+snapshots. These size measurements are descriptive and are separate from the
+source-evidence evaluation.
+
+### 3.2 From Agent Actions to Recorded Evidence
+
+At each step, the acting model receives compact DOM text, executable
+`agent-browser` references, task memory, and recent action outcomes. The
+Python harness validates the proposed action and executes it through
+`agent-browser` in the same browser tab. Wootzapp Browser then captures the
+resulting state through ChromiumRL and CDP.
+
+Each state keeps its screenshot, structured DOM, readable full-DOM text,
+model-facing DOM, and action-tool observations. Rejected model proposals are
+recorded separately and do not create executed-action states. Browser node
+identifiers and executable `agent-browser` references remain separate
+namespaces.
+
+<a id="evaluation-results"></a>
+
+## 4 Evaluation results
 
 A source-evidence loss means a required item is absent from one recorded
 representation and present in the other. The counts below come from
@@ -93,7 +186,9 @@ different events. The report lists 12 task IDs with access blockers and
 separately records 12 execution failures in the published trajectories.
 Those sets overlap; their counts cannot be added into a single failure rate.
 
-## Mathematical definitions
+<a id="mathematical-definitions"></a>
+
+## 5 Mathematical definitions
 
 ### Rubric scores and task success
 
@@ -197,7 +292,9 @@ annotation error. See the [full method](docs/technical-report.md#benchmark-proto
 for definitions and the [paired analysis](docs/technical-report.md#url-sensitivity-and-paired-comparison)
 for overlap and sensitivity details.
 
-## How the system works
+<a id="how-the-system-works"></a>
+
+## 6 System architecture and boundaries
 
 The acting model, `gpt-5.2`, generates browser actions from DOM-based text
 observations and executable `agent-browser` references. The recorder saves
@@ -275,38 +372,301 @@ Preflight checks establish input consistency; live replay and downstream
 agent improvements require separate evaluation. DOM and screenshots are
 captured sequentially, so rapidly changing pages can differ between captures.
 
-## Run the benchmark
+<a id="run-the-benchmark"></a>
 
-### Install and configure
+## 7 Run the benchmark
 
-Prepared-pair evaluation requires **Python 3.10+**, Git, network access for
-dependencies and the dataset, and an OpenAI API key for executed model calls.
-It runs without building or starting the browser. From a new checkout:
+The complete recording workflow begins with a clean Chromium build, applies
+the Wootzapp Browser source overlay, builds the local browser image, and then
+installs this benchmark. Evaluation-only users can skip the browser build and
+begin at [Clone and install the benchmark](#6-clone-and-install-the-benchmark).
+The [runbook](docs/runbook.md) contains additional troubleshooting and
+artifact details.
+
+### Repository layout
+
+- `w8bench/task_recorder/` contains task loading, browser capture, action
+  execution, model prompts, text renderers, and trajectory export.
+- `w8bench/dom_model/` contains the structured-evidence verifier.
+- `w8bench/screenshot_verifier/` contains the screenshot-evidence verifier.
+- `w8bench/verifier/` contains dataset retrieval, rubric freezing, paired
+  execution, result normalization, and evidence auditing.
+- `protocol/ChromiumRL.pdl` is the pinned browser protocol definition.
+- `scripts/` contains the supported recording, image-build, and evaluation
+  commands.
+- `data/samples/` contains small examples. Complete paired task data is
+  downloaded into the ignored `dataset/` directory.
+- `results/` contains the published aggregate results and supporting notes.
+
+### Requirements
+
+Prepared-pair evaluation requires:
+
+- 64-bit Linux or WSL 2
+- Python 3.10 or newer
+- Git and network access for dependencies and prepared data
+- An OpenAI API key for executed model calls
+
+Recording additionally requires:
+
+- Docker Engine with Compose and Buildx
+- `rsync`
+- Approximately 32 GiB of RAM
+- Approximately 200 GiB of free disk space for Chromium
+
+Keep the Chromium workspace on a Linux filesystem. Building under `/mnt/c`
+in WSL is considerably slower and can cause filesystem compatibility issues.
+
+### Build Wootzapp Browser for recording
+
+#### 1. Create the build workspace and install `depot_tools`
+
+Create a workspace for the browser source and install Chromium's build tools:
+
+```bash
+mkdir -p w8-browser-build
+cd w8-browser-build
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+export PATH="$PATH:$(pwd)/depot_tools"
+```
+
+Run the `export` command again in each new terminal used for the Chromium
+build.
+
+#### 2. Fetch the pinned Chromium source
+
+```bash
+mkdir -p chromium
+cd chromium
+fetch --nohooks --no-history chromium
+gclient sync --nohooks \
+  --revision src@refs/tags/152.0.7948.0 \
+  --reset --upstream -D --force --no-history --shallow
+```
+
+The first download can take more than an hour. If it is interrupted, restore
+the `depot_tools` path, return to the `chromium` directory, and run the same
+`gclient sync` command again.
+
+#### 3. Build the pinned Chromium revision
+
+```bash
+cd src
+./build/install-build-deps.sh
+gclient runhooks
+gn gen out/Release --args='is_debug=false
+is_component_build=false
+symbol_level=0
+blink_symbol_level=0
+v8_symbol_level=0
+proprietary_codecs=true
+ffmpeg_branding="Chrome"'
+autoninja -C out/Release chrome
+./out/Release/chrome --version
+```
+
+Do not continue unless this initial build succeeds.
+
+#### 4. Fetch the Wootzapp Browser source overlay
+
+Return to the directory containing `w8-browser-build`, then clone the public
+browser repository:
+
+```bash
+cd ../../..
+git clone https://github.com/wootzapp/wootzapp-browser.git
+```
+
+#### 5. Apply the overlay and rebuild
+
+Copy the maintained overlay into Chromium:
+
+```bash
+sudo chmod -R u+w w8-browser-build/chromium/src
+cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
+```
+
+Only files under `wootzapp-browser/src/` are applied.
+
+```bash
+cd w8-browser-build/chromium
+gclient runhooks
+cd src
+gn gen out/Release
+autoninja -C out/Release chrome
+./out/Release/chrome --version
+cd ../../..
+```
+
+The existing `out/Release` directory retains the build arguments from the
+initial Chromium build. The final command returns to the shared workspace.
+
+#### 6. Clone and install the benchmark
+
+The browser-build flow is now back in the shared workspace containing
+`w8-browser-build`. Evaluation-only users can run the following commands from
+the directory where they want to keep the benchmark:
 
 ```bash
 git clone https://github.com/wootzapp/w8-domdiff-bench.git
 cd w8-domdiff-bench
+```
+
+Create the Python environment:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[test]"
 ```
 
-The `scripts/` wrappers use this checkout's `.venv/bin/python`. For
-evaluation, create `.env` if it does not already exist:
+The `scripts/` wrappers use this checkout's `.venv/bin/python`.
+
+#### 7. Create the local browser image
+
+Copy the rebuilt browser and its runtime dependencies into the benchmark:
 
 ```bash
-test -f .env || cp .env.example .env
+rm -rf build
+mkdir build
+cd ../w8-browser-build/chromium/src
+gn desc out/Release //chrome:chrome runtime_deps | \
+  rsync -aR --files-from=- out/Release/ ../../../w8-domdiff-bench/build/
+test -x ../../../w8-domdiff-bench/build/chrome
+cd ../../../w8-domdiff-bench
 ```
 
-Edit `.env` to set `OPENAI_API_KEY`. Recording also needs `OPENAI_MODEL`
-(the published runs used `gpt-5.2`). Evaluation model settings are in
-[config/](config/); the default audit model is `gpt-5.6-sol`.
-The API account must have access to the configured models.
+Build and inspect the local image:
+
+```bash
+IMAGE_VERSION=chromium-152.0.7948.0 ./scripts/build-browser-image
+docker image inspect w8-core:domdiff-bench
+```
+
+The image remains in the local Docker engine after the terminal closes. It
+only needs to be rebuilt when Chromium, the Wootzapp Browser overlay, or the
+image runtime files change.
+
+### Configure and start the browser runtime
+
+From the repository root with the Python environment active, create a
+conflict-free local runtime configuration:
+
+```bash
+python -m w8bench.task_recorder.browser_runtime configure
+```
+
+This command creates `w8-domdiff-bench/.env`, chooses available host ports,
+and assigns a checkout-specific container name. Open that file and set:
+
+```text
+OPENAI_API_KEY=your-api-key
+OPENAI_MODEL=your-supported-model
+```
+
+Recording requires both values. Evaluation requires `OPENAI_API_KEY`; its
+model settings are read from [config/](config/). The API account must have
+access to the configured models.
+
+Start the browser and verify the container, CDP endpoint, noVNC page, and
+bundled `agent-browser`:
+
+```bash
+docker compose --env-file .env up -d --wait w8-core
+python -m w8bench.task_recorder.browser_runtime status
+```
+
+The status command prints the noVNC port selected for this checkout.
+
+### View a browser running on a remote server
+
+The URL printed by `status` uses `127.0.0.1`, so it is local to the machine
+running Docker. When Docker is running on a remote server, first note the
+printed noVNC port. From the computer where the browser window should be
+opened, create an SSH tunnel:
+
+```bash
+ssh -o ExitOnForwardFailure=yes -N \
+  -L 39084:127.0.0.1:16191 \
+  username@server-address
+```
+
+Replace `16191` with the port printed by `status`. Then open this address on
+the local computer:
+
+```text
+http://127.0.0.1:39084/vnc.html?resize=scale&autoconnect=1&path=websockify
+```
+
+If local port `39084` is already occupied, choose another local port in both
+the SSH command and browser URL. The Docker ports stay bound to server
+loopback and do not need to be exposed publicly.
+
+### Run a catalog task
+
+Catalog tasks are loaded from the configured task catalog by task ID. Run one
+from the repository root:
+
+```bash
+mkdir -p recordings
+./scripts/run-task task8 --output-dir recordings --no-human-intervention
+```
+
+The task runner prints the selected task name, start URL, output directory,
+and intervention policy before execution.
+
+### Run a custom task
+
+```bash
+./scripts/run-task local-check "Example page inspection" \
+  --task "Report the visible heading on the page." \
+  --start-url "https://example.com/" \
+  --output-dir recordings \
+  --no-human-intervention
+```
+
+Omit `--no-human-intervention` only when an operator may solve a CAPTCHA or
+similar access challenge. Human intervention is not recorded as an agent
+action.
+
+Each recording is written under `recordings/<run-id>/`:
+
+```text
+recordings/<run-id>/
+  task.json
+  manifest.json
+  decisions.jsonl
+  final.json
+  trajectory.jsonl
+  web_surfer.log
+  steps/
+    step_001/
+      dom.json
+      dom_full.txt
+      dom_model.json
+      dom_model.txt
+      screenshot.png
+      agent_browser.txt
+      agent_browser_actions.txt
+      action.json
+```
+
+The first step is the initial browser state. Each later step is the state
+after an executed action, and the final step can have no `action.json`. Raw
+recordings cannot be passed directly to `run-comparison`; see the
+[recording/evaluation boundary](docs/runbook.md#recording-and-evaluation-inputs).
+
+Stop this checkout's browser when it is no longer needed:
+
+```bash
+docker compose --env-file .env down
+```
 
 ### Evaluate prepared pairs
 
-Download a prepared pair, check required files and consecutive state indices, and
-print the planned workflow **without model calls**:
+Prepared-pair evaluation does not require the browser container. Download one
+pair, validate its files and state indices, and print the planned workflow
+**without model calls**:
 
 ```bash
 ./scripts/run-comparison --task task_01
@@ -318,57 +678,21 @@ Run rubric generation, both verifiers, and the paired evidence audit:
 ./scripts/run-comparison --task task_01 --execute
 ```
 
-Run all prepared tasks with `./scripts/run-comparison --all --execute`.
-Each execution generates a fresh rubric, freezes it for both verifiers,
-scores both representations, normalizes results, and audits source evidence.
-Full shared-input and action/state alignment checks run in the executed
-workflow before scoring.
-The `--execute` commands make paid model calls. A fresh run can differ from
-the published findings because rubric generation and model judgments are
-performed again.
+Run all prepared tasks:
+
+```bash
+./scripts/run-comparison --all --execute
+```
+
+Each executed comparison generates and freezes one rubric for both
+representations, scores the screenshot and DOM evidence, normalizes the
+results, and audits source availability. The `--execute` commands make paid
+model calls, and fresh judgments can differ from the published findings.
 
 Prepared inputs are downloaded under `dataset/data-ss/<task>/` and
-`dataset/data-dom/<task>/`. Both contain `task_data.json`, `final_answer.json`,
-and `web_surfer.log`, plus ordered `screenshotN.png` or `dom_modelN.txt`
-evidence. Generated runs go to the ignored
-`evaluation/<task>/<run-id>/` directory, including `evidence_audit.json`.
-Batch summaries go to `evaluation/batches/<run-id>/`.
-
-### Record new tasks
-
-Recording requires 64-bit Linux or WSL 2, Docker Engine with Compose and
-Buildx, `rsync`, and a local `w8-core:domdiff-bench` image. Building that image
-requires about **32 GiB RAM and 200 GiB free disk space**. Follow the
-[browser build instructions](docs/runbook.md#browser-build) to build pinned
-Chromium `152.0.7948.0`, apply the `w8-core` overlay, and assemble the image.
-Then, from the repository root with the Python environment active:
-
-```bash
-python -m w8bench.task_recorder.browser_runtime configure
-# Set OPENAI_API_KEY and OPENAI_MODEL in .env before recording.
-docker compose --env-file .env up -d --wait w8-core
-python -m w8bench.task_recorder.browser_runtime status
-mkdir -p recordings
-./scripts/run-task task8 --output-dir recordings --no-human-intervention
-```
-
-The status command checks the container, CDP, browser, and bundled
-`agent-browser`, and prints the noVNC URL. To record a custom task:
-
-```bash
-./scripts/run-task local-check "Example page inspection" \
-  --task "Report the visible heading on the page." \
-  --start-url "https://example.com/" \
-  --output-dir recordings \
-  --no-human-intervention
-```
-
-Raw runs are saved under `recordings/<run-id>/`, including `manifest.json`,
-`trajectory.jsonl`, `final.json`, and `steps/step_001/` onward. These raw
-directories cannot be passed directly to `run-comparison`; see the
-[preparation boundary](docs/runbook.md#recording-and-evaluation-inputs).
-The [runbook](docs/runbook.md) also covers remote browser access and
-troubleshooting.
+`dataset/data-dom/<task>/`. Generated runs are stored under
+`evaluation/<task>/<run-id>/`, and batch summaries are stored under
+`evaluation/batches/<run-id>/`.
 
 ### Run tests
 
@@ -378,7 +702,7 @@ The offline test suite runs with:
 python -m pytest
 ```
 
-## Documentation and data
+## 8 Documentation and data
 
 | Resource | Contents |
 | --- | --- |
