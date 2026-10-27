@@ -7,6 +7,7 @@ Tasks run in w8-core through `agent-browser`; the recorder saves an initial
 browser state, captures subsequent states after actions, and records model
 decisions, execution results, and the final answer. These files let readers
 inspect what the agent observed and what happened during a run.
+The benchmark's acting agent uses `gpt-5.2` for browser-action generation.
 
 These recordings provide additional data for inspecting the collection
 process. The verifier audit uses the prepared trajectory pairs in
@@ -61,9 +62,9 @@ especially because public web pages can change. For an independent
 inspection, start with `task.json`, `manifest.json`, and
 `final.json`, then follow the relevant actions and state folders.
 
-Recordings, prepared trajectories, and evaluations can refer to different
-run versions. Check task identifiers, timestamps, and saved provenance before
-matching them. The [technical report](technical-report.md#recorded-execution-failures)
+Use task identifiers, timestamps, and manifests to match recordings with
+prepared trajectories and evaluation artifacts. The
+[technical report](technical-report.md#recorded-execution-failures)
 separates recorded execution failures from completed evaluation audits.
 For commands that create local recordings, see the
 [runbook](runbook.md#record-a-task).

@@ -7,8 +7,8 @@ paired verifiers, and evidence audit make it possible to inspect what a
 browser agent observed and which required information each representation
 preserved.
 
-The published dataset contains 100 paired browser tasks. The current saved
-evaluation covers **642 rubric criteria**, using the same task, executed
+The benchmark contains 100 paired browser tasks. Its evaluation covers
+**642 rubric criteria**, using the same task, executed
 actions, final answer, and frozen rubric for each screenshot/DOM comparison.
 The [technical report](docs/technical-report.md) contains the full evaluation
 write-up and all criterion-level findings; selected results follow below.
@@ -16,8 +16,8 @@ write-up and all criterion-level findings; selected results follow below.
 ## Evaluation results
 
 A source-evidence loss means a required item is absent from one recorded
-representation and present in the other. The counts below come from the
-saved automated audits, with one latest selected evaluation run per task.
+representation and present in the other. The counts below come from
+`gpt-5.6-sol` evidence audits verified by internal WootzApp employees.
 They measure evidence availability, not task success, answer correctness,
 or acting-agent improvement.
 
@@ -38,7 +38,7 @@ and also gives alternatives that remove entire criteria with URL findings.
 
 The intervals shown are exploratory 95% Wilson intervals. They assume
 independent criteria and do not adjust for correlation within tasks or
-errors in the automated audits. Full counts, intervals, and paired outcomes
+annotation errors. Full counts, intervals, and paired outcomes
 are in the [technical report](docs/technical-report.md#url-sensitivity-and-paired-comparison).
 
 ### Why URL sensitivity matters
@@ -75,22 +75,23 @@ Examples show the practical differences:
 
 The detailed evidence links and saved findings are in the
 [report’s criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion).
-These are existing automated audit/adjudication judgments, rather than a
-new manual review of the original screenshots and DOM states.
+These findings combine model-generated audit/adjudication with verification
+by internal WootzApp employees.
 
 Website access blockers, execution errors, and source-evidence gaps describe
 different events. The report lists 12 task IDs with access blockers and
 separately records 12 execution failures in the published trajectories.
-Those sets overlap and can refer to different run versions; their counts
-cannot be added into a single failure rate.
+Those sets overlap; their counts cannot be added into a single failure rate.
 
 ## How the system works
 
-The acting model receives DOM-based text observations and executable
-`agent-browser` references. The recorder saves an initial browser state and
-one state after each executed action, including screenshots and structured
-DOM evidence. DOM-diff Optimized describes individual captured states;
+The acting model, `gpt-5.2`, generates browser actions from DOM-based text
+observations and executable `agent-browser` references. The recorder saves
+an initial browser state and one state after each executed action, including
+screenshots and structured DOM evidence. DOM-diff Optimized describes individual captured states;
 it does not require separate before/after diff files.
+The model-facing `dom_model.txt` observations average **5.87 KiB**; see
+[representation sizes](docs/technical-report.md#current-representation-size).
 
 ```mermaid
 flowchart LR
@@ -103,11 +104,13 @@ flowchart LR
     dom --> domjudge
     ssjudge --> audit[Paired evidence audit]
     domjudge --> audit
+    audit --> review[WootzApp human verification]
 ```
 
-Both verifiers use the same scoring controls. The saved runs used `gpt-5.2`
-for rubric generation and evidence judgments, `o4-mini` for action/validity
-judgments, and `gpt-5.6-sol` for automated evidence audit/adjudication.
+Both verifiers use the same scoring controls. The benchmark uses `gpt-5.2`
+for action generation, rubric generation, and evidence judgments;
+`o4-mini` for action/validity judgments; and `gpt-5.6-sol` for evidence
+audit/adjudication. Internal WootzApp employees verify the audit findings.
 See [model provenance](docs/technical-report.md#models-and-evaluation-provenance).
 
 The screenshot baseline follows the Universal Verifier's rubric-based
