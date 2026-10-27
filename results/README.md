@@ -6,6 +6,13 @@ and verified by internal WootzApp employees identify **151 screenshot losses
 (23.52%)** and **5 DOM losses (0.78%)**. These are evidence-availability
 counts, rather than measurements of task success or answer correctness.
 
+| Analysis | Tasks | Audited criteria | Screenshot losses | DOM losses |
+| --- | ---: | ---: | ---: | ---: |
+| All source-evidence loss categories | 100 | 642 | **151 (23.52%)** | **5 (0.78%)** |
+| URL loss category excluded | 100 | 642 | **34 (5.30%)** | **5 (0.78%)** |
+| Listed access-blocked task IDs excluded | 88 | 575 | **125 (21.74%)** | **5 (0.87%)** |
+| Listed access-blocked task IDs and URL loss category excluded | 88 | 575 | **32 (5.57%)** | **5 (0.87%)** |
+
 Selected results are in the [repository README](../README.md#evaluation-results).
 The [technical report](../docs/technical-report.md) documents the repository's
 browser capture pipeline, success rules, source-loss equations, models and
