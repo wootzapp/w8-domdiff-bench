@@ -43,7 +43,7 @@ remove entire criteria with URL findings.
 The audit/adjudication findings were verified by internal WootzApp employees.
 Criterion-level Wilson intervals do not adjust for correlation within tasks
 or audit errors. See the [protocol](../docs/evaluation-protocol.md) and
-[category guide](../docs/EVIDENCE-CATEGORIES.md) for definitions and caveats.
+[category guide](../docs/evidence-categories.md) for definitions and caveats.
 
 ## Regenerate figures
 

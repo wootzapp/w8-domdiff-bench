@@ -63,7 +63,7 @@ screenshots or a different rubric were used.
 The full audits identify **154 affected criteria across 91 tasks**. Two
 criteria have losses in both representations, so the 151 screenshot and 5
 DOM losses overlap. Each affected representation receives one primary
-[category](docs/EVIDENCE-CATEGORIES.md).
+[category](docs/evidence-categories.md).
 
 Examples show the practical differences:
 
@@ -97,8 +97,8 @@ Those sets overlap; their counts cannot be added into a single failure rate.
 
 ### Rubric scores and task success
 
-For task $t$, let $s_{t,j}$ be the points awarded to criterion $j$ after
-scoring and rescoring, and $p_{t,j}$ its maximum points. For each
+For task $`t`$, let $`s_{t,j}`$ be the points awarded to criterion $`j`$ after
+scoring and rescoring, and $`p_{t,j}`$ its maximum points. For each
 representation separately, the total and normalized score are
 
 ```math
@@ -109,9 +109,9 @@ S_t/S_t^{\max} & S_t^{\max}>0,\\
 \end{cases}
 ```
 
-Let $\mathbf{1}\{\cdot\}$ be 1 when a condition holds and 0 otherwise.
-The process flag $P_t$ applies a rubric threshold $\tau$; the outcome flag
-$O_t$ records the outcome judge's Boolean decision:
+The indicator function equals 1 when its condition holds and 0 otherwise.
+The process flag $`P_t`$ applies a rubric threshold $`\tau`$; the outcome flag
+$`O_t`$ records the outcome judge's Boolean decision:
 
 ```math
 P_t=\mathbf{1}\{r_t\ge\tau\},\qquad
@@ -126,19 +126,19 @@ The standalone verifier runners support three `--success` rules:
 \mathrm{Success}_{\mathrm{both}}(t)=P_t O_t.
 ```
 
-The paired workflow fixes **`--success outcome`** and **$\tau=0.8$**.
-Its binary `score` follows $O_t$, while `rubric_is_success` records $P_t$.
-A strict full-score success instead requires $S_t=S_t^{\max}$ for a
+The paired workflow fixes **`--success outcome`** and the threshold $`\tau=0.8`$.
+Its binary `score` follows $`O_t`$, while `rubric_is_success` records $`P_t`$.
+A strict full-score success instead requires $`S_t=S_t^{\max}`$ for a
 positive maximum total. The [shared controls](w8bench/verifier/common.py)
 and [success rules](docs/evaluation-protocol.md#success-rules) document these
 choices. Task success and source-evidence loss are separate measurements.
 
 ### Paired source-evidence loss
 
-Let $\mathcal{C}$ contain the audited criteria, $M=|\mathcal{C}|$, and
-$\mathcal{I}_c$ contain the concrete required items reviewed for criterion
-$c$. Let $a_{c,i,S}$ and $a_{c,i,D}$ be binary indicators of item $i$'s
-availability in the eligible ordered screenshot ($S$) and DOM ($D$) states.
+Let $`\mathcal{C}`$ contain the audited criteria, $`M=|\mathcal{C}|`$, and
+$`\mathcal{I}_c`$ contain the concrete required items reviewed for criterion
+$`c`$. Let $`a_{c,i,S}`$ and $`a_{c,i,D}`$ be binary indicators of item $`i`$'s
+availability in the eligible ordered screenshot ($`S`$) and DOM ($`D`$) states.
 Using the same requirements and review scope for both representations:
 
 ```math
@@ -162,26 +162,26 @@ L_m=\sum_{c\in\mathcal{C}}\ell_{c,m},\qquad
 \mathrm{ELR}_m=100\frac{L_m}{M},\qquad m\in\{S,D\}.
 ```
 
-For the published findings, $M=642$, $L_S=151$, and $L_D=5$, giving
+For the published findings, $`M=642`$, $`L_S=151`$, and $`L_D=5`$, giving
 **23.52%** and **0.78%**. The two overlapping criteria yield
-$151+5-2=154$ distinct affected criteria. With a shared denominator and
-$L_S>0$, the relative reduction in losses is
+$`151+5-2=154`$ distinct affected criteria. With a shared denominator and
+$`L_S>0`$, the relative reduction in losses is
 
 ```math
 \mathrm{Reduction}=100\frac{L_S-L_D}{L_S}
 =100\frac{151-5}{151}\approx96.7\%.
 ```
 
-Excluding primary URL-category losses keeps $M=642$ and gives
-$L_S=151-117=34$, $L_D=5$: rates of **5.30%** and **0.78%**, and a relative
-reduction of $100(34-5)/34\approx85.3\%$. Excluding the listed blocked tasks
-instead removes their 67 criteria, giving $M=575$. These are descriptive
+Excluding primary URL-category losses keeps $`M=642`$ and gives
+$`L_S=151-117=34`$, $`L_D=5`$: rates of **5.30%** and **0.78%**, and a relative
+reduction of $`100(34-5)/34\approx85.3\%`$. Excluding the listed blocked tasks
+instead removes their 67 criteria, giving $`M=575`$. These are descriptive
 sensitivity calculations on the saved findings.
 
 ### Confidence intervals in the graph
 
-For a loss count $L$, denominator $M$, observed fraction $\hat p=L/M$,
-and $z=1.96$, the exploratory 95% Wilson interval is
+For a loss count $`L`$, denominator $`M`$, observed fraction $`\hat p=L/M`$,
+and $`z=1.96`$, the exploratory 95% Wilson interval is
 
 ```math
 \mathrm{CI}_{95\%}=
@@ -237,7 +237,7 @@ flowchart TB
     output --> review[Human verification of published findings]
 ```
 
-An execution with $N$ actions normally produces $N+1$ states: the initial
+An execution with $`N`$ actions normally produces $`N+1`$ states: the initial
 state and one after each executed action. Raw states start at
 `steps/step_001/`; prepared evidence starts at `screenshot0.png` and
 `dom_model0.txt`. Rejected proposals do not add executed actions.
@@ -389,7 +389,7 @@ python -m pytest
 | [Runbook](docs/runbook.md) | Installation, browser build, recording, scoring, and troubleshooting. |
 | [Dataset card](docs/datacard.md) | Paired data layout, local samples, collection policy, and limitations. |
 | [Recordings](docs/recordings.md) | Raw collection artifacts, action/state alignment, and provenance. |
-| [Evidence categories](docs/EVIDENCE-CATEGORIES.md) | Six category definitions, boundary rules, and annotated examples. |
+| [Evidence categories](docs/evidence-categories.md) | Six category definitions, boundary rules, and annotated examples. |
 | [Published dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) | All paired trajectories, task catalog, recordings, and saved evaluations. |
 
 Implementation lives in `w8bench/task_recorder/`, `w8bench/dom_model/`,
