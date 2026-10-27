@@ -67,7 +67,7 @@ paired source loss. Evidence that a verifier overlooks or misinterprets is
 a separate interpretation error.
 
 Each representation/criterion loss receives one primary
-[category](EVIDENCE-CATEGORIES.md). A criterion can lose different items in
+[category](evidence-categories.md). A criterion can lose different items in
 both representations and have a different category on each side. Such a
 criterion contributes once to each marginal count; the counts overlap.
 Multiple criteria can also depend on the same capture omission.

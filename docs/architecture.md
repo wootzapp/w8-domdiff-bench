@@ -44,10 +44,20 @@ ablation measuring the effect of each engineering change.
 
 ## Current observation size
 
-The model-facing `dom_model.txt` files average **5.87 KiB** per observation.
-In a historical sample of 650 states, optimized text averaged **4.84 KiB**,
-versus **44.88 KiB** for detailed readable text and **191.32 KiB** for
-structured snapshots. See the [report's size comparison](technical-report.md#current-representation-size).
+The model-facing DOM-diff Optimized observations are more compact than
+text-dense readable DOM and full structured DOM snapshots. The reported
+mean sizes are:
+
+| Representation | Artifact | Mean size per observation |
+| --- | --- | ---: |
+| DOM-diff Optimized | `dom_model.txt` — compact model-facing text | **5.87 KiB** |
+| Text-dense DOM | `dom_full.txt` — detailed readable text | **44.88 KiB** |
+| Full DOM | `dom.json` — structured snapshot | **191.32 KiB** |
+
+These are serialized observation sizes, with 1 KiB = 1,024 bytes; token
+counts depend on the tokenizer. A full snapshot remains subject to the
+capture boundaries described below. See the
+[report's size comparison](technical-report.md#current-representation-size).
 
 ## Actions and recorded states
 

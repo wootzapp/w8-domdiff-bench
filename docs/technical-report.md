@@ -20,11 +20,11 @@ The [paired evaluation pipeline](../w8bench/verifier/) validates the prepared sc
 
 ## Benchmark protocol and mathematical definitions
 
-The evaluation contains one paired trajectory for each of 100 tasks and **642 audited rubric criteria** [[3]](#references). Screenshots and DOM states are aligned by action step, and both verifiers receive the same task inputs, executed actions, final answer, frozen rubric, and scoring controls. An execution with $N$ actions normally yields $N+1$ recorded states: the initial state and one state after each executed action.
+The evaluation contains one paired trajectory for each of 100 tasks and **642 audited rubric criteria** [[3]](#references). Screenshots and DOM states are aligned by action step, and both verifiers receive the same task inputs, executed actions, final answer, frozen rubric, and scoring controls. An execution with $`N`$ actions normally yields $`N+1`$ recorded states: the initial state and one state after each executed action.
 
 ### Rubric scores and task-success rules
 
-For task $t$, let $s_{t,j}$ be the final awarded points for rubric criterion $j$, after the verifier's scoring and rescoring stages, and let $p_{t,j}$ be its maximum points. The earned total, maximum total, and normalized rubric score are
+For task $`t`$, let $`s_{t,j}`$ be the final awarded points for rubric criterion $`j`$, after the verifier's scoring and rescoring stages, and let $`p_{t,j}`$ be its maximum points. The earned total, maximum total, and normalized rubric score are
 
 ```math
 S_t=\sum_j s_{t,j},
@@ -41,7 +41,7 @@ The implementation sets the normalized score to zero when the maximum total is z
 =\mathbf{1}\{S_t=S_t^{\max}\}.
 ```
 
-This defines the full-credit convention ($x/x$). The CLI also exposes distinct process and outcome rules. Let $P_t$ be the process pass flag at rubric threshold $\tau$, and let $O_t$ indicate that the outcome judge returned the Boolean `true`:
+This defines the full-credit convention ($`x/x`$). The CLI also exposes distinct process and outcome rules. Let $`P_t`$ be the process pass flag at rubric threshold $`\tau`$, and let $`O_t`$ indicate that the outcome judge returned the Boolean `true`:
 
 ```math
 P_t=\mathbf{1}\{r_t\ge\tau\},
@@ -59,13 +59,13 @@ The binary rules available through `--success` are
 \mathrm{Success}_{\mathrm{both}}(t)=P_t O_t.
 ```
 
-The paired command currently fixes **`--success outcome`** and **$\tau=0.8$**, so its binary `score` follows the outcome judgment; `rubric_is_success` separately records whether at least 80% of rubric points were earned. A strict full-score summary uses the first rule above. The standalone verifier runners support all three CLI rules. These definitions apply separately to each representation of a task.
+The paired command currently fixes **`--success outcome`** and the threshold $`\tau=0.8`$, so its binary `score` follows the outcome judgment; `rubric_is_success` separately records whether at least 80% of rubric points were earned. A strict full-score summary uses the first rule above. The standalone verifier runners support all three CLI rules. These definitions apply separately to each representation of a task.
 
 The [shared controls](../w8bench/verifier/common.py) also fix five evidence items per criterion, a screenshot keypoint threshold of 3, a minimum relevance threshold of 0, and one voting instance. The [screenshot runner](../w8bench/screenshot_verifier/runner.py) and [DOM runner](../w8bench/dom_model/runner.py) implement the binary rules. The [evaluation protocol](evaluation-protocol.md#success-rules) summarizes them, while saved run manifests establish the controls used by a particular evaluation. None of these success rules defines source-evidence loss.
 
 ### Paired source-evidence loss
 
-Let $\mathcal{C}$ be the audited rubric criteria, $M=|\mathcal{C}|$, and $\mathcal{I}_c$ the concrete required values or states reviewed for criterion $c$. For required item $i\in\mathcal{I}_c$, let $a_{c,i,S},a_{c,i,D}\in\{0,1\}$ indicate its availability in screenshots ($S$) and DOM-diff Optimized ($D$), respectively, across the eligible ordered source states. Both representations use the same evidence requirements and review scope.
+Let $`\mathcal{C}`$ be the audited rubric criteria, $`M=|\mathcal{C}|`$, and $`\mathcal{I}_c`$ the concrete required values or states reviewed for criterion $`c`$. For required item $`i\in\mathcal{I}_c`$, let $`a_{c,i,S},a_{c,i,D}\in\{0,1\}`$ indicate its availability in screenshots ($`S`$) and DOM-diff Optimized ($`D`$), respectively, across the eligible ordered source states. Both representations use the same evidence requirements and review scope.
 
 ```math
 \ell_{c,S}=\mathbf{1}\!\left\{\exists i\in\mathcal{I}_c:
@@ -77,7 +77,7 @@ a_{c,i,D}=0\ \land\ a_{c,i,S}=1\right\}.
 
 Each indicator is binary: a criterion contributes at most one loss per representation, even if several required items are missing. Partial preservation still counts as loss when one specific required item is absent from that representation and present in the other. Items available in both or absent from both do not trigger paired loss. Evidence that a verifier overlooks or misinterprets is an interpretation error, separate from source availability.
 
-For representation $m$, the loss count and percentage rate are
+For representation $`m`$, the loss count and percentage rate are
 
 ```math
 L_m=\sum_{c\in\mathcal{C}}\ell_{c,m},
@@ -108,7 +108,7 @@ Therefore,
 \mathrm{ELR}_D=\frac{5}{642}\times100\approx0.78\%.
 ```
 
-For a shared denominator and $L_S>0$, the relative reduction is
+For a shared denominator and $`L_S>0`$, the relative reduction is
 
 ```math
 \mathrm{Relative\ reduction}
@@ -142,7 +142,15 @@ These are relative reductions in criterion-level source-loss counts. Task-succes
 
 ## Current representation size
 
-The model-facing `dom_model.txt` files average **5.87 KiB** per captured observation in the evaluated collection.
+The model-facing `dom_model.txt` files average **5.87 KiB** per captured observation in the evaluated collection. The following comparison places DOM-diff Optimized alongside text-dense readable DOM and full structured DOM snapshots:
+
+| Representation | Artifact | Reported mean size per observation |
+| --- | --- | ---: |
+| DOM-diff Optimized | `dom_model.txt` — compact model-facing text | **5.87 KiB** |
+| Text-dense DOM | `dom_full.txt` — detailed readable text | **44.88 KiB** |
+| Full DOM | `dom.json` — structured snapshot | **191.32 KiB** |
+
+The text-dense representation exposes detailed DOM information as readable text; the full DOM snapshot retains structured node data. DOM-diff Optimized groups selected content and controls into compact observations for model input. Sizes are serialized bytes (1 KiB = 1,024 bytes); token counts depend on the tokenizer. This size comparison does not measure task success or evidence preservation. Full snapshots also remain subject to the [capture boundaries](architecture.md#verification-and-boundaries).
 
 ## Evidence preservation across 100 tasks
 
@@ -204,7 +212,7 @@ The paired counts in this subset are **33 screenshot only, 3 DOM only, 1 both, a
 
 ## Source-evidence loss by category
 
-The category breakdown shows which required information each representation loses. The [evidence category guide](EVIDENCE-CATEGORIES.md) defines the six categories, explains how overlapping cases are assigned, and provides audited examples.
+The category breakdown shows which required information each representation loses. The [evidence category guide](evidence-categories.md) defines the six categories, explains how overlapping cases are assigned, and provides audited examples.
 
 **Table 4.** Evidence losses by category across the full dataset
 
