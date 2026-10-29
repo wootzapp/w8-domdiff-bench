@@ -1,6 +1,7 @@
 """Convert recorder runs into paired screenshot and DOM verifier datasets.
 
 Usage: python -m w8bench.task_recorder.prepare_verifier_data RECORDINGS OUTPUT
+   or: python w8bench/task_recorder/prepare_verifier_data.py RECORDINGS OUTPUT
 """
 
 from __future__ import annotations
@@ -17,14 +18,17 @@ import sys
 import tempfile
 from typing import Any
 
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from PIL import Image
 
 from w8bench.screenshot_verifier.trajectory import Trajectory
 from w8bench.screenshot_verifier.utils.preflight import preflight_screenshot_task
 from w8bench.verifier.validate_inputs import dataset_only_preflight
 
-from .recorder_support import RunnerError, write_json
-from .trajectory import snapshot_url, step_directory_number, websurfer_action
+from w8bench.task_recorder.recorder_support import RunnerError, write_json
+from w8bench.task_recorder.trajectory import snapshot_url, step_directory_number, websurfer_action
 
 
 @dataclass
