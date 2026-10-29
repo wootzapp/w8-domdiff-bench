@@ -12,7 +12,7 @@ from typing import Any, Iterable
 
 
 CANONICAL_JUDGE_MODEL = "gpt-5.2"
-CANONICAL_ACTION_MODEL = "o4-mini"
+CANONICAL_ACTION_MODEL = "gpt-5.6-terra"
 CANONICAL_SETTINGS = {
     "rubric_threshold": 0.8,
     "max_evidence_items_per_criterion": 5,

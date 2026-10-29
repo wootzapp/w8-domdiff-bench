@@ -223,7 +223,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--eval-config", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--judge-model", default="gpt-5")
-    parser.add_argument("--o4mini-model", default="o4-mini")
+    # Temp change
+    parser.add_argument("--o4mini-model", default="gpt-5.6-terra")
     parser.add_argument("--rubric-threshold", type=float, default=0.8)
     parser.add_argument("--max-images-per-criterion", type=int, default=5)
     parser.add_argument("--majority-vote-instances", type=int, default=1)
