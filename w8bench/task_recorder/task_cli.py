@@ -480,6 +480,46 @@ def fetch_catalog_task(
     return definition
 
 
+def load_local_tasks(path: Path) -> list[dict[str, str]]:
+    """Validate the whole local catalog before any browser task starts."""
+    source = str(path.resolve(strict=True))
+    try:
+        rows = parse_task_catalog(path.read_text(encoding="utf-8"), source=source)
+    except UnicodeError as error:
+        raise RunnerError(f"task catalog {source} must be UTF-8") from error
+    definitions: list[dict[str, str]] = []
+    for row in rows:
+        task_id = safe_task_id(str(row["task_id"]).strip())
+        for field in ("instruction", "start_url"):
+            if not isinstance(row.get(field), str) or not row[field].strip():
+                raise RunnerError(f"task {task_id}: {field} must be non-empty text")
+        for field in ("category", "stopping_condition"):
+            if field in row and not isinstance(row[field], str):
+                raise RunnerError(f"task {task_id}: {field} must be text")
+        constraints = row.get("constraints", [])
+        if not isinstance(constraints, list) or any(
+            not isinstance(item, str) for item in constraints
+        ):
+            raise RunnerError(f"task {task_id}: constraints must be a list of strings")
+        try:
+            definition = validate_task_definition(
+                catalog_task_instruction(row), row["start_url"]
+            )
+            task_name = row.get("category", "").strip() or task_id
+            task_name_slug(task_name)
+        except RunnerError as error:
+            raise RunnerError(f"task {task_id}: {error}") from error
+        definition.update(
+            {
+                "source_task_id": task_id,
+                "task_name": task_name,
+                "source_catalog": source,
+            }
+        )
+        definitions.append(definition)
+    return definitions
+
+
 def unique_run_id(
     task_id: str,
     task_name: str,
@@ -554,9 +594,11 @@ def build_runner_command(
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse the generic task launcher options without starting any process."""
     parser = argparse.ArgumentParser(
-        description="Run a configured catalog task or a manually supplied task"
+        description="Run a catalog task, a manual task, or all tasks in a local JSONL file"
     )
-    parser.add_argument("task_id", help="run ID and configured-catalog task selector")
+    parser.add_argument(
+        "task_id", nargs="?", help="run ID and configured-catalog task selector"
+    )
     parser.add_argument(
         "task_name",
         nargs="?",
@@ -565,6 +607,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--task", help="complete manual task instruction and constraints")
     parser.add_argument("--start-url", help="absolute HTTP(S) starting URL for a manual task")
     parser.add_argument("--catalog-url", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--tasks-file",
+        type=Path,
+        help="run every task in a local JSONL catalog sequentially, in file order",
+    )
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument(
         "--output-dir",
@@ -610,19 +657,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_STOP_TIMEOUT_SECONDS,
         help="seconds to allow a previous task runner to shut down before it is killed",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.tasks_file is not None:
+        if any(
+            value is not None
+            for value in (
+                args.task_id, args.task_name, args.task, args.start_url, args.catalog_url
+            )
+        ):
+            parser.error(
+                "--tasks-file cannot be combined with a task selector, task name, "
+                "--task, --start-url, or --catalog-url"
+            )
+    elif args.task_id is None:
+        parser.error("provide a task_id or --tasks-file")
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Validate a task, preserve the browser, replace an old runner, and wait."""
+    """Resolve single-task or local-batch inputs and run the recorder."""
     args = parse_args(argv)
-    task_id = safe_task_id(args.task_id.strip())
     if args.max_steps <= 0:
         raise RunnerError("--max-steps must be positive")
     if args.previous_run_stop_timeout < 0:
         raise RunnerError("--previous-run-stop-timeout must not be negative")
 
     load_env(args.env_file)
+    if args.tasks_file is not None:
+        return run_batch(args)
+    task_id = safe_task_id(args.task_id.strip())
     # Supplying either manual field selects manual mode and requires both. With
     # neither field, the positional task id is resolved through the catalog.
     manual_task = args.task is not None or args.start_url is not None
@@ -641,6 +704,42 @@ def main(argv: list[str] | None = None) -> int:
             task_id,
             token=os.environ.get("TASK_CATALOG_TOKEN", os.environ.get("HF_TOKEN", "")),
         )
+    return run_task(args, task_id, definition)
+
+
+def run_batch(args: argparse.Namespace) -> int:
+    """Run validated local tasks in order, continuing after recorder failures."""
+    definitions = load_local_tasks(args.tasks_file)
+    failures: list[tuple[str, str]] = []
+    for index, definition in enumerate(definitions, start=1):
+        task_id = definition["source_task_id"]
+        print(f"\n[{index}/{len(definitions)}] {task_id}", flush=True)
+        try:
+            code = run_task(args, task_id, definition)
+        except (RunnerError, OSError) as error:
+            failures.append((task_id, str(error)))
+            print(f"{task_id}: error: {error}", file=sys.stderr, flush=True)
+            continue
+        if code in (130, -signal.SIGINT):
+            print(
+                f"Batch interrupted at {task_id}; remaining tasks were not started.",
+                flush=True,
+            )
+            return 130
+        if code != 0:
+            failures.append((task_id, f"recorder exited with code {code}"))
+    label = "Batch dry run finished" if args.dry_run else "Batch finished"
+    print(
+        f"\n{label}: {len(definitions)} tasks, {len(failures)} recorder failures.",
+        flush=True,
+    )
+    for task_id, reason in failures:
+        print(f"  {task_id}: {reason}", file=sys.stderr)
+    return 1 if failures else 0
+
+
+def run_task(args: argparse.Namespace, task_id: str, definition: dict[str, str]) -> int:
+    """Launch one resolved task and wait for its recorder to exit."""
     task_name = (
         args.task_name.strip()
         if args.task_name
@@ -737,13 +836,14 @@ def main(argv: list[str] | None = None) -> int:
         except ProcessLookupError:
             pass
         try:
-            return process.wait(timeout=args.previous_run_stop_timeout)
+            process.wait(timeout=args.previous_run_stop_timeout)
         except subprocess.TimeoutExpired:
             try:
                 os.killpg(process.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-            return process.wait()
+            process.wait()
+        return 130
     finally:
         clear_active_run(process.pid)
 
