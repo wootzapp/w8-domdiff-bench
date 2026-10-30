@@ -44,8 +44,8 @@ The preparation report preserves the exact validation errors.
 
 - [Summary](summary.json): counts, cohort exclusions, confidence intervals,
   model roles, sizes and selected evaluation paths.
-- [Criterion findings](evidence_findings.json): all 121 affected criteria,
-  unchanged adjudications, citations and source-audit checksums.
+- [Source audits on Hugging Face](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/a10226a46d3a9c3ee5f0f40b244163d2a6b50e75/evaluation): full criterion-level
+  adjudications, citations and frozen-rubric checksums.
 - [Technical report](../docs/technical-report.md): methods, interpretation,
   coverage and criterion-level findings.
 - [Figures](../docs/assets/evaluations/): evidence-loss rates and task coverage.

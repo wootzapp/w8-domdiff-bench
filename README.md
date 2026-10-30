@@ -150,8 +150,8 @@ cohort; that is not a task-success or model-accuracy improvement.
   state in DOM.
 
 The [criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion)
-and [saved findings](results/evidence_findings.json) retain each source claim
-and its citations. Exact URL identity can matter under the audit rule, but
+links to the [saved Hugging Face audits](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/a10226a46d3a9c3ee5f0f40b244163d2a6b50e75/evaluation),
+which retain each source claim and its citations. Exact URL identity can matter under the audit rule, but
 these artifacts do not contain separately assigned primary categories; no
 URL-excluded or access-blocker subset totals are asserted.
 

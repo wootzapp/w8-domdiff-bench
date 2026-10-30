@@ -37,7 +37,7 @@ viewport position caused its absence.
 **Example — task_19 C3, screenshot loss:** DOM preserves the release timestamp
 “02 Sep 17:40,” while screenshots retain only a relative release date.
 The missing item is the absolute date/time value.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_19/20261021T040737Z/evidence_audit.json#L1112).
+[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_19/20261021T040737Z/evidence_audit.json#L1112).
 
 ### URLs
 
@@ -50,7 +50,7 @@ evidence under this identity rule.
 **Example — task_75 C0, screenshot loss:** both representations retain the
 Black Lotus API response, but only DOM associates it with the required
 Scryfall exact-card endpoint.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_75/20261021T040737Z/evidence_audit.json#L623).
+[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_75/20261021T040737Z/evidence_audit.json#L623).
 
 ### Control states
 
@@ -61,7 +61,7 @@ absence of state text does not establish that the control is unchecked.
 **Example — task_56 C1, DOM loss:** screenshots show the PubMed “5 years”
 radio button and “Review” checkbox empty. DOM retains their labels without
 the states needed to establish that the filters were not applied.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_56/20261021T040737Z/evidence_audit.json#L1254).
+[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_56/20261021T040737Z/evidence_audit.json#L1254).
 
 ### Table entries
 
@@ -73,7 +73,7 @@ list boundaries generally belong to **Capture omissions**.
 **Example — task_35 C4, screenshot loss:** screenshots preserve the
 `3.12-slim-bookworm` tag and update time but omit its `linux/amd64` size
 row. DOM preserves that row and its 43.33 MB value.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_35/20261021T040737Z/evidence_audit.json#L1463).
+[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_35/20261021T040737Z/evidence_audit.json#L1463).
 
 ### Label–value links
 
@@ -86,7 +86,7 @@ including headings whose corresponding table is no longer associated.
 “Electronic Arts.” DOM exposes the label without its value; another
 occurrence of “Electronic Arts” in product-summary text does not establish
 the publisher relationship.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_02/20261021T040737Z/evidence_audit.json#L1199).
+[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_02/20261021T040737Z/evidence_audit.json#L1199).
 
 ### Capture omissions
 
@@ -98,7 +98,7 @@ rather than recovering an isolated value or explicit table row.
 **Example — task_24 C1, screenshot loss:** screenshots cover ranks 1–29 of
 the first 30 Hacker News stories. DOM also preserves rank 30 and its
 non-GitHub domain, which is needed to establish the complete GitHub count.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_24/20261021T040737Z/evidence_audit.json#L804).
+[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_24/20261021T040737Z/evidence_audit.json#L804).
 
 ## Choosing a primary category
 
@@ -114,7 +114,7 @@ non-GitHub domain, which is needed to establish the complete GitHub count.
    For task_24 C0, both URL identity and rank 30 are missing; the annotation
    chooses **Capture omissions** because the first-30 list boundary is the
    primary gap. Secondary gaps remain in the
-   [saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_24/20261021T040737Z/evidence_audit.json#L579).
+   [saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_24/20261021T040737Z/evidence_audit.json#L579).
 4. Assign each representation separately when both have a confirmed loss.
    Count the criterion once in each affected representation's category totals.
 
@@ -132,7 +132,7 @@ include those assignments. Do not infer a category from the criterion title
 or reuse linked example counts as aggregate evidence.
 
 The [technical report](technical-report.md) contains the current counts and
-coverage limits. The [findings file](../results/evidence_findings.json) retains
+coverage limits. The [Hugging Face audits](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/a10226a46d3a9c3ee5f0f40b244163d2a6b50e75/evaluation) retain
 source evidence and adjudications without adding category labels.
 
 Selected aggregate statistics are available locally in
