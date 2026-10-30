@@ -435,7 +435,10 @@ browser repository:
 ```bash
 cd ../../..
 git clone https://github.com/wootzapp/wootzapp-browser.git
+git -C wootzapp-browser checkout --detach 02bf5a35c5a7d02371deb6afa6adb57cc73aae72
 ```
+
+The overlay revision is pinned in `protocol/browser-build.json`.
 
 #### 5. Apply the overlay and rebuild
 
@@ -499,9 +502,14 @@ cd ../../../w8-domdiff-bench
 Build and inspect the local image:
 
 ```bash
-IMAGE_VERSION=chromium-152.0.7948.0 ./scripts/build-browser-image
+./scripts/build-browser-image
 docker image inspect w8-core:domdiff-bench
 ```
+
+The build checks the pinned overlay, applied source files, protocol and copied
+Release binary. It includes a `browser-build.json` receipt and image labels for
+the source revisions. For other source locations, pass the Chromium source
+directory and browser-overlay directory as the script's two arguments.
 
 The image remains in the local Docker engine after the terminal closes. It
 only needs to be rebuilt when Chromium, the Wootzapp Browser overlay, or the
@@ -523,6 +531,11 @@ and assigns a checkout-specific container name. Open that file and set:
 OPENAI_API_KEY=your-api-key
 OPENAI_MODEL=your-supported-model
 ```
+
+Use `OPENAI_MODEL=gpt-5.6` to match the benchmark's recording model. Other
+supported models are allowed; the selected model is saved in `task.json`.
+The recorder reads this setting from the environment, with `--model` as an
+explicit override. It does not supply a fixed acting model.
 
 Recording requires both values. Evaluation requires `OPENAI_API_KEY`; its
 model settings are read from [config/](config/). The API account must have
@@ -569,7 +582,7 @@ from the repository root:
 
 ```bash
 mkdir -p recordings
-./scripts/run-task task8 --output-dir recordings --no-human-intervention
+./scripts/run-task task8 --output-dir recordings
 ```
 
 The task runner prints the selected task name, start URL, output directory,
@@ -581,13 +594,14 @@ and intervention policy before execution.
 ./scripts/run-task local-check "Example page inspection" \
   --task "Report the visible heading on the page." \
   --start-url "https://example.com/" \
-  --output-dir recordings \
-  --no-human-intervention
+  --output-dir recordings
 ```
 
-Omit `--no-human-intervention` only when an operator may solve a CAPTCHA or
-similar access challenge. Human intervention is not recorded as an agent
-action.
+Human intervention is disabled by default. Use `--allow-human-intervention`
+only to permit assistance with a CAPTCHA or similar access challenge.
+Requests, timestamps and resume/abort status are logged and counted in the
+manifest; individual human clicks are not exported as agent actions.
+Keep assistance disabled for autonomous benchmark recordings.
 
 Each recording is written under `recordings/<run-id>/`:
 
@@ -671,6 +685,10 @@ local input folder.
 Both paths freeze one rubric per task, run both verifiers, and audit evidence
 loss. `--execute` makes paid model calls; fresh judgments can vary. Results go
 to `evaluation/<task>/<run-id>/`, with batch summaries in `evaluation/batches/`.
+
+`run-id` groups outputs. The run manifest records the source task ID and UTC
+scoring/audit times; batch summaries record batch times. Use manifests and
+logs for execution dates.
 See the [runbook](docs/runbook.md#score-a-prepared-task) for operational details.
 
 ### Run tests

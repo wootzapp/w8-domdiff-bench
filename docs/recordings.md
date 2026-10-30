@@ -24,12 +24,17 @@ line; `web_surfer.log` also uses that format.
 | Artifact | Purpose | Availability | How to inspect it | Key fields or related files |
 |---|---|---|---|---|
 | `task.json` | Identifies the task and collection setup. | Every run. | Read the instruction, constraints, start URL, and model. | `source_task_id`, `task_id`, `action_driver`. |
-| `manifest.json` | Indexes the recording and its provenance. | Every run. | Check capture settings, browser/driver details, state paths, actions, warnings, and errors. | `states`, `steps`, `status`, `trajectory_export`. |
+| `manifest.json` | Indexes the recording and its provenance. | Every run. | Check capture settings, browser/driver details, state paths, actions, warnings, and errors. | `states`, `steps`, `status`, `trajectory_export`, `browser_build_provenance`. |
 | `final.json` | Stores the final answer and recorded outcome. | Every run. | Read the answer alongside any failure or error details. | `status`, optional `run_status`, `recorded_steps`. |
 | `decisions.jsonl` | Records model decisions, including rejected proposals and termination. | When model decisions were recorded. | Inspect proposed actions, rejection reasons, memory updates, response metadata, and token usage. | `model_turn`, `decision`, `rejection_reason`. |
 | `trajectory.jsonl` | Stores normalized executed browser actions. | When export is available; may be empty. | Follow each action's arguments, execution status, and state transition. | `source_step`, `next_step`, `execution_status`. |
 | `web_surfer.log` | Expresses the exported actions as WebSurfer events. | When export is available; may be empty. | Read action messages and arguments in order. | Companion to `trajectory.jsonl`. |
 | `steps/step_NNN/` | Holds one captured browser state. | When state capture succeeded. | Compare adjacent folders to inspect an action's effect. | State assets described below. |
+
+`browser_build_provenance` records the container's exact image ID, available
+repository digests and build labels for the overlay, Chromium and protocol.
+Source revisions remain unknown for older images without those labels.
+Direct CDP runs without managed-container metadata leave this field null.
 
 Within each state folder:
 
@@ -63,7 +68,9 @@ inspection, start with `task.json`, `manifest.json`, and
 `final.json`, then follow the relevant actions and state folders.
 
 Use task identifiers, timestamps, and manifests to match recordings with
-prepared trajectories and evaluation artifacts. The
+prepared trajectories and evaluation artifacts. Evaluation folder IDs group
+outputs; use the run manifest's scoring/audit times and saved logs for actual
+execution dates. The
 [technical report](technical-report.md#recorded-execution-failures)
 separates recorded execution failures from completed evaluation audits.
 For commands that create local recordings, see the

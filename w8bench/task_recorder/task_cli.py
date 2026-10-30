@@ -272,6 +272,45 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
     except (json.JSONDecodeError, IndexError, KeyError, TypeError) as error:
         raise RunnerError("docker inspect returned invalid container provenance") from error
 
+    # Inspect by immutable image ID, not by a tag that may have moved since this
+    # container started. Older images remain usable with unknown source labels.
+    image_id = container.get("Image")
+    image_labels = (container.get("Config") or {}).get("Labels") or {}
+    repo_digests: list[str] = []
+    image_inspection_error = None
+    if image_id:
+        try:
+            image_result = subprocess.run(
+                ["docker", "image", "inspect", image_id],
+                text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            )
+            if image_result.returncode:
+                raise ValueError(image_result.stderr.strip() or "image inspection failed")
+            image = json.loads(image_result.stdout)[0]
+            if image.get("Id") != image_id:
+                raise ValueError("image inspection returned a different image ID")
+            repo_digests = image.get("RepoDigests") or []
+            image_labels = (image.get("Config") or {}).get("Labels") or {}
+            if not isinstance(repo_digests, list) or any(not isinstance(part, str) for part in repo_digests):
+                raise ValueError("image inspection returned invalid repository digests")
+            if not isinstance(image_labels, dict):
+                raise ValueError("image inspection returned invalid build labels")
+        except (OSError, ValueError, IndexError, TypeError, AttributeError) as error:
+            repo_digests = []
+            image_labels = (container.get("Config") or {}).get("Labels") or {}
+            image_inspection_error = str(error)
+    browser_build = {
+        "image_reference": (container.get("Config") or {}).get("Image"),
+        "image_id": image_id,
+        "repo_digests": repo_digests,
+        "image_source_revision": image_labels.get("org.opencontainers.image.revision"),
+        "image_version": image_labels.get("org.opencontainers.image.version"),
+        "overlay_revision": image_labels.get("org.wootzapp.browser.overlay.revision"),
+        "chromium_revision": image_labels.get("org.wootzapp.browser.chromium.revision"),
+        "protocol_sha256": image_labels.get("org.wootzapp.browser.protocol.sha256"),
+        "inspection_error": image_inspection_error,
+    }
+
     counted = subprocess.run(
         [
             "docker", "exec", container_name, "sh", "-c",
@@ -314,6 +353,7 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
         "container_created_at": container_created_at,
         "profile_fresh_at_run_start": tasks_previously_run == 0,
         "tasks_previously_run_in_container": tasks_previously_run,
+        "browser_build": browser_build,
     }
 
 
@@ -589,11 +629,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Keep post-action locale redirects disabled (the default)",
     )
     parser.set_defaults(post_action_language_redirect=False)
-    parser.add_argument(
-        "--no-human-intervention",
+    human_intervention_group = parser.add_mutually_exclusive_group()
+    human_intervention_group.add_argument(
+        "--allow-human-intervention",
+        dest="allow_human_intervention",
         action="store_true",
-        help="do not permit the runner to pause for manual challenges",
+        help="permit a recorded pause for a human to solve an access challenge",
     )
+    human_intervention_group.add_argument(
+        "--no-human-intervention",
+        dest="allow_human_intervention",
+        action="store_false",
+        help="do not permit manual challenges (the default)",
+    )
+    parser.set_defaults(allow_human_intervention=False)
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -663,7 +712,7 @@ def main(argv: list[str] | None = None) -> int:
         run_id=run_id,
         output_dir=output_dir,
         env_file=args.env_file.resolve(),
-        allow_human_intervention=not args.no_human_intervention,
+        allow_human_intervention=args.allow_human_intervention,
         novnc_url=novnc_url,
         post_action_language_redirect=args.post_action_language_redirect,
         model=args.model,
@@ -676,7 +725,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Output: {output_dir / run_id}")
     print(
         "Human intervention: "
-        + ("enabled" if not args.no_human_intervention else "disabled")
+        + ("enabled" if args.allow_human_intervention else "disabled")
     )
     if args.dry_run:
         print("Dry run complete; browser task was not started.")

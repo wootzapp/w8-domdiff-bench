@@ -99,12 +99,18 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 
 ARG IMAGE_VERSION=dev
 ARG VCS_REF=unknown
+ARG BROWSER_OVERLAY_REVISION=unknown
+ARG CHROMIUM_REVISION=unknown
+ARG BROWSER_PROTOCOL_SHA256=unknown
 
 LABEL org.opencontainers.image.title="w8-core browser engine" \
       org.opencontainers.image.description="w8-core with ChromiumRL CDP and agent-browser" \
       org.opencontainers.image.source="https://github.com/wootzapp/w8-domdiff-bench" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
-      org.opencontainers.image.revision="${VCS_REF}"
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.wootzapp.browser.overlay.revision="${BROWSER_OVERLAY_REVISION}" \
+      org.wootzapp.browser.chromium.revision="${CHROMIUM_REVISION}" \
+      org.wootzapp.browser.protocol.sha256="${BROWSER_PROTOCOL_SHA256}"
 
 WORKDIR /home/wootz
 EXPOSE 9222 5900 6080

@@ -166,6 +166,7 @@ def _run_all(args: argparse.Namespace, data_root: Path) -> int:
         )
         return 0
 
+    batch_started_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     audits: list[dict] = []
     failures: list[dict[str, str]] = []
     batch_root = results_root / "batches" / run_id
@@ -198,6 +199,8 @@ def _run_all(args: argparse.Namespace, data_root: Path) -> int:
         raise RuntimeError("All selected task comparisons failed; no aggregate was written")
     summary = aggregate_audits(audits, failures)
     summary.update({"run_id": run_id, "selected_tasks": len(tasks),
+                    "batch_started_at": batch_started_at,
+                    "batch_completed_at": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
                     "input_source": _input_source(args, data_root)})
     batch_root.mkdir(parents=True)
     write_json(batch_root / "evidence_loss_summary.json", summary)
