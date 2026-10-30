@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -88,6 +89,13 @@ def _local_paired_tasks(data_root: Path) -> list[str]:
     return sorted(screenshot & dom)
 
 
+def _tree_hashes(root: Path) -> dict[str, str]:
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in root.rglob("*") if path.is_file()
+    }
+
+
 def fetch_trajectories(
     *,
     data_root: str | Path,
@@ -142,6 +150,16 @@ def fetch_trajectories(
         copied: list[str] = []
         for alias in aliases:
             if _pair_is_valid(target, alias):
+                # File presence alone does not establish the selected revision.
+                # Never silently score a different cohort from an older cache.
+                for modality in ("data-ss", "data-dom"):
+                    remote_task = remote_root / modality / alias
+                    local_task = target / modality / alias
+                    if _tree_hashes(remote_task) != _tree_hashes(local_task):
+                        raise ValueError(
+                            f"Cached trajectory differs from selected Hugging Face inputs: {local_task}. "
+                            "Move the existing download folder aside before fetching again."
+                        )
                 copied.append(alias)
                 continue
             existing = [

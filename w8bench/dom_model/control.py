@@ -9,7 +9,7 @@ from typing import Any
 
 
 CANONICAL_JUDGE_MODEL = "gpt-5.2"
-CANONICAL_ACTION_MODEL = "o4-mini"
+CANONICAL_ACTION_MODEL = "gpt-5.6-terra"
 
 
 def load_json(path: str | Path) -> Any:

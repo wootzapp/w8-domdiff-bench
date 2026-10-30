@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import os
 from pathlib import Path
 from typing import Any
 
@@ -66,7 +67,10 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
             )
             if not valid_coordinate and arguments.get("ref") is None and arguments.get("target") is None:
                 raise ValueError(f"{path}:{line_number}: screenshot click requires [x, y], ref, or target")
-        if mode == "dom_model" and name in {"click", "fill"}:
+        # WebSurfer "type" also represents keyboard input to the focused control
+        # (including browser Find). Only an explicit fill or click requires a
+        # DOM target; inventing a ref for keyboard typing changes the recording.
+        if mode == "dom_model" and (name == "click" or raw_name == "fill"):
             if arguments.get("ref") is None and arguments.get("target") is None:
                 raise ValueError(f"{path}:{line_number}: DOM-model {name} requires ref or target")
         signature: dict[str, Any] = {
@@ -265,7 +269,7 @@ def validate_pair(
         raise ValueError("Phase B requires --generation-metrics from Phase A")
     receipt.update(
         {
-            "frozen_rubric": str(frozen.path),
+            "frozen_rubric": os.path.relpath(frozen.path, Path(__file__).resolve().parents[2]),
             "frozen_rubric_sha256": frozen.sha256,
             "criterion_order": [item["criterion"] for item in frozen.rubric["items"]],
             "criterion_descriptions": [item["description"] for item in frozen.rubric["items"]],
@@ -273,7 +277,7 @@ def validate_pair(
             "criterion_denominator": frozen.denominator,
             "screenshot_sidecar_validated": screenshot_sidecar,
             "dom_model_sidecar_validated": dom_sidecar,
-            "generation_metrics": str(Path(generation_metrics).resolve()) if generation_metrics else None,
+            "generation_metrics": os.path.relpath(Path(generation_metrics).resolve(), Path(__file__).resolve().parents[2]) if generation_metrics else None,
             "rubric_generation_calls_during_scoring": 0,
             "endpoint_config": validate_endpoint_configs(eval_config) if eval_config else None,
         }

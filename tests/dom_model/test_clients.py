@@ -72,7 +72,7 @@ def test_graceful_retry_from_path_filters_by_eval_model(tmp_path):
 
     cfg_dir = tmp_path / "configs"
     cfg_dir.mkdir()
-    # Two configs: one gpt-4o, one o4-mini.
+    # Two configs: one gpt-4o, one gpt-5.6-terra.
     (cfg_dir / "a.json").write_text(
         json.dumps(
             {
@@ -89,7 +89,7 @@ def test_graceful_retry_from_path_filters_by_eval_model(tmp_path):
             {
                 "CHAT_COMPLETION_PROVIDER": "openai",
                 "CHAT_COMPLETION_KWARGS_JSON": {
-                    "model": "o4-mini",
+                    "model": "gpt-5.6-terra",
                     "api_key": "sk-test",
                 },
             }
@@ -104,9 +104,9 @@ def test_graceful_retry_from_path_filters_by_eval_model(tmp_path):
     assert len(g4o._clients) == 1
     assert "gpt-4o" in g4o._clients[0].description
 
-    o4 = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="o4-mini")
-    assert len(o4._clients) == 1
-    assert "o4-mini" in o4._clients[0].description
+    action = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="gpt-5.6-terra")
+    assert len(action._clients) == 1
+    assert "gpt-5.6-terra" in action._clients[0].description
 
     star = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="*")
     assert len(star._clients) == 2
@@ -120,8 +120,8 @@ def test_should_include_model_exact_match():
 
     assert GracefulRetryClient._should_include_model("gpt-4o", "gpt-4o")
     assert GracefulRetryClient._should_include_model("gpt-4o", "*")
-    assert GracefulRetryClient._should_include_model("o4-mini", ["gpt-4o", "o4-mini"])
-    assert not GracefulRetryClient._should_include_model("gpt-4o", "o4-mini")
+    assert GracefulRetryClient._should_include_model("gpt-5.6-terra", ["gpt-4o", "gpt-5.6-terra"])
+    assert not GracefulRetryClient._should_include_model("gpt-4o", "gpt-5.6-terra")
     assert not GracefulRetryClient._should_include_model("gpt-4o-mini", "gpt-4o")
 
 

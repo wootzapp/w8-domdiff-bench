@@ -107,8 +107,8 @@ def pair_factory(tmp_path):
             {"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-5.2"}},
         )
         _write_json(
-            config / "o4.json",
-            {"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {"model": "o4-mini"}},
+            config / "action_judge.json",
+            {"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-5.6-terra"}},
         )
         return {
             "staged": staged,

@@ -7,7 +7,7 @@ Tasks run in w8-core through `agent-browser`; the recorder saves an initial
 browser state, captures subsequent states after actions, and records model
 decisions, execution results, and the final answer. These files let readers
 inspect what the agent observed and what happened during a run.
-The benchmark's acting agent uses `gpt-5.2` for browser-action generation.
+The benchmark's acting agent uses `gpt-5.6` for browser-action generation.
 
 These recordings provide additional data for inspecting the collection
 process. The verifier audit uses the prepared trajectory pairs in
@@ -17,7 +17,7 @@ Use the recordings when you want more detail about a recorded run, its
 observations, or its failures.
 
 Each run has a folder such as
-`browser_task_002-cross-site-research-20261021T101834Z`: a task identifier,
+[task1-reddit-ranking-20261029T152819Z](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/4fd56ae6a085374b2b1b75435af21dd06c22eb30/recordings/task1-reddit-ranking-20261029T152819Z): a task identifier,
 readable name, and UTC run timestamp. JSONL files contain one JSON object per
 line; `web_surfer.log` also uses that format.
 

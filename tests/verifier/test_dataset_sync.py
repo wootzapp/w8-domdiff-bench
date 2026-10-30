@@ -1,6 +1,7 @@
 import json
 import shutil
 from pathlib import Path
+import pytest
 
 from w8bench.verifier.dataset_sync import fetch_trajectories, upload_trajectories
 
@@ -97,3 +98,19 @@ def test_upload_publishes_only_paired_trajectory_trees(tmp_path):
     assert receipt["task_count"] == 1
     assert api.kwargs["path_in_repo"] == "trajectories"
     assert api.kwargs["allow_patterns"] == ["data-ss/**", "data-dom/**"]
+
+
+def test_fetch_rejects_stale_but_structurally_valid_cache(tmp_path):
+    local = tmp_path / "data"
+    _write_pair(local, "task_01")
+    original = local / "data-dom/task_01/dom_model0.txt"
+    before = original.read_bytes()
+    def download(**kwargs):
+        destination = Path(kwargs["local_dir"])
+        root = destination / "trajectories"
+        _write_pair(root, "task_01")
+        (root / "data-dom/task_01/dom_model0.txt").write_text("URL: https://different.test/\n")
+        return str(destination)
+    with pytest.raises(ValueError, match="Cached trajectory differs"):
+        fetch_trajectories(data_root=local, task="task_01", snapshot_download_fn=download)
+    assert original.read_bytes() == before

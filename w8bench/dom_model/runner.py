@@ -8,6 +8,7 @@ import json
 import logging
 import time
 from dataclasses import asdict, is_dataclass
+import os
 from pathlib import Path
 from typing import Any
 
@@ -132,7 +133,7 @@ def preflight_dom_model_task(
         "maximum_points": [float(item["max_points"]) for item in frozen.precomputed_rubric["items"]],
         "criterion_denominator": sum(float(item["max_points"]) for item in frozen.precomputed_rubric["items"]),
         "sidecar_validated": True,
-        "phase_a_metrics": str(Path(generation_metrics).resolve(strict=True)),
+        "phase_a_metrics": os.path.relpath(Path(generation_metrics).resolve(strict=True), Path(__file__).resolve().parents[2]),
         "phase_a_rubric_generation_calls": metrics["rubric_generation_calls"],
         "rubric_generation_calls": 0,
         "package_manifest": package,
@@ -156,17 +157,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "preflight": preflight,
         }
     eval_config = Path(args.eval_config).resolve(strict=True)
-    o4mini_client = GracefulRetryClient.from_path(
-        path=str(eval_config), logger=logger, eval_model=args.o4mini_model
+    action_client = GracefulRetryClient.from_path(
+        path=str(eval_config), logger=logger, eval_model=args.action_model
     )
     gpt5_client = GracefulRetryClient.from_path(
         path=str(eval_config), logger=logger, eval_model=args.judge_model
     )
-    instrument_client_calls(o4mini_client)
+    instrument_client_calls(action_client)
     instrument_client_calls(gpt5_client)
     agent = DomModelRubricAgent(
         config=MMRubricAgentConfig(
-            o4mini_client=o4mini_client,
+            action_client=action_client,
             gpt5_client=gpt5_client,
             max_states_per_criterion=args.max_evidence_per_criterion,
             min_relevance_threshold=args.min_relevance_threshold,
@@ -212,11 +213,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "rubric_generation_calls": 0,
         "token_usage": {
             "judge": usage_dict(gpt5_client),
-            "action_judge": usage_dict(o4mini_client),
+            "action_judge": usage_dict(action_client),
         },
         "call_metrics": {
             "judge": call_metrics(gpt5_client),
-            "action_judge": call_metrics(o4mini_client),
+            "action_judge": call_metrics(action_client),
             "rubric_generation_calls": 0,
         },
         "intermediate_mm_rubric_steps": raw.get("intermediate_mm_rubric_steps"),
@@ -225,7 +226,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     output_dir = Path(args.output).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = write_json(output_dir / "result.json", result)
-    result["result_path"] = str(output_path)
+    result["result_path"] = os.path.relpath(output_path, Path(__file__).resolve().parents[2])
     return result
 
 
@@ -237,7 +238,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--eval-config", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--judge-model", default=CANONICAL_JUDGE_MODEL)
-    parser.add_argument("--o4mini-model", default=CANONICAL_ACTION_MODEL)
+    parser.add_argument("--action-model", default=CANONICAL_ACTION_MODEL)
     parser.add_argument("--rubric-threshold", type=float, default=0.8)
     parser.add_argument("--max-evidence-per-criterion", type=int, default=5)
     # Keep the baseline evidence-analysis behavior. A positive value

@@ -10,10 +10,12 @@ from __future__ import annotations
 import argparse
 import importlib.metadata
 import json
+import re
 import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 from typing import Any
 
@@ -66,8 +68,8 @@ def validate_command_parity(run_commands: dict[str, list[str]]) -> dict[str, Any
             _arg_value(dom_model, "--judge-model"),
         ),
         "action_judge_model": (
-            _arg_value(screenshot, "--o4mini-model"),
-            _arg_value(dom_model, "--o4mini-model"),
+            _arg_value(screenshot, "--action-model"),
+            _arg_value(dom_model, "--action-model"),
         ),
         "rubric_threshold": (
             _arg_value(screenshot, "--rubric-threshold"),
@@ -134,9 +136,18 @@ def _run_logged(command: list[str], log_path: Path) -> None:
         check=False,
     )
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    log_path.write_text(completed.stdout, encoding="utf-8")
+    output = completed.stdout
+    # Only traceback file references are reformatted here. Do not rewrite
+    # page evidence, model answers, URLs, or arbitrary quoted strings.
+    for filename in re.findall(r'^\s+File "(/[^"\n]+)", line \d+, in ', output, re.MULTILINE):
+        output = output.replace(f'File "{filename}", line ',
+                                f'File "{os.path.relpath(filename, REPOSITORY_ROOT)}", line ')
+    log_path.write_text(output, encoding="utf-8")
     if completed.returncode:
-        raise RuntimeError(f"Verifier failed with exit code {completed.returncode}; see {log_path}")
+        raise RuntimeError(
+            f"Verifier failed with exit code {completed.returncode}; "
+            f"see {os.path.relpath(log_path, REPOSITORY_ROOT)}"
+        )
 
 
 def prepare_isolated_inputs(
@@ -190,7 +201,7 @@ def commands(
             "--eval-config", str(eval_config),
             "--output", str(screenshot_output),
             "--judge-model", CANONICAL_JUDGE_MODEL,
-            "--o4mini-model", CANONICAL_ACTION_MODEL,
+            "--action-model", CANONICAL_ACTION_MODEL,
             "--rubric-threshold", str(CANONICAL_SETTINGS["rubric_threshold"]),
             "--max-images-per-criterion", str(CANONICAL_SETTINGS["max_evidence_items_per_criterion"]),
             "--majority-vote-instances", str(CANONICAL_SETTINGS["majority_vote_instances"]),
@@ -205,7 +216,7 @@ def commands(
             "--eval-config", str(eval_config),
             "--output", str(dom_output),
             "--judge-model", CANONICAL_JUDGE_MODEL,
-            "--o4mini-model", CANONICAL_ACTION_MODEL,
+            "--action-model", CANONICAL_ACTION_MODEL,
             "--rubric-threshold", str(CANONICAL_SETTINGS["rubric_threshold"]),
             "--max-evidence-per-criterion", str(CANONICAL_SETTINGS["max_evidence_items_per_criterion"]),
             "--min-relevance-threshold", str(CANONICAL_SETTINGS["min_relevance_threshold"]),
@@ -305,23 +316,25 @@ def main(argv: list[str] | None = None) -> int:
         "preflight": preflight,
         "verifier_packages": packages,
         "runtime": _package_versions(),
-        "commands": run_commands,
+        "commands": {name: [os.path.relpath(value, REPOSITORY_ROOT) if Path(value).is_absolute()
+                            else value for value in command]
+                     for name, command in run_commands.items()},
         "verifier_parity": {
             "status": "passed",
             "only_intentional_difference": "evidence_loader_and_representation",
             "controls": parity_controls,
         },
         "source_inputs": {
-            "screenshot": str(screenshot_source),
-            "dom_model": str(dom_source),
-            "frozen_rubric": str(rubric_source),
-            "generation_metrics": str(generation_source),
+            "screenshot": os.path.relpath(screenshot_source, REPOSITORY_ROOT),
+            "dom_model": os.path.relpath(dom_source, REPOSITORY_ROOT),
+            "frozen_rubric": os.path.relpath(rubric_source, REPOSITORY_ROOT),
+            "generation_metrics": os.path.relpath(generation_source, REPOSITORY_ROOT),
         },
         "isolated_inputs": {
-            "screenshot": str(isolated_screenshot),
-            "dom_model": str(isolated_dom),
-            "frozen_rubric": str(isolated_rubric),
-            "generation_metrics": str(isolated_generation),
+            "screenshot": os.path.relpath(isolated_screenshot, REPOSITORY_ROOT),
+            "dom_model": os.path.relpath(isolated_dom, REPOSITORY_ROOT),
+            "frozen_rubric": os.path.relpath(isolated_rubric, REPOSITORY_ROOT),
+            "generation_metrics": os.path.relpath(isolated_generation, REPOSITORY_ROOT),
         },
         "phase_a_usage_separate_from_scoring": phase_a.get("token_usage", {}),
         "rubric_generation_calls_during_scoring": 0,
@@ -331,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
             "model": args.audit_model,
             "runs_after_both_verifiers": True,
         },
-        "run_root": str(run_root),
+        "run_root": os.path.relpath(run_root, REPOSITORY_ROOT),
     }
     if not args.execute:
         print(json.dumps(manifest, ensure_ascii=False, indent=2))
@@ -391,11 +404,11 @@ def main(argv: list[str] | None = None) -> int:
     write_json(comparison_json_path, comparison_receipt)
 
     common_outputs = {
-        "screenshot_metrics": str(screenshot_root / "run_metrics.json"),
-        "dom_model_metrics": str(dom_root / "run_metrics.json"),
-        "comparison_report": str(comparison_markdown_path),
-        "frozen_rubric": str(published_rubric),
-        "rubric_generation_metrics": str(published_generation),
+        "screenshot_metrics": os.path.relpath(screenshot_root / "run_metrics.json", REPOSITORY_ROOT),
+        "dom_model_metrics": os.path.relpath(dom_root / "run_metrics.json", REPOSITORY_ROOT),
+        "comparison_report": os.path.relpath(comparison_markdown_path, REPOSITORY_ROOT),
+        "frozen_rubric": os.path.relpath(published_rubric, REPOSITORY_ROOT),
+        "rubric_generation_metrics": os.path.relpath(published_generation, REPOSITORY_ROOT),
     }
     try:
         audit = run_evidence_audit(
@@ -421,7 +434,7 @@ def main(argv: list[str] | None = None) -> int:
         write_json(error_path, error_payload)
         comparison_receipt["evidence_audit"] = {
             "status": "failed",
-            "error_file": str(error_path),
+            "error_file": os.path.relpath(error_path, REPOSITORY_ROOT),
             "message": str(exc),
         }
         write_json(comparison_json_path, comparison_receipt)
@@ -436,7 +449,7 @@ def main(argv: list[str] | None = None) -> int:
                 "status": "complete_with_audit_error",
                 **common_outputs,
                 "evidence_audit_status": "failed",
-                "evidence_audit_error": str(error_path),
+                "evidence_audit_error": os.path.relpath(error_path, REPOSITORY_ROOT),
             }
         )
         write_json(run_root / "run_manifest.json", manifest)
@@ -459,8 +472,8 @@ def main(argv: list[str] | None = None) -> int:
             "status": "complete",
             **common_outputs,
             "evidence_audit_status": "complete",
-            "evidence_audit_json": str(audit_json_path),
-            "evidence_audit_report": str(audit_markdown_path),
+            "evidence_audit_json": os.path.relpath(audit_json_path, REPOSITORY_ROOT),
+            "evidence_audit_report": os.path.relpath(audit_markdown_path, REPOSITORY_ROOT),
             "evidence_loss": audit["metrics"],
         }
     )

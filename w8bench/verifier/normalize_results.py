@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -105,10 +106,10 @@ def _normalize(
     return {
         "task_id": task,
         "evidence_mode": mode,
-        "input_task": str(Path(input_task).resolve()),
-        "frozen_rubric_path": str(frozen.path),
+        "input_task": os.path.relpath(Path(input_task).resolve(), Path(__file__).resolve().parents[2]),
+        "frozen_rubric_path": os.path.relpath(frozen.path, Path(__file__).resolve().parents[2]),
         "frozen_rubric_sha256": frozen.sha256,
-        "phase_a_generation_metrics": str(Path(generation_metrics).resolve(strict=True)),
+        "phase_a_generation_metrics": os.path.relpath(Path(generation_metrics).resolve(strict=True), Path(__file__).resolve().parents[2]),
         "judge_models": {
             "judge": CANONICAL_JUDGE_MODEL,
             "action_and_validity_judge": CANONICAL_ACTION_MODEL,
@@ -142,9 +143,9 @@ def _normalize(
             CANONICAL_ACTION_MODEL: usage_action,
             "combined": combined_usage,
         },
-        "score_artifact": str(source),
-        "raw_instrumentation": str(source),
-        "run_log": str(Path(run_log).resolve()),
+        "score_artifact": os.path.relpath(source, Path(__file__).resolve().parents[2]),
+        "raw_instrumentation": os.path.relpath(source, Path(__file__).resolve().parents[2]),
+        "run_log": os.path.relpath(Path(run_log).resolve(), Path(__file__).resolve().parents[2]),
     }
 
 

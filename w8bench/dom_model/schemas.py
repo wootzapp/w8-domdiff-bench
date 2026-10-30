@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+import os
 from pathlib import Path
 from typing import Any
 
@@ -55,7 +56,7 @@ class DomModelState:
     def audit_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value.pop("raw_text")
-        value["path"] = str(self.path)
+        value["path"] = os.path.relpath(self.path, Path(__file__).resolve().parents[2])
         value["sections"] = [asdict(section) for section in self.sections]
         value["provenance"] = self.provenance
         return value

@@ -4,7 +4,7 @@ from copy import deepcopy
 import pytest
 
 from w8bench.verifier.compare_results import compare
-from w8bench.verifier.common import CANONICAL_SETTINGS, canonical_sha256
+from w8bench.verifier.common import CANONICAL_ACTION_MODEL, CANONICAL_SETTINGS, canonical_sha256
 from w8bench.verifier.normalize_results import normalize_dom_model, normalize_screenshot
 
 
@@ -14,7 +14,7 @@ def _run(mode):
         "evidence_mode": mode,
         "frozen_rubric_sha256": "abc",
         "phase_a_generation_metrics": "/same/metrics.json",
-        "judge_models": {"judge": "gpt-5.2", "action_and_validity_judge": "o4-mini"},
+        "judge_models": {"judge": "gpt-5.2", "action_and_validity_judge": CANONICAL_ACTION_MODEL},
         "pipeline_settings": dict(CANONICAL_SETTINGS),
         "result": {"process_score": 1.0, "total_earned_points": 10.0, "total_max_points": 10.0, "outcome_success": True},
         "criteria": [
