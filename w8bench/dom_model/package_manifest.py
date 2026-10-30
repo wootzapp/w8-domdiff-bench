@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 
 
@@ -16,5 +17,5 @@ def source_receipt() -> dict[str, object]:
         digest.update(b"\0")
         digest.update(hashlib.sha256(path.read_bytes()).digest())
         digest.update(b"\n")
-    return {"package": "dom_model", "root": str(root), "files": len(files), "sha256": digest.hexdigest()}
+    return {"package": "dom_model", "root": os.path.relpath(root, Path(__file__).resolve().parents[2]), "files": len(files), "sha256": digest.hexdigest()}
 

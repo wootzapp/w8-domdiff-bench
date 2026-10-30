@@ -8,6 +8,7 @@ import json
 import logging
 import time
 from dataclasses import asdict, is_dataclass
+import os
 from pathlib import Path
 from typing import Any
 
@@ -132,7 +133,7 @@ def preflight_dom_model_task(
         "maximum_points": [float(item["max_points"]) for item in frozen.precomputed_rubric["items"]],
         "criterion_denominator": sum(float(item["max_points"]) for item in frozen.precomputed_rubric["items"]),
         "sidecar_validated": True,
-        "phase_a_metrics": str(Path(generation_metrics).resolve(strict=True)),
+        "phase_a_metrics": os.path.relpath(Path(generation_metrics).resolve(strict=True), Path(__file__).resolve().parents[2]),
         "phase_a_rubric_generation_calls": metrics["rubric_generation_calls"],
         "rubric_generation_calls": 0,
         "package_manifest": package,
@@ -225,7 +226,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     output_dir = Path(args.output).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = write_json(output_dir / "result.json", result)
-    result["result_path"] = str(output_path)
+    result["result_path"] = os.path.relpath(output_path, Path(__file__).resolve().parents[2])
     return result
 
 

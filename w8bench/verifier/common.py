@@ -166,7 +166,7 @@ def validate_endpoint_configs(path: str | Path) -> dict[str, Any]:
         if not isinstance(kwargs, dict) or not isinstance(kwargs.get("model"), str):
             raise ValueError(f"Endpoint config has no model: {source}")
         models.add(kwargs["model"])
-        receipts.append({"path": str(source), "model": kwargs["model"]})
+        receipts.append({"path": os.path.relpath(source, Path(__file__).resolve().parents[2]), "model": kwargs["model"]})
     required = {CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL}
     if models != required:
         raise ValueError(f"Endpoint models must be exactly {sorted(required)}, got {sorted(models)}")

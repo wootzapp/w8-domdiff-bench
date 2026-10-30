@@ -38,7 +38,7 @@ def tree_receipt(package: str) -> dict[str, Any]:
         digest.update(b"\n")
     return {
         "package": package,
-        "root": str(root),
+        "root": root.relative_to(REPOSITORY_ROOT).as_posix(),
         "file_count": files,
         "tree_sha256": digest.hexdigest(),
     }
@@ -54,7 +54,7 @@ def require_local_package(package: str) -> dict[str, Any]:
                 f"Local {package} package differs from its fixed manifest for {key}: "
                 f"{actual[key]!r} != {expected.get(key)!r}"
             )
-    return {**actual, "manifest": str(manifest_path.resolve())}
+    return {**actual, "manifest": manifest_path.relative_to(REPOSITORY_ROOT).as_posix()}
 
 
 def require_local_packages() -> dict[str, dict[str, Any]]:

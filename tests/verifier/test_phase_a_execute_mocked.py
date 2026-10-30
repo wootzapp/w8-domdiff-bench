@@ -85,6 +85,9 @@ def test_phase_a_calls_one_screenshot_workflow_and_writes_both_staged_sidecars(
         assert rc == 0
         assert workflow_invocations == 1
         metric_value = json.loads(metrics.read_text(encoding="utf-8"))
+        assert str(experiment) not in json.dumps(metric_value)
+        assert not Path(metric_value["preflight"]["rubric_output"]).is_absolute()
+        assert (experiment / metric_value["preflight"]["rubric_output"]).resolve() == rubric
         assert metric_value["rubric_generation_calls"] == 2
         assert metric_value["token_usage"]["combined"]["total_tokens"] == 10
         for root in (pair["screenshot"], pair["dom"]):

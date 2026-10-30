@@ -57,7 +57,12 @@ def test_phase_b_cli_dry_preflight_writes_nothing(pair_factory, capsys):
             ]
         )
         assert rc == 0
-        assert '"paid_calls_authorized": false' in capsys.readouterr().out
+        receipt = json.loads(capsys.readouterr().out)
+        assert receipt["paid_calls_authorized"] is False
+        assert str(repository) not in json.dumps(receipt)
+        for command in receipt["commands"].values():
+            assert not any(Path(argument).is_absolute() for argument in command)
+        assert (repository / receipt["run_root"]).resolve() == output
         assert not output.exists()
 
 

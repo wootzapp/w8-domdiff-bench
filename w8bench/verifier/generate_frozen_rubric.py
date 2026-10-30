@@ -11,6 +11,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -146,12 +147,12 @@ def main(argv: list[str] | None = None) -> int:
         "writes_authorized": bool(args.execute),
         "dataset": dataset_receipt,
         "endpoint_config": endpoint_receipt,
-        "rubric_output": str(rubric_path),
-        "metrics_output": str(metrics_path),
-        "sidecar_outputs": [str(targets[2]), str(targets[3])],
+        "rubric_output": os.path.relpath(rubric_path, REPOSITORY_ROOT),
+        "metrics_output": os.path.relpath(metrics_path, REPOSITORY_ROOT),
+        "sidecar_outputs": [os.path.relpath(path, REPOSITORY_ROOT) for path in targets[2:]],
         "models": [CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL],
         "verifier_packages": packages,
-        "import_source": str(Path(args.import_rubric).resolve(strict=True)) if args.import_rubric else None,
+        "import_source": os.path.relpath(Path(args.import_rubric).resolve(strict=True), REPOSITORY_ROOT) if args.import_rubric else None,
     }
     if not args.execute:
         print(json.dumps(preflight, ensure_ascii=False, indent=2))

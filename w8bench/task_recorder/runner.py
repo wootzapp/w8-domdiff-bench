@@ -773,6 +773,9 @@ async def run(args: argparse.Namespace) -> int:
     if not args.capture_only and not args.task:
         raise RunnerError("--task is required unless --capture-only is used")
     task_id = safe_task_id(args.task_id or default_task_id())
+    catalog_reference = args.source_catalog
+    if catalog_reference and Path(catalog_reference).is_absolute():
+        catalog_reference = os.path.relpath(catalog_reference, ROOT)
     run_dir = Path(args.output_dir).resolve() / task_id
     run_dir.mkdir(parents=True, exist_ok=False)
     agent_browser = AgentBrowserClient(
@@ -786,7 +789,7 @@ async def run(args: argparse.Namespace) -> int:
         {
             "task_id": task_id,
             "source_task_id": args.source_task_id,
-            "source_catalog": args.source_catalog,
+            "source_catalog": catalog_reference,
             "task_name": args.task_name,
             "instruction": args.task or "capture-only",
             "start_url": args.start_url,
@@ -799,7 +802,7 @@ async def run(args: argparse.Namespace) -> int:
     manifest: dict[str, Any] = {
         "task_id": task_id,
         "source_task_id": args.source_task_id,
-        "source_catalog": args.source_catalog,
+        "source_catalog": catalog_reference,
         "task_name": args.task_name,
         "task": args.task or "capture-only",
         "created_at": utc_now(),
