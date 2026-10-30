@@ -169,7 +169,7 @@ The completed audits identify **118 screenshot losses and 7 DOM losses** across 
 
 *Both rows retain all 582 audited criteria; the URL exclusion changes the numerator only.*
 
-![Screenshot and DOM evidence-loss rates across four analysis choices, with 95% Wilson confidence intervals.](assets/evaluations/evidence-loss-rates.png)
+![Screenshot and DOM evidence-loss rates for the full audited dataset and the subset excluding listed blocked-task IDs, with and without primary URL losses.](assets/evaluations/evidence-loss-rates.png)
 
 **Figure 1.** Evidence-loss rates for all completed audits and the subset excluding the nine cited blocker-task IDs, with and without primary URL losses. Wilson intervals assume independent criteria; they do not adjust for within-task correlation or annotation error.
 

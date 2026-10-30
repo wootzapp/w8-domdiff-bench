@@ -17,7 +17,7 @@ Use the recordings when you want more detail about a recorded run, its
 observations, or its failures.
 
 Each run has a folder such as
-`browser_task_002-cross-site-research-20261021T101834Z`: a task identifier,
+[task1-reddit-ranking-20261029T152819Z](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/4fd56ae6a085374b2b1b75435af21dd06c22eb30/recordings/task1-reddit-ranking-20261029T152819Z): a task identifier,
 readable name, and UTC run timestamp. JSONL files contain one JSON object per
 line; `web_surfer.log` also uses that format.
 

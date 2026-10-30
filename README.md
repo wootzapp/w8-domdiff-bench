@@ -116,7 +116,7 @@ Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were ex
 
 Excluding the primary URL category removes those losses from the numerator and retains every audited criterion. Excluding the nine cited blocker-task IDs removes their 53 criteria. The [report defines both exclusions](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks), and separately gives alternatives that remove entire criteria with primary URL findings.
 
-![Screenshot and DOM evidence-loss rates across four analysis choices.](docs/assets/evaluations/evidence-loss-rates.png)
+![Screenshot and DOM evidence-loss rates for the full audited dataset and the subset excluding listed blocked-task IDs, with and without primary URL losses.](docs/assets/evaluations/evidence-loss-rates.png)
 
 The intervals are exploratory 95% Wilson intervals. They assume independent criteria and do not adjust for within-task correlation or annotation errors. Counts, intervals and paired outcomes are in the [technical report](docs/technical-report.md#url-sensitivity-and-paired-comparison).
 
@@ -143,10 +143,10 @@ The audits identify **121 affected criteria across 74 tasks**. Four criteria hav
 
 Examples show the practical differences:
 
-- **Exact values:** task_08 C2 preserves an absolute publication date in DOM; screenshots show a relative age.
-- **Capture coverage:** task_19 C2 preserves three complete highlight rows in DOM; screenshots stop at the heading.
-- **Visual form:** task_37 C4 preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
-- **Relationships and controls:** DOM losses include a disconnected publisher label/value in task_02 C2 and missing World radio selection in task_44 C2.
+- **Exact values:** [task_08 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/4fd56ae6a085374b2b1b75435af21dd06c22eb30/evaluation/task_08/20261029T212045Z/evidence_audit.json) preserves an absolute publication date in DOM; screenshots show a relative age.
+- **Capture coverage:** [task_19 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/4fd56ae6a085374b2b1b75435af21dd06c22eb30/evaluation/task_19/20261029T212045Z/evidence_audit.json) preserves three complete highlight rows in DOM; screenshots stop at the heading.
+- **Visual form:** [task_37 C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/4fd56ae6a085374b2b1b75435af21dd06c22eb30/evaluation/task_37/20261029T212045Z/evidence_audit.json) preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
+- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/4fd56ae6a085374b2b1b75435af21dd06c22eb30/evaluation/task_02/20261029T212045Z/evidence_audit.json) and missing World radio selection in [task_44 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/4fd56ae6a085374b2b1b75435af21dd06c22eb30/evaluation/task_44/20261029T212045Z/evidence_audit.json).
 
 The detailed findings and evidence links are in the [report’s six-column criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion). Category annotations summarize the saved findings; they do not change verifier scores or audit decisions.
 
