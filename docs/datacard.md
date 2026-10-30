@@ -7,10 +7,9 @@ complete set is hosted at
 [WootzappLab/browser-agent-tasks](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks).
 
 This checkout includes two example pairs under [data/samples/](../data/samples/).
-The comparison command downloads prepared pairs into the ignored `dataset/`
-directory. Local samples illustrate the file contract and are not a
-representative statistical subset. Saved evaluations and raw recordings are
-additional artifacts in the hosted dataset.
+The samples illustrate the file contract, not a representative statistical
+subset. Saved evaluations and raw recordings are also available in the hosted
+dataset.
 
 ## Published dataset layout
 

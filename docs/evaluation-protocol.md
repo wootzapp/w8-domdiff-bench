@@ -25,6 +25,16 @@ The comparison command fails if those controls drift.
 One rubric is generated or imported first. Its canonical SHA-256 and point
 denominator are recorded, then the unchanged object is passed to both sides.
 
+Both modes receive the recorded refs, targets, and available coordinates.
+Coordinates are derived element centres, not exact click-event traces;
+provenance stays outside judge inputs. Some published pairs projected these
+fields separately, so comparisons across collections must account for that
+input difference.
+
+Tool-failure diagnostics distinguish command parameters from `thoughts` and
+`target` annotations. They run after scoring and outcome verification, without
+changing points, penalties, thresholds, or the recorded action history.
+
 ### Success rules
 
 The normalized rubric score is the earned point total divided by the maximum
@@ -114,25 +124,8 @@ adjust for correlation among criteria within a task or annotation error.
 Website blockers, recorded execution failures, task scores, and source-loss
 counts are separate measurements.
 
-## Commands
+## Operation
 
-Download and validate one pair without paid calls or evaluation output:
-
-```bash
-./scripts/run-comparison --task task_01
-```
-
-Run the controlled comparison:
-
-```bash
-./scripts/run-comparison --task task_01 --execute
-```
-
-Run every paired task:
-
-```bash
-./scripts/run-comparison --all --execute
-```
-
-Generated runs are written under `evaluation/`, which is ignored by Git.
-
+See the [runbook](runbook.md#score-a-prepared-task) for preparation, validation,
+and comparison commands. Saved rubrics, scores, audits, and provenance are
+written under `evaluation/`.

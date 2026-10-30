@@ -315,7 +315,7 @@ flowchart TB
         observation --> actor
         capture --> raw[Raw states and action logs in recordings/]
     end
-    raw -. Separate dataset preparation .-> pairs[Prepared screenshot and DOM pairs]
+    raw -. Prepare verifier inputs .-> pairs[Prepared screenshot and DOM pairs]
     subgraph evaluation[Paired evaluation]
         pairs --> check[Validate shared inputs and state alignment]
         check --> rubric[Generate and freeze one rubric]
@@ -338,8 +338,6 @@ An execution with $`N`$ actions normally produces $`N+1`$ states: the initial
 state and one after each executed action. Raw states start at
 `steps/step_001/`; prepared evidence starts at `screenshot0.png` and
 `dom_model0.txt`. Rejected proposals do not add executed actions.
-The dotted connection is a dataset-production boundary: this repository
-has no public command that converts raw recordings into prepared pairs.
 
 | Component | Role and artifacts | Implementation | Verification |
 | --- | --- | --- | --- |
@@ -652,9 +650,8 @@ recordings/<run-id>/
 ```
 
 The first step is the initial browser state. Each later step is the state
-after an executed action, and the final step can have no `action.json`. Raw
-recordings cannot be passed directly to `run-comparison`; see the
-[recording/evaluation boundary](docs/runbook.md#recording-and-evaluation-inputs).
+after an executed action, and the final step can have no `action.json`.
+Prepare these recordings before scoring them, as described below.
 
 Stop this checkout's browser when it is no longer needed:
 
@@ -662,37 +659,57 @@ Stop this checkout's browser when it is no longer needed:
 docker compose --env-file .env down
 ```
 
-### Evaluate prepared pairs
+### Compare screenshot and DOM evidence
 
-Prepared-pair evaluation does not require the browser container. Download one
-pair, validate its files and state indices, and print the planned workflow
-**without model calls**:
+For a full comparison, choose one input source:
 
-```bash
-./scripts/run-comparison --task task_01
-```
+- **Your recordings:** prepare local trajectories, then evaluate them.
+- **Published trajectories:** fetch them from Hugging Face and evaluate directly;
+  no browser build or task recording is needed.
 
-Run rubric generation, both verifiers, and the paired evidence audit:
+#### Use your recordings
 
-```bash
-./scripts/run-comparison --task task_01 --execute
-```
-
-Run all prepared tasks:
+Prepare paired inputs without model calls:
 
 ```bash
-./scripts/run-comparison --all --execute
+python -m w8bench.task_recorder.prepare_verifier_data recordings trajectories
 ```
 
-Each executed comparison generates and freezes one rubric for both
-representations, scores the screenshot and DOM evidence, normalizes the
-results, and audits source availability. The `--execute` commands make paid
-model calls, and fresh judgments can differ from the published findings.
+The command preserves recordings and existing pairs, adds missing usable pairs,
+and reports exclusions in `trajectories/preparation_report.json`. Failed tasks
+are included when their captured evidence is usable; exclusions return exit code 1.
 
-Prepared inputs are downloaded under `dataset/data-ss/<task>/` and
-`dataset/data-dom/<task>/`. Generated runs are stored under
-`evaluation/<task>/<run-id>/`, and batch summaries are stored under
-`evaluation/batches/<run-id>/`.
+Validate the inputs, then run the full comparison:
+
+```bash
+./scripts/run-comparison --all --data-source local
+```
+
+```bash
+./scripts/run-comparison --all --data-source local --execute
+```
+
+#### Use published trajectories
+
+Download and validate the published pairs, then evaluate them:
+
+```bash
+./scripts/run-comparison --all --data-source huggingface
+```
+
+```bash
+./scripts/run-comparison --all --data-source huggingface --execute
+```
+
+Local inputs stay under `trajectories/`; downloaded inputs stay under `dataset/`.
+The selected source is used without falling back to the other. Replace `--all`
+with `--task task_01` for one task, or use `--data-root PATH` for a different
+local input folder.
+
+Both paths freeze one rubric per task, run both verifiers, and audit evidence
+loss. `--execute` makes paid model calls; fresh judgments can vary. Results go
+to `evaluation/<task>/<run-id>/`, with batch summaries in `evaluation/batches/`.
+See the [runbook](docs/runbook.md#score-a-prepared-task) for operational details.
 
 ### Run tests
 

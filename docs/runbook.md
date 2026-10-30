@@ -1,25 +1,22 @@
 # Runbook
 
 This is the detailed operational guide for `w8-domdiff-bench`. It contains the
-commands for browser setup, task recording, prepared dataset retrieval, and
-verifier scoring. The [README operating section](../README.md#run-the-benchmark)
+commands for browser setup, task recording, verifier-input preparation, and
+verifier scoring. The [README operating section](../README.md#7-run-the-benchmark)
 contains the complete end-to-end flow; this runbook adds focused checks,
 artifact details, and troubleshooting.
 
 Two workflows are available:
 
 1. **Recording** writes a raw browser run under `recordings/`.
-2. **Evaluation** scores a prepared screenshot/DOM pair under `dataset/`.
+2. **Evaluation** scores local pairs under `trajectories/` or published pairs
+   downloaded under `dataset/`.
 
 | What you want to do | Sections to follow |
 | --- | --- |
 | Record a task | Requirements → Browser build → Get the benchmark and install Python → Create the local browser image → Environment configuration → Browser runtime → Record a task |
 | Score a prepared task | Requirements → Get the benchmark and install Python → Environment configuration → Score a prepared task |
 
-There is no direct raw-recording-to-scoring command. The repository does not
-currently convert a raw recording into a prepared verifier pair. The exact
-boundary is described in
-[Recording and evaluation inputs](#recording-and-evaluation-inputs).
 
 ## Requirements
 
@@ -254,7 +251,7 @@ The recorder writes numbered step directories. The verifier expects a paired
 task bundle:
 
 ```text
-dataset/
+trajectories/
   data-ss/task_01/
     task_data.json
     final_answer.json
@@ -269,54 +266,70 @@ dataset/
     dom_model1.txt
 ```
 
-Both sides must contain the same task, action history, and final answer. The
-state count must be the executed action count plus one.
-
-The supported scoring command obtains these prepared pairs from the hosted
-dataset. A raw directory under `recordings/` cannot be passed directly to
-`run-comparison`. Preparing and publishing a newly recorded run is a separate
-dataset-production operation and is not implemented by a public command in
-this repository.
+Both sides share the task, action history, and final answer. An execution with
+`N` actions supplies `N+1` captured states: the initial state and each after-state.
+The [dataset card](datacard.md#prepared-trajectory-files) describes the files.
 
 ## Score a prepared task
 
-Download and validate one prepared pair without making model calls:
+For the full comparison, either prepare your recordings or fetch the published
+trajectories from Hugging Face. Choose one path below. Evaluation itself does
+not require the browser container.
+
+### Use your recordings
+
+Convert `recordings/` into paired inputs under `trajectories/`:
 
 ```bash
-./scripts/run-comparison --task task_01
+python -m w8bench.task_recorder.prepare_verifier_data recordings trajectories
 ```
 
-Run rubric generation, both verifiers, and the evidence audit:
+- Original recordings and existing pairs are preserved; missing usable pairs are added.
+- Successes and failures are included when their captured evidence is usable.
+- `preparation_report.json` records source paths, hashes, warnings, and exclusions.
+  Exclusions return exit code 1; inspect the report before scoring.
+- Add `--dry-run` to check without writing. Use a separate output folder for a
+  different collection; repeated task attempts are kept separately.
+
+Validate the local pairs without model calls:
 
 ```bash
-./scripts/run-comparison --task task_01 --execute
+./scripts/run-comparison --all --data-source local
 ```
 
-The executed command performs this sequence:
-
-1. Load the paired task and verify its common files.
-2. Generate or import one rubric.
-3. Validate and freeze the rubric.
-4. Score screenshot evidence.
-5. Score DOM-model evidence with the same rubric and controls.
-6. Normalize the two results.
-7. Audit missing source evidence.
-
-Results are stored under:
-
-```text
-evaluation/task_01/<run-id>/
-```
-
-Run all available prepared tasks with:
+Run the full evaluation:
 
 ```bash
-./scripts/run-comparison --all --execute
+./scripts/run-comparison --all --data-source local --execute
 ```
 
-`run-comparison` downloads the selected prepared pair or pairs before
-validation. Use `./scripts/dataset-sync fetch --task task_01` only when you
-want to download a pair without running the comparison preflight.
+### Use published trajectories
+
+If you have not recorded tasks, fetch and validate the published pairs:
+
+```bash
+./scripts/run-comparison --all --data-source huggingface
+```
+
+Run their evaluation:
+
+```bash
+./scripts/run-comparison --all --data-source huggingface --execute
+```
+
+### Controls and outputs
+
+- Local mode reads `trajectories/`; Hugging Face mode downloads to `dataset/`.
+  Neither falls back to the other. Changed download caches are rejected.
+- Replace `--all` with `--task task_01` for one task. `--data-root PATH` selects
+  another local input folder; use task names from the preparation report.
+- Both paths freeze one rubric, score screenshots and DOM text, and audit
+  source loss. `--execute` makes paid calls. The
+  [evaluation protocol](evaluation-protocol.md) defines controls and scoring.
+- Results go to `evaluation/<task>/<run-id>/`; batch summaries go to
+  `evaluation/batches/<run-id>/`. `input_source.json` identifies the input source.
+- Preparation-report references are relative to their output folder; evaluation
+  references are relative to the repository root. Older absolute paths remain readable.
 
 ## View a remote browser
 

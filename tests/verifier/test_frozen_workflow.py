@@ -1,11 +1,127 @@
 import json
+import copy
+import importlib
+import asyncio
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 
 from w8bench.verifier.generate_frozen_rubric import main as generate_main
 from w8bench.verifier.run_comparison import commands, validate_command_parity
 from w8bench.verifier.validate_inputs import compare_semantic_actions, parse_actions, validate_pair
+
+
+@pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
+@pytest.mark.parametrize("action,keys,expected", [
+    ("left_click", ["ref", "target", "thoughts"], None),
+    ("left_click", ["coordinate", "_call_id"], None),
+    ("type", ["text", "thoughts"], None),
+    ("type", ["ref", "text", "target", "delete_existing_text"], None),
+    ("scroll", ["ref", "pixels", "target", "thoughts"], None),
+    ("select", ["ref", "text", "target", "thoughts"], None),
+    ("key", ["key", "thoughts"], None),
+    ("key", ["keys"], None),
+    ("wait", ["seconds", "thoughts"], None),
+    ("wait", ["time"], None),
+    ("left_click", ["ref", "unexpected_parameter"], "6.1"),
+    ("visit_url", ["url", "ref"], "6.1"),
+    ("invented_action", ["ref", "thoughts"], "6.2"),
+])
+def test_diagnostics_recognize_commands_without_hiding_real_errors(package, action, keys, expected):
+    module = importlib.import_module(f"w8bench.{package}.rubric_agent")
+    schema = importlib.import_module(f"w8bench.{package}.utils.action_schema")
+    steps = [{"step_number": 1, "action_name": action, "action_args_keys": keys}]
+    original = copy.deepcopy(steps)
+    errors = module.MMRubricAgent._detect_tool_interaction_errors(steps, schema.FARA_ACTION_DEFINITIONS)
+    assert [row["error_code"] for row in errors] == ([expected] if expected else [])
+    assert steps == original
+
+
+def test_both_verifiers_use_identical_diagnostic_definitions():
+    from w8bench.dom_model.utils.action_schema import ACTION_METADATA_KEYS, FARA_ACTION_DEFINITIONS
+    from w8bench.screenshot_verifier.utils import action_schema
+    assert FARA_ACTION_DEFINITIONS == action_schema.FARA_ACTION_DEFINITIONS
+    assert ACTION_METADATA_KEYS == action_schema.ACTION_METADATA_KEYS == {"thoughts", "target"}
+
+
+@pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
+def test_diagnostic_filter_does_not_strip_judge_action_context(package):
+    module = importlib.import_module(f"w8bench.{package}.rubric_agent")
+    models = importlib.import_module(f"w8bench.{package}.models")
+    schema = importlib.import_module(f"w8bench.{package}.utils.action_schema")
+    arguments = {"ref": "e1", "target": {"role": "button", "name": "Save"},
+                 "coordinate": [20, 30], "thoughts": "Save the value."}
+    summary = models.StepSummary(index=1, action_name="left_click", action_args=arguments)
+    history = module.MMRubricAgent._format_action_history([summary])
+    steps = [{"step_number": 1, "action_name": "left_click", "action_args_keys": list(arguments)}]
+    assert module.MMRubricAgent._detect_tool_interaction_errors(steps, schema.FARA_ACTION_DEFINITIONS) == []
+    assert module.MMRubricAgent._format_action_history([summary]) == history
+    for key in arguments:
+        assert f'"{key}"' in history
+
+
+@pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
+def test_failure_analysis_explains_metadata_without_changing_history(package):
+    module = importlib.import_module(f"w8bench.{package}.rubric_agent")
+    schema = importlib.import_module(f"w8bench.{package}.utils.action_schema")
+    agent = object.__new__(module.MMRubricAgent)
+    agent.config = SimpleNamespace(action_definitions=schema.FARA_ACTION_DEFINITIONS,
+                                   max_iters=1, gpt5_client=None)
+    agent._call_llm = AsyncMock(return_value=json.dumps({
+        "reasoning": "The recorded command is valid.", "has_failure": False, "failure_points": []
+    }))
+    history = 'left_click({"ref":"e1","target":{"name":"Save"},"thoughts":"Save it"})'
+    result = asyncio.run(agent._first_point_of_failure_analysis(
+        rubric={"items": []}, evidence_by_criterion={}, task="Inspect the page.",
+        init_url_context="", action_history=history, predicted_output="Done.",
+        outcome_result={"output_success": True},
+        step_actions=[{"step_number": 1, "action_name": "left_click",
+                       "action_args_keys": ["ref", "target", "thoughts"]}],
+    ))
+    assert result["has_failure"] is False
+    agent._call_llm.assert_awaited_once()
+    prompt = agent._call_llm.call_args.args[0][-1]["content"]
+    assert history in prompt
+    assert "Recorder annotations (target, thoughts)" in prompt
+    assert "their presence alone is not an invalid invocation" in prompt
+
+
+@pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
+@pytest.mark.parametrize("earned", [0, 5, 10])
+@pytest.mark.parametrize("success", [False, True])
+def test_failure_diagnostics_do_not_change_numeric_or_outcome_scores(package, earned, success):
+    module = importlib.import_module(f"w8bench.{package}.rubric_agent")
+    # Exercise pure result wrapping without constructing any API clients.
+    agent = object.__new__(module.MMRubricAgent)
+    agent.config = SimpleNamespace(rubric_score_threshold=0.8)
+    field = "post_dom_earned_points" if package == "dom_model" else "post_image_earned_points"
+    result = {"items": [{"criterion": "Recorded fact", "max_points": 10, field: earned}],
+              "total_max_points": 10, "total_earned_points": earned,
+              "outcome_verification": {"output_success": success}}
+    changed = copy.deepcopy(result)
+    changed["first_point_of_failure"] = {"has_failure": True, "first_failure_step": 1}
+    changed["intermediate_mm_rubric_steps"] = {"step9_first_point_of_failure": changed["first_point_of_failure"]}
+    before, after = agent._wrap_result(result), agent._wrap_result(changed)
+    assert before[0].score == after[0].score == earned / 10
+    assert before[0].rubric_is_success == after[0].rubric_is_success == (earned >= 8)
+    assert before[1].output_success == after[1].output_success == success
+    assert module.MMRubricAgent._compute_final_scores(result) == module.MMRubricAgent._compute_final_scores(changed)
+    assert module.MMRubricAgent._build_scored_rubric_summary(result) == module.MMRubricAgent._build_scored_rubric_summary(changed)
+
+
+def test_keyboard_typing_does_not_require_an_element_ref(tmp_path):
+    log = tmp_path / "web_surfer.log"
+    log.write_text(json.dumps({"action": "type", "arguments": {"action": "type", "text": "Find this"}}) + "\n")
+    assert parse_actions(log, mode="dom_model")[0]["text"] == "Find this"
+
+
+def test_explicit_fill_still_requires_a_target(tmp_path):
+    log = tmp_path / "web_surfer.log"
+    log.write_text(json.dumps({"action": "fill", "arguments": {"action": "fill", "text": "value"}}) + "\n")
+    with pytest.raises(ValueError, match="requires ref or target"):
+        parse_actions(log, mode="dom_model")
 
 
 def test_screenshot_click_with_ref_does_not_require_coordinates(tmp_path):

@@ -66,7 +66,10 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
             )
             if not valid_coordinate and arguments.get("ref") is None and arguments.get("target") is None:
                 raise ValueError(f"{path}:{line_number}: screenshot click requires [x, y], ref, or target")
-        if mode == "dom_model" and name in {"click", "fill"}:
+        # WebSurfer "type" also represents keyboard input to the focused control
+        # (including browser Find). Only an explicit fill or click requires a
+        # DOM target; inventing a ref for keyboard typing changes the recording.
+        if mode == "dom_model" and (name == "click" or raw_name == "fill"):
             if arguments.get("ref") is None and arguments.get("target") is None:
                 raise ValueError(f"{path}:{line_number}: DOM-model {name} requires ref or target")
         signature: dict[str, Any] = {

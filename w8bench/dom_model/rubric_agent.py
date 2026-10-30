@@ -524,6 +524,7 @@ from .prompts import (  # noqa: E402
     CHECK_VALID_TASK_WITH_TRAJECTORY_PROMPT,
 )
 from .utils.validity import classify_task, _validate_verification_result
+from .utils.action_schema import ACTION_METADATA_KEYS
 
 logger = logging.getLogger(__name__)
 
@@ -2302,6 +2303,11 @@ class MMRubricAgent(VerifierAgent):
             args_str = ", ".join(sorted(action_definitions[act_name]))
             action_defs_lines.append(f"  - `{act_name}({args_str})`")
         action_definitions_text = "\n".join(action_defs_lines)
+        action_definitions_text += (
+            "\nRecorder annotations (" + ", ".join(sorted(ACTION_METADATA_KEYS))
+            + ") may accompany actions in the history. They are not tool parameters; "
+            "their presence alone is not an invalid invocation."
+        )
 
         prompt = Template(FIRST_POINT_OF_FAILURE_PROMPT).substitute(
             task_definition=task,
@@ -2499,7 +2505,10 @@ class MMRubricAgent(VerifierAgent):
         for sa in step_actions:
             step = sa["step_number"]
             name = sa["action_name"]
-            args_keys = set(sa["action_args_keys"]) - {"_call_id"}
+            # Keep the recorded arguments intact for all scoring prompts.
+            # Only this diagnostic key comparison separates tool parameters
+            # from recorder annotations such as thoughts and target identity.
+            args_keys = set(sa["action_args_keys"]) - {"_call_id"} - ACTION_METADATA_KEYS
 
             if not name:
                 continue
