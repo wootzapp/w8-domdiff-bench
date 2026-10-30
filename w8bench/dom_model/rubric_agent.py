@@ -103,7 +103,7 @@ DOM Evidence Pipeline (9 Steps)
       * Whole-rubric (default): 1 gpt-5 call rescores all criteria in a single
         pass, seeing the full rubric context for better cascading-dependency
         handling.
-      * Per-criterion (legacy): N sequential o4-mini calls, each scoring one
+      * Per-criterion (legacy): N sequential action-judge calls, each scoring one
         criterion with previously rescored criteria visible for context.
     Key rescoring principles:
       * Trust latest DOM state when multiple show the same UI element.
@@ -433,8 +433,8 @@ Each criterion in items contains:
 
 Model Assignment — Which LLM Client Is Used Where
 ---------------------------------------------------
-Three client parameters are accepted: model_client, o4mini_client, gpt5_client.
-In practice, model_client is typically o4-mini.
+Three client parameters are accepted: model_client, action_client, gpt5_client.
+The model_client parameter is retained for compatibility.
 
   gpt5_client (gpt-5.2):
     - Step 0a — Rubric Generation (_generate_rubric)
@@ -447,7 +447,7 @@ In practice, model_client is typically o4-mini.
     - Step 8  — Outcome Verification
     - Step 9a — Points of Failure Analysis
 
-  o4mini_client (o4-mini):
+  action_client (action/validity judge):
     - Step 0c — Action-Only Rubric Scoring (the text-only baseline scorer)
     - Step 6  — Per-Criterion Rescoring (legacy path, rescore_whole_mm_rubric=False)
     - Step 9b — Trajectory-Informed Task Verification
@@ -455,7 +455,7 @@ In practice, model_client is typically o4-mini.
 
   NOTE: model_client (_model_client) is no longer used directly in any pipeline
   step. It is retained for backward compatibility but all calls have been routed
-  to either gpt5_client or o4mini_client as listed above.
+  to either gpt5_client or action_client as listed above.
 
 """
 
@@ -579,13 +579,13 @@ class MMRubricAgentConfig(AgentConfig):
     name: str = "mm_rubric_agent"
 
     # LLM clients — callers pass concrete ChatCompletionClient instances
-    o4mini_client: Any = None
+    action_client: Any = None
     gpt5_client: Any = None
 
     # LLM client configs — alternative to passing concrete clients.
     # When provided (and the corresponding client is None), the client
     # is created via ``create_client_from_config`` at init time.
-    o4mini_client_config: Optional[Dict[str, Any]] = None
+    action_client_config: Optional[Dict[str, Any]] = None
     gpt5_client_config: Optional[Dict[str, Any]] = None
 
     # Pipeline knobs
@@ -886,9 +886,9 @@ class MMRubricAgent(VerifierAgent):
         # no concrete client instance was supplied. Uses DOM-model verifier's client
         # factory so MMRubricAgent plugs into the same endpoint-config
         # format the rest of the DOM-model verifier package already consumes.
-        if self.config.o4mini_client is None and self.config.o4mini_client_config:
-            self.config.o4mini_client = _build_client_from_endpoint_config(
-                self.config.o4mini_client_config
+        if self.config.action_client is None and self.config.action_client_config:
+            self.config.action_client = _build_client_from_endpoint_config(
+                self.config.action_client_config
             )
         if self.config.gpt5_client is None and self.config.gpt5_client_config:
             self.config.gpt5_client = _build_client_from_endpoint_config(
@@ -896,8 +896,8 @@ class MMRubricAgent(VerifierAgent):
             )
 
         assert (
-            self.config.o4mini_client is not None
-        ), "o4mini_client or o4mini_client_config must be provided"
+            self.config.action_client is not None
+        ), "action_client or action_client_config must be provided"
         assert (
             self.config.gpt5_client is not None
         ), "gpt5_client or gpt5_client_config must be provided"
@@ -911,8 +911,8 @@ class MMRubricAgent(VerifierAgent):
         return MMRubricAgentConfig
 
     @property
-    def _o4mini_client(self) -> ChatCompletionClient:
-        return self.config.o4mini_client
+    def _action_client(self) -> ChatCompletionClient:
+        return self.config.action_client
 
     @property
     def _gpt5_client(self) -> ChatCompletionClient:
@@ -1790,7 +1790,7 @@ class MMRubricAgent(VerifierAgent):
             while max_iters > 0:
                 try:
                     response_text = await self._call_llm(
-                        messages, self._o4mini_client, json_output=True
+                        messages, self._action_client, json_output=True
                     )
                     rescore = json.loads(response_text)
                     self._validate_rescore(rescore, criterion["max_points"])
@@ -2588,7 +2588,7 @@ class MMRubricAgent(VerifierAgent):
         to make a more informed judgment about whether the *task itself* was
         ambiguous or invalid.
 
-        Uses 1 o4-mini call (with up to 5 retry attempts on validation errors).
+        Uses 1 action-judge call (with up to 5 retry attempts on validation errors).
 
         Returns:
             Dict matching the ``TaskAgentResult`` schema, including
@@ -2634,7 +2634,7 @@ class MMRubricAgent(VerifierAgent):
         while max_iters > 0:
             try:
                 response_text = await self._call_llm(
-                    messages, self._o4mini_client, json_output=True
+                    messages, self._action_client, json_output=True
                 )
                 result = json.loads(response_text)
                 _validate_verification_result(result)
@@ -2700,7 +2700,7 @@ class MMRubricAgent(VerifierAgent):
         result = await classify_task(
             task,
             url,
-            self._o4mini_client,
+            self._action_client,
             apps=apps,
             system_messages=self.DEFAULT_SYSTEM_MESSAGES,
         )
@@ -3201,7 +3201,7 @@ class MMRubricAgent(VerifierAgent):
         while max_iters > 0:
             try:
                 response_text = await self._call_llm(
-                    messages, self._o4mini_client, json_output=True
+                    messages, self._action_client, json_output=True
                 )
                 response_dict = json.loads(response_text)
                 response_dict = graft_scores_onto_rubric(rubric_dict, response_dict)

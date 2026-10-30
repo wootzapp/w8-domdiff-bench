@@ -59,7 +59,7 @@ capture boundaries described below. See the
 
 ## Actions and recorded states
 
-The acting model, `gpt-5.2`, generates actions from compact page text,
+The acting model, `gpt-5.6`, generates actions from compact page text,
 interactive control references, task memory, and recent action outcomes.
 Screenshots are retained for inspection and screenshot-based verification, rather than being sent to
 the acting model. Chromium node identifiers and executable `agent-browser`

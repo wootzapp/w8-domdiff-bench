@@ -158,9 +158,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     gpt_calls = {"logical_calls": 0, "api_attempts": 0}
-    o4_calls = {"logical_calls": 0, "api_attempts": 0}
+    action_calls = {"logical_calls": 0, "api_attempts": 0}
     gpt_usage = {"prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0, "total_tokens": 0}
-    o4_usage = dict(gpt_usage)
+    action_usage = dict(gpt_usage)
     origin = "screenshot_generate_rubric"
     if args.import_rubric:
         imported = load_canonical_rubric(
@@ -175,14 +175,14 @@ def main(argv: list[str] | None = None) -> int:
         gpt5_client = GracefulRetryClient.from_path(
             path=args.eval_config, logger=logger, eval_model=CANONICAL_JUDGE_MODEL
         )
-        o4mini_client = GracefulRetryClient.from_path(
+        action_client = GracefulRetryClient.from_path(
             path=args.eval_config, logger=logger, eval_model=CANONICAL_ACTION_MODEL
         )
         gpt_calls = _instrument(gpt5_client)
-        o4_calls = _instrument(o4mini_client)
+        action_calls = _instrument(action_client)
         agent = MMRubricAgent(
             config=MMRubricAgentConfig(
-                o4mini_client=o4mini_client,
+                action_client=action_client,
                 gpt5_client=gpt5_client,
                 action_definitions=FARA_ACTION_DEFINITIONS,
                 majority_vote_instances=1,
@@ -197,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         gpt_usage = _usage(gpt5_client)
-        o4_usage = _usage(o4mini_client)
+        action_usage = _usage(action_client)
 
     denominator = validate_rubric(rubric)
     rubric_sha = canonical_sha256(rubric)
@@ -211,13 +211,13 @@ def main(argv: list[str] | None = None) -> int:
         dom_root / "task_data_with_canonical_rubric.json",
         _sidecar_payload(dom_root / "task_data.json", rubric),
     )
-    logical = gpt_calls["logical_calls"] + o4_calls["logical_calls"]
-    attempts = gpt_calls["api_attempts"] + o4_calls["api_attempts"]
+    logical = gpt_calls["logical_calls"] + action_calls["logical_calls"]
+    attempts = gpt_calls["api_attempts"] + action_calls["api_attempts"]
     usage = {
         CANONICAL_JUDGE_MODEL: gpt_usage,
-        CANONICAL_ACTION_MODEL: o4_usage,
+        CANONICAL_ACTION_MODEL: action_usage,
         "combined": {
-            key: gpt_usage[key] + o4_usage[key]
+            key: gpt_usage[key] + action_usage[key]
             for key in ("prompt_tokens", "completion_tokens", "reasoning_tokens", "total_tokens")
         },
     }
@@ -235,7 +235,7 @@ def main(argv: list[str] | None = None) -> int:
         "retries": max(0, attempts - logical),
         "call_metrics": {
             CANONICAL_JUDGE_MODEL: {**gpt_calls, "retries": max(0, gpt_calls["api_attempts"] - gpt_calls["logical_calls"])},
-            CANONICAL_ACTION_MODEL: {**o4_calls, "retries": max(0, o4_calls["api_attempts"] - o4_calls["logical_calls"])},
+            CANONICAL_ACTION_MODEL: {**action_calls, "retries": max(0, action_calls["api_attempts"] - action_calls["logical_calls"])},
         },
         "token_usage": usage,
         "preflight": preflight,

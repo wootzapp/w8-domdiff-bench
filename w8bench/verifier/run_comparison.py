@@ -66,8 +66,8 @@ def validate_command_parity(run_commands: dict[str, list[str]]) -> dict[str, Any
             _arg_value(dom_model, "--judge-model"),
         ),
         "action_judge_model": (
-            _arg_value(screenshot, "--o4mini-model"),
-            _arg_value(dom_model, "--o4mini-model"),
+            _arg_value(screenshot, "--action-model"),
+            _arg_value(dom_model, "--action-model"),
         ),
         "rubric_threshold": (
             _arg_value(screenshot, "--rubric-threshold"),
@@ -190,7 +190,7 @@ def commands(
             "--eval-config", str(eval_config),
             "--output", str(screenshot_output),
             "--judge-model", CANONICAL_JUDGE_MODEL,
-            "--o4mini-model", CANONICAL_ACTION_MODEL,
+            "--action-model", CANONICAL_ACTION_MODEL,
             "--rubric-threshold", str(CANONICAL_SETTINGS["rubric_threshold"]),
             "--max-images-per-criterion", str(CANONICAL_SETTINGS["max_evidence_items_per_criterion"]),
             "--majority-vote-instances", str(CANONICAL_SETTINGS["majority_vote_instances"]),
@@ -205,7 +205,7 @@ def commands(
             "--eval-config", str(eval_config),
             "--output", str(dom_output),
             "--judge-model", CANONICAL_JUDGE_MODEL,
-            "--o4mini-model", CANONICAL_ACTION_MODEL,
+            "--action-model", CANONICAL_ACTION_MODEL,
             "--rubric-threshold", str(CANONICAL_SETTINGS["rubric_threshold"]),
             "--max-evidence-per-criterion", str(CANONICAL_SETTINGS["max_evidence_items_per_criterion"]),
             "--min-relevance-threshold", str(CANONICAL_SETTINGS["min_relevance_threshold"]),

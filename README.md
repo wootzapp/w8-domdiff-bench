@@ -296,7 +296,7 @@ for overlap and sensitivity details.
 
 ## 6 System architecture and boundaries
 
-The acting model, `gpt-5.2`, generates browser actions from DOM-based text
+The acting model, `gpt-5.6`, generates browser actions from DOM-based text
 observations and executable `agent-browser` references. The recorder saves
 an initial browser state and one state after each executed action, including
 screenshots and structured DOM evidence. DOM-diff Optimized describes individual captured states;
@@ -347,10 +347,11 @@ state and one after each executed action. Raw states start at
 | Paired verifiers | Scores image and text evidence against the same rubric. | [screenshot_verifier](w8bench/screenshot_verifier/) · [dom_model](w8bench/dom_model/) | Inspect per-criterion results and scoring controls in run receipts. |
 | Orchestration and audit | Normalizes results, audits source availability, and saves comparison provenance. | [run_full_comparison.py](w8bench/verifier/run_full_comparison.py) · [evidence_audit.py](w8bench/verifier/evidence_audit.py) | Inspect `evidence_audit.json` and its source citations. |
 
-Both verifiers use the same scoring controls. The benchmark uses `gpt-5.2`
-for action generation, rubric generation, and evidence judgments;
-`o4-mini` for action/validity judgments; and `gpt-5.6-sol` for evidence
-audit/adjudication. Internal WootzApp employees verify the audit findings.
+Both verifiers use the same scoring controls. Current evaluations use `gpt-5.2`
+for rubric generation and evidence judgments, `gpt-5.6-terra` for action/validity
+judgments, and `gpt-5.6-sol` for evidence audit/adjudication. Recordings use
+`gpt-5.6` for browser-action generation. Internal WootzApp employees verify
+the published audit findings.
 See [model provenance](docs/technical-report.md#models-and-evaluation-provenance).
 
 The screenshot baseline follows the Universal Verifier's rubric-based

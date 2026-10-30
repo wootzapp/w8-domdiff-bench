@@ -30,7 +30,7 @@ the trajectories’ suitability for training.
 
 Tasks were executed in `w8-core` through `agent-browser`. The recorder
 captured an initial state and one state after every executed action. The
-acting model, `gpt-5.2`, generated actions from DOM-based observations.
+acting model, `gpt-5.6`, generated actions from DOM-based observations.
 Screenshots were stored as evaluation artifacts and were not sent to the
 acting model.
 

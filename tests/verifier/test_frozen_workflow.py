@@ -13,6 +13,29 @@ from w8bench.verifier.run_comparison import commands, validate_command_parity
 from w8bench.verifier.validate_inputs import compare_semantic_actions, parse_actions, validate_pair
 
 
+def test_action_judge_model_matches_both_packages_and_endpoint_config():
+    from w8bench.dom_model.control import CANONICAL_ACTION_MODEL as dom_model
+    from w8bench.verifier.common import CANONICAL_ACTION_MODEL, validate_endpoint_configs
+
+    root = Path(__file__).resolve().parents[2]
+    assert CANONICAL_ACTION_MODEL == dom_model == "gpt-5.6-terra"
+    validate_endpoint_configs(root / "config")
+    endpoint = json.loads((root / "config/openai_gpt5_6_terra.json").read_text())
+    assert endpoint["CHAT_COMPLETION_KWARGS_JSON"]["model"] == CANONICAL_ACTION_MODEL
+
+
+@pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
+def test_standalone_action_judge_defaults_to_terra_and_allows_override(package):
+    module = importlib.import_module(f"w8bench.{package}.runner")
+    arguments = ["--input", "task", "--rubric-file", "rubric.json",
+                 "--eval-config", "config", "--output", "result.json"]
+    if package == "dom_model":
+        arguments += ["--generation-metrics", "metrics.json"]
+    assert module.parse_args(arguments).action_model == "gpt-5.6-terra"
+    # Allow an explicit action/validity model selection.
+    assert module.parse_args(arguments + ["--action-model", "custom-model"]).action_model == "custom-model"
+
+
 @pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
 @pytest.mark.parametrize("action,keys,expected", [
     ("left_click", ["ref", "target", "thoughts"], None),

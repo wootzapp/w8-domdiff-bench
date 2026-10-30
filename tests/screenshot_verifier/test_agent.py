@@ -100,9 +100,9 @@ def test_mm_rubric_agent_accepts_client_instance():
 
     agent = MMRubricAgent(
         config=MMRubricAgentConfig(
-            o4mini_client=_DummyClient(),
+            action_client=_DummyClient(),
             gpt5_client=_DummyClient(),
         )
     )
-    assert agent.config.o4mini_client is not None
+    assert agent.config.action_client is not None
     assert agent.config.gpt5_client is not None

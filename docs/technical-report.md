@@ -8,13 +8,13 @@ Both representations share the same task, executed action history, and final ans
 
 ## Foundations and baselines
 
-WebVoyager introduced multimodal automatic evaluation for open-ended web tasks [[1]](#references). Our screenshot baseline follows the Universal Verifier's rubric-centered design: criterion-specific evidence selection, separate process and outcome judgments, and failure attribution [[2]](#references). WootzApp's contribution is the DOM-based adaptation, browser-native evidence capture, paired comparison protocol, and source-aware audit. The acting agent uses `gpt-5.2` to generate actions from compact text observations; screenshots are retained for inspection and screenshot-based verification.
+WebVoyager introduced multimodal automatic evaluation for open-ended web tasks [[1]](#references). Our screenshot baseline follows the Universal Verifier's rubric-centered design: criterion-specific evidence selection, separate process and outcome judgments, and failure attribution [[2]](#references). WootzApp's contribution is the DOM-based adaptation, browser-native evidence capture, paired comparison protocol, and source-aware audit. The acting agent uses `gpt-5.6` to generate actions from compact text observations; screenshots are retained for inspection and screenshot-based verification.
 
 WebArena provides screenshot, HTML DOM, and accessibility-tree observations and evaluates functional task completion in controlled websites [[4]](#references). These systems establish context for structured and visual browser evidence. This benchmark evaluates what paired recorded representations preserve under a shared rubric; it does not reproduce those benchmarks' task-success experiments. The [architecture guide](architecture.md) explains the browser stack and representation history.
 
 ## Browser capture and evaluation pipeline
 
-The repository's [task recorder](../w8bench/task_recorder/) supplies `gpt-5.2` with DOM-based observations and executable `agent-browser` references. The harness validates each proposed action, executes it in `w8-core`, and records the resulting screenshot and structured browser state. DOM-diff Optimized organizes each captured state into readable content, tables, controls, relationships, and scroll context.
+The repository's [task recorder](../w8bench/task_recorder/) supplies `gpt-5.6` with DOM-based observations and executable `agent-browser` references. The harness validates each proposed action, executes it in `w8-core`, and records the resulting screenshot and structured browser state. DOM-diff Optimized organizes each captured state into readable content, tables, controls, relationships, and scroll context.
 
 The [paired evaluation pipeline](../w8bench/verifier/) validates the prepared screenshot/DOM bundles, freezes a shared rubric, runs both verifiers, and audits criterion-level evidence availability. Internal WootzApp employees verify the `gpt-5.6-sol` audit/adjudication findings. The [published dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) hosts the trajectories and supporting artifacts used by this repository; the tables below report the resulting benchmark findings.
 
@@ -358,22 +358,25 @@ The group counts sum to `2 + 7 + 1 + 1 + 1 = 12`. Execution failures, website bl
 
 The benchmark uses separate models for generating browser actions, evaluating trajectories, and auditing evidence. Internal WootzApp employees verify the evidence-audit/adjudication findings.
 
-**Table 11.** Models and reviewers used in the benchmark
+**Table 11.** Model configuration and reviewers
 
 | Role | Model or reviewer |
 |---|---|
-| Acting agent: browser-action generation | `gpt-5.2` |
+| Acting agent: browser-action generation | `gpt-5.6` |
 | Screenshot verification: evidence/rubric judge | `gpt-5.2` |
-| Screenshot verification: action/validity judge | `o4-mini` |
+| Screenshot verification: action/validity judge | `gpt-5.6-terra` |
 | DOM verification: evidence/rubric judge | `gpt-5.2` |
-| DOM verification: action/validity judge | `o4-mini` |
+| DOM verification: action/validity judge | `gpt-5.6-terra` |
 | Rubric generation | `gpt-5.2` |
 | Automated evidence audit/adjudication | `gpt-5.6-sol` |
 | Evidence-audit/adjudication verification | Internal WootzApp employees |
 
 *Browser-action generation, evidence judges, action/validity judges, and human verification are separate roles.*
 
-Both verifier results are checked against the same frozen rubric per task. Verifier model identities are recorded in command arguments and run metrics; rubric-generation identities include models with nonzero generation calls. GPT-5.2 generates the acting agent's browser actions. GPT-5.6 Sol produces the evidence-audit/adjudication findings, which are then verified by internal WootzApp employees.
+Each evaluation manifest records the models and controls associated with its
+results.
+
+Both verifier results are checked against the same frozen rubric per task. Verifier model identities are recorded in command arguments and run metrics; rubric-generation identities include models with nonzero generation calls. GPT-5.6 generates the acting agent's browser actions. GPT-5.6 Sol produces the evidence-audit/adjudication findings, which are then verified by internal WootzApp employees.
 
 Example provenance: [run manifest](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_01/20261021T040737Z/run_manifest.json), [rubric-generation metrics](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_01/20261021T040737Z/rubric_generation_metrics.json), [screenshot verification metrics](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_01/20261021T040737Z/screenshot_verifier/run_metrics.json), and [DOM verification metrics](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_01/20261021T040737Z/dom_model/run_metrics.json).
 

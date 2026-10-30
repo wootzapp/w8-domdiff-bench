@@ -134,17 +134,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     preflight = preflight_screenshot_task(task_dir)
 
     eval_config = Path(args.eval_config).resolve(strict=True)
-    o4mini_client = GracefulRetryClient.from_path(
-        path=str(eval_config), logger=logger, eval_model=args.o4mini_model
+    action_client = GracefulRetryClient.from_path(
+        path=str(eval_config), logger=logger, eval_model=args.action_model
     )
     gpt5_client = GracefulRetryClient.from_path(
         path=str(eval_config), logger=logger, eval_model=args.judge_model
     )
-    _instrument_client_calls(o4mini_client)
+    _instrument_client_calls(action_client)
     _instrument_client_calls(gpt5_client)
     agent = MMRubricAgent(
         config=MMRubricAgentConfig(
-            o4mini_client=o4mini_client,
+            action_client=action_client,
             gpt5_client=gpt5_client,
             max_images_per_criterion=args.max_images_per_criterion,
             majority_vote_instances=args.majority_vote_instances,
@@ -199,11 +199,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         ),
         "token_usage": {
             "judge": _usage_dict(gpt5_client),
-            "action_judge": _usage_dict(o4mini_client),
+            "action_judge": _usage_dict(action_client),
         },
         "call_metrics": {
             "judge": _call_metrics(gpt5_client),
-            "action_judge": _call_metrics(o4mini_client),
+            "action_judge": _call_metrics(action_client),
         },
         "intermediate_mm_rubric_steps": raw.get("intermediate_mm_rubric_steps"),
         "duration_sec": round(time.time() - started, 3),
@@ -223,7 +223,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--eval-config", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--judge-model", default="gpt-5")
-    parser.add_argument("--o4mini-model", default="o4-mini")
+    parser.add_argument("--action-model", default="gpt-5.6-terra",
+                        help="Action/validity judge model")
     parser.add_argument("--rubric-threshold", type=float, default=0.8)
     parser.add_argument("--max-images-per-criterion", type=int, default=5)
     parser.add_argument("--majority-vote-instances", type=int, default=1)
