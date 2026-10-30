@@ -119,16 +119,19 @@ acting-agent improvement or absolute evidence completeness.
 
 ## Current representation size
 
-| Representation | Artifact | Captured observations | Mean size |
-| --- | --- | ---: | ---: |
-| DOM-diff Optimized | `dom_model.txt` | 853 | **5.16 KiB** |
-| Text-dense DOM | `dom_full.txt` | 853 | **47.56 KiB** |
-| Full structured DOM | `dom.json` | 853 | **207.97 KiB** |
+| Representation | Artifact | Captured observations | Mean kB | Mean KiB |
+| --- | --- | ---: | ---: | ---: |
+| DOM-diff Optimized | `dom_model.txt` | 853 | 5.28 | **5.16** |
+| Text-dense DOM | `dom_full.txt` | 853 | 48.70 | **47.56** |
+| Full structured DOM | `dom.json` | 853 | 212.96 | **207.97** |
 
 The means use all available state files in `recordings/`, with identical
-853-file cohorts for these three representations. A KiB is 1,024 bytes.
+853-file cohorts for these three representations. A kB is 1,000 bytes and
+a KiB is 1,024 bytes. Graphs use KiB; the two units are not interchangeable.
 These are serialized sizes, not tokenizer counts. Excluded tasks remain part
 of recording-level size measurements when they contain complete state files.
+
+![Mean file sizes across the same captured observations.](assets/evaluations/representation-sizes.png)
 
 ## Evaluation coverage
 
@@ -160,7 +163,7 @@ Its 7 rubric criteria remain in scoring results and are excluded
 from evidence-loss statistics. The eight input exclusions and this audit gap
 are disclosed, not counted as zero-loss tasks.
 
-![Task coverage.](assets/evaluations/task-coverage.svg)
+![Task coverage.](assets/evaluations/task-coverage.png)
 
 ## Evidence preservation
 
@@ -174,7 +177,9 @@ Screenshot loss has an exploratory 95% Wilson interval of
 These intervals assume independent criteria and do not adjust for within-task
 correlation or automated-annotation error.
 
-![Screenshot and DOM evidence-loss rates.](assets/evaluations/evidence-loss-rates.svg)
+![Screenshot and DOM evidence-loss rates.](assets/evaluations/evidence-loss-rates.png)
+
+![Interpretation misses identified by the automated audit.](assets/evaluations/verifier-miss-rates.png)
 
 ## URL sensitivity and paired comparison
 
@@ -194,6 +199,8 @@ The marginal counts overlap on **4 criteria**. Thus 118+7-4 gives
 **121 distinct affected criteria across 74 tasks**. The
 461 criteria with no confirmed source gap remain in the denominator.
 Shared absence from both representations is outside this paired metric.
+
+![Paired outcomes across all 582 audited criteria.](assets/evaluations/paired-outcomes.png)
 
 ## Source-evidence loss by category
 

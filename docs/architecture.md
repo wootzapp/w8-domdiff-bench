@@ -44,13 +44,14 @@ ablation measuring the effect of each engineering change.
 
 The three means below use the same 853 captured observations in `recordings/`.
 
-| Representation | Artifact | Captured observations | Mean size |
-| --- | --- | ---: | ---: |
-| DOM-diff Optimized | `dom_model.txt` | 853 | **5.16 KiB** |
-| Text-dense DOM | `dom_full.txt` | 853 | **47.56 KiB** |
-| Full structured DOM | `dom.json` | 853 | **207.97 KiB** |
+| Representation | Artifact | Captured observations | Mean kB | Mean KiB |
+| --- | --- | ---: | ---: | ---: |
+| DOM-diff Optimized | `dom_model.txt` | 853 | 5.28 | **5.16** |
+| Text-dense DOM | `dom_full.txt` | 853 | 48.70 | **47.56** |
+| Full structured DOM | `dom.json` | 853 | 212.96 | **207.97** |
 
-A KiB is 1,024 bytes. File size is not token usage or evidence completeness.
+A kB is 1,000 bytes; a KiB is 1,024 bytes. Graphs use KiB. File size is not
+token usage or evidence completeness.
 See the [report](technical-report.md#current-representation-size).
 
 ## Actions and recorded states

@@ -90,7 +90,8 @@ describes each captured state directly.
 The model-facing `dom_model.txt` observations average **5.16 KiB**.
 Detailed readable DOM averages **47.56 KiB**, and structured
 snapshots average **207.97 KiB** across the same 853 captured
-observations. Serialized file size is not token usage or an evidence-loss rate.
+observations. These values use KiB (1,024 bytes), not decimal kB (1,000 bytes).
+Serialized file size is not token usage or an evidence-loss rate.
 
 ### 3.2 From Agent Actions to Recorded Evidence
 
@@ -130,7 +131,7 @@ Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were ex
 | Evidence losses | **118/582 (20.27%)** | **7/582 (1.20%)** |
 | Verifier interpretation misses | 84/582 (14.43%) | 76/582 (13.06%) |
 
-![Screenshot and DOM evidence-loss rates across 582 audited criteria.](docs/assets/evaluations/evidence-loss-rates.svg)
+![Screenshot and DOM evidence-loss rates across 582 audited criteria.](docs/assets/evaluations/evidence-loss-rates.png)
 
 The graph uses exploratory 95% Wilson intervals. They assume independent
 criteria and do not adjust for correlation within tasks or audit errors.
@@ -149,13 +150,15 @@ cohort; that is not a task-success or model-accuracy improvement.
 - Task 44 C2: the audit identifies missing evidence of the worldwide filter
   state in DOM.
 
+![Paired evidence outcomes across all 582 audited criteria.](docs/assets/evaluations/paired-outcomes.png)
+
 The [criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion)
 links to the [saved Hugging Face audits](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/a10226a46d3a9c3ee5f0f40b244163d2a6b50e75/evaluation),
 which retain each source claim and its citations. Exact URL identity can matter under the audit rule, but
 these artifacts do not contain separately assigned primary categories; no
 URL-excluded or access-blocker subset totals are asserted.
 
-![Task coverage: 100 recorded, 92 evaluated and 91 with completed evidence audits.](docs/assets/evaluations/task-coverage.svg)
+![Task coverage: 100 recorded, 92 evaluated and 91 with completed evidence audits.](docs/assets/evaluations/task-coverage.png)
 
 Tasks are not excluded merely because they failed: the evaluated set includes
 5 execution-error recordings. Missing captures and alignment failures are

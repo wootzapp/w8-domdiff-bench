@@ -40,6 +40,19 @@ The preparation report preserves the exact validation errors.
 | ---: | ---: | ---: | ---: |
 | 114 | 3 | 4 | 461 |
 
+## Mean recorded file sizes
+
+The same 853 recorded states are used for each file type. Means are per
+captured state, not averages of task averages.
+
+| File | Mean kB | Mean KiB |
+| --- | ---: | ---: |
+| `dom_model.txt` | 5.28 | 5.16 |
+| `dom_full.txt` | 48.70 | 47.56 |
+| `dom.json` | 212.96 | 207.97 |
+
+1 kB = 1,000 bytes; 1 KiB = 1,024 bytes. Graphs use KiB.
+
 ## Artifacts
 
 - [Summary](summary.json): counts, cohort exclusions, confidence intervals,
@@ -48,7 +61,7 @@ The preparation report preserves the exact validation errors.
   adjudications, citations and frozen-rubric checksums.
 - [Technical report](../docs/technical-report.md): methods, interpretation,
   coverage and criterion-level findings.
-- [Figures](../docs/assets/evaluations/): evidence-loss rates and task coverage.
+- [Figures](../docs/assets/evaluations/): evidence-loss rates, coverage, paired outcomes, verifier misses and observation sizes.
 
 Saved inputs and evaluations use `trajectories/` and `evaluation/`. The
 [dataset repository](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks)
