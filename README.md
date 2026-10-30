@@ -130,6 +130,17 @@ DOM has **94.07% fewer losses** across all categories and **78.79% fewer non-URL
 
 The audits identify **121 affected criteria across 74 tasks**. Four criteria have losses in both representations, so the 118 screenshot and 7 DOM losses overlap. Each affected representation receives one primary [category](docs/evidence-categories.md), with the assignment and rationale recorded in [evidence_categories.tsv](results/evidence_categories.tsv).
 
+| Category | Screenshots | DOM |
+|---|---:|---:|
+| Exact text and values | 20 | 4 |
+| URLs | 85 | 0 |
+| Control states | 0 | 1 |
+| Table entries | 7 | 0 |
+| Label–value links | 1 | 2 |
+| Capture omissions | 5 | 0 |
+| **All categories** | **118** | **7** |
+| **Non-URL subtotal** | **33** | **7** |
+
 Examples show the practical differences:
 
 - **Exact values:** task_08 C2 preserves an absolute publication date in DOM; screenshots show a relative age.
