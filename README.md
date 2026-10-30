@@ -9,13 +9,9 @@ state. The recorder, paired verifiers, and evidence audit make it possible
 to inspect what a browser agent observed and which required information each
 representation preserved.
 
-The collection contains **100 recorded tasks**, of which **92 have usable
-paired inputs for evaluation**. Completed evidence audits cover **91 tasks
-and 582 criteria**, identifying **118 screenshot losses (20.27%)** and
-**7 DOM losses (1.20%)**. Eight tasks fail capture or alignment
-checks; task 76 has verifier results but no valid evidence audit. These
-measurements describe evidence availability, not task success or acting-agent
-improvement.
+The collection contains **100 recorded browser tasks** and **92 evaluated task pairs**. Completed evidence audits cover **91 tasks and 582 criteria**, identifying **118 screenshot losses (20.27%)** and **7 DOM losses (1.20%)**. Primary URL losses account for 85 screenshot losses; excluding that category leaves 33 screenshot losses and 7 DOM losses, with all 582 audited criteria retained. These measurements describe evidence availability, not task success or acting-agent improvement.
+
+Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. Evidence-loss results cover 91 tasks because task 76’s audit failed validation.
 
 The [technical report](docs/technical-report.md) contains the full method and
 all criterion-level findings. This README keeps the headline results,
@@ -87,11 +83,7 @@ describes each captured state directly.
 | Browser-native processing | Re-reading the live page could differ from the snapshot that had been recorded. | Moved model-DOM selection and grouping into Chromium so structured JSON and rendered text describe the same captured state. |
 | Preservation refinements | Nested text, context, author labels, control state, and long content could be omitted. | Refined selection and removed the former subtree-text limit while retaining viewport-based capture. |
 
-The model-facing `dom_model.txt` observations average **5.16 KiB**.
-Detailed readable DOM averages **47.56 KiB**, and structured
-snapshots average **207.97 KiB** across the same 853 captured
-observations. These values use KiB (1,024 bytes), not decimal kB (1,000 bytes).
-Serialized file size is not token usage or an evidence-loss rate.
+The model-facing `dom_model.txt` observations average **5.16 KiB**. Across the same 853 recorded states, readable `dom_full.txt` averages **47.56 KiB** and structured `dom.json` averages **207.97 KiB**. A KiB is 1,024 bytes; a decimal kB is 1,000 bytes. These size measurements are descriptive and separate from evidence-loss rates and token usage.
 
 ### 3.2 From Agent Actions to Recorded Evidence
 
@@ -111,58 +103,47 @@ namespaces.
 
 ## 4 Evaluation results
 
-A source-evidence loss means a required item is absent from one recorded
-representation and present in the other. The counts come from saved
-`gpt-5.6-sol` audit/adjudication. Human verification is not established by
-these artifacts; evidence availability is separate from task success.
+A source-evidence loss means a required item is absent from one recorded representation and present in the other. The counts below come from saved `gpt-5.6-sol` evidence audits. They measure evidence availability, not task success, answer correctness or acting-agent improvement.
 
 Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. Evidence-loss results cover 91 tasks because task 76’s audit failed validation.
 
-| Coverage | Count |
-| --- | ---: |
-| Recorded tasks | 100 |
-| Evaluated tasks | 92 |
-| Completed evidence audits | 91 |
-| Criteria scored by both verifiers | 589 |
-| Criteria included in evidence-loss rates | 582 |
+| Analysis | Tasks | Audited criteria | Screenshot losses | DOM losses |
+| --- | ---: | ---: | ---: | ---: |
+| All source-evidence loss categories | 91 | 582 | **118 (20.27%)** | **7 (1.20%)** |
+| URL loss category excluded | 91 | 582 | **33 (5.67%)** | **7 (1.20%)** |
+| Listed access-blocked task IDs excluded | 82 | 529 | **107 (20.23%)** | **7 (1.32%)** |
+| Listed access-blocked task IDs and URL loss category excluded | 82 | 529 | **32 (6.05%)** | **7 (1.32%)** |
 
-| Measure | Screenshot | DOM-diff Optimized |
-| --- | ---: | ---: |
-| Evidence losses | **118/582 (20.27%)** | **7/582 (1.20%)** |
-| Verifier interpretation misses | 84/582 (14.43%) | 76/582 (13.06%) |
+Excluding the primary URL category removes those losses from the numerator and retains every audited criterion. Excluding the nine cited blocker-task IDs removes their 53 criteria. The [report defines both exclusions](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks), and separately gives alternatives that remove entire criteria with primary URL findings.
 
-![Screenshot and DOM evidence-loss rates across 582 audited criteria.](docs/assets/evaluations/evidence-loss-rates.png)
+![Screenshot and DOM evidence-loss rates across four analysis choices.](docs/assets/evaluations/evidence-loss-rates.png)
 
-The graph uses exploratory 95% Wilson intervals. They assume independent
-criteria and do not adjust for correlation within tasks or audit errors.
+The intervals are exploratory 95% Wilson intervals. They assume independent criteria and do not adjust for within-task correlation or annotation errors. Counts, intervals and paired outcomes are in the [technical report](docs/technical-report.md#url-sensitivity-and-paired-comparison).
+
+### Why URL sensitivity matters
+
+URLs are the primary category for **85 of 118 screenshot losses (72.03%)**. Screenshot capture omits the browser’s address bar. Under the saved audit’s identity rule, a missing URL counts only when the rubric requires exact website, page, record or endpoint identity and DOM preserves that URL. Branding and shared action-history URLs do not substitute for URL evidence within the representation itself.
+
+DOM has **94.07% fewer losses** across all categories and **78.79% fewer non-URL losses**. The URL-excluded view recalculates saved findings; it does not measure what would happen if URLs were added to screenshots or a different rubric were used. Secondary URL gaps in other primary categories are not removed.
 
 ### What the findings show
 
-The audits identify **121 affected criteria across 74 tasks**.
-Four criteria lose different items in both representations, so the two loss
-counts overlap. DOM has **94.07% fewer criterion-level losses** in this
-cohort; that is not a task-success or model-accuracy improvement.
+The audits identify **121 affected criteria across 74 tasks**. Four criteria have losses in both representations, so the 118 screenshot and 7 DOM losses overlap. Each affected representation receives one primary [category](docs/evidence-categories.md), with the assignment and rationale recorded in [evidence_categories.tsv](results/evidence_categories.tsv).
 
-- Task 2 C2: screenshots preserve the publisher label/value association while
-  DOM preserves page identity, producing loss in both representations.
-- Task 19 C2: DOM preserves the requested release-highlight bullets that
-  the screenshots omit.
-- Task 44 C2: the audit identifies missing evidence of the worldwide filter
-  state in DOM.
+Examples show the practical differences:
 
-![Paired evidence outcomes across all 582 audited criteria.](docs/assets/evaluations/paired-outcomes.png)
+- **Exact values:** task_08 C2 preserves an absolute publication date in DOM; screenshots show a relative age.
+- **Capture coverage:** task_19 C2 preserves three complete highlight rows in DOM; screenshots stop at the heading.
+- **Visual form:** task_37 C4 preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
+- **Relationships and controls:** DOM losses include a disconnected publisher label/value in task_02 C2 and missing World radio selection in task_44 C2.
 
-The [criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion)
-links to the [saved Hugging Face audits](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/a10226a46d3a9c3ee5f0f40b244163d2a6b50e75/evaluation),
-which retain each source claim and its citations. Exact URL identity can matter under the audit rule, but
-these artifacts do not contain separately assigned primary categories; no
-URL-excluded or access-blocker subset totals are asserted.
+The detailed findings and evidence links are in the [report’s six-column criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion). Category annotations summarize the saved findings; they do not change verifier scores or audit decisions.
 
-![Task coverage: 100 recorded, 92 evaluated and 91 with completed evidence audits.](docs/assets/evaluations/task-coverage.png)
+![Non-URL evidence losses by category for all completed audits and the subset excluding cited blocker-task IDs.](docs/assets/evaluations/non-url-loss-categories.png)
 
-Tasks are not excluded merely because they failed: the evaluated set includes
-5 execution-error recordings. Missing captures and alignment failures are
-input exclusions; task 76's audit error is a separate evaluation-stage gap.
+Each bar counts criterion-level losses in one representation. The panels retain all 582 and 529 criteria, respectively; URL losses are omitted so the smaller categories remain readable. PNG and SVG versions are in [evaluation figures](docs/assets/evaluations/).
+
+Website blockers, execution errors and source-evidence gaps are different events. The report lists nine cited blocker-task IDs and separately records 12 execution errors in the 100 recordings. Some blocked tasks later completed; the sets overlap and must not be added into a single failure rate.
 
 <a id="mathematical-definitions"></a>
 
@@ -235,18 +216,13 @@ L_m=\sum_{c\in\mathcal{C}}\ell_{c,m},\qquad
 \mathrm{ELR}_m=100\frac{L_m}{M},\qquad m\in\{S,D\}.
 ```
 
-For the saved findings, $`M=582`$, $`L_S=118`$, and $`L_D=7`$, giving
-**20.27%** and **1.20%**. The four overlapping criteria yield
-$`118+7-4=121`$ distinct affected criteria. With a shared denominator
-and $`L_S>0`$, the relative reduction in losses is
+For the saved findings, $`M=582`$, $`L_S=118`$, and $`L_D=7`$, giving **20.27%** and **1.20%**. Four overlapping criteria yield $`118+7-4=121`$ distinct affected criteria. With a shared denominator and $`L_S>0`$, the relative reduction is
 
 ```math
-\mathrm{Reduction}=100\frac{L_S-L_D}{L_S}
-=100\frac{118-7}{118}\approx94.07\%.
+\mathrm{Reduction}=100\frac{L_S-L_D}{L_S}=100\frac{118-7}{118}\approx94.07\%.
 ```
 
-All 582 audited criteria stay in the denominator. The eight input exclusions
-and one audit failure are disclosed separately rather than treated as zero loss.
+Excluding primary URL-category losses keeps $`M=582`$ and gives $`L_S=118-85=33`$, $`L_D=7`$: rates of **5.67%** and **1.20%**, with **78.79% fewer losses**. Excluding the nine cited blocker-task IDs instead removes 53 criteria, leaving $`M=529`$. These are descriptive sensitivity calculations on the saved findings.
 
 ### Confidence intervals in the graph
 
@@ -265,7 +241,7 @@ Multiply the bounds by 100 for percentages. The graph uses these intervals;
 independent criteria and do not account for within-task correlation or
 annotation error. See the [full method](docs/technical-report.md#benchmark-protocol-and-mathematical-definitions)
 for definitions and the [paired analysis](docs/technical-report.md#url-sensitivity-and-paired-comparison)
-for overlap and coverage details.
+for overlap and sensitivity details.
 
 <a id="how-the-system-works"></a>
 
@@ -306,7 +282,7 @@ flowchart TB
         pairs --> audit
         audit --> output[Results and provenance in evaluation/]
     end
-    output --> review[Source citations for independent review]
+    output --> review[Internal review of audit findings]
 ```
 
 An execution with $`N`$ actions normally produces $`N+1`$ states: the initial
@@ -325,8 +301,7 @@ state and one after each executed action. Raw states start at
 Both verifiers use the same scoring controls. Current evaluations use `gpt-5.2`
 for rubric generation and evidence judgments, `gpt-5.6-terra` for action/validity
 judgments, and `gpt-5.6-sol` for evidence audit/adjudication. Recordings use
-`gpt-5.6` for browser-action generation. Audit and adjudication are automated;
-human verification is not established by the saved artifacts.
+`gpt-5.6` for browser-action generation. Internal WootzApp review is a separate verification step; its completion is not recorded in the saved model outputs.
 See [model provenance](docs/technical-report.md#models-and-evaluation-provenance).
 
 The screenshot baseline follows the Universal Verifier's rubric-based
@@ -700,7 +675,7 @@ python -m pytest
 | Resource | Contents |
 | --- | --- |
 | [Technical report](docs/technical-report.md) | Full evaluation findings, mathematical definitions, success rules, current observation sizes, references, and all 121 affected criteria. |
-| [Results](results/README.md) · [JSON summary](results/summary.json) | Aggregate counts, coverage limits and analysis definitions. |
+| [Results](results/README.md) · [JSON summary](results/summary.json) | Published aggregate counts and analysis definitions. |
 | [Evaluation protocol](docs/evaluation-protocol.md) | Shared inputs, scoring controls, source-loss definition, and counting rules. |
 | [Architecture](docs/architecture.md) | Browser capture, DOM-diff Optimized, verifier components, and boundaries. |
 | [Runbook](docs/runbook.md) | Installation, browser build, recording, scoring, and troubleshooting. |

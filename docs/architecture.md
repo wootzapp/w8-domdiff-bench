@@ -42,17 +42,15 @@ ablation measuring the effect of each engineering change.
 
 ## Current observation size
 
-The three means below use the same 853 captured observations in `recordings/`.
+The model-facing DOM-diff Optimized observations are more compact than text-dense readable DOM and full structured snapshots. The mean serialized sizes across the same 853 recorded states are:
 
 | Representation | Artifact | Captured observations | Mean kB | Mean KiB |
 | --- | --- | ---: | ---: | ---: |
-| DOM-diff Optimized | `dom_model.txt` | 853 | 5.28 | **5.16** |
-| Text-dense DOM | `dom_full.txt` | 853 | 48.70 | **47.56** |
-| Full structured DOM | `dom.json` | 853 | 212.96 | **207.97** |
+| DOM-diff Optimized | `dom_model.txt` — compact model-facing text | 853 | 5.28 | **5.16** |
+| Text-dense DOM | `dom_full.txt` — detailed readable text | 853 | 48.70 | **47.56** |
+| Full DOM | `dom.json` — structured snapshot | 853 | 212.96 | **207.97** |
 
-A kB is 1,000 bytes; a KiB is 1,024 bytes. Graphs use KiB. File size is not
-token usage or evidence completeness.
-See the [report](technical-report.md#current-representation-size).
+A kB is 1,000 bytes; a KiB is 1,024 bytes. Token counts depend on the tokenizer. These sizes do not measure evidence completeness. A full snapshot remains subject to the capture boundaries below. See the [report’s size comparison](technical-report.md#current-representation-size).
 
 ## Actions and recorded states
 
@@ -77,8 +75,7 @@ logs, normalized action logs, detailed snapshots, and model-facing states.
 The repository code, stored manifests, and prepared pairs establish the
 capture and alignment contracts above. The comparison preflight checks
 file presence and alignment; it does not prove answer correctness or
-faithful live replay. Saved automated audit findings are the source of the reported loss counts.
-Human verification is not established by these artifacts. See the
+faithful live replay. Saved model-generated audit findings are the source of the loss counts. Category annotations and internal WootzApp verification are separate review steps, as explained in the
 [technical report](technical-report.md#source-evidence-gaps-by-task-and-criterion).
 
 DOM state, screenshots, and action-tool observations are captured

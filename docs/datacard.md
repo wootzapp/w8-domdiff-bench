@@ -1,6 +1,6 @@
 # Dataset Card
 
-The task catalog contains 100 browser tasks. Each prepared trajectory
+The collection contains 100 recordings and 92 prepared browser-task trajectory pairs. Each
 pair uses the same task, executed action history, and final answer. One
 side stores screenshots; the other stores model-facing DOM text. The
 complete set is hosted at
@@ -15,8 +15,8 @@ dataset.
 
 | Dataset path | Contents | How to inspect | Local guide |
 | --- | --- | --- | --- |
-| [`trajectories/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-ss) | Screenshot folders for prepared task aliases such as `task_01`. | Read task metadata, final answers, action logs, and ordered screenshots. | [Evaluation inputs](runbook.md#recording-and-evaluation-inputs) |
-| [`trajectories/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-dom) | The corresponding DOM-text task folders. | Read the common task files and ordered `dom_modelN.txt` observations. | [Evaluation protocol](evaluation-protocol.md) |
+| [`trajectories/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-ss) | 92 prepared screenshot task folders from the 100-task catalog. | Read task metadata, final answers, action logs, and ordered screenshots. | [Evaluation inputs](runbook.md#recording-and-evaluation-inputs) |
+| [`trajectories/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-dom) | The corresponding 92 DOM-text task folders. | Read the common task files and ordered `dom_modelN.txt` observations. | [Evaluation protocol](evaluation-protocol.md) |
 | [`tasks.jsonl`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/tasks.jsonl) | Catalog of task identifiers, categories, instructions, start URLs, stopping conditions, and constraints. | Inspect each task’s requested behavior and restrictions. | [Task recording](runbook.md#record-a-task) |
 | [`recordings/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/recordings) | Additional collection artifacts: manifests, decisions, executed actions, and captured states. | Follow a recording manifest through actions and states. | [Recording artifacts](recordings.md) |
 | [`evaluation/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/evaluation) | Frozen rubrics, verifier results, automated audits, and saved provenance. | Match task IDs and selected run timestamps before following citations. | [Technical report](technical-report.md) |
@@ -61,13 +61,13 @@ training.
 
 Successful, failed, and errored runs are retained. Recorded outcomes describe
 collection status; verifier scores and evidence-audit judgments are separate
-artifacts. Evidence audit and adjudication use `gpt-5.6-sol`; human
-verification is not established by the saved evaluation artifacts. The
+artifacts. Evidence audit/adjudication uses `gpt-5.6-sol`; internal WootzApp review is a separate verification role. The
 [technical report](technical-report.md) distinguishes website blockers,
 execution errors, and source-evidence losses.
 
 Use task identifiers, timestamps, and manifests to follow the evidence from
 recordings through prepared trajectories and evaluations. Loss rates use
-all 582 audited criteria across 91 tasks, including criteria without gaps.
+all 582 audited criteria across 91 tasks, including the criteria without
+gaps omitted from the report's detailed findings table.
 
 Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. Evidence-loss results cover 91 tasks because task 76’s audit failed validation.

@@ -1,6 +1,7 @@
 # Evidence categories
 
-This guide defines six source-evidence-loss categories. Categories identify
+This guide explains the six source-evidence-loss categories used in
+[technical report](technical-report.md). Categories identify
 the primary missing item or relationship in a confirmed source gap.
 
 ## Scope and counting
@@ -10,20 +11,14 @@ representation and preserved in the other. An item absent from both
 representations, or available in both, does not count as source loss.
 Availability is assessed across the eligible ordered source states.
 
-When category annotations are supplied, assign one primary category to each
-representation/criterion loss, even when several required items are missing.
-A criterion can have a different loss
-and category in each representation. For example, task_35 C5 has missing
-architecture/size rows in screenshots (**Table entries**) and a disconnected
-tag-to-size association in DOM (**Label–value links**).
+Each representation/criterion loss receives one primary category, even when
+several required items are missing. A criterion can have a different loss
+and category in each representation. For example, task_02 C2 has missing exact page identity in screenshots (**URLs**) and a disconnected publisher field in DOM (**Label–value links**).
 
-The [report](technical-report.md) contains 121 affected criteria across
-74 tasks, with 118 screenshot losses and 7 DOM losses overlapping
-on 4 criteria. Rates use all 582 criteria from 91 completed audits.
-
-The linked examples below illustrate the category definitions. They do not
-assign categories to the current findings or establish category totals; those
-require explicit per-criterion annotations.
+The current report contains 121 affected criteria across 74 tasks. Its
+118 screenshot losses and 7 DOM losses total 125 representation/criterion
+losses because four criteria have losses in both representations. Rates
+retain all 582 audited criteria across 91 completed audits in the denominator.
 
 ## The six categories
 
@@ -34,10 +29,7 @@ Use this category when the gap concerns a specific value within otherwise
 preserved context. An isolated value can belong here even when clipping or
 viewport position caused its absence.
 
-**Example — task_19 C3, screenshot loss:** DOM preserves the release timestamp
-“02 Sep 17:40,” while screenshots retain only a relative release date.
-The missing item is the absolute date/time value.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_19/20261021T040737Z/evidence_audit.json#L1112).
+**Example — task_08 C2, screenshot loss:** DOM preserves the absolute publication date Oct 14, 2026, while screenshots show only “released this 2 weeks ago.” [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/8f9301ddad1c18b675c5b2df1c364bbbeff8f0a6/evaluation/task_08/20261029T212045Z/evidence_audit.json).
 
 ### URLs
 
@@ -47,10 +39,7 @@ identity, the audit requires URL evidence within the representation itself.
 Branding and URLs in the shared action history do not substitute for that
 evidence under this identity rule.
 
-**Example — task_75 C0, screenshot loss:** both representations retain the
-Black Lotus API response, but only DOM associates it with the required
-Scryfall exact-card endpoint.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_75/20261021T040737Z/evidence_audit.json#L623).
+**Example — task_75 C0, screenshot loss:** DOM preserves the exact Scryfall endpoint, while screenshots show response content without the current page URL. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/8f9301ddad1c18b675c5b2df1c364bbbeff8f0a6/evaluation/task_75/20261029T212045Z/evidence_audit.json).
 
 ### Control states
 
@@ -58,10 +47,7 @@ Missing checked, selected, enabled, disabled, or other explicit control
 states. A control's name or label alone does not establish its state;
 absence of state text does not establish that the control is unchecked.
 
-**Example — task_56 C1, DOM loss:** screenshots show the PubMed “5 years”
-radio button and “Review” checkbox empty. DOM retains their labels without
-the states needed to establish that the filters were not applied.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_56/20261021T040737Z/evidence_audit.json#L1254).
+**Example — task_44 C2, DOM loss:** screenshots show the World radio option selected; DOM lists region names without checked states. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/8f9301ddad1c18b675c5b2df1c364bbbeff8f0a6/evaluation/task_44/20261029T212045Z/evidence_audit.json).
 
 ### Table entries
 
@@ -70,10 +56,7 @@ requested fields. Use this category when a specific row or its structured
 field grouping is the missing evidence. Whole missing cards, sections, or
 list boundaries generally belong to **Capture omissions**.
 
-**Example — task_35 C4, screenshot loss:** screenshots preserve the
-`3.12-slim-bookworm` tag and update time but omit its `linux/amd64` size
-row. DOM preserves that row and its 43.33 MB value.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_35/20261021T040737Z/evidence_audit.json#L1463).
+**Example — task_35 C2/C3, screenshot loss:** the third tag’s Linux/amd64 size row is cropped in screenshots but retained in DOM. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/8f9301ddad1c18b675c5b2df1c364bbbeff8f0a6/evaluation/task_35/20261029T212045Z/evidence_audit.json).
 
 ### Label–value links
 
@@ -82,11 +65,7 @@ Seeing the value elsewhere on the page does not establish the required
 association. This category covers disconnected field relationships,
 including headings whose corresponding table is no longer associated.
 
-**Example — task_02 C2, DOM loss:** screenshots connect “Published by” to
-“Electronic Arts.” DOM exposes the label without its value; another
-occurrence of “Electronic Arts” in product-summary text does not establish
-the publisher relationship.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_02/20261021T040737Z/evidence_audit.json#L1199).
+**Example — task_02 C2, DOM loss:** screenshots connect Published by with Microsoft Studios; DOM has the label without its value. Another occurrence in the page header does not preserve that association. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/8f9301ddad1c18b675c5b2df1c364bbbeff8f0a6/evaluation/task_02/20261029T212045Z/evidence_audit.json).
 
 ### Capture omissions
 
@@ -95,10 +74,7 @@ description is absent from the retained representation. Use this category
 when the missing scope prevents establishing coverage or completeness,
 rather than recovering an isolated value or explicit table row.
 
-**Example — task_24 C1, screenshot loss:** screenshots cover ranks 1–29 of
-the first 30 Hacker News stories. DOM also preserves rank 30 and its
-non-GitHub domain, which is needed to establish the complete GitHub count.
-[Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_24/20261021T040737Z/evidence_audit.json#L804).
+**Example — task_19 C2, screenshot loss:** screenshots stop at the Highlights heading, while DOM retains the complete ordered highlight list. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/8f9301ddad1c18b675c5b2df1c364bbbeff8f0a6/evaluation/task_19/20261029T212045Z/evidence_audit.json).
 
 ## Choosing a primary category
 
@@ -109,31 +85,22 @@ non-GitHub domain, which is needed to establish the complete GitHub count.
 2. Apply the scope distinctions above: an isolated value, an explicit
    control state, a structured row, a disconnected label/value relationship,
    an exact URL, or a broader capture omission.
-3. When several gaps fit different categories, choose the primary gap and
-   document the reason. The categories have no universal priority order.
-   For task_24 C0, both URL identity and rank 30 are missing; the annotation
-   chooses **Capture omissions** because the first-30 list boundary is the
-   primary gap. Secondary gaps remain in the
-   [saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/111c2d229333b85bf7b205458766f8dce195b2e2/evaluation/task_24/20261021T040737Z/evidence_audit.json#L579).
+3. When several gaps fit different categories, choose the primary gap and document the reason. There is no universal priority order. In task_02 C0 the missing Best sellers section is primary (**Capture omissions**); in C1 the missing listing-to-product association is primary (**Label–value links**). Both findings also mention URL identity. Primary-category exclusion does not remove those secondary gaps. The [annotations](../results/evidence_categories.tsv) preserve each choice and rationale.
+
 4. Assign each representation separately when both have a confirmed loss.
    Count the criterion once in each affected representation's category totals.
 
 ## Labels and annotation provenance
 
-An optional **Category** annotation names the evidence type. The stored
-classification identifies which representation loses evidence:
+The table's **Category** names the evidence type. Its **Labels** column
+identifies which representation loses evidence:
 `SCREENSHOT_EVIDENCE_MISSING`, `DOM_EVIDENCE_MISSING`, or
 `BOTH_EVIDENCE_INCOMPLETE`. These tags are derived from the confirmed
 source-loss flags.
 
-Category assignments must identify the task, zero-based criterion index,
-representation, rationale and source finding. The current saved audits do not
-include those assignments. Do not infer a category from the criterion title
-or reuse linked example counts as aggregate evidence.
+The category assignments are explicit report annotations of the saved decisive evidence and citations, prepared by Codex. They do not alter the original automated audit/adjudication, and they are not evidence of completed internal human verification.
 
-The [technical report](technical-report.md) contains the current counts and
-coverage limits. The [Hugging Face audits](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/a10226a46d3a9c3ee5f0f40b244163d2a6b50e75/evaluation) retain
-source evidence and adjudications without adding category labels.
+Assignments are keyed by task, zero-based criterion index and representation in [evidence_categories.tsv](../results/evidence_categories.tsv). Each includes a category, rationale, source path and `finding_sha256`. The hash covers the exact criterion wording and original per-representation loss object, using sorted compact UTF-8 JSON. The [technical report](technical-report.md) contains aggregate counts, sensitivity views and the six-column criterion table.
 
 Selected aggregate statistics are available locally in
 [results/summary.json](../results/summary.json).

@@ -76,10 +76,10 @@ Items absent from both representations, or present in both, do not trigger
 paired source loss. Evidence that a verifier overlooks or misinterprets is
 a separate interpretation error.
 
-A criterion can lose different items in both representations and contributes
-once to each marginal count; the counts overlap. Primary
-[category](evidence-categories.md) labels require separate annotations; they
-are not assigned by the stored audit classification.
+Each representation/criterion loss receives one primary
+[category](evidence-categories.md). A criterion can lose different items in
+both representations and have a different category on each side. Such a
+criterion contributes once to each marginal count; the counts overlap.
 Multiple criteria can also depend on the same capture omission.
 
 Rates divide confirmed criterion-level losses by all audited criteria in
@@ -98,24 +98,24 @@ that identity rule. A URL missing from a screenshot is not automatically a
 loss for every criterion. The screenshot capture omits the browser’s
 address bar, which makes this rule material to the aggregate comparison.
 
-URL-excluded calculations require explicit per-representation category
-annotations. They are not reported for this cohort because those annotations
-are not stored. A subset calculation must disclose whether it removes losses
-from the numerator or whole criteria from the denominator.
+The primary URL-excluded analysis removes primary URL-category losses from
+each representation’s numerator and keeps all audited criteria in the
+cohort denominator. It preserves non-URL losses on the other side of the
+same criterion. The report separately shows alternatives removing entire
+criteria with URL findings; those have different denominators. These are
+recalculations of saved findings, not new audits or experiments adding URLs
+to screenshots.
 
 ### Benchmark evaluation
 
-The [technical report](technical-report.md) covers 92 evaluated tasks and
-91 completed evidence audits, with 582 audited criteria, 118 screenshot losses
-and 7 DOM losses. Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. Evidence-loss results cover 91 tasks because task 76’s audit failed validation.
+The [technical report](technical-report.md) documents 92 evaluated tasks and 91 completed evidence audits, covering 582 criteria. It includes 118 screenshot losses and 7 DOM losses, overlapping on four criteria. The audit/adjudication uses `gpt-5.6-sol`; category annotations are separately recorded in [evidence_categories.tsv](../results/evidence_categories.tsv).
 
-The findings are automated audit/adjudication judgments. Human verification
-is not established by these saved artifacts.
+Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. Evidence-loss results cover 91 tasks because task 76’s audit failed validation.
 
 The acting agent uses `gpt-5.6` for browser-action generation. The verifiers
 use `gpt-5.2` for rubric generation and evidence judgments and `gpt-5.6-terra`
 for action/validity judgments. See
-[model provenance](technical-report.md#models-and-evaluation-provenance).
+[models and review roles](technical-report.md#models-and-evaluation-provenance).
 
 Standalone verifier commands select this model with `--action-model`.
 The paired comparison supplies the same model to both verifiers.
