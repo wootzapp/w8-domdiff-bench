@@ -91,14 +91,14 @@ and their [current numerical values](technical-report.md#current-counts-and-rela
 
 ### URL identity and sensitivity
 
-The saved audits require exact URL evidence within a representation where
-the rubric makes website, page, record, or endpoint identity essential.
-Visible branding and URLs in shared action history do not substitute under
-that identity rule. A URL missing from a screenshot is not automatically a
-loss for every criterion. The screenshot capture omits the browser’s
-address bar, which makes this rule material to the aggregate comparison.
+Observed URLs in the formatted action history count as evidence for each
+verifier receiving them. A URL absent from screenshot pixels alone is not a
+loss when that shared context establishes the required identity. Navigation
+arguments and a supplied start URL express intent, not an observed page.
+Query strings, fragments and text removed by the history formatter cannot be
+restored by inference. Citations distinguish shared history from page content.
 
-The primary URL-excluded analysis removes primary URL-category losses from
+The supplementary URL-excluded analysis removes primary URL-category losses from
 each representation’s numerator and keeps all audited criteria in the
 cohort denominator. It preserves non-URL losses on the other side of the
 same criterion. The report separately shows alternatives removing entire
@@ -108,9 +108,13 @@ to screenshots.
 
 ### Benchmark evaluation
 
-The [technical report](technical-report.md) documents 92 evaluated tasks and 91 completed evidence audits, covering 582 criteria. It includes 118 screenshot losses and 7 DOM losses, overlapping on four criteria. The audit/adjudication uses `gpt-5.6-sol`; category annotations are separately recorded in [evidence_categories.tsv](../results/evidence_categories.tsv).
+The [technical report](technical-report.md) contains the published counts and
+the [category annotations](../results/evidence_categories.tsv). Inventory uses
+`gpt-5.6-sol` and adjudication uses `gpt-5.6-terra`.
 
-Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. Evidence-loss results cover 91 tasks because task 76’s audit failed validation.
+Evaluation requires usable, aligned captures. Audit failures remain listed
+separately and do not count as either confirmed loss or confirmed absence of
+loss. Verifier scores remain available when an audit fails validation.
 
 The acting agent uses `gpt-5.6` for browser-action generation. The verifiers
 use `gpt-5.2` for rubric generation and evidence judgments and `gpt-5.6-terra`
@@ -120,8 +124,15 @@ for action/validity judgments. See
 Standalone verifier commands select this model with `--action-model`.
 The paired comparison supplies the same model to both verifiers.
 
-Exploratory 95% Wilson intervals assume independent criteria and do not
-adjust for correlation among criteria within a task or annotation error.
+`EVIDENCE_ADJUDICATOR_MODEL` selects the audit adjudicator; its default is
+`gpt-5.6-terra`. It does not change the recording or verifier models.
+
+Aggregate intervals resample whole tasks, keeping their criteria and both
+modalities together. The reported rate remains total losses divided by total
+criteria, not the average of task rates. The paired difference uses the same
+task draws. The percentile bootstrap uses 20,000 draws and records its seed.
+It assumes independent tasks and does not measure annotation error. A single
+task has no estimable interval; constant samples are marked as degenerate.
 Website blockers, recorded execution failures, task scores, and source-loss
 counts are separate measurements.
 

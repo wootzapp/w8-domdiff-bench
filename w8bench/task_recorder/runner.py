@@ -126,7 +126,8 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
         "profile_fresh_at_run_start",
         "tasks_previously_run_in_container",
     }
-    if not isinstance(value, dict) or set(value) != expected:
+    if (not isinstance(value, dict) or not expected.issubset(value)
+        or set(value) - expected - {"browser_build"}):
         raise RunnerError("RUNNER_BROWSER_PROFILE_PROVENANCE has invalid fields")
     if not isinstance(value["container_id"], str) or not value["container_id"]:
         raise RunnerError("w8-core container id is missing")
@@ -137,6 +138,16 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
     count = value["tasks_previously_run_in_container"]
     if isinstance(count, bool) or not isinstance(count, int) or count < 0:
         raise RunnerError("browser prior task count must be a non-negative integer")
+    build = value.get("browser_build")
+    if build is not None:
+        if not isinstance(build, dict):
+            raise RunnerError("browser build provenance must be an object")
+        for key, item in build.items():
+            if key == "repo_digests":
+                if not isinstance(item, list) or any(not isinstance(part, str) for part in item):
+                    raise RunnerError("browser image digests must be a list of strings")
+            elif item is not None and not isinstance(item, str):
+                raise RunnerError(f"browser build provenance {key} must be a string or null")
     return value
 
 
@@ -799,6 +810,8 @@ async def run(args: argparse.Namespace) -> int:
     )
 
     current_renderer_versions = renderer_versions()
+    profile_provenance = browser_profile_provenance_from_environment()
+    browser_build = profile_provenance.pop("browser_build", None)
     manifest: dict[str, Any] = {
         "task_id": task_id,
         "source_task_id": args.source_task_id,
@@ -806,8 +819,10 @@ async def run(args: argparse.Namespace) -> int:
         "task_name": args.task_name,
         "task": args.task or "capture-only",
         "created_at": utc_now(),
-        "browser_image": os.environ.get("IMAGE", "w8-core:domdiff-bench"),
-        "browser_profile_provenance": browser_profile_provenance_from_environment(),
+        "browser_image": (browser_build or {}).get("image_reference")
+        or os.environ.get("IMAGE", "w8-core:domdiff-bench"),
+        "browser_profile_provenance": profile_provenance,
+        "browser_build_provenance": browser_build,
         "dom_capture_parameters": {
             "max_nodes": args.snapshot_max_nodes,
             "max_text_chars": args.snapshot_max_text_chars,

@@ -40,6 +40,43 @@ class TaskCliTests(unittest.TestCase):
         self.assertFalse(runner_args.post_action_language_redirect)
         self.assertFalse(cli_args.post_action_language_redirect)
 
+    def test_human_intervention_is_disabled_unless_explicitly_enabled(self) -> None:
+        base = ["task1", "--output-dir", "/tmp/browser-runs"]
+        self.assertFalse(runner.parse_args([]).allow_human_intervention)
+        self.assertFalse(task_cli.parse_args(base).allow_human_intervention)
+        self.assertFalse(
+            task_cli.parse_args(base + ["--no-human-intervention"]).allow_human_intervention
+        )
+        self.assertTrue(
+            task_cli.parse_args(base + ["--allow-human-intervention"]).allow_human_intervention
+        )
+        with patch("sys.stderr", new=io.StringIO()), self.assertRaises(SystemExit):
+            task_cli.parse_args(base + ["--allow-human-intervention", "--no-human-intervention"])
+
+    def test_cli_passes_only_explicit_human_opt_in_to_runner(self) -> None:
+        build_runner = task_cli.build_runner_command
+        with tempfile.TemporaryDirectory() as temporary:
+            base = [
+                "manual-check", "--task", "Report the heading.",
+                "--start-url", "https://example.test/",
+                "--env-file", str(Path(temporary) / "missing.env"),
+                "--output-dir", temporary, "--dry-run",
+            ]
+            for flags, allowed in (([], False), (["--no-human-intervention"], False),
+                                   (["--allow-human-intervention"], True)):
+                with (
+                    self.subTest(flags=flags),
+                    patch.object(task_cli, "build_runner_command", wraps=task_cli.build_runner_command) as build,
+                    patch("sys.stdout", new=io.StringIO()) as output,
+                    patch.object(task_cli, "restart_browser_service") as restart,
+                ):
+                    self.assertEqual(task_cli.main(base + flags), 0)
+                    self.assertEqual(build.call_args.kwargs["allow_human_intervention"], allowed)
+                    command = build_runner(*build.call_args.args, **build.call_args.kwargs)
+                    self.assertEqual("--allow-human-intervention" in command, allowed)
+                    self.assertIn("Human intervention: " + ("enabled" if allowed else "disabled"), output.getvalue())
+                    restart.assert_not_called()
+
     def test_arbitrary_task_definition_is_validated(self) -> None:
         definition = task_cli.validate_task_definition(
             "Inspect the visible page.",
@@ -53,6 +90,34 @@ class TaskCliTests(unittest.TestCase):
             task_cli.validate_task_definition("", "https://example.test/")
         with self.assertRaises(runner.RunnerError):
             task_cli.validate_task_definition("Inspect it", "example.test")
+
+    def test_acting_model_comes_from_environment_or_explicit_override(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            args = ["--env-file", str(Path(temporary) / "missing.env")]
+            with patch.dict(runner.os.environ, {"OPENAI_MODEL": "chosen-model"}):
+                self.assertEqual(runner.parse_args(args).model, "chosen-model")
+                self.assertEqual(
+                    runner.parse_args(args + ["--model", "explicit-model"]).model,
+                    "explicit-model",
+                )
+            with patch.dict(runner.os.environ):
+                runner.os.environ.pop("OPENAI_MODEL", None)
+                self.assertEqual(runner.parse_args(args).model, "")
+                env_file = Path(temporary) / "model.env"
+                env_file.write_text("OPENAI_MODEL=env-file-model\n", encoding="utf-8")
+                self.assertEqual(
+                    runner.parse_args(["--env-file", str(env_file)]).model,
+                    "env-file-model",
+                )
+
+    def test_launcher_leaves_environment_model_selection_to_runner(self) -> None:
+        command = task_cli.build_runner_command(
+            {"instruction": "Report the heading.", "start_url": "https://example.test/"},
+            task_id="task1", task_name="inspection", run_id="task1-inspection",
+            output_dir=Path("/tmp/browser-runs"), env_file=Path("/tmp/model.env"),
+            allow_human_intervention=False, novnc_url="http://localhost:6080/vnc.html",
+        )
+        self.assertNotIn("--model", command)
 
     def test_runner_command_uses_new_run_and_enables_human_pause(self) -> None:
         command = task_cli.build_runner_command(
@@ -261,6 +326,66 @@ class TaskCliTests(unittest.TestCase):
         self.assertFalse(provenance["profile_fresh_at_run_start"])
         self.assertEqual(run.call_args_list[1].args[0][-1], custom_path)
         self.assertEqual(run.call_args_list[2].args[0][-2], custom_path)
+
+    def test_build_provenance_inspects_the_running_image_id_not_its_tag(self) -> None:
+        image_id = "sha256:" + "a" * 64
+        labels = {
+            "org.opencontainers.image.revision": "recorder-revision",
+            "org.opencontainers.image.version": "chromium-152.0.7948.0",
+            "org.wootzapp.browser.overlay.revision": "overlay-revision",
+            "org.wootzapp.browser.chromium.revision": "chromium-revision",
+            "org.wootzapp.browser.protocol.sha256": "protocol-hash",
+        }
+        completed = [
+            SimpleNamespace(returncode=0, stderr="", stdout=json.dumps([{
+                "Id": "container-id", "Created": "created-at", "Image": image_id,
+                "Config": {"Image": "w8-core:local"},
+            }])),
+            SimpleNamespace(returncode=0, stderr="", stdout=json.dumps([{
+                "Id": image_id, "RepoDigests": ["w8-core@sha256:digest"],
+                "Config": {"Labels": labels},
+            }])),
+            SimpleNamespace(returncode=0, stdout="0", stderr=""),
+            SimpleNamespace(returncode=0, stdout="", stderr=""),
+        ]
+        with patch.object(task_cli.subprocess, "run", side_effect=completed) as run:
+            provenance = task_cli.claim_browser_profile_provenance("browser")
+        self.assertEqual(run.call_args_list[1].args[0], ["docker", "image", "inspect", image_id])
+        build = provenance["browser_build"]
+        self.assertEqual(build["image_id"], image_id)
+        self.assertEqual(build["image_reference"], "w8-core:local")
+        self.assertEqual(build["repo_digests"], ["w8-core@sha256:digest"])
+        self.assertEqual(build["overlay_revision"], "overlay-revision")
+        self.assertEqual(build["chromium_revision"], "chromium-revision")
+        self.assertEqual(build["protocol_sha256"], "protocol-hash")
+        self.assertIsNone(build["inspection_error"])
+        with patch.dict(runner.os.environ, {"RUNNER_BROWSER_PROFILE_PROVENANCE": json.dumps(provenance)}):
+            self.assertEqual(runner.browser_profile_provenance_from_environment(), provenance)
+
+    def test_image_inspection_failure_keeps_identity_without_inventing_source(self) -> None:
+        image_id = "sha256:" + "b" * 64
+        completed = [
+            SimpleNamespace(returncode=0, stderr="", stdout=json.dumps([{
+                "Id": "container-id", "Created": "created-at", "Image": image_id,
+                "Config": {"Image": "w8-core:older"},
+            }])),
+            SimpleNamespace(returncode=1, stdout="", stderr="image metadata unavailable"),
+            SimpleNamespace(returncode=0, stdout="0", stderr=""),
+            SimpleNamespace(returncode=0, stdout="", stderr=""),
+        ]
+        with patch.object(task_cli.subprocess, "run", side_effect=completed):
+            build = task_cli.claim_browser_profile_provenance("browser")["browser_build"]
+        self.assertEqual(build["image_id"], image_id)
+        self.assertIsNone(build["overlay_revision"])
+        self.assertEqual(build["inspection_error"], "image metadata unavailable")
+
+    def test_profile_provenance_accepts_older_metadata_without_build_labels(self) -> None:
+        previous = {
+            "container_id": "container-id", "container_created_at": "created-at",
+            "profile_fresh_at_run_start": True, "tasks_previously_run_in_container": 0,
+        }
+        with patch.dict(runner.os.environ, {"RUNNER_BROWSER_PROFILE_PROVENANCE": json.dumps(previous)}):
+            self.assertEqual(runner.browser_profile_provenance_from_environment(), previous)
 
     def test_human_request_requires_opt_in_and_reason(self) -> None:
         decision = {

@@ -88,7 +88,10 @@ After the first build, return to the directory containing
 ```bash
 cd ../../..
 git clone https://github.com/wootzapp/wootzapp-browser.git
+git -C wootzapp-browser checkout --detach 02bf5a35c5a7d02371deb6afa6adb57cc73aae72
 ```
+
+The overlay revision is pinned in `protocol/browser-build.json`.
 
 ### 5. Apply the overlay and rebuild
 
@@ -152,9 +155,14 @@ cd ../../../w8-domdiff-bench
 Build and inspect the image:
 
 ```bash
-IMAGE_VERSION=chromium-152.0.7948.0 ./scripts/build-browser-image
+./scripts/build-browser-image
 docker image inspect w8-core:domdiff-bench
 ```
+
+The build checks the pinned overlay, applied source files, protocol and copied
+Release binary. It includes a `browser-build.json` receipt and source-revision
+labels. For other source locations, pass the Chromium source directory and
+browser-overlay directory as the script's two arguments.
 
 The image remains in the local Docker engine after the terminal closes. It
 only needs to be rebuilt when Chromium, the Wootzapp Browser overlay, or image
@@ -184,6 +192,11 @@ OPENAI_API_KEY=your-api-key
 OPENAI_MODEL=your-supported-model
 ```
 
+Use `OPENAI_MODEL=gpt-5.6` to match the benchmark's recording model. Other
+supported models are allowed; the selected model is saved in `task.json`.
+The recorder reads this setting from the environment, with `--model` as an
+explicit override. It does not supply a fixed acting model.
+
 ## Browser runtime
 
 Start the browser and verify every runtime component:
@@ -202,7 +215,7 @@ Run a catalog task:
 
 ```bash
 mkdir -p recordings
-./scripts/run-task task8 --output-dir recordings --no-human-intervention
+./scripts/run-task task8 --output-dir recordings
 ```
 
 Run a manual task:
@@ -211,12 +224,14 @@ Run a manual task:
 ./scripts/run-task local-check "Readable task name" \
   --task "Inspect the page and report the requested visible values." \
   --start-url "https://example.com/" \
-  --output-dir recordings \
-  --no-human-intervention
+  --output-dir recordings
 ```
 
-Omit `--no-human-intervention` only when an operator may solve a CAPTCHA or
-similar challenge. Human intervention is not recorded as an agent action.
+Human intervention is disabled by default. Use `--allow-human-intervention`
+only to permit assistance with a CAPTCHA or similar access challenge.
+Requests, timestamps and resume/abort status are logged and counted in the
+manifest; individual human clicks are not exported as agent actions.
+Keep assistance disabled for autonomous benchmark recordings.
 
 Each run receives a timestamped directory:
 
@@ -328,6 +343,9 @@ Run their evaluation:
   [evaluation protocol](evaluation-protocol.md) defines controls and scoring.
 - Results go to `evaluation/<task>/<run-id>/`; batch summaries go to
   `evaluation/batches/<run-id>/`. `input_source.json` identifies the input source.
+- `run-id` groups outputs, not execution dates. The run manifest records the
+  source task ID and UTC scoring/audit times; batch summaries record their
+  start and completion times.
 - Preparation-report references are relative to their output folder; evaluation
   references are relative to the repository root. Older absolute paths remain readable.
 

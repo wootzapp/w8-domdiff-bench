@@ -33,6 +33,7 @@ from .compare_results import compare
 from .evidence_audit import (
     AuditValidationError,
     DEFAULT_AUDIT_MODEL,
+    DEFAULT_ADJUDICATOR_MODEL,
     append_audit_to_comparison,
     render_markdown as render_evidence_audit,
     run_evidence_audit,
@@ -311,6 +312,11 @@ def main(argv: list[str] | None = None) -> int:
     manifest: dict[str, Any] = {
         "status": "preflight_passed",
         "phase": "B",
+        # A supplied run_id can group a batch; it is not an execution timestamp.
+        "run_id": run_id,
+        "source_task_id": preflight["task_id"],
+        "evaluation_started_at": None,
+        "evaluation_completed_at": None,
         "paid_calls_authorized": bool(args.execute),
         "writes_performed": False,
         "preflight": preflight,
@@ -343,6 +349,8 @@ def main(argv: list[str] | None = None) -> int:
             "method": "automated_llm",
             "model": args.audit_model,
             "runs_after_both_verifiers": True,
+            "started_at": None,
+            "completed_at": None,
         },
         "run_root": os.path.relpath(run_root, REPOSITORY_ROOT),
     }
@@ -352,6 +360,7 @@ def main(argv: list[str] | None = None) -> int:
 
     load_env_file(args.env_file)
     require_openai_key()
+    manifest["evaluation_started_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     run_root.mkdir(parents=True)
     copied = prepare_isolated_inputs(
         screenshot_task=screenshot_source,
@@ -371,33 +380,43 @@ def main(argv: list[str] | None = None) -> int:
     write_json(run_root / "run_manifest.json", manifest)
 
     screenshot_root = run_root / "screenshot_verifier"
-    _run_logged(
-        run_commands["screenshot_verifier"],
-        screenshot_root / "run.log",
-    )
-    screenshot_metrics = normalize_screenshot(
-        screenshot_root / "result.json",
-        input_task=screenshot_source,
-        rubric_file=published_rubric,
-        generation_metrics=published_generation,
-        run_log=screenshot_root / "run.log",
-    )
-    write_json(screenshot_root / "run_metrics.json", screenshot_metrics)
-
     dom_root = run_root / "dom_model"
-    _run_logged(
-        run_commands["dom_model"],
-        dom_root / "run.log",
-    )
-    dom_metrics = normalize_dom_model(
-        dom_root / "result.json",
-        input_task=dom_source,
-        rubric_file=published_rubric,
-        generation_metrics=published_generation,
-        run_log=dom_root / "run.log",
-    )
-    write_json(dom_root / "run_metrics.json", dom_metrics)
-    comparison_receipt, comparison_markdown = compare(screenshot_metrics, dom_metrics)
+    try:
+        _run_logged(
+            run_commands["screenshot_verifier"],
+            screenshot_root / "run.log",
+        )
+        screenshot_metrics = normalize_screenshot(
+            screenshot_root / "result.json",
+            input_task=screenshot_source,
+            rubric_file=published_rubric,
+            generation_metrics=published_generation,
+            run_log=screenshot_root / "run.log",
+        )
+        write_json(screenshot_root / "run_metrics.json", screenshot_metrics)
+
+        _run_logged(
+            run_commands["dom_model"],
+            dom_root / "run.log",
+        )
+        dom_metrics = normalize_dom_model(
+            dom_root / "result.json",
+            input_task=dom_source,
+            rubric_file=published_rubric,
+            generation_metrics=published_generation,
+            run_log=dom_root / "run.log",
+        )
+        write_json(dom_root / "run_metrics.json", dom_metrics)
+        comparison_receipt, comparison_markdown = compare(screenshot_metrics, dom_metrics)
+    except Exception as exc:
+        manifest.update(
+            status="error",
+            evaluation_completed_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            evaluation_error={"stage": "verifier_scoring", "type": type(exc).__name__},
+        )
+        write_json(run_root / "run_manifest.json", manifest)
+        raise
+    manifest["evaluation_completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     comparison_markdown_path = run_root / "comparison.md"
     comparison_json_path = run_root / "comparison.json"
     comparison_markdown_path.write_text(comparison_markdown, encoding="utf-8")
@@ -410,6 +429,11 @@ def main(argv: list[str] | None = None) -> int:
         "frozen_rubric": os.path.relpath(published_rubric, REPOSITORY_ROOT),
         "rubric_generation_metrics": os.path.relpath(published_generation, REPOSITORY_ROOT),
     }
+    adjudicator_model = os.environ.get("EVIDENCE_ADJUDICATOR_MODEL", "").strip() or DEFAULT_ADJUDICATOR_MODEL
+    audit_calls: list[dict[str, Any]] = []
+    manifest["evidence_audit"]["adjudicator_model"] = adjudicator_model
+    manifest["evidence_audit"]["started_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    write_json(run_root / "run_manifest.json", manifest)
     try:
         audit = run_evidence_audit(
             screenshot_dir=isolated_screenshot,
@@ -419,14 +443,19 @@ def main(argv: list[str] | None = None) -> int:
             dom_result=dom_root / "result.json",
             task_alias=args.task,
             model=args.audit_model,
+            adjudicator_model=adjudicator_model,
+            call_records=audit_calls,
         )
     except Exception as exc:
+        manifest["evidence_audit"]["completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
         error_path = run_root / "evidence_audit_error.json"
         error_payload: dict[str, Any] = {
             "status": "audit_failed",
             "error_type": type(exc).__name__,
             "message": str(exc),
             "audit_model": args.audit_model,
+            "adjudicator_model": adjudicator_model,
+            "calls": audit_calls,
             "verifier_comparison_complete": True,
         }
         if isinstance(exc, AuditValidationError):
@@ -456,6 +485,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(manifest, ensure_ascii=False, indent=2))
         return 0
 
+    manifest["evidence_audit"]["completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     audit_json_path = run_root / "evidence_audit.json"
     audit_markdown_path = run_root / "evidence_audit.md"
     write_json(audit_json_path, audit)

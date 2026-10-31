@@ -6,8 +6,14 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 AGENT_BROWSER_DIR="${REPO_ROOT}/w8bench/task_recorder/agent_browser/runtime"
 IMAGE_NAME="${CHROMIUM_IMAGE_NAME:-w8-core:domdiff-bench}"
 BUILD_DIR="${REPO_ROOT}/build"
-IMAGE_VERSION="${IMAGE_VERSION:-dev}"
+CHROMIUM_SOURCE_DIR="${1:-${REPO_ROOT}/../w8-browser-build/chromium/src}"
+OVERLAY_SOURCE_DIR="${2:-${REPO_ROOT}/../wootzapp-browser}"
 VCS_REF="${IMAGE_VCS_REF:-$(git -C "${REPO_ROOT}" rev-parse HEAD)}"
+
+if [ "$#" -gt 2 ]; then
+  echo "Usage: scripts/build-browser-image [chromium-source-dir] [browser-overlay-dir]" >&2
+  exit 1
+fi
 
 if [ ! -x "${BUILD_DIR}/chrome" ]; then
   echo "Missing executable Chromium payload: ${BUILD_DIR}/chrome" >&2
@@ -22,6 +28,85 @@ for required in package.json package-lock.json; do
   fi
 done
 
+# Verify the declared source checkout and copied payload before assigning build
+# labels. The receipt belongs to this image; it is not evidence about older runs.
+BUILD_METADATA="$(python3 - "${REPO_ROOT}" "${CHROMIUM_SOURCE_DIR}" "${OVERLAY_SOURCE_DIR}" <<'PY'
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+root, chromium, overlay = (Path(value).resolve() for value in sys.argv[1:])
+settings = json.loads((root / "protocol/browser-build.json").read_text())
+try:
+    overlay_revision = subprocess.check_output(
+        ["git", "-C", str(overlay), "rev-parse", "HEAD"], text=True
+    ).strip()
+    if overlay_revision != settings["overlay_revision"]:
+        raise ValueError("Browser overlay revision differs from protocol/browser-build.json")
+    changes = subprocess.check_output(
+        ["git", "-C", str(overlay), "status", "--porcelain", "--", "src"], text=True
+    )
+    if changes:
+        raise ValueError("Browser overlay src/ contains uncommitted changes")
+    version_fields = dict(
+        line.split("=", 1) for line in (chromium / "chrome/VERSION").read_text().splitlines()
+        if "=" in line
+    )
+    version = ".".join(version_fields[key] for key in ("MAJOR", "MINOR", "BUILD", "PATCH"))
+    if version != settings["chromium_version"]:
+        raise ValueError("Chromium version differs from protocol/browser-build.json")
+    chromium_revision = subprocess.check_output(
+        ["git", "-C", str(chromium), "rev-parse", "HEAD"], text=True
+    ).strip()
+    overlay_files = subprocess.check_output(
+        ["git", "-C", str(overlay), "ls-files", "-z", "--", "src"]
+    ).decode().split("\0")
+    if not any(overlay_files):
+        raise ValueError("Browser overlay has no tracked src/ files")
+    for filename in filter(None, overlay_files):
+        original = overlay / filename
+        applied = chromium / Path(filename).relative_to("src")
+        if original.is_symlink():
+            if not applied.is_symlink() or original.readlink() != applied.readlink():
+                raise ValueError(f"Applied overlay differs: {filename}")
+        elif not applied.is_file() or original.read_bytes() != applied.read_bytes():
+            raise ValueError(f"Applied overlay differs: {filename}")
+    protocol = chromium / "third_party/blink/public/devtools_protocol/domains/ChromiumRL.pdl"
+    protocol_sha256 = hashlib.sha256(protocol.read_bytes()).hexdigest()
+    if (protocol_sha256 != settings["protocol_sha256"]
+        or protocol_sha256 != hashlib.sha256((root / "protocol/ChromiumRL.pdl").read_bytes()).hexdigest()):
+        raise ValueError("Browser protocol differs from the pinned protocol")
+    # Stream the browser binary: reading a full Release binary into memory can
+    # itself exhaust a small build machine.
+    binary_hashes = []
+    for binary in (root / "build/chrome", chromium / "out/Release/chrome"):
+        digest = hashlib.sha256()
+        with binary.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+        binary_hashes.append(digest.hexdigest())
+    if binary_hashes[0] != binary_hashes[1]:
+        raise ValueError("Copied browser differs from the Chromium Release binary")
+    receipt = {
+        **settings,
+        "chromium_revision": chromium_revision,
+        "chrome_sha256": binary_hashes[0],
+        "source_verification": "overlay files and Release payload matched at image creation",
+    }
+    (root / "build/browser-build.json").write_text(json.dumps(receipt, indent=2) + "\n")
+except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as error:
+    raise SystemExit(f"Browser build provenance check failed: {error}")
+print(version)
+print(overlay_revision)
+print(chromium_revision)
+print(protocol_sha256)
+PY
+)"
+mapfile -t BUILD_FIELDS <<< "${BUILD_METADATA}"
+IMAGE_VERSION="${IMAGE_VERSION:-chromium-${BUILD_FIELDS[0]}}"
+
 "${BUILD_DIR}/chrome" --version
 du -sh "${BUILD_DIR}"
 
@@ -30,6 +115,9 @@ docker buildx build \
   --load \
   --build-arg "IMAGE_VERSION=${IMAGE_VERSION}" \
   --build-arg "VCS_REF=${VCS_REF}" \
+  --build-arg "BROWSER_OVERLAY_REVISION=${BUILD_FIELDS[1]}" \
+  --build-arg "CHROMIUM_REVISION=${BUILD_FIELDS[2]}" \
+  --build-arg "BROWSER_PROTOCOL_SHA256=${BUILD_FIELDS[3]}" \
   --tag "${IMAGE_NAME}" \
   --file Dockerfile \
   .
