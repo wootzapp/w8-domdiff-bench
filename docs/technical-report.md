@@ -158,9 +158,9 @@ The completed audits identify **41 screenshot losses and 10 DOM losses** across 
 
 *Both rows retain all 589 audited criteria; the URL exclusion changes the numerator only.*
 
-![Screenshot and DOM evidence-loss rates for the full audited dataset and the subset excluding listed blocked-task IDs, with and without primary URL losses.](assets/evaluations/evidence-loss-rates.png)
+![Screenshot and DOM evidence-loss rates for all audited tasks and the subset excluding listed blocked-task IDs.](assets/evaluations/evidence-loss-rates.png)
 
-**Figure 1.** Evidence-loss rates for all completed audits and the subset excluding the nine cited blocker-task IDs, with and without primary URL losses. The 95% intervals resample whole tasks; they assume independent tasks and do not measure annotation error.
+**Figure 1.** Evidence-loss rates for all completed audits and the subset excluding the nine cited blocker-task IDs. Both include URL losses. The 95% intervals resample whole tasks; they assume independent tasks and do not measure annotation error.
 
 These counts measure evidence availability, not task success or answer correctness. A common loss concerns the same task/criterion and is already included in both marginal counts; each representation loses a different required item. The report first examines URL sensitivity and categories, then website blockers, execution failures, and evaluation provenance.
 
@@ -170,7 +170,7 @@ The screenshot capture mechanism cannot access the browser’s address/search ba
 
 Observed URLs in the formatted action history count for each verifier receiving them. Their absence from screenshot pixels or DOM text alone is not a loss. The formatter removes query strings and fragments and shortens URLs longer than 150 characters; omitted details cannot be restored by inference. A supplied start URL or navigation argument expresses intent, not proof of an observed destination.
 
-Primary URL categories account for **7/41 screenshot losses (17.07%)** and **0/10 DOM losses**. Excluding that category leaves **34 screenshot losses and 10 DOM losses**, with all 589 audited criteria retained.
+Primary URL categories account for **7/41 screenshot losses (17.07%)** and **0/10 DOM losses**. The headline results include these findings. As a supplementary sensitivity calculation, excluding that category leaves **34 screenshot losses and 10 DOM losses**, with all 589 audited criteria retained.
 
 The exclusion is applied separately to each representation’s loss. In [task_50 C0–C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_50/20261029T212045Z/evidence_audit.json), the DOM preserves the `date=2020:2026` request query while the shared observed history preserves only the endpoint path. Those five criteria depend on one query-range gap, not five independent capture failures. The non-URL findings affect **43 criteria across 25 tasks**.
 
@@ -218,9 +218,9 @@ The category breakdown shows which required information each representation lose
 
 *Counts cover 92 completed audits and 589 criteria. The 51 representation/criterion losses affect 50 distinct criteria because one criterion loses different items in both representations.*
 
-![Non-URL losses by category, for all completed audits and the subset excluding cited blocker tasks.](assets/evaluations/non-url-loss-categories.png)
+![Evidence losses across all six categories for all completed audits and the subset excluding cited blocker tasks.](assets/evaluations/evidence-loss-categories.png)
 
-**Figure 2.** The five non-URL categories share a count scale. The panels retain 589 and 536 audited criteria, respectively. URL losses are omitted so the smaller categories remain readable.
+**Figure 2.** All six categories share a count scale, including URL losses. The panels retain 589 and 536 audited criteria, respectively.
 
 ### Repeated capture gaps and mathematical notation
 
@@ -274,9 +274,9 @@ The task IDs are `task_01`, `task_06`, `task_07`, `task_14`, `task_15`, `task_22
 
 DOM has **78.05% fewer losses** across all categories and **73.53% fewer non-URL losses** in this subset.
 
-![Loss counts after excluding cited blocker-task IDs and primary URL losses.](assets/evaluations/exclusion-waterfall.png)
+![Loss counts before and after excluding cited blocker-task IDs.](assets/evaluations/exclusion-waterfall.png)
 
-**Figure 3.** Screenshot losses are 41, 41 and 34 across the three views; DOM losses are 10, 9 and 9. Excluding cited task IDs changes the denominator from 589 to 536; excluding the remaining seven primary URL losses keeps all 536 criteria. Gold hatched segments show excluded losses.
+**Figure 3.** Screenshot losses remain at 41; DOM losses change from 10 to 9 after excluding the cited blocker-task IDs. The denominator changes from 589 to 536 criteria. Both views include URL losses. The gold hatched segment shows the excluded DOM loss.
 
 #### Alternative: exclude entire criteria with URL findings
 

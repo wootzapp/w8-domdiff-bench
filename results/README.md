@@ -7,9 +7,7 @@ Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were ex
 | Analysis | Tasks | Audited criteria | Screenshot losses | DOM losses |
 | --- | ---: | ---: | ---: | ---: |
 | All source-evidence loss categories | 92 | 589 | **41 (6.96%)** | **10 (1.70%)** |
-| URL loss category excluded | 92 | 589 | **34 (5.77%)** | **10 (1.70%)** |
 | Listed access-blocked task IDs excluded | 83 | 536 | **41 (7.65%)** | **9 (1.68%)** |
-| Listed access-blocked task IDs and URL loss category excluded | 83 | 536 | **34 (6.34%)** | **9 (1.68%)** |
 
 Selected results are in the [repository README](../README.md#evaluation-results).
 The [technical report](../docs/technical-report.md) documents the repository's
@@ -29,7 +27,7 @@ findings. [EVALUATIONS.md](EVALUATIONS.md) points to that report.
 
 One criterion has losses in both representations, affecting different required items. The marginal counts total 51 representation/criterion losses across 50 distinct affected criteria. All 589 audited criteria stay in the primary denominator, including 539 without a confirmed paired gap.
 
-Excluding seven primary screenshot URL losses leaves **34/589 (5.77%)** screenshot losses and **10/589 (1.70%)** DOM losses. Excluding the nine cited blocker-task IDs leaves **83 tasks and 536 criteria**. The report retains both views and alternatives removing entire URL criteria. Category labels are report annotations of saved findings.
+The totals include seven screenshot URL losses and no DOM URL losses. Excluding the nine cited blocker-task IDs leaves **83 tasks and 536 criteria**. Supplementary URL-excluded calculations remain in the technical report and `summary.json`. Category labels are report annotations of saved findings.
 
 The [protocol](../docs/evaluation-protocol.md) and [category guide](../docs/evidence-categories.md) define the rules. Intervals resample whole tasks and hold automated labels fixed; independent human review has not been established.
 

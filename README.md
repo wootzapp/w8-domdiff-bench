@@ -9,7 +9,7 @@ state. The recorder, paired verifiers, and evidence audit make it possible
 to inspect what a browser agent observed and which required information each
 representation preserved.
 
-The collection contains **100 recorded browser tasks** and **92 evaluated task pairs**. Validated evidence audits cover **92 tasks and 589 criteria**, identifying **41 screenshot losses (6.96%)** and **10 DOM losses (1.70%)**. Observed URLs in the shared formatted history count for both verifiers. Seven remaining screenshot losses concern URL details unavailable in that shared evidence; excluding the primary URL category leaves 34 screenshot losses and 10 DOM losses, with all 589 criteria retained. These measurements describe evidence availability, not task success or acting-agent improvement.
+The collection contains **100 recorded browser tasks** and **92 evaluated task pairs**. Validated evidence audits cover **92 tasks and 589 criteria**, identifying **41 screenshot losses (6.96%)** and **10 DOM losses (1.70%)**. Observed URLs in the shared formatted history count for both verifiers. These measurements describe evidence availability, not task success or acting-agent improvement.
 
 Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. All 92 evaluated tasks have validated evidence audits covering 589 criteria.
 
@@ -110,17 +110,17 @@ Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were ex
 | Analysis | Tasks | Audited criteria | Screenshot losses | DOM losses |
 | --- | ---: | ---: | ---: | ---: |
 | All source-evidence loss categories | 92 | 589 | **41 (6.96%)** | **10 (1.70%)** |
-| URL loss category excluded | 92 | 589 | **34 (5.77%)** | **10 (1.70%)** |
 | Listed access-blocked task IDs excluded | 83 | 536 | **41 (7.65%)** | **9 (1.68%)** |
-| Listed access-blocked task IDs and URL loss category excluded | 83 | 536 | **34 (6.34%)** | **9 (1.68%)** |
 
-Excluding the primary URL category removes those losses from the numerator and retains every audited criterion. Excluding the nine cited blocker-task IDs removes their 53 criteria. The [report defines both exclusions](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks), and separately gives alternatives that remove entire criteria with primary URL findings.
+Excluding the nine cited blocker-task IDs removes their 53 criteria. The [report defines that subset](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks).
 
-![Screenshot and DOM evidence-loss rates for the full audited dataset and the subset excluding listed blocked-task IDs, with and without primary URL losses.](docs/assets/evaluations/evidence-loss-rates.png)
+![Screenshot and DOM evidence-loss rates for all audited tasks and the subset excluding listed blocked-task IDs.](docs/assets/evaluations/evidence-loss-rates.png)
 
 The 95% intervals resample whole tasks, preserving correlation among criteria within a task. They assume independent tasks and do not measure annotation error. Counts, intervals and paired outcomes are in the [technical report](docs/technical-report.md#url-sensitivity-and-paired-comparison).
 
-### Why URL sensitivity matters
+<a id="why-url-sensitivity-matters"></a>
+
+### URL evidence
 
 Screenshot capture omits the browser’s address bar, but observed URLs in the
 formatted action history are available to both verifiers. A URL absent from
@@ -133,9 +133,9 @@ For example, task_50 retains `date=2020:2026` only in the DOM URL. The remaining
 losses concern information unavailable in the shared history, not URLs already
 supplied to both verifiers.
 
-DOM has **75.61% fewer losses** across all categories and **70.59% fewer non-URL
-losses**. The URL-excluded view recalculates saved findings; it is not an
-experiment that changes screenshots, rubrics or verifier scores.
+DOM has **75.61% fewer losses** across all categories. The
+[technical report](docs/technical-report.md#url-sensitivity-and-paired-comparison)
+retains supplementary URL-excluded calculations.
 
 ### What the findings show
 
@@ -150,7 +150,6 @@ The audits identify **50 affected criteria across 28 tasks**. One criterion has 
 | Label–value links | 3 | 4 |
 | Capture omissions | 4 | 2 |
 | **All categories** | **41** | **10** |
-| **Non-URL subtotal** | **34** | **10** |
 
 Examples show the practical differences:
 
@@ -161,9 +160,9 @@ Examples show the practical differences:
 
 The detailed findings and evidence links are in the [report’s six-column criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion). Category annotations summarize the saved findings; they do not change verifier scores or audit decisions.
 
-![Non-URL evidence losses by category for all completed audits and the subset excluding cited blocker-task IDs.](docs/assets/evaluations/non-url-loss-categories.png)
+![Evidence losses across all six categories for all completed audits and the subset excluding cited blocker-task IDs.](docs/assets/evaluations/evidence-loss-categories.png)
 
-Each bar counts criterion-level losses in one representation. The panels retain all 589 and 536 criteria, respectively; URL losses are omitted so the smaller categories remain readable. PNG and SVG versions are in [evaluation figures](docs/assets/evaluations/).
+Each bar counts criterion-level losses in one representation, including URL losses. The panels retain all 589 and 536 criteria, respectively. PNG and SVG versions are in [evaluation figures](docs/assets/evaluations/).
 
 Website blockers, execution errors and source-evidence gaps are different events. The report lists nine cited blocker-task IDs and separately records 12 execution errors in the 100 recordings. Some blocked tasks later completed; the sets overlap and must not be added into a single failure rate.
 
@@ -244,7 +243,7 @@ For the saved findings, $`M=589`$, $`L_S=41`$, and $`L_D=10`$, giving **6.96%** 
 \mathrm{Reduction}=100\frac{L_S-L_D}{L_S}=100\frac{41-10}{41}\approx75.61\%.
 ```
 
-Excluding the seven primary URL-category losses keeps $`M=589`$ and gives $`L_S=34`$, $`L_D=10`$: **5.77%** and **1.70%**, with **70.59% fewer losses**. Excluding the nine cited blocker-task IDs removes 53 criteria, leaving $`M=536`$. These are descriptive sensitivity calculations on the saved findings.
+Excluding the nine cited blocker-task IDs removes 53 criteria, leaving $`M=536`$. This is a descriptive subset of the saved findings.
 
 ### Confidence intervals in the graph
 

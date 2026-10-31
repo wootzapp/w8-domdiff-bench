@@ -98,7 +98,7 @@ arguments and a supplied start URL express intent, not an observed page.
 Query strings, fragments and text removed by the history formatter cannot be
 restored by inference. Citations distinguish shared history from page content.
 
-The primary URL-excluded analysis removes primary URL-category losses from
+The supplementary URL-excluded analysis removes primary URL-category losses from
 each representation’s numerator and keeps all audited criteria in the
 cohort denominator. It preserves non-URL losses on the other side of the
 same criterion. The report separately shows alternatives removing entire
