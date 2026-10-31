@@ -154,10 +154,10 @@ The audits identify **50 affected criteria across 28 tasks**. One criterion has 
 
 Examples show the practical differences:
 
-- **Exact values:** [task_08 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/bench_fixes/evaluation/task_08/20261029T212045Z/evidence_audit.json) preserves an absolute publication date in DOM; screenshots show a relative age.
-- **Capture coverage:** [task_19 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/bench_fixes/evaluation/task_19/20261029T212045Z/evidence_audit.json) preserves three complete highlight rows in DOM; screenshots stop at the heading.
-- **Visual form:** [task_37 C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/bench_fixes/evaluation/task_37/20261029T212045Z/evidence_audit.json) preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
-- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/bench_fixes/evaluation/task_02/20261029T212045Z/evidence_audit.json) and missing World radio selection in [task_44 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/bench_fixes/evaluation/task_44/20261029T212045Z/evidence_audit.json).
+- **Exact values:** [task_08 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_08/20261029T212045Z/evidence_audit.json) preserves an absolute publication date in DOM; screenshots show a relative age.
+- **Capture coverage:** [task_19 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_19/20261029T212045Z/evidence_audit.json) preserves three complete highlight rows in DOM; screenshots stop at the heading.
+- **Visual form:** [task_37 C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_37/20261029T212045Z/evidence_audit.json) preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
+- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_02/20261029T212045Z/evidence_audit.json) and missing World radio selection in [task_44 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_44/20261029T212045Z/evidence_audit.json).
 
 The detailed findings and evidence links are in the [report’s six-column criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion). Category annotations summarize the saved findings; they do not change verifier scores or audit decisions.
 

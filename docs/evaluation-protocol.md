@@ -136,18 +136,6 @@ task has no estimable interval; constant samples are marked as degenerate.
 Website blockers, recorded execution failures, task scores, and source-loss
 counts are separate measurements.
 
-### Human review
-
-Optional human review can use 150 audited criteria selected uniformly without
-replacement. Two reviewers independently use the frozen rubric, ordered
-sources and the formatted history received by each verifier. Final answers
-remain claims, not proof of page content. Reviewers must not consult model
-findings or each other's labels before submitting.
-
-Inter-reviewer agreement and agreement with the locked audit labels remain
-unreported until both human sheets are completed. Distinct model variants do
-not establish independent human verification.
-
 ## Operation
 
 See the [runbook](runbook.md#score-a-prepared-task) for preparation, validation,
