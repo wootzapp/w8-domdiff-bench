@@ -204,13 +204,14 @@ def upload_trajectories(
     revision: str = DEFAULT_REVISION,
     api: Any | None = None,
 ) -> dict[str, Any]:
-    """Upload paired trajectories without adding them to the Dataset Viewer config."""
+    """Upload paired trajectories and their loadable JSONL index."""
 
     source = Path(data_root).resolve(strict=True)
     aliases = _local_paired_tasks(source)
     if not aliases:
         raise ValueError(f"No paired tasks found under {source}")
     validated = [validate_downloaded_pair(source, alias) for alias in aliases]
+    index = build_trajectory_index(source)
     if api is None:
         _, api_type = _require_huggingface_hub()
         api = api_type()
@@ -220,7 +221,7 @@ def upload_trajectories(
         revision=revision,
         folder_path=str(source),
         path_in_repo=REMOTE_PREFIX,
-        allow_patterns=["data-ss/**", "data-dom/**"],
+        allow_patterns=["data-ss/**", "data-dom/**", "pairs.jsonl"],
         commit_message="Add paired screenshot and DOM verifier trajectories",
     )
     return {
@@ -229,13 +230,91 @@ def upload_trajectories(
         "revision": revision,
         "remote_prefix": REMOTE_PREFIX,
         "task_count": len(validated),
+        "index_sha256": index["sha256"],
         "commit": str(result),
     }
 
 
+def build_trajectory_index(data_root: str | Path) -> dict[str, Any]:
+    """Index complete paired inputs without changing any source task file."""
+    source = Path(data_root).resolve(strict=True)
+    aliases = _local_paired_tasks(source)
+    if not aliases:
+        raise ValueError(f"No paired tasks found under {source}")
+    screenshot_tasks = {p.name for p in (source / "data-ss").iterdir() if p.is_dir()}
+    dom_tasks = {p.name for p in (source / "data-dom").iterdir() if p.is_dir()}
+    if screenshot_tasks != dom_tasks:
+        raise ValueError("Screenshot and DOM task folders differ; a pair is incomplete")
+    records = []
+    for alias in aliases:
+        validated = validate_downloaded_pair(source, alias)
+        if validated["screenshot_states"] != validated["dom_states"]:
+            raise ValueError(f"Screenshot and DOM state counts differ for {alias}")
+        screenshot, dom = source / "data-ss" / alias, source / "data-dom" / alias
+        shared_files = {}
+        identities, answers = [], []
+        for mode, folder in (("screenshot", screenshot), ("dom_model", dom)):
+            for name in ("task_data.json", "final_answer.json", "web_surfer.log"):
+                shared_files[(mode, name)] = (folder / name).read_bytes().decode("utf-8")
+            metadata = json.loads(shared_files[(mode, "task_data.json")])
+            if isinstance(metadata, list) and len(metadata) == 1:
+                metadata = metadata[0]
+            if not isinstance(metadata, dict):
+                raise ValueError(f"Expected one task object for {alias}, {mode}")
+            identities.append((metadata.get("task_id") or metadata.get("id"),
+                               metadata.get("confirmed_task") or metadata.get("question"),
+                               metadata.get("website") or metadata.get("init_url")))
+            answer = json.loads(shared_files[(mode, "final_answer.json")])
+            if not isinstance(answer, dict) or "final_answer" not in answer:
+                raise ValueError(f"Missing final answer object for {alias}, {mode}")
+            answers.append(answer["final_answer"])
+        if identities[0] != identities[1] or not all(identities[0]):
+            raise ValueError(f"Screenshot and DOM task identities differ or are incomplete for {alias}")
+        if answers[0] != answers[1]:
+            raise ValueError(f"Screenshot and DOM final answers differ for {alias}")
+        screenshot_log = shared_files[("screenshot", "web_surfer.log")]
+        dom_log = shared_files[("dom_model", "web_surfer.log")]
+        if screenshot_log != dom_log:
+            raise ValueError(f"Screenshot and DOM action logs differ for {alias}")
+        images = sorted(
+            (path for path in screenshot.iterdir() if path.is_file() and not path.is_symlink()
+             and re.fullmatch(r"screenshot_?(0|[1-9]\d*)\.(?:png|jpe?g|webp)", path.name, re.I)),
+            key=lambda path: int(re.search(r"\d+", path.name).group()),
+        )
+        if len(images) != validated["screenshot_states"]:
+            raise ValueError(f"Original screenshot sources are incomplete for {alias}")
+        states = []
+        for index, image in enumerate(images):
+            model = dom / f"dom_model{index}.txt"
+            states.append({
+                "index": index,
+                "screenshot_path": f"{REMOTE_PREFIX}/data-ss/{alias}/{image.name}",
+                "screenshot_sha256": hashlib.sha256(image.read_bytes()).hexdigest(),
+                "dom_model_path": f"{REMOTE_PREFIX}/data-dom/{alias}/{model.name}",
+                "dom_model_sha256": hashlib.sha256(model.read_bytes()).hexdigest(),
+                "dom_model_text": model.read_bytes().decode("utf-8"),
+            })
+        records.append({
+            "task_alias": alias,
+            "screenshot_task_data_json": shared_files[("screenshot", "task_data.json")],
+            "dom_model_task_data_json": shared_files[("dom_model", "task_data.json")],
+            "screenshot_final_answer_json": shared_files[("screenshot", "final_answer.json")],
+            "dom_model_final_answer_json": shared_files[("dom_model", "final_answer.json")],
+            "web_surfer_log": screenshot_log,
+            "states": states,
+        })
+    index_path = source / "pairs.jsonl"
+    pending = index_path.with_suffix(".jsonl.tmp")
+    pending.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in records), encoding="utf-8")
+    pending.replace(index_path)
+    return {"status": "indexed", "task_count": len(records),
+            "index_path": os.path.relpath(index_path, REPOSITORY_ROOT),
+            "sha256": hashlib.sha256(index_path.read_bytes()).hexdigest()}
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("fetch", "upload"))
+    parser.add_argument("command", choices=("fetch", "upload", "index"))
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--task")
     selection.add_argument("--all", action="store_true")
@@ -246,8 +325,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--source-dir",
-        default=str(REPOSITORY_ROOT / "data"),
-        help="Maintainer-only local source used by the upload command",
+        default=str(REPOSITORY_ROOT / "trajectories"),
+        help="Prepared local trajectories used by index and upload",
     )
     parser.add_argument(
         "--repo-id", default=os.environ.get("W8_BENCH_DATASET_REPO", DEFAULT_REPO_ID)
@@ -269,8 +348,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     else:
         if args.task or args.all:
-            raise ValueError("upload always publishes every validated paired task")
-        result = upload_trajectories(
+            raise ValueError(f"{args.command} uses every validated paired task")
+        result = build_trajectory_index(args.source_dir) if args.command == "index" else upload_trajectories(
             data_root=args.source_dir,
             repo_id=args.repo_id,
             revision=args.revision,
