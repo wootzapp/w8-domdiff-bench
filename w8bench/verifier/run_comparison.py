@@ -33,6 +33,7 @@ from .compare_results import compare
 from .evidence_audit import (
     AuditValidationError,
     DEFAULT_AUDIT_MODEL,
+    DEFAULT_ADJUDICATOR_MODEL,
     append_audit_to_comparison,
     render_markdown as render_evidence_audit,
     run_evidence_audit,
@@ -428,6 +429,9 @@ def main(argv: list[str] | None = None) -> int:
         "frozen_rubric": os.path.relpath(published_rubric, REPOSITORY_ROOT),
         "rubric_generation_metrics": os.path.relpath(published_generation, REPOSITORY_ROOT),
     }
+    adjudicator_model = os.environ.get("EVIDENCE_ADJUDICATOR_MODEL", "").strip() or DEFAULT_ADJUDICATOR_MODEL
+    audit_calls: list[dict[str, Any]] = []
+    manifest["evidence_audit"]["adjudicator_model"] = adjudicator_model
     manifest["evidence_audit"]["started_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     write_json(run_root / "run_manifest.json", manifest)
     try:
@@ -439,6 +443,8 @@ def main(argv: list[str] | None = None) -> int:
             dom_result=dom_root / "result.json",
             task_alias=args.task,
             model=args.audit_model,
+            adjudicator_model=adjudicator_model,
+            call_records=audit_calls,
         )
     except Exception as exc:
         manifest["evidence_audit"]["completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
@@ -448,6 +454,8 @@ def main(argv: list[str] | None = None) -> int:
             "error_type": type(exc).__name__,
             "message": str(exc),
             "audit_model": args.audit_model,
+            "adjudicator_model": adjudicator_model,
+            "calls": audit_calls,
             "verifier_comparison_complete": True,
         }
         if isinstance(exc, AuditValidationError):
