@@ -124,8 +124,12 @@ for action/validity judgments. See
 Standalone verifier commands select this model with `--action-model`.
 The paired comparison supplies the same model to both verifiers.
 
-`EVIDENCE_ADJUDICATOR_MODEL` selects the audit adjudicator; its default is
-`gpt-5.6-terra`. It does not change the recording or verifier models.
+In `.env`, `EVIDENCE_AUDIT_MODEL` selects the inventory model (default
+`gpt-5.6-sol`) and `EVIDENCE_ADJUDICATOR_MODEL` selects the adjudicator
+(default `gpt-5.6-terra`). `--audit-model` overrides the inventory setting.
+Process environment values take precedence over `.env`. The selected audit
+models are saved in the run manifest; these settings do not change the
+recording or verifier models.
 
 Aggregate intervals resample whole tasks, keeping their criteria and both
 modalities together. The reported rate remains total losses divided by total

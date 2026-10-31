@@ -548,8 +548,11 @@ The recorder reads this setting from the environment, with `--model` as an
 explicit override. It does not supply a fixed acting model.
 
 Recording requires both values. Evaluation requires `OPENAI_API_KEY`; its
-model settings are read from [config/](config/). The API account must have
-access to the configured models.
+judge settings are read from [config/](config/). In `.env`,
+`EVIDENCE_AUDIT_MODEL` selects the inventory model and
+`EVIDENCE_ADJUDICATOR_MODEL` selects the adjudicator. Their defaults are
+`gpt-5.6-sol` and `gpt-5.6-terra`. `--audit-model` overrides the inventory
+setting. The API account must have access to the configured models.
 
 Start the browser and verify the container, CDP endpoint, noVNC page, and
 bundled `agent-browser`:

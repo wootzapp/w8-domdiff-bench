@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import unittest
@@ -71,6 +72,27 @@ class BrowserSourceLayoutTest(unittest.TestCase):
         self.assertFalse(
             (renderer_root / "render_chromiumrl_snapshot_model.py").exists()
         )
+
+
+@pytest.mark.parametrize("invalid", [None, "VCS_REF", "BROWSER_OVERLAY_REVISION",
+                                    "CHROMIUM_REVISION", "BROWSER_PROTOCOL_SHA256"])
+@pytest.mark.parametrize("value", ["", "unknown", "a" * 39, "g" * 64, "a" * 39 + "\n"])
+def test_dockerfile_requires_complete_source_hashes(invalid, value):
+    dockerfile = (REPOSITORY_ROOT / "Dockerfile").read_text()
+    guard = re.search(r"^RUN for source .*?(?=\n\n)", dockerfile, re.M | re.S)
+    assert guard is not None
+    values = {"VCS_REF": "1" * 40, "BROWSER_OVERLAY_REVISION": "2" * 40,
+              "CHROMIUM_REVISION": "3" * 40, "BROWSER_PROTOCOL_SHA256": "4" * 64}
+    for key in values:
+        assert f"ARG {key}\n" in dockerfile
+        assert f"ARG {key}=" not in dockerfile
+    if invalid:
+        values[invalid] = value
+    result = subprocess.run(
+        ["/bin/sh", "-c", guard.group()[4:].replace("\\\n", "")],
+        env={**os.environ, **values}, capture_output=True, text=True,
+    )
+    assert (result.returncode == 0) == (invalid is None), result.stderr
 
 
 @pytest.mark.parametrize("mismatch", [None, "revision", "overlay", "protocol", "binary"])

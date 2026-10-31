@@ -240,8 +240,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--eval-config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--env-file", default=str(REPOSITORY_ROOT / ".env"))
     parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
-    parser.add_argument("--run-id")
-    parser.add_argument("--audit-model", default=DEFAULT_AUDIT_MODEL)
+    parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
+    parser.add_argument("--audit-model", help=f"Inventory model (default: EVIDENCE_AUDIT_MODEL or {DEFAULT_AUDIT_MODEL})")
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
 
@@ -281,6 +281,10 @@ def main(argv: list[str] | None = None) -> int:
         require_sidecars=True,
     )
     packages = require_local_packages()
+    if Path(args.env_file).is_file() or args.execute:
+        load_env_file(args.env_file)
+    args.audit_model = (args.audit_model or os.environ.get("EVIDENCE_AUDIT_MODEL", "")).strip() or DEFAULT_AUDIT_MODEL
+    adjudicator_model = os.environ.get("EVIDENCE_ADJUDICATOR_MODEL", "").strip() or DEFAULT_ADJUDICATOR_MODEL
     run_id = args.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     results_root = ensure_under(
         Path(args.results_root), REPOSITORY_ROOT, label="results root"
@@ -348,6 +352,7 @@ def main(argv: list[str] | None = None) -> int:
             "enabled": True,
             "method": "automated_llm",
             "model": args.audit_model,
+            "adjudicator_model": adjudicator_model,
             "runs_after_both_verifiers": True,
             "started_at": None,
             "completed_at": None,
@@ -358,7 +363,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(manifest, ensure_ascii=False, indent=2))
         return 0
 
-    load_env_file(args.env_file)
     require_openai_key()
     manifest["evaluation_started_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     run_root.mkdir(parents=True)
@@ -429,9 +433,7 @@ def main(argv: list[str] | None = None) -> int:
         "frozen_rubric": os.path.relpath(published_rubric, REPOSITORY_ROOT),
         "rubric_generation_metrics": os.path.relpath(published_generation, REPOSITORY_ROOT),
     }
-    adjudicator_model = os.environ.get("EVIDENCE_ADJUDICATOR_MODEL", "").strip() or DEFAULT_ADJUDICATOR_MODEL
     audit_calls: list[dict[str, Any]] = []
-    manifest["evidence_audit"]["adjudicator_model"] = adjudicator_model
     manifest["evidence_audit"]["started_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     write_json(run_root / "run_manifest.json", manifest)
     try:

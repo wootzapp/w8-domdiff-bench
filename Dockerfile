@@ -3,6 +3,18 @@ FROM node:24-bookworm-slim AS node-runtime
 
 FROM ubuntu:24.04
 
+ARG VCS_REF
+ARG BROWSER_OVERLAY_REVISION
+ARG CHROMIUM_REVISION
+ARG BROWSER_PROTOCOL_SHA256
+RUN for source in "40:$VCS_REF" "40:$BROWSER_OVERLAY_REVISION" \
+      "40:$CHROMIUM_REVISION" "64:$BROWSER_PROTOCOL_SHA256"; do \
+      digest="${source#*:}"; \
+      case "$digest" in ''|*[!0-9a-f]*) echo 'Valid source hashes are required.' >&2; exit 1;; esac; \
+      test "${#digest}" -eq "${source%%:*}" \
+        || { echo 'Full source hashes are required.' >&2; exit 1; }; \
+    done
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
@@ -98,10 +110,6 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     && agent-browser --version
 
 ARG IMAGE_VERSION=dev
-ARG VCS_REF=unknown
-ARG BROWSER_OVERLAY_REVISION=unknown
-ARG CHROMIUM_REVISION=unknown
-ARG BROWSER_PROTOCOL_SHA256=unknown
 
 LABEL org.opencontainers.image.title="w8-core browser engine" \
       org.opencontainers.image.description="w8-core with ChromiumRL CDP and agent-browser" \

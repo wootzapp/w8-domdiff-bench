@@ -85,6 +85,8 @@ def test_execution_times_are_independent_of_output_group_id(pair_factory, tmp_pa
     monkeypatch.setattr(comparison, "require_local_packages", lambda: {})
     monkeypatch.setattr(comparison, "load_env_file", lambda path: None)
     monkeypatch.setattr(comparison, "require_openai_key", lambda: None)
+    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "fixture-inventory")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "fixture-adjudicator")
     calls = []
 
     def execute_mocked(command, log_path):
@@ -97,6 +99,8 @@ def test_execution_times_are_independent_of_output_group_id(pair_factory, tmp_pa
 
     def audit_mocked(**kwargs):
         assert len(calls) == 2
+        assert kwargs["model"] == "fixture-inventory"
+        assert kwargs["adjudicator_model"] == "fixture-adjudicator"
         if outcome == "audit_failed":
             raise ValueError("fixture audit validation error")
         return {"metrics": {"total_criteria": 2}}
@@ -122,6 +126,8 @@ def test_execution_times_are_independent_of_output_group_id(pair_factory, tmp_pa
     manifest = json.loads((run_root / "run_manifest.json").read_text())
     assert manifest["run_id"] == old_group_id
     assert manifest["source_task_id"] == pair["task"]["task_id"]
+    assert manifest["evidence_audit"]["model"] == "fixture-inventory"
+    assert manifest["evidence_audit"]["adjudicator_model"] == "fixture-adjudicator"
     start = datetime.fromisoformat(manifest["evaluation_started_at"].replace("Z", "+00:00"))
     end = datetime.fromisoformat(manifest["evaluation_completed_at"].replace("Z", "+00:00"))
     assert start.year > 2000
@@ -136,6 +142,55 @@ def test_execution_times_are_independent_of_output_group_id(pair_factory, tmp_pa
         assert end <= audit_start <= audit_end
         assert manifest["status"] == ("complete" if outcome == "complete" else "complete_with_audit_error")
     assert tree_digest(pair["staged"]) == source_digest
+
+
+@pytest.mark.parametrize("entrypoint", [comparison, workflow])
+@pytest.mark.parametrize("file_model,environment_model,cli_model,expected", [
+    (None, None, None, "gpt-5.6-sol"),
+    ("", None, None, "gpt-5.6-sol"),
+    ("file-inventory", None, None, "file-inventory"),
+    ("file-inventory", "process-inventory", None, "process-inventory"),
+    ("file-inventory", "process-inventory", "cli-inventory", "cli-inventory"),
+])
+def test_audit_model_selection_preserves_offline_inputs(
+    pair_factory, tmp_path, monkeypatch, capsys,
+    entrypoint, file_model, environment_model, cli_model, expected,
+):
+    pair = pair_factory()
+    before = tree_digest(pair["staged"])
+    monkeypatch.setattr(entrypoint, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(comparison, "require_local_packages", lambda: {})
+    monkeypatch.delenv("EVIDENCE_AUDIT_MODEL", raising=False)
+    monkeypatch.delenv("EVIDENCE_ADJUDICATOR_MODEL", raising=False)
+    if environment_model is not None:
+        monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", environment_model)
+    env_file = tmp_path / ".env"
+    if file_model is not None:
+        env_file.write_text(
+            f"EVIDENCE_AUDIT_MODEL={file_model}\n"
+            "EVIDENCE_ADJUDICATOR_MODEL=file-adjudicator\n"
+        )
+    argv = ["--task", "task1", "--env-file", str(env_file),
+            "--eval-config", str(pair["config"]), "--results-root", str(tmp_path / "evaluation")]
+    if entrypoint is comparison:
+        argv += ["--staged-root", str(pair["staged"]), "--rubric-file", str(pair["rubric"]),
+                 "--generation-metrics", str(pair["metrics"])]
+    else:
+        argv += ["--data-source", "local", "--data-root", str(pair["staged"])]
+    if cli_model:
+        argv += ["--audit-model", cli_model]
+    assert entrypoint.main(argv) == 0
+    receipt = json.loads(capsys.readouterr().out)
+    if entrypoint is comparison:
+        assert receipt["evidence_audit"]["model"] == expected
+        assert receipt["evidence_audit"]["adjudicator_model"] == (
+            "file-adjudicator" if file_model is not None else "gpt-5.6-terra"
+        )
+    else:
+        assert receipt["audit_model"] == expected
+    assert receipt["paid_calls_authorized"] is False
+    assert not (tmp_path / "evaluation").exists()
+    assert tree_digest(pair["staged"]) == before
 
 
 def test_batch_records_actual_times_separately_from_group_id(tmp_path, monkeypatch):

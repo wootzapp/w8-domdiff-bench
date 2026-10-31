@@ -40,6 +40,31 @@ def validate_alignment(
                     state_index=0,
                 )
             )
+        elif (
+            task_url.scheme in {"http", "https"}
+            and task_url.scheme == state_url.scheme
+            and task_url.hostname and state_url.hostname
+            and (
+                task_url.hostname == f"www.{state_url.hostname}"
+                or state_url.hostname == f"www.{task_url.hostname}"
+            )
+            and all(value is None for value in (
+                task_url.username, task_url.password, state_url.username, state_url.password
+            ))
+            and (task_url.port or (443 if task_url.scheme == "https" else 80))
+                == (state_url.port or (443 if state_url.scheme == "https" else 80))
+            and task_url.path == state_url.path
+            and urlsplit(initial_url).query == urlsplit(states[0].url).query
+        ):
+            # Preserve both URLs; a host alias is not proof of a redirect or success.
+            warnings.append(
+                AlignmentWarning(
+                    "initial_url_www_alias",
+                    f"Initial URLs differ only by www; no redirect chain is available: "
+                    f"task={initial_url!r}, state={states[0].url!r}",
+                    state_index=0,
+                )
+            )
         else:
             raise ValueError(
                 f"Initial URL differs: task={initial_url!r}, dom_model0={states[0].url!r}"

@@ -197,6 +197,10 @@ supported models are allowed; the selected model is saved in `task.json`.
 The recorder reads this setting from the environment, with `--model` as an
 explicit override. It does not supply a fixed acting model.
 
+Audit models use `.env` settings `EVIDENCE_AUDIT_MODEL` (inventory) and
+`EVIDENCE_ADJUDICATOR_MODEL` (adjudication). `--audit-model` overrides the
+inventory setting. Judge settings remain in `config/`.
+
 ## Browser runtime
 
 Start the browser and verify every runtime component:
@@ -348,6 +352,8 @@ Run their evaluation:
   start and completion times.
 - Preparation-report references are relative to their output folder; evaluation
   references are relative to the repository root. Older absolute paths remain readable.
+- An initial `www`/bare-domain difference is a warning only when the scheme,
+  port, path, and query match. Both URLs remain recorded; other hosts fail validation.
 
 ## View a remote browser
 

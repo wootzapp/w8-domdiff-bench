@@ -101,6 +101,8 @@ RUNNER_NOVNC_URL={values['RUNNER_NOVNC_URL']}
 
 OPENAI_API_KEY={values['OPENAI_API_KEY']}
 OPENAI_MODEL={values['OPENAI_MODEL']}
+EVIDENCE_AUDIT_MODEL={values['EVIDENCE_AUDIT_MODEL']}
+EVIDENCE_ADJUDICATOR_MODEL={values['EVIDENCE_ADJUDICATOR_MODEL']}
 
 CHROMIUM_HEADLESS=0
 CHROMIUM_RESET_PROFILE=0
@@ -143,6 +145,8 @@ def configure(env_path: Path, refresh_ports: bool) -> int:
         "OPENAI_MODEL": existing.get(
             "OPENAI_MODEL", "replace-with-a-supported-model-name"
         ),
+        "EVIDENCE_AUDIT_MODEL": existing.get("EVIDENCE_AUDIT_MODEL", "gpt-5.6-sol"),
+        "EVIDENCE_ADJUDICATOR_MODEL": existing.get("EVIDENCE_ADJUDICATOR_MODEL", "gpt-5.6-terra"),
     }
     env_path.parent.mkdir(parents=True, exist_ok=True)
     write_env(env_path, values)

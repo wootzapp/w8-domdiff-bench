@@ -17,7 +17,7 @@ from pathlib import Path
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 from .common import ensure_under
-from .common import load_json, write_json
+from .common import load_env_file, load_json, write_json
 from .dataset_sync import (
     DEFAULT_DATASET_ROOT,
     DEFAULT_REPO_ID,
@@ -42,8 +42,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--eval-config", default=str(REPOSITORY_ROOT / "config"))
     parser.add_argument("--env-file", default=str(REPOSITORY_ROOT / ".env"))
     parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
-    parser.add_argument("--run-id")
-    parser.add_argument("--audit-model", default=DEFAULT_AUDIT_MODEL)
+    parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
+    parser.add_argument("--audit-model", help=f"Inventory model (default: EVIDENCE_AUDIT_MODEL or {DEFAULT_AUDIT_MODEL})")
     parser.add_argument("--hf-repo", default=DEFAULT_REPO_ID)
     parser.add_argument("--hf-revision", default=DEFAULT_REVISION)
     parser.add_argument("--execute", action="store_true")
@@ -213,6 +213,9 @@ def _run_all(args: argparse.Namespace, data_root: Path) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if Path(args.env_file).is_file():
+        load_env_file(args.env_file)
+    args.audit_model = (args.audit_model or os.environ.get("EVIDENCE_AUDIT_MODEL", "")).strip() or DEFAULT_AUDIT_MODEL
     if args.data_source == "huggingface":
         if (DEFAULT_DATASET_ROOT / "preparation_report.json").exists():
             raise ValueError("The download folder contains locally prepared inputs; use local mode or a separate download folder")
