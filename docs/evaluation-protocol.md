@@ -127,10 +127,26 @@ The paired comparison supplies the same model to both verifiers.
 `EVIDENCE_ADJUDICATOR_MODEL` selects the audit adjudicator; its default is
 `gpt-5.6-terra`. It does not change the recording or verifier models.
 
-Exploratory 95% Wilson intervals assume independent criteria and do not
-adjust for correlation among criteria within a task or annotation error.
+Aggregate intervals resample whole tasks, keeping their criteria and both
+modalities together. The reported rate remains total losses divided by total
+criteria, not the average of task rates. The paired difference uses the same
+task draws. The percentile bootstrap uses 20,000 draws and records its seed.
+It assumes independent tasks and does not measure annotation error. A single
+task has no estimable interval; constant samples are marked as degenerate.
 Website blockers, recorded execution failures, task scores, and source-loss
 counts are separate measurements.
+
+### Human review
+
+Optional human review can use 150 audited criteria selected uniformly without
+replacement. Two reviewers independently use the frozen rubric, ordered
+sources and the formatted history received by each verifier. Final answers
+remain claims, not proof of page content. Reviewers must not consult model
+findings or each other's labels before submitting.
+
+Inter-reviewer agreement and agreement with the locked audit labels remain
+unreported until both human sheets are completed. Distinct model variants do
+not establish independent human verification.
 
 ## Operation
 

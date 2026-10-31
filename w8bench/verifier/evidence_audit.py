@@ -12,7 +12,9 @@ import base64
 from datetime import datetime, timezone
 import json
 import mimetypes
+import random
 import re
+from statistics import quantiles
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -1196,6 +1198,62 @@ def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]
     all_rows = [row for audit in audits for row in audit.get("criteria", [])]
     if not all_rows:
         raise ValueError("No completed evidence audits to aggregate")
+    task_ids = [audit["task_id"] for audit in audits]
+    if len(set(task_ids)) != len(task_ids):
+        raise ValueError("Completed evidence audits must have unique task identities")
+    if any(not audit.get("criteria") for audit in audits):
+        raise ValueError("Every completed evidence audit must contain criteria")
+    metrics = calculate_metrics(all_rows)
+    interval_keys = (
+        "screenshot_evidence_loss", "dom_model_evidence_loss",
+        "screenshot_minus_dom_loss_rate",
+    )
+    estimates = (
+        metrics["screenshot_evidence_loss"]["rate"],
+        metrics["dom_model_evidence_loss"]["rate"],
+        metrics["screenshot_evidence_loss"]["rate"] - metrics["dom_model_evidence_loss"]["rate"],
+    )
+    confidence = {
+        "method": "paired_task_cluster_percentile_bootstrap",
+        "confidence_level": 0.95,
+        "resampling_unit": "task",
+        "estimator": "criterion_weighted_rate",
+        "clusters": len(audits),
+        "resamples": 20000,
+        "seed": 0,
+        "interpretation": (
+            "Assumes independent tasks and holds audit labels fixed; it does not "
+            "measure annotation error. A degenerate empirical interval does not "
+            "establish zero uncertainty."
+        ),
+    }
+    samples: list[list[float]] = [[], [], []]
+    if len(audits) >= 2:
+        # Keep every criterion and both modalities together when sampling a task.
+        # Sum counts before dividing so tasks with more criteria retain their weight.
+        clusters = [
+            (len(audit["criteria"]),
+             sum(row["screenshot_evidence_loss"] for row in audit["criteria"]),
+             sum(row["dom_model_evidence_loss"] for row in audit["criteria"]))
+            for audit in sorted(audits, key=lambda audit: audit["task_id"])
+        ]
+        rng = random.Random(confidence["seed"])
+        for _ in range(confidence["resamples"]):
+            selected = rng.choices(clusters, k=len(clusters))
+            denominator = sum(task[0] for task in selected)
+            screen_rate = sum(task[1] for task in selected) / denominator
+            dom_rate = sum(task[2] for task in selected) / denominator
+            samples[0].append(screen_rate)
+            samples[1].append(dom_rate)
+            samples[2].append(screen_rate - dom_rate)
+    for key, estimate, values in zip(interval_keys, estimates, samples):
+        interval = None
+        status = "insufficient_tasks"
+        if values:
+            cutpoints = quantiles(values, n=40, method="inclusive")
+            interval = [cutpoints[0], cutpoints[-1]]
+            status = "degenerate" if min(values) == max(values) else "estimated"
+        confidence[key] = {"estimate": estimate, "ci95": interval, "status": status}
     return {
         "schema_version": SCHEMA_VERSION,
         "audit_method": "automated_llm",
@@ -1209,7 +1267,8 @@ def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]
             }
             for audit in audits
         ],
-        "metrics": calculate_metrics(all_rows),
+        "metrics": metrics,
+        "confidence_intervals": confidence,
     }
 
 
@@ -1246,21 +1305,26 @@ def render_markdown(audit: dict[str, Any]) -> str:
 
 def render_aggregate_markdown(summary: dict[str, Any]) -> str:
     metrics = summary["metrics"]
+    confidence = summary.get("confidence_intervals", {})
     lines = [
         "# Aggregate automated evidence audit", "",
         f"Completed tasks: {summary['completed_tasks']}",
         f"Failed tasks: {len(summary.get('failed_tasks', []))}", "",
-        "| Modality | Missing evidence | Rate |",
-        "|---|---:|---:|",
+        "| Modality | Missing evidence | Rate | 95% task-cluster interval |",
+        "|---|---:|---:|---:|",
     ]
     for label, key in (
         ("Screenshot", "screenshot_evidence_loss"),
         ("DOM-model", "dom_model_evidence_loss"),
     ):
         item = metrics[key]
+        interval = confidence.get(key, {}).get("ci95")
+        interval_text = "n/a" if interval is None else " to ".join(_pct(value) for value in interval)
         lines.append(
-            f"| {label} | {item['count']}/{item['denominator']} | {_pct(item['rate'])} |"
+            f"| {label} | {item['count']}/{item['denominator']} | {_pct(item['rate'])} | {interval_text} |"
         )
+    if confidence:
+        lines.extend(["", confidence["interpretation"]])
     if summary.get("failed_tasks"):
         lines.extend(["", "## Failed tasks", ""])
         for failure in summary["failed_tasks"]:

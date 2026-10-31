@@ -19,6 +19,7 @@ from w8bench.verifier.evidence_audit import (
     calculate_metrics,
     classification,
     ordered_audit_screenshots,
+    render_aggregate_markdown,
     run_evidence_audit,
     validate_audit_response,
     validate_adjudication_response,
@@ -534,3 +535,73 @@ def test_aggregate_reports_failures_without_counting_them_as_evidence_loss():
     assert summary["completed_tasks"] == 1
     assert len(summary["failed_tasks"]) == 1
     assert summary["metrics"]["total_criteria"] == 1
+    confidence = summary["confidence_intervals"]
+    assert confidence["clusters"] == 1
+    assert confidence["screenshot_evidence_loss"]["status"] == "insufficient_tasks"
+    assert confidence["screenshot_evidence_loss"]["ci95"] is None
+
+
+def test_cluster_intervals_keep_correlated_criteria_in_their_tasks():
+    audits = []
+    for task, loss in (("a", True), ("b", False)):
+        rows = [_row(screen_loss=loss) for _ in range(100)]
+        audits.append({"task_id": task, "criteria": rows, "metrics": calculate_metrics(rows)})
+    confidence = aggregate_audits(audits)["confidence_intervals"]
+    assert confidence["resampling_unit"] == "task"
+    assert confidence["clusters"] == 2
+    assert confidence["screenshot_evidence_loss"]["estimate"] == 0.5
+    # Only two independent clusters, not 200 independent Bernoulli observations.
+    assert confidence["screenshot_evidence_loss"]["ci95"] == [0.0, 1.0]
+
+
+def test_cluster_estimates_weight_criteria_and_keep_modalities_paired():
+    audits = []
+    for task, count, loss in (("a", 1, True), ("b", 9, False)):
+        rows = [_row(screen_loss=loss, dom_loss=loss) for _ in range(count)]
+        audits.append({"task_id": task, "criteria": rows, "metrics": calculate_metrics(rows)})
+    confidence = aggregate_audits(audits)["confidence_intervals"]
+    assert confidence["estimator"] == "criterion_weighted_rate"
+    assert confidence["screenshot_evidence_loss"]["estimate"] == 0.1
+    assert confidence["dom_model_evidence_loss"]["ci95"] == confidence["screenshot_evidence_loss"]["ci95"]
+    difference = confidence["screenshot_minus_dom_loss_rate"]
+    assert difference["estimate"] == 0.0
+    assert difference["ci95"] == [0.0, 0.0]
+    assert difference["status"] == "degenerate"
+    assert confidence == aggregate_audits(list(reversed(audits)))["confidence_intervals"]
+
+
+def test_cluster_intervals_report_constant_empirical_data_without_claiming_certainty():
+    rows = [_row()]
+    audits = [{"task_id": task, "criteria": rows, "metrics": calculate_metrics(rows)}
+              for task in ("a", "b")]
+    confidence = aggregate_audits(audits)["confidence_intervals"]
+    assert confidence["screenshot_evidence_loss"]["ci95"] == [0.0, 0.0]
+    assert confidence["screenshot_evidence_loss"]["status"] == "degenerate"
+    assert "does not establish zero uncertainty" in confidence["interpretation"]
+
+
+def test_cluster_intervals_reject_duplicate_task_identities():
+    rows = [_row()]
+    audit = {"task_id": "same-task", "criteria": rows, "metrics": calculate_metrics(rows)}
+    with pytest.raises(ValueError, match="unique task identities"):
+        aggregate_audits([audit, audit])
+
+
+def test_cluster_intervals_reject_empty_completed_tasks():
+    rows = [_row()]
+    audit = {"task_id": "a", "criteria": rows, "metrics": calculate_metrics(rows)}
+    with pytest.raises(ValueError, match="must contain criteria"):
+        aggregate_audits([audit, {"task_id": "b", "criteria": []}])
+
+
+def test_aggregate_report_renders_task_cluster_intervals_without_mutating_audits():
+    audits = []
+    for task, loss in (("a", True), ("b", False)):
+        rows = [_row(screen_loss=loss)]
+        audits.append({"task_id": task, "criteria": rows, "metrics": calculate_metrics(rows)})
+    original = json.loads(json.dumps(audits))
+    report = render_aggregate_markdown(aggregate_audits(audits))
+    assert "95% task-cluster interval" in report
+    assert "| Screenshot | 1/2 | 50.0% | 0.0% to 100.0% |" in report
+    assert "does not measure annotation error" in report
+    assert audits == original
