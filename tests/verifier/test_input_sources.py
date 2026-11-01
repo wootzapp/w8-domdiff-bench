@@ -109,14 +109,21 @@ def test_execute_passes_only_selected_local_inputs(inputs, tmp_path, monkeypatch
         return 0
     monkeypatch.setattr(workflow, "generate_rubric", generate)
     monkeypatch.setattr(workflow, "run_comparison", score)
-    assert workflow.main(["--task", "task1", "--data-source", "local", "--data-root", str(inputs["staged"]),
-                          "--env-file", str(env), "--eval-config", str(inputs["config"]),
-                          "--run-id", "check", "--execute"]) == 0
+    arguments = ["--task", "task1", "--data-source", "local", "--data-root", str(inputs["staged"]),
+                 "--env-file", str(env), "--eval-config", str(inputs["config"]),
+                 "--run-id", "check", "--execute"]
+    assert workflow.main(arguments) == 0
     assert seen == ["generate", "score"]
     receipt = json.loads((tmp_path / "evaluation/task1/check/input_source.json").read_text())
     assert receipt["data_source"] == "local"
     assert not Path(receipt["data_root"]).is_absolute()
     assert (tmp_path / receipt["data_root"]).resolve() == inputs["staged"]
+
+    existing = {p.relative_to(tmp_path): p.read_bytes() for p in (tmp_path / "evaluation").rglob("*") if p.is_file()}
+    with pytest.raises(ValueError, match="Run output already exists"):
+        workflow.main(arguments)
+    assert seen == ["generate", "score"]
+    assert {p.relative_to(tmp_path): p.read_bytes() for p in (tmp_path / "evaluation").rglob("*") if p.is_file()} == existing
 
 
 def test_preparation_hashes_block_edited_inputs_before_paid_calls(inputs, monkeypatch):

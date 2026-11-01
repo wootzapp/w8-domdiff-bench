@@ -141,13 +141,29 @@ def fetch_trajectories(
         dom_tasks = {
             path.name for path in (remote_root / "data-dom").iterdir() if path.is_dir()
         } if (remote_root / "data-dom").is_dir() else set()
+        if screenshot_tasks != dom_tasks:
+            raise ValueError("Downloaded screenshot and DOM task folders differ")
         aliases = sorted(screenshot_tasks & dom_tasks)
         if task and aliases != [task]:
             raise ValueError(f"No complete paired trajectory found for {task} in {repo_id}")
         if not aliases:
             raise ValueError(f"No paired trajectories found in {repo_id}@{revision}")
 
-        copied: list[str] = []
+        if task is None:
+            for modality in ("data-ss", "data-dom"):
+                local_root = target / modality
+                cached = {path.name for path in local_root.iterdir() if path.is_dir()} if local_root.is_dir() else set()
+                if cached - set(aliases):
+                    raise ValueError(
+                        "Cached task folders are absent from the selected Hugging Face inputs: "
+                        + ", ".join(sorted(cached - set(aliases)))
+                        + ". Move the existing download folder aside before fetching again."
+                    )
+
+        # Validate the complete selection before changing the download folder.
+        for alias in aliases:
+            validate_downloaded_pair(remote_root, alias)
+        pending: list[str] = []
         for alias in aliases:
             if _pair_is_valid(target, alias):
                 # File presence alone does not establish the selected revision.
@@ -160,7 +176,6 @@ def fetch_trajectories(
                             f"Cached trajectory differs from selected Hugging Face inputs: {local_task}. "
                             "Move the existing download folder aside before fetching again."
                         )
-                copied.append(alias)
                 continue
             existing = [
                 target / modality / alias
@@ -172,14 +187,25 @@ def fetch_trajectories(
                     "Refusing to replace incomplete local trajectory directories: "
                     + ", ".join(str(path) for path in existing)
                 )
-            for modality in ("data-ss", "data-dom"):
-                source = remote_root / modality / alias
-                destination = target / modality / alias
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copytree(source, destination)
-            copied.append(alias)
+            pending.append(alias)
 
-    validated = [validate_downloaded_pair(target, alias) for alias in copied]
+        created: list[Path] = []
+        try:
+            for alias in pending:
+                for modality in ("data-ss", "data-dom"):
+                    source = remote_root / modality / alias
+                    destination = target / modality / alias
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    destination.mkdir()
+                    created.append(destination)
+                    shutil.copytree(source, destination, dirs_exist_ok=True)
+            validated = [validate_downloaded_pair(target, alias) for alias in aliases]
+        except BaseException:
+            # Remove only task directories created by this download attempt.
+            for destination in reversed(created):
+                shutil.rmtree(destination)
+            raise
+
     return {
         "status": "resolved_from_huggingface",
         "repo_id": repo_id,

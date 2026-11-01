@@ -1,6 +1,7 @@
 import json
 import shutil
 from pathlib import Path
+from unittest.mock import Mock
 import pytest
 
 from w8bench.verifier.dataset_sync import build_trajectory_index, fetch_trajectories, upload_trajectories
@@ -24,7 +25,7 @@ def _write_pair(root: Path, task: str) -> None:
     )
 
 
-def test_fetch_one_task_maps_remote_trajectory_prefix_to_local_data(tmp_path):
+def test_fetch_one_task_maps_remote_trajectory_prefix_to_local_data(tmp_path, monkeypatch):
     remote = tmp_path / "remote" / "trajectories"
     _write_pair(remote, "task_01")
     _write_pair(remote, "task_02")
@@ -60,6 +61,31 @@ def test_fetch_one_task_maps_remote_trajectory_prefix_to_local_data(tmp_path):
         "trajectories/data-dom/task_01/**",
     ]
 
+    original = {p.relative_to(local): p.read_bytes() for p in local.rglob("*") if p.is_file()}
+    dom_state = remote / "data-dom/task_02/dom_model0.txt"
+    dom_state.rename(dom_state.with_name("dom_model1.txt"))
+    invalid = tmp_path / "invalid-data"
+    with pytest.raises(ValueError, match="contiguous from 0"):
+        fetch_trajectories(
+            data_root=invalid, task=None,
+            snapshot_download_fn=Mock(return_value=str(remote.parent)),
+        )
+    assert not invalid.exists()
+    assert all((local / name).read_bytes() == content for name, content in original.items())
+
+    dom_state.with_name("dom_model1.txt").rename(dom_state)
+    with monkeypatch.context() as patch:
+        patch.setattr("w8bench.verifier.dataset_sync.shutil.copytree",
+                      Mock(side_effect=OSError("copy failed")))
+        with pytest.raises(OSError, match="copy failed"):
+            fetch_trajectories(
+                data_root=local, task=None,
+                snapshot_download_fn=Mock(return_value=str(remote.parent)),
+            )
+    assert not (local / "data-ss/task_02").exists()
+    assert not (local / "data-dom/task_02").exists()
+    assert {p.relative_to(local): p.read_bytes() for p in local.rglob("*") if p.is_file()} == original
+
 
 def test_fetch_revalidates_valid_cache_against_huggingface(tmp_path):
     local = tmp_path / "data"
@@ -79,6 +105,25 @@ def test_fetch_revalidates_valid_cache_against_huggingface(tmp_path):
     )
     assert receipt["status"] == "resolved_from_huggingface"
     assert len(calls) == 1
+
+    _write_pair(local, "task_02")
+    before = {p.relative_to(local): p.read_bytes() for p in local.rglob("*") if p.is_file()}
+    with pytest.raises(ValueError, match="Cached task folders are absent"):
+        fetch_trajectories(data_root=local, task=None, snapshot_download_fn=fake_snapshot_download)
+    assert {p.relative_to(local): p.read_bytes() for p in local.rglob("*") if p.is_file()} == before
+
+    # A single-task request can share a cache with other explicitly fetched tasks.
+    selected = fetch_trajectories(data_root=local, task="task_01", snapshot_download_fn=fake_snapshot_download)
+    assert [row["task"] for row in selected["tasks"]] == ["task_01"]
+    assert {p.relative_to(local): p.read_bytes() for p in local.rglob("*") if p.is_file()} == before
+
+    fresh = tmp_path / "fresh-data"
+    completed = fetch_trajectories(data_root=fresh, task=None, snapshot_download_fn=fake_snapshot_download)
+    assert set(completed) == set(receipt)
+    assert completed["tasks"][0]["task"] == "task_01"
+    assert {p.relative_to(fresh): p.read_bytes() for p in fresh.rglob("*") if p.is_file()} == {
+        name: content for name, content in before.items() if name.parts[1] == "task_01"
+    }
 
 
 def test_upload_publishes_only_paired_trajectory_trees(tmp_path):

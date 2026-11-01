@@ -260,6 +260,11 @@ def _run_task(args: argparse.Namespace, data_root: Path) -> int:
             number += 1
         run_id = f"batch_{number:02d}"
 
+    if (results_root / args.task / run_id).exists():
+        raise ValueError(
+            f"Run output already exists; choose a new --run-id: {results_root / args.task / run_id}"
+        )
+
     if not args.execute:
         print(
             json.dumps(
