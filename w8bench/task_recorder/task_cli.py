@@ -513,7 +513,8 @@ def fetch_catalog_task(
     definition.update(
         {
             "source_task_id": str(row.get("task_id", "")).strip(),
-            "task_name": str(row.get("category", "")).strip(),
+            "task_name": str(row.get("task_name") or "").strip()
+            or str(row.get("category") or "").strip(),
             "source_catalog": url,
         }
     )

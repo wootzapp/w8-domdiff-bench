@@ -224,6 +224,45 @@ class TaskCliTests(unittest.TestCase):
         self.assertEqual(result, 0)
         fetch.assert_called_once()
 
+    def test_catalog_task_name_is_independent_of_category(self) -> None:
+        row = {
+            "task_id": "browser_task_001",
+            "task_name": "product metadata",
+            "instruction": "Inspect the product page.",
+            "start_url": "https://example.test/",
+            "stopping_condition": "Stop after recording the requested fields.",
+            "constraints": ["Do not sign in."],
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            for category in ("record lookup", "search and filtering"):
+                with self.subTest(category=category), patch.object(
+                    task_cli.urllib.request, "urlopen",
+                    return_value=io.BytesIO(json.dumps({**row, "category": category}).encode()),
+                ):
+                    definition = task_cli.fetch_catalog_task("https://example.test/tasks.jsonl", "task1")
+                    self.assertEqual(definition["task_name"], "product metadata")
+                    self.assertEqual(definition["source_task_id"], row["task_id"])
+                    self.assertEqual(definition["instruction"], task_cli.catalog_task_instruction(row))
+                    self.assertEqual(
+                        task_cli.unique_run_id("task1", definition["task_name"], Path(temporary),
+                                               timestamp="20260101T000000Z"),
+                        "task1-product-metadata-20260101T000000Z",
+                    )
+
+    def test_legacy_catalog_names_remain_supported(self) -> None:
+        for name in (None, "", "   "):
+            row = {"task_id": "browser_task_001", "category": "legacy task title",
+                   "instruction": "Inspect the page.", "start_url": "https://example.test/"}
+            if name is not None:
+                row["task_name"] = name
+            with self.subTest(name=name), patch.object(
+                task_cli.urllib.request, "urlopen", return_value=io.BytesIO(json.dumps(row).encode()),
+            ):
+                self.assertEqual(
+                    task_cli.fetch_catalog_task("https://example.test/tasks.jsonl", "task1")["task_name"],
+                    "legacy task title",
+                )
+
     def test_browser_service_start_preserves_existing_container(self) -> None:
         completed = SimpleNamespace(returncode=0, stdout="", stderr="")
         with patch.object(task_cli.subprocess, "run", return_value=completed) as run:
