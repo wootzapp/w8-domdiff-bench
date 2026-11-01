@@ -13,7 +13,7 @@ Availability is assessed across the eligible ordered source states.
 
 Each representation/criterion loss receives one primary category, even when several required items are missing. A criterion can lose different items in each representation. In task_37 C4, screenshots lose availability glyphs while DOM loses displayed label capitalization; each side contributes one Exact text and values loss.
 
-The current report contains 50 affected criteria across 28 tasks. Its 41 screenshot losses and 10 DOM losses total 51 representation/criterion losses because one criterion has a loss on both sides. Rates retain all 589 audited criteria across 92 completed audits in the denominator.
+The current report contains 63 affected criteria across 34 tasks. Its 50 screenshot losses and 14 DOM losses total 64 representation/criterion losses because one criterion has a loss on both sides. Rates retain all 640 audited criteria across 100 completed audits in the denominator.
 
 ## The six categories
 
@@ -28,9 +28,9 @@ viewport position caused its absence.
 
 ### URLs
 
-Missing exact URLs, endpoints, domains, or their association with page content. Observed URLs in the formatted action history count for both verifiers. Count URL loss only when decision-essential details are absent from that shared evidence and one representation but present in the other. Navigation intent is not proof of an observed destination.
+Missing exact URLs, endpoints, query parameters, or their association with page content.
 
-**Example — task_75 C0, screenshot loss:** DOM preserves `?exact=Black%20Lotus`; the shared observed history preserves only the `/cards/named` path, and screenshots do not show the query. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_75/batch_01/evidence_audit.json).
+**Example — task_75 C0, screenshot loss:** DOM preserves `?exact=Black%20Lotus`, which is absent from screenshots and the shared history. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_75/batch_01/evidence_audit.json).
 
 ### Control states
 
@@ -76,7 +76,7 @@ rather than recovering an isolated value or explicit table row.
 2. Apply the scope distinctions above: an isolated value, an explicit
    control state, a structured row, a disconnected label/value relationship,
    an exact URL, or a broader capture omission.
-3. When several gaps fit different categories, choose the primary gap and document the reason. There is no universal priority order. Task_35 C2 is assigned to **Table entries** because its missing architecture row is primary; missing absolute timestamps are an additional gap. Primary-category exclusion does not remove secondary gaps. The [annotations](../results/evidence_categories.tsv) preserve each choice and rationale.
+3. When several gaps fit different categories, choose the primary gap and document the reason. There is no universal priority order. Task_35 C2 is assigned to **Table entries** because its missing architecture row is primary; missing absolute timestamps are an additional gap. The [annotations](../results/evidence_categories.tsv) preserve each choice and rationale.
 
 4. Assign each representation separately when both have a confirmed loss.
    Count the criterion once in each affected representation's category totals.

@@ -70,8 +70,9 @@ general claim that one verifier always scores tasks better.
 
 A representation loses evidence for a criterion when at least one required
 item is absent from that representation and present in the other, across
-the eligible ordered source states. A criterion contributes at most one
-loss per representation even when several required items are missing.
+the eligible ordered source states and shared formatted action history.
+A criterion contributes at most one loss per representation even when
+several required items are missing.
 Items absent from both representations, or present in both, do not trigger
 paired source loss. Evidence that a verifier overlooks or misinterprets is
 a separate interpretation error.
@@ -88,23 +89,6 @@ availability differences rather than absolute information loss against the
 live webpage, since gaps shared by both representations remain undetected.
 The report gives the [availability indicators and rate equations](technical-report.md#paired-source-evidence-loss)
 and their [current numerical values](technical-report.md#current-counts-and-relative-reduction).
-
-### URL identity and sensitivity
-
-Observed URLs in the formatted action history count as evidence for each
-verifier receiving them. A URL absent from screenshot pixels alone is not a
-loss when that shared context establishes the required identity. Navigation
-arguments and a supplied start URL express intent, not an observed page.
-Query strings, fragments and text removed by the history formatter cannot be
-restored by inference. Citations distinguish shared history from page content.
-
-The supplementary URL-excluded analysis removes primary URL-category losses from
-each representation’s numerator and keeps all audited criteria in the
-cohort denominator. It preserves non-URL losses on the other side of the
-same criterion. The report separately shows alternatives removing entire
-criteria with URL findings; those have different denominators. These are
-recalculations of saved findings, not new audits or experiments adding URLs
-to screenshots.
 
 ### Benchmark evaluation
 

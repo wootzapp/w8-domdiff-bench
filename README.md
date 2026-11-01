@@ -9,9 +9,9 @@ state. The recorder, paired verifiers, and evidence audit make it possible
 to inspect what a browser agent observed and which required information each
 representation preserved.
 
-The collection contains **100 recorded browser tasks** and **92 evaluated task pairs**. Validated evidence audits cover **92 tasks and 589 criteria**, identifying **41 screenshot losses (6.96%)** and **10 DOM losses (1.70%)**. Observed URLs in the shared formatted history count for both verifiers. These measurements describe evidence availability, not task success or acting-agent improvement.
+The collection contains **100 recorded browser tasks** and **100 evaluated task pairs**. Validated evidence audits cover **100 tasks and 640 criteria**, identifying **50 screenshot losses (7.81%)** and **14 DOM losses (2.19%)**. These measurements describe evidence availability, not task success or acting-agent improvement.
 
-Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. All 92 evaluated tasks have validated evidence audits covering 589 criteria.
+All 100 recorded tasks have usable, aligned evidence and validated audits covering 640 criteria. Successful, failed and errored recordings with usable evidence are included; no tasks are excluded.
 
 The [technical report](docs/technical-report.md) contains the full method and
 all criterion-level findings. This README keeps the headline results,
@@ -83,7 +83,7 @@ describes each captured state directly.
 | Browser-native processing | Re-reading the live page could differ from the snapshot that had been recorded. | Moved model-DOM selection and grouping into Chromium so structured JSON and rendered text describe the same captured state. |
 | Preservation refinements | Nested text, context, author labels, control state, and long content could be omitted. | Refined selection and removed the former subtree-text limit while retaining viewport-based capture. |
 
-The model-facing `dom_model.txt` observations average **5.16 KiB**. Across the same 853 recorded states, readable `dom_full.txt` averages **47.56 KiB** and structured `dom.json` averages **207.97 KiB**. A KiB is 1,024 bytes; a decimal kB is 1,000 bytes. These size measurements are descriptive and separate from evidence-loss rates and token usage.
+The model-facing `dom_model.txt` observations average **5.11 KiB**. Across the same 883 recorded states, readable `dom_full.txt` averages **47.38 KiB** and structured `dom.json` averages **208.15 KiB**. A KiB is 1,024 bytes; a decimal kB is 1,000 bytes. These size measurements are descriptive and separate from evidence-loss rates and token usage.
 
 ### 3.2 From Agent Actions to Recorded Evidence
 
@@ -105,51 +105,32 @@ namespaces.
 
 A source-evidence loss means a required item is absent from one representation together with its shared history and present in the other. Inventory uses `gpt-5.6-sol`; final adjudication uses `gpt-5.6-terra`. The counts measure evidence availability, not task success, answer correctness or acting-agent improvement.
 
-Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. All 92 evaluated tasks have validated evidence audits covering 589 criteria.
+All 100 recorded tasks have usable, aligned evidence and validated audits covering 640 criteria. Successful, failed and errored recordings with usable evidence are included; no tasks are excluded.
 
 | Analysis | Tasks | Audited criteria | Screenshot losses | DOM losses |
 | --- | ---: | ---: | ---: | ---: |
-| All source-evidence loss categories | 92 | 589 | **41 (6.96%)** | **10 (1.70%)** |
-| Listed access-blocked task IDs excluded | 83 | 536 | **41 (7.65%)** | **9 (1.68%)** |
+| All source-evidence loss categories | 100 | 640 | **50 (7.81%)** | **14 (2.19%)** |
+| Listed access-blocked task IDs excluded | 91 | 593 | **50 (8.43%)** | **12 (2.02%)** |
 
-Excluding the nine cited blocker-task IDs removes their 53 criteria. The [report defines that subset](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks).
+Excluding the nine cited blocker-task IDs removes their 47 criteria. The [report defines that subset](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks).
 
 ![Screenshot and DOM evidence-loss rates for all audited tasks and the subset excluding listed blocked-task IDs.](docs/assets/evaluations/evidence-loss-rates.png)
 
-The 95% intervals resample whole tasks, preserving correlation among criteria within a task. They assume independent tasks and do not measure annotation error. Counts, intervals and paired outcomes are in the [technical report](docs/technical-report.md#url-sensitivity-and-paired-comparison).
-
-<a id="why-url-sensitivity-matters"></a>
-
-### URL evidence
-
-Screenshot capture omits the browser’s address bar, but observed URLs in the
-formatted action history are available to both verifiers. A URL absent from
-screenshot pixels alone is not a loss when that shared context establishes it.
-The formatter removes query strings and fragments and can shorten long URLs.
-An intended navigation target is not proof of the observed destination.
-
-URLs are the primary category for **7 of 41 screenshot losses (17.07%)**.
-For example, task_50 retains `date=2020:2026` only in the DOM URL. The remaining
-losses concern information unavailable in the shared history, not URLs already
-supplied to both verifiers.
-
-DOM has **75.61% fewer losses** across all categories. The
-[technical report](docs/technical-report.md#url-sensitivity-and-paired-comparison)
-retains supplementary URL-excluded calculations.
+The 95% intervals resample whole tasks, preserving correlation among criteria within a task. They assume independent tasks and do not measure annotation error. Counts, intervals and paired outcomes are in the [technical report](docs/technical-report.md#paired-comparison).
 
 ### What the findings show
 
-The audits identify **50 affected criteria across 28 tasks**. One criterion has losses in both representations, so the 41 screenshot and 10 DOM losses overlap. Each affected representation receives one primary [category](docs/evidence-categories.md), with its assignment and rationale in [evidence_categories.tsv](results/evidence_categories.tsv).
+The audits identify **63 affected criteria across 34 tasks**. One criterion has losses in both representations, so the 50 screenshot and 14 DOM losses overlap. Each affected representation receives one primary [category](docs/evidence-categories.md), with its assignment and rationale in [evidence_categories.tsv](results/evidence_categories.tsv).
 
 | Category | Screenshots | DOM |
 |---|---:|---:|
-| Exact text and values | 18 | 2 |
+| Exact text and values | 19 | 3 |
 | URLs | 7 | 0 |
 | Control states | 0 | 2 |
-| Table entries | 9 | 0 |
-| Label–value links | 3 | 4 |
-| Capture omissions | 4 | 2 |
-| **All categories** | **41** | **10** |
+| Table entries | 15 | 0 |
+| Label–value links | 3 | 7 |
+| Capture omissions | 6 | 2 |
+| **All categories** | **50** | **14** |
 
 Examples show the practical differences:
 
@@ -162,9 +143,9 @@ The detailed findings and evidence links are in the [report’s six-column crite
 
 ![Evidence losses across all six categories for all completed audits and the subset excluding cited blocker-task IDs.](docs/assets/evaluations/evidence-loss-categories.png)
 
-Each bar counts criterion-level losses in one representation, including URL losses. The panels retain all 589 and 536 criteria, respectively. PNG and SVG versions are in [evaluation figures](docs/assets/evaluations/).
+Each bar counts criterion-level losses in one representation. The panels retain all 640 and 593 criteria, respectively. PNG and SVG versions are in [evaluation figures](docs/assets/evaluations/).
 
-Website blockers, execution errors and source-evidence gaps are different events. The report lists nine cited blocker-task IDs and separately records 12 execution errors in the 100 recordings. Some blocked tasks later completed; the sets overlap and must not be added into a single failure rate.
+Website blockers, execution errors and source-evidence gaps are different events. The report lists nine cited blocker-task IDs and separately records 5 execution errors in the 100 recordings. Some blocked tasks completed; the sets overlap and must not be added into a single failure rate.
 
 <a id="mathematical-definitions"></a>
 
@@ -237,13 +218,13 @@ L_m=\sum_{c\in\mathcal{C}}\ell_{c,m},\qquad
 \mathrm{ELR}_m=100\frac{L_m}{M},\qquad m\in\{S,D\}.
 ```
 
-For the saved findings, $`M=589`$, $`L_S=41`$, and $`L_D=10`$, giving **6.96%** and **1.70%**. One overlapping criterion yields $`41+10-1=50`$ distinct affected criteria. With a shared denominator and $`L_S>0`$, the relative reduction is
+For the saved findings, $`M=640`$, $`L_S=50`$, and $`L_D=14`$, giving **7.81%** and **2.19%**. One overlapping criterion yields $`50+14-1=63`$ distinct affected criteria. With a shared denominator and $`L_S>0`$, the relative reduction is
 
 ```math
-\mathrm{Reduction}=100\frac{L_S-L_D}{L_S}=100\frac{41-10}{41}\approx75.61\%.
+\mathrm{Reduction}=100\frac{L_S-L_D}{L_S}=100\frac{50-14}{50}=72.00\%.
 ```
 
-Excluding the nine cited blocker-task IDs removes 53 criteria, leaving $`M=536`$. This is a descriptive subset of the saved findings.
+Excluding the nine cited blocker-task IDs removes 47 criteria, leaving $`M=593`$. This is a descriptive comparison on the saved findings.
 
 ### Confidence intervals in the graph
 
@@ -273,7 +254,7 @@ observations and executable `agent-browser` references. The recorder saves
 an initial browser state and one state after each executed action, including
 screenshots and structured DOM evidence. DOM-diff Optimized describes individual captured states;
 it does not require separate before/after diff files.
-The model-facing `dom_model.txt` observations average **5.16 KiB**; see
+The model-facing `dom_model.txt` observations average **5.11 KiB**; see
 [representation sizes](docs/technical-report.md#current-representation-size).
 
 ```mermaid
@@ -719,7 +700,7 @@ python -m pytest
 
 | Resource | Contents |
 | --- | --- |
-| [Technical report](docs/technical-report.md) | Full evaluation findings, mathematical definitions, success rules, current observation sizes, references, and all 50 affected criteria. |
+| [Technical report](docs/technical-report.md) | Full evaluation findings, mathematical definitions, success rules, current observation sizes, references, and all 63 affected criteria. |
 | [Results](results/README.md) · [JSON summary](results/summary.json) | Published aggregate counts and analysis definitions. |
 | [Evaluation protocol](docs/evaluation-protocol.md) | Shared inputs, scoring controls, source-loss definition, and counting rules. |
 | [Architecture](docs/architecture.md) | Browser capture, DOM-diff Optimized, verifier components, and boundaries. |

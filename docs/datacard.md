@@ -1,6 +1,6 @@
 # Dataset Card
 
-The collection contains 100 recordings and 92 prepared browser-task trajectory pairs. Each
+The collection contains 100 recordings and 100 prepared browser-task trajectory pairs. Each
 pair uses the same task, executed action history, and final answer. One
 side stores screenshots; the other stores model-facing DOM text. The
 complete set is hosted at
@@ -9,14 +9,14 @@ complete set is hosted at
 This checkout includes two example pairs under [data/samples/](../data/samples/).
 The samples illustrate the file contract, not a representative statistical
 subset. Saved evaluations and raw recordings are also available in the hosted
-dataset. The 92 prepared pairs contain 849 aligned states per representation;
-file-size means use all 853 captured states in the raw recordings.
+dataset. The 100 prepared pairs contain 883 aligned states per representation;
+file-size means use all 883 captured states in the raw recordings.
 
 ## Published dataset layout
 
 | Dataset path | Contents | How to inspect | Local guide |
 | --- | --- | --- | --- |
-| [`trajectories/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-ss) | 92 prepared screenshot task folders from the 100-task catalog. | Read task metadata, final answers, action logs, and ordered screenshots. | [Evaluation inputs](runbook.md#recording-and-evaluation-inputs) |
+| [`trajectories/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-ss) | 100 prepared screenshot task folders from the 100-task catalog. | Read task metadata, final answers, action logs, and ordered screenshots. | [Evaluation inputs](runbook.md#recording-and-evaluation-inputs) |
 | [`trajectories/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-dom) | The corresponding 92 DOM-text task folders. | Read the common task files and ordered `dom_modelN.txt` observations. | [Evaluation protocol](evaluation-protocol.md) |
 | [`tasks.jsonl`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/tasks.jsonl) | Catalog of task identifiers, names, categories, instructions, start URLs, stopping conditions, and constraints. | Inspect each task’s requested behavior and restrictions. | [Task recording](runbook.md#record-a-task) |
 | [`trajectories/pairs.jsonl`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/trajectories/pairs.jsonl) | Loadable paired records with DOM text, common task files, and screenshot paths/checksums. | Select the `trajectory_pairs` configuration and `test` split. | Dataset access commands below |
@@ -99,7 +99,7 @@ execution errors, and source-evidence losses.
 
 Use task identifiers, timestamps, and manifests to follow the evidence from
 recordings through prepared trajectories and evaluations. Loss rates use
-all 589 audited criteria across 92 tasks, including the criteria without
+all 640 audited criteria across 100 tasks, including the criteria without
 gaps omitted from the report's detailed findings table.
 
-Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. All 92 evaluated tasks have validated evidence audits covering 589 criteria.
+All 100 recorded tasks have usable, aligned evidence and validated audits covering 640 criteria. Successful, failed and errored recordings with usable evidence are included; no tasks are excluded.
