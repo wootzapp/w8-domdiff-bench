@@ -243,7 +243,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
     parser.add_argument("--audit-model", help=f"Inventory model (default: EVIDENCE_AUDIT_MODEL or {DEFAULT_AUDIT_MODEL})")
     parser.add_argument("--execute", action="store_true")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.run_id is not None and (not args.run_id or args.run_id in {".", ".."}
+        or not all(character.isalnum() or character in "._-" for character in args.run_id)):
+        parser.error("--run-id must be a single filename containing letters, digits, '.', '_' or '-'")
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -285,10 +289,15 @@ def main(argv: list[str] | None = None) -> int:
         load_env_file(args.env_file)
     args.audit_model = (args.audit_model or os.environ.get("EVIDENCE_AUDIT_MODEL", "")).strip() or DEFAULT_AUDIT_MODEL
     adjudicator_model = os.environ.get("EVIDENCE_ADJUDICATOR_MODEL", "").strip() or DEFAULT_ADJUDICATOR_MODEL
-    run_id = args.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     results_root = ensure_under(
         Path(args.results_root), REPOSITORY_ROOT, label="results root"
     )
+    run_id = args.run_id
+    if run_id is None:
+        number = 1
+        while any(results_root.glob(f"*/batch_{number:02d}")):
+            number += 1
+        run_id = f"batch_{number:02d}"
     run_root = results_root / args.task / run_id
     if run_root.exists():
         raise ValueError(f"Run output already exists; choose a new --run-id: {run_root}")

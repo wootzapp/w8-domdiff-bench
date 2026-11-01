@@ -52,6 +52,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--data-root requires --data-source local")
     if args.task and (Path(args.task).name != args.task or args.task in {".", ".."} or "\\" in args.task):
         parser.error("--task must name one task folder, not a path")
+    if args.run_id is not None and (not args.run_id or args.run_id in {".", ".."}
+        or not all(character.isalnum() or character in "._-" for character in args.run_id)):
+        parser.error("--run-id must be a single filename containing letters, digits, '.', '_' or '-'")
     return args
 
 
@@ -146,8 +149,13 @@ def _run_all(args: argparse.Namespace, data_root: Path) -> int:
         if args.data_source == "local":
             _verify_local_preparation(data_root, task)
         _validate_task(data_root, task)
-    run_id = args.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     results_root = ensure_under(Path(args.results_root), REPOSITORY_ROOT, label="results root")
+    run_id = args.run_id
+    if run_id is None:
+        number = 1
+        while any(results_root.glob(f"*/batch_{number:02d}")):
+            number += 1
+        run_id = f"batch_{number:02d}"
     if not args.execute:
         print(
             json.dumps(
@@ -170,8 +178,7 @@ def _run_all(args: argparse.Namespace, data_root: Path) -> int:
     audits: list[dict] = []
     failures: list[dict[str, str]] = []
     batch_root = results_root / "batches" / run_id
-    if batch_root.exists():
-        raise ValueError(f"Batch output already exists: {batch_root}")
+    batch_root.mkdir(parents=True, exist_ok=False)
     for ordinal, task in enumerate(tasks, start=1):
         print(f"[{ordinal}/{len(tasks)}] {task}", flush=True)
         child_args = argparse.Namespace(**vars(args))
@@ -202,7 +209,6 @@ def _run_all(args: argparse.Namespace, data_root: Path) -> int:
                     "batch_started_at": batch_started_at,
                     "batch_completed_at": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
                     "input_source": _input_source(args, data_root)})
-    batch_root.mkdir(parents=True)
     write_json(batch_root / "evidence_loss_summary.json", summary)
     (batch_root / "evidence_loss_summary.md").write_text(
         render_aggregate_markdown(summary), encoding="utf-8"
@@ -247,7 +253,12 @@ def _run_task(args: argparse.Namespace, data_root: Path) -> int:
     results_root = ensure_under(
         Path(args.results_root), REPOSITORY_ROOT, label="results root"
     )
-    run_id = args.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_id = args.run_id
+    if run_id is None:
+        number = 1
+        while any(results_root.glob(f"*/batch_{number:02d}")):
+            number += 1
+        run_id = f"batch_{number:02d}"
 
     if not args.execute:
         print(

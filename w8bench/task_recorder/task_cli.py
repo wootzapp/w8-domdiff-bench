@@ -357,14 +357,6 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
     }
 
 
-def task_name_slug(value: str) -> str:
-    """Create a bounded filesystem-safe task-name component or fail if empty."""
-    slug = re.sub(r"[^a-z0-9]+", "-", value.strip().lower()).strip("-")
-    if not slug:
-        raise RunnerError("task name must contain at least one letter or digit")
-    return slug[:48].rstrip("-")
-
-
 def validate_task_definition(
     instruction: str,
     start_url: str,
@@ -523,14 +515,11 @@ def fetch_catalog_task(
 
 def unique_run_id(
     task_id: str,
-    task_name: str,
     output_dir: Path,
-    *,
-    timestamp: str | None = None,
 ) -> str:
-    """Build a timestamped run id and suffix collisions instead of overwriting."""
-    stamp = timestamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    base = safe_task_id(f"{task_id}-{task_name_slug(task_name)}-{stamp}")
+    """Normalize task aliases and suffix existing names instead of overwriting."""
+    numbered = re.fullmatch(r"(?:browser_)?task[_-]?(\d+)", task_id, re.IGNORECASE)
+    base = f"task_{int(numbered.group(1)):02d}" if numbered else safe_task_id(task_id)
     candidate = base
     suffix = 2
     while (output_dir / candidate).exists():
@@ -611,7 +600,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--output-dir",
         type=Path,
         required=True,
-        help="parent directory for this task's timestamped run",
+        help="parent directory for this task's recording",
     )
     parser.add_argument("--model", default="")
     parser.add_argument("--max-steps", type=int, default=80)
@@ -697,7 +686,7 @@ def main(argv: list[str] | None = None) -> int:
         else str(definition.get("task_name") or task_id).strip()
     )
     output_dir = args.output_dir.resolve()
-    run_id = unique_run_id(task_id, task_name, output_dir)
+    run_id = unique_run_id(str(definition.get("source_task_id") or task_id), output_dir)
     default_novnc_url = (
         "http://127.0.0.1:"
         + os.environ.get("NOVNC_HOST_PORT", "16191")

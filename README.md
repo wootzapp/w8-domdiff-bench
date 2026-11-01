@@ -153,10 +153,10 @@ The audits identify **50 affected criteria across 28 tasks**. One criterion has 
 
 Examples show the practical differences:
 
-- **Exact values:** [task_08 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_08/20261029T212045Z/evidence_audit.json) preserves an absolute publication date in DOM; screenshots show a relative age.
-- **Capture coverage:** [task_19 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_19/20261029T212045Z/evidence_audit.json) preserves three complete highlight rows in DOM; screenshots stop at the heading.
-- **Visual form:** [task_37 C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_37/20261029T212045Z/evidence_audit.json) preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
-- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_02/20261029T212045Z/evidence_audit.json) and missing World radio selection in [task_44 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_44/20261029T212045Z/evidence_audit.json).
+- **Exact values:** [task_08 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_08/batch_01/evidence_audit.json) preserves an absolute publication date in DOM; screenshots show a relative age.
+- **Capture coverage:** [task_19 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_19/batch_01/evidence_audit.json) preserves three complete highlight rows in DOM; screenshots stop at the heading.
+- **Visual form:** [task_37 C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_37/batch_01/evidence_audit.json) preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
+- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_02/batch_01/evidence_audit.json) and missing World radio selection in [task_44 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_44/batch_01/evidence_audit.json).
 
 The detailed findings and evidence links are in the [report’s six-column criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion). Category annotations summarize the saved findings; they do not change verifier scores or audit decisions.
 
@@ -616,10 +616,11 @@ Requests, timestamps and resume/abort status are logged and counted in the
 manifest; individual human clicks are not exported as agent actions.
 Keep assistance disabled for autonomous benchmark recordings.
 
-Each recording is written under `recordings/<run-id>/`:
+Catalog recordings use numbered folders such as `recordings/task_01/`.
+Additional attempts use a numeric suffix, such as `task_01-2`:
 
 ```text
-recordings/<run-id>/
+recordings/task_01/
   task.json
   manifest.json
   decisions.jsonl
@@ -697,7 +698,9 @@ local input folder.
 
 Both paths freeze one rubric per task, run both verifiers, and audit evidence
 loss. `--execute` makes paid model calls; fresh judgments can vary. Results go
-to `evaluation/<task>/<run-id>/`, with batch summaries in `evaluation/batches/`.
+to `evaluation/task_01/batch_01/`, with batch summaries in
+`evaluation/batches/batch_01/`. New output groups use the next available batch
+number; existing task outputs are never overwritten.
 
 `run-id` groups outputs. The run manifest records the source task ID and UTC
 scoring/audit times; batch summaries record batch times. Use manifests and

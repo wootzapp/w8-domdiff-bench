@@ -73,6 +73,26 @@ def test_phase_b_cli_dry_preflight_writes_nothing(pair_factory, capsys):
             assert not any(Path(argument).is_absolute() for argument in command)
         assert (repository / receipt["run_root"]).resolve() == output
         assert not output.exists()
+        results = output_files / "evaluation"
+        (results / "task_02" / "batch_01").mkdir(parents=True)
+        (results / "batches" / "batch_02").mkdir(parents=True)
+        before = tree_digest(staged)
+        for entrypoint in (comparison, workflow):
+            arguments = ["--task", "task1", "--env-file", str(output_files / "missing.env"),
+                         "--eval-config", str(pair["config"]), "--results-root", str(results)]
+            if entrypoint is comparison:
+                arguments += ["--staged-root", str(staged), "--rubric-file", str(rubric),
+                              "--generation-metrics", str(metrics)]
+            else:
+                arguments += ["--data-source", "local", "--data-root", str(staged)]
+            assert entrypoint.main(arguments) == 0
+            default_receipt = json.loads(capsys.readouterr().out)
+            assert default_receipt["run_id"] == "batch_03"
+            assert not (results / "task1").exists()
+            assert tree_digest(staged) == before
+            for value in ("", ".", "..", "../outside", "/absolute", "nested/group", "nested\\group"):
+                with pytest.raises(SystemExit):
+                    entrypoint.parse_args(arguments + ["--run-id", value])
 
 
 @pytest.mark.parametrize("outcome", ["complete", "audit_failed", "scoring_failed"])

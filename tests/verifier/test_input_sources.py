@@ -136,9 +136,10 @@ def test_preparation_hashes_block_edited_inputs_before_paid_calls(inputs, monkey
         workflow.main(["--all", "--data-source", "local", "--data-root", str(root), "--execute"])
 
 
-def test_huggingface_batch_downloads_once_and_keeps_source_in_children(inputs, monkeypatch):
+def test_huggingface_batch_downloads_once_and_keeps_source_in_children(inputs, tmp_path, monkeypatch):
     root = inputs["staged"]
     calls, children = [], []
+    monkeypatch.setattr(workflow, "REPOSITORY_ROOT", tmp_path)
     monkeypatch.setattr(workflow, "DEFAULT_DATASET_ROOT", root)
     monkeypatch.setattr(workflow, "fetch_trajectories", lambda **kw: calls.append(kw) or {})
     monkeypatch.setattr(workflow, "_run_task", lambda args, selected: children.append((args.data_source, selected)) or 1)

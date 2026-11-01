@@ -364,9 +364,12 @@ def safe_task_id(value: str) -> str:
     return value
 
 
-def default_task_id() -> str:
-    """Create a collision-resistant UTC task id for callers that omit one."""
-    return datetime.now(timezone.utc).strftime("task-%Y%m%dT%H%M%SZ")
+def default_task_id(output_dir: Path) -> str:
+    """Choose the first available numbered recording for an unnamed task."""
+    number = 1
+    while (output_dir / f"task_{number:02d}").exists():
+        number += 1
+    return f"task_{number:02d}"
 
 
 def prompt_for_human_intervention(
@@ -783,7 +786,7 @@ async def run(args: argparse.Namespace) -> int:
     """
     if not args.capture_only and not args.task:
         raise RunnerError("--task is required unless --capture-only is used")
-    task_id = safe_task_id(args.task_id or default_task_id())
+    task_id = safe_task_id(args.task_id or default_task_id(Path(args.output_dir)))
     catalog_reference = args.source_catalog
     if catalog_reference and Path(catalog_reference).is_absolute():
         catalog_reference = os.path.relpath(catalog_reference, ROOT)

@@ -17,18 +17,20 @@ class TaskCliTests(unittest.TestCase):
             output = Path(temporary)
             first = task_cli.unique_run_id(
                 "task1",
-                "ranking lookup",
                 output,
-                timestamp="20260810T120000Z",
             )
             (output / first).mkdir()
             second = task_cli.unique_run_id(
-                "task1",
-                "ranking lookup",
+                "browser_task_001",
                 output,
-                timestamp="20260810T120000Z",
             )
-        self.assertEqual(first, "task1-ranking-lookup-20260810T120000Z")
+            (output / "manual-check").write_text("existing artifact")
+            self.assertEqual(task_cli.unique_run_id("manual-check", output), "manual-check-2")
+            self.assertEqual(task_cli.unique_run_id("task_100", output), "task_100")
+            self.assertEqual(runner.default_task_id(output), "task_02")
+            (output / "task_02").mkdir()
+            self.assertEqual(runner.default_task_id(output), "task_03")
+        self.assertEqual(first, "task_01")
         self.assertEqual(second, first + "-2")
 
     def test_post_action_language_redirect_is_disabled_by_default(self) -> None:
@@ -244,9 +246,8 @@ class TaskCliTests(unittest.TestCase):
                     self.assertEqual(definition["source_task_id"], row["task_id"])
                     self.assertEqual(definition["instruction"], task_cli.catalog_task_instruction(row))
                     self.assertEqual(
-                        task_cli.unique_run_id("task1", definition["task_name"], Path(temporary),
-                                               timestamp="20260101T000000Z"),
-                        "task1-product-metadata-20260101T000000Z",
+                        task_cli.unique_run_id("task1", Path(temporary)),
+                        "task_01",
                     )
 
     def test_legacy_catalog_names_remain_supported(self) -> None:

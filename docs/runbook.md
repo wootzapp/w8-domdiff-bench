@@ -237,10 +237,11 @@ Requests, timestamps and resume/abort status are logged and counted in the
 manifest; individual human clicks are not exported as agent actions.
 Keep assistance disabled for autonomous benchmark recordings.
 
-Each run receives a timestamped directory:
+Catalog tasks use numbered directories. Additional attempts receive a numeric
+suffix, such as `task_01-2`, without overwriting an existing recording:
 
 ```text
-recordings/<run-id>/
+recordings/task_01/
   task.json
   manifest.json
   decisions.jsonl
@@ -345,8 +346,10 @@ Run their evaluation:
 - Both paths freeze one rubric, score screenshots and DOM text, and audit
   source loss. `--execute` makes paid calls. The
   [evaluation protocol](evaluation-protocol.md) defines controls and scoring.
-- Results go to `evaluation/<task>/<run-id>/`; batch summaries go to
-  `evaluation/batches/<run-id>/`. `input_source.json` identifies the input source.
+- Results go to `evaluation/task_01/batch_01/`; batch summaries go to
+  `evaluation/batches/batch_01/`. `input_source.json` identifies the input source.
+- New output groups receive the next available batch number. `--run-id` can
+  select a named group; existing task outputs are never overwritten.
 - `run-id` groups outputs, not execution dates. The run manifest records the
   source task ID and UTC scoring/audit times; batch summaries record their
   start and completion times.

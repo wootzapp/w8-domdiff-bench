@@ -16,10 +16,10 @@ process. The verifier audit uses the prepared trajectory pairs in
 Use the recordings when you want more detail about a recorded run, its
 observations, or its failures.
 
-Each run has a folder such as
-[task1-reddit-ranking-20261029T152819Z](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/recordings/task1-reddit-ranking-20261029T152819Z): a task identifier,
-readable name, and UTC run timestamp. JSONL files contain one JSON object per
-line; `web_surfer.log` also uses that format.
+Each recording has a task folder such as
+[task_01](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/recordings/task_01).
+Actual execution times remain in its metadata. JSONL files contain one JSON
+object per line; `web_surfer.log` also uses that format.
 
 | Artifact | Purpose | Availability | How to inspect it | Key fields or related files |
 |---|---|---|---|---|
