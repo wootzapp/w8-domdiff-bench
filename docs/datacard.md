@@ -57,7 +57,7 @@ Maintainers can build the index from prepared local inputs without model calls:
 ./scripts/dataset-sync index --source-dir trajectories
 ```
 
-The upload command includes `trajectories/pairs.jsonl` alongside the unchanged
+The upload command includes each run's `pairs.jsonl` alongside the unchanged
 task folders. This index is for dataset access; verifier commands continue to
 read the paired task folders.
 

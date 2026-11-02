@@ -114,10 +114,14 @@ A source-evidence loss means a required item is absent from one representation t
 
 All 100 recorded tasks have usable, aligned evidence and validated audits covering 640 criteria. Successful, failed and errored recordings with usable evidence are included; no tasks are excluded.
 
+<!-- recorded-runs:start -->
+
 | Analysis | Tasks | Audited criteria | Screenshot losses | DOM losses |
 | --- | ---: | ---: | ---: | ---: |
 | All source-evidence loss categories | 100 | 640 | **50 (7.81%)** | **14 (2.19%)** |
 | Listed access-blocked task IDs excluded | 91 | 593 | **50 (8.43%)** | **12 (2.02%)** |
+
+<!-- recorded-runs:end -->
 
 Excluding the nine cited blocker-task IDs removes their 47 criteria. The [report defines that subset](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks).
 
@@ -289,7 +293,7 @@ flowchart TB
         domjudge --> normalize
         normalize --> audit[Source-evidence audit and adjudication]
         pairs --> audit
-        audit --> output[Results and provenance in evaluation/]
+        audit --> output[Results and provenance in evaluations/]
     end
     output --> review[Internal review of audit findings]
 ```

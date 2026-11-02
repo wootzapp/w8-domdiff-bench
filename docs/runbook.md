@@ -367,6 +367,20 @@ Run their evaluation:
   start and completion times.
 - Preparation-report references are relative to their output folder; evaluation
   references are relative to the repository root. Older absolute paths remain readable.
+
+### Compare recorded runs
+
+Use the same catalog and frozen rubrics for every included run. Supply each
+completed evaluation directory to the aggregator:
+
+```bash
+python -m w8bench.verifier.aggregate_runs evaluations/run_1 --output-dir results --readme README.md --figures-dir docs/assets/evaluations
+```
+
+Additional run directories can follow `evaluations/run_1`. The summary reports
+each run and the mean rates, with paired task-then-run bootstrap intervals.
+Category annotations must match the saved finding hashes; unassigned findings
+remain explicitly unclassified. Sizes use all captured states and KiB (1,024 bytes).
 - An initial `www`/bare-domain difference is a warning only when the scheme,
   port, path, and query match. Both URLs remain recorded; other hosts fail validation.
 

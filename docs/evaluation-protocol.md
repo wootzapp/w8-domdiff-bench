@@ -119,6 +119,12 @@ Aggregate intervals resample whole tasks, keeping their criteria and both
 modalities together. The reported rate remains total losses divided by total
 criteria, not the average of task rates. The paired difference uses the same
 task draws. The percentile bootstrap uses 20,000 draws and records its seed.
+
+For multiple independent recorded runs, report the mean criterion-level rate
+across runs. Compute relative reduction from mean screenshot and DOM counts.
+Intervals draw tasks with replacement, then runs within each selected task;
+all criteria and both representations stay paired. Task sets, rubric hashes,
+prompt versions, model IDs and generation settings must match across runs.
 It assumes independent tasks and does not measure annotation error. A single
 task has no estimable interval; constant samples are marked as degenerate.
 Website blockers, recorded execution failures, task scores, and source-loss
@@ -128,4 +134,4 @@ counts are separate measurements.
 
 See the [runbook](runbook.md#score-a-prepared-task) for preparation, validation,
 and comparison commands. Saved rubrics, scores, audits, and provenance are
-written under `evaluation/`.
+written under `evaluations/<run-name>/`.
