@@ -5,8 +5,9 @@ import pytest
 from w8bench.verifier.common import canonical_sha256
 from w8bench.verifier.evidence_audit import (
     ADJUDICATION_SYSTEM_PROMPT,
-    DEFAULT_ADJUDICATOR_MODEL,
-    DEFAULT_AUDIT_MODEL,
+    SYSTEM_PROMPT,
+    SCHEMA_VERSION,
+    PROMPT_VERSION,
     CITATION_KEYS,
     AuditValidationError,
     _resolve_source_name,
@@ -38,6 +39,12 @@ def _row(*, screen_loss=False, dom_loss=False, screen_caught=True, dom_caught=Tr
         "screenshot_evidence_loss": screen_loss,
         "dom_model_evidence_loss": dom_loss,
     }
+
+
+def _audit(task_id, rows):
+    return {"task_id": task_id, "criteria": rows, "metrics": calculate_metrics(rows),
+            "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
+            "audit_model": "gpt-5.6-sol", "adjudicator_model": "gemini-3.1-pro-preview"}
 
 
 def _source_decision(modality, *, coverage="COMPLETE", caught=True):
@@ -99,7 +106,11 @@ def test_adjudication_policy_keeps_url_evidence_and_ordered_state_continuity():
     assert "formatted action history count for both verifiers" in ADJUDICATION_SYSTEM_PROMPT
     assert "absence from screenshot pixels or DOM text alone is not a loss" in ADJUDICATION_SYSTEM_PROMPT
     assert "earlier selected control or state remains evidence" in ADJUDICATION_SYSTEM_PROMPT
-    assert "Do not restore missing query strings" in ADJUDICATION_SYSTEM_PROMPT
+    for prompt in (SYSTEM_PROMPT, ADJUDICATION_SYSTEM_PROMPT):
+        assert "shared context" in prompt
+        assert "initial URL alone" in prompt or "initial\nURL alone" in prompt
+        assert "corroborating" in prompt
+        assert "absent from all allowed inputs" in prompt or "absent\nfrom all allowed inputs" in prompt
 
 
 def test_source_instructions_declare_the_complete_citation_contract(pair_factory):
@@ -479,9 +490,9 @@ def test_run_audit_uses_inventory_and_adjudication_calls(pair_factory):
         complete=fake_complete,
     )
     assert len(calls) == 2
-    assert calls[0][0] == DEFAULT_AUDIT_MODEL
-    assert calls[1][0] == DEFAULT_ADJUDICATOR_MODEL == "gpt-5.6-terra"
-    assert audit["adjudicator_model"] == DEFAULT_ADJUDICATOR_MODEL
+    assert calls[0][0] == "gpt-5.6-sol"
+    assert calls[1][0] == "gemini-3.1-pro-preview" == "gemini-3.1-pro-preview"
+    assert audit["adjudicator_model"] == "gemini-3.1-pro-preview"
     content = calls[0][1][1]["content"]
     text_parts = [part.get("text", "") for part in content]
     assert any("SCREENSHOT SOURCE FILE: screenshot0.png" in text for text in text_parts)
@@ -530,7 +541,7 @@ def test_validation_rejects_partial_relationship_reported_as_complete(pair_facto
 
 def test_aggregate_reports_failures_without_counting_them_as_evidence_loss():
     rows = [_row(screen_loss=True)]
-    audit = {"task_id": "task-a", "criteria": rows, "metrics": calculate_metrics(rows)}
+    audit = _audit("task-a", rows)
     summary = aggregate_audits([audit], [{"task": "task-b", "error": "infra"}])
     assert summary["completed_tasks"] == 1
     assert len(summary["failed_tasks"]) == 1
@@ -545,7 +556,7 @@ def test_cluster_intervals_keep_correlated_criteria_in_their_tasks():
     audits = []
     for task, loss in (("a", True), ("b", False)):
         rows = [_row(screen_loss=loss) for _ in range(100)]
-        audits.append({"task_id": task, "criteria": rows, "metrics": calculate_metrics(rows)})
+        audits.append(_audit(task, rows))
     confidence = aggregate_audits(audits)["confidence_intervals"]
     assert confidence["resampling_unit"] == "task"
     assert confidence["clusters"] == 2
@@ -558,7 +569,7 @@ def test_cluster_estimates_weight_criteria_and_keep_modalities_paired():
     audits = []
     for task, count, loss in (("a", 1, True), ("b", 9, False)):
         rows = [_row(screen_loss=loss, dom_loss=loss) for _ in range(count)]
-        audits.append({"task_id": task, "criteria": rows, "metrics": calculate_metrics(rows)})
+        audits.append(_audit(task, rows))
     confidence = aggregate_audits(audits)["confidence_intervals"]
     assert confidence["estimator"] == "criterion_weighted_rate"
     assert confidence["screenshot_evidence_loss"]["estimate"] == 0.1
@@ -572,7 +583,7 @@ def test_cluster_estimates_weight_criteria_and_keep_modalities_paired():
 
 def test_cluster_intervals_report_constant_empirical_data_without_claiming_certainty():
     rows = [_row()]
-    audits = [{"task_id": task, "criteria": rows, "metrics": calculate_metrics(rows)}
+    audits = [_audit(task, rows)
               for task in ("a", "b")]
     confidence = aggregate_audits(audits)["confidence_intervals"]
     assert confidence["screenshot_evidence_loss"]["ci95"] == [0.0, 0.0]
@@ -582,23 +593,23 @@ def test_cluster_intervals_report_constant_empirical_data_without_claiming_certa
 
 def test_cluster_intervals_reject_duplicate_task_identities():
     rows = [_row()]
-    audit = {"task_id": "same-task", "criteria": rows, "metrics": calculate_metrics(rows)}
+    audit = _audit("same-task", rows)
     with pytest.raises(ValueError, match="unique task identities"):
         aggregate_audits([audit, audit])
 
 
 def test_cluster_intervals_reject_empty_completed_tasks():
     rows = [_row()]
-    audit = {"task_id": "a", "criteria": rows, "metrics": calculate_metrics(rows)}
+    audit = _audit("a", rows)
     with pytest.raises(ValueError, match="must contain criteria"):
-        aggregate_audits([audit, {"task_id": "b", "criteria": []}])
+        aggregate_audits([audit, {**_audit("b", rows), "criteria": []}])
 
 
 def test_aggregate_report_renders_task_cluster_intervals_without_mutating_audits():
     audits = []
     for task, loss in (("a", True), ("b", False)):
         rows = [_row(screen_loss=loss)]
-        audits.append({"task_id": task, "criteria": rows, "metrics": calculate_metrics(rows)})
+        audits.append(_audit(task, rows))
     original = json.loads(json.dumps(audits))
     report = render_aggregate_markdown(aggregate_audits(audits))
     assert "95% task-cluster interval" in report

@@ -166,8 +166,8 @@ def test_execution_times_are_independent_of_output_group_id(pair_factory, tmp_pa
 
 @pytest.mark.parametrize("entrypoint", [comparison, workflow])
 @pytest.mark.parametrize("file_model,environment_model,cli_model,expected", [
-    (None, None, None, "gpt-5.6-sol"),
-    ("", None, None, "gpt-5.6-sol"),
+    (None, None, None, None),
+    ("", None, None, None),
     ("file-inventory", None, None, "file-inventory"),
     ("file-inventory", "process-inventory", None, "process-inventory"),
     ("file-inventory", "process-inventory", "cli-inventory", "cli-inventory"),
@@ -199,12 +199,18 @@ def test_audit_model_selection_preserves_offline_inputs(
         argv += ["--data-source", "local", "--data-root", str(pair["staged"])]
     if cli_model:
         argv += ["--audit-model", cli_model]
+    if expected is None:
+        with pytest.raises(ValueError, match="EVIDENCE_AUDIT_MODEL"):
+            entrypoint.main(argv)
+        assert not (tmp_path / "evaluation").exists()
+        assert tree_digest(pair["staged"]) == before
+        return
     assert entrypoint.main(argv) == 0
     receipt = json.loads(capsys.readouterr().out)
     if entrypoint is comparison:
         assert receipt["evidence_audit"]["model"] == expected
         assert receipt["evidence_audit"]["adjudicator_model"] == (
-            "file-adjudicator" if file_model is not None else "gpt-5.6-terra"
+            "file-adjudicator" if file_model is not None else "gemini-3.1-pro-preview"
         )
     else:
         assert receipt["audit_model"] == expected

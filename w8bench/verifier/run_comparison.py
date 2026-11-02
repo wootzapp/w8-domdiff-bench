@@ -32,8 +32,8 @@ from .common import (
 from .compare_results import compare
 from .evidence_audit import (
     AuditValidationError,
-    DEFAULT_AUDIT_MODEL,
-    DEFAULT_ADJUDICATOR_MODEL,
+    resolve_audit_config,
+    check_audit_models,
     append_audit_to_comparison,
     render_markdown as render_evidence_audit,
     run_evidence_audit,
@@ -241,7 +241,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--env-file", default=str(REPOSITORY_ROOT / ".env"))
     parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
     parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
-    parser.add_argument("--audit-model", help=f"Inventory model (default: EVIDENCE_AUDIT_MODEL or {DEFAULT_AUDIT_MODEL})")
+    parser.add_argument("--audit-model", help="Inventory model; otherwise EVIDENCE_AUDIT_MODEL")
+    parser.add_argument("--adjudicator-model", help="Adjudication model; otherwise EVIDENCE_ADJUDICATOR_MODEL")
+    parser.add_argument("--audit-provider", choices=("openai", "google"))
+    parser.add_argument("--adjudicator-provider", choices=("openai", "google"))
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args(argv)
     if args.run_id is not None and (not args.run_id or args.run_id in {".", ".."}
@@ -287,8 +290,9 @@ def main(argv: list[str] | None = None) -> int:
     packages = require_local_packages()
     if Path(args.env_file).is_file() or args.execute:
         load_env_file(args.env_file)
-    args.audit_model = (args.audit_model or os.environ.get("EVIDENCE_AUDIT_MODEL", "")).strip() or DEFAULT_AUDIT_MODEL
-    adjudicator_model = os.environ.get("EVIDENCE_ADJUDICATOR_MODEL", "").strip() or DEFAULT_ADJUDICATOR_MODEL
+    audit_config = resolve_audit_config(args.audit_model, args.adjudicator_model, args.audit_provider, args.adjudicator_provider)
+    args.audit_model = audit_config["inventory"]["model"]
+    adjudicator_model = audit_config["adjudication"]["model"]
     results_root = ensure_under(
         Path(args.results_root), REPOSITORY_ROOT, label="results root"
     )
@@ -373,6 +377,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     require_openai_key()
+    model_check = check_audit_models(audit_config)
+    manifest["evidence_audit"]["model_check"] = model_check
     manifest["evaluation_started_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     run_root.mkdir(parents=True)
     copied = prepare_isolated_inputs(
@@ -455,6 +461,9 @@ def main(argv: list[str] | None = None) -> int:
             task_alias=args.task,
             model=args.audit_model,
             adjudicator_model=adjudicator_model,
+            audit_provider=audit_config["inventory"]["provider"],
+            adjudicator_provider=audit_config["adjudication"]["provider"],
+            model_check=model_check,
             call_records=audit_calls,
         )
     except Exception as exc:
@@ -497,6 +506,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     manifest["evidence_audit"]["completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    manifest["evidence_audit"]["run_manifest"] = audit.get("run_manifest", {})
     audit_json_path = run_root / "evidence_audit.json"
     audit_markdown_path = run_root / "evidence_audit.md"
     write_json(audit_json_path, audit)

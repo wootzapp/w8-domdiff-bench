@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import base64
 from datetime import datetime, timezone
+import hashlib
 import json
 import mimetypes
+import os
 import random
 import re
 from statistics import quantiles
@@ -19,19 +21,118 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from openai import DefaultHttpxClient, OpenAI
+import httpx
+from openai import APIConnectionError, DefaultHttpxClient, OpenAI
 
-from .common import load_canonical_rubric, load_json, write_json
+from .common import canonical_sha256, load_canonical_rubric, load_json, write_json
 from .validate_inputs import SCREENSHOT_RE
 
 
-SCHEMA_VERSION = "automated-evidence-audit/v4"
-PROMPT_VERSION = "shared-trajectory-pairwise-adjudication/v4"
-DEFAULT_AUDIT_MODEL = "gpt-5.6-sol"
-DEFAULT_ADJUDICATOR_MODEL = "gpt-5.6-terra"
+SCHEMA_VERSION = "automated-evidence-audit/v5"
+PROMPT_VERSION = "shared-trajectory-pairwise-adjudication/v5"
+GEMINI_API_VERSION = "v1beta"
+OPENAI_GENERATION_SETTINGS = {"response_format": {"type": "json_object"}}
+GEMINI_GENERATION_SETTINGS = {
+    "response_mime_type": "application/json",
+    "media_resolution": "MEDIA_RESOLUTION_HIGH",
+}
 DOM_RE = re.compile(r"^dom_model(0|[1-9]\d*)\.txt$")
 LINE_RANGE_RE = re.compile(r"^L0*(\d+)(?:-L0*(\d+))?$")
 CITATION_KEYS = ("source", "location", "quote")
+
+
+def resolve_provider(model: str, provider: str | None = None) -> str:
+    if not isinstance(model, str) or not model.strip():
+        raise ValueError("A model ID is required")
+    if model.endswith("-latest"):
+        raise ValueError("Use an exact model ID, not a -latest alias")
+    if provider:
+        if provider not in {"openai", "google"}:
+            raise ValueError("Provider must be openai or google")
+        return provider
+    name = model.removeprefix("models/")
+    if name.startswith("gemini-"):
+        return "google"
+    if name.startswith("gpt-") or re.match(r"^o\d", name):
+        return "openai"
+    raise ValueError("Cannot infer provider; set EVIDENCE_AUDIT_PROVIDER or EVIDENCE_ADJUDICATOR_PROVIDER, or the matching CLI provider flag")
+
+
+def resolve_audit_config(model=None, adjudicator_model=None, audit_provider=None, adjudicator_provider=None) -> dict:
+    config = {}
+    for stage, selected, explicit, model_env, provider_env in (
+        ("inventory", model, audit_provider, "EVIDENCE_AUDIT_MODEL", "EVIDENCE_AUDIT_PROVIDER"),
+        ("adjudication", adjudicator_model, adjudicator_provider, "EVIDENCE_ADJUDICATOR_MODEL", "EVIDENCE_ADJUDICATOR_PROVIDER"),
+    ):
+        name = (selected if selected is not None else os.environ.get(model_env, "")).strip()
+        if not name:
+            raise ValueError(f"Set {model_env} or its CLI model flag before running an audit")
+        provider = explicit if explicit is not None else os.environ.get(provider_env, "").strip()
+        config[stage] = {"model": name, "provider": resolve_provider(name, provider or None)}
+    return config
+
+
+def _transport_request(call, record: dict):
+    attempts = record.setdefault("transport_attempts", [])
+    for attempt in range(1, 4):
+        receipt = {"attempt": attempt, "started_at": datetime.now(timezone.utc).isoformat()}
+        attempts.append(receipt)
+        started = time.perf_counter()
+        try:
+            result = call()
+            receipt.update(status="accepted", retryable=False, will_retry=False, backoff_seconds=0)
+            return result
+        except Exception as error:
+            code = getattr(error, "status_code", None) or getattr(error, "code", None)
+            retryable = isinstance(error, (APIConnectionError, httpx.TransportError, ConnectionError, TimeoutError)) or (
+                isinstance(code, int) and (code == 429 or 500 <= code <= 599))
+            message = str(error)
+            for key, value in os.environ.items():
+                if key.endswith("API_KEY") and value:
+                    message = message.replace(value, "[REDACTED]")
+            retry = retryable and attempt < 3
+            delay = 2 ** (attempt - 1) if retry else 0
+            receipt.update(status="error", status_code=code if isinstance(code, int) else None,
+                           error_type=type(error).__name__, error=message, retryable=retryable,
+                           will_retry=retry, backoff_seconds=delay)
+            if not retry:
+                raise
+            time.sleep(delay)
+        finally:
+            receipt["duration_seconds"] = time.perf_counter() - started
+
+
+def check_audit_models(config: dict, *, records: list | None = None) -> dict:
+    checks = {}
+    listings = {}
+    for stage, selected in config.items():
+        provider, model = selected["provider"], selected["model"]
+        if provider not in listings:
+            record = {"provider": provider, "requested_at": datetime.now(timezone.utc).isoformat()}
+            if records is not None:
+                records.append(record)
+            if provider == "google":
+                from google import genai
+                from google.genai import types
+                key = os.environ.get("GEMINI_API_KEY", "").strip()
+                if not key:
+                    raise ValueError("GEMINI_API_KEY is required for Google model checks")
+                with genai.Client(api_key=key, http_options=types.HttpOptions(
+                    api_version=GEMINI_API_VERSION, retry_options={"attempts": 1},
+                )) as client:
+                    names = _transport_request(lambda: [item.name.removeprefix("models/") for item in client.models.list() if item.name], record)
+            else:
+                with OpenAI(max_retries=0) as client:
+                    names = _transport_request(lambda: [item.id for item in client.models.list()], record)
+            record.update(listed_at=datetime.now(timezone.utc).isoformat(), available_model_ids=sorted(set(names)))
+            listings[provider] = record
+        listing = listings[provider]
+        requested = model.removeprefix("models/") if provider == "google" else model
+        if requested not in listing["available_model_ids"]:
+            raise ValueError(f"Configured model ID {model!r} was not listed exactly by {provider}; aborting")
+        checks[stage] = {**selected, "listed_at": listing["listed_at"], "model_listed": True,
+                         "available_model_count": len(listing["available_model_ids"])}
+    return {"stages": checks, "listings": listings}
 
 
 class AuditValidationError(ValueError):
@@ -83,9 +184,13 @@ is not proof of page content or success without execution/state evidence. An
 observed URL explicitly present in the formatted action history is available to
 both verifiers and can establish page identity. Do not count its absence from
 screenshot pixels or DOM text as a modality loss. Navigation arguments show
-intent, not an observed destination. The raw action metadata and supplied start
-URL are context, not additional URL evidence. Do not restore query strings,
-fragments or shortened text absent from the formatted history. Cite
+intent, not an observed destination. Task instructions and the supplied initial
+URL are shared context available to both verifiers. Do not count a URL component
+already supplied there as missing merely because pixels or formatted history
+omit it. The initial URL alone does not prove successful navigation or page
+content; require corroborating ordered states or executed history for those
+claims. Raw action metadata adds no evidence beyond the formatted history.
+Do not invent query strings or fragments absent from all allowed inputs. Cite
 every positive modality claim. Return JSON only. Your loss flags are proposals
 that a separate adjudicator will review.
 """
@@ -112,9 +217,15 @@ it and the final state is consistent. Shared actions may prove process,
 navigation, stopping, and prohibited-action constraints for both modalities.
 Action intent identifies an attempted target but needs execution/state evidence
 to prove success. Navigation arguments express intent, not an observed page.
-Raw action metadata and the supplied start URL do not add URL evidence beyond
-the formatted history. Do not restore missing query strings, fragments or
-shortened text. Cite the shared history when relying on it. The final
+Task instructions and the supplied initial URL are shared context for both
+verifiers. A URL component already supplied there is not a modality loss merely
+because it is absent from pixels or formatted history. The initial URL alone
+does not prove successful navigation or page content: check corroborating
+ordered states or executed history. Correct use of this context with supporting
+state evidence is not a verifier miss. Raw action metadata adds no evidence
+beyond the formatted history. Do not invent query strings or fragments absent
+from all allowed inputs. Cite the supporting states or shared history when
+relying on them, and identify the task context used in the explanation. The final
 answer is a claim, not proof of page content.
 
 Confirm a verifier miss only when the corresponding shared-plus-modality input
@@ -495,9 +606,16 @@ def adjudication_messages(
     ]
 
 
-def _completion(model: str, messages: list[dict[str, Any]], *, records: list | None = None) -> dict[str, Any]:
+def _completion(model: str, messages: list[dict[str, Any]], *, records: list | None = None,
+                provider: str | None = None) -> dict[str, Any]:
+    provider = resolve_provider(model, provider)
     record = {
         "model": model,
+        "provider": provider,
+        "requested_model": model,
+        "response_model": None,
+        "api_version": GEMINI_API_VERSION if provider == "google" else None,
+        "generation_settings": None,
         "stage": "adjudication" if messages[0]["content"] == ADJUDICATION_SYSTEM_PROMPT else "inventory",
         "started_at": datetime.now(timezone.utc).isoformat(),
         "api_attempts": [], "usage": None,
@@ -509,27 +627,101 @@ def _completion(model: str, messages: list[dict[str, Any]], *, records: list | N
 
     def requested(request):
         record["api_attempts"].append({"status_code": None})
+        try:
+            payload = json.loads(request.content)
+            settings = (payload.get("generationConfig", {}) if provider == "google" else {
+                key: payload[key] for key in ("model", "response_format", "temperature", "seed", "reasoning_effort")
+                if key in payload
+            })
+            record["api_attempts"][-1]["request_settings"] = settings
+        except (ValueError, TypeError, AttributeError):
+            pass
 
     def received(response):
         record["api_attempts"][-1]["status_code"] = response.status_code
 
     try:
-        with OpenAI(http_client=DefaultHttpxClient(
-            event_hooks={"request": [requested], "response": [received]}
-        )) as client:
-            response = client.chat.completions.create(
-                model=model, messages=messages, response_format={"type": "json_object"},
+        if provider == "google":
+            if model.endswith("-latest"):
+                raise ValueError("Gemini audits require an exact model ID, not a -latest alias")
+            key = os.environ.get("GEMINI_API_KEY", "").strip()
+            if not key:
+                raise ValueError("GEMINI_API_KEY is required for Gemini audit models")
+            try:
+                from google import genai
+                from google.genai import types
+            except ImportError as error:
+                raise RuntimeError("Install the gemini extra: pip install -e '.[gemini]'") from error
+            system, contents = [], []
+            for message in messages:
+                role, body = message["role"], message["content"]
+                if role == "system":
+                    if not isinstance(body, str):
+                        raise ValueError("Gemini system instructions must be text")
+                    system.append(body)
+                    continue
+                if role not in {"user", "assistant"}:
+                    raise ValueError(f"Unsupported Gemini message role: {role}")
+                parts = []
+                for part in ([{"type": "text", "text": body}] if isinstance(body, str) else body):
+                    if part["type"] == "text":
+                        parts.append(types.Part.from_text(text=part["text"]))
+                    elif part["type"] == "image_url":
+                        # Native inline bytes have no OpenAI-only image detail field.
+                        url = part["image_url"]["url"]
+                        match = re.fullmatch(r"data:(image/[\w.+-]+);base64,(.*)", url, re.DOTALL)
+                        if not match:
+                            raise ValueError("Gemini audit images must be base64 image data URLs")
+                        parts.append(types.Part.from_bytes(
+                            data=base64.b64decode(match.group(2), validate=True),
+                            mime_type=match.group(1),
+                        ))
+                    else:
+                        raise ValueError(f"Unsupported Gemini content type: {part['type']}")
+                contents.append(types.Content(role="model" if role == "assistant" else "user", parts=parts))
+            # Seed is omitted unless SDK and model acceptance are established.
+            settings = GEMINI_GENERATION_SETTINGS.copy()
+            with genai.Client(api_key=key, http_options=types.HttpOptions(
+                api_version=GEMINI_API_VERSION, retry_options={"attempts": 1}, client_args={
+                    "event_hooks": {"request": [requested], "response": [received]}
+                },
+            )) as client:
+                record["generation_settings"] = settings.copy()
+                response = _transport_request(lambda: client.models.generate_content(
+                    model=model, contents=contents,
+                    config=types.GenerateContentConfig(system_instruction="\n\n".join(system), **settings),
+                ), record)
+            usage = response.usage_metadata
+            normalized = None
+            if usage is not None:
+                prompt = int(usage.prompt_token_count or 0)
+                thinking = int(usage.thoughts_token_count or 0)
+                completion = int(usage.candidates_token_count or 0) + thinking
+                normalized = {"prompt_tokens": prompt, "completion_tokens": completion,
+                              "reasoning_tokens": thinking, "total_tokens": prompt + completion}
+            record.update(response_id=response.response_id, response_model=response.model_version,
+                          usage=normalized,
+                          provider_usage=usage.model_dump() if usage is not None else None)
+            content = response.text
+        else:
+            settings = OPENAI_GENERATION_SETTINGS.copy()
+            with OpenAI(max_retries=0, http_client=DefaultHttpxClient(
+                event_hooks={"request": [requested], "response": [received]}
+            )) as client:
+                record["generation_settings"] = settings.copy()
+                response = _transport_request(lambda: client.chat.completions.create(model=model, messages=messages, **settings), record)
+            record.update(
+                response_id=response.id, response_model=response.model,
+                system_fingerprint=getattr(response, "system_fingerprint", None),
+                usage=response.usage.model_dump() if response.usage is not None else None,
             )
-        record.update(
-            response_id=response.id, response_model=response.model,
-            usage=response.usage.model_dump() if response.usage is not None else None,
-        )
+            content = response.choices[0].message.content
     except Exception as error:
         record["error_type"] = type(error).__name__
         raise
     finally:
         record["duration_seconds"] = time.perf_counter() - started
-    content = response.choices[0].message.content
+        record["completed_at"] = datetime.now(timezone.utc).isoformat()
     if not content:
         raise ValueError("Evidence auditor returned an empty response")
     try:
@@ -894,6 +1086,53 @@ def validate_adjudication_response(
     return [{"criterion_index": index, **by_index[index]} for index in expected]
 
 
+def _record_retry_flag_changes(invalid_attempts: list, accepted: dict, *, inventory: bool) -> None:
+    """Compare observable booleans only; missing/malformed flags stay unknown."""
+    def flags(payload):
+        result, seen = {}, set()
+        rows = payload.get("criteria", []) if isinstance(payload, dict) else []
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict) or type(row.get("criterion_index")) is not int:
+                continue
+            index = row["criterion_index"]
+            if index in seen:
+                result[index] = {}
+                continue
+            seen.add(index)
+            result[index] = {}
+            for mode in ("screenshot", "dom_model"):
+                for kind in ("evidence_loss", "verifier_miss"):
+                    field = f"{mode}_{kind}"
+                    if inventory:
+                        modality = row.get(mode)
+                        value = (row.get(field) if kind == "evidence_loss"
+                                 else modality.get("verifier_caught") if isinstance(modality, dict) else None)
+                        if type(value) is bool and kind == "verifier_miss":
+                            value = not value
+                    else:
+                        value = row.get(field)
+                        value = value.get("confirmed") if isinstance(value, dict) else None
+                    if type(value) is bool:
+                        result[index][field] = value
+        return result
+
+    final = flags(accepted)
+    for receipt in invalid_attempts:
+        before = flags(receipt["raw_response"])
+        changes, unknown = [], []
+        for index in sorted(set(before) | set(final)):
+            for field in ("screenshot_evidence_loss", "dom_model_evidence_loss",
+                          "screenshot_verifier_miss", "dom_model_verifier_miss"):
+                a, b = before.get(index, {}).get(field), final.get(index, {}).get(field)
+                if a is None or b is None:
+                    unknown.append({"criterion_index": index, "flag": field})
+                elif a != b:
+                    changes.append({"criterion_index": index, "flag": field,
+                                    "failed_value": a, "accepted_value": b})
+        receipt.update(flag_flips_detected=bool(changes), flag_flips=changes,
+                       uncomparable_flags=unknown)
+
+
 def _request_validated_audit(
     *,
     model: str,
@@ -921,6 +1160,7 @@ def _request_validated_audit(
                 screenshot_root=screenshot_root,
                 dom_root=dom_root,
             )
+            _record_retry_flag_changes(invalid_attempts, raw, inventory=True)
             return decisions, raw, attempt
         except (TypeError, ValueError) as exc:
             last_error = exc
@@ -972,6 +1212,7 @@ def _request_validated_adjudication(
                 screenshot_root=screenshot_root,
                 dom_root=dom_root,
             )
+            _record_retry_flag_changes(invalid_attempts, raw, inventory=False)
             return decisions, raw, attempt
         except (TypeError, ValueError) as exc:
             last_error = exc
@@ -1043,8 +1284,28 @@ def calculate_metrics(criteria: list[dict[str, Any]]) -> dict[str, Any]:
     def rate(count: int, denominator: int) -> float | None:
         return count / denominator if denominator else None
 
+    agreement = {}
+    for mode in ("screenshot", "dom_model"):
+        statuses = {key: 0 for key in ("confirmed", "rejected", "added", "not_proposed")}
+        for row in criteria:
+            decision = row.get("loss_agreement", {}).get(mode)
+            if decision:
+                statuses[decision["status"]] += 1
+        comparable = sum(statuses.values())
+        same = statuses["confirmed"] + statuses["not_proposed"]
+        agreement[mode] = {**statuses, "compared": comparable,
+                           "agreement_count": same, "disagreement_count": comparable - same,
+                           "agreement_rate": rate(same, comparable)}
     return {
         "total_criteria": total,
+        "inventory_adjudication_agreement": agreement,
+        "coverage_conflicts": {
+            "criteria": sum(bool(row.get("coverage_conflict")) for row in criteria),
+            "flags": sum(len({item["side"] for item in row.get("coverage_conflicts", [])}) for row in criteria),
+            "details": sum(len(row.get("coverage_conflicts", [])) for row in criteria),
+        },
+        "requires_human_review": sum(bool(row["dom_model_evidence_loss"]) for row in criteria),
+        "retry_flag_flips": sum(len(row.get("retry_flag_flips", [])) for row in criteria),
         "screenshot_evidence_loss": {
             "count": screenshot_loss, "denominator": total, "rate": rate(screenshot_loss, total)
         },
@@ -1078,11 +1339,17 @@ def run_evidence_audit(
     screenshot_result: str | Path,
     dom_result: str | Path,
     task_alias: str | None = None,
-    model: str = DEFAULT_AUDIT_MODEL,
-    adjudicator_model: str = DEFAULT_ADJUDICATOR_MODEL,
+    model: str | None = None,
+    adjudicator_model: str | None = None,
+    audit_provider: str | None = None,
+    adjudicator_provider: str | None = None,
+    model_check: dict | None = None,
     complete: Callable[[str, list[dict[str, Any]]], dict[str, Any]] | None = None,
     call_records: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    started_at = datetime.now(timezone.utc).isoformat()
+    config = resolve_audit_config(model, adjudicator_model, audit_provider, adjudicator_provider)
+    model, adjudicator_model = config["inventory"]["model"], config["adjudication"]["model"]
     frozen = load_canonical_rubric(rubric_file)
     criteria = _criteria_payload(frozen.rubric)
     screenshot_raw = load_json(screenshot_result)
@@ -1100,7 +1367,17 @@ def run_evidence_audit(
     dom_sources = {path.name for path in ordered_dom_states(dom_root)}
     records = call_records if call_records is not None else []
     inventory_invalid, adjudication_invalid = [], []
-    call = complete or (lambda selected_model, messages: _completion(selected_model, messages, records=records))
+    if model_check is None and complete is None:
+        model_check = check_audit_models(config)
+    if model_check is not None:
+        for stage, selected in config.items():
+            checked = model_check.get("stages", {}).get(stage, {})
+            if any(checked.get(key) != value for key, value in selected.items()) or not checked.get("model_listed") or not checked.get("listed_at"):
+                raise ValueError(f"Model-list check does not match configured {stage}")
+    call = complete or (lambda selected_model, messages: _completion(
+        selected_model, messages, records=records,
+        provider=config["adjudication" if messages[0]["content"] == ADJUDICATION_SYSTEM_PROMPT else "inventory"]["provider"],
+    ))
     decisions, raw_audit, attempts = _request_validated_audit(
         model=model,
         messages=pairwise_messages(
@@ -1156,6 +1433,23 @@ def run_evidence_audit(
             "verifier_caught": dom_caught,
             "verifier_output": dom_verifier_context,
         }
+        conflicts, agreement = [], {}
+        for side, counterpart in (("screenshot", "dom_model"), ("dom_model", "screenshot")):
+            proposal = decision[side + "_evidence_loss"]
+            final = adjudication[side + "_evidence_loss"]["confirmed"]
+            agreement[side] = {"inventory_proposed": proposal, "adjudicator_confirmed": final,
+                "status": ("confirmed" if final else "rejected") if proposal else ("added" if final else "not_proposed")}
+            if final:
+                if decision[side]["coverage"] == "COMPLETE":
+                    conflicts.append({"side": side, "reason": "loss_confirmed_despite_complete_inventory_coverage",
+                                      "inventory_coverage": "COMPLETE"})
+                if decision[counterpart]["coverage"] == "ABSENT":
+                    conflicts.append({"side": side, "reason": "counterpart_inventory_coverage_absent",
+                                      "counterpart": counterpart, "inventory_coverage": "ABSENT"})
+        flips = [{"stage": stage, "failed_attempt": receipt["attempt"], **change}
+                 for stage, receipts in (("inventory", inventory_invalid), ("adjudication", adjudication_invalid))
+                 for receipt in receipts for change in receipt.get("flag_flips", [])
+                 if change["criterion_index"] == criterion["criterion_index"]]
         rows.append(
             {
                 **criterion,
@@ -1164,6 +1458,11 @@ def run_evidence_audit(
                 "dom_model": dom_decision,
                 "screenshot_evidence_loss": screenshot_loss,
                 "dom_model_evidence_loss": dom_loss,
+                "coverage_conflict": bool(conflicts),
+                "coverage_conflicts": conflicts,
+                "loss_agreement": agreement,
+                "retry_flag_flips": flips,
+                "requires_human_review": dom_loss,
                 "classification": classification(
                     screenshot_decision, dom_decision, screenshot_loss, dom_loss
                 ),
@@ -1178,10 +1477,60 @@ def run_evidence_audit(
         "audit_method": "automated_llm",
         "audit_model": model,
         "adjudicator_model": adjudicator_model,
+        "audit_provider": config["inventory"]["provider"],
+        "adjudicator_provider": config["adjudication"]["provider"],
+        "run_manifest": {
+            "models": {
+                stage: {"requested_model": selected["model"], "provider": selected["provider"],
+                        "listing_time": (model_check or {}).get("stages", {}).get(stage, {}).get("listed_at"),
+                        "response_models": sorted({record["response_model"] for record in records
+                                                   if record.get("stage") == stage and record.get("response_model")})}
+                for stage, selected in config.items()
+            },
+            "response_model_drift": any(len({record["response_model"] for record in records
+                                             if record.get("stage") == stage and record.get("response_model")}) > 1
+                                        for stage in config),
+            "transport_policy": {"max_attempts": 3, "backoff_seconds": [1, 2],
+                                 "retry_statuses": [429, "5xx"], "retry_connection_errors": True},
+        },
+        "started_at": started_at,
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "generation_settings": {
+            stage: {
+                "requested": (GEMINI_GENERATION_SETTINGS if config[stage]["provider"] == "google"
+                              else OPENAI_GENERATION_SETTINGS).copy(),
+                "provider": config[stage]["provider"],
+                "api_version": GEMINI_API_VERSION if config[stage]["provider"] == "google" else None,
+                "actual": [record["generation_settings"] for record in records
+                           if record.get("stage") == stage and record.get("generation_settings") is not None],
+                "injected_complete": complete is not None,
+            }
+            for stage, selected in (("inventory", model), ("adjudication", adjudicator_model))
+        },
         "calls": records,
         "task_id": frozen.task_id,
         "task_alias": task_alias,
         "frozen_rubric_sha256": frozen.sha256,
+        "evidence_paths": {
+            "screenshots": [str(screenshot_root / name) for name in sorted(screen_sources)],
+            "dom_states": [str(dom_root / name) for name in sorted(dom_sources)],
+            "action_history": {"screenshot": str(screenshot_root / "web_surfer.log"),
+                               "dom_model": str(dom_root / "web_surfer.log")},
+        },
+        "input_fingerprints": {
+            "frozen_rubric": frozen.sha256,
+            "shared_trajectory": canonical_sha256(shared_trajectory),
+            "screenshot_verifier_result": hashlib.sha256(Path(screenshot_result).read_bytes()).hexdigest(),
+            "dom_verifier_result": hashlib.sha256(Path(dom_result).read_bytes()).hexdigest(),
+            "screenshot_sources": {
+                name: hashlib.sha256((screenshot_root / name).read_bytes()).hexdigest()
+                for name in sorted(screen_sources)
+            },
+            "dom_sources": {
+                name: hashlib.sha256((dom_root / name).read_bytes()).hexdigest()
+                for name in sorted(dom_sources)
+            },
+        },
         "shared_trajectory": shared_trajectory,
         "primary_auditor_output": {"attempts": attempts, "raw": raw_audit, "invalid_attempts": inventory_invalid},
         "adjudicator_output": {
@@ -1195,6 +1544,14 @@ def run_evidence_audit(
 
 
 def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]] | None = None) -> dict[str, Any]:
+    protocol_fields = ("schema_version", "prompt_version", "audit_model", "adjudicator_model")
+    if audits:
+        for field in protocol_fields:
+            values = [audit.get(field) for audit in audits]
+            if any(not isinstance(value, str) or not value for value in values):
+                raise ValueError(f"Every audit must record {field}")
+            if len(set(values)) != 1:
+                raise ValueError(f"Audit protocol mismatch: {field}")
     all_rows = [row for audit in audits for row in audit.get("criteria", [])]
     if not all_rows:
         raise ValueError("No completed evidence audits to aggregate")
@@ -1206,12 +1563,15 @@ def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]
     metrics = calculate_metrics(all_rows)
     interval_keys = (
         "screenshot_evidence_loss", "dom_model_evidence_loss",
-        "screenshot_minus_dom_loss_rate",
+        "screenshot_minus_dom_loss_rate", "relative_reduction",
     )
     estimates = (
         metrics["screenshot_evidence_loss"]["rate"],
         metrics["dom_model_evidence_loss"]["rate"],
         metrics["screenshot_evidence_loss"]["rate"] - metrics["dom_model_evidence_loss"]["rate"],
+        ((metrics["screenshot_evidence_loss"]["count"] - metrics["dom_model_evidence_loss"]["count"])
+         / metrics["screenshot_evidence_loss"]["count"]
+         if metrics["screenshot_evidence_loss"]["count"] else None),
     )
     confidence = {
         "method": "paired_task_cluster_percentile_bootstrap",
@@ -1227,7 +1587,8 @@ def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]
             "establish zero uncertainty."
         ),
     }
-    samples: list[list[float]] = [[], [], []]
+    samples: list[list[float]] = [[], [], [], []]
+    undefined_reduction = 0
     if len(audits) >= 2:
         # Keep every criterion and both modalities together when sampling a task.
         # Sum counts before dividing so tasks with more criteria retain their weight.
@@ -1246,16 +1607,44 @@ def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]
             samples[0].append(screen_rate)
             samples[1].append(dom_rate)
             samples[2].append(screen_rate - dom_rate)
+            if screen_rate:
+                samples[3].append((screen_rate - dom_rate) / screen_rate)
+            else:
+                undefined_reduction += 1
     for key, estimate, values in zip(interval_keys, estimates, samples):
         interval = None
         status = "insufficient_tasks"
-        if values:
+        if len(values) >= 2:
             cutpoints = quantiles(values, n=40, method="inclusive")
             interval = [cutpoints[0], cutpoints[-1]]
             status = "degenerate" if min(values) == max(values) else "estimated"
         confidence[key] = {"estimate": estimate, "ci95": interval, "status": status}
+        if key == "relative_reduction":
+            confidence[key].update(
+                defined_resamples=len(values), undefined_resamples=undefined_reduction,
+                performed_resamples=len(values) + undefined_reduction,
+                units="fraction", conditional_on="resampled screenshot loss count > 0",
+            )
+            if len(audits) >= 2 and not values:
+                confidence[key]["status"] = "all_resamples_undefined"
+            elif len(values) == 1:
+                confidence[key]["status"] = "insufficient_defined_resamples"
+    reviews = [
+        {"task_id": audit["task_id"], "task_alias": audit.get("task_alias"),
+         "criterion_index": row.get("criterion_index", index), "criterion": row.get("criterion"),
+         "requires_human_review": True,
+         "reason": "Confirmed DOM loss relies on screenshot evidence; pixel content is not deterministically validated.",
+         "finding": row.get("adjudication", {}).get("dom_model_evidence_loss")}
+        for audit in audits for index, row in enumerate(audit["criteria"])
+        if row["dom_model_evidence_loss"]
+    ]
+    conflicts = [
+        {"task_id": audit["task_id"], "task_alias": audit.get("task_alias"),
+         "criterion_index": row.get("criterion_index", index), "details": row.get("coverage_conflicts", [])}
+        for audit in audits for index, row in enumerate(audit["criteria"]) if row.get("coverage_conflict")
+    ]
     return {
-        "schema_version": SCHEMA_VERSION,
+        **{field: audits[0][field] for field in protocol_fields},
         "audit_method": "automated_llm",
         "completed_tasks": len(audits),
         "failed_tasks": failures or [],
@@ -1269,6 +1658,8 @@ def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]
         ],
         "metrics": metrics,
         "confidence_intervals": confidence,
+        "coverage_conflict_list": conflicts,
+        "requires_human_review": {"count": len(reviews), "items": reviews},
     }
 
 

@@ -24,7 +24,7 @@ from .dataset_sync import (
     DEFAULT_REVISION,
     fetch_trajectories,
 )
-from .evidence_audit import DEFAULT_AUDIT_MODEL, aggregate_audits, render_aggregate_markdown
+from .evidence_audit import resolve_audit_config, check_audit_models, aggregate_audits, render_aggregate_markdown
 from .generate_frozen_rubric import main as generate_rubric
 from .run_comparison import main as run_comparison
 from .validate_inputs import dataset_only_preflight
@@ -43,7 +43,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--env-file", default=str(REPOSITORY_ROOT / ".env"))
     parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
     parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
-    parser.add_argument("--audit-model", help=f"Inventory model (default: EVIDENCE_AUDIT_MODEL or {DEFAULT_AUDIT_MODEL})")
+    parser.add_argument("--audit-model", help="Inventory model; otherwise EVIDENCE_AUDIT_MODEL")
+    parser.add_argument("--adjudicator-model", help="Adjudication model; otherwise EVIDENCE_ADJUDICATOR_MODEL")
+    parser.add_argument("--audit-provider", choices=("openai", "google"))
+    parser.add_argument("--adjudicator-provider", choices=("openai", "google"))
     parser.add_argument("--hf-repo", default=DEFAULT_REPO_ID)
     parser.add_argument("--hf-revision", default=DEFAULT_REVISION)
     parser.add_argument("--execute", action="store_true")
@@ -221,7 +224,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if Path(args.env_file).is_file():
         load_env_file(args.env_file)
-    args.audit_model = (args.audit_model or os.environ.get("EVIDENCE_AUDIT_MODEL", "")).strip() or DEFAULT_AUDIT_MODEL
+    audit_config = resolve_audit_config(args.audit_model, args.adjudicator_model, args.audit_provider, args.adjudicator_provider)
+    args.audit_model = audit_config["inventory"]["model"]
+    args.adjudicator_model = audit_config["adjudication"]["model"]
+    args.audit_provider = audit_config["inventory"]["provider"]
+    args.adjudicator_provider = audit_config["adjudication"]["provider"]
+    if args.execute:
+        check_audit_models(audit_config)
     if args.data_source == "huggingface":
         if (DEFAULT_DATASET_ROOT / "preparation_report.json").exists():
             raise ValueError("The download folder contains locally prepared inputs; use local mode or a separate download folder")
@@ -332,6 +341,9 @@ def _run_task(args: argparse.Namespace, data_root: Path) -> int:
             "--results-root", str(results_root),
             "--run-id", run_id,
             "--audit-model", args.audit_model,
+            "--adjudicator-model", args.adjudicator_model,
+            "--audit-provider", args.audit_provider,
+            "--adjudicator-provider", args.adjudicator_provider,
             "--execute",
         ]
         result = run_comparison(phase_b_args)

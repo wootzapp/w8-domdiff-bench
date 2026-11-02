@@ -9,6 +9,20 @@ import pytest
 from w8bench.verifier.common import canonical_sha256
 
 
+@pytest.fixture(autouse=True)
+def audit_test_configuration(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gpt-5.6-sol")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("EVIDENCE_AUDIT_PROVIDER", "openai")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "google")
+    from w8bench.verifier import run_comparison, run_full_comparison
+    def checked(config):
+        return {"stages": {stage: {**selected, "model_listed": True, "listed_at": "2026-01-01T00:00:00Z"}
+                           for stage, selected in config.items()}, "listings": {}}
+    monkeypatch.setattr(run_comparison, "check_audit_models", checked)
+    monkeypatch.setattr(run_full_comparison, "check_audit_models", checked)
+
+
 RUBRIC = {
     "items": [
         {
