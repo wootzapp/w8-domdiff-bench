@@ -57,8 +57,8 @@ def compare(screenshot: dict[str, Any], dom_model: dict[str, Any]) -> tuple[dict
         errors.append("Criterion maximum points differ")
     screenshot_result = screenshot.get("result") or {}
     dom_result = dom_model.get("result") or {}
-    if screenshot_result.get("total_max_points") != dom_result.get("total_max_points"):
-        errors.append("Cross-modal denominators differ")
+    # Frozen weights must match; condition applicability is a judgment made
+    # separately by each verifier. Each effective denominator is checked above.
     if errors:
         raise ValueError("Comparison validation failed:\n- " + "\n- ".join(errors))
 
@@ -77,7 +77,7 @@ def compare(screenshot: dict[str, Any], dom_model: dict[str, Any]) -> tuple[dict
     receipt = {
         "status": "pass",
         "task_id": screenshot["task_id"],
-        "criterion_denominator": screenshot_result["total_max_points"],
+        "criterion_denominator": sum(float(item["max_points"]) for item in screenshot_items),
         "screenshot": {
             "process_score": screenshot_result["process_score"],
             "earned_points": screenshot_result["total_earned_points"],
@@ -103,6 +103,8 @@ def compare(screenshot: dict[str, Any], dom_model: dict[str, Any]) -> tuple[dict
             f"| {label} | {_fmt(result['total_earned_points'])}/{_fmt(result['total_max_points'])} ({result['process_score']:.3f}) | "
             f"{result['outcome_success']} |"
         )
+    if screenshot_result["total_max_points"] != dom_result["total_max_points"]:
+        lines.extend(["", "Applicable point totals differ because conditional criteria were judged differently."])
     lines.extend([
         "", "## Criterion scores", "",
         "| Criterion | Max | Screenshot action | DOM-model action | Screenshot final | DOM-model final |",

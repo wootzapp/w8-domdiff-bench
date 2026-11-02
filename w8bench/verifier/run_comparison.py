@@ -512,6 +512,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     manifest["evidence_audit"]["completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    if "evidence_paths" in audit:
+        audit["evidence_paths"] = {
+            "screenshots": [os.path.relpath(screenshot_source / Path(path).name, REPOSITORY_ROOT)
+                            for path in audit["evidence_paths"]["screenshots"]],
+            "dom_states": [os.path.relpath(dom_source / Path(path).name, REPOSITORY_ROOT)
+                           for path in audit["evidence_paths"]["dom_states"]],
+            "action_history": {"screenshot": os.path.relpath(screenshot_source / "web_surfer.log", REPOSITORY_ROOT),
+                               "dom_model": os.path.relpath(dom_source / "web_surfer.log", REPOSITORY_ROOT)},
+        }
     manifest["evidence_audit"]["run_manifest"] = audit.get("run_manifest", {})
     audit_json_path = run_root / "evidence_audit.json"
     audit_markdown_path = run_root / "evidence_audit.md"

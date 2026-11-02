@@ -385,6 +385,19 @@ def _run_task(args: argparse.Namespace, data_root: Path) -> int:
         run_root = results_root / args.task / run_id
         if run_root.is_dir():
             write_json(run_root / "input_source.json", _input_source(args, data_root))
+            audit_path = run_root / "evidence_audit.json"
+            if audit_path.is_file():
+                audit = load_json(audit_path)
+                if "evidence_paths" in audit:
+                    audit["evidence_paths"] = {
+                        "screenshots": [os.path.relpath(screenshot_source / Path(path).name, REPOSITORY_ROOT)
+                                        for path in audit["evidence_paths"]["screenshots"]],
+                        "dom_states": [os.path.relpath(dom_source / Path(path).name, REPOSITORY_ROOT)
+                                       for path in audit["evidence_paths"]["dom_states"]],
+                        "action_history": {"screenshot": os.path.relpath(screenshot_source / "web_surfer.log", REPOSITORY_ROOT),
+                                           "dom_model": os.path.relpath(dom_source / "web_surfer.log", REPOSITORY_ROOT)},
+                    }
+                    write_json(audit_path, audit)
         return result
 
 
