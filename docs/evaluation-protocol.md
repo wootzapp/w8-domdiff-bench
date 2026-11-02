@@ -94,7 +94,7 @@ and their [current numerical values](technical-report.md#current-counts-and-rela
 
 The [technical report](technical-report.md) contains the published counts and
 the [category annotations](../results/evidence_categories.tsv). Inventory uses
-`gpt-5.6-sol` and adjudication uses `gpt-5.6-terra`.
+`gpt-5.6-sol` and adjudication uses `gemini-3.1-pro-preview`.
 
 Evaluation requires usable, aligned captures. Audit failures remain listed
 separately and do not count as either confirmed loss or confirmed absence of
@@ -108,9 +108,9 @@ for action/validity judgments. See
 Standalone verifier commands select this model with `--action-model`.
 The paired comparison supplies the same model to both verifiers.
 
-In `.env`, `EVIDENCE_AUDIT_MODEL` selects the inventory model (default
-`gpt-5.6-sol`) and `EVIDENCE_ADJUDICATOR_MODEL` selects the adjudicator
-(default `gpt-5.6-terra`). `--audit-model` overrides the inventory setting.
+In `.env`, `EVIDENCE_AUDIT_MODEL` selects the inventory model and
+`EVIDENCE_ADJUDICATOR_MODEL` selects the adjudicator. Both are required.
+The matching CLI flags override these settings.
 Process environment values take precedence over `.env`. The selected audit
 models are saved in the run manifest; these settings do not change the
 recording or verifier models.

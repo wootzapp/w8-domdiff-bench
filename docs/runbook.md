@@ -198,8 +198,9 @@ The recorder reads this setting from the environment, with `--model` as an
 explicit override. It does not supply a fixed acting model.
 
 Audit models use `.env` settings `EVIDENCE_AUDIT_MODEL` (inventory) and
-`EVIDENCE_ADJUDICATOR_MODEL` (adjudication). `--audit-model` overrides the
-inventory setting. Judge settings remain in `config/`.
+`EVIDENCE_ADJUDICATOR_MODEL` (adjudication). Set both explicitly. The matching
+CLI flags override them. Google models require `GEMINI_API_KEY` and
+`python -m pip install -e ".[gemini]"`. Judge settings remain in `config/`.
 
 ## Browser runtime
 
@@ -241,7 +242,7 @@ Catalog tasks use numbered directories. Additional attempts receive a numeric
 suffix, such as `task_01-2`, without overwriting an existing recording:
 
 ```text
-recordings/task_01/
+recordings/run_1/task_01/
   task.json
   manifest.json
   decisions.jsonl
@@ -298,10 +299,10 @@ not require the browser container.
 
 ### Use your recordings
 
-Convert `recordings/` into paired inputs under `trajectories/`:
+Convert the selected run's recordings into paired verifier inputs:
 
 ```bash
-python -m w8bench.task_recorder.prepare_verifier_data recordings trajectories
+python -m w8bench.task_recorder.prepare_verifier_data
 ```
 
 - Original recordings and existing pairs are preserved; missing usable pairs are added.
@@ -309,7 +310,18 @@ python -m w8bench.task_recorder.prepare_verifier_data recordings trajectories
 - `preparation_report.json` records source paths, hashes, warnings, and exclusions.
   Exclusions return exit code 1; inspect the report before scoring.
 - Add `--dry-run` to check without writing. Use a separate output folder for a
-  different collection; repeated task attempts are kept separately.
+  different collection.
+
+Set `W8_RUN_NAME=run_1` in `.env`, or pass `--run-name run_1` to the commands.
+Recordings, trajectories and evaluations use the same run name. A different
+run uses a different folder, without changing the captured files.
+
+For repeated recordings scored against a reference run's frozen rubrics:
+
+```bash
+python -m w8bench.task_recorder.prepare_verifier_data --run-name run_2 --frozen-rubrics evaluations/run_1
+./scripts/run-comparison --all --run-name run_2 --data-source local --frozen-rubrics evaluations/run_1 --execute
+```
 
 Validate the local pairs without model calls:
 
@@ -339,15 +351,15 @@ Run their evaluation:
 
 ### Controls and outputs
 
-- Local mode reads `trajectories/`; Hugging Face mode downloads to `dataset/`.
+- Local mode reads `trajectories/<run-name>/`; Hugging Face mode downloads to `dataset/<run-name>/`.
   Neither falls back to the other. Changed download caches are rejected.
 - Replace `--all` with `--task task_01` for one task. `--data-root PATH` selects
   another local input folder; use task names from the preparation report.
 - Both paths freeze one rubric, score screenshots and DOM text, and audit
   source loss. `--execute` makes paid calls. The
   [evaluation protocol](evaluation-protocol.md) defines controls and scoring.
-- Results go to `evaluation/task_01/batch_01/`; batch summaries go to
-  `evaluation/batches/batch_01/`. `input_source.json` identifies the input source.
+- Results go to `evaluations/run_1/task_01/batch_01/`; batch summaries go to
+  `evaluations/run_1/batches/batch_01/`. `input_source.json` identifies the input source.
 - New output groups receive the next available batch number. `--run-id` can
   select a named group; existing task outputs are never overwritten.
 - `run-id` groups outputs, not execution dates. The run manifest records the

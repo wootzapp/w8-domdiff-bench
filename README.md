@@ -99,11 +99,18 @@ recorded separately and do not create executed-action states. Browser node
 identifiers and executable `agent-browser` references remain separate
 namespaces.
 
+Screenshots are saved for verification, not shown to the acting model.
+Both verifiers evaluate paired evidence from the same browser run and share
+the task instructions, action history, final answer and frozen rubric.
+Screenshots capture the visible viewport, while DOM capture uses viewport
+filtering. Selected DOM elements can contain text extending beyond the
+visible area, giving DOM a coverage advantage in some cases.
+
 <a id="evaluation-results"></a>
 
 ## 4 Evaluation results
 
-A source-evidence loss means a required item is absent from one representation together with its shared history and present in the other. Inventory uses `gpt-5.6-sol`; final adjudication uses `gpt-5.6-terra`. The counts measure evidence availability, not task success, answer correctness or acting-agent improvement.
+A source-evidence loss means a required item is absent from one representation together with its shared history and present in the other. Inventory uses `gpt-5.6-sol`; final adjudication uses `gemini-3.1-pro-preview`. The counts measure evidence availability, not task success, answer correctness or acting-agent improvement.
 
 All 100 recorded tasks have usable, aligned evidence and validated audits covering 640 criteria. Successful, failed and errored recordings with usable evidence are included; no tasks are excluded.
 
@@ -134,10 +141,10 @@ The audits identify **63 affected criteria across 34 tasks**. One criterion has 
 
 Examples show the practical differences:
 
-- **Exact values:** [task_08 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_08/batch_01/evidence_audit.json) preserves an absolute publication date in DOM; screenshots show a relative age.
-- **Capture coverage:** [task_19 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_19/batch_01/evidence_audit.json) preserves three complete highlight rows in DOM; screenshots stop at the heading.
-- **Visual form:** [task_37 C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_37/batch_01/evidence_audit.json) preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
-- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_02/batch_01/evidence_audit.json) and missing World radio selection in [task_44 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_44/batch_01/evidence_audit.json).
+- **Exact values:** [task_08 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_08/batch_01/evidence_audit.json) preserves an absolute publication date in DOM; screenshots show a relative age.
+- **Capture coverage:** [task_19 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_19/batch_01/evidence_audit.json) preserves three complete highlight rows in DOM; screenshots stop at the heading.
+- **Visual form:** [task_37 C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_37/batch_01/evidence_audit.json) preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
+- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_02/batch_01/evidence_audit.json) and missing World radio selection in [task_44 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_44/batch_01/evidence_audit.json).
 
 The detailed findings and evidence links are in the [report’s six-column criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion). Category annotations summarize the saved findings; they do not change verifier scores or audit decisions.
 
@@ -333,6 +340,13 @@ installs this benchmark. Evaluation-only users can skip the browser build and
 begin at [Clone and install the benchmark](#6-clone-and-install-the-benchmark).
 The [runbook](docs/runbook.md) contains additional troubleshooting and
 artifact details.
+
+### Run selection
+
+`W8_RUN_NAME` in `.env` selects the experiment, with `run_1` as the default.
+`--run-name` overrides it. Data stays under `recordings/run_1/`,
+`trajectories/run_1/` and `evaluations/run_1/` for that run.
+Use the same name for recording, preparation and comparison.
 
 ### Repository layout
 
@@ -531,9 +545,11 @@ explicit override. It does not supply a fixed acting model.
 Recording requires both values. Evaluation requires `OPENAI_API_KEY`; its
 judge settings are read from [config/](config/). In `.env`,
 `EVIDENCE_AUDIT_MODEL` selects the inventory model and
-`EVIDENCE_ADJUDICATOR_MODEL` selects the adjudicator. Their defaults are
-`gpt-5.6-sol` and `gpt-5.6-terra`. `--audit-model` overrides the inventory
-setting. The API account must have access to the configured models.
+`EVIDENCE_ADJUDICATOR_MODEL` selects the adjudicator. Set both explicitly;
+`.env.example` includes example model IDs. `--audit-model` and
+`--adjudicator-model` override them. Google models require `GEMINI_API_KEY`
+and the Gemini extra: `python -m pip install -e ".[gemini]"`.
+Each configured ID is checked against its provider's model list before auditing.
 
 Start the browser and verify the container, CDP endpoint, noVNC page, and
 bundled `agent-browser`:
@@ -597,11 +613,11 @@ Requests, timestamps and resume/abort status are logged and counted in the
 manifest; individual human clicks are not exported as agent actions.
 Keep assistance disabled for autonomous benchmark recordings.
 
-Catalog recordings use numbered folders such as `recordings/task_01/`.
+Catalog recordings use numbered folders such as `recordings/run_1/task_01/`.
 Additional attempts use a numeric suffix, such as `task_01-2`:
 
 ```text
-recordings/task_01/
+recordings/run_1/task_01/
   task.json
   manifest.json
   decisions.jsonl
@@ -643,7 +659,7 @@ For a full comparison, choose one input source:
 Prepare paired inputs without model calls:
 
 ```bash
-python -m w8bench.task_recorder.prepare_verifier_data recordings trajectories
+python -m w8bench.task_recorder.prepare_verifier_data
 ```
 
 The command preserves recordings and existing pairs, adds missing usable pairs,
@@ -679,8 +695,8 @@ local input folder.
 
 Both paths freeze one rubric per task, run both verifiers, and audit evidence
 loss. `--execute` makes paid model calls; fresh judgments can vary. Results go
-to `evaluation/task_01/batch_01/`, with batch summaries in
-`evaluation/batches/batch_01/`. New output groups use the next available batch
+to `evaluations/run_1/task_01/batch_01/`, with batch summaries in
+`evaluations/run_1/batches/batch_01/`. New output groups use the next available batch
 number; existing task outputs are never overwritten.
 
 `run-id` groups outputs. The run manifest records the source task ID and UTC

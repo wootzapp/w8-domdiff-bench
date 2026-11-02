@@ -26,7 +26,7 @@ def _write_pair(root: Path, task: str) -> None:
 
 
 def test_fetch_one_task_maps_remote_trajectory_prefix_to_local_data(tmp_path, monkeypatch):
-    remote = tmp_path / "remote" / "trajectories"
+    remote = tmp_path / "remote" / "trajectories" / "run_1"
     _write_pair(remote, "task_01")
     _write_pair(remote, "task_02")
     calls = []
@@ -35,10 +35,10 @@ def test_fetch_one_task_maps_remote_trajectory_prefix_to_local_data(tmp_path, mo
         calls.append(kwargs)
         destination = Path(kwargs["local_dir"])
         for pattern in kwargs["allow_patterns"]:
-            task = pattern.split("/")[2]
+            task = pattern.split("/")[3]
             for modality in ("data-ss", "data-dom"):
                 source = remote / modality / task
-                target = destination / "trajectories" / modality / task
+                target = destination / "trajectories" / "run_1" / modality / task
                 if not target.exists():
                     shutil.copytree(source, target)
         return str(destination)
@@ -57,8 +57,8 @@ def test_fetch_one_task_maps_remote_trajectory_prefix_to_local_data(tmp_path, mo
     assert not (local / "data-ss" / "task_02").exists()
     assert calls[0]["repo_type"] == "dataset"
     assert calls[0]["allow_patterns"] == [
-        "trajectories/data-ss/task_01/**",
-        "trajectories/data-dom/task_01/**",
+        "trajectories/run_1/data-ss/task_01/**",
+        "trajectories/run_1/data-dom/task_01/**",
     ]
 
     original = {p.relative_to(local): p.read_bytes() for p in local.rglob("*") if p.is_file()}
@@ -68,7 +68,7 @@ def test_fetch_one_task_maps_remote_trajectory_prefix_to_local_data(tmp_path, mo
     with pytest.raises(ValueError, match="contiguous from 0"):
         fetch_trajectories(
             data_root=invalid, task=None,
-            snapshot_download_fn=Mock(return_value=str(remote.parent)),
+            snapshot_download_fn=Mock(return_value=str(remote.parents[1])),
         )
     assert not invalid.exists()
     assert all((local / name).read_bytes() == content for name, content in original.items())
@@ -80,7 +80,7 @@ def test_fetch_one_task_maps_remote_trajectory_prefix_to_local_data(tmp_path, mo
         with pytest.raises(OSError, match="copy failed"):
             fetch_trajectories(
                 data_root=local, task=None,
-                snapshot_download_fn=Mock(return_value=str(remote.parent)),
+                snapshot_download_fn=Mock(return_value=str(remote.parents[1])),
             )
     assert not (local / "data-ss/task_02").exists()
     assert not (local / "data-dom/task_02").exists()
@@ -95,7 +95,7 @@ def test_fetch_revalidates_valid_cache_against_huggingface(tmp_path):
     def fake_snapshot_download(**kwargs):
         calls.append(kwargs)
         destination = Path(kwargs["local_dir"])
-        _write_pair(destination / "trajectories", "task_01")
+        _write_pair(destination / "trajectories" / "run_1", "task_01")
         return str(destination)
 
     receipt = fetch_trajectories(
@@ -141,7 +141,7 @@ def test_upload_publishes_only_paired_trajectory_trees(tmp_path):
     api = FakeApi()
     receipt = upload_trajectories(data_root=local, api=api)
     assert receipt["task_count"] == 1
-    assert api.kwargs["path_in_repo"] == "trajectories"
+    assert api.kwargs["path_in_repo"] == "trajectories/run_1"
     assert api.kwargs["allow_patterns"] == ["data-ss/**", "data-dom/**", "pairs.jsonl"]
     assert (local / "pairs.jsonl").is_file()
 
@@ -155,7 +155,7 @@ def test_pair_index_retains_source_payloads_and_order_without_modifying_them(tmp
     assert receipt["task_count"] == 1
     assert record["task_alias"] == "task_01"
     assert record["states"][0]["index"] == 0
-    assert record["states"][0]["screenshot_path"] == "trajectories/data-ss/task_01/screenshot0.png"
+    assert record["states"][0]["screenshot_path"] == "trajectories/run_1/data-ss/task_01/screenshot0.png"
     assert record["states"][0]["dom_model_text"] == (source / "data-dom/task_01/dom_model0.txt").read_text()
     assert record["screenshot_final_answer_json"] == (source / "data-ss/task_01/final_answer.json").read_text()
     assert all(p.read_bytes() == content for p, content in originals.items())
@@ -223,7 +223,7 @@ def test_fetch_rejects_stale_but_structurally_valid_cache(tmp_path):
     before = original.read_bytes()
     def download(**kwargs):
         destination = Path(kwargs["local_dir"])
-        root = destination / "trajectories"
+        root = destination / "trajectories" / "run_1"
         _write_pair(root, "task_01")
         (root / "data-dom/task_01/dom_model0.txt").write_text("URL: https://different.test/\n")
         return str(destination)

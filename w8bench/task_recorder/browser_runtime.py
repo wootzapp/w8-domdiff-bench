@@ -103,6 +103,10 @@ OPENAI_API_KEY={values['OPENAI_API_KEY']}
 OPENAI_MODEL={values['OPENAI_MODEL']}
 EVIDENCE_AUDIT_MODEL={values['EVIDENCE_AUDIT_MODEL']}
 EVIDENCE_ADJUDICATOR_MODEL={values['EVIDENCE_ADJUDICATOR_MODEL']}
+GEMINI_API_KEY={values.get('GEMINI_API_KEY', '')}
+EVIDENCE_AUDIT_PROVIDER={values.get('EVIDENCE_AUDIT_PROVIDER', '')}
+EVIDENCE_ADJUDICATOR_PROVIDER={values.get('EVIDENCE_ADJUDICATOR_PROVIDER', '')}
+W8_RUN_NAME={values.get('W8_RUN_NAME', 'run_1')}
 
 CHROMIUM_HEADLESS=0
 CHROMIUM_RESET_PROFILE=0
@@ -145,8 +149,12 @@ def configure(env_path: Path, refresh_ports: bool) -> int:
         "OPENAI_MODEL": existing.get(
             "OPENAI_MODEL", "replace-with-a-supported-model-name"
         ),
-        "EVIDENCE_AUDIT_MODEL": existing.get("EVIDENCE_AUDIT_MODEL", "gpt-5.6-sol"),
-        "EVIDENCE_ADJUDICATOR_MODEL": existing.get("EVIDENCE_ADJUDICATOR_MODEL", "gpt-5.6-terra"),
+        "EVIDENCE_AUDIT_MODEL": existing.get("EVIDENCE_AUDIT_MODEL", ""),
+        "EVIDENCE_ADJUDICATOR_MODEL": existing.get("EVIDENCE_ADJUDICATOR_MODEL", ""),
+        "W8_RUN_NAME": existing.get("W8_RUN_NAME", "run_1"),
+        "GEMINI_API_KEY": existing.get("GEMINI_API_KEY", ""),
+        "EVIDENCE_AUDIT_PROVIDER": existing.get("EVIDENCE_AUDIT_PROVIDER", ""),
+        "EVIDENCE_ADJUDICATOR_PROVIDER": existing.get("EVIDENCE_ADJUDICATOR_PROVIDER", ""),
     }
     env_path.parent.mkdir(parents=True, exist_ok=True)
     write_env(env_path, values)

@@ -11,13 +11,13 @@ The benchmark's acting agent uses `gpt-5.6` for browser-action generation.
 
 These recordings provide additional data for inspecting the collection
 process. The verifier audit uses the prepared trajectory pairs in
-[`trajectories/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-ss) and
-[`trajectories/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-dom).
+[`trajectories/run_1/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/run_1/data-ss) and
+[`trajectories/run_1/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/run_1/data-dom).
 Use the recordings when you want more detail about a recorded run, its
 observations, or its failures.
 
 Each recording has a task folder such as
-[task_01](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/recordings/task_01).
+[task_01](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/recordings/run_1/task_01).
 Actual execution times remain in its metadata. JSONL files contain one JSON
 object per line; `web_surfer.log` also uses that format.
 

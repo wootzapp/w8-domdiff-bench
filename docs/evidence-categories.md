@@ -24,13 +24,13 @@ Use this category when the gap concerns a specific value within otherwise
 preserved context. An isolated value can belong here even when clipping or
 viewport position caused its absence.
 
-**Example — task_08 C2, screenshot loss:** DOM preserves the absolute publication date Oct 14, 2026, while screenshots show only “released this 2 weeks ago.” [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_08/batch_01/evidence_audit.json).
+**Example — task_08 C2, screenshot loss:** DOM preserves the absolute publication date Oct 14, 2026, while screenshots show only “released this 2 weeks ago.” [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_08/batch_01/evidence_audit.json).
 
 ### URLs
 
 Missing exact URLs, endpoints, query parameters, or their association with page content.
 
-**Example — task_75 C0, screenshot loss:** DOM preserves `?exact=Black%20Lotus`, which is absent from screenshots and the shared history. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_75/batch_01/evidence_audit.json).
+**Example — task_75 C0, screenshot loss:** DOM preserves `?exact=Black%20Lotus`, which is absent from screenshots and the shared history. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_75/batch_01/evidence_audit.json).
 
 ### Control states
 
@@ -38,7 +38,7 @@ Missing checked, selected, enabled, disabled, or other explicit control
 states. A control's name or label alone does not establish its state;
 absence of state text does not establish that the control is unchecked.
 
-**Example — task_44 C2, DOM loss:** screenshots show the World radio option selected; DOM lists region names without checked states. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_44/batch_01/evidence_audit.json).
+**Example — task_44 C2, DOM loss:** screenshots show the World radio option selected; DOM lists region names without checked states. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_44/batch_01/evidence_audit.json).
 
 ### Table entries
 
@@ -47,7 +47,7 @@ requested fields. Use this category when a specific row or its structured
 field grouping is the missing evidence. Whole missing cards, sections, or
 list boundaries generally belong to **Capture omissions**.
 
-**Example — task_35 C2/C3/C4, screenshot loss:** the third tag’s Linux/amd64 size row is cropped in screenshots but retained in DOM. It affects the complete tag report, architecture check and stopping condition. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_35/batch_01/evidence_audit.json).
+**Example — task_35 C2/C3/C4, screenshot loss:** the third tag’s Linux/amd64 size row is cropped in screenshots but retained in DOM. It affects the complete tag report, architecture check and stopping condition. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_35/batch_01/evidence_audit.json).
 
 ### Label–value links
 
@@ -56,7 +56,7 @@ Seeing the value elsewhere on the page does not establish the required
 association. This category covers disconnected field relationships,
 including headings whose corresponding table is no longer associated.
 
-**Example — task_02 C2, DOM loss:** screenshots connect Published by with Microsoft Studios; DOM has the label without its value. Another occurrence in the page header does not preserve that association. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_02/batch_01/evidence_audit.json).
+**Example — task_02 C2, DOM loss:** screenshots connect Published by with Microsoft Studios; DOM has the label without its value. Another occurrence in the page header does not preserve that association. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_02/batch_01/evidence_audit.json).
 
 ### Capture omissions
 
@@ -65,7 +65,7 @@ description is absent from the retained representation. Use this category
 when the missing scope prevents establishing coverage or completeness,
 rather than recovering an isolated value or explicit table row.
 
-**Example — task_19 C2, screenshot loss:** screenshots stop at the Highlights heading, while DOM retains the complete ordered highlight list. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluation/task_19/batch_01/evidence_audit.json).
+**Example — task_19 C2, screenshot loss:** screenshots stop at the Highlights heading, while DOM retains the complete ordered highlight list. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_19/batch_01/evidence_audit.json).
 
 ## Choosing a primary category
 

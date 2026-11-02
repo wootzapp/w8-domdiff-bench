@@ -239,7 +239,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--staged-root", default=str(REPOSITORY_ROOT / "data"))
     parser.add_argument("--eval-config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--env-file", default=str(REPOSITORY_ROOT / ".env"))
-    parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
+    parser.add_argument("--results-root", type=Path)
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
     parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
     parser.add_argument("--audit-model", help="Inventory model; otherwise EVIDENCE_AUDIT_MODEL")
     parser.add_argument("--adjudicator-model", help="Adjudication model; otherwise EVIDENCE_ADJUDICATOR_MODEL")
@@ -293,8 +294,11 @@ def main(argv: list[str] | None = None) -> int:
     audit_config = resolve_audit_config(args.audit_model, args.adjudicator_model, args.audit_provider, args.adjudicator_provider)
     args.audit_model = audit_config["inventory"]["model"]
     adjudicator_model = audit_config["adjudication"]["model"]
+    from w8bench.run_paths import run_directory, resolve_run_name
+    args.run_name = resolve_run_name(args.run_name)
     results_root = ensure_under(
-        Path(args.results_root), REPOSITORY_ROOT, label="results root"
+        Path(args.results_root) if args.results_root else run_directory(REPOSITORY_ROOT / "evaluations", args.run_name),
+        REPOSITORY_ROOT, label="results root"
     )
     run_id = args.run_id
     if run_id is None:
@@ -331,6 +335,7 @@ def main(argv: list[str] | None = None) -> int:
         "phase": "B",
         # A supplied run_id can group a batch; it is not an execution timestamp.
         "run_id": run_id,
+        "run_name": args.run_name,
         "source_task_id": preflight["task_id"],
         "evaluation_started_at": None,
         "evaluation_completed_at": None,
@@ -453,6 +458,7 @@ def main(argv: list[str] | None = None) -> int:
     write_json(run_root / "run_manifest.json", manifest)
     try:
         audit = run_evidence_audit(
+            run_name=args.run_name,
             screenshot_dir=isolated_screenshot,
             dom_dir=isolated_dom,
             rubric_file=published_rubric,

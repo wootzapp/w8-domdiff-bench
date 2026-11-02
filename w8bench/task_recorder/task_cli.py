@@ -596,6 +596,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--start-url", help="absolute HTTP(S) starting URL for a manual task")
     parser.add_argument("--catalog-url", help=argparse.SUPPRESS)
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -662,6 +663,9 @@ def main(argv: list[str] | None = None) -> int:
         raise RunnerError("--previous-run-stop-timeout must not be negative")
 
     load_env(args.env_file)
+    from w8bench.run_paths import run_directory, resolve_run_name
+    args.run_name = resolve_run_name(args.run_name)
+    args.output_dir = run_directory(args.output_dir, args.run_name)
     # Supplying either manual field selects manual mode and requires both. With
     # neither field, the positional task id is resolved through the catalog.
     manual_task = args.task is not None or args.start_url is not None
@@ -709,6 +713,7 @@ def main(argv: list[str] | None = None) -> int:
         max_steps=args.max_steps,
     )
 
+    command.extend(["--run-name", args.run_name])
     print(f"Task id: {task_id}")
     print(f"Task name: {task_name}")
     print(f"Start URL: {definition['start_url']}")

@@ -802,6 +802,7 @@ async def run(args: argparse.Namespace) -> int:
         run_dir / "task.json",
         {
             "task_id": task_id,
+            "run_name": getattr(args, "run_name", None),
             "source_task_id": args.source_task_id,
             "source_catalog": catalog_reference,
             "task_name": args.task_name,
@@ -817,6 +818,7 @@ async def run(args: argparse.Namespace) -> int:
     browser_build = profile_provenance.pop("browser_build", None)
     manifest: dict[str, Any] = {
         "task_id": task_id,
+        "run_name": getattr(args, "run_name", None),
         "source_task_id": args.source_task_id,
         "source_catalog": catalog_reference,
         "task_name": args.task_name,
@@ -1569,6 +1571,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=float(os.environ.get("AGENT_BROWSER_TIMEOUT", "90")),
     )
     parser.add_argument("--output-dir")
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
     # 80 bounds autonomous action attempts; it does not cap captured nodes/diffs.
     parser.add_argument("--max-steps", type=int, default=int(os.environ.get("RUN_MAX_STEPS", "80")))
     parser.add_argument("--settle-seconds", type=float, default=float(os.environ.get("STEP_SETTLE_SECONDS", "1.0")))
@@ -1639,6 +1642,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if report["status"] == "complete" else 2
         if not args.output_dir:
             raise RunnerError("--output-dir is required for live and capture-only runs")
+        from w8bench.run_paths import run_directory
+        args.output_dir = str(run_directory(args.output_dir, args.run_name))
         return asyncio.run(run_with_interrupt_handlers(args))
     except (AgentBrowserBaseError, RunnerError, CDPError, OSError, json.JSONDecodeError) as error:
         print(f"error: {error}", file=sys.stderr)

@@ -41,7 +41,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Local trajectory folder (default in local mode: trajectories/)")
     parser.add_argument("--eval-config", default=str(REPOSITORY_ROOT / "config"))
     parser.add_argument("--env-file", default=str(REPOSITORY_ROOT / ".env"))
-    parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
+    parser.add_argument("--results-root", type=Path)
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
+    parser.add_argument("--frozen-rubrics", type=Path,
+                        help="Reuse the reference run's frozen rubrics and generation receipts")
     parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
     parser.add_argument("--audit-model", help="Inventory model; otherwise EVIDENCE_AUDIT_MODEL")
     parser.add_argument("--adjudicator-model", help="Adjudication model; otherwise EVIDENCE_ADJUDICATOR_MODEL")
@@ -151,7 +154,14 @@ def _run_all(args: argparse.Namespace, data_root: Path) -> int:
     for task in tasks:
         if args.data_source == "local":
             _verify_local_preparation(data_root, task)
-        _validate_task(data_root, task)
+        preflight = _validate_task(data_root, task)
+        if getattr(args, "frozen_rubrics", None):
+            from .common import load_canonical_rubric, validate_generation_metrics
+            references = list((args.frozen_rubrics / task).glob("*/frozen_rubric.json"))
+            if len(references) != 1:
+                raise ValueError(f"Expected one reference frozen rubric for {task}")
+            frozen = load_canonical_rubric(references[0], expected_task_id=preflight["task_id"])
+            validate_generation_metrics(references[0].with_name("rubric_generation_metrics.json"), frozen)
     results_root = ensure_under(Path(args.results_root), REPOSITORY_ROOT, label="results root")
     run_id = args.run_id
     if run_id is None:
@@ -224,6 +234,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if Path(args.env_file).is_file():
         load_env_file(args.env_file)
+    from w8bench.run_paths import run_directory, resolve_run_name
+    args.run_name = resolve_run_name(args.run_name)
+    args.results_root = args.results_root or run_directory(REPOSITORY_ROOT / "evaluations", args.run_name)
     audit_config = resolve_audit_config(args.audit_model, args.adjudicator_model, args.audit_provider, args.adjudicator_provider)
     args.audit_model = audit_config["inventory"]["model"]
     args.adjudicator_model = audit_config["adjudication"]["model"]
@@ -232,19 +245,21 @@ def main(argv: list[str] | None = None) -> int:
     if args.execute:
         check_audit_models(audit_config)
     if args.data_source == "huggingface":
-        if (DEFAULT_DATASET_ROOT / "preparation_report.json").exists():
+        download_root = run_directory(DEFAULT_DATASET_ROOT, args.run_name)
+        if (download_root / "preparation_report.json").exists():
             raise ValueError("The download folder contains locally prepared inputs; use local mode or a separate download folder")
         fetched = fetch_trajectories(
-            data_root=DEFAULT_DATASET_ROOT,
+            data_root=download_root,
             task=None if args.all else args.task,
             repo_id=args.hf_repo,
             revision=args.hf_revision,
+            run_name=args.run_name,
         )
         print(json.dumps({"dataset_fetch": fetched}, ensure_ascii=False, indent=2))
-        data_root = DEFAULT_DATASET_ROOT.resolve(strict=True)
+        data_root = download_root.resolve(strict=True)
     else:
         # Local mode has no downloader call and no fallback to hosted inputs.
-        data_root = (args.data_root or REPOSITORY_ROOT / "trajectories").resolve(strict=True)
+        data_root = (args.data_root or run_directory(REPOSITORY_ROOT / "trajectories", args.run_name)).resolve(strict=True)
     if args.all:
         return _run_all(args, data_root)
     return _run_task(args, data_root)
@@ -256,6 +271,13 @@ def _run_task(args: argparse.Namespace, data_root: Path) -> int:
     if args.data_source == "local":
         _verify_local_preparation(data_root, args.task)
     preflight = _validate_task(data_root, args.task)
+    if args.frozen_rubrics:
+        from .common import load_canonical_rubric, validate_generation_metrics
+        references = list((args.frozen_rubrics / args.task).glob("*/frozen_rubric.json"))
+        if len(references) != 1:
+            raise ValueError(f"Expected one reference frozen rubric for {args.task}")
+        frozen = load_canonical_rubric(references[0], expected_task_id=preflight["task_id"])
+        validate_generation_metrics(references[0].with_name("rubric_generation_metrics.json"), frozen)
 
     eval_config = Path(args.eval_config).resolve(strict=True)
     env_file = Path(args.env_file).resolve(strict=args.execute)
@@ -290,7 +312,7 @@ def _run_task(args: argparse.Namespace, data_root: Path) -> int:
                     "run_id": run_id,
                     "audit_model": args.audit_model,
                     "workflow": [
-                        "generate one fresh screenshot rubric",
+                        "reuse the reference frozen rubric" if args.frozen_rubrics else "generate one fresh screenshot rubric",
                         "freeze the rubric on isolated task copies",
                         "score screenshot and DOM evidence with the same rubric",
                         "inventory and adjudicate evidence loss and verifier misses automatically",
@@ -326,7 +348,19 @@ def _run_task(args: argparse.Namespace, data_root: Path) -> int:
             "--overwrite",
             "--execute",
         ]
-        if generate_rubric(phase_a_args) != 0:
+        if args.frozen_rubrics:
+            references = list((args.frozen_rubrics / args.task).glob("*/frozen_rubric.json"))
+            if len(references) != 1:
+                raise ValueError(f"Expected one reference frozen rubric for {args.task}")
+            shutil.copyfile(references[0], rubric_file)
+            shutil.copyfile(references[0].with_name("rubric_generation_metrics.json"), metrics_file)
+            from .common import load_canonical_rubric
+            from .generate_frozen_rubric import _sidecar_payload
+            frozen = load_canonical_rubric(rubric_file, expected_task_id=preflight["task_id"])
+            for folder in (screenshot_staged, dom_staged):
+                write_json(folder / "task_data_with_canonical_rubric.json",
+                           _sidecar_payload(folder / "task_data.json", frozen.rubric))
+        elif generate_rubric(phase_a_args) != 0:
             return 1
 
         phase_b_args = [
@@ -340,6 +374,7 @@ def _run_task(args: argparse.Namespace, data_root: Path) -> int:
             "--env-file", str(env_file),
             "--results-root", str(results_root),
             "--run-id", run_id,
+            "--run-name", args.run_name,
             "--audit-model", args.audit_model,
             "--adjudicator-model", args.adjudicator_model,
             "--audit-provider", args.audit_provider,

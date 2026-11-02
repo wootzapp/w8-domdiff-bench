@@ -16,18 +16,21 @@ file-size means use all 883 captured states in the raw recordings.
 
 | Dataset path | Contents | How to inspect | Local guide |
 | --- | --- | --- | --- |
-| [`trajectories/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-ss) | 100 prepared screenshot task folders from the 100-task catalog. | Read task metadata, final answers, action logs, and ordered screenshots. | [Evaluation inputs](runbook.md#recording-and-evaluation-inputs) |
-| [`trajectories/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-dom) | The corresponding 100 DOM-text task folders. | Read the common task files and ordered `dom_modelN.txt` observations. | [Evaluation protocol](evaluation-protocol.md) |
+| [`trajectories/run_1/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/run_1/data-ss) | 100 prepared screenshot task folders from the 100-task catalog. | Read task metadata, final answers, action logs, and ordered screenshots. | [Evaluation inputs](runbook.md#recording-and-evaluation-inputs) |
+| [`trajectories/run_1/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/run_1/data-dom) | The corresponding 100 DOM-text task folders. | Read the common task files and ordered `dom_modelN.txt` observations. | [Evaluation protocol](evaluation-protocol.md) |
 | [`tasks.jsonl`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/tasks.jsonl) | Catalog of task identifiers, names, categories, instructions, start URLs, stopping conditions, and constraints. | Inspect each task’s requested behavior and restrictions. | [Task recording](runbook.md#record-a-task) |
-| [`trajectories/pairs.jsonl`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/trajectories/pairs.jsonl) | Loadable paired records with DOM text, common task files, and screenshot paths/checksums. | Select the `trajectory_pairs` configuration and `test` split. | Dataset access commands below |
+| [`trajectories/run_1/pairs.jsonl`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/trajectories/run_1/pairs.jsonl) | Loadable paired records with DOM text, common task files, and screenshot paths/checksums. | Select the `trajectory_pairs` configuration and `test` split. | Dataset access commands below |
 | [`recordings/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/recordings) | Additional collection artifacts: manifests, decisions, executed actions, and captured states. | Follow a recording manifest through actions and states. | [Recording artifacts](recordings.md) |
-| [`evaluation/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/evaluation) | Frozen rubrics, verifier results, automated audits, and saved provenance. | Match task IDs and selected run timestamps before following citations. | [Technical report](technical-report.md) |
+| [`evaluations/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/evaluations) | Frozen rubrics, verifier results, automated audits, and saved provenance. | Match run names and task IDs before following citations. | [Technical report](technical-report.md) |
 
 The dataset loader exposes the task catalog through the default configuration
 and complete paired records through `trajectory_pairs`. Both use a `test` split.
 The pair index contains the original metadata and answers as JSON strings,
 the shared action log, ordered DOM text, and repository-relative screenshot
 paths with checksums. Image bytes remain in the trajectory folders.
+
+Each paired record includes `run_name`. The `trajectory_pairs` configuration
+reads the per-run indices under `trajectories/run_*/pairs.jsonl`.
 
 `task_name` is a descriptive title; `category` groups tasks by their main
 operation. The categories are record lookup, reference lookup, search and
@@ -93,7 +96,7 @@ training.
 
 Successful, failed, and errored runs are retained. Recorded outcomes describe
 collection status; verifier scores and evidence-audit judgments are separate
-artifacts. Evidence inventory uses `gpt-5.6-sol` and adjudication uses `gpt-5.6-terra`; internal WootzApp review is a separate verification role. The
+artifacts. Evidence inventory uses `gpt-5.6-sol` and adjudication uses `gemini-3.1-pro-preview`; internal WootzApp review is a separate verification role. The
 [technical report](technical-report.md) distinguishes website blockers,
 execution errors, and source-evidence losses.
 

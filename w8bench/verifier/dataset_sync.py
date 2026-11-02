@@ -11,6 +11,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from typing import Any, Callable
+from w8bench.run_paths import resolve_run_name, run_directory
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -103,20 +104,22 @@ def fetch_trajectories(
     repo_id: str = DEFAULT_REPO_ID,
     revision: str = DEFAULT_REVISION,
     snapshot_download_fn: Callable[..., str] | None = None,
+    run_name: str | None = None,
 ) -> dict[str, Any]:
     """Fetch one paired task, or every task, without changing verifier inputs."""
 
     target = Path(data_root).resolve()
+    remote_prefix = f"{REMOTE_PREFIX}/{resolve_run_name(run_name)}"
     if task is not None:
         _validate_task_name(task)
     if snapshot_download_fn is None:
         snapshot_download_fn, _ = _require_huggingface_hub()
     patterns = [
-        f"{REMOTE_PREFIX}/data-ss/{task}/**",
-        f"{REMOTE_PREFIX}/data-dom/{task}/**",
+        f"{remote_prefix}/data-ss/{task}/**",
+        f"{remote_prefix}/data-dom/{task}/**",
     ] if task else [
-        f"{REMOTE_PREFIX}/data-ss/**",
-        f"{REMOTE_PREFIX}/data-dom/**",
+        f"{remote_prefix}/data-ss/**",
+        f"{remote_prefix}/data-dom/**",
     ]
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".dataset-download-", dir=target.parent) as name:
@@ -130,10 +133,10 @@ def fetch_trajectories(
                 local_dir=stage,
             )
         )
-        remote_root = snapshot_root / REMOTE_PREFIX
+        remote_root = snapshot_root / remote_prefix
         if not remote_root.is_dir():
             raise ValueError(
-                f"Hugging Face dataset {repo_id}@{revision} does not contain {REMOTE_PREFIX}/"
+                f"Hugging Face dataset {repo_id}@{revision} does not contain {remote_prefix}/"
             )
         screenshot_tasks = {
             path.name for path in (remote_root / "data-ss").iterdir() if path.is_dir()
@@ -229,6 +232,7 @@ def upload_trajectories(
     repo_id: str = DEFAULT_REPO_ID,
     revision: str = DEFAULT_REVISION,
     api: Any | None = None,
+    run_name: str | None = None,
 ) -> dict[str, Any]:
     """Upload paired trajectories and their loadable JSONL index."""
 
@@ -237,7 +241,8 @@ def upload_trajectories(
     if not aliases:
         raise ValueError(f"No paired tasks found under {source}")
     validated = [validate_downloaded_pair(source, alias) for alias in aliases]
-    index = build_trajectory_index(source)
+    run_name = resolve_run_name(run_name)
+    index = build_trajectory_index(source, run_name=run_name)
     if api is None:
         _, api_type = _require_huggingface_hub()
         api = api_type()
@@ -246,7 +251,7 @@ def upload_trajectories(
         repo_type="dataset",
         revision=revision,
         folder_path=str(source),
-        path_in_repo=REMOTE_PREFIX,
+        path_in_repo=f"{REMOTE_PREFIX}/{run_name}",
         allow_patterns=["data-ss/**", "data-dom/**", "pairs.jsonl"],
         commit_message="Add paired screenshot and DOM verifier trajectories",
     )
@@ -254,16 +259,17 @@ def upload_trajectories(
         "status": "uploaded",
         "repo_id": repo_id,
         "revision": revision,
-        "remote_prefix": REMOTE_PREFIX,
+        "remote_prefix": f"{REMOTE_PREFIX}/{run_name}",
         "task_count": len(validated),
         "index_sha256": index["sha256"],
         "commit": str(result),
     }
 
 
-def build_trajectory_index(data_root: str | Path) -> dict[str, Any]:
+def build_trajectory_index(data_root: str | Path, *, run_name: str | None = None) -> dict[str, Any]:
     """Index complete paired inputs without changing any source task file."""
     source = Path(data_root).resolve(strict=True)
+    remote_prefix = f"{REMOTE_PREFIX}/{resolve_run_name(run_name)}"
     aliases = _local_paired_tasks(source)
     if not aliases:
         raise ValueError(f"No paired tasks found under {source}")
@@ -314,13 +320,14 @@ def build_trajectory_index(data_root: str | Path) -> dict[str, Any]:
             model = dom / f"dom_model{index}.txt"
             states.append({
                 "index": index,
-                "screenshot_path": f"{REMOTE_PREFIX}/data-ss/{alias}/{image.name}",
+                "screenshot_path": f"{remote_prefix}/data-ss/{alias}/{image.name}",
                 "screenshot_sha256": hashlib.sha256(image.read_bytes()).hexdigest(),
-                "dom_model_path": f"{REMOTE_PREFIX}/data-dom/{alias}/{model.name}",
+                "dom_model_path": f"{remote_prefix}/data-dom/{alias}/{model.name}",
                 "dom_model_sha256": hashlib.sha256(model.read_bytes()).hexdigest(),
                 "dom_model_text": model.read_bytes().decode("utf-8"),
             })
         records.append({
+            "run_name": resolve_run_name(run_name),
             "task_alias": alias,
             "screenshot_task_data_json": shared_files[("screenshot", "task_data.json")],
             "dom_model_task_data_json": shared_files[("dom_model", "task_data.json")],
@@ -341,17 +348,19 @@ def build_trajectory_index(data_root: str | Path) -> dict[str, Any]:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("fetch", "upload", "index"))
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
+    parser.add_argument("--env-file", type=Path, default=REPOSITORY_ROOT / ".env")
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--task")
     selection.add_argument("--all", action="store_true")
     parser.add_argument(
         "--output-dir",
-        default=str(DEFAULT_DATASET_ROOT),
+        type=Path,
         help="Local dataset directory populated from Hugging Face",
     )
     parser.add_argument(
         "--source-dir",
-        default=str(REPOSITORY_ROOT / "trajectories"),
+        type=Path,
         help="Prepared local trajectories used by index and upload",
     )
     parser.add_argument(
@@ -363,6 +372,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    from .common import load_env_file
+    if args.env_file.is_file():
+        load_env_file(args.env_file)
+    args.run_name = resolve_run_name(args.run_name)
+    args.output_dir = args.output_dir or run_directory(DEFAULT_DATASET_ROOT, args.run_name)
+    args.source_dir = args.source_dir or run_directory(REPOSITORY_ROOT / "trajectories", args.run_name)
     if args.command == "fetch":
         if not args.task and not args.all:
             raise ValueError("fetch requires --task TASK or --all")
@@ -371,14 +386,16 @@ def main(argv: list[str] | None = None) -> int:
             task=None if args.all else args.task,
             repo_id=args.repo_id,
             revision=args.revision,
+            run_name=args.run_name,
         )
     else:
         if args.task or args.all:
             raise ValueError(f"{args.command} uses every validated paired task")
-        result = build_trajectory_index(args.source_dir) if args.command == "index" else upload_trajectories(
+        result = build_trajectory_index(args.source_dir, run_name=args.run_name) if args.command == "index" else upload_trajectories(
             data_root=args.source_dir,
             repo_id=args.repo_id,
             revision=args.revision,
+            run_name=args.run_name,
         )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0

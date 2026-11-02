@@ -1346,8 +1346,11 @@ def run_evidence_audit(
     model_check: dict | None = None,
     complete: Callable[[str, list[dict[str, Any]]], dict[str, Any]] | None = None,
     call_records: list[dict[str, Any]] | None = None,
+    run_name: str | None = None,
 ) -> dict[str, Any]:
     started_at = datetime.now(timezone.utc).isoformat()
+    from w8bench.run_paths import resolve_run_name
+    run_name = resolve_run_name(run_name)
     config = resolve_audit_config(model, adjudicator_model, audit_provider, adjudicator_provider)
     model, adjudicator_model = config["inventory"]["model"], config["adjudication"]["model"]
     frozen = load_canonical_rubric(rubric_file)
@@ -1473,6 +1476,7 @@ def run_evidence_audit(
         )
     return {
         "schema_version": SCHEMA_VERSION,
+        "run_name": run_name,
         "prompt_version": PROMPT_VERSION,
         "audit_method": "automated_llm",
         "audit_model": model,
@@ -1512,10 +1516,10 @@ def run_evidence_audit(
         "task_alias": task_alias,
         "frozen_rubric_sha256": frozen.sha256,
         "evidence_paths": {
-            "screenshots": [str(screenshot_root / name) for name in sorted(screen_sources)],
-            "dom_states": [str(dom_root / name) for name in sorted(dom_sources)],
-            "action_history": {"screenshot": str(screenshot_root / "web_surfer.log"),
-                               "dom_model": str(dom_root / "web_surfer.log")},
+            "screenshots": [os.path.relpath(screenshot_root / name, Path(__file__).resolve().parents[2]) for name in sorted(screen_sources)],
+            "dom_states": [os.path.relpath(dom_root / name, Path(__file__).resolve().parents[2]) for name in sorted(dom_sources)],
+            "action_history": {"screenshot": os.path.relpath(screenshot_root / "web_surfer.log", Path(__file__).resolve().parents[2]),
+                               "dom_model": os.path.relpath(dom_root / "web_surfer.log", Path(__file__).resolve().parents[2])},
         },
         "input_fingerprints": {
             "frozen_rubric": frozen.sha256,

@@ -216,7 +216,7 @@ def copy_evidence(source: Path, destination: Path, expected: str) -> None:
         raise ValueError(f"Evidence changed while copying: {source}")
 
 
-def prepare_recording(recording: Recording, staging: Path) -> dict[str, Any]:
+def prepare_recording(recording: Recording, staging: Path, *, task_id: str | None = None) -> dict[str, Any]:
     if input_hashes(recording.source) != recording.input_sha256:
         raise ValueError(f"Recording changed after inspection: {recording.source}")
     screenshot = staging / "data-ss" / recording.alias
@@ -224,7 +224,7 @@ def prepare_recording(recording: Recording, staging: Path) -> dict[str, Any]:
     screenshot.mkdir(parents=True)
     dom.mkdir(parents=True)
     task_data = [{
-        "task_id": recording.task["task_id"],
+        "task_id": task_id or recording.task["task_id"],
         "confirmed_task": recording.task["instruction"],
         "website": recording.task["start_url"],
         "level": "recorded_browser_task",
@@ -267,15 +267,24 @@ def prepare_recording(recording: Recording, staging: Path) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("input_dir", nargs="?", default=Path("recordings"), type=Path,
+    parser.add_argument("input_dir", nargs="?", type=Path,
                         help="Recordings directory or a single recorded run (default: recordings)")
-    parser.add_argument("output_dir", nargs="?", default=Path("trajectories"), type=Path,
+    parser.add_argument("output_dir", nargs="?", type=Path,
                         help="New folder for paired verifier inputs (default: trajectories)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Check conversion in temporary storage without publishing inputs")
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
+    parser.add_argument("--env-file", type=Path, default=Path(".env"))
+    parser.add_argument("--frozen-rubrics", type=Path,
+                        help="Reference evaluations containing the unchanged per-task frozen rubrics")
     args = parser.parse_args(argv)
-    source = args.input_dir.resolve(strict=True)
-    output = args.output_dir.resolve()
+    from w8bench.verifier.common import load_env_file
+    if args.env_file.is_file():
+        load_env_file(args.env_file)
+    from w8bench.run_paths import run_directory, resolve_run_name
+    run_name = resolve_run_name(args.run_name)
+    source = (args.input_dir or run_directory("recordings", run_name)).resolve(strict=True)
+    output = (args.output_dir or run_directory("trajectories", run_name)).resolve()
     if not source.is_dir():
         raise ValueError(f"Input is not a directory: {source}")
     if source == output or source in output.parents or output in source.parents:
@@ -366,7 +375,17 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 with tempfile.TemporaryDirectory(prefix="task-", dir=staging) as task_stage:
                     task_root = Path(task_stage)
-                    receipt = prepare_recording(recording, task_root)
+                    reference_id = None
+                    if args.frozen_rubrics:
+                        references = list((args.frozen_rubrics / recording.alias).glob("*/frozen_rubric.json"))
+                        if len(references) != 1:
+                            raise ValueError(f"Expected one frozen rubric for {recording.alias}")
+                        reference_id = read_object(references[0])["task_id"]
+                        reference_task = read_object(references[0].with_name("evidence_audit.json"))["shared_trajectory"]
+                        if (reference_task["task_instruction"] != recording.task["instruction"]
+                            or reference_task["initial_url"] != recording.task["start_url"]):
+                            raise ValueError(f"Task text or start URL differs from frozen reference: {recording.alias}")
+                    receipt = prepare_recording(recording, task_root, task_id=reference_id)
                     for modality in ("data-ss", "data-dom"):
                         destination = bundle / modality / recording.alias
                         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -401,7 +420,7 @@ def main(argv: list[str] | None = None) -> int:
                                  "error": f"{type(error).__name__}: {error}".replace(
                                      str(recording.source), os.path.relpath(recording.source, output))})
         report = {
-            "schema_version": "1.0", "source_root": os.path.relpath(source, output),
+            "schema_version": "1.0", "run_name": run_name, "source_root": os.path.relpath(source, output),
             "output_root": ".", "dry_run": args.dry_run,
             "selected_recordings": len(runs), "prepared_count": len(prepared),
             "excluded_count": len(excluded), "prepared": prepared, "excluded": excluded,
