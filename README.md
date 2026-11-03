@@ -19,9 +19,12 @@
 - [Appendix C. Embedded Analysis and Reproducibility](#appendix-c-embedded-analysis-and-reproducibility)
 - [References](#references)
 
+
+<<Update Pending: Reorder sections. section 4 before section 3, section for describing methodology before section 4, for section 3, need clearer definitions and organization, we should also boast about w8-core chromium image>>
+
 ## Abstract
 
-Browser-agent evaluators judge executions through retained observations, which may omit facts required to assess a task. We study evidence availability as a distinct component of evaluation: given one execution and a fixed rubric, which required facts are preserved by one recorded representation but missing from another? We introduce `w8-domdiff-bench`, a browser recording and audit framework that pairs screenshots with compact DOM-derived text while holding the task, executed actions, final answer, and rubric fixed. Across 100 public-web tasks and 642 criteria, the saved model-assisted, internally reviewed audit identifies 151 screenshot-side evidence losses (23.52%) and 5 DOM-side losses (0.78%). Exact URL identity accounts for 117 screenshot losses, reflecting both the capture configuration and the audit’s identity rule. Counting only findings assigned a non-URL primary category, while retaining all criteria, leaves 34 screenshot losses (5.30%) and 5 DOM losses (0.78%). The corresponding difference is 4.52 percentage points, with a 95% task-bootstrap interval of 2.32–6.91. The remaining gaps involve exact values, coverage, control states, and visual relationships. These findings characterize asymmetric evidence availability in the recorded corpus; they do not measure verifier accuracy or agent success. The framework makes source omissions inspectable separately from errors in interpreting available evidence.
+Browser-agent evaluators judge executions through retained <<Maybe use recorded for continuity with the next line>> observations, which may omit facts required to assess a task. We study evidence availability as a distinct component of evaluation: given one execution and a fixed rubric, <<And 2 distinct representations>> which required facts are preserved by one recorded <<remove recorded>> representation but missing from another? We introduce `w8-domdiff-bench`, a browser recording and audit framework that pairs screenshots with compact DOM-derived text while holding the task, executed actions, final answer, and rubric fixed. Across 100 public-web tasks and 642 criteria, the saved model-assisted, internally reviewed audit identifies 151 screenshot-side evidence losses (23.52%) and 5 DOM-side losses (0.78%). Exact URL identity accounts for 117 screenshot losses, reflecting both the capture configuration and the audit’s identity rule <<remove URL loss mention from here, we can talk about publishing the new dataset instead>>. Counting only findings assigned a non-URL primary category, while retaining all criteria, leaves 34 screenshot losses (5.30%) and 5 DOM losses (0.78%). The corresponding difference is 4.52 percentage points, with a 95% task-bootstrap interval of 2.32–6.91. The remaining gaps involve exact values, coverage, control states, and visual relationships. These findings characterize asymmetric evidence availability in the recorded corpus; they do not measure verifier accuracy or agent success. The framework makes source omissions inspectable separately from errors in interpreting available evidence.
 
 ## 1. Introduction
 
@@ -33,7 +36,7 @@ Prior work provides realistic browser benchmarks, multimodal observation interfa
 
 We implement this comparison in `w8-domdiff-bench`. The recorder captures screenshots and DOM-derived observations from the same browser trajectory. Paired verifiers receive the same instruction, action history, final answer, frozen rubric, and scoring controls. A separate source audit examines the saved observations to identify criterion-required evidence present in one channel and missing from the other. This separation prevents a disagreement between verifier scores from being treated automatically as evidence loss.
 
-The study covers 100 public-web research and extraction tasks and 642 rubric criteria. The saved audit contains 151 screenshot-side losses and 5 DOM-side losses. Most screenshot losses concern exact URL identity, which is available in DOM text but absent from the captured browser content images. We therefore foreground the audit’s identity rule and report two distinct URL sensitivities. Under the primary sensitivity, which counts only findings assigned a non-URL category and retains the original denominator, 34 screenshot losses and 5 DOM losses remain. We also recompute uncertainty by resampling entire tasks, preserving the dependence among their criteria and the pairing between representations.
+The study covers 100 public-web research and extraction tasks and 642 rubric criteria. The saved audit contains 151 screenshot-side losses and 5 DOM-side losses. Most screenshot losses concern exact URL identity, which is available in DOM text but absent from the captured browser content images. We therefore foreground the audit’s identity rule and report two distinct URL sensitivities. Under the primary sensitivity, which counts only findings assigned a non-URL category and retains the original denominator <<highlight this as the main result>>, 34 screenshot losses and 5 DOM losses remain. We also recompute uncertainty by resampling entire tasks, preserving the dependence among their criteria and the pairing between representations. <<Not clear>>
 
 Our contributions are:
 
@@ -49,7 +52,7 @@ The study concerns fixed trajectories generated by a DOM-conditioned acting poli
 
 **Browser benchmarks and observation interfaces.**
 
-WebArena evaluates functional task completion in reproducible web environments ([Zhou et al. 2024](https://proceedings.iclr.cc/paper_files/paper/2024/hash/4410c0711e9154a7a2d26f9b3816d1ef-Abstract-Conference.html)). VisualWebArena extends evaluation to tasks requiring visual understanding ([Koh et al. 2024](https://aclanthology.org/2024.acl-long.50/)). BrowserGym standardizes observation and action interfaces across benchmarks and exposes screenshots, DOM and accessibility structures, tab metadata, and action feedback ([Le Sellier de Chezelles et al. 2025](https://openreview.net/forum?id=5298fKGmv3)). Our comparison builds on these interfaces by auditing the criterion-required evidence preserved by different records of the same execution.
+WebArena evaluates functional task completion in reproducible web environments ([Zhou et al. 2024](https://proceedings.iclr.cc/paper_files/paper/2024/hash/4410c0711e9154a7a2d26f9b3816d1ef-Abstract-Conference.html)). VisualWebArena extends evaluation to tasks requiring visual understanding ([Koh et al. 2024](https://aclanthology.org/2024.acl-long.50/)). BrowserGym standardizes observation and action interfaces across benchmarks and exposes screenshots, DOM and accessibility structures, tab metadata, and action feedback ([Le Sellier de Chezelles et al. 2025](https://openreview.net/forum?id=5298fKGmv3)). Our comparison builds on these interfaces by auditing the criterion-required evidence preserved by different records <<representations*>>of the same execution.
 
 **Trajectory verification.**
 
@@ -59,15 +62,17 @@ WebVoyager uses multimodal evaluation for tasks on live websites ([He et al. 202
 
 [Enomoto et al. (2026)](https://arxiv.org/abs/2605.29397) evaluate HTML reduction using the retention of Minimal Failure Sets, connecting preserved elements to agent performance. Our analysis instead concerns retrospective verification of a fixed trajectory against a rubric. It compares screenshot and structured-text records without treating evidence-loss rates as a validated proxy for downstream success. The resulting diagnostic identifies observation gaps before attributing evaluation disagreements to verifier reasoning.
 
+<<Shouldn't we talk about what dom-diff is more? And what the MUV is limited too?>>
+
 ## 3. Auditing Paired Evidence
 
 ### 3.1 Units, inputs, and the comparison boundary
 
 For task $t$, let the recorded trajectory contain $N_t$ executed actions and the corresponding initial and post-action browser states. The two retained evidence channels are the ordered screenshot sequence $E_{t,S}$ and the ordered DOM-text sequence $E_{t,D}$. The shared context $H_t$ contains the task instruction, executed action history, final answer, and frozen rubric. The paired verifiers receive $(H_t,E_{t,S})$ and $(H_t,E_{t,D})$, respectively.
 
-The source audit asks about evidence *within each retained channel*. This boundary is narrower than the verifier’s full input. In particular, the saved audit does not allow a URL in the shared action history to substitute for a missing URL in a representation when exact page identity is required. A channel-level loss can therefore coexist with relevant information elsewhere in $H_t$. It is not automatically evidence that a verifier lacks every possible basis for a correct decision.
+The source audit asks about evidence *within each retained channel* <<Need to define what source audit is more clearly>>. This boundary <<what boundary exactly?>> is narrower than the verifier’s full input. In particular, the saved audit does not allow a URL in the shared action history to substitute for a missing URL in a representation when exact page identity is required. A channel-level loss can therefore coexist with relevant information elsewhere in $H_t$. It is not automatically evidence that a verifier lacks every possible basis for a correct decision.
 
-Each rubric criterion $c$ has a set $\mathcal{I}_c$ of concrete required items. These can be values, page identities, control states, table entries, relationships, or evidence of coverage. Let $a_{c,i,m}\in\{0,1\}$ indicate whether item $i$ is available in the eligible ordered source states for representation $m\in\{S,D\}$, at the specificity required by the criterion. Availability is an annotation about the source record, distinct from a verifier’s awarded score.
+Each rubric criterion $c$ has a set $\mathcal{I}_c$ <<latex breaks>> of concrete required items. These can be values, page identities, control states, table entries, relationships, or evidence of coverage. Let $a_{c,i,m}\in\{0,1\}$ <<latex breaks>> indicate whether item $i$ is available in the eligible ordered source states for representation $m\in\{S,D\}$, <<S and D are not defined, they are implicit though>> at the specificity required by the criterion. Availability is an annotation about the source record, distinct from a verifier’s awarded score.
 
 ### 3.2 Directional evidence loss
 
@@ -82,7 +87,7 @@ a_{c,i,D}=0\ \land\ a_{c,i,S}=1\right].
 \end{aligned}
 ```
 
-For $M$ audited criteria, we report the count $L_m$, directional loss rate $p_m$, and paired rate difference $\Delta$:
+For $M$ audited criteria, we report the count $L_m$, directional loss rate $p_m$, and paired rate difference $\Delta$: <<Not clear>>
 
 ```math
 L_m=\sum_{c=1}^{M}\ell_{c,m},\qquad
@@ -91,36 +96,38 @@ p_m=100\frac{L_m}{M},\qquad
 ```
 
 The rates are percentages of audited criteria; $\Delta$ is measured in percentage points. Each criterion contributes at most one loss per representation, regardless of how many items are missing. A criterion may have losses in both directions when the channels omit different items.
-
+<<Not clear>>
 This metric detects *asymmetric gaps*. An item absent from both channels does not trigger either indicator. Consequently, a criterion with $(\ell_{c,S},\ell_{c,D})=(0,0)$ is not necessarily fully supported, and $1-p_m/100$ is not an estimate of the fraction of all required evidence preserved. The denominator counts criteria, not facts, pixels, tokens, or independent capture failures. One omitted item can affect several criteria.
+<<Add a line for how to tackle the evidence loss in both representations>>
 
 ### 3.3 Source review and category attribution
 
-The audit and adjudication stages receive the saved ordered screenshots and line-numbered DOM states, shared trajectory context, and both verifier outputs. Their source inputs extend beyond the five evidence items nominated per criterion by the verifier workflow. Source citations and explicit loss flags make a finding inspectable, although providing all saved states does not guarantee that the model successfully examines every relevant detail.
+The audit and adjudication stages receive the saved ordered screenshots and line-numbered DOM states, shared trajectory context, and both verifier outputs. Their source inputs extend beyond the five evidence items <<Need to define where this 5 is coming from>> nominated per criterion by the verifier workflow. Source citations <<Need to define source here>> and explicit loss flags make a finding inspectable, although providing all saved states does not guarantee that the model successfully examines every relevant detail. <<Not clear>>
 
 The saved findings were generated and adjudicated with `gpt-5.6-sol` and verified by internal WootzApp employees. This is model-assisted review with internal verification. We do not report independent agreement or blinded annotation. [Section 6](#6-discussion-and-limitations) considers the resulting limits on label validity, including possible anchoring on verifier outputs.
+<<Add actual example, for reference>>
 
-Each representation–criterion loss receives one primary category: exact text and values, URLs, control states, table entries, label–value links, or capture omissions. Categories describe the main missing item or relationship. They are not an exhaustive enumeration of every missing fact in a criterion. We reconstruct the published assignments from the pinned report’s criterion table and match them to the saved audit flags; we do not relabel findings.
+Each representation–criterion loss receives one primary category: exact text and values, URLs, control states, table entries, label–value links, or capture omissions. <<Move it before the previous paragraph>> Categories describe the main missing item or relationship. They are not an exhaustive enumeration of every missing fact in a criterion. We reconstruct the published assignments from the pinned report’s criterion table and match them to the saved audit flags; we do not relabel findings. <<Not clear>>
 
 ### 3.4 Sensitivity analyses and uncertainty
 
-We use three complementary restrictions. First, *primary-category filtering* removes losses attributed to URLs from each representation’s numerator while retaining every criterion in the cohort denominator. A criterion with a screenshot URL loss and a DOM control-state loss retains its DOM loss. This sensitivity does not enumerate secondary non-URL gaps inside URL-attributed findings.
+We use three complementary restrictions. First, *primary-category filtering* removes losses attributed to URLs from each representation’s numerator while retaining every criterion in the cohort denominator. A criterion with a screenshot URL loss and a DOM control-state loss retains its DOM loss <<This line is not adding much clarity>>. This sensitivity does not enumerate secondary non-URL gaps inside URL-attributed findings. 
 
 Second, *whole-criterion exclusion* removes every criterion with a primary URL loss on either side. Its denominator changes, and it may also remove a non-URL loss in the other representation. Because selection uses observed loss categories, this subset is descriptive; it is not the set of all criteria that do not require URLs. Neither restriction measures what would happen if URL metadata were added to screenshots.
 
-Third, we remove the 12 task IDs listed as access-blocked, together with all of their criteria, and repeat the main comparisons. We keep this restriction separate from the list of recorded execution failures.
+Third, we remove the 12 task IDs listed as access-blocked, together with all of their criteria, and repeat the main comparisons. We keep this restriction separate from the list of recorded execution failures. <<Need to define access-blocked tasks more clearly>>
 
-To account for dependence among criteria within a task, we bootstrap entire tasks with replacement. Each sampled task carries both representations, all its criteria, and their category assignments. We recompute the pooled criterion-weighted rates and $\Delta$ for each of 20,000 resamples and report the 2.5th and 97.5th percentiles. These intervals describe empirical variation over the saved task corpus, conditional on fixed labels. They do not account for annotation error, dependencies across tasks on the same website, or nonrandom task selection. [Appendix A](#appendix-a-reanalysis-of-the-saved-audit) specifies the reproducible calculation.
+To account for dependence among criteria within a task, we bootstrap entire tasks with replacement. Each sampled task carries both representations, all its criteria, and their category assignments. We recompute the pooled criterion-weighted rates and $\Delta$ for each of 20,000 resamples <<Where is this number coming from?>> and report the 2.5th and 97.5th percentiles. These intervals describe empirical variation over the saved task corpus <<Not clear>>, conditional on fixed labels. They do not account for annotation error <<What do we mean by annotation error?>>, dependencies across tasks on the same website, or nonrandom task selection. [Appendix A](#appendix-a-reanalysis-of-the-saved-audit) specifies the reproducible calculation.
 
 ## 4. Recording System and Study Corpus
 
 ### 4.1 Aligned visual and structured records
 
-WootzApp Browser, powered by the Chromium-based `w8-core` engine, records browser states through ChromiumRL and the Chrome DevTools Protocol. A Python harness validates proposed actions and executes accepted actions through `agent-browser` in the same tab. Each recorded state can contain a screenshot, a structured DOM snapshot, detailed readable text, compact model-facing text, and action-tool observations. Rejected proposals are logged separately and do not create executed-action states. An execution with $N$ actions normally produces $N+1$ states.
+WootzApp Browser, powered by the Chromium-based `w8-core` engine, records browser states through ChromiumRL and the Chrome DevTools Protocol. A Python harness validates proposed actions and executes accepted actions through `agent-browser` in the same tab. Each recorded state can contain a screenshot, a structured DOM snapshot, detailed readable text, compact model-facing text, and action-tool observations. Rejected proposals are logged separately and do not create executed-action states. An execution with $N$ actions normally produces $N+1$ states. <<Too many implementation names before explaining why these details matter; consider starting with the recording outputs and moving the software-stack details to an implementation paragraph>>
 
-The compact representation, DOM-diff Optimized, organizes a captured state into content, tables, media descriptions, controls, relationships, and scroll regions. Despite the historical name, the evaluated output describes each state directly rather than requiring a reader to reconstruct it from a separate difference file. Selection and grouping operate on the captured Chromium state, so structured JSON and rendered text refer to that capture rather than a subsequent read of the live page. The evaluated comparison does not ablate the individual engineering changes in this renderer.
+The compact representation, DOM-diff Optimized, organizes a captured state into content, tables, media descriptions, controls, relationships, and scroll regions. Despite the historical name, the evaluated output describes each state directly rather than requiring a reader to reconstruct it from a separate difference file. Selection and grouping operate on the captured Chromium state, so structured JSON and rendered text refer to that capture rather than a subsequent read of the live page. The evaluated comparison does not ablate the individual engineering changes in this renderer. <<Define DOM-diff Optimized in one plain-language sentence, and explain why the reader needs to know that it is not actually a diff>>
 
-Both channels have capture boundaries. The screenshot records page content without the browser address bar. The DOM channel includes page-identity metadata but remains subject to viewport filtering and capture limits; a detailed snapshot does not imply complete coverage of all offscreen content. Screenshot and DOM capture are sequential. Differences can therefore reflect crop, timing, or capture policy in addition to representational differences. We describe them as gaps in the *recorded evidence*, rather than intrinsic impossibilities of screenshots or DOM.
+Both channels have capture boundaries. The screenshot records page content without the browser address bar. The DOM channel includes page-identity metadata but remains subject to viewport filtering and capture limits; a detailed snapshot does not imply complete coverage of all offscreen content. Screenshot and DOM capture are sequential. Differences can therefore reflect crop, timing, or capture policy in addition to representational differences. We describe them as gaps in the *recorded evidence*, rather than intrinsic impossibilities of screenshots or DOM. <<This is important but dense; consider giving one concrete example of a capture-policy gap>>
 
 #### Figure 1. Paired recording and source audit.
 
@@ -138,28 +145,29 @@ flowchart TD
     SV -.-> A
     DV -.-> A
 ```
+<<This is incomplete, show what the source audit and adjudicator outputs>>
 
-The comparison holds the execution and rubric fixed. Shared context contains the instruction, executed actions, final answer, and frozen rubric. The audit receives both source channels and the verifier outputs; its endpoint is directional source-evidence loss. Dashed arrows carry context or verifier judgments, and solid arrows carry execution and source records.
+The comparison holds the execution and rubric fixed. Shared context contains the instruction, executed actions, final answer, and frozen rubric. The audit receives both source channels and the verifier outputs; its endpoint is directional source-evidence loss. Dashed arrows carry context or verifier judgments, and solid arrows carry execution and source records. <<Clarify whether the figure is a workflow, a data-flow diagram, or both; “endpoint” is abstract here>>
 
 ### 4.2 Trajectory generation and paired scoring
 
-The acting model, `gpt-5.2`, receives DOM text, executable `agent-browser` references, task memory, and recent action outcomes. It does not receive the screenshots retained for this comparison. Thus, pairing controls the executed trajectory but does not remove its dependence on a DOM-conditioned policy. A screenshot-conditioned policy could visit different states or make different scrolling and stopping decisions.
+The acting model, `gpt-5.2`, receives DOM text, executable `agent-browser` references, task memory, and recent action outcomes. It does not receive the screenshots retained for this comparison. Thus, pairing controls the executed trajectory but does not remove its dependence on a DOM-conditioned policy. A screenshot-conditioned policy could visit different states or make different scrolling and stopping decisions. <<Explain the practical implication: the study compares representations of this particular trajectory, not the performance of screenshot- and DOM-based agents>>
 
-Preflight validates task identity, action alignment, state order, artifacts, and rubric structure. Both verifiers receive the same frozen rubric, whose canonical hash and point denominator are recorded. The released generator takes the task instruction and initial URL context; it receives neither screenshots nor DOM states. This prevents direct conditioning on the compared observations while leaving the validity of the rubric requirements as a separate question.
+Preflight validates task identity, action alignment, state order, artifacts, and rubric structure. Both verifiers receive the same frozen rubric, whose canonical hash and point denominator are recorded. The released generator takes the task instruction and initial URL context; it receives neither screenshots nor DOM states. This prevents direct conditioning on the compared observations while leaving the validity of the rubric requirements as a separate question. <<“Released generator” appears abruptly; define what it generates and why this control is needed>>
 
-Both verifiers use the same models and scoring controls, with the evidence loader varying. The analysis reports source-audit labels rather than differences in verifier scores. [Appendix B](#appendix-b-operational-details-and-measurement-boundaries) describes the scoring conventions inherited from Universal Verifier.
+Both verifiers use the same models and scoring controls, with the evidence loader varying. The analysis reports source-audit labels rather than differences in verifier scores. [Appendix B](#appendix-b-operational-details-and-measurement-boundaries) describes the scoring conventions inherited from Universal Verifier. <<State the reason for not using verifier-score differences as the main outcome more explicitly>>
 
 ### 4.3 Corpus and provenance
 
 The released study contains one paired trajectory for each of 100 public-web research and extraction tasks, with 642 criteria in total ([WootzApp 2026a](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/111c2d229333b85bf7b205458766f8dce195b2e2)). Examples include retrieving release metadata, checking ranked lists, extracting product fields, and inspecting search filters. The saved normalized action histories contain 365 executed-action records: a median of one per task, with a range of zero to 48. Twelve tasks have no recorded action, and 49 have one. The tasks begin at 90 distinct hostnames and contain three to 12 criteria each. These summaries show substantial direct lookup activity; they do not establish broad long-horizon, transactional, authenticated, or visually intensive coverage.
 
-The statistical reanalysis uses all 100 audit files from a pinned dataset revision and the corresponding published category assignments. It adds no annotations. [Appendix A](#appendix-a-reanalysis-of-the-saved-audit) records the source versions, hash checks, and analysis procedure.
+The statistical reanalysis uses all 100 audit files from a pinned dataset revision and the corresponding published category assignments. It adds no annotations. [Appendix A](#appendix-a-reanalysis-of-the-saved-audit) records the source versions, hash checks, and analysis procedure. <<Say explicitly that this is a reanalysis of existing labels, not a new audit>>
 
 ## 5. Results
 
 ### 5.1 Directional gaps in the full corpus
 
-Table 1 reports the main rates and task-bootstrap differences. Across 642 criteria, screenshots have 151 losses (23.52%) and DOM text has 5 (0.78%). The paired difference is 22.74 percentage points, with a 95% task-bootstrap interval of 19.08–26.79.
+Table 1 reports the main rates and task-bootstrap differences. Across 642 criteria, screenshots have 151 losses (23.52%) and DOM text has 5 (0.78%). The paired difference is 22.74 percentage points, with a 95% task-bootstrap interval of 19.08–26.79. <<Add a plain-language interpretation of this result immediately after the statistic>>
 
 The marginal counts overlap. Table 2 shows 149 criteria with a screenshot-side loss only, 3 with a DOM-side loss only, and 2 with losses in both directions. In total, 154 distinct criteria across 91 tasks have a detected directional gap. The remaining 488 criteria have no detected directional loss.
 
@@ -221,11 +229,13 @@ Access blockers and execution failures are different annotations. The published 
 
 ## 6. Discussion and Limitations
 
-**Evaluation quality has an evidence component.**
+<<This section is thoughtful but dense; consider opening with a short paragraph that states the overall interpretation and separates findings from limitations>>
+
+**Evaluation quality has an evidence component.** <<Connect this claim explicitly to the measured source-loss rates>>
 
 The audit makes one source of evaluation uncertainty explicit: a required fact may be missing from the retained channel even when another channel records it. This suggests reporting evidence availability alongside verifier accuracy. The two measurements answer different questions, and a missing item need not change a verdict when other context suffices. Establishing that connection requires independently adjudicated correctness labels and a comparison of verdicts under alternative evidence inputs.
 
-**Metadata parity is an unresolved baseline.**
+**Metadata parity is an unresolved baseline.** <<Define “metadata parity” on first use—for example, whether both channels receive the same URL and tab metadata>>
 
 The largest observed difference concerns URLs. BrowserGym already exposes tab URLs separately from screenshots ([Le Sellier de Chezelles et al. 2025](https://openreview.net/forum?id=5298fKGmv3)), making screenshots augmented with the same identity metadata a natural comparator. The category sensitivities clarify the saved findings but cannot replace that intervention. The study also lacks comparisons with an ordinary accessibility tree, lightly filtered DOM, or combined screenshot and DOM evidence. It therefore does not isolate the incremental value of the optimized renderer over standard structured observations.
 
@@ -233,33 +243,43 @@ The largest observed difference concerns URLs. BrowserGym already exposes tab UR
 
 The results are conditional on one trajectory per task, a DOM-conditioned acting policy, the selected public-web tasks, and their generated rubrics. We analyze a fixed task set without a reported probability-sampling design for websites or tasks. The corpus is oriented toward research and extraction, so it cannot support a general claim about visually grounded, transactional, or authenticated workflows. Resampling tasks addresses one dependence structure within this corpus; it does not create population representativeness.
 
-**Recorded gaps do not isolate intrinsic modality limits.**
+**Recorded gaps do not isolate intrinsic modality limits.** <<Consider a plainer heading: “The results do not prove that one modality is inherently better”>>
 
 Sequential capture can introduce temporal mismatch. Viewport selection, screenshot resolution, DOM grouping, and visibility filtering can also change what is retained. The present study does not separate those mechanisms experimentally. Similarly, paired losses cannot detect evidence absent from both records. A richer independent source, such as an instrumented replay or expert-reviewed environment state, would be needed to estimate absolute evidence coverage.
 
-**Annotation validity remains a separate requirement.**
+**Annotation validity remains a separate requirement.** <<Clarify whether this refers to source-audit labels, verifier labels, or both>>
 
 Internal verification makes model-generated findings inspectable, but this study does not report the number of human annotators, independent agreement, or human review coverage of no-loss decisions. The audit is unblinded to verifier outputs, which may influence source review. The primary-category scheme also compresses potentially multiple omissions into one label. Source-file hash checks establish provenance, and bootstrap intervals describe task-resampling variation; neither validates the availability annotations themselves.
 
-**Reproduction has distinct levels.**
+**Reproduction has distinct levels.** <<Distinguish recomputing the published statistics from repeating data collection and model judgments>>
 
 The saved-label statistics can be recomputed directly from this Markdown file without network access or model calls. An optional source-verification mode reconstructs the embedded analysis tables from the pinned public audit files and technical report. Repeating the verifier and audit requires model access and can produce different judgments. Re-recording a live website introduces additional drift. Finally, the public repository does not provide the conversion command from raw recordings to prepared pairs, and its internal category registry and report exporter are not distributed. These gaps limit reproduction of the complete pipeline, even though the prepared evidence and published findings remain inspectable.
 
 ## 7. Conclusion
 
+<<Restate the main quantitative finding in the first sentence, then give the broader methodological contribution>>
+
 Browser-agent evaluation depends on what its records preserve. Using aligned screenshots and DOM text from 100 task trajectories, we audit 642 criteria and identify asymmetric source gaps in both channels. URL identity accounts for most screenshot-side findings; a smaller contrast remains among findings assigned non-URL categories. Task-bootstrap reanalysis preserves the pairing and within-task dependence while making the limits of statistical interpretation explicit. The resulting contribution is a source-aware diagnostic: it identifies missing recorded evidence separately from verifier interpretation and task outcome. This separation provides a concrete basis for testing how observation interfaces affect evaluation quality.
 
 ## Data and Code Availability
+
+<<Clarify which artifacts are sufficient for statistical reanalysis and which are needed to reproduce the full browser-and-model pipeline>>
 
 The browser recorder, prepared-pair evaluator, and technical documentation are available in the [project repository](https://github.com/wootzapp/w8-domdiff-bench). Task definitions, recordings, prepared evidence, and saved audits are available in the [dataset release](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks). This `paper.md` is self-contained for the numerical reanalysis: [Appendix C](#appendix-c-embedded-analysis-and-reproducibility) embeds the complete analysis program, all 642 criterion records, 100 task summaries, reference numerical results, and the source manifest. No companion files or folders are required to recompute the saved-label statistics. The original browser recordings and full audit JSONs remain in the public release. Pinned locations and hashes for the audit JSONs and technical report are included for optional source verification.
 
 ## Responsible Use
 
+<<This is appropriately cautious; consider stating who should act on these limitations—benchmark designers, verifier developers, or deployers>>
+
 The corpus concerns public-web research and extraction, with task-specific constraints recorded in its definitions. Browser traces can nevertheless contain identifying page content or account state in other applications. Extensions should minimize retained sensitive information and review redistribution permissions. Evidence availability alone is insufficient to justify automated high-stakes decisions or reward labels: a retained fact can still be interpreted incorrectly, and a missing fact can remain undetected by a paired audit.
 
 ## Appendix A. Reanalysis of the Saved Audit
 
+<<Add a one-sentence overview explaining that this appendix defines exactly how the published tables and intervals are recomputed>>
+
 **Pinned inputs.**
+
+<<This subsection is precise but very implementation-heavy; explain first why pinning versions and hashes matters for the reader>>
 
 The repository snapshot is commit `bc2ebf509ce786d1622bd41c854c7b27a4cefbdc`. The dataset revision is `111c2d229333b85bf7b205458766f8dce195b2e2`. The analysis uses one `evidence_audit.json` per task from the task-specific saved-run directories listed in the [embedded source manifest](#c6-source-manifest) at the pinned dataset revision. Seventy-eight files use run directory `20261021T040737Z`; the remaining 22 use other recorded run directories. The manifest records the authoritative path, pinned URL, file size, and SHA-256 for every audit and the technical report ([WootzApp 2026b](https://github.com/wootzapp/w8-domdiff-bench/blob/bc2ebf509ce786d1622bd41c854c7b27a4cefbdc/docs/technical-report.md)). All 100 audit files were checked against these pinned sources when preparing this reanalysis. The default embedded calculation uses the extracted rows; the optional source-verification mode fetches the original files and repeats the hash and row-reconstruction checks.
 
@@ -269,9 +289,13 @@ Action counts are the lengths of the saved `shared_trajectory.actions` arrays. O
 
 **Label extraction.**
 
+<<Define “flattened flags” and “primary categories” before describing the consistency checks>>
+
 For each criterion, we extract the confirmed screenshot and DOM loss flags from adjudication and verify that they agree with the corresponding flattened flags. The 642 criteria reconcile with the per-task totals. Primary categories are read from the pinned report’s criterion-level table, keyed by task and criterion index, with separate assignments for both representations where necessary. The extraction checks that every positive loss has a category and that the 154 distinct affected criteria reconcile with the saved flags. This reconstructs the published categorization rather than creating new annotations.
 
 **Resampling.**
+
+<<The formula is correct but hard to parse without a small numerical example; consider adding one or explaining the numerator and denominator in words first>>
 
 For task $t$, let $m_t$ be its number of audited criteria and let $u_{t,S}$ and $u_{t,D}$ be its loss counts under the selected category rule. For each bootstrap draw $b$, sample $T$ task indices $I_{b,1},\ldots,I_{b,T}$ uniformly with replacement from the $T$ tasks in the cohort. Then compute
 
@@ -295,9 +319,13 @@ Removing every criterion with a primary URL loss produces 525 criteria with 33 s
 
 **Reproduction within this file.**
 
+<<State the expected reader-facing result of a successful run, such as the validation flag or the main rates being reproduced>>
+
 The [embedded analysis program](#c2-analysis-program) reads the data blocks in this same `paper.md`, validates the criterion and task tables, and recomputes the counts, corpus summaries, sensitivity analyses, and bootstrap intervals. Its optional `--verify-sources` mode fetches the revision-pinned audit files and technical report into memory, checks their hashes, reconstructs the criterion and task rows, and compares them with the embedded tables. Both modes write their results to standard output and require no supplementary files or output directories. Neither mode performs browser execution, annotation, or model calls.
 
 ## Appendix B. Operational Details and Measurement Boundaries
+
+<<Add a short roadmap: what is operationally defined here, and which questions remain outside the measurement boundary?>>
 
 #### Table 4. Model and human roles in the reported workflow.
 
@@ -330,6 +358,8 @@ The reported current mean model-facing observation size is 5.87 KiB. A separate 
 Prepared-pair evaluation requires 64-bit Linux or WSL 2, Python 3.10 or newer, Git, network access, and an OpenAI API key for model execution. Recording additionally requires Docker Engine with Compose and Buildx, `rsync`, and a Chromium build workspace. The command `./scripts/run-comparison --task task_01` validates a prepared pair without model calls. Adding `--execute` runs the paired evaluation and audit; `--all --execute` runs the prepared dataset. Fresh judgments and changing websites can produce results different from the saved audit analyzed here.
 
 ## Appendix C. Embedded Analysis and Reproducibility
+
+<<Explain why the full program and data are embedded in the paper rather than only linked externally>>
 
 This appendix contains the complete numerical reanalysis in one file. The code and data are included in expandable sections so that the main paper remains readable on GitHub. The embedded payloads are plain text; their filenames are identifiers inside this Markdown document, not companion files that must be uploaded or downloaded separately.
 
