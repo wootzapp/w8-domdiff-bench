@@ -62,9 +62,9 @@ These systems establish tasks and interfaces for browser-agent evaluation. Our q
 
 ### 2.2 Trajectory Verification
 
-WebVoyager uses multimodal evaluation for live-web tasks ([He et al. 2024](https://doi.org/10.18653/v1/2024.acl-long.371)). WebJudge selects relevant intermediate screenshots to assess completion ([Xue et al. 2025](https://openreview.net/forum?id=6jZi4HSs6o)). Universal Verifier studies rubric construction, process and outcome judgments, environmental blockers, and context management over screenshot trajectories ([Rosset et al. 2026](https://doi.org/10.48550/arXiv.2604.06240)). Human review of WebArena-Lite also identifies discrepancies between automatic outcomes and observed completion ([Gan et al. 2026](https://doi.org/10.48550/arXiv.2610.01491)).
+WebVoyager uses multimodal evaluation for live-web tasks ([He et al. 2024](https://doi.org/10.18653/v1/2024.acl-long.371)). WebJudge selects relevant intermediate screenshots to assess completion ([Xue et al. 2025](https://openreview.net/forum?id=6jZi4HSs6o)). Universal Verifier studies rubric construction, process and outcome judgments, environmental blockers, and context management over screenshot trajectories ([Rosset et al. 2026](#ref-rosset-2026)). Human review of WebArena-Lite also identifies discrepancies between automatic outcomes and observed completion ([Gan et al. 2026](https://doi.org/10.48550/arXiv.2610.01491)).
 
-Our screenshot verifier follows [Universal Verifier's rubric-centered design](https://doi.org/10.48550/arXiv.2604.06240). Its judgments depend on the evidence supplied to it. A score disagreement can reflect either missing observations or differences in interpreting available observations. We therefore add a source audit that explicitly checks availability in both saved representations. This separates the measurement of missing evidence from the scoring workflow.
+Our screenshot verifier follows Universal Verifier's rubric-centered design ([Rosset et al. 2026](#ref-rosset-2026)). Its judgments depend on the evidence supplied to it. A score disagreement can reflect either missing observations or differences in interpreting available observations. We therefore add a source audit that explicitly checks availability in both saved representations. This separates the measurement of missing evidence from the scoring workflow.
 
 ### 2.3 Observation Reduction and Evidence Retention
 
@@ -347,6 +347,8 @@ He, Hongliang, Wenlin Yao, Kaixin Ma, Wenhao Yu, Yong Dai, Hongming Zhang, Zhenz
 Koh, Jing Yu, Robert Lo, Lawrence Jang, Vikram Duvvur, Ming Lim, Po-Yu Huang, Graham Neubig, Shuyan Zhou, Russ Salakhutdinov, and Daniel Fried. 2024. [VisualWebArena: Evaluating Multimodal Agents on Realistic Visual Web Tasks.](https://doi.org/10.18653/v1/2024.acl-long.50) In *Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)*, 881–905. Bangkok, Thailand: Association for Computational Linguistics.
 
 Le Sellier de Chezelles, Thibault, Maxime Gasse, Alexandre Lacoste, Massimo Caccia, Alexandre Drouin, Léo Boisvert, Megh Thakkar, et al. 2025. [The BrowserGym Ecosystem for Web Agent Research.](https://openreview.net/forum?id=5298fKGmv3) *Transactions on Machine Learning Research*.
+
+<a id="ref-rosset-2026"></a>
 
 Rosset, Corby, Pratyusha Sharma, Andrew Zhao, Miguel Gonzalez-Fernandez, and Ahmed Awadallah. 2026. [The Art of Building Verifiers for Computer Use Agents.](https://doi.org/10.48550/arXiv.2604.06240) arXiv preprint arXiv:2604.06240.
 
