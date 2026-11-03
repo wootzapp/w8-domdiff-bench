@@ -360,24 +360,24 @@ Zhou, Shuyan, Frank F. Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek Sridhar, Xian
 
 ## Appendix A. Formal Definitions and Equations
 
-Let $S$ denote screenshots and $D$ denote DOM text. For each criterion $c$, let $\mathcal{I}_c$ be its set of required evidence items. For an item $i \in \mathcal{I}_c$ and a representation $m \in \{S,D\}$, the availability indicator $a_{c,i,m} \in \{0,1\}$ is one when the item is available at the specificity required by $c$, and zero otherwise. Let $\mathbf{1}\{\cdot\}$ denote an indicator that is one when its condition holds and zero otherwise. The directional loss indicators are:
+Let $`S`$ denote screenshots and $`D`$ denote DOM text. For each criterion $`c`$, let $`\mathcal{I}_c`$ be its set of required evidence items. For an item $`i \in \mathcal{I}_c`$ and a representation $`m \in \{S,D\}`$, the availability indicator $`a_{c,i,m} \in \{0,1\}`$ is one when the item is available at the specificity required by $`c`$, and zero otherwise. Let $`\mathbf{1}\{\cdot\}`$ denote an indicator that is one when its condition holds and zero otherwise. The directional loss indicators are:
 
-$$
+```math
 \begin{aligned}
-\ell_{c,S} &= \mathbf{1}\left\{\exists i \in \mathcal{I}_c : a_{c,i,S}=0 \land a_{c,i,D}=1\right\},
+\ell_{c,S} &= \mathbf{1}\left\{\exists i \in \mathcal{I}_c : a_{c,i,S}=0 \land a_{c,i,D}=1\right\}, \\
 \ell_{c,D} &= \mathbf{1}\left\{\exists i \in \mathcal{I}_c : a_{c,i,D}=0 \land a_{c,i,S}=1\right\}.
 \end{aligned}
-$$
+```
 
-For $M$ audited criteria, $L_m$ is the number with a loss in representation $m$, $p_m$ is the percentage with a loss, and $\Delta$ is the screenshot-minus-DOM difference in percentage points:
+For $`M`$ audited criteria, $`L_m`$ is the number with a loss in representation $`m`$, $`p_m`$ is the percentage with a loss, and $`\Delta`$ is the screenshot-minus-DOM difference in percentage points:
 
-$$
+```math
 L_m=\sum_{c=1}^{M}\ell_{c,m},\qquad
 p_m=100\,\frac{L_m}{M},\qquad
 \Delta=p_S-p_D=100\,\frac{L_S-L_D}{M}.
-$$
+```
 
-For the non-URL analysis, a loss flag contributes only if its assigned primary category is not URLs. $M$ remains unchanged.
+For the non-URL analysis, a loss flag contributes only if its assigned primary category is not URLs. $`M`$ remains unchanged.
 
 These indicators count affected criteria, rather than the number of missing items. Neither zero loss nor one minus the loss rate measures absolute evidence completeness.
 
@@ -387,7 +387,7 @@ These indicators count affected criteria, rather than the number of missing item
 
 WootzApp Browser uses the Chromium-based `w8-core` engine, with browser-state capture through ChromiumRL and the Chrome DevTools Protocol. A Python harness validates proposed actions and executes accepted actions through `agent-browser` in the same tab. A state can contain a screenshot, structured DOM snapshot, detailed readable text, compact model-facing text, and action-tool observations.
 
-Rejected proposals are logged separately and do not create executed-action states. An execution with $N$ actions normally has $N+1$ states, including its initial state. Raw folders start at `steps/step_001/`; prepared evidence begins with `screenshot0.png` and `dom_model0.txt`. Chromium node IDs and executable `agent-browser` references belong to different identifier systems. Raw recordings cannot be supplied directly to the prepared-pair comparison command.
+Rejected proposals are logged separately and do not create executed-action states. An execution with $`N`$ actions normally has $`N+1`$ states, including its initial state. Raw folders start at `steps/step_001/`; prepared evidence begins with `screenshot0.png` and `dom_model0.txt`. Chromium node IDs and executable `agent-browser` references belong to different identifier systems. Raw recordings cannot be supplied directly to the prepared-pair comparison command.
 
 ### B.2 Models and Scoring Controls
 
@@ -403,16 +403,16 @@ Rejected proposals are logged separately and do not create executed-action state
 
 The paired configuration fixes five evidence items per criterion, a screenshot keypoint threshold of three, a minimum relevance threshold of zero, and one voting instance. Run manifests record the settings. Source auditing subsequently receives the complete saved ordered channels.
 
-For awarded criterion points $s_j$ and maxima $q_j$, the normalized process score $r$ is:
+For awarded criterion points $`s_j`$ and maxima $`q_j`$, the normalized process score $`r`$ is:
 
-$$
+```math
 r=\begin{cases}
 \displaystyle\frac{\sum_j s_j}{\sum_j q_j}, & \text{if }\sum_j q_j>0, \\
 0, & \text{otherwise}.
 \end{cases}
-$$
+```
 
-Process success requires $r \geq 0.8$. The paired workflow's binary score follows the outcome judge's `output_success` decision. Standalone runners also support process-only and combined process/outcome rules. Strict full-score success requires every available point with a positive maximum. None of these scoring rules defines the evidence-loss rate analyzed in this paper.
+Process success requires $`r \geq 0.8`$. The paired workflow's binary score follows the outcome judge's `output_success` decision. Standalone runners also support process-only and combined process/outcome rules. Strict full-score success requires every available point with a positive maximum. None of these scoring rules defines the evidence-loss rate analyzed in this paper.
 
 ### B.3 Representation Sizes
 
@@ -446,13 +446,13 @@ This appendix retains the original bootstrap calculation to reproduce the archiv
 
 ### D.1 Whole-Task Resampling
 
-For each task $t$, let $m_t$ be its criterion count and $u_{t,S}$ and $u_{t,D}$ its loss counts under the selected category rule. Let $T$ be the number of tasks in the cohort. For each bootstrap resample $b$, draw task indices $I_{b,1},\ldots,I_{b,T}$ independently and uniformly with replacement from $\{1,\ldots,T\}$. Add the selected tasks' screenshot and DOM counts, take their difference, and divide by their total criterion count:
+For each task $`t`$, let $`m_t`$ be its criterion count and $`u_{t,S}`$ and $`u_{t,D}`$ its loss counts under the selected category rule. Let $`T`$ be the number of tasks in the cohort. For each bootstrap resample $`b`$, draw task indices $`I_{b,1},\ldots,I_{b,T}`$ independently and uniformly with replacement from $`\{1,\ldots,T\}`$. Add the selected tasks' screenshot and DOM counts, take their difference, and divide by their total criterion count:
 
-$$
+```math
 \Delta^{(b)}=100\,
 \frac{\sum_{k=1}^{T}\left(u_{I_{b,k},S}-u_{I_{b,k},D}\right)}
 {\sum_{k=1}^{T}m_{I_{b,k}}}.
-$$
+```
 
 Tasks are ordered numerically. The program uses NumPy's `default_rng` with seed `20261028`, 20,000 resamples, and linearly interpolated 2.5th and 97.5th percentiles. It resets the generator for each cohort, using the same draws for all-category and non-URL calculations within that cohort. The recorded calculation used NumPy 2.3.5.
 
@@ -493,7 +493,7 @@ exec(compile(matches[0], "<README.md embedded analysis>", "exec"),
 PY
 ```
 
-A successful run prints JSON with `verification.offline_recomputation_matches_embedded_results` set to `true`. It validates the embedded rows and recomputes the rates, paired outcomes, category totals, corpus summaries, cohort restrictions, and bootstrap intervals. Integer comparisons are exact; floating-point comparisons use relative tolerance $10^{-12}$ and absolute tolerance $10^{-10}$.
+A successful run prints JSON with `verification.offline_recomputation_matches_embedded_results` set to `true`. It validates the embedded rows and recomputes the rates, paired outcomes, category totals, corpus summaries, cohort restrictions, and bootstrap intervals. Integer comparisons are exact; floating-point comparisons use relative tolerance $`10^{-12}`$ and absolute tolerance $`10^{-10}`$.
 
 ### D.4 Optional Source Verification
 
