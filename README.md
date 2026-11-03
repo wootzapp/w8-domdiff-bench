@@ -364,7 +364,7 @@ Let $S$ denote screenshots and $D$ denote DOM text. For each criterion $c$, let 
 
 $$
 \begin{aligned}
-\ell_{c,S} &= \mathbf{1}\left\{\exists i \in \mathcal{I}_c : a_{c,i,S}=0 \land a_{c,i,D}=1\right\}, \\
+\ell_{c,S} &= \mathbf{1}\left\{\exists i \in \mathcal{I}_c : a_{c,i,S}=0 \land a_{c,i,D}=1\right\},
 \ell_{c,D} &= \mathbf{1}\left\{\exists i \in \mathcal{I}_c : a_{c,i,D}=0 \land a_{c,i,S}=1\right\}.
 \end{aligned}
 $$
