@@ -10,7 +10,7 @@ inspect what the agent observed and what happened during a run.
 The benchmark's acting agent uses `gpt-5.6` for browser-action generation.
 
 These recordings provide additional data for inspecting the collection
-process. The verifier audit uses the prepared trajectory pairs in
+process. Prepared trajectory pairs are grouped by the same run name. For example, run_1 uses
 [`trajectories/run_1/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/run_1/data-ss) and
 [`trajectories/run_1/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/run_1/data-dom).
 Use the recordings when you want more detail about a recorded run, its

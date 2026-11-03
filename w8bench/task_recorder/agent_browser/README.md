@@ -115,5 +115,3 @@ Two exclusions are deliberate and should stay:
   exactly one active page tab and fails loudly otherwise. Not observed in any
   recording to date. Fixed upstream in 0.34.0 via `--pin-tab`; upgrading would
   break comparability with existing recordings.
-
-Adjust the limitations section as items resolve — that's the part that goes stale.

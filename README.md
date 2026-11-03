@@ -9,9 +9,9 @@ state. The recorder, paired verifiers, and evidence audit make it possible
 to inspect what a browser agent observed and which required information each
 representation preserved.
 
-The collection contains **100 recorded browser tasks** and **100 evaluated task pairs**. Validated evidence audits cover **100 tasks and 640 criteria**, identifying **50 screenshot losses (7.81%)** and **14 DOM losses (2.19%)**. These measurements describe evidence availability, not task success or acting-agent improvement.
+The collection contains **100 browser tasks**, **300 retained recordings** and **296 evaluated task pairs**. The matched results average independent recorded runs over **97 common tasks and 619 criteria per run**, identifying **61.00 screenshot losses (9.85%)** and **13.00 DOM losses (2.10%)** on average. These measurements describe evidence availability, not task success or acting-agent improvement.
 
-All 100 recorded tasks have usable, aligned evidence and validated audits covering 640 criteria. Successful, failed and errored recordings with usable evidence are included; no tasks are excluded.
+The matched comparison uses **97 tasks and 619 criteria per run**. Successful, failed and errored recordings with usable evidence are included. Recordings with no captured state remain unscored, not zero-loss audits.
 
 The [technical report](docs/technical-report.md) contains the full method and
 all criterion-level findings. This README keeps the headline results,
@@ -83,7 +83,7 @@ describes each captured state directly.
 | Browser-native processing | Re-reading the live page could differ from the snapshot that had been recorded. | Moved model-DOM selection and grouping into Chromium so structured JSON and rendered text describe the same captured state. |
 | Preservation refinements | Nested text, context, author labels, control state, and long content could be omitted. | Refined selection and removed the former subtree-text limit while retaining viewport-based capture. |
 
-The model-facing `dom_model.txt` observations average **5.11 KiB**. Across the same 883 recorded states, readable `dom_full.txt` averages **47.38 KiB** and structured `dom.json` averages **208.15 KiB**. A KiB is 1,024 bytes; a decimal kB is 1,000 bytes. These size measurements are descriptive and separate from evidence-loss rates and token usage.
+The model-facing `dom_model.txt` observations average **5.25 KiB**. Across the same 2,592 recorded states, readable `dom_full.txt` averages **47.26 KiB** and structured `dom.json` averages **206.45 KiB**. A KiB is 1,024 bytes; a decimal kB is 1,000 bytes. These are file-weighted sizes of recordings, separate from evidence-loss rates and token usage.
 
 ### 3.2 From Agent Actions to Recorded Evidence
 
@@ -110,53 +110,74 @@ visible area, giving DOM a coverage advantage in some cases.
 
 ## 4 Evaluation results
 
-A source-evidence loss means a required item is absent from one representation together with its shared history and present in the other. Inventory uses `gpt-5.6-sol`; final adjudication uses `gemini-3.1-pro-preview`. The counts measure evidence availability, not task success, answer correctness or acting-agent improvement.
+A source-evidence loss means a required item is absent from one representation together with the shared task inputs and action history, and present in the other. Inventory uses `gpt-5.6-sol`; final adjudication uses `gemini-3.1-pro-preview`. The counts measure evidence availability, not task success, answer correctness or acting-agent improvement.
 
-All 100 recorded tasks have usable, aligned evidence and validated audits covering 640 criteria. Successful, failed and errored recordings with usable evidence are included; no tasks are excluded.
+The matched comparison uses **97 tasks and 619 criteria per run**. Successful, failed and errored recordings with usable evidence are included. Recordings with no captured state remain unscored, not zero-loss audits.
 
 <!-- recorded-runs:start -->
 
-| Analysis | Tasks | Audited criteria | Screenshot losses | DOM losses |
+| Run | Criteria | Screenshot losses | DOM losses | Screenshot misses | DOM misses |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| run_1 | 619 | 51 | 16 | 56 | 69 |
+| run_2 | 619 | 62 | 15 | 50 | 57 |
+| run_3 | 619 | 70 | 8 | 58 | 64 |
+| Mean | 619 | 61.00 (9.85%) | 13.00 (2.10%) | 54.67 | 63.33 |
+
+| Measure | Estimate | 95% interval |
+| --- | ---: | ---: |
+| Screenshot loss rate | 9.85% | 6.59% to 13.48% |
+| DOM loss rate | 2.10% | 0.88% to 3.62% |
+| Screenshot minus DOM rate | 7.75 pp | 4.07 to 11.71 pp |
+| Relative reduction | 78.69% | 57.25% to 91.62% |
+
+The matched comparison uses 97 of 100 catalog tasks in every run.
+Intervals resample tasks, then recorded runs within each task, keeping both representations together.
+
+Recordings without captured states remain recorded execution errors, not zero-loss audits.
+Tasks outside the common panel: task_80, task_83, task_94.
+
+| Run | Available audited tasks | Available criteria | Screenshot losses | DOM losses |
 | --- | ---: | ---: | ---: | ---: |
-| All source-evidence loss categories | 100 | 640 | **50 (7.81%)** | **14 (2.19%)** |
-| Listed access-blocked task IDs excluded | 91 | 593 | **50 (8.43%)** | **12 (2.02%)** |
+| run_1 | 100 | 640 | 51 | 16 |
+| run_2 | 99 | 633 | 62 | 15 |
+| run_3 | 97 | 619 | 70 | 8 |
 
 <!-- recorded-runs:end -->
 
-Excluding the nine cited blocker-task IDs removes their 47 criteria. The [report defines that subset](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks).
+The exploratory view excludes the same nine cited blocker-task IDs, leaving 88 common tasks and 572 criteria per run. The [report defines the subset](docs/technical-report.md#analysis-excluding-the-listed-access-blocked-tasks).
 
-![Screenshot and DOM evidence-loss rates for all audited tasks and the subset excluding listed blocked-task IDs.](docs/assets/evaluations/evidence-loss-rates.png)
+![Screenshot and DOM loss rates by run on the matched panel and the exploratory subset.](docs/assets/evaluations/evidence-loss-rates.png)
 
-The 95% intervals resample whole tasks, preserving correlation among criteria within a task. They assume independent tasks and do not measure annotation error. Counts, intervals and paired outcomes are in the [technical report](docs/technical-report.md#paired-comparison).
+The 95% intervals resample tasks, then runs within each task, preserving paired criteria. They assume independent tasks and do not measure annotation error. Counts, intervals and paired outcomes are in the [technical report](docs/technical-report.md#paired-comparison).
 
 ### What the findings show
 
-The audits identify **63 affected criteria across 34 tasks**. One criterion has losses in both representations, so the 50 screenshot and 14 DOM losses overlap. Each affected representation receives one primary [category](docs/evidence-categories.md), with its assignment and rationale in [evidence_categories.tsv](results/evidence_categories.tsv).
+The audits identify **219 affected run/criterion observations**, covering **118 distinct criterion positions across 49 tasks**. A criterion can lose different items in both representations. Each representation/criterion loss receives one primary category; averaged counts can be fractional. Rows are rounded independently; totals use unrounded counts.
 
 | Category | Screenshots | DOM |
 |---|---:|---:|
-| Exact text and values | 19 | 3 |
-| URLs | 7 | 0 |
-| Control states | 0 | 2 |
-| Table entries | 15 | 0 |
-| Label–value links | 3 | 7 |
-| Capture omissions | 6 | 2 |
-| **All categories** | **50** | **14** |
+| Exact text and values | 25.00 | 5.67 |
+| URLs | 0.33 | 1.00 |
+| Control states | 0.67 | 0.67 |
+| Table entries | 19.00 | 0.00 |
+| Label–value links | 3.33 | 4.00 |
+| Capture omissions | 12.67 | 1.67 |
+| **All categories** | **61.00** | **13.00** |
 
 Examples show the practical differences:
 
 - **Exact values:** [task_08 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_08/batch_01/evidence_audit.json) preserves an absolute publication date in DOM; screenshots show a relative age.
 - **Capture coverage:** [task_19 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_19/batch_01/evidence_audit.json) preserves three complete highlight rows in DOM; screenshots stop at the heading.
 - **Visual form:** [task_37 C4](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_37/batch_01/evidence_audit.json) preserves availability checkmarks in DOM but the displayed release-label capitalization in screenshots.
-- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_02/batch_01/evidence_audit.json) and missing World radio selection in [task_44 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_44/batch_01/evidence_audit.json).
+- **Relationships and controls:** DOM losses include a disconnected publisher label/value in [task_02 C2](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_02/batch_01/evidence_audit.json) and the missing checked state of Accounts in [task_48 C0](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_48/batch_01/evidence_audit.json).
 
 The detailed findings and evidence links are in the [report’s six-column criterion table](docs/technical-report.md#source-evidence-gaps-by-task-and-criterion). Category annotations summarize the saved findings; they do not change verifier scores or audit decisions.
 
 ![Evidence losses across all six categories for all completed audits and the subset excluding cited blocker-task IDs.](docs/assets/evaluations/evidence-loss-categories.png)
 
-Each bar counts criterion-level losses in one representation. The panels retain all 640 and 593 criteria, respectively. PNG and SVG versions are in [evaluation figures](docs/assets/evaluations/).
+Bars show mean criterion-level losses. The main and exploratory views retain 619 and 572 criteria per run, respectively. PNG and SVG versions are in [evaluation figures](docs/assets/evaluations/).
 
-Website blockers, execution errors and source-evidence gaps are different events. The report lists nine cited blocker-task IDs and separately records 5 execution errors in the 100 recordings. Some blocked tasks completed; the sets overlap and must not be added into a single failure rate.
+Website blockers, execution errors and source-evidence gaps are different events. The report lists nine cited blocker-task IDs and separately reports recording outcomes by run. Some blocked tasks completed; the sets overlap and must not be added into a single failure rate.
 
 <a id="mathematical-definitions"></a>
 
@@ -165,16 +186,20 @@ Website blockers, execution errors and source-evidence gaps are different events
 ### Rubric scores and task success
 
 For task $`t`$, let $`s_{t,j}`$ be the points awarded to criterion $`j`$ after
-scoring and rescoring, and $`p_{t,j}`$ its maximum points. For each
-representation separately, the total and normalized score are
+scoring and rescoring, and $`p_{t,j}`$ its maximum points. Let $`A_t`$ contain
+the criteria that the verifier marks applicable. For each representation
+separately, the total and normalized score are
 
 ```math
-S_t=\sum_j s_{t,j},\qquad S_t^{\max}=\sum_j p_{t,j},\qquad
+S_t=\sum_{j\in A_t} s_{t,j},\qquad S_t^{\max}=\sum_{j\in A_t} p_{t,j},\qquad
 r_t=\begin{cases}
 S_t/S_t^{\max} & S_t^{\max}>0,\\
 0 & S_t^{\max}=0.
 \end{cases}
 ```
+
+Inapplicable criteria contribute neither earned nor maximum points. This
+scoring rule does not remove criteria from the evidence-loss denominator.
 
 The indicator function equals 1 when its condition holds and 0 otherwise.
 The process flag $`P_t`$ applies a rubric threshold $`\tau`$; the outcome flag
@@ -205,7 +230,7 @@ choices. Task success and source-evidence loss are separate measurements.
 Let $`\mathcal{C}`$ contain the audited criteria, $`M=|\mathcal{C}|`$, and
 $`\mathcal{I}_c`$ contain the concrete required items reviewed for criterion
 $`c`$. Let $`a_{c,i,S}`$ and $`a_{c,i,D}`$ be binary indicators of item $`i`$'s
-availability in the eligible ordered screenshot ($`S`$) and DOM ($`D`$) states together with their shared formatted action history.
+availability in the eligible ordered screenshot ($`S`$) and DOM ($`D`$) states together with their shared task inputs and formatted action history.
 Using the same requirements and review scope for both representations:
 
 ```math
@@ -229,32 +254,21 @@ L_m=\sum_{c\in\mathcal{C}}\ell_{c,m},\qquad
 \mathrm{ELR}_m=100\frac{L_m}{M},\qquad m\in\{S,D\}.
 ```
 
-For the saved findings, $`M=640`$, $`L_S=50`$, and $`L_D=14`$, giving **7.81%** and **2.19%**. One overlapping criterion yields $`50+14-1=63`$ distinct affected criteria. With a shared denominator and $`L_S>0`$, the relative reduction is
+For each run, the same 97 tasks supply $`M=619`$ criteria. Across $`k`$ runs, $`\bar L_m=k^{-1}\sum_r L_{r,m}`$ and $`\bar p_m=k^{-1}\sum_r L_{r,m}/M`$. The mean losses are **61.00** for screenshots and **13.00** for DOM, giving **9.85%** and **2.10%**. The relative reduction is
 
 ```math
-\mathrm{Reduction}=100\frac{L_S-L_D}{L_S}=100\frac{50-14}{50}=72.00\%.
+\mathrm{Reduction}=100\frac{\bar L_S-\bar L_D}{\bar L_S}=78.69\%.
 ```
-
-Excluding the nine cited blocker-task IDs removes 47 criteria, leaving $`M=593`$. This is a descriptive comparison on the saved findings.
 
 ### Confidence intervals in the graph
 
-Intervals resample whole tasks, keeping each task's criteria and both
-representations together. For task $`t`$, let $`n_t`$ be its criterion count
-and $`l_{t,m}`$ its loss count in representation $`m`$. For each bootstrap
-draw, sample $`T`$ task indices $`I_1,\ldots,I_T`$ with replacement:
+Each of 20,000 seeded draws samples tasks with replacement, then runs within each selected task. All criteria and both representations stay together. With sampled task indices $`I_b`$ and sampled run indices $`J_{b,q}`$, the bootstrap rate is
 
 ```math
-\hat p_m^*=\frac{\sum_{b=1}^{T}l_{I_b,m}}{\sum_{b=1}^{T}n_{I_b}},\qquad
-\mathrm{CI}_{95\%}=\left[Q_{0.025}(\hat p_m^*),Q_{0.975}(\hat p_m^*)\right].
+\hat p_m^*=\frac{\sum_{b=1}^{T}\sum_{q=1}^{k}l_{I_b,J_{b,q},m}}{k\sum_{b=1}^{T}n_{I_b}},\qquad \mathrm{CI}_{95\%}=[Q_{0.025}(\hat p_m^*),Q_{0.975}(\hat p_m^*)].
 ```
 
-The calculation uses 20,000 draws and seed 0. The paired screenshot-minus-DOM
-difference uses the same draws. Rates remain criterion-weighted rather than
-averages of task percentages. [summary.json](results/summary.json) stores the
-intervals as fractions. They assume independent tasks and hold the automated
-audit labels fixed; they do not measure annotation error or establish human
-verification. See the [full method](docs/evaluation-protocol.md#evidence-loss-audit).
+The 2.5th and 97.5th percentiles give the intervals for both rates, their paired difference and relative reduction. Rates remain criterion-weighted; [summary.json](results/summary.json) stores bounds as fractions. These intervals hold audit labels fixed and do not measure annotation error or establish human verification. See the [full method](docs/evaluation-protocol.md#evidence-loss-audit).
 
 <a id="how-the-system-works"></a>
 
@@ -265,7 +279,7 @@ observations and executable `agent-browser` references. The recorder saves
 an initial browser state and one state after each executed action, including
 screenshots and structured DOM evidence. DOM-diff Optimized describes individual captured states;
 it does not require separate before/after diff files.
-The model-facing `dom_model.txt` observations average **5.11 KiB**; see
+The model-facing `dom_model.txt` observations average **5.25 KiB**; see
 [representation sizes](docs/technical-report.md#current-representation-size).
 
 ```mermaid
@@ -313,7 +327,7 @@ state and one after each executed action. Raw states start at
 
 Both verifiers use the same scoring controls. Current evaluations use `gpt-5.2`
 for rubric generation and evidence judgments, `gpt-5.6-terra` for action/validity
-judgments, and `gpt-5.6-sol` for evidence inventory and `gpt-5.6-terra` for adjudication. Recordings use
+judgments, and `gpt-5.6-sol` for evidence inventory and `gemini-3.1-pro-preview` for adjudication. Recordings use
 `gpt-5.6` for browser-action generation. Internal WootzApp review is a separate verification step; its completion is not recorded in the saved model outputs.
 See [model provenance](docs/technical-report.md#models-and-evaluation-provenance).
 
@@ -720,7 +734,7 @@ python -m pytest
 
 | Resource | Contents |
 | --- | --- |
-| [Technical report](docs/technical-report.md) | Full evaluation findings, mathematical definitions, success rules, current observation sizes, references, and all 63 affected criteria. |
+| [Technical report](docs/technical-report.md) | Full evaluation findings, mathematical definitions, success rules, current observation sizes, references, and criterion-level findings. |
 | [Results](results/README.md) · [JSON summary](results/summary.json) | Published aggregate counts and analysis definitions. |
 | [Evaluation protocol](docs/evaluation-protocol.md) | Shared inputs, scoring controls, source-loss definition, and counting rules. |
 | [Architecture](docs/architecture.md) | Browser capture, DOM-diff Optimized, verifier components, and boundaries. |
@@ -728,7 +742,7 @@ python -m pytest
 | [Dataset card](docs/datacard.md) | Paired data layout, local samples, collection policy, and limitations. |
 | [Recordings](docs/recordings.md) | Raw collection artifacts, action/state alignment, and provenance. |
 | [Evidence categories](docs/evidence-categories.md) | Six category definitions, boundary rules, and annotated examples. |
-| [Published dataset](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) | All paired trajectories, task catalog, recordings, and saved evaluations. |
+| [Dataset repository](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks) | Task catalog and browser-evidence data. |
 
 Implementation lives in `w8bench/task_recorder/`, `w8bench/dom_model/`,
 `w8bench/screenshot_verifier/`, and `w8bench/verifier/`. The pinned browser

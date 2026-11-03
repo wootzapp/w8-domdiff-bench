@@ -9,11 +9,12 @@ the primary missing item or relationship in a confirmed source gap.
 A source gap requires concrete evidence that is absent from one recorded
 representation and preserved in the other. An item absent from both
 representations, or available in both, does not count as source loss.
-Availability is assessed across the eligible ordered source states.
+Availability is assessed across the eligible ordered source states and shared
+task inputs and action history.
 
 Each representation/criterion loss receives one primary category, even when several required items are missing. A criterion can lose different items in each representation. In task_37 C4, screenshots lose availability glyphs while DOM loses displayed label capitalization; each side contributes one Exact text and values loss.
 
-The current report contains 63 affected criteria across 34 tasks. Its 50 screenshot losses and 14 DOM losses total 64 representation/criterion losses because one criterion has a loss on both sides. Rates retain all 640 audited criteria across 100 completed audits in the denominator.
+The audits identify **219 affected run/criterion observations**, covering **118 distinct criterion positions across 49 tasks**. A criterion can lose different items in both representations. Each representation/criterion loss receives one primary category; averaged counts can be fractional. Rows are rounded independently; totals use unrounded counts. All 619 criteria per run remain in the matched denominator.
 
 ## The six categories
 
@@ -30,7 +31,7 @@ viewport position caused its absence.
 
 Missing exact URLs, endpoints, query parameters, or their association with page content.
 
-**Example — task_75 C0, screenshot loss:** DOM preserves `?exact=Black%20Lotus`, which is absent from screenshots and the shared history. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_75/batch_01/evidence_audit.json).
+**Example — run_1 task_42 C5, DOM loss:** screenshots preserve the Website field's `https://about.museum` value on the delegation page; DOM preserves the label without its value. This is a page field, not the task's start URL. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_42/batch_01/evidence_audit.json).
 
 ### Control states
 
@@ -38,7 +39,7 @@ Missing checked, selected, enabled, disabled, or other explicit control
 states. A control's name or label alone does not establish its state;
 absence of state text does not establish that the control is unchecked.
 
-**Example — task_44 C2, DOM loss:** screenshots show the World radio option selected; DOM lists region names without checked states. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_44/batch_01/evidence_audit.json).
+**Example — run_1 task_48 C0, DOM loss:** screenshots show Accounts checked; DOM preserves its label without the explicit checked state. [Saved finding](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/main/evaluations/run_1/task_48/batch_01/evidence_audit.json).
 
 ### Table entries
 
@@ -91,7 +92,7 @@ source-loss flags.
 
 The category assignments are explicit report annotations of the saved decisive evidence and citations. They do not alter the original automated audit/adjudication, and they are not evidence of completed internal human verification.
 
-Assignments are keyed by task, zero-based criterion index and representation in [evidence_categories.tsv](../results/evidence_categories.tsv). Each includes a category, rationale, source path and `finding_sha256`. The hash covers the exact criterion wording and original per-representation loss object, using sorted compact UTF-8 JSON. The [technical report](technical-report.md) contains aggregate counts, sensitivity views and the six-column criterion table.
+Assignments are keyed by run, task, zero-based criterion index and representation in [evidence_categories.tsv](../results/evidence_categories.tsv). Each includes a category, rationale, source path and `finding_sha256`. The hash covers the exact criterion wording and original per-representation loss object, using sorted compact UTF-8 JSON. The [technical report](technical-report.md) contains aggregate counts, sensitivity views and the six-column criterion table.
 
 Selected aggregate statistics are available locally in
 [results/summary.json](../results/summary.json).

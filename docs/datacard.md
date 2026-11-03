@@ -1,18 +1,18 @@
 # Dataset Card
 
-The collection contains 100 recordings and 100 prepared browser-task trajectory pairs. Each
+The collection contains 300 retained recordings of 100 tasks and 296 prepared trajectory pairs. Each
 pair uses the same task, executed action history, and final answer. One
 side stores screenshots; the other stores model-facing DOM text. The
-complete set is hosted at
+dataset repository is
 [WootzappLab/browser-agent-tasks](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks).
 
 This checkout includes two example pairs under [data/samples/](../data/samples/).
 The samples illustrate the file contract, not a representative statistical
-subset. Saved evaluations and raw recordings are also available in the hosted
-dataset. The 100 prepared pairs contain 883 aligned states per representation;
-file-size means use all 883 captured states in the raw recordings.
+subset. Recordings, trajectories and evaluations are grouped by run.
+The collection contains 2,592 captured states per representation;
+file-size means use the raw recordings, not duplicated trajectory files.
 
-## Published dataset layout
+## Dataset layout
 
 | Dataset path | Contents | How to inspect | Local guide |
 | --- | --- | --- | --- |
@@ -102,7 +102,7 @@ execution errors, and source-evidence losses.
 
 Use task identifiers, timestamps, and manifests to follow the evidence from
 recordings through prepared trajectories and evaluations. Loss rates use
-all 640 audited criteria across 100 tasks, including the criteria without
-gaps omitted from the report's detailed findings table.
+all 619 criteria per run on the 97-task matched panel, including criteria
+without gaps omitted from the detailed findings table.
 
-All 100 recorded tasks have usable, aligned evidence and validated audits covering 640 criteria. Successful, failed and errored recordings with usable evidence are included; no tasks are excluded.
+The matched comparison uses **97 tasks and 619 criteria per run**. Successful, failed and errored recordings with usable evidence are included. Recordings with no captured state remain unscored, not zero-loss audits.

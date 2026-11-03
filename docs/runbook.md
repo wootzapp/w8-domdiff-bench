@@ -272,7 +272,7 @@ The recorder writes numbered step directories. The verifier expects a paired
 task bundle:
 
 ```text
-trajectories/
+trajectories/run_1/
   data-ss/task_01/
     task_data.json
     final_answer.json
@@ -316,7 +316,7 @@ Set `W8_RUN_NAME=run_1` in `.env`, or pass `--run-name run_1` to the commands.
 Recordings, trajectories and evaluations use the same run name. A different
 run uses a different folder, without changing the captured files.
 
-For repeated recordings scored against a reference run's frozen rubrics:
+Independent runs use the same frozen rubrics:
 
 ```bash
 python -m w8bench.task_recorder.prepare_verifier_data --run-name run_2 --frozen-rubrics evaluations/run_1
@@ -353,6 +353,8 @@ Run their evaluation:
 
 - Local mode reads `trajectories/<run-name>/`; Hugging Face mode downloads to `dataset/<run-name>/`.
   Neither falls back to the other. Changed download caches are rejected.
+- An initial `www`/bare-domain difference is a warning only when the scheme,
+  port, path and query match. Both URLs remain recorded; other hosts fail validation.
 - Replace `--all` with `--task task_01` for one task. `--data-root PATH` selects
   another local input folder; use task names from the preparation report.
 - Both paths freeze one rubric, score screenshots and DOM text, and audit
@@ -374,15 +376,17 @@ Use the same catalog and frozen rubrics for every included run. Supply each
 completed evaluation directory to the aggregator:
 
 ```bash
-python -m w8bench.verifier.aggregate_runs evaluations/run_1 --output-dir results --readme README.md --figures-dir docs/assets/evaluations
+python -m w8bench.verifier.aggregate_runs evaluations/run_* --output-dir results --categories results/evidence_categories.tsv --readme README.md --figures-dir docs/assets/evaluations
 ```
 
-Additional run directories can follow `evaluations/run_1`. The summary reports
-each run and the mean rates, with paired task-then-run bootstrap intervals.
+The summary reports each run and the mean rates, with paired task-then-run
+bootstrap intervals. `--exploratory-exclusions` accepts comma-separated task
+aliases for a labelled subset; it does not change the primary comparison.
 Category annotations must match the saved finding hashes; unassigned findings
 remain explicitly unclassified. Sizes use all captured states and KiB (1,024 bytes).
-- An initial `www`/bare-domain difference is a warning only when the scheme,
-  port, path, and query match. Both URLs remain recorded; other hosts fail validation.
+Run manifests identify the complete catalog and frozen rubrics. Recordings with
+no captured state remain unscored; the mean uses the audited tasks common to
+every run, with available task counts reported separately.
 
 ## View a remote browser
 

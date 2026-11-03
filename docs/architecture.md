@@ -42,13 +42,13 @@ ablation measuring the effect of each engineering change.
 
 ## Current observation size
 
-The model-facing DOM-diff Optimized observations are more compact than text-dense readable DOM and full structured snapshots. The mean serialized sizes across the same 883 recorded states are:
+The model-facing DOM-diff Optimized observations are more compact than text-dense readable DOM and full structured snapshots. The mean serialized sizes across the same 2,592 recorded states are:
 
 | Representation | Artifact | Captured observations | Mean kB | Mean KiB |
 | --- | --- | ---: | ---: | ---: |
-| DOM-diff Optimized | `dom_model.txt` — compact model-facing text | 883 | 5.23 | **5.11** |
-| Text-dense DOM | `dom_full.txt` — detailed readable text | 883 | 48.51 | **47.38** |
-| Full DOM | `dom.json` — structured snapshot | 883 | 213.15 | **208.15** |
+| DOM-diff Optimized | `dom_model.txt` — compact model-facing text | 2,592 | 5.37 | **5.25** |
+| Text-dense DOM | `dom_full.txt` — detailed readable text | 2,592 | 48.40 | **47.26** |
+| Full DOM | `dom.json` — structured snapshot | 2,592 | 211.40 | **206.45** |
 
 A kB is 1,000 bytes; a KiB is 1,024 bytes. Token counts depend on the tokenizer. These sizes do not measure evidence completeness. A full snapshot remains subject to the capture boundaries below. See the [report’s size comparison](technical-report.md#current-representation-size).
 

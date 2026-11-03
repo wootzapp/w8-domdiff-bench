@@ -38,7 +38,9 @@ changing points, penalties, thresholds, or the recorded action history.
 ### Success rules
 
 The normalized rubric score is the earned point total divided by the maximum
-available points. `rubric_is_success` records whether that ratio meets the
+available points, using only criteria the verifier marks applicable.
+Inapplicable criteria remain in the separate evidence-loss denominator.
+`rubric_is_success` records whether that ratio meets the
 rubric threshold, currently **0.8** in the paired comparison. A strict
 full-score success means earning every available point (`x/x`).
 
@@ -70,7 +72,7 @@ general claim that one verifier always scores tasks better.
 
 A representation loses evidence for a criterion when at least one required
 item is absent from that representation and present in the other, across
-the eligible ordered source states and shared formatted action history.
+the eligible ordered source states, shared task inputs and formatted action history.
 A criterion contributes at most one loss per representation even when
 several required items are missing.
 Items absent from both representations, or present in both, do not trigger
