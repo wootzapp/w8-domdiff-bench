@@ -32,7 +32,8 @@ Browser-agent evaluators use recorded observations to judge what an agent did. T
 
 A browser agent may claim that it read a price, applied a filter, or checked every entry in a list. A verifier must decide whether the recorded execution supports that claim. That decision depends on whether the required facts were recorded and whether the verifier interpreted them correctly. A stronger verifier cannot recover a fact that its inputs never contained.
 
-Different browser observations preserve different facts. A screenshot can show a label next to its value or a control's checked state. A DOM-derived record can retain exact text and content outside the captured image. In the corpus studied here, one DOM record contains an absolute release date where screenshots show only a relative age. Conversely, one screenshot preserves a publisher's label–value relationship that the DOM record omits. These examples motivate our research question:
+Different browser observations preserve different facts. A screenshot can show a label next to its value or a control's checked state. 
+A DOM-derived record can retain exact text from viewport-selected elements, even when some of that text extends beyond the paired screenshot's visible area. In the corpus studied here, one DOM record contains an absolute release date where screenshots show only a relative age. Conversely, one screenshot preserves a publisher's label–value relationship that the DOM record omits. These examples motivate our research question:
 
 > For the same browser execution and verification rubric, which required facts are preserved by one recorded representation and missing from the other?
 
@@ -185,7 +186,7 @@ The dataset loader exposes the task catalog as a `test` split. Its `trajectory_p
 
 ### 5.3 Trajectory Generation
 
-The acting model, `gpt-5.6`, receives DOM text, executable `agent-browser` references, task memory, and recent action outcomes. Screenshots are retained for comparison but are not supplied to the acting model. Pairing holds each executed trajectory fixed; a screenshot-conditioned policy could navigate, scroll, or stop differently. Each recording starts with a fresh browser profile. The recorder reads its model from `OPENAI_MODEL`, with an explicit CLI override available; model settings are recorded rather than fixed in the implementation.
+The acting model, `gpt-5.6`, receives DOM text, executable `agent-browser` references, task memory, and recent action outcomes. Screenshots are retained for comparison but are not supplied to the acting model. Pairing holds each executed trajectory fixed; a screenshot-conditioned policy could navigate, scroll, or stop differently. The recorder reads its model from `OPENAI_MODEL`, with an explicit CLI override available; model settings are recorded rather than fixed in the implementation.
 
 The recorder uses WootzApp Browser, powered by the Chromium-based `w8-core` engine. It captures browser states through ChromiumRL and the Chrome DevTools Protocol. This provides the browser captures from which the screenshot and structured records are produced. [Appendix B](#appendix-b-recording-and-verifier-implementation-details) describes the execution and recording details.
 
