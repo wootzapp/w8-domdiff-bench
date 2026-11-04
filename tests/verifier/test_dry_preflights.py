@@ -13,6 +13,18 @@ from w8bench.verifier import run_comparison as comparison, run_full_comparison a
 from .conftest import tree_digest
 
 
+@pytest.mark.parametrize("field", ["thoughts", "screen_description"])
+def test_judge_visible_history_mismatch_fails_before_execution(pair_factory, field):
+    from w8bench.verifier.validate_inputs import dataset_only_preflight
+    pair = pair_factory()
+    path = pair["dom"] / "web_surfer.log"
+    event = json.loads(path.read_text())
+    event["arguments"][field] = "Different judge-visible annotation"
+    path.write_text(json.dumps(event) + "\n")
+    with pytest.raises(ValueError, match="judge-visible action histories differ"):
+        dataset_only_preflight(pair["screenshot"], pair["dom"])
+
+
 def test_dom_runner_dry_preflight_constructs_no_clients_or_outputs(pair_factory, tmp_path):
     pair = pair_factory()
     output = tmp_path / "must-not-exist"

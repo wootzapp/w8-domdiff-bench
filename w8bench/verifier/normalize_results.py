@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
@@ -81,9 +82,18 @@ def _normalize(
     intermediate = raw.get("intermediate_mm_rubric_steps") or {}
     criterion_rows = intermediate.get("step6_rescoring_summary") or []
     criteria = _criteria(criterion_rows, frozen.rubric["items"], mode=mode)
+    penalty_items = intermediate.get("step7_penalty_criteria") or []
+    if not isinstance(penalty_items, list) or any(not isinstance(item, dict) for item in penalty_items):
+        raise ValueError("Side-effect penalties must be a list of criterion objects")
+    penalties = _criteria(penalty_items, penalty_items, mode=mode)
+    for item in penalties:
+        if (not isfinite(item["max_points"]) or item["max_points"] <= 0
+                or item["final_points"] != 0 or item["action_only_points"] != 0):
+            raise ValueError("Side-effect penalties require positive maxima and zero earned points")
+        item["penalty"] = True
     frozen_denominator = sum(item["max_points"] for item in criteria)
     effective_denominator = sum(
-        item["max_points"] for item in criteria if item["is_applicable"]
+        item["max_points"] for item in criteria + penalties if item["is_applicable"]
     )
     result_denominator = float(raw.get("rubric_total_max_points", 0))
     declared_frozen_denominator = float(
@@ -130,6 +140,7 @@ def _normalize(
             "duration_seconds": raw.get("duration_sec", 0),
         },
         "criteria": criteria,
+        **({"penalty_criteria": penalties} if penalties else {}),
         "llm_calls": {
             CANONICAL_JUDGE_MODEL: int(calls_judge.get("logical_calls", 0)),
             CANONICAL_ACTION_MODEL: int(calls_action.get("logical_calls", 0)),

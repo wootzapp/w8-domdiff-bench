@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import random
+import re
 from statistics import mean, quantiles
 
 from .combine_audit_passes import _flags, _protocol
@@ -29,7 +30,7 @@ def hierarchical_intervals(clusters: list[list[tuple[int, int, int]]], *,
     rng = random.Random(seed)
     distributions = [[], [], [], []]
     undefined = 0
-    for _ in range(resamples):
+    for _ in range(resamples if len(clusters) > 1 else 0):
         counts = [0, 0, 0]
         for task in rng.choices(clusters, k=len(clusters)):
             for run in rng.choices(task, k=len(task)):
@@ -46,10 +47,17 @@ def hierarchical_intervals(clusters: list[list[tuple[int, int, int]]], *,
     result = {"method": "paired_task_then_run_percentile_bootstrap", "confidence": 0.95,
               "resamples": resamples, "seed": seed, "tasks": len(clusters),
               "runs": len(clusters[0]), "undefined_relative_reduction_resamples": undefined,
+              "performed_resamples": len(distributions[0]), "statuses": {},
               "interpretation": "Sampling uncertainty with audit labels held fixed; not annotation error."}
     for key, values in zip((*LOSS_FLAGS, "rate_difference", "relative_reduction"), distributions):
         cutpoints = quantiles(values, n=40, method="inclusive") if len(values) >= 2 else None
         result[key] = [cutpoints[0], cutpoints[-1]] if cutpoints else None
+        result["statuses"][key] = (
+            "insufficient_tasks" if len(clusters) < 2 else
+            "all_resamples_undefined" if not values else
+            "insufficient_defined_resamples" if cutpoints is None else
+            "degenerate" if min(values) == max(values) else "estimated"
+        )
     return result
 
 
@@ -61,18 +69,34 @@ def aggregate_runs(roots: list[Path], *, expected_tasks: int = 100,
     if len({Path(root).name for root in roots}) != len(roots):
         raise ValueError("Provide distinct run names")
     runs, reference_protocol, reference = [], None, {}
+    recording_sources, recording_identities, evidence_identities = {}, {}, {}
     catalog = {f"task_{number:02d}" for number in range(1, expected_tasks + 1)}
     if not set(excluded_tasks) <= catalog:
         raise ValueError("Exploratory exclusions contain unknown catalog tasks")
     reference_hashes, unscored = None, {}
     for root in roots:
         root = Path(root).resolve(strict=True)
+        project_root = root.parent.parent
+        manifest_path = project_root / "manifests" / f"{root.name}.json"
+        manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else None
+        selected = {}
+        if manifest is not None:
+            for entry in manifest.get("entries", []):
+                if entry.get("audit") is not None:
+                    path = Path(entry["audit"])
+                    path = (project_root / path).resolve(strict=True) if not path.is_absolute() else path.resolve(strict=True)
+                    if not path.is_relative_to(root) or path in selected:
+                        raise ValueError(f"Invalid or duplicate selected audit path: {root.name}")
+                    selected[path] = entry["task_alias"]
+        paths = sorted(selected) if manifest is not None else sorted(root.glob("task_*/**/evidence_audit.json"))
         tasks = {}
-        for path in sorted(root.glob("task_*/**/evidence_audit.json")):
+        for path in paths:
             value = json.loads(path.read_text())
             alias = value.get("task_alias")
             if not isinstance(alias, str) or alias in tasks:
                 raise ValueError(f"Missing or duplicate task alias in {root.name}")
+            if selected and selected[path] != alias:
+                raise ValueError(f"Selected audit task differs from manifest: {root.name}/{alias}")
             protocol = _protocol(value)
             if reference_protocol is None:
                 reference_protocol = protocol
@@ -90,9 +114,7 @@ def aggregate_runs(roots: list[Path], *, expected_tasks: int = 100,
             signature = (rubric_hash, sorted((row["criterion_index"], row["criterion"],
                                              row.get("description"), row.get("max_points")) for row in rows))
             tasks[alias] = {"audit": value, "signature": signature, "path": path}
-        manifest_path = root.parent.parent / "manifests" / f"{root.name}.json"
-        if manifest_path.is_file():
-            manifest = json.loads(manifest_path.read_text())
+        if manifest is not None:
             entries = manifest.get("entries", [])
             indexed = {entry["task_alias"]: entry for entry in entries}
             if (manifest.get("run_name") != root.name or len(entries) != expected_tasks
@@ -117,8 +139,47 @@ def aggregate_runs(roots: list[Path], *, expected_tasks: int = 100,
                 raise ValueError(f"Expected {expected_tasks} tasks in {root.name}; found {len(tasks)}")
             hashes = {alias: entry["signature"][0] for alias, entry in tasks.items()}
             unscored[root.name] = {}
+            indexed = {}
         if not set(tasks) <= catalog:
             raise ValueError("Run task sets differ from the expected catalog aliases")
+        for alias, entry in tasks.items():
+            source = Path(indexed.get(alias, {}).get("recording") or f"recordings/{root.name}/{alias}")
+            source = (project_root / source).resolve() if not source.is_absolute() else source.resolve()
+            if not source.is_relative_to(project_root):
+                raise ValueError(f"Recording source escapes the run workspace: {alias}")
+            source_manifest = source / "manifest.json"
+            identity = None
+            if source_manifest.is_file():
+                if source in recording_sources and recording_sources[source] != root.name:
+                    raise ValueError(f"Recording source reused across runs: {alias}")
+                recording_sources[source] = root.name
+                recorded = json.loads(source_manifest.read_text())
+                started = recorded.get("started_at") or recorded.get("created_at")
+                recorded_id = recorded.get("task_id")
+                if started and recorded_id:
+                    identity = (alias, recorded_id, started)
+                    if identity in recording_identities and recording_identities[identity] != root.name:
+                        raise ValueError(f"Recording identity reused across runs: {alias}")
+                    recording_identities[identity] = root.name
+            fingerprints = entry["audit"].get("input_fingerprints", {})
+            if (not isinstance(fingerprints, dict) or any(
+                    not isinstance(fingerprints.get(key), dict) or not fingerprints[key]
+                    for key in ("screenshot_sources", "dom_sources"))):
+                raise ValueError(f"Source fingerprints missing from audit: {alias}")
+            digests = [fingerprints.get("frozen_rubric"), fingerprints.get("shared_trajectory"),
+                       *fingerprints["screenshot_sources"].values(), *fingerprints["dom_sources"].values()]
+            if any(not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value) for value in digests):
+                raise ValueError(f"Invalid source fingerprint: {alias}")
+            if (fingerprints["frozen_rubric"] != entry["signature"][0]
+                    or fingerprints["shared_trajectory"] != canonical_sha256(entry["audit"].get("shared_trajectory"))):
+                raise ValueError(f"Shared trajectory or rubric fingerprint differs: {alias}")
+            evidence_key = (alias, canonical_sha256({key: fingerprints[key] for key in
+                            ("shared_trajectory", "screenshot_sources", "dom_sources")}))
+            if evidence_key in evidence_identities:
+                previous_identity = evidence_identities[evidence_key]
+                if identity is None or previous_identity is None or identity == previous_identity:
+                    raise ValueError(f"Repeated evidence requires distinct recording provenance: {alias}")
+            evidence_identities[evidence_key] = identity
         if reference_hashes is None:
             reference_hashes = hashes
         elif hashes != reference_hashes:
@@ -156,6 +217,9 @@ def aggregate_runs(roots: list[Path], *, expected_tasks: int = 100,
                             [[task[run_index]] for task in clusters], resamples=resamples, seed=seed)})
         for alias, entry in tasks.items():
             audit = entry["audit"]
+            if any(not any(call.get("stage") == stage and call.get("response_model")
+                           for call in audit.get("calls", [])) for stage in returned):
+                raise ValueError(f"Audit lacks returned-model provenance: {alias}")
             for call in audit.get("calls", []):
                 if call.get("stage") in returned and call.get("response_model"):
                     returned[call["stage"]].add(call["response_model"])
@@ -175,6 +239,8 @@ def aggregate_runs(roots: list[Path], *, expected_tasks: int = 100,
     means = {flag: {"count": mean(run[flag]["count"] for run in per_run),
                     "rate": mean(run[flag]["rate"] for run in per_run)} for flag in LOSS_FLAGS}
     s, d = (means[key]["count"] for key in LOSS_FLAGS)
+    if any(len(values) > 1 for values in returned.values()):
+        raise ValueError("Returned model versions differ across the selected audits")
     return {"schema_version": "recorded-run-comparison/v1", "created_at": datetime.now(timezone.utc).isoformat(),
             "aggregation": "mean_across_independent_recorded_runs", "protocol": reference_protocol,
             "run_names": [root.name for root, _ in runs], "k": len(runs), "tasks_per_run": len(aliases),
@@ -235,7 +301,8 @@ def render_table(summary: dict) -> str:
 
 def write_figure(path: Path, title: str, rows: list[tuple[str, float, float]], *, unit: str,
                  series: tuple[str, str] = ("Screenshots", "DOM"), intervals: list | None = None) -> None:
-    """Small vector chart; orange and dark red distinguish the two sides."""
+    """Write matching vector and raster charts from the same drawing."""
+    from cairosvg import svg2png
     peak = max((max(s, d) for _, s, d in rows), default=1) or 1
     if intervals:
         if len(intervals) != len(rows):
@@ -262,7 +329,10 @@ def write_figure(path: Path, title: str, rows: list[tuple[str, float, float]], *
                               f'M {low:.2f} {middle - 4} V {middle + 4} '
                               f'M {high:.2f} {middle - 4} V {middle + 4}" stroke="#222" stroke-width="1.5"/>'])
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text('\n'.join(parts + ['</svg>']) + '\n', encoding='utf-8')
+    svg = '\n'.join(parts + ['</svg>']) + '\n'
+    raster = svg2png(bytestring=svg.encode('utf-8'), scale=2)
+    path.write_text(svg, encoding='utf-8')
+    path.with_suffix('.png').write_bytes(raster)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -279,6 +349,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--resamples", type=int, default=20000)
     parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args(argv)
+    if args.figures_dir:
+        try:
+            from cairosvg import svg2png
+        except (ImportError, OSError) as error:
+            raise ValueError("Figure rendering requires the figures extra and the Cairo system library") from error
     readme_text = args.readme.read_text(encoding="utf-8") if args.readme else None
     start, end = "<!-- recorded-runs:start -->", "<!-- recorded-runs:end -->"
     if readme_text is not None and (readme_text.count(start) != 1 or readme_text.count(end) != 1
@@ -362,14 +437,17 @@ def main(argv: list[str] | None = None) -> int:
         rate_rows.append(("Mean", summary["mean"][LOSS_FLAGS[0]]["rate"] * 100,
                           summary["mean"][LOSS_FLAGS[1]]["rate"] * 100))
         rate_intervals = [tuple([value * 100 for value in run["confidence_intervals"][flag]]
+                                if run["confidence_intervals"][flag] is not None else None
                                 for flag in LOSS_FLAGS) for run in summary["per_run"]]
         rate_intervals.append(tuple([value * 100 for value in summary["confidence_intervals"][flag]]
+                                     if summary["confidence_intervals"][flag] is not None else None
                                      for flag in LOSS_FLAGS))
         if summary.get("exploratory_subset"):
             subset = summary["exploratory_subset"]
             rate_rows.append(("Listed IDs excluded", subset["mean"][LOSS_FLAGS[0]]["rate"] * 100,
                               subset["mean"][LOSS_FLAGS[1]]["rate"] * 100))
             rate_intervals.append(tuple([value * 100 for value in subset["confidence_intervals"][flag]]
+                                         if subset["confidence_intervals"][flag] is not None else None
                                          for flag in LOSS_FLAGS))
         write_figure(args.figures_dir / "evidence-loss-rates.svg", "Source-evidence loss rates",
                      rate_rows, unit="%", intervals=rate_intervals)
@@ -412,7 +490,10 @@ def main(argv: list[str] | None = None) -> int:
                 parts.extend([f'<text x="20" y="{y + 17}" font-family="sans-serif">{escape(name)}</text>',
                               f'<rect x="200" y="{y}" width="{500 * size / peak:.2f}" height="24" fill="{color}"/>',
                               f'<text x="720" y="{y + 17}" font-family="sans-serif">{size:.2f} KiB</text>'])
-            (args.figures_dir / "representation-sizes.svg").write_text('\n'.join(parts + ['</svg>']) + '\n', encoding='utf-8')
+            svg = '\n'.join(parts + ['</svg>']) + '\n'
+            raster = svg2png(bytestring=svg.encode('utf-8'), scale=2)
+            (args.figures_dir / "representation-sizes.svg").write_text(svg, encoding='utf-8')
+            (args.figures_dir / "representation-sizes.png").write_bytes(raster)
     if args.readme:
         if args.readme.read_text(encoding="utf-8") != readme_text:
             raise ValueError("README changed during aggregation")

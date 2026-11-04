@@ -218,10 +218,10 @@ def test_post_adjudication_conflicts_are_recorded_not_overridden(pair_factory):
     assert all(r["coverage_conflict"] for r in result["criteria"])
     assert result["metrics"]["coverage_conflicts"] == {"criteria": 2, "flags": 2, "details": 4}
     assert result["criteria"][1]["requires_human_review"] is True
-    assert result["criteria"][0]["requires_human_review"] is False
+    assert result["criteria"][0]["requires_human_review"] is True
     aggregate = audit.aggregate_audits([result])
-    assert aggregate["requires_human_review"]["count"] == 1
-    assert aggregate["requires_human_review"]["items"][0]["criterion_index"] == 1
+    assert aggregate["requires_human_review"]["count"] == 2
+    assert {item["criterion_index"] for item in aggregate["requires_human_review"]["items"]} == {0, 1}
     assert len(aggregate["coverage_conflict_list"]) == 2
     for side in ("screenshot", "dom_model"):
         agreement = aggregate["metrics"]["inventory_adjudication_agreement"][side]

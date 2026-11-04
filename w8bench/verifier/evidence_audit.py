@@ -1304,7 +1304,9 @@ def calculate_metrics(criteria: list[dict[str, Any]]) -> dict[str, Any]:
             "flags": sum(len({item["side"] for item in row.get("coverage_conflicts", [])}) for row in criteria),
             "details": sum(len(row.get("coverage_conflicts", [])) for row in criteria),
         },
-        "requires_human_review": sum(bool(row["dom_model_evidence_loss"]) for row in criteria),
+        "requires_human_review": sum(bool(row["screenshot_evidence_loss"] or row["dom_model_evidence_loss"]
+                                          or not row["screenshot"]["verifier_caught"]
+                                          or not row["dom_model"]["verifier_caught"]) for row in criteria),
         "retry_flag_flips": sum(len(row.get("retry_flag_flips", [])) for row in criteria),
         "screenshot_evidence_loss": {
             "count": screenshot_loss, "denominator": total, "rate": rate(screenshot_loss, total)
@@ -1465,7 +1467,7 @@ def run_evidence_audit(
                 "coverage_conflicts": conflicts,
                 "loss_agreement": agreement,
                 "retry_flag_flips": flips,
-                "requires_human_review": dom_loss,
+                "requires_human_review": screenshot_loss or dom_loss or not screenshot_caught or not dom_caught,
                 "classification": classification(
                     screenshot_decision, dom_decision, screenshot_loss, dom_loss
                 ),
@@ -1637,10 +1639,14 @@ def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]
         {"task_id": audit["task_id"], "task_alias": audit.get("task_alias"),
          "criterion_index": row.get("criterion_index", index), "criterion": row.get("criterion"),
          "requires_human_review": True,
-         "reason": "Confirmed DOM loss relies on screenshot evidence; pixel content is not deterministically validated.",
-         "finding": row.get("adjudication", {}).get("dom_model_evidence_loss")}
+         "reason": "Source-availability and verifier-miss labels require evidence review.",
+         "findings": {key: row.get("adjudication", {}).get(key) for key in
+                      ("screenshot_evidence_loss", "dom_model_evidence_loss",
+                       "screenshot_verifier_miss", "dom_model_verifier_miss")
+                      if row.get("adjudication", {}).get(key, {}).get("confirmed")}}
         for audit in audits for index, row in enumerate(audit["criteria"])
-        if row["dom_model_evidence_loss"]
+        if (row["screenshot_evidence_loss"] or row["dom_model_evidence_loss"]
+            or not row["screenshot"]["verifier_caught"] or not row["dom_model"]["verifier_caught"])
     ]
     conflicts = [
         {"task_id": audit["task_id"], "task_alias": audit.get("task_alias"),

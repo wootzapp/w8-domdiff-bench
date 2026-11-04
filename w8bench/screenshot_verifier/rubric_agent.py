@@ -150,10 +150,7 @@ Multimodal Pipeline (9 Steps)
 
   Step 9a — Points of Failure Analysis:
     Identifies ALL failure points in the trajectory using a structured error
-    taxonomy of 7 categories with numbered sub-codes: Selection (1.1–1.5),
-    Hallucination (2.1–2.5), Execution & Strategy (3.1–3.6), Critical Point
-    (4.1–4.3), Task Ambiguity (5.1–5.4), Unsolicited Side-Effect (6.1–6.2),
-    Tool Interaction (7.1–7.4). Each failure is identified by error_code,
+    taxonomy defined in resources/error_taxonomy_analysis.md. Each failure is identified by error_code,
     category, and type. The FIRST (earliest step number) failure is computed
     programmatically from the LLM's failure_points list. Uses the scored
     rubric, screenshot evidence, action history, and outcome verification as

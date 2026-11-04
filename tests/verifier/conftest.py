@@ -69,21 +69,13 @@ def pair_factory(tmp_path):
             "arguments": {
                 "action": "left_click",
                 "coordinate": [10, 20],
-                "thoughts": "Save the value",
-            },
-        }
-        dom_event = {
-            "action": "left_click",
-            "url": "https://example.test/done",
-            "arguments": {
-                "action": "left_click",
                 "ref": "save-button",
                 "target": {"role": "button", "name": "Save"},
                 "thoughts": "Save the value",
             },
         }
         (screenshot / "web_surfer.log").write_text(json.dumps(screenshot_event) + "\n", encoding="utf-8")
-        (dom / "web_surfer.log").write_text(json.dumps(dom_event) + "\n", encoding="utf-8")
+        (dom / "web_surfer.log").write_text(json.dumps(screenshot_event) + "\n", encoding="utf-8")
         (screenshot / "screenshot0.png").write_bytes(b"offline-placeholder-0")
         (screenshot / "screenshot1.png").write_bytes(b"offline-placeholder-1")
         _write_json(

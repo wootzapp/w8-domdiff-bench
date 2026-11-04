@@ -19,7 +19,8 @@ shape, and required files before model clients are created.
 ## Controlled scoring
 
 Both sides use the same judge model, action model, rubric threshold, evidence
-count, majority-vote count, and success rule. Only the evidence loader differs.
+count, majority-vote count, and success rule. Each representation has its own
+evidence loader, grounding instructions and context packing.
 The comparison command fails if those controls drift.
 
 One rubric is generated or imported first. Its canonical SHA-256 and point
@@ -39,6 +40,9 @@ changing points, penalties, thresholds, or the recorded action history.
 
 The normalized rubric score is the earned point total divided by the maximum
 available points, using only criteria the verifier marks applicable.
+Additional side-effect penalties are recorded separately from the frozen
+criteria. They contribute to the verifier's point total without changing the
+frozen rubric or the evidence-loss denominator.
 Inapplicable criteria remain in the separate evidence-loss denominator.
 `rubric_is_success` records whether that ratio meets the
 rubric threshold, currently **0.8** in the paired comparison. A strict
@@ -67,6 +71,11 @@ The audit asks whether a rubric fact is present in each ordered evidence
 source. It keeps missing source evidence separate from judge disagreement.
 The headline counts are therefore evidence-availability measurements, not a
 general claim that one verifier always scores tasks better.
+
+Review routing covers losses and verifier misses on either side. The blind
+review builder also selects 75 seeded unflagged criteria, or all remaining
+criteria if fewer are available. Votes and selection reasons stay outside
+the blind review file. Review selection does not alter audit labels.
 
 ### Source-loss counting
 
@@ -129,6 +138,10 @@ all criteria and both representations stay paired. Task sets, rubric hashes,
 prompt versions, model IDs and generation settings must match across runs.
 It assumes independent tasks and does not measure annotation error. A single
 task has no estimable interval; constant samples are marked as degenerate.
+The selected audit paths come from each run manifest when one is present.
+Returned model versions must agree. Repeated evidence requires distinct
+recording provenance; identical static page content alone does not establish
+that two recordings are duplicates.
 Website blockers, recorded execution failures, task scores, and source-loss
 counts are separate measurements.
 

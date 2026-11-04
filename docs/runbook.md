@@ -24,6 +24,9 @@ Prepared-pair evaluation requires 64-bit Linux or WSL 2, Git, Python 3.10 or
 newer, network access for dependencies and prepared data, and an OpenAI API
 key for executed model calls.
 
+Figure rendering and the full test suite also require Cairo. On Ubuntu or
+WSL, install it with `sudo apt install libcairo2`.
+
 Recording additionally requires Docker Engine with Compose and Buildx,
 `rsync`, approximately 32 GiB of RAM, and about 200 GiB of free disk space
 for Chromium.
@@ -376,17 +379,30 @@ Use the same catalog and frozen rubrics for every included run. Supply each
 completed evaluation directory to the aggregator:
 
 ```bash
+python -m pip install -e ".[figures]"
+```
+
+PNG rendering uses the Cairo system library. On Ubuntu or WSL, install it
+with `sudo apt install libcairo2` if it is not already available.
+
+```bash
 python -m w8bench.verifier.aggregate_runs evaluations/run_* --output-dir results --categories results/evidence_categories.tsv --readme README.md --figures-dir docs/assets/evaluations
 ```
 
 The summary reports each run and the mean rates, with paired task-then-run
-bootstrap intervals. `--exploratory-exclusions` accepts comma-separated task
-aliases for a labelled subset; it does not change the primary comparison.
+bootstrap intervals.
 Category annotations must match the saved finding hashes; unassigned findings
 remain explicitly unclassified. Sizes use all captured states and KiB (1,024 bytes).
+Each figure is written as both SVG and PNG from the same drawing. The README's
+marked results table and `results/comparison.md` are generated from the summary;
+the explanatory sections retain their existing text.
 Run manifests identify the complete catalog and frozen rubrics. Recordings with
 no captured state remain unscored; the mean uses the audited tasks common to
 every run, with available task counts reported separately.
+When a run manifest is present, its audit paths select the evaluation batches.
+Set each entry's `audit` path to the batch selected for the comparison.
+Without one, each task must have exactly one audit. Dataset-download receipts
+record both the requested revision and the resolved commit SHA.
 
 ## View a remote browser
 

@@ -59,7 +59,7 @@ def _arg_value(command: list[str], flag: str, *, default: str | None = None) -> 
 
 
 def validate_command_parity(run_commands: dict[str, list[str]]) -> dict[str, Any]:
-    """Fail before paid calls if verifier behavior differs beyond evidence I/O."""
+    """Validate shared numerical scoring controls before paid calls."""
 
     screenshot = run_commands["screenshot_verifier"]
     dom_model = run_commands["dom_model"]

@@ -390,6 +390,9 @@ Prepared-pair evaluation requires:
 - Git and network access for dependencies and prepared data
 - An OpenAI API key for executed model calls
 
+Figure rendering and the full test suite also require Cairo. On Ubuntu or
+WSL, install it with `sudo apt install libcairo2`.
+
 Recording additionally requires:
 
 - Docker Engine with Compose and Buildx

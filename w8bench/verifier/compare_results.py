@@ -33,11 +33,11 @@ def _validate_metrics(run: dict[str, Any]) -> list[str]:
     denominator = float((run.get("result") or {}).get("total_max_points", 0))
     effective_maximum = sum(
         float(item.get("max_points", 0))
-        for item in run.get("criteria", [])
+        for item in run.get("criteria", []) + run.get("penalty_criteria", [])
         if item.get("is_applicable", True)
     )
     if denominator != effective_maximum:
-        errors.append(f"{mode} denominator differs from applicable criterion maxima")
+        errors.append(f"{mode} denominator differs from applicable criterion and penalty maxima")
     return errors
 
 
@@ -92,6 +92,9 @@ def compare(screenshot: dict[str, Any], dom_model: dict[str, Any]) -> tuple[dict
         },
         "criteria": criteria,
     }
+    for label, run in (("screenshot", screenshot), ("dom_model", dom_model)):
+        if run.get("penalty_criteria"):
+            receipt[label]["penalty_criteria"] = run["penalty_criteria"]
     lines = [
         f"# {screenshot['task_id']} verifier comparison", "",
         "| Mode | Score | Outcome |",
@@ -104,7 +107,10 @@ def compare(screenshot: dict[str, Any], dom_model: dict[str, Any]) -> tuple[dict
             f"{result['outcome_success']} |"
         )
     if screenshot_result["total_max_points"] != dom_result["total_max_points"]:
-        lines.extend(["", "Applicable point totals differ because conditional criteria were judged differently."])
+        reason = ("Applicable point totals include separately recorded side-effect penalties."
+                  if screenshot.get("penalty_criteria") or dom_model.get("penalty_criteria")
+                  else "Applicable point totals differ because conditional criteria were judged differently.")
+        lines.extend(["", reason])
     lines.extend([
         "", "## Criterion scores", "",
         "| Criterion | Max | Screenshot action | DOM-model action | Screenshot final | DOM-model final |",

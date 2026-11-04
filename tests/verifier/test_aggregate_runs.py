@@ -17,6 +17,8 @@ def runs(tmp_path, k=3, flagged=None):
             path = root / alias / "evidence_audit.json"
             value = json.loads(path.read_text())
             value["task_alias"] = alias
+            value["shared_trajectory"]["recording_id"] = root.name
+            value["input_fingerprints"]["shared_trajectory"] = aggregate.canonical_sha256(value["shared_trajectory"])
             for row in value["criteria"]:
                 for finding in row["adjudication"].values():
                     finding["explanation"] = "Saved evidence requirement."
@@ -76,7 +78,8 @@ def test_task_set_mismatch_and_duplicates_rejected(tmp_path):
         entries = [{"task_alias": alias, "frozen_rubric_sha256": digest,
                     "evaluation_status": "not_scored" if index == 1 and alias == "task_02" else "complete",
                     "captured_states": 0 if index == 1 and alias == "task_02" else 1,
-                    "audit": None if index == 1 and alias == "task_02" else "evidence_audit.json",
+                    "audit": None if index == 1 and alias == "task_02" else
+                             f"evaluations/{root.name}/{alias}/evidence_audit.json",
                     "unscored_reason": "no_captured_state" if index == 1 and alias == "task_02" else None}
                    for alias, digest in reference.items()]
         (manifests / f"{root.name}.json").write_text(json.dumps({"run_name": root.name, "entries": entries}))
@@ -106,10 +109,78 @@ def test_paired_hierarchical_intervals_are_seeded_and_keep_sides_together():
     first = aggregate.hierarchical_intervals(clusters, resamples=1000, seed=1)
     assert first == aggregate.hierarchical_intervals(clusters, resamples=1000, seed=1)
     assert first["relative_reduction"] == [0.5, 0.5]
+    assert first["statuses"]["relative_reduction"] == "degenerate"
     assert first["undefined_relative_reduction_resamples"] > 0
     zero = aggregate.hierarchical_intervals([[(3, 0, 0)]], resamples=100)
     assert zero["relative_reduction"] is None
-    assert zero["undefined_relative_reduction_resamples"] == 100
+    assert zero["undefined_relative_reduction_resamples"] == 0
+    assert zero["statuses"]["relative_reduction"] == "insufficient_tasks"
+    assert zero["performed_resamples"] == 0
+
+
+def test_recording_provenance_and_returned_models_are_checked(tmp_path):
+    roots = runs(tmp_path)
+    original_path = roots[0] / "task_01/evidence_audit.json"
+    path = roots[1] / "task_01/evidence_audit.json"
+    original = json.loads(original_path.read_text())
+    value = json.loads(path.read_text())
+    value["input_fingerprints"] = original["input_fingerprints"]
+    value["shared_trajectory"] = original["shared_trajectory"]
+    path.write_text(json.dumps(value))
+    with pytest.raises(ValueError, match="distinct recording provenance"):
+        aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
+    for index, root in enumerate(roots[:2], 1):
+        recording = tmp_path / "recordings" / root.name / "task_01"
+        recording.mkdir(parents=True)
+        (recording / "manifest.json").write_text(json.dumps(
+            {"task_id": "task_01", "started_at": f"2026-01-0{index}T00:00:00Z"}))
+    aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
+    value["calls"][0]["response_model"] = "different-returned-model"
+    path.write_text(json.dumps(value))
+    with pytest.raises(ValueError, match="Returned model versions differ"):
+        aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
+    value["calls"][0]["response_model"] = original["calls"][0]["response_model"]
+    path.write_text(json.dumps(value))
+    first = tmp_path / "recordings" / roots[0].name / "task_01/manifest.json"
+    second = tmp_path / "recordings" / roots[1].name / "task_01/manifest.json"
+    second.write_bytes(first.read_bytes())
+    with pytest.raises(ValueError, match="Recording identity reused"):
+        aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
+
+
+def test_run_manifest_selects_the_audit_batch(tmp_path):
+    roots = runs(tmp_path)
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    for root in roots:
+        entries = []
+        for alias in ("task_01", "task_02"):
+            path = root / alias / "evidence_audit.json"
+            value = json.loads(path.read_text())
+            entries.append({"task_alias": alias, "evaluation_status": "complete",
+                            "frozen_rubric_sha256": value["frozen_rubric_sha256"],
+                            "audit": path.relative_to(tmp_path).as_posix()})
+        (manifests / f"{root.name}.json").write_text(json.dumps(
+            {"run_name": root.name, "entries": entries}))
+    duplicate = roots[0] / "task_01/batch_02/evidence_audit.json"
+    duplicate.parent.mkdir()
+    duplicate.write_bytes((roots[0] / "task_01/evidence_audit.json").read_bytes())
+    result, _ = aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
+    assert result["tasks_per_run"] == 2
+    (manifests / f"{roots[0].name}.json").unlink()
+    with pytest.raises(ValueError, match="duplicate task alias"):
+        aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
+
+
+@pytest.mark.parametrize("field", ["input_fingerprints", "calls"])
+def test_missing_source_or_model_provenance_is_rejected(tmp_path, field):
+    roots = runs(tmp_path)
+    path = roots[0] / "task_01/evidence_audit.json"
+    value = json.loads(path.read_text())
+    value.pop(field)
+    path.write_text(json.dumps(value))
+    with pytest.raises(ValueError, match="fingerprints missing|returned-model provenance"):
+        aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
 
 
 def test_outputs_and_figures_are_written_without_model_calls(tmp_path):
@@ -145,3 +216,5 @@ def test_outputs_and_figures_are_written_without_model_calls(tmp_path):
         assert len(list(csv.DictReader(stream, delimiter="\t"))) == 1
     assert b"\r\n" not in (output / "evidence_categories.tsv").read_bytes()
     assert (figures / "evidence-loss-rates.svg").is_file()
+    for svg in figures.glob("*.svg"):
+        assert svg.with_suffix(".png").read_bytes().startswith(b"\x89PNG\r\n\x1a\n")

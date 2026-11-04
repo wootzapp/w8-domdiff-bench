@@ -104,6 +104,7 @@ def fetch_trajectories(
     repo_id: str = DEFAULT_REPO_ID,
     revision: str = DEFAULT_REVISION,
     snapshot_download_fn: Callable[..., str] | None = None,
+    api: Any | None = None,
     run_name: str | None = None,
 ) -> dict[str, Any]:
     """Fetch one paired task, or every task, without changing verifier inputs."""
@@ -114,6 +115,14 @@ def fetch_trajectories(
         _validate_task_name(task)
     if snapshot_download_fn is None:
         snapshot_download_fn, _ = _require_huggingface_hub()
+    resolved_revision = revision
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", revision):
+        if api is None:
+            _, api_type = _require_huggingface_hub()
+            api = api_type()
+        resolved_revision = api.repo_info(repo_id=repo_id, repo_type="dataset", revision=revision).sha
+    if not isinstance(resolved_revision, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", resolved_revision):
+        raise ValueError("Dataset revision must resolve to a full commit SHA")
     patterns = [
         f"{remote_prefix}/data-ss/{task}/**",
         f"{remote_prefix}/data-dom/{task}/**",
@@ -128,7 +137,7 @@ def fetch_trajectories(
             snapshot_download_fn(
                 repo_id=repo_id,
                 repo_type="dataset",
-                revision=revision,
+                revision=resolved_revision,
                 allow_patterns=patterns,
                 local_dir=stage,
             )
@@ -213,6 +222,7 @@ def fetch_trajectories(
         "status": "resolved_from_huggingface",
         "repo_id": repo_id,
         "revision": revision,
+        "resolved_revision": resolved_revision,
         "data_root": str(target),
         "tasks": validated,
     }

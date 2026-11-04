@@ -28,5 +28,5 @@ def test_fetch_uses_only_the_selected_run(tmp_path):
         _write_pair(destination / "trajectories/run_3", "task_01")
         return str(destination)
     dataset_sync.fetch_trajectories(data_root=tmp_path / "local/run_3", task="task_01",
-                                   run_name="run_3", snapshot_download_fn=download)
+                                   run_name="run_3", snapshot_download_fn=download, revision="a" * 40)
     assert (tmp_path / "local/run_3/data-dom/task_01/dom_model0.txt").is_file()

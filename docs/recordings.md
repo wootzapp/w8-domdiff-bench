@@ -75,3 +75,14 @@ execution dates. The
 separates recorded execution failures from completed evaluation audits.
 For commands that create local recordings, see the
 [runbook](runbook.md#record-a-task).
+
+## Recording attempts
+
+Each run contributes one retained recording per task. Zero-state technical
+failures normally permit one additional attempt. Runs 2 and 3 each contain
+108 logged attempts for 100 retained tasks. Run 2/task 45 and task 94 each
+have three logged attempts; run 2/task 42 retains a 54-state attempt following
+an attempt with 72 states. These are technical-retention exceptions, not
+additional evaluated tasks. The latest permitted attempt is retained
+regardless of status, rather than selecting by verifier scores or audit labels.
+Available attempt details and retained paths are recorded in the run manifests.
