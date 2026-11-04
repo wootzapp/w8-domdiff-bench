@@ -27,7 +27,23 @@ class AgentBrowserBaseError(Exception):
 
 
 def normalized_http_url(value: str) -> str:
-    """Validate a CDP HTTP endpoint and discard any accidental path/query."""
+    """Validate and canonicalize a browser CDP HTTP endpoint.
+
+    The agent-browser CLI accepts the browser's host and port as its CDP
+    target.  Callers may still pass a URL copied from a browser or a config
+    file, so this helper deliberately accepts a trailing slash, path, query,
+    or fragment and removes those parts before the endpoint is reused.
+
+    Examples:
+
+    * ``http://127.0.0.1:9222/`` -> ``http://127.0.0.1:9222``
+    * ``https://browser.example/cdp?profile=task#tab`` ->
+      ``https://browser.example``
+
+    Only HTTP(S) URLs with a network location are valid.  This function does
+    not probe the endpoint; connection and protocol errors are reported by
+    :meth:`AgentBrowserClient.connect`.
+    """
     parsed = urlsplit(value.strip().rstrip("/"))
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise AgentBrowserBaseError(f"invalid CDP URL: {value!r}")
@@ -36,7 +52,6 @@ def normalized_http_url(value: str) -> str:
 
 class AgentBrowserError(AgentBrowserBaseError):
     """An official agent-browser command failed."""
-
     def __init__(self, command: list[str], error: str):
         """Preserve the failed CLI arguments and its human-readable error."""
         super().__init__(f"agent-browser {' '.join(command)!r} failed: {error}")
@@ -75,7 +90,19 @@ def container_agent_browser_command(container_name: str) -> str:
 
 
 class AgentBrowserClient:
-    """Official agent-browser CLI attached to the recorder's existing Chromium."""
+    """Run the official agent-browser CLI against the recorder's browser.
+
+    The recorder has two browser-facing clients: this adapter drives actions
+    and accessibility snapshots through the CLI, while ``capture.CDPClient``
+    captures ChromiumRL evidence and screenshots.  Both clients must point at
+    the same browser, but they use different transports and namespaces.  In
+    particular, agent-browser ``eN`` refs are not Chromium node IDs.
+
+    ``command`` is kept as an argument vector after :func:`shlex.split`; every
+    operation then runs as a bounded subprocess.  The named ``session`` keeps
+    the CLI state isolated from other recorder runs, and ``timeout`` applies to
+    each individual CLI invocation.
+    """
 
     def __init__(
         self,
@@ -85,7 +112,14 @@ class AgentBrowserClient:
         cdp_url: str,
         timeout: float,
     ):
-        """Configure one named official-CLI session attached to an existing CDP."""
+        """Configure one isolated CLI session attached to an existing CDP.
+
+        Local CDP endpoints are passed to agent-browser as a port (for
+        example, ``http://127.0.0.1:9222`` becomes ``"9222"``), because the
+        bundled CLI runs inside the browser container and expects its local
+        CDP port.  Non-local endpoints retain the URL form after validation so
+        a remote agent-browser process can resolve them directly.
+        """
         self.command = shlex.split(command)
         if not self.command:
             raise AgentBrowserBaseError("--agent-browser-command must not be empty")
@@ -175,7 +209,13 @@ class AgentBrowserClient:
         )
 
     async def connect(self) -> None:
-        """Check the official CLI version and attach the named session to CDP."""
+        """Check the CLI version, then attach this session to the CDP target.
+
+        Version probing is intentionally separate from ``connect`` so the
+        recording manifest can identify the executable that produced each
+        observation.  A successful call marks the session as connected; a
+        failed call leaves it disconnected and propagates the CLI error.
+        """
         version = await self._invoke(
             ["--version"],
             json_output=False,
@@ -188,7 +228,12 @@ class AgentBrowserClient:
         self.connected = True
 
     async def reconnect(self) -> None:
-        """Reattach the named CLI session without closing the browser target."""
+        """Reattach the named session without creating or closing a browser tab.
+
+        This is used after a transient CLI transport failure.  It refreshes
+        the session connection and increments ``reconnect_count`` for run
+        provenance; it does not switch the active tab or repair a stale ref.
+        """
         result = await self._invoke(["connect", self.cdp_target])
         assert isinstance(result, dict)
         self.connection_result = result
@@ -196,7 +241,12 @@ class AgentBrowserClient:
         self.reconnect_count += 1
 
     async def close(self) -> None:
-        """Close only this CLI session; failures during cleanup are non-fatal."""
+        """Close only this CLI session, leaving the shared browser running.
+
+        Cleanup is best effort because the browser may already have gone away
+        after a failed task.  The method is idempotent, which lets runner and
+        context-manager cleanup both call it safely.
+        """
         if not self.connected:
             return
         try:
@@ -206,7 +256,14 @@ class AgentBrowserClient:
         self.connected = False
 
     async def snapshot(self, *, interactive: bool = False) -> AgentBrowserObservation:
-        """Capture compact evidence or the interactive ref namespace used to act."""
+        """Capture an accessibility snapshot and its executable ref mapping.
+
+        ``interactive=False`` records the compact accessibility evidence;
+        ``interactive=True`` records the ref namespace supplied to the action
+        model.  The latter is the only snapshot whose refs may be passed back
+        to :meth:`execute`.  Both forms are persisted so an artifact reader can
+        distinguish model evidence from executable action references.
+        """
         # Keep the compact tree as the complete recorded accessibility evidence.
         # The separate interactive tree is the action namespace supplied to the
         # model and is captured last, so its refs are exactly the refs executed.
@@ -241,7 +298,12 @@ class AgentBrowserClient:
         )
 
     async def active_page(self) -> AgentBrowserPage:
-        """Return the official agent-browser session's one active tab."""
+        """Return the session's unique active page tab.
+
+        Requiring exactly one active page makes tab identity explicit before
+        the recorder asks CDP to capture the page.  Missing or ambiguous tab
+        metadata is an error rather than a reason to guess which page to use.
+        """
         arguments = ["tab", "list"]
         payload = await self._invoke(arguments)
         assert isinstance(payload, dict)
@@ -277,15 +339,23 @@ class AgentBrowserClient:
 
     @staticmethod
     def action_ref(value: Any) -> str:
-        """Normalize either eN or @eN into the ref form stored in artifacts."""
+        """Normalize ``eN``/``@eN`` values to the stored agent-browser ref.
+
+        The CLI syntax uses ``@eN`` selectors, while JSON decisions and saved
+        observations use the bare ``eN`` identity.  Keeping that conversion in
+        one place prevents accidental mixing with Chromium node IDs.
+        """
         ref = "" if value is None else str(value).strip()
         return ref[1:] if ref.startswith("@") else ref
 
     async def execute(self, decision: dict[str, Any]) -> dict[str, Any] | str:
-        """Map one action to official CLI operations and report normalized input.
+        """Map one validated decision to official CLI operations.
 
-        Most actions issue one CLI operation. A ref-targeted scroll first hovers
-        the ref and then issues the wheel operation so nested panes can receive it.
+        ``runner`` validates refs and target identity before calling this
+        method; this layer only translates the decision into subprocess
+        arguments and records normalized parameters.  Most actions issue one
+        CLI operation. A ref-targeted scroll first hovers the ref and then
+        issues the wheel operation so nested panes can receive it.
         """
         action = str(decision["action"])
         ref = self.action_ref(decision.get("id"))
