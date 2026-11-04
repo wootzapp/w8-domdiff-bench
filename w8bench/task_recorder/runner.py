@@ -126,7 +126,8 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
         "profile_fresh_at_run_start",
         "tasks_previously_run_in_container",
     }
-    if not isinstance(value, dict) or set(value) != expected:
+    if (not isinstance(value, dict) or not expected.issubset(value)
+        or set(value) - expected - {"browser_build"}):
         raise RunnerError("RUNNER_BROWSER_PROFILE_PROVENANCE has invalid fields")
     if not isinstance(value["container_id"], str) or not value["container_id"]:
         raise RunnerError("w8-core container id is missing")
@@ -137,6 +138,16 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
     count = value["tasks_previously_run_in_container"]
     if isinstance(count, bool) or not isinstance(count, int) or count < 0:
         raise RunnerError("browser prior task count must be a non-negative integer")
+    build = value.get("browser_build")
+    if build is not None:
+        if not isinstance(build, dict):
+            raise RunnerError("browser build provenance must be an object")
+        for key, item in build.items():
+            if key == "repo_digests":
+                if not isinstance(item, list) or any(not isinstance(part, str) for part in item):
+                    raise RunnerError("browser image digests must be a list of strings")
+            elif item is not None and not isinstance(item, str):
+                raise RunnerError(f"browser build provenance {key} must be a string or null")
     return value
 
 
@@ -353,9 +364,12 @@ def safe_task_id(value: str) -> str:
     return value
 
 
-def default_task_id() -> str:
-    """Create a collision-resistant UTC task id for callers that omit one."""
-    return datetime.now(timezone.utc).strftime("task-%Y%m%dT%H%M%SZ")
+def default_task_id(output_dir: Path) -> str:
+    """Choose the first available numbered recording for an unnamed task."""
+    number = 1
+    while (output_dir / f"task_{number:02d}").exists():
+        number += 1
+    return f"task_{number:02d}"
 
 
 def prompt_for_human_intervention(
@@ -772,7 +786,7 @@ async def run(args: argparse.Namespace) -> int:
     """
     if not args.capture_only and not args.task:
         raise RunnerError("--task is required unless --capture-only is used")
-    task_id = safe_task_id(args.task_id or default_task_id())
+    task_id = safe_task_id(args.task_id or default_task_id(Path(args.output_dir)))
     catalog_reference = args.source_catalog
     if catalog_reference and Path(catalog_reference).is_absolute():
         catalog_reference = os.path.relpath(catalog_reference, ROOT)
@@ -788,6 +802,7 @@ async def run(args: argparse.Namespace) -> int:
         run_dir / "task.json",
         {
             "task_id": task_id,
+            "run_name": getattr(args, "run_name", None),
             "source_task_id": args.source_task_id,
             "source_catalog": catalog_reference,
             "task_name": args.task_name,
@@ -799,15 +814,20 @@ async def run(args: argparse.Namespace) -> int:
     )
 
     current_renderer_versions = renderer_versions()
+    profile_provenance = browser_profile_provenance_from_environment()
+    browser_build = profile_provenance.pop("browser_build", None)
     manifest: dict[str, Any] = {
         "task_id": task_id,
+        "run_name": getattr(args, "run_name", None),
         "source_task_id": args.source_task_id,
         "source_catalog": catalog_reference,
         "task_name": args.task_name,
         "task": args.task or "capture-only",
         "created_at": utc_now(),
-        "browser_image": os.environ.get("IMAGE", "w8-core:domdiff-bench"),
-        "browser_profile_provenance": browser_profile_provenance_from_environment(),
+        "browser_image": (browser_build or {}).get("image_reference")
+        or os.environ.get("IMAGE", "w8-core:domdiff-bench"),
+        "browser_profile_provenance": profile_provenance,
+        "browser_build_provenance": browser_build,
         "dom_capture_parameters": {
             "max_nodes": args.snapshot_max_nodes,
             "max_text_chars": args.snapshot_max_text_chars,
@@ -1551,6 +1571,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=float(os.environ.get("AGENT_BROWSER_TIMEOUT", "90")),
     )
     parser.add_argument("--output-dir")
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
     # 80 bounds autonomous action attempts; it does not cap captured nodes/diffs.
     parser.add_argument("--max-steps", type=int, default=int(os.environ.get("RUN_MAX_STEPS", "80")))
     parser.add_argument("--settle-seconds", type=float, default=float(os.environ.get("STEP_SETTLE_SECONDS", "1.0")))
@@ -1621,6 +1642,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if report["status"] == "complete" else 2
         if not args.output_dir:
             raise RunnerError("--output-dir is required for live and capture-only runs")
+        from w8bench.run_paths import run_directory
+        args.output_dir = str(run_directory(args.output_dir, args.run_name))
         return asyncio.run(run_with_interrupt_handlers(args))
     except (AgentBrowserBaseError, RunnerError, CDPError, OSError, json.JSONDecodeError) as error:
         print(f"error: {error}", file=sys.stderr)

@@ -197,6 +197,11 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
     screenshot_actions = parse_actions(screenshot / "web_surfer.log", mode="screenshot")
     dom_actions = parse_actions(dom / "web_surfer.log", mode="dom_model")
     compare_semantic_actions(screenshot_actions, dom_actions)
+    # Compare the text supplied to the judges, including action rationales and
+    # annotations, as well as the executable action signatures above.
+    from .evidence_audit import verifier_action_history
+    if verifier_action_history(screenshot) != verifier_action_history(dom):
+        raise ValueError("Screenshot and DOM judge-visible action histories differ")
     screenshots = ordered_screenshots(screenshot)
     if len(screenshots) != len(screenshot_actions) + 1:
         raise ValueError("Screenshot task requires intentional N+1 states")

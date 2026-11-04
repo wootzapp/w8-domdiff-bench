@@ -233,3 +233,30 @@ def test_external_evidence_symlink_is_rejected(recording_factory, tmp_path):
     evidence.unlink(); evidence.symlink_to(outside)
     with pytest.raises(ValueError, match="escapes"):
         prepare.inspect_recording(source)
+
+
+def test_reference_identity_is_shared_without_changing_recorded_task(recording_factory, tmp_path):
+    source = recording_factory("fresh-attempt")
+    original = digest(source)
+    reference = tmp_path / "reference/task_01/batch_01"
+    write_json(reference / "frozen_rubric.json", {"task_id": "frozen-task-identity"})
+    write_json(reference / "evidence_audit.json", {"shared_trajectory": {
+        "task_instruction": "Inspect the example page.", "initial_url": "https://example.test/"}})
+    output = tmp_path / "inputs"
+    assert prepare.main([str(source), str(output), "--run-name", "run_2",
+                         "--frozen-rubrics", str(reference.parents[1])]) == 0
+    for side in ("data-ss", "data-dom"):
+        assert json.loads((output / side / "task_01/task_data.json").read_text())[0]["task_id"] == "frozen-task-identity"
+    assert json.loads((output / "preparation_report.json").read_text())["run_name"] == "run_2"
+    assert digest(source) == original
+
+
+def test_different_task_text_cannot_reuse_reference_rubric(recording_factory, tmp_path):
+    source = recording_factory()
+    reference = tmp_path / "reference/task_01/batch_01"
+    write_json(reference / "frozen_rubric.json", {"task_id": "reference"})
+    write_json(reference / "evidence_audit.json", {"shared_trajectory": {
+        "task_instruction": "A different task.", "initial_url": "https://example.test/"}})
+    output = tmp_path / "inputs"
+    assert prepare.main([str(source), str(output), "--frozen-rubrics", str(reference.parents[1])]) == 1
+    assert json.loads((output / "preparation_report.json").read_text())["prepared_count"] == 0

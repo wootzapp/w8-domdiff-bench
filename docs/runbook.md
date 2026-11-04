@@ -24,6 +24,9 @@ Prepared-pair evaluation requires 64-bit Linux or WSL 2, Git, Python 3.10 or
 newer, network access for dependencies and prepared data, and an OpenAI API
 key for executed model calls.
 
+Figure rendering and the full test suite also require Cairo. On Ubuntu or
+WSL, install it with `sudo apt install libcairo2`.
+
 Recording additionally requires Docker Engine with Compose and Buildx,
 `rsync`, approximately 32 GiB of RAM, and about 200 GiB of free disk space
 for Chromium.
@@ -88,7 +91,10 @@ After the first build, return to the directory containing
 ```bash
 cd ../../..
 git clone https://github.com/wootzapp/wootzapp-browser.git
+git -C wootzapp-browser checkout --detach 02bf5a35c5a7d02371deb6afa6adb57cc73aae72
 ```
+
+The overlay revision is pinned in `protocol/browser-build.json`.
 
 ### 5. Apply the overlay and rebuild
 
@@ -152,9 +158,14 @@ cd ../../../w8-domdiff-bench
 Build and inspect the image:
 
 ```bash
-IMAGE_VERSION=chromium-152.0.7948.0 ./scripts/build-browser-image
+./scripts/build-browser-image
 docker image inspect w8-core:domdiff-bench
 ```
+
+The build checks the pinned overlay, applied source files, protocol and copied
+Release binary. It includes a `browser-build.json` receipt and source-revision
+labels. For other source locations, pass the Chromium source directory and
+browser-overlay directory as the script's two arguments.
 
 The image remains in the local Docker engine after the terminal closes. It
 only needs to be rebuilt when Chromium, the Wootzapp Browser overlay, or image
@@ -184,6 +195,16 @@ OPENAI_API_KEY=your-api-key
 OPENAI_MODEL=your-supported-model
 ```
 
+Use `OPENAI_MODEL=gpt-5.6` to match the benchmark's recording model. Other
+supported models are allowed; the selected model is saved in `task.json`.
+The recorder reads this setting from the environment, with `--model` as an
+explicit override. It does not supply a fixed acting model.
+
+Audit models use `.env` settings `EVIDENCE_AUDIT_MODEL` (inventory) and
+`EVIDENCE_ADJUDICATOR_MODEL` (adjudication). Set both explicitly. The matching
+CLI flags override them. Google models require `GEMINI_API_KEY` and
+`python -m pip install -e ".[gemini]"`. Judge settings remain in `config/`.
+
 ## Browser runtime
 
 Start the browser and verify every runtime component:
@@ -202,7 +223,7 @@ Run a catalog task:
 
 ```bash
 mkdir -p recordings
-./scripts/run-task task8 --output-dir recordings --no-human-intervention
+./scripts/run-task task8 --output-dir recordings
 ```
 
 Run a manual task:
@@ -211,17 +232,20 @@ Run a manual task:
 ./scripts/run-task local-check "Readable task name" \
   --task "Inspect the page and report the requested visible values." \
   --start-url "https://example.com/" \
-  --output-dir recordings \
-  --no-human-intervention
+  --output-dir recordings
 ```
 
-Omit `--no-human-intervention` only when an operator may solve a CAPTCHA or
-similar challenge. Human intervention is not recorded as an agent action.
+Human intervention is disabled by default. Use `--allow-human-intervention`
+only to permit assistance with a CAPTCHA or similar access challenge.
+Requests, timestamps and resume/abort status are logged and counted in the
+manifest; individual human clicks are not exported as agent actions.
+Keep assistance disabled for autonomous benchmark recordings.
 
-Each run receives a timestamped directory:
+Catalog tasks use numbered directories. Additional attempts receive a numeric
+suffix, such as `task_01-2`, without overwriting an existing recording:
 
 ```text
-recordings/<run-id>/
+recordings/run_1/task_01/
   task.json
   manifest.json
   decisions.jsonl
@@ -251,7 +275,7 @@ The recorder writes numbered step directories. The verifier expects a paired
 task bundle:
 
 ```text
-trajectories/
+trajectories/run_1/
   data-ss/task_01/
     task_data.json
     final_answer.json
@@ -278,10 +302,10 @@ not require the browser container.
 
 ### Use your recordings
 
-Convert `recordings/` into paired inputs under `trajectories/`:
+Convert the selected run's recordings into paired verifier inputs:
 
 ```bash
-python -m w8bench.task_recorder.prepare_verifier_data recordings trajectories
+python -m w8bench.task_recorder.prepare_verifier_data
 ```
 
 - Original recordings and existing pairs are preserved; missing usable pairs are added.
@@ -289,7 +313,18 @@ python -m w8bench.task_recorder.prepare_verifier_data recordings trajectories
 - `preparation_report.json` records source paths, hashes, warnings, and exclusions.
   Exclusions return exit code 1; inspect the report before scoring.
 - Add `--dry-run` to check without writing. Use a separate output folder for a
-  different collection; repeated task attempts are kept separately.
+  different collection.
+
+Set `W8_RUN_NAME=run_1` in `.env`, or pass `--run-name run_1` to the commands.
+Recordings, trajectories and evaluations use the same run name. A different
+run uses a different folder, without changing the captured files.
+
+Independent runs use the same frozen rubrics:
+
+```bash
+python -m w8bench.task_recorder.prepare_verifier_data --run-name run_2 --frozen-rubrics evaluations/run_1
+./scripts/run-comparison --all --run-name run_2 --data-source local --frozen-rubrics evaluations/run_1 --execute
+```
 
 Validate the local pairs without model calls:
 
@@ -319,17 +354,55 @@ Run their evaluation:
 
 ### Controls and outputs
 
-- Local mode reads `trajectories/`; Hugging Face mode downloads to `dataset/`.
+- Local mode reads `trajectories/<run-name>/`; Hugging Face mode downloads to `dataset/<run-name>/`.
   Neither falls back to the other. Changed download caches are rejected.
+- An initial `www`/bare-domain difference is a warning only when the scheme,
+  port, path and query match. Both URLs remain recorded; other hosts fail validation.
 - Replace `--all` with `--task task_01` for one task. `--data-root PATH` selects
   another local input folder; use task names from the preparation report.
 - Both paths freeze one rubric, score screenshots and DOM text, and audit
   source loss. `--execute` makes paid calls. The
   [evaluation protocol](evaluation-protocol.md) defines controls and scoring.
-- Results go to `evaluation/<task>/<run-id>/`; batch summaries go to
-  `evaluation/batches/<run-id>/`. `input_source.json` identifies the input source.
+- Results go to `evaluations/run_1/task_01/batch_01/`; batch summaries go to
+  `evaluations/run_1/batches/batch_01/`. `input_source.json` identifies the input source.
+- New output groups receive the next available batch number. `--run-id` can
+  select a named group; existing task outputs are never overwritten.
+- `run-id` groups outputs, not execution dates. The run manifest records the
+  source task ID and UTC scoring/audit times; batch summaries record their
+  start and completion times.
 - Preparation-report references are relative to their output folder; evaluation
   references are relative to the repository root. Older absolute paths remain readable.
+
+### Compare recorded runs
+
+Use the same catalog and frozen rubrics for every included run. Supply each
+completed evaluation directory to the aggregator:
+
+```bash
+python -m pip install -e ".[figures]"
+```
+
+PNG rendering uses the Cairo system library. On Ubuntu or WSL, install it
+with `sudo apt install libcairo2` if it is not already available.
+
+```bash
+python -m w8bench.verifier.aggregate_runs evaluations/run_* --output-dir results --categories results/evidence_categories.tsv --readme README.md --figures-dir docs/assets/evaluations
+```
+
+The summary reports each run and the mean rates, with paired task-then-run
+bootstrap intervals.
+Category annotations must match the saved finding hashes; unassigned findings
+remain explicitly unclassified. Sizes use all captured states and KiB (1,024 bytes).
+Each figure is written as both SVG and PNG from the same drawing. The README's
+marked results table and `results/comparison.md` are generated from the summary;
+the explanatory sections retain their existing text.
+Run manifests identify the complete catalog and frozen rubrics. Recordings with
+no captured state remain unscored; the mean uses the audited tasks common to
+every run, with available task counts reported separately.
+When a run manifest is present, its audit paths select the evaluation batches.
+Set each entry's `audit` path to the batch selected for the comparison.
+Without one, each task must have exactly one audit. Dataset-download receipts
+record both the requested revision and the resolved commit SHA.
 
 ## View a remote browser
 

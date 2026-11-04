@@ -32,7 +32,8 @@ from .common import (
 from .compare_results import compare
 from .evidence_audit import (
     AuditValidationError,
-    DEFAULT_AUDIT_MODEL,
+    resolve_audit_config,
+    check_audit_models,
     append_audit_to_comparison,
     render_markdown as render_evidence_audit,
     run_evidence_audit,
@@ -58,7 +59,7 @@ def _arg_value(command: list[str], flag: str, *, default: str | None = None) -> 
 
 
 def validate_command_parity(run_commands: dict[str, list[str]]) -> dict[str, Any]:
-    """Fail before paid calls if verifier behavior differs beyond evidence I/O."""
+    """Validate shared numerical scoring controls before paid calls."""
 
     screenshot = run_commands["screenshot_verifier"]
     dom_model = run_commands["dom_model"]
@@ -238,11 +239,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--staged-root", default=str(REPOSITORY_ROOT / "data"))
     parser.add_argument("--eval-config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--env-file", default=str(REPOSITORY_ROOT / ".env"))
-    parser.add_argument("--results-root", default=str(REPOSITORY_ROOT / "evaluation"))
-    parser.add_argument("--run-id")
-    parser.add_argument("--audit-model", default=DEFAULT_AUDIT_MODEL)
+    parser.add_argument("--results-root", type=Path)
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
+    parser.add_argument("--run-id", help="Output group ID; execution times are recorded separately")
+    parser.add_argument("--audit-model", help="Inventory model; otherwise EVIDENCE_AUDIT_MODEL")
+    parser.add_argument("--adjudicator-model", help="Adjudication model; otherwise EVIDENCE_ADJUDICATOR_MODEL")
+    parser.add_argument("--audit-provider", choices=("openai", "google"))
+    parser.add_argument("--adjudicator-provider", choices=("openai", "google"))
     parser.add_argument("--execute", action="store_true")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.run_id is not None and (not args.run_id or args.run_id in {".", ".."}
+        or not all(character.isalnum() or character in "._-" for character in args.run_id)):
+        parser.error("--run-id must be a single filename containing letters, digits, '.', '_' or '-'")
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -280,10 +289,23 @@ def main(argv: list[str] | None = None) -> int:
         require_sidecars=True,
     )
     packages = require_local_packages()
-    run_id = args.run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    if Path(args.env_file).is_file() or args.execute:
+        load_env_file(args.env_file)
+    audit_config = resolve_audit_config(args.audit_model, args.adjudicator_model, args.audit_provider, args.adjudicator_provider)
+    args.audit_model = audit_config["inventory"]["model"]
+    adjudicator_model = audit_config["adjudication"]["model"]
+    from w8bench.run_paths import run_directory, resolve_run_name
+    args.run_name = resolve_run_name(args.run_name)
     results_root = ensure_under(
-        Path(args.results_root), REPOSITORY_ROOT, label="results root"
+        Path(args.results_root) if args.results_root else run_directory(REPOSITORY_ROOT / "evaluations", args.run_name),
+        REPOSITORY_ROOT, label="results root"
     )
+    run_id = args.run_id
+    if run_id is None:
+        number = 1
+        while any(results_root.glob(f"*/batch_{number:02d}")):
+            number += 1
+        run_id = f"batch_{number:02d}"
     run_root = results_root / args.task / run_id
     if run_root.exists():
         raise ValueError(f"Run output already exists; choose a new --run-id: {run_root}")
@@ -311,6 +333,12 @@ def main(argv: list[str] | None = None) -> int:
     manifest: dict[str, Any] = {
         "status": "preflight_passed",
         "phase": "B",
+        # A supplied run_id can group a batch; it is not an execution timestamp.
+        "run_id": run_id,
+        "run_name": args.run_name,
+        "source_task_id": preflight["task_id"],
+        "evaluation_started_at": None,
+        "evaluation_completed_at": None,
         "paid_calls_authorized": bool(args.execute),
         "writes_performed": False,
         "preflight": preflight,
@@ -342,7 +370,10 @@ def main(argv: list[str] | None = None) -> int:
             "enabled": True,
             "method": "automated_llm",
             "model": args.audit_model,
+            "adjudicator_model": adjudicator_model,
             "runs_after_both_verifiers": True,
+            "started_at": None,
+            "completed_at": None,
         },
         "run_root": os.path.relpath(run_root, REPOSITORY_ROOT),
     }
@@ -350,8 +381,10 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(manifest, ensure_ascii=False, indent=2))
         return 0
 
-    load_env_file(args.env_file)
     require_openai_key()
+    model_check = check_audit_models(audit_config)
+    manifest["evidence_audit"]["model_check"] = model_check
+    manifest["evaluation_started_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     run_root.mkdir(parents=True)
     copied = prepare_isolated_inputs(
         screenshot_task=screenshot_source,
@@ -371,33 +404,43 @@ def main(argv: list[str] | None = None) -> int:
     write_json(run_root / "run_manifest.json", manifest)
 
     screenshot_root = run_root / "screenshot_verifier"
-    _run_logged(
-        run_commands["screenshot_verifier"],
-        screenshot_root / "run.log",
-    )
-    screenshot_metrics = normalize_screenshot(
-        screenshot_root / "result.json",
-        input_task=screenshot_source,
-        rubric_file=published_rubric,
-        generation_metrics=published_generation,
-        run_log=screenshot_root / "run.log",
-    )
-    write_json(screenshot_root / "run_metrics.json", screenshot_metrics)
-
     dom_root = run_root / "dom_model"
-    _run_logged(
-        run_commands["dom_model"],
-        dom_root / "run.log",
-    )
-    dom_metrics = normalize_dom_model(
-        dom_root / "result.json",
-        input_task=dom_source,
-        rubric_file=published_rubric,
-        generation_metrics=published_generation,
-        run_log=dom_root / "run.log",
-    )
-    write_json(dom_root / "run_metrics.json", dom_metrics)
-    comparison_receipt, comparison_markdown = compare(screenshot_metrics, dom_metrics)
+    try:
+        _run_logged(
+            run_commands["screenshot_verifier"],
+            screenshot_root / "run.log",
+        )
+        screenshot_metrics = normalize_screenshot(
+            screenshot_root / "result.json",
+            input_task=screenshot_source,
+            rubric_file=published_rubric,
+            generation_metrics=published_generation,
+            run_log=screenshot_root / "run.log",
+        )
+        write_json(screenshot_root / "run_metrics.json", screenshot_metrics)
+
+        _run_logged(
+            run_commands["dom_model"],
+            dom_root / "run.log",
+        )
+        dom_metrics = normalize_dom_model(
+            dom_root / "result.json",
+            input_task=dom_source,
+            rubric_file=published_rubric,
+            generation_metrics=published_generation,
+            run_log=dom_root / "run.log",
+        )
+        write_json(dom_root / "run_metrics.json", dom_metrics)
+        comparison_receipt, comparison_markdown = compare(screenshot_metrics, dom_metrics)
+    except Exception as exc:
+        manifest.update(
+            status="error",
+            evaluation_completed_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            evaluation_error={"stage": "verifier_scoring", "type": type(exc).__name__},
+        )
+        write_json(run_root / "run_manifest.json", manifest)
+        raise
+    manifest["evaluation_completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
     comparison_markdown_path = run_root / "comparison.md"
     comparison_json_path = run_root / "comparison.json"
     comparison_markdown_path.write_text(comparison_markdown, encoding="utf-8")
@@ -410,8 +453,12 @@ def main(argv: list[str] | None = None) -> int:
         "frozen_rubric": os.path.relpath(published_rubric, REPOSITORY_ROOT),
         "rubric_generation_metrics": os.path.relpath(published_generation, REPOSITORY_ROOT),
     }
+    audit_calls: list[dict[str, Any]] = []
+    manifest["evidence_audit"]["started_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    write_json(run_root / "run_manifest.json", manifest)
     try:
         audit = run_evidence_audit(
+            run_name=args.run_name,
             screenshot_dir=isolated_screenshot,
             dom_dir=isolated_dom,
             rubric_file=published_rubric,
@@ -419,14 +466,22 @@ def main(argv: list[str] | None = None) -> int:
             dom_result=dom_root / "result.json",
             task_alias=args.task,
             model=args.audit_model,
+            adjudicator_model=adjudicator_model,
+            audit_provider=audit_config["inventory"]["provider"],
+            adjudicator_provider=audit_config["adjudication"]["provider"],
+            model_check=model_check,
+            call_records=audit_calls,
         )
     except Exception as exc:
+        manifest["evidence_audit"]["completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
         error_path = run_root / "evidence_audit_error.json"
         error_payload: dict[str, Any] = {
             "status": "audit_failed",
             "error_type": type(exc).__name__,
             "message": str(exc),
             "audit_model": args.audit_model,
+            "adjudicator_model": adjudicator_model,
+            "calls": audit_calls,
             "verifier_comparison_complete": True,
         }
         if isinstance(exc, AuditValidationError):
@@ -456,6 +511,17 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(manifest, ensure_ascii=False, indent=2))
         return 0
 
+    manifest["evidence_audit"]["completed_at"] = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    if "evidence_paths" in audit:
+        audit["evidence_paths"] = {
+            "screenshots": [os.path.relpath(screenshot_source / Path(path).name, REPOSITORY_ROOT)
+                            for path in audit["evidence_paths"]["screenshots"]],
+            "dom_states": [os.path.relpath(dom_source / Path(path).name, REPOSITORY_ROOT)
+                           for path in audit["evidence_paths"]["dom_states"]],
+            "action_history": {"screenshot": os.path.relpath(screenshot_source / "web_surfer.log", REPOSITORY_ROOT),
+                               "dom_model": os.path.relpath(dom_source / "web_surfer.log", REPOSITORY_ROOT)},
+        }
+    manifest["evidence_audit"]["run_manifest"] = audit.get("run_manifest", {})
     audit_json_path = run_root / "evidence_audit.json"
     audit_markdown_path = run_root / "evidence_audit.md"
     write_json(audit_json_path, audit)

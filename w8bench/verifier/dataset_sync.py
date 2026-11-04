@@ -11,6 +11,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from typing import Any, Callable
+from w8bench.run_paths import resolve_run_name, run_directory
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -103,20 +104,31 @@ def fetch_trajectories(
     repo_id: str = DEFAULT_REPO_ID,
     revision: str = DEFAULT_REVISION,
     snapshot_download_fn: Callable[..., str] | None = None,
+    api: Any | None = None,
+    run_name: str | None = None,
 ) -> dict[str, Any]:
     """Fetch one paired task, or every task, without changing verifier inputs."""
 
     target = Path(data_root).resolve()
+    remote_prefix = f"{REMOTE_PREFIX}/{resolve_run_name(run_name)}"
     if task is not None:
         _validate_task_name(task)
     if snapshot_download_fn is None:
         snapshot_download_fn, _ = _require_huggingface_hub()
+    resolved_revision = revision
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", revision):
+        if api is None:
+            _, api_type = _require_huggingface_hub()
+            api = api_type()
+        resolved_revision = api.repo_info(repo_id=repo_id, repo_type="dataset", revision=revision).sha
+    if not isinstance(resolved_revision, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", resolved_revision):
+        raise ValueError("Dataset revision must resolve to a full commit SHA")
     patterns = [
-        f"{REMOTE_PREFIX}/data-ss/{task}/**",
-        f"{REMOTE_PREFIX}/data-dom/{task}/**",
+        f"{remote_prefix}/data-ss/{task}/**",
+        f"{remote_prefix}/data-dom/{task}/**",
     ] if task else [
-        f"{REMOTE_PREFIX}/data-ss/**",
-        f"{REMOTE_PREFIX}/data-dom/**",
+        f"{remote_prefix}/data-ss/**",
+        f"{remote_prefix}/data-dom/**",
     ]
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".dataset-download-", dir=target.parent) as name:
@@ -125,15 +137,15 @@ def fetch_trajectories(
             snapshot_download_fn(
                 repo_id=repo_id,
                 repo_type="dataset",
-                revision=revision,
+                revision=resolved_revision,
                 allow_patterns=patterns,
                 local_dir=stage,
             )
         )
-        remote_root = snapshot_root / REMOTE_PREFIX
+        remote_root = snapshot_root / remote_prefix
         if not remote_root.is_dir():
             raise ValueError(
-                f"Hugging Face dataset {repo_id}@{revision} does not contain {REMOTE_PREFIX}/"
+                f"Hugging Face dataset {repo_id}@{revision} does not contain {remote_prefix}/"
             )
         screenshot_tasks = {
             path.name for path in (remote_root / "data-ss").iterdir() if path.is_dir()
@@ -141,13 +153,29 @@ def fetch_trajectories(
         dom_tasks = {
             path.name for path in (remote_root / "data-dom").iterdir() if path.is_dir()
         } if (remote_root / "data-dom").is_dir() else set()
+        if screenshot_tasks != dom_tasks:
+            raise ValueError("Downloaded screenshot and DOM task folders differ")
         aliases = sorted(screenshot_tasks & dom_tasks)
         if task and aliases != [task]:
             raise ValueError(f"No complete paired trajectory found for {task} in {repo_id}")
         if not aliases:
             raise ValueError(f"No paired trajectories found in {repo_id}@{revision}")
 
-        copied: list[str] = []
+        if task is None:
+            for modality in ("data-ss", "data-dom"):
+                local_root = target / modality
+                cached = {path.name for path in local_root.iterdir() if path.is_dir()} if local_root.is_dir() else set()
+                if cached - set(aliases):
+                    raise ValueError(
+                        "Cached task folders are absent from the selected Hugging Face inputs: "
+                        + ", ".join(sorted(cached - set(aliases)))
+                        + ". Move the existing download folder aside before fetching again."
+                    )
+
+        # Validate the complete selection before changing the download folder.
+        for alias in aliases:
+            validate_downloaded_pair(remote_root, alias)
+        pending: list[str] = []
         for alias in aliases:
             if _pair_is_valid(target, alias):
                 # File presence alone does not establish the selected revision.
@@ -160,7 +188,6 @@ def fetch_trajectories(
                             f"Cached trajectory differs from selected Hugging Face inputs: {local_task}. "
                             "Move the existing download folder aside before fetching again."
                         )
-                copied.append(alias)
                 continue
             existing = [
                 target / modality / alias
@@ -172,18 +199,30 @@ def fetch_trajectories(
                     "Refusing to replace incomplete local trajectory directories: "
                     + ", ".join(str(path) for path in existing)
                 )
-            for modality in ("data-ss", "data-dom"):
-                source = remote_root / modality / alias
-                destination = target / modality / alias
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copytree(source, destination)
-            copied.append(alias)
+            pending.append(alias)
 
-    validated = [validate_downloaded_pair(target, alias) for alias in copied]
+        created: list[Path] = []
+        try:
+            for alias in pending:
+                for modality in ("data-ss", "data-dom"):
+                    source = remote_root / modality / alias
+                    destination = target / modality / alias
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    destination.mkdir()
+                    created.append(destination)
+                    shutil.copytree(source, destination, dirs_exist_ok=True)
+            validated = [validate_downloaded_pair(target, alias) for alias in aliases]
+        except BaseException:
+            # Remove only task directories created by this download attempt.
+            for destination in reversed(created):
+                shutil.rmtree(destination)
+            raise
+
     return {
         "status": "resolved_from_huggingface",
         "repo_id": repo_id,
         "revision": revision,
+        "resolved_revision": resolved_revision,
         "data_root": str(target),
         "tasks": validated,
     }
@@ -203,14 +242,17 @@ def upload_trajectories(
     repo_id: str = DEFAULT_REPO_ID,
     revision: str = DEFAULT_REVISION,
     api: Any | None = None,
+    run_name: str | None = None,
 ) -> dict[str, Any]:
-    """Upload paired trajectories without adding them to the Dataset Viewer config."""
+    """Upload paired trajectories and their loadable JSONL index."""
 
     source = Path(data_root).resolve(strict=True)
     aliases = _local_paired_tasks(source)
     if not aliases:
         raise ValueError(f"No paired tasks found under {source}")
     validated = [validate_downloaded_pair(source, alias) for alias in aliases]
+    run_name = resolve_run_name(run_name)
+    index = build_trajectory_index(source, run_name=run_name)
     if api is None:
         _, api_type = _require_huggingface_hub()
         api = api_type()
@@ -219,35 +261,117 @@ def upload_trajectories(
         repo_type="dataset",
         revision=revision,
         folder_path=str(source),
-        path_in_repo=REMOTE_PREFIX,
-        allow_patterns=["data-ss/**", "data-dom/**"],
+        path_in_repo=f"{REMOTE_PREFIX}/{run_name}",
+        allow_patterns=["data-ss/**", "data-dom/**", "pairs.jsonl"],
         commit_message="Add paired screenshot and DOM verifier trajectories",
     )
     return {
         "status": "uploaded",
         "repo_id": repo_id,
         "revision": revision,
-        "remote_prefix": REMOTE_PREFIX,
+        "remote_prefix": f"{REMOTE_PREFIX}/{run_name}",
         "task_count": len(validated),
+        "index_sha256": index["sha256"],
         "commit": str(result),
     }
 
 
+def build_trajectory_index(data_root: str | Path, *, run_name: str | None = None) -> dict[str, Any]:
+    """Index complete paired inputs without changing any source task file."""
+    source = Path(data_root).resolve(strict=True)
+    remote_prefix = f"{REMOTE_PREFIX}/{resolve_run_name(run_name)}"
+    aliases = _local_paired_tasks(source)
+    if not aliases:
+        raise ValueError(f"No paired tasks found under {source}")
+    screenshot_tasks = {p.name for p in (source / "data-ss").iterdir() if p.is_dir()}
+    dom_tasks = {p.name for p in (source / "data-dom").iterdir() if p.is_dir()}
+    if screenshot_tasks != dom_tasks:
+        raise ValueError("Screenshot and DOM task folders differ; a pair is incomplete")
+    records = []
+    for alias in aliases:
+        validated = validate_downloaded_pair(source, alias)
+        if validated["screenshot_states"] != validated["dom_states"]:
+            raise ValueError(f"Screenshot and DOM state counts differ for {alias}")
+        screenshot, dom = source / "data-ss" / alias, source / "data-dom" / alias
+        shared_files = {}
+        identities, answers = [], []
+        for mode, folder in (("screenshot", screenshot), ("dom_model", dom)):
+            for name in ("task_data.json", "final_answer.json", "web_surfer.log"):
+                shared_files[(mode, name)] = (folder / name).read_bytes().decode("utf-8")
+            metadata = json.loads(shared_files[(mode, "task_data.json")])
+            if isinstance(metadata, list) and len(metadata) == 1:
+                metadata = metadata[0]
+            if not isinstance(metadata, dict):
+                raise ValueError(f"Expected one task object for {alias}, {mode}")
+            identities.append((metadata.get("task_id") or metadata.get("id"),
+                               metadata.get("confirmed_task") or metadata.get("question"),
+                               metadata.get("website") or metadata.get("init_url")))
+            answer = json.loads(shared_files[(mode, "final_answer.json")])
+            if not isinstance(answer, dict) or "final_answer" not in answer:
+                raise ValueError(f"Missing final answer object for {alias}, {mode}")
+            answers.append(answer["final_answer"])
+        if identities[0] != identities[1] or not all(identities[0]):
+            raise ValueError(f"Screenshot and DOM task identities differ or are incomplete for {alias}")
+        if answers[0] != answers[1]:
+            raise ValueError(f"Screenshot and DOM final answers differ for {alias}")
+        screenshot_log = shared_files[("screenshot", "web_surfer.log")]
+        dom_log = shared_files[("dom_model", "web_surfer.log")]
+        if screenshot_log != dom_log:
+            raise ValueError(f"Screenshot and DOM action logs differ for {alias}")
+        images = sorted(
+            (path for path in screenshot.iterdir() if path.is_file() and not path.is_symlink()
+             and re.fullmatch(r"screenshot_?(0|[1-9]\d*)\.(?:png|jpe?g|webp)", path.name, re.I)),
+            key=lambda path: int(re.search(r"\d+", path.name).group()),
+        )
+        if len(images) != validated["screenshot_states"]:
+            raise ValueError(f"Original screenshot sources are incomplete for {alias}")
+        states = []
+        for index, image in enumerate(images):
+            model = dom / f"dom_model{index}.txt"
+            states.append({
+                "index": index,
+                "screenshot_path": f"{remote_prefix}/data-ss/{alias}/{image.name}",
+                "screenshot_sha256": hashlib.sha256(image.read_bytes()).hexdigest(),
+                "dom_model_path": f"{remote_prefix}/data-dom/{alias}/{model.name}",
+                "dom_model_sha256": hashlib.sha256(model.read_bytes()).hexdigest(),
+                "dom_model_text": model.read_bytes().decode("utf-8"),
+            })
+        records.append({
+            "run_name": resolve_run_name(run_name),
+            "task_alias": alias,
+            "screenshot_task_data_json": shared_files[("screenshot", "task_data.json")],
+            "dom_model_task_data_json": shared_files[("dom_model", "task_data.json")],
+            "screenshot_final_answer_json": shared_files[("screenshot", "final_answer.json")],
+            "dom_model_final_answer_json": shared_files[("dom_model", "final_answer.json")],
+            "web_surfer_log": screenshot_log,
+            "states": states,
+        })
+    index_path = source / "pairs.jsonl"
+    pending = index_path.with_suffix(".jsonl.tmp")
+    pending.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in records), encoding="utf-8")
+    pending.replace(index_path)
+    return {"status": "indexed", "task_count": len(records),
+            "index_path": os.path.relpath(index_path, REPOSITORY_ROOT),
+            "sha256": hashlib.sha256(index_path.read_bytes()).hexdigest()}
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("fetch", "upload"))
+    parser.add_argument("command", choices=("fetch", "upload", "index"))
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
+    parser.add_argument("--env-file", type=Path, default=REPOSITORY_ROOT / ".env")
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--task")
     selection.add_argument("--all", action="store_true")
     parser.add_argument(
         "--output-dir",
-        default=str(DEFAULT_DATASET_ROOT),
+        type=Path,
         help="Local dataset directory populated from Hugging Face",
     )
     parser.add_argument(
         "--source-dir",
-        default=str(REPOSITORY_ROOT / "data"),
-        help="Maintainer-only local source used by the upload command",
+        type=Path,
+        help="Prepared local trajectories used by index and upload",
     )
     parser.add_argument(
         "--repo-id", default=os.environ.get("W8_BENCH_DATASET_REPO", DEFAULT_REPO_ID)
@@ -258,6 +382,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    from .common import load_env_file
+    if args.env_file.is_file():
+        load_env_file(args.env_file)
+    args.run_name = resolve_run_name(args.run_name)
+    args.output_dir = args.output_dir or run_directory(DEFAULT_DATASET_ROOT, args.run_name)
+    args.source_dir = args.source_dir or run_directory(REPOSITORY_ROOT / "trajectories", args.run_name)
     if args.command == "fetch":
         if not args.task and not args.all:
             raise ValueError("fetch requires --task TASK or --all")
@@ -266,14 +396,16 @@ def main(argv: list[str] | None = None) -> int:
             task=None if args.all else args.task,
             repo_id=args.repo_id,
             revision=args.revision,
+            run_name=args.run_name,
         )
     else:
         if args.task or args.all:
-            raise ValueError("upload always publishes every validated paired task")
-        result = upload_trajectories(
+            raise ValueError(f"{args.command} uses every validated paired task")
+        result = build_trajectory_index(args.source_dir, run_name=args.run_name) if args.command == "index" else upload_trajectories(
             data_root=args.source_dir,
             repo_id=args.repo_id,
             revision=args.revision,
+            run_name=args.run_name,
         )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0

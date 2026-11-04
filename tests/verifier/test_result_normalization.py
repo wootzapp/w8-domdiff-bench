@@ -40,8 +40,57 @@ def test_comparison_accepts_controlled_matching_receipts():
     assert "calls" not in markdown.lower()
     assert "DOM-model" in markdown
 
+    screenshot = _run("screenshot")
+    dom = _run("dom_model")
+    for run in (screenshot, dom):
+        run["criteria"][1]["condition"] = "Only when needed"
+    dom["criteria"][1]["is_applicable"] = False
+    dom["criteria"][1]["final_points"] = 0.0
+    dom["result"].update(total_max_points=7.0, total_earned_points=7.0)
+    original = deepcopy((screenshot, dom))
+    receipt, markdown = compare(screenshot, dom)
+    assert receipt["criterion_denominator"] == 10.0
+    assert receipt["screenshot"]["maximum_points"] == 10.0
+    assert receipt["dom_model"]["maximum_points"] == 7.0
+    assert (screenshot, dom) == original
+    assert "conditional criteria" in markdown
 
-@pytest.mark.parametrize("drift", ["hash", "order", "maximum", "generation"])
+
+@pytest.mark.parametrize("points_field", ["post_image_earned_points", "post_dom_earned_points"])
+def test_penalties_normalize_and_compare_without_changing_frozen_criteria(pair_factory, tmp_path, points_field):
+    pair = pair_factory()
+    original_rubric = pair["rubric"].read_bytes()
+    rubric = json.loads(original_rubric)["precomputed_rubric"]
+    rows = [{**item, "earned_points": item["max_points"],
+             points_field: item["max_points"]} for item in rubric["items"]]
+    raw = {"task_id": pair["task"]["task_id"], "rubric_sha256": canonical_sha256(rubric),
+           "criterion_denominator": 10, "rubric_total_max_points": 12,
+           "rubric_total_earned_points": 10, "rubric_score": 10 / 12,
+           "intermediate_mm_rubric_steps": {"step6_rescoring_summary": rows,
+               "step7_penalty_criteria": [{"criterion": "Unsolicited material side effect",
+                   "max_points": 2, "earned_points": 0, points_field: 0,
+                   "penalty": True}]}}
+    result_file = tmp_path / "penalty.json"
+    result_file.write_text(json.dumps(raw))
+    kwargs = {"input_task": pair["screenshot"], "rubric_file": pair["rubric"],
+              "generation_metrics": pair["metrics"], "run_log": tmp_path / "run.log"}
+    screenshot = normalize_screenshot(result_file, **kwargs)
+    dom = normalize_dom_model(result_file, **kwargs)
+    receipt, markdown = compare(screenshot, dom)
+    assert receipt["criterion_denominator"] == 10
+    for value in (screenshot, dom):
+        assert sum(item["max_points"] for item in value["criteria"]) == 10
+        assert value["result"]["process_score"] == 10 / 12
+        assert value["result"]["total_max_points"] == 12
+        assert value["penalty_criteria"][0]["final_points"] == 0
+    assert pair["rubric"].read_bytes() == original_rubric
+    raw["intermediate_mm_rubric_steps"]["step7_penalty_criteria"][0][points_field] = 1
+    result_file.write_text(json.dumps(raw))
+    with pytest.raises(ValueError, match="zero earned points"):
+        (normalize_dom_model if points_field.startswith("post_dom") else normalize_screenshot)(result_file, **kwargs)
+
+
+@pytest.mark.parametrize("drift", ["hash", "order", "maximum", "generation", "denominator"])
 def test_comparison_rejects_frozen_contract_drift(drift):
     screenshot = _run("screenshot")
     dom = deepcopy(_run("dom_model"))
@@ -52,6 +101,8 @@ def test_comparison_rejects_frozen_contract_drift(drift):
     elif drift == "maximum":
         dom["criteria"][0]["max_points"] = 6.0
         dom["criteria"][1]["max_points"] = 4.0
+    elif drift == "denominator":
+        dom["result"]["total_max_points"] = 9.0
     else:
         dom["llm_calls"]["rubric_generation_calls"] = 1
     with pytest.raises(ValueError):

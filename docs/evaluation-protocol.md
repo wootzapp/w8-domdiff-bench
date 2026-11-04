@@ -19,7 +19,8 @@ shape, and required files before model clients are created.
 ## Controlled scoring
 
 Both sides use the same judge model, action model, rubric threshold, evidence
-count, majority-vote count, and success rule. Only the evidence loader differs.
+count, majority-vote count, and success rule. Each representation has its own
+evidence loader, grounding instructions and context packing.
 The comparison command fails if those controls drift.
 
 One rubric is generated or imported first. Its canonical SHA-256 and point
@@ -38,7 +39,12 @@ changing points, penalties, thresholds, or the recorded action history.
 ### Success rules
 
 The normalized rubric score is the earned point total divided by the maximum
-available points. `rubric_is_success` records whether that ratio meets the
+available points, using only criteria the verifier marks applicable.
+Additional side-effect penalties are recorded separately from the frozen
+criteria. They contribute to the verifier's point total without changing the
+frozen rubric or the evidence-loss denominator.
+Inapplicable criteria remain in the separate evidence-loss denominator.
+`rubric_is_success` records whether that ratio meets the
 rubric threshold, currently **0.8** in the paired comparison. A strict
 full-score success means earning every available point (`x/x`).
 
@@ -66,12 +72,18 @@ source. It keeps missing source evidence separate from judge disagreement.
 The headline counts are therefore evidence-availability measurements, not a
 general claim that one verifier always scores tasks better.
 
+Review routing covers losses and verifier misses on either side. The blind
+review builder also selects 75 seeded unflagged criteria, or all remaining
+criteria if fewer are available. Votes and selection reasons stay outside
+the blind review file. Review selection does not alter audit labels.
+
 ### Source-loss counting
 
 A representation loses evidence for a criterion when at least one required
 item is absent from that representation and present in the other, across
-the eligible ordered source states. A criterion contributes at most one
-loss per representation even when several required items are missing.
+the eligible ordered source states, shared task inputs and formatted action history.
+A criterion contributes at most one loss per representation even when
+several required items are missing.
 Items absent from both representations, or present in both, do not trigger
 paired source loss. Evidence that a verifier overlooks or misinterprets is
 a separate interpretation error.
@@ -89,28 +101,15 @@ live webpage, since gaps shared by both representations remain undetected.
 The report gives the [availability indicators and rate equations](technical-report.md#paired-source-evidence-loss)
 and their [current numerical values](technical-report.md#current-counts-and-relative-reduction).
 
-### URL identity and sensitivity
-
-The saved audits require exact URL evidence within a representation where
-the rubric makes website, page, record, or endpoint identity essential.
-Visible branding and URLs in shared action history do not substitute under
-that identity rule. A URL missing from a screenshot is not automatically a
-loss for every criterion. The screenshot capture omits the browser’s
-address bar, which makes this rule material to the aggregate comparison.
-
-The primary URL-excluded analysis removes primary URL-category losses from
-each representation’s numerator and keeps all audited criteria in the
-cohort denominator. It preserves non-URL losses on the other side of the
-same criterion. The report separately shows alternatives removing entire
-criteria with URL findings; those have different denominators. These are
-recalculations of saved findings, not new audits or experiments adding URLs
-to screenshots.
-
 ### Benchmark evaluation
 
-The [technical report](technical-report.md) documents 92 evaluated tasks and 91 completed evidence audits, covering 582 criteria. It includes 118 screenshot losses and 7 DOM losses, overlapping on four criteria. The audit/adjudication uses `gpt-5.6-sol`; category annotations are separately recorded in [evidence_categories.tsv](../results/evidence_categories.tsv).
+The [technical report](technical-report.md) contains the published counts and
+the [category annotations](../results/evidence_categories.tsv). Inventory uses
+`gpt-5.6-sol` and adjudication uses `gemini-3.1-pro-preview`.
 
-Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. Evidence-loss results cover 91 tasks because task 76’s audit failed validation.
+Evaluation requires usable, aligned captures. Audit failures remain listed
+separately and do not count as either confirmed loss or confirmed absence of
+loss. Verifier scores remain available when an audit fails validation.
 
 The acting agent uses `gpt-5.6` for browser-action generation. The verifiers
 use `gpt-5.2` for rubric generation and evidence judgments and `gpt-5.6-terra`
@@ -120,8 +119,29 @@ for action/validity judgments. See
 Standalone verifier commands select this model with `--action-model`.
 The paired comparison supplies the same model to both verifiers.
 
-Exploratory 95% Wilson intervals assume independent criteria and do not
-adjust for correlation among criteria within a task or annotation error.
+In `.env`, `EVIDENCE_AUDIT_MODEL` selects the inventory model and
+`EVIDENCE_ADJUDICATOR_MODEL` selects the adjudicator. Both are required.
+The matching CLI flags override these settings.
+Process environment values take precedence over `.env`. The selected audit
+models are saved in the run manifest; these settings do not change the
+recording or verifier models.
+
+Aggregate intervals resample whole tasks, keeping their criteria and both
+modalities together. The reported rate remains total losses divided by total
+criteria, not the average of task rates. The paired difference uses the same
+task draws. The percentile bootstrap uses 20,000 draws and records its seed.
+
+For multiple independent recorded runs, report the mean criterion-level rate
+across runs. Compute relative reduction from mean screenshot and DOM counts.
+Intervals draw tasks with replacement, then runs within each selected task;
+all criteria and both representations stay paired. Task sets, rubric hashes,
+prompt versions, model IDs and generation settings must match across runs.
+It assumes independent tasks and does not measure annotation error. A single
+task has no estimable interval; constant samples are marked as degenerate.
+The selected audit paths come from each run manifest when one is present.
+Returned model versions must agree. Repeated evidence requires distinct
+recording provenance; identical static page content alone does not establish
+that two recordings are duplicates.
 Website blockers, recorded execution failures, task scores, and source-loss
 counts are separate measurements.
 
@@ -129,4 +149,4 @@ counts are separate measurements.
 
 See the [runbook](runbook.md#score-a-prepared-task) for preparation, validation,
 and comparison commands. Saved rubrics, scores, audits, and provenance are
-written under `evaluation/`.
+written under `evaluations/<run-name>/`.

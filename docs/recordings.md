@@ -10,26 +10,31 @@ inspect what the agent observed and what happened during a run.
 The benchmark's acting agent uses `gpt-5.6` for browser-action generation.
 
 These recordings provide additional data for inspecting the collection
-process. The verifier audit uses the prepared trajectory pairs in
-[`trajectories/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-ss) and
-[`trajectories/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/data-dom).
+process. Prepared trajectory pairs are grouped by the same run name. For example, run_1 uses
+[`trajectories/run_1/data-ss/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/run_1/data-ss) and
+[`trajectories/run_1/data-dom/`](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/trajectories/run_1/data-dom).
 Use the recordings when you want more detail about a recorded run, its
 observations, or its failures.
 
-Each run has a folder such as
-[task1-reddit-ranking-20261029T152819Z](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/4fd56ae6a085374b2b1b75435af21dd06c22eb30/recordings/task1-reddit-ranking-20261029T152819Z): a task identifier,
-readable name, and UTC run timestamp. JSONL files contain one JSON object per
-line; `web_surfer.log` also uses that format.
+Each recording has a task folder such as
+[task_01](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/recordings/run_1/task_01).
+Actual execution times remain in its metadata. JSONL files contain one JSON
+object per line; `web_surfer.log` also uses that format.
 
 | Artifact | Purpose | Availability | How to inspect it | Key fields or related files |
 |---|---|---|---|---|
 | `task.json` | Identifies the task and collection setup. | Every run. | Read the instruction, constraints, start URL, and model. | `source_task_id`, `task_id`, `action_driver`. |
-| `manifest.json` | Indexes the recording and its provenance. | Every run. | Check capture settings, browser/driver details, state paths, actions, warnings, and errors. | `states`, `steps`, `status`, `trajectory_export`. |
+| `manifest.json` | Indexes the recording and its provenance. | Every run. | Check capture settings, browser/driver details, state paths, actions, warnings, and errors. | `states`, `steps`, `status`, `trajectory_export`, `browser_build_provenance`. |
 | `final.json` | Stores the final answer and recorded outcome. | Every run. | Read the answer alongside any failure or error details. | `status`, optional `run_status`, `recorded_steps`. |
 | `decisions.jsonl` | Records model decisions, including rejected proposals and termination. | When model decisions were recorded. | Inspect proposed actions, rejection reasons, memory updates, response metadata, and token usage. | `model_turn`, `decision`, `rejection_reason`. |
 | `trajectory.jsonl` | Stores normalized executed browser actions. | When export is available; may be empty. | Follow each action's arguments, execution status, and state transition. | `source_step`, `next_step`, `execution_status`. |
 | `web_surfer.log` | Expresses the exported actions as WebSurfer events. | When export is available; may be empty. | Read action messages and arguments in order. | Companion to `trajectory.jsonl`. |
 | `steps/step_NNN/` | Holds one captured browser state. | When state capture succeeded. | Compare adjacent folders to inspect an action's effect. | State assets described below. |
+
+`browser_build_provenance` records the container's exact image ID, available
+repository digests and build labels for the overlay, Chromium and protocol.
+Source revisions remain unknown for older images without those labels.
+Direct CDP runs without managed-container metadata leave this field null.
 
 Within each state folder:
 
@@ -63,8 +68,21 @@ inspection, start with `task.json`, `manifest.json`, and
 `final.json`, then follow the relevant actions and state folders.
 
 Use task identifiers, timestamps, and manifests to match recordings with
-prepared trajectories and evaluation artifacts. The
+prepared trajectories and evaluation artifacts. Evaluation folder IDs group
+outputs; use the run manifest's scoring/audit times and saved logs for actual
+execution dates. The
 [technical report](technical-report.md#recorded-execution-failures)
 separates recorded execution failures from completed evaluation audits.
 For commands that create local recordings, see the
 [runbook](runbook.md#record-a-task).
+
+## Recording attempts
+
+Each run contributes one retained recording per task. Zero-state technical
+failures normally permit one additional attempt. Runs 2 and 3 each contain
+108 logged attempts for 100 retained tasks. Run 2/task 45 and task 94 each
+have three logged attempts; run 2/task 42 retains a 54-state attempt following
+an attempt with 72 states. These are technical-retention exceptions, not
+additional evaluated tasks. The latest permitted attempt is retained
+regardless of status, rather than selecting by verifier scores or audit labels.
+Available attempt details and retained paths are recorded in the run manifests.

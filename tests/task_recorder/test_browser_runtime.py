@@ -92,6 +92,9 @@ class BrowserRuntimeTests(unittest.TestCase):
         self.assertEqual(values["COMPOSE_PROJECT_NAME"], "w8-recorder-abc12345")
         self.assertEqual(values["CONTAINER_NAME"], "w8-core-browser-abc12345")
         self.assertEqual(values["IMAGE"], "w8-core:domdiff-bench")
+        self.assertEqual(values["EVIDENCE_AUDIT_MODEL"], "")
+        self.assertEqual(values["EVIDENCE_ADJUDICATOR_MODEL"], "")
+        self.assertEqual(values["W8_RUN_NAME"], "run_1")
         self.assertEqual(values["CDP_HOST_PORT"], "49335")
         self.assertEqual(values["NOVNC_HOST_PORT"], "22001")
         self.assertEqual(values["VNC_HOST_PORT"], "15911")
@@ -120,6 +123,8 @@ class BrowserRuntimeTests(unittest.TestCase):
                         "CONTAINER_NAME=existing-container",
                         "OPENAI_API_KEY=secret-value",
                         "OPENAI_MODEL=test-model",
+                        "EVIDENCE_AUDIT_MODEL=test-inventory",
+                        "EVIDENCE_ADJUDICATOR_MODEL=test-adjudicator",
                     ]
                 )
                 + "\n",
@@ -139,6 +144,8 @@ class BrowserRuntimeTests(unittest.TestCase):
         self.assertEqual(values["CONTAINER_NAME"], "existing-container")
         self.assertEqual(values["OPENAI_API_KEY"], "secret-value")
         self.assertEqual(values["OPENAI_MODEL"], "test-model")
+        self.assertEqual(values["EVIDENCE_AUDIT_MODEL"], "test-inventory")
+        self.assertEqual(values["EVIDENCE_ADJUDICATOR_MODEL"], "test-adjudicator")
         self.assertEqual(values["CDP_HOST_PORT"], "31001")
         self.assertEqual(values["NOVNC_HOST_PORT"], "31002")
         self.assertEqual(values["VNC_HOST_PORT"], "31003")

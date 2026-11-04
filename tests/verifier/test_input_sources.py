@@ -58,7 +58,7 @@ def test_huggingface_source_fetches_to_download_folder(inputs, monkeypatch, caps
     calls = []
     monkeypatch.setattr(workflow, "DEFAULT_DATASET_ROOT", inputs["staged"])
     monkeypatch.setattr(workflow, "fetch_trajectories", lambda **kw: calls.append(kw) or {"status": "fetched"})
-    args = ["--task", "task1", "--hf-revision", "pinned-revision"]
+    args = ["--task", "task1", "--hf-revision", "pinned-revision", "--run-name", "staged"]
     if explicit:
         args += ["--data-source", "huggingface"]
     assert workflow.main(args) == 0
@@ -69,7 +69,7 @@ def test_huggingface_source_fetches_to_download_folder(inputs, monkeypatch, caps
 
 def test_local_default_uses_trajectories_not_download_folder(inputs, tmp_path, monkeypatch):
     monkeypatch.setattr(workflow, "REPOSITORY_ROOT", tmp_path)
-    shutil.copytree(inputs["staged"], tmp_path / "trajectories")
+    shutil.copytree(inputs["staged"], tmp_path / "trajectories/run_1")
     monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
     assert workflow.main(["--all", "--data-source", "local"]) == 0
 
@@ -79,7 +79,7 @@ def test_download_mode_refuses_locally_prepared_root(inputs, monkeypatch):
     (inputs["staged"] / "preparation_report.json").write_text("{}")
     monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
     with pytest.raises(ValueError, match="locally prepared"):
-        workflow.main(["--task", "task1", "--data-source", "huggingface"])
+        workflow.main(["--task", "task1", "--data-source", "huggingface", "--run-name", "staged"])
 
 
 @pytest.mark.parametrize("argv", [
@@ -104,19 +104,26 @@ def test_execute_passes_only_selected_local_inputs(inputs, tmp_path, monkeypatch
         return 0
     def score(argv):
         seen.append("score")
-        root = tmp_path / "evaluation/task1/check"
+        root = tmp_path / "evaluations/run_1/task1/check"
         root.mkdir(parents=True)
         return 0
     monkeypatch.setattr(workflow, "generate_rubric", generate)
     monkeypatch.setattr(workflow, "run_comparison", score)
-    assert workflow.main(["--task", "task1", "--data-source", "local", "--data-root", str(inputs["staged"]),
-                          "--env-file", str(env), "--eval-config", str(inputs["config"]),
-                          "--run-id", "check", "--execute"]) == 0
+    arguments = ["--task", "task1", "--data-source", "local", "--data-root", str(inputs["staged"]),
+                 "--env-file", str(env), "--eval-config", str(inputs["config"]),
+                 "--run-id", "check", "--execute"]
+    assert workflow.main(arguments) == 0
     assert seen == ["generate", "score"]
-    receipt = json.loads((tmp_path / "evaluation/task1/check/input_source.json").read_text())
+    receipt = json.loads((tmp_path / "evaluations/run_1/task1/check/input_source.json").read_text())
     assert receipt["data_source"] == "local"
     assert not Path(receipt["data_root"]).is_absolute()
     assert (tmp_path / receipt["data_root"]).resolve() == inputs["staged"]
+
+    existing = {p.relative_to(tmp_path): p.read_bytes() for p in (tmp_path / "evaluations").rglob("*") if p.is_file()}
+    with pytest.raises(ValueError, match="Run output already exists"):
+        workflow.main(arguments)
+    assert seen == ["generate", "score"]
+    assert {p.relative_to(tmp_path): p.read_bytes() for p in (tmp_path / "evaluations").rglob("*") if p.is_file()} == existing
 
 
 def test_preparation_hashes_block_edited_inputs_before_paid_calls(inputs, monkeypatch):
@@ -136,14 +143,15 @@ def test_preparation_hashes_block_edited_inputs_before_paid_calls(inputs, monkey
         workflow.main(["--all", "--data-source", "local", "--data-root", str(root), "--execute"])
 
 
-def test_huggingface_batch_downloads_once_and_keeps_source_in_children(inputs, monkeypatch):
+def test_huggingface_batch_downloads_once_and_keeps_source_in_children(inputs, tmp_path, monkeypatch):
     root = inputs["staged"]
     calls, children = [], []
+    monkeypatch.setattr(workflow, "REPOSITORY_ROOT", tmp_path)
     monkeypatch.setattr(workflow, "DEFAULT_DATASET_ROOT", root)
     monkeypatch.setattr(workflow, "fetch_trajectories", lambda **kw: calls.append(kw) or {})
     monkeypatch.setattr(workflow, "_run_task", lambda args, selected: children.append((args.data_source, selected)) or 1)
     with pytest.raises(RuntimeError, match="All selected task comparisons failed"):
-        workflow.main(["--all", "--data-source", "huggingface", "--execute"])
+        workflow.main(["--all", "--data-source", "huggingface", "--run-name", "staged", "--execute"])
     assert len(calls) == 1 and calls[0]["task"] is None
     assert children == [("huggingface", root)]
 
@@ -154,3 +162,42 @@ def test_malformed_local_preparation_report_is_rejected(inputs, monkeypatch):
     monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
     with pytest.raises(ValueError, match="report schema"):
         workflow.main(["--all", "--data-source", "local", "--data-root", str(root)])
+
+
+def test_reference_rubric_is_copied_unchanged_without_generation(pair_factory, tmp_path, monkeypatch):
+    pair = pair_factory()
+    (tmp_path / "missing.env").write_text("")
+    reference = tmp_path / "reference/task1/batch_01"
+    reference.mkdir(parents=True)
+    shutil.copyfile(pair["rubric"], reference / "frozen_rubric.json")
+    shutil.copyfile(pair["metrics"], reference / "rubric_generation_metrics.json")
+    original = pair["rubric"].read_bytes()
+    monkeypatch.setattr(workflow, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(workflow, "generate_rubric", lambda *a: pytest.fail("Frozen rubric was regenerated"))
+    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
+    calls = []
+    def score(args):
+        rubric = Path(args[args.index("--rubric-file") + 1])
+        assert rubric.read_bytes() == original
+        screenshot = Path(args[args.index("--screenshot-task") + 1])
+        assert (screenshot / "task_data_with_canonical_rubric.json").is_file()
+        assert args[args.index("--run-name") + 1] == "run_2"
+        output = Path(args[args.index("--results-root") + 1]) / "task1" / args[args.index("--run-id") + 1]
+        output.mkdir(parents=True)
+        (output / "evidence_audit.json").write_text(json.dumps({"evidence_paths": {
+            "screenshots": [str(screenshot / "screenshot0.png")],
+            "dom_states": ["temporary/dom_model0.txt"],
+            "action_history": {"screenshot": "temporary/log", "dom_model": "temporary/log"}}}))
+        calls.append(args)
+        return 0
+    monkeypatch.setattr(workflow, "run_comparison", score)
+    assert workflow.main(["--task", "task1", "--run-name", "run_2", "--data-source", "local",
+                          "--data-root", str(pair["staged"]), "--eval-config", str(pair["config"]),
+                          "--env-file", str(tmp_path / "missing.env"), "--execute",
+                          "--frozen-rubrics", str(tmp_path / "reference")]) == 0
+    assert len(calls) == 1
+    assert pair["rubric"].read_bytes() == original
+    audit = json.loads((tmp_path / "evaluations/run_2/task1/batch_01/evidence_audit.json").read_text())
+    for path in audit["evidence_paths"]["screenshots"] + audit["evidence_paths"]["dom_states"] + list(audit["evidence_paths"]["action_history"].values()):
+        assert not Path(path).is_absolute()
+        assert (tmp_path / path).is_file()

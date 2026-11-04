@@ -272,6 +272,45 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
     except (json.JSONDecodeError, IndexError, KeyError, TypeError) as error:
         raise RunnerError("docker inspect returned invalid container provenance") from error
 
+    # Inspect by immutable image ID, not by a tag that may have moved since this
+    # container started. Older images remain usable with unknown source labels.
+    image_id = container.get("Image")
+    image_labels = (container.get("Config") or {}).get("Labels") or {}
+    repo_digests: list[str] = []
+    image_inspection_error = None
+    if image_id:
+        try:
+            image_result = subprocess.run(
+                ["docker", "image", "inspect", image_id],
+                text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+            )
+            if image_result.returncode:
+                raise ValueError(image_result.stderr.strip() or "image inspection failed")
+            image = json.loads(image_result.stdout)[0]
+            if image.get("Id") != image_id:
+                raise ValueError("image inspection returned a different image ID")
+            repo_digests = image.get("RepoDigests") or []
+            image_labels = (image.get("Config") or {}).get("Labels") or {}
+            if not isinstance(repo_digests, list) or any(not isinstance(part, str) for part in repo_digests):
+                raise ValueError("image inspection returned invalid repository digests")
+            if not isinstance(image_labels, dict):
+                raise ValueError("image inspection returned invalid build labels")
+        except (OSError, ValueError, IndexError, TypeError, AttributeError) as error:
+            repo_digests = []
+            image_labels = (container.get("Config") or {}).get("Labels") or {}
+            image_inspection_error = str(error)
+    browser_build = {
+        "image_reference": (container.get("Config") or {}).get("Image"),
+        "image_id": image_id,
+        "repo_digests": repo_digests,
+        "image_source_revision": image_labels.get("org.opencontainers.image.revision"),
+        "image_version": image_labels.get("org.opencontainers.image.version"),
+        "overlay_revision": image_labels.get("org.wootzapp.browser.overlay.revision"),
+        "chromium_revision": image_labels.get("org.wootzapp.browser.chromium.revision"),
+        "protocol_sha256": image_labels.get("org.wootzapp.browser.protocol.sha256"),
+        "inspection_error": image_inspection_error,
+    }
+
     counted = subprocess.run(
         [
             "docker", "exec", container_name, "sh", "-c",
@@ -314,15 +353,8 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
         "container_created_at": container_created_at,
         "profile_fresh_at_run_start": tasks_previously_run == 0,
         "tasks_previously_run_in_container": tasks_previously_run,
+        "browser_build": browser_build,
     }
-
-
-def task_name_slug(value: str) -> str:
-    """Create a bounded filesystem-safe task-name component or fail if empty."""
-    slug = re.sub(r"[^a-z0-9]+", "-", value.strip().lower()).strip("-")
-    if not slug:
-        raise RunnerError("task name must contain at least one letter or digit")
-    return slug[:48].rstrip("-")
 
 
 def validate_task_definition(
@@ -473,7 +505,8 @@ def fetch_catalog_task(
     definition.update(
         {
             "source_task_id": str(row.get("task_id", "")).strip(),
-            "task_name": str(row.get("category", "")).strip(),
+            "task_name": str(row.get("task_name") or "").strip()
+            or str(row.get("category") or "").strip(),
             "source_catalog": url,
         }
     )
@@ -482,14 +515,11 @@ def fetch_catalog_task(
 
 def unique_run_id(
     task_id: str,
-    task_name: str,
     output_dir: Path,
-    *,
-    timestamp: str | None = None,
 ) -> str:
-    """Build a timestamped run id and suffix collisions instead of overwriting."""
-    stamp = timestamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    base = safe_task_id(f"{task_id}-{task_name_slug(task_name)}-{stamp}")
+    """Normalize task aliases and suffix existing names instead of overwriting."""
+    numbered = re.fullmatch(r"(?:browser_)?task[_-]?(\d+)", task_id, re.IGNORECASE)
+    base = f"task_{int(numbered.group(1)):02d}" if numbered else safe_task_id(task_id)
     candidate = base
     suffix = 2
     while (output_dir / candidate).exists():
@@ -566,11 +596,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--start-url", help="absolute HTTP(S) starting URL for a manual task")
     parser.add_argument("--catalog-url", help=argparse.SUPPRESS)
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
+    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
     parser.add_argument(
         "--output-dir",
         type=Path,
         required=True,
-        help="parent directory for this task's timestamped run",
+        help="parent directory for this task's recording",
     )
     parser.add_argument("--model", default="")
     parser.add_argument("--max-steps", type=int, default=80)
@@ -589,11 +620,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Keep post-action locale redirects disabled (the default)",
     )
     parser.set_defaults(post_action_language_redirect=False)
-    parser.add_argument(
-        "--no-human-intervention",
+    human_intervention_group = parser.add_mutually_exclusive_group()
+    human_intervention_group.add_argument(
+        "--allow-human-intervention",
+        dest="allow_human_intervention",
         action="store_true",
-        help="do not permit the runner to pause for manual challenges",
+        help="permit a recorded pause for a human to solve an access challenge",
     )
+    human_intervention_group.add_argument(
+        "--no-human-intervention",
+        dest="allow_human_intervention",
+        action="store_false",
+        help="do not permit manual challenges (the default)",
+    )
+    parser.set_defaults(allow_human_intervention=False)
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -623,6 +663,9 @@ def main(argv: list[str] | None = None) -> int:
         raise RunnerError("--previous-run-stop-timeout must not be negative")
 
     load_env(args.env_file)
+    from w8bench.run_paths import run_directory, resolve_run_name
+    args.run_name = resolve_run_name(args.run_name)
+    args.output_dir = run_directory(args.output_dir, args.run_name)
     # Supplying either manual field selects manual mode and requires both. With
     # neither field, the positional task id is resolved through the catalog.
     manual_task = args.task is not None or args.start_url is not None
@@ -647,7 +690,7 @@ def main(argv: list[str] | None = None) -> int:
         else str(definition.get("task_name") or task_id).strip()
     )
     output_dir = args.output_dir.resolve()
-    run_id = unique_run_id(task_id, task_name, output_dir)
+    run_id = unique_run_id(str(definition.get("source_task_id") or task_id), output_dir)
     default_novnc_url = (
         "http://127.0.0.1:"
         + os.environ.get("NOVNC_HOST_PORT", "16191")
@@ -663,20 +706,21 @@ def main(argv: list[str] | None = None) -> int:
         run_id=run_id,
         output_dir=output_dir,
         env_file=args.env_file.resolve(),
-        allow_human_intervention=not args.no_human_intervention,
+        allow_human_intervention=args.allow_human_intervention,
         novnc_url=novnc_url,
         post_action_language_redirect=args.post_action_language_redirect,
         model=args.model,
         max_steps=args.max_steps,
     )
 
+    command.extend(["--run-name", args.run_name])
     print(f"Task id: {task_id}")
     print(f"Task name: {task_name}")
     print(f"Start URL: {definition['start_url']}")
     print(f"Output: {output_dir / run_id}")
     print(
         "Human intervention: "
-        + ("enabled" if not args.no_human_intervention else "disabled")
+        + ("enabled" if args.allow_human_intervention else "disabled")
     )
     if args.dry_run:
         print("Dry run complete; browser task was not started.")

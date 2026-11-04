@@ -1,20 +1,19 @@
 # Results
 
-The benchmark’s paired evaluation covers **92 tasks and 589 scored criteria**. Completed `gpt-5.6-sol` audits cover **91 tasks and 582 criteria**, identifying **118 screenshot losses (20.27%)** and **7 DOM losses (1.20%)**. These measure evidence availability, not task success or answer correctness.
+The matched comparison covers **97 tasks and 619 criteria per run**, identifying **61.00 screenshot losses (9.85%)** and **13.00 DOM losses (2.10%)** on average. Inventory uses `gpt-5.6-sol` and adjudication uses `gemini-3.1-pro-preview`. These measure evidence availability, not task success or answer correctness.
 
-Of 100 recorded tasks, 92 had usable, aligned evidence for evaluation; 8 were excluded because captures were missing/incomplete or failed URL alignment. Evidence-loss results cover 91 tasks because task 76’s audit failed validation.
+The matched comparison uses **97 tasks and 619 criteria per run**. Successful, failed and errored recordings with usable evidence are included. Recordings with no captured state remain unscored, not zero-loss audits.
 
-| Analysis | Tasks | Audited criteria | Screenshot losses | DOM losses |
+| Run | Audited tasks | Criteria | Screenshot losses | DOM losses |
 | --- | ---: | ---: | ---: | ---: |
-| All source-evidence loss categories | 91 | 582 | **118 (20.27%)** | **7 (1.20%)** |
-| URL loss category excluded | 91 | 582 | **33 (5.67%)** | **7 (1.20%)** |
-| Listed access-blocked task IDs excluded | 82 | 529 | **107 (20.23%)** | **7 (1.32%)** |
-| Listed access-blocked task IDs and URL loss category excluded | 82 | 529 | **32 (6.05%)** | **7 (1.32%)** |
+| run_1 | 100 | 640 | 51 (7.97%) | 16 (2.50%) |
+| run_2 | 99 | 633 | 62 (9.79%) | 15 (2.37%) |
+| run_3 | 97 | 619 | 70 (11.31%) | 8 (1.29%) |
 
 Selected results are in the [repository README](../README.md#evaluation-results).
 The [technical report](../docs/technical-report.md) documents the repository's
 browser capture pipeline, success rules, source-loss equations, models and
-review roles, representation sizes, and all 121 criterion-level
+review roles, representation sizes, and the criterion-level
 findings. [EVALUATIONS.md](EVALUATIONS.md) points to that report.
 
 | Artifact | Contents | How to verify |
@@ -22,27 +21,24 @@ findings. [EVALUATIONS.md](EVALUATIONS.md) points to that report.
 | [summary.json](summary.json) | Coverage, paired outcomes, category counts, sensitivity analyses and file-size means. Rates and confidence limits are fractions in `[0, 1]`. | Compare with the report’s aggregate/category tables and the annotation TSV. |
 | [Technical report](../docs/technical-report.md) | Repository methods and evaluation findings, including model roles, review boundaries, references, and representation sizes. | Follow criterion citations to audits, frozen rubrics, and run manifests; inspect the method and size sections for definitions and context. |
 | [Evaluation figures](../docs/assets/evaluations/) | Published PNG images embedded in the report and SVG versions for export. | Compare their displayed counts and rates with the report tables and `summary.json`. |
-| [Category annotations](evidence_categories.tsv) | One primary category and rationale for each confirmed representation/criterion loss. | Recompute its source-finding hash and compare the 125 rows with the category tables. |
-| [Hosted evaluations](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/8f9301ddad1c18b675c5b2df1c364bbbeff8f0a6/evaluation) | Per-task verifier results, audit/adjudication findings, and provenance supporting this benchmark. | Follow task references to the audits and final adjudications cited by the report. |
+| [Category annotations](evidence_categories.tsv) | One primary category and rationale for each confirmed representation/criterion loss. | Recompute its source-finding hash and compare the 222 rows with the category tables. |
+| [Hosted evaluations](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/main/evaluations) | Per-task verifier results, audit/adjudication findings, and provenance supporting this benchmark. | Follow task references to the audits and final adjudications cited by the report. |
 
 ## Counting and sensitivity
 
-Four criteria have losses in both representations, affecting different required items. The marginal counts total 125 representation/criterion losses across 121 distinct affected criteria. All 582 audited criteria stay in the primary denominator, including 461 without a confirmed paired gap.
+The audits identify **219 affected run/criterion observations**, covering **118 distinct criterion positions across 49 tasks**. A criterion can lose different items in both representations. Each representation/criterion loss receives one primary category; averaged counts can be fractional. Rows are rounded independently; totals use unrounded counts. All 619 criteria remain in every matched run denominator. The exploratory subset uses 88 common tasks and 572 criteria per run.
 
-Excluding 85 primary screenshot URL losses leaves **33/582 (5.67%)** screenshot losses and **7/582 (1.20%)** DOM losses. Excluding the nine cited blocker-task IDs leaves **82 tasks and 529 criteria**. The report and summary retain both subset views and alternatives removing entire criteria with primary URL findings. Category labels are report annotations of unchanged audit findings, with rationales in the TSV.
-
-The [protocol](../docs/evaluation-protocol.md) and [category guide](../docs/evidence-categories.md) define the rules. Wilson intervals do not adjust for within-task correlation or annotation error; internal human review remains a separate step.
+The [protocol](../docs/evaluation-protocol.md) and [category guide](../docs/evidence-categories.md) define the rules. `confidence_intervals` contains task-then-run bootstrap bounds for rates, their difference and relative reduction. Bounds are fractions; multiply by 100 for percentages. Audit labels remain fixed.
 
 ## Mean recorded file sizes
 
 | Representation | Artifact | Captured observations | Mean kB | Mean KiB |
 | --- | --- | ---: | ---: | ---: |
-| DOM-diff Optimized | `dom_model.txt` — compact model-facing text | 853 | 5.28 | **5.16** |
-| Text-dense DOM | `dom_full.txt` — detailed readable text | 853 | 48.70 | **47.56** |
-| Full DOM | `dom.json` — structured snapshot | 853 | 212.96 | **207.97** |
+| DOM-diff Optimized | `dom_model.txt` — compact model-facing text | 2,592 | 5.37 | **5.25** |
+| Text-dense DOM | `dom_full.txt` — detailed readable text | 2,592 | 48.40 | **47.26** |
+| Full DOM | `dom.json` — structured snapshot | 2,592 | 211.40 | **206.45** |
 
-The same 853 recorded states are used for all three means. 1 kB = 1,000 bytes; 1 KiB = 1,024 bytes. Graphs use KiB.
+The same 2,592 captured states from all 300 retained recordings are used for all three means, including unsuccessful recordings. Files are weighted equally, not tasks. 1 kB = 1,000 bytes; 1 KiB = 1,024 bytes. Graphs use KiB.
 
-The complete paired trajectories and evaluation artifacts used by this
-repository are available from
+Dataset repository:
 [WootzappLab/browser-agent-tasks](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks).

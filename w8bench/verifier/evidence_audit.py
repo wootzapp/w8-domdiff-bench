@@ -9,23 +9,130 @@ analysis, then calculates evidence-loss and recovery metrics deterministically.
 from __future__ import annotations
 
 import base64
+from datetime import datetime, timezone
+import hashlib
 import json
 import mimetypes
+import os
+import random
 import re
+from statistics import quantiles
+import time
 from pathlib import Path
 from typing import Any, Callable
 
-from openai import OpenAI
+import httpx
+from openai import APIConnectionError, DefaultHttpxClient, OpenAI
 
-from .common import load_canonical_rubric, load_json, write_json
+from .common import canonical_sha256, load_canonical_rubric, load_json, write_json
 from .validate_inputs import SCREENSHOT_RE
 
 
-SCHEMA_VERSION = "automated-evidence-audit/v3"
-PROMPT_VERSION = "shared-trajectory-pairwise-adjudication/v3"
-DEFAULT_AUDIT_MODEL = "gpt-5.6-sol"
+SCHEMA_VERSION = "automated-evidence-audit/v5"
+PROMPT_VERSION = "shared-trajectory-pairwise-adjudication/v5"
+GEMINI_API_VERSION = "v1beta"
+OPENAI_GENERATION_SETTINGS = {"response_format": {"type": "json_object"}}
+GEMINI_GENERATION_SETTINGS = {
+    "response_mime_type": "application/json",
+    "media_resolution": "MEDIA_RESOLUTION_HIGH",
+}
 DOM_RE = re.compile(r"^dom_model(0|[1-9]\d*)\.txt$")
 LINE_RANGE_RE = re.compile(r"^L0*(\d+)(?:-L0*(\d+))?$")
+CITATION_KEYS = ("source", "location", "quote")
+
+
+def resolve_provider(model: str, provider: str | None = None) -> str:
+    if not isinstance(model, str) or not model.strip():
+        raise ValueError("A model ID is required")
+    if model.endswith("-latest"):
+        raise ValueError("Use an exact model ID, not a -latest alias")
+    if provider:
+        if provider not in {"openai", "google"}:
+            raise ValueError("Provider must be openai or google")
+        return provider
+    name = model.removeprefix("models/")
+    if name.startswith("gemini-"):
+        return "google"
+    if name.startswith("gpt-") or re.match(r"^o\d", name):
+        return "openai"
+    raise ValueError("Cannot infer provider; set EVIDENCE_AUDIT_PROVIDER or EVIDENCE_ADJUDICATOR_PROVIDER, or the matching CLI provider flag")
+
+
+def resolve_audit_config(model=None, adjudicator_model=None, audit_provider=None, adjudicator_provider=None) -> dict:
+    config = {}
+    for stage, selected, explicit, model_env, provider_env in (
+        ("inventory", model, audit_provider, "EVIDENCE_AUDIT_MODEL", "EVIDENCE_AUDIT_PROVIDER"),
+        ("adjudication", adjudicator_model, adjudicator_provider, "EVIDENCE_ADJUDICATOR_MODEL", "EVIDENCE_ADJUDICATOR_PROVIDER"),
+    ):
+        name = (selected if selected is not None else os.environ.get(model_env, "")).strip()
+        if not name:
+            raise ValueError(f"Set {model_env} or its CLI model flag before running an audit")
+        provider = explicit if explicit is not None else os.environ.get(provider_env, "").strip()
+        config[stage] = {"model": name, "provider": resolve_provider(name, provider or None)}
+    return config
+
+
+def _transport_request(call, record: dict):
+    attempts = record.setdefault("transport_attempts", [])
+    for attempt in range(1, 4):
+        receipt = {"attempt": attempt, "started_at": datetime.now(timezone.utc).isoformat()}
+        attempts.append(receipt)
+        started = time.perf_counter()
+        try:
+            result = call()
+            receipt.update(status="accepted", retryable=False, will_retry=False, backoff_seconds=0)
+            return result
+        except Exception as error:
+            code = getattr(error, "status_code", None) or getattr(error, "code", None)
+            retryable = isinstance(error, (APIConnectionError, httpx.TransportError, ConnectionError, TimeoutError)) or (
+                isinstance(code, int) and (code == 429 or 500 <= code <= 599))
+            message = str(error)
+            for key, value in os.environ.items():
+                if key.endswith("API_KEY") and value:
+                    message = message.replace(value, "[REDACTED]")
+            retry = retryable and attempt < 3
+            delay = 2 ** (attempt - 1) if retry else 0
+            receipt.update(status="error", status_code=code if isinstance(code, int) else None,
+                           error_type=type(error).__name__, error=message, retryable=retryable,
+                           will_retry=retry, backoff_seconds=delay)
+            if not retry:
+                raise
+            time.sleep(delay)
+        finally:
+            receipt["duration_seconds"] = time.perf_counter() - started
+
+
+def check_audit_models(config: dict, *, records: list | None = None) -> dict:
+    checks = {}
+    listings = {}
+    for stage, selected in config.items():
+        provider, model = selected["provider"], selected["model"]
+        if provider not in listings:
+            record = {"provider": provider, "requested_at": datetime.now(timezone.utc).isoformat()}
+            if records is not None:
+                records.append(record)
+            if provider == "google":
+                from google import genai
+                from google.genai import types
+                key = os.environ.get("GEMINI_API_KEY", "").strip()
+                if not key:
+                    raise ValueError("GEMINI_API_KEY is required for Google model checks")
+                with genai.Client(api_key=key, http_options=types.HttpOptions(
+                    api_version=GEMINI_API_VERSION, retry_options={"attempts": 1},
+                )) as client:
+                    names = _transport_request(lambda: [item.name.removeprefix("models/") for item in client.models.list() if item.name], record)
+            else:
+                with OpenAI(max_retries=0) as client:
+                    names = _transport_request(lambda: [item.id for item in client.models.list()], record)
+            record.update(listed_at=datetime.now(timezone.utc).isoformat(), available_model_ids=sorted(set(names)))
+            listings[provider] = record
+        listing = listings[provider]
+        requested = model.removeprefix("models/") if provider == "google" else model
+        if requested not in listing["available_model_ids"]:
+            raise ValueError(f"Configured model ID {model!r} was not listed exactly by {provider}; aborting")
+        checks[stage] = {**selected, "listed_at": listing["listed_at"], "model_listed": True,
+                         "available_model_count": len(listing["available_model_ids"])}
+    return {"stages": checks, "listings": listings}
 
 
 class AuditValidationError(ValueError):
@@ -68,15 +175,22 @@ verifier_caught means the existing verifier accurately described both the
 available evidence and any material evidence limitation in that modality. It is
 not a judgment about whether you agree with the points awarded. Screenshot
 claims may use only visible pixels; DOM claims may use only supplied DOM text.
-The normalized action history is shared evidence for both modalities and may
+The formatted action history is shared evidence for both modalities and may
 prove process, navigation, stopping, and constraint compliance. The final
 answer is a shared claim, not proof of page content. Consider the full ordered
 trajectory: evidence from an earlier state remains available unless a later
 state or action contradicts it. Action intent explains the attempted target but
 is not proof of page content or success without execution/state evidence. An
-action-history URL may prove an attempted or observed transition for process
-evaluation, but it does not replace URL evidence in either modality when the
-audit is comparing representation loss. Cite
+observed URL explicitly present in the formatted action history is available to
+both verifiers and can establish page identity. Do not count its absence from
+screenshot pixels or DOM text as a modality loss. Navigation arguments show
+intent, not an observed destination. Task instructions and the supplied initial
+URL are shared context available to both verifiers. Do not count a URL component
+already supplied there as missing merely because pixels or formatted history
+omit it. The initial URL alone does not prove successful navigation or page
+content; require corroborating ordered states or executed history for those
+claims. Raw action metadata adds no evidence beyond the formatted history.
+Do not invent query strings or fragments absent from all allowed inputs. Cite
 every positive modality claim. Return JSON only. Your loss flags are proposals
 that a separate adjudicator will review.
 """
@@ -90,9 +204,9 @@ Confirm screenshot evidence loss only when shared evidence plus DOM contains
 explicit, cited, decision-essential evidence and shared evidence plus all
 screenshots cannot establish the same criterion conclusion or score. Confirm
 DOM evidence loss by the exact reverse rule. More explicit, redundant, or
-convenient evidence is not loss. However, when a criterion requires proving the
-website or page identity, an exact URL present in DOM but absent from screenshots
-is screenshot evidence loss; branding is not a substitute for URL evidence. Do
+convenient evidence is not loss. Observed URLs explicitly present in the shared
+formatted action history count for both verifiers, including page identity.
+Their absence from screenshot pixels or DOM text alone is not a loss. Do
 not infer a site's omission from absent text unless the source explicitly states
 the omission (such as "not listed", "none", or "TBD"). Shared ambiguity is not
 loss.
@@ -102,9 +216,16 @@ earlier selected control or state remains evidence when no later action changes
 it and the final state is consistent. Shared actions may prove process,
 navigation, stopping, and prohibited-action constraints for both modalities.
 Action intent identifies an attempted target but needs execution/state evidence
-to prove success. An action-history URL may prove an attempted or observed
-transition for process evaluation, but it does not replace URL evidence in
-either modality when the audit is comparing representation loss. The final
+to prove success. Navigation arguments express intent, not an observed page.
+Task instructions and the supplied initial URL are shared context for both
+verifiers. A URL component already supplied there is not a modality loss merely
+because it is absent from pixels or formatted history. The initial URL alone
+does not prove successful navigation or page content: check corroborating
+ordered states or executed history. Correct use of this context with supporting
+state evidence is not a verifier miss. Raw action metadata adds no evidence
+beyond the formatted history. Do not invent query strings or fragments absent
+from all allowed inputs. Cite the supporting states or shared history when
+relying on them, and identify the task context used in the explanation. The final
 answer is a claim, not proof of page content.
 
 Confirm a verifier miss only when the corresponding shared-plus-modality input
@@ -206,6 +327,36 @@ def _trajectory_events(root: Path) -> list[dict[str, Any]]:
     return events
 
 
+def verifier_action_history(root: Path) -> str:
+    """Reconstruct the existing judges' shared text without editing inputs."""
+    from ..screenshot_verifier.models import StepSummary
+    from ..screenshot_verifier.rubric_agent import MMRubricAgent as ScreenshotAgent
+    from ..dom_model.rubric_agent import MMRubricAgent as DOMAgent
+
+    summaries = []
+    for line in (root / "web_surfer.log").read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        event = json.loads(line)
+        if not event.get("action"):
+            continue
+        arguments = event.get("arguments") or {}
+        name = arguments.get("action", event["action"])
+        if name in ("stop_and_answer_question", "stop_execution"):
+            name = "terminate"
+        summaries.append(StepSummary(
+            index=len(summaries) + 1, action_name=name,
+            action_args={key: value for key, value in arguments.items()
+                         if key not in {"action", "screen_description", "reasoning"}},
+            url=event.get("url") or "",
+            state_description=arguments.get("screen_description", ""),
+        ))
+    history = ScreenshotAgent._format_action_history(summaries)
+    if history != DOMAgent._format_action_history(summaries):
+        raise ValueError("Verifier action-history formats differ")
+    return history
+
+
 def shared_trajectory_payload(screenshot_root: Path, dom_root: Path) -> dict[str, Any]:
     """Build representation-neutral evidence shared by both verifier inputs."""
 
@@ -218,6 +369,8 @@ def shared_trajectory_payload(screenshot_root: Path, dom_root: Path) -> dict[str
     dom_events = _trajectory_events(dom_root)
     if screenshot_events != dom_events:
         raise ValueError("Screenshot and DOM normalized action histories differ")
+    history = verifier_action_history(screenshot_root)
+    dom_history = verifier_action_history(dom_root)
     screenshot_answer = load_json(screenshot_root / "final_answer.json")
     dom_answer = load_json(dom_root / "final_answer.json")
     if not isinstance(screenshot_answer, dict) or not isinstance(dom_answer, dict):
@@ -230,6 +383,7 @@ def shared_trajectory_payload(screenshot_root: Path, dom_root: Path) -> dict[str
         "task_instruction": screenshot_task.get("confirmed_task"),
         "initial_url": screenshot_task.get("website"),
         "actions": screenshot_events,
+        "verifier_action_history": {"screenshot": history, "dom_model": dom_history},
         "final_answer_claim": final_answer,
     }
 
@@ -245,7 +399,8 @@ def _audit_request_text(
         "RUBRIC CRITERIA:\n"
         + json.dumps(criteria, ensure_ascii=False, indent=2)
         + "\n\nSHARED REPRESENTATION-NEUTRAL TRAJECTORY:\n"
-        + json.dumps(shared_trajectory, ensure_ascii=False, indent=2)
+        + json.dumps({key: value for key, value in shared_trajectory.items()
+                      if key not in {"actions", "verifier_action_history"}}, ensure_ascii=False, indent=2)
         + "\n\nEXISTING SCREENSHOT VERIFIER OUTPUT (not ground truth):\n"
         + json.dumps(screenshot_context, ensure_ascii=False, indent=2)
         + "\n\nEXISTING DOM VERIFIER OUTPUT (not ground truth):\n"
@@ -273,10 +428,28 @@ def _data_url(path: Path) -> str:
 def _source_instructions(screenshot_dir: Path, dom_dir: Path) -> str:
     screenshots = [path.name for path in ordered_audit_screenshots(screenshot_dir)]
     dom_states = [path.name for path in ordered_dom_states(dom_dir)]
+    histories = {"screenshot": verifier_action_history(screenshot_dir),
+                 "dom_model": verifier_action_history(dom_dir)}
+    if histories["screenshot"] == histories["dom_model"]:
+        histories = {"both verifiers": histories["screenshot"]}
+    history_text = "\n".join(
+        f"SHARED SOURCE: action_history ({mode})\n" + "\n".join(
+            f"L{index:04d}: {line}" for index, line in enumerate(history.splitlines(), start=1)
+        ) for mode, history in histories.items()
+    )
     return (
         "CITATION SOURCE RULE: use one of these exact filenames.\n"
         f"Screenshot sources: {json.dumps(screenshots)}\n"
         f"DOM sources: {json.dumps(dom_states)}\n"
+        f"Citation object keys (all required, no extra keys): {json.dumps(CITATION_KEYS)}\n"
+        "source is an exact source name; location is Lx or Lx-Ly for DOM/history, "
+        "or a visible image region for screenshots; quote is exact source text.\n"
+        "Shared source: action_history; cite Lx or Lx-Ly and an exact quote.\n"
+        "DOM and action_history quotes must be literal contiguous source text, "
+        "without the supplied L-number prefixes, paraphrases or inserted ellipses. "
+        "Prefer short exact excerpts; use separate citations for separate passages.\n"
+        "Use only the history shown for the verifier being assessed.\n"
+        + history_text + "\n"
     )
 
 
@@ -370,7 +543,8 @@ def _adjudication_request_text(
     return (
         "RUBRIC CRITERIA:\n" + json.dumps(criteria, ensure_ascii=False, indent=2)
         + "\n\nSHARED REPRESENTATION-NEUTRAL TRAJECTORY:\n"
-        + json.dumps(shared_trajectory, ensure_ascii=False, indent=2)
+        + json.dumps({key: value for key, value in shared_trajectory.items()
+                      if key not in {"actions", "verifier_action_history"}}, ensure_ascii=False, indent=2)
         + "\n\nSCREENSHOT VERIFIER OUTPUT (not ground truth):\n"
         + json.dumps(screenshot_context, ensure_ascii=False, indent=2)
         + "\n\nDOM VERIFIER OUTPUT (not ground truth):\n"
@@ -385,7 +559,13 @@ def _adjudication_request_text(
         + '"dom_model_verifier_miss":' + finding + ','
         + '"explanation":"final criterion-level rationale"}]}\n'
         + "For a false finding, decisive_evidence must be an empty string and citations empty. "
-        + "For a true finding, both must be non-empty."
+        + "For a true finding, both must be non-empty. "
+        + "Screenshot evidence loss requires a decisive DOM citation; DOM evidence loss "
+        + "requires a decisive screenshot citation. A verifier miss requires decisive "
+        + "evidence from that verifier's own input or its action_history. Citations from "
+        + "the counterpart may support a contrast but cannot replace the required "
+        + "decisive citation. Every supporting citation must also be valid. Shared "
+        + "history alone cannot establish a modality loss."
     )
 
 
@@ -426,16 +606,129 @@ def adjudication_messages(
     ]
 
 
-def _completion(model: str, messages: list[dict[str, Any]]) -> dict[str, Any]:
-    response = OpenAI().chat.completions.create(
-        model=model,
-        messages=messages,
-        response_format={"type": "json_object"},
-    )
-    content = response.choices[0].message.content
+def _completion(model: str, messages: list[dict[str, Any]], *, records: list | None = None,
+                provider: str | None = None) -> dict[str, Any]:
+    provider = resolve_provider(model, provider)
+    record = {
+        "model": model,
+        "provider": provider,
+        "requested_model": model,
+        "response_model": None,
+        "api_version": GEMINI_API_VERSION if provider == "google" else None,
+        "generation_settings": None,
+        "stage": "adjudication" if messages[0]["content"] == ADJUDICATION_SYSTEM_PROMPT else "inventory",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "api_attempts": [], "usage": None,
+    }
+    if records is not None:
+        records.append(record)
+    print(json.dumps({"stage": record["stage"], "model": model}), flush=True)
+    started = time.perf_counter()
+
+    def requested(request):
+        record["api_attempts"].append({"status_code": None})
+        try:
+            payload = json.loads(request.content)
+            settings = (payload.get("generationConfig", {}) if provider == "google" else {
+                key: payload[key] for key in ("model", "response_format", "temperature", "seed", "reasoning_effort")
+                if key in payload
+            })
+            record["api_attempts"][-1]["request_settings"] = settings
+        except (ValueError, TypeError, AttributeError):
+            pass
+
+    def received(response):
+        record["api_attempts"][-1]["status_code"] = response.status_code
+
+    try:
+        if provider == "google":
+            if model.endswith("-latest"):
+                raise ValueError("Gemini audits require an exact model ID, not a -latest alias")
+            key = os.environ.get("GEMINI_API_KEY", "").strip()
+            if not key:
+                raise ValueError("GEMINI_API_KEY is required for Gemini audit models")
+            try:
+                from google import genai
+                from google.genai import types
+            except ImportError as error:
+                raise RuntimeError("Install the gemini extra: pip install -e '.[gemini]'") from error
+            system, contents = [], []
+            for message in messages:
+                role, body = message["role"], message["content"]
+                if role == "system":
+                    if not isinstance(body, str):
+                        raise ValueError("Gemini system instructions must be text")
+                    system.append(body)
+                    continue
+                if role not in {"user", "assistant"}:
+                    raise ValueError(f"Unsupported Gemini message role: {role}")
+                parts = []
+                for part in ([{"type": "text", "text": body}] if isinstance(body, str) else body):
+                    if part["type"] == "text":
+                        parts.append(types.Part.from_text(text=part["text"]))
+                    elif part["type"] == "image_url":
+                        # Native inline bytes have no OpenAI-only image detail field.
+                        url = part["image_url"]["url"]
+                        match = re.fullmatch(r"data:(image/[\w.+-]+);base64,(.*)", url, re.DOTALL)
+                        if not match:
+                            raise ValueError("Gemini audit images must be base64 image data URLs")
+                        parts.append(types.Part.from_bytes(
+                            data=base64.b64decode(match.group(2), validate=True),
+                            mime_type=match.group(1),
+                        ))
+                    else:
+                        raise ValueError(f"Unsupported Gemini content type: {part['type']}")
+                contents.append(types.Content(role="model" if role == "assistant" else "user", parts=parts))
+            # Seed is omitted unless SDK and model acceptance are established.
+            settings = GEMINI_GENERATION_SETTINGS.copy()
+            with genai.Client(api_key=key, http_options=types.HttpOptions(
+                api_version=GEMINI_API_VERSION, retry_options={"attempts": 1}, client_args={
+                    "event_hooks": {"request": [requested], "response": [received]}
+                },
+            )) as client:
+                record["generation_settings"] = settings.copy()
+                response = _transport_request(lambda: client.models.generate_content(
+                    model=model, contents=contents,
+                    config=types.GenerateContentConfig(system_instruction="\n\n".join(system), **settings),
+                ), record)
+            usage = response.usage_metadata
+            normalized = None
+            if usage is not None:
+                prompt = int(usage.prompt_token_count or 0)
+                thinking = int(usage.thoughts_token_count or 0)
+                completion = int(usage.candidates_token_count or 0) + thinking
+                normalized = {"prompt_tokens": prompt, "completion_tokens": completion,
+                              "reasoning_tokens": thinking, "total_tokens": prompt + completion}
+            record.update(response_id=response.response_id, response_model=response.model_version,
+                          usage=normalized,
+                          provider_usage=usage.model_dump() if usage is not None else None)
+            content = response.text
+        else:
+            settings = OPENAI_GENERATION_SETTINGS.copy()
+            with OpenAI(max_retries=0, http_client=DefaultHttpxClient(
+                event_hooks={"request": [requested], "response": [received]}
+            )) as client:
+                record["generation_settings"] = settings.copy()
+                response = _transport_request(lambda: client.chat.completions.create(model=model, messages=messages, **settings), record)
+            record.update(
+                response_id=response.id, response_model=response.model,
+                system_fingerprint=getattr(response, "system_fingerprint", None),
+                usage=response.usage.model_dump() if response.usage is not None else None,
+            )
+            content = response.choices[0].message.content
+    except Exception as error:
+        record["error_type"] = type(error).__name__
+        raise
+    finally:
+        record["duration_seconds"] = time.perf_counter() - started
+        record["completed_at"] = datetime.now(timezone.utc).isoformat()
     if not content:
         raise ValueError("Evidence auditor returned an empty response")
-    value = json.loads(content)
+    try:
+        value = json.loads(content)
+    except (TypeError, ValueError):
+        record["response_text"] = content
+        raise
     if not isinstance(value, dict):
         raise ValueError("Evidence auditor response must be a JSON object")
     return value
@@ -454,6 +747,7 @@ def validate_audit_response(
     if not isinstance(raw_rows, list) or len(raw_rows) != len(criteria):
         raise ValueError("Evidence auditor returned an incomplete criteria list")
     by_index: dict[int, dict[str, Any]] = {}
+    errors: list[str] = []
     for raw in raw_rows:
         expected_keys = {
             "criterion_index", "required_evidence", "screenshot", "dom_model",
@@ -475,18 +769,21 @@ def validate_audit_response(
         required = str(raw.get("required_evidence") or "").strip()
         if not required:
             raise ValueError("Required evidence description must be non-empty")
-        screen = _validate_modality_decision(
-            raw.get("screenshot"),
-            modality="screenshot",
-            allowed_sources=screenshot_sources,
-            source_root=screenshot_root,
-        )
-        dom = _validate_modality_decision(
-            raw.get("dom_model"),
-            modality="dom_model",
-            allowed_sources=dom_sources,
-            source_root=dom_root,
-        )
+        decisions = {}
+        for modality, sources, source_root in (
+            ("screenshot", screenshot_sources, screenshot_root),
+            ("dom_model", dom_sources, dom_root),
+        ):
+            try:
+                decisions[modality] = _validate_modality_decision(
+                    raw.get(modality), modality=modality,
+                    allowed_sources=sources, source_root=source_root,
+                )
+            except (ValueError, TypeError) as error:
+                errors.append(f"criterion {index}, {modality}: {error}")
+        if len(decisions) != 2:
+            continue
+        screen, dom = decisions["screenshot"], decisions["dom_model"]
         screenshot_loss = raw.get("screenshot_evidence_loss")
         dom_loss = raw.get("dom_model_evidence_loss")
         if not isinstance(screenshot_loss, bool) or not isinstance(dom_loss, bool):
@@ -508,6 +805,8 @@ def validate_audit_response(
             "classification": derived_classification,
             "explanation": explanation,
         }
+    if errors:
+        raise ValueError("\n".join(errors))
     expected = list(range(len(criteria)))
     if sorted(by_index) != expected:
         raise ValueError(f"Evidence auditor criterion indices differ: {sorted(by_index)} != {expected}")
@@ -607,29 +906,48 @@ def _validate_modality_decision(
     if coverage == "ABSENT" and (available or not missing or citations):
         raise ValueError(f"{modality} ABSENT coverage has inconsistent detail")
     clean_citations: list[dict[str, str]] = []
-    for citation in citations:
-        if not isinstance(citation, dict) or set(citation) != {"source", "location", "quote"}:
-            raise ValueError("Evidence citation has an invalid schema")
-        source = _resolve_source_name(citation["source"], allowed_sources, modality)
-        location = str(citation["location"]).strip()
-        quote = str(citation["quote"]).strip()
-        if not location:
-            raise ValueError(f"Evidence citation location is empty for {source}")
-        if not quote:
-            raise ValueError(f"Evidence citation quote is empty for {source}")
-        if modality == "dom_model":
-            match = LINE_RANGE_RE.fullmatch(location)
-            if match is None:
-                raise ValueError("DOM citation location must be Lx or Lx-Ly")
-            start = int(match.group(1))
-            end = int(match.group(2) or start)
-            lines = (source_root / source).read_text(encoding="utf-8").splitlines()
-            if start < 1 or end < start or end > len(lines):
-                raise ValueError("DOM citation line range is outside its source file")
-            cited_text = "\n".join(lines[start - 1:end])
-            if " ".join(quote.split()) not in " ".join(cited_text.split()):
-                raise ValueError("DOM citation quote is not present in the cited line range")
-        clean_citations.append({"source": source, "location": location, "quote": quote})
+    citation_errors: list[str] = []
+    for ordinal, citation in enumerate(citations, start=1):
+        try:
+            if not isinstance(citation, dict) or set(citation) != set(CITATION_KEYS):
+                received = sorted(citation) if isinstance(citation, dict) else type(citation).__name__
+                raise ValueError(
+                    "Evidence citation has an invalid schema; expected exactly "
+                    f"{list(CITATION_KEYS)!r}, received {received!r}"
+                )
+            sources = allowed_sources | ({"action_history"} if (source_root / "web_surfer.log").is_file() else set())
+            source = _resolve_source_name(citation["source"], sources, modality)
+            location = str(citation["location"]).strip()
+            quote = str(citation["quote"]).strip()
+            if not location:
+                raise ValueError(f"Evidence citation location is empty for {source}")
+            if not quote:
+                raise ValueError(f"Evidence citation quote is empty for {source}")
+            if modality == "dom_model" or source == "action_history":
+                match = LINE_RANGE_RE.fullmatch(location)
+                if match is None:
+                    raise ValueError(f"DOM citation location must be Lx or Lx-Ly: {source}, {location!r}")
+                start = int(match.group(1))
+                end = int(match.group(2) or start)
+                lines = (verifier_action_history(source_root).splitlines() if source == "action_history"
+                         else (source_root / source).read_text(encoding="utf-8").splitlines())
+                if start < 1 or end < start or end > len(lines):
+                    raise ValueError(
+                        f"DOM citation line range is outside its source file: {source}, "
+                        f"{location!r}; source has {len(lines)} lines"
+                    )
+                cited_text = "\n".join(lines[start - 1:end])
+                if " ".join(quote.split()) not in " ".join(cited_text.split()):
+                    raise ValueError(
+                        "DOM citation quote is not present in the cited line range: "
+                        f"{source}, {location!r}, quote={quote!r}. Use a literal contiguous "
+                        "excerpt, without line-number labels, paraphrases or added ellipses."
+                    )
+            clean_citations.append({"source": source, "location": location, "quote": quote})
+        except (ValueError, TypeError) as error:
+            citation_errors.append(f"citation {ordinal}: {error}")
+    if citation_errors:
+        raise ValueError("\n".join(citation_errors))
     return {
         "coverage": coverage,
         "available_evidence": available,
@@ -646,6 +964,8 @@ def _validate_finding(
     citation_modality: str,
     allowed_sources: set[str],
     source_root: Path,
+    counterpart_sources: set[str] | None = None,
+    counterpart_root: Path | None = None,
 ) -> dict[str, Any]:
     if not isinstance(value, dict) or set(value) != {
         "confirmed", "decisive_evidence", "citations", "explanation"
@@ -670,22 +990,46 @@ def _validate_finding(
         }
     if not evidence or not citations:
         raise ValueError(f"Confirmed {label} requires decisive evidence and citations")
-    checked = _validate_modality_decision(
-        {
-            "coverage": "COMPLETE",
-            "available_evidence": [evidence],
-            "missing_required_evidence": [],
-            "verifier_caught": True,
-            "citations": citations,
-        },
-        modality=citation_modality,
-        allowed_sources=allowed_sources,
-        source_root=source_root,
-    )
+    counterpart_sources = counterpart_sources or set()
+    if counterpart_sources and counterpart_root is None:
+        raise ValueError("Counterpart citations require their source directory")
+    shared_sources = {"action_history"} if (source_root / "web_surfer.log").is_file() else set()
+    checked_citations, errors = [], []
+    decisive = False
+    for ordinal, citation in enumerate(citations, start=1):
+        try:
+            if not isinstance(citation, dict) or set(citation) != set(CITATION_KEYS):
+                received = sorted(citation) if isinstance(citation, dict) else type(citation).__name__
+                raise ValueError(f"Evidence citation has an invalid schema; expected exactly {list(CITATION_KEYS)!r}, received {received!r}")
+            source = _resolve_source_name(
+                citation["source"], allowed_sources | counterpart_sources | shared_sources,
+                citation_modality,
+            )
+            primary = source in allowed_sources or source in shared_sources
+            actual_modality = citation_modality if primary else (
+                "screenshot" if citation_modality == "dom_model" else "dom_model"
+            )
+            checked = _validate_modality_decision(
+                {"coverage": "COMPLETE", "available_evidence": [evidence],
+                 "missing_required_evidence": [], "verifier_caught": True,
+                 "citations": [{**citation, "source": source}]},
+                modality=actual_modality,
+                allowed_sources=allowed_sources if primary else counterpart_sources,
+                source_root=source_root if primary else counterpart_root,
+            )
+            checked_citations.extend(checked["citations"])
+            if primary and (not label.endswith("evidence loss") or source != "action_history"):
+                decisive = True
+        except (ValueError, TypeError) as error:
+            errors.append(f"citation {ordinal}: {error}")
+    if errors:
+        raise ValueError(f"{label} requires {citation_modality} evidence: " + "\n".join(errors))
+    if not decisive:
+        raise ValueError(f"{label} requires decisive {citation_modality} evidence; supporting citations cannot replace the required source")
     return {
         "confirmed": True,
         "decisive_evidence": evidence,
-        "citations": checked["citations"],
+        "citations": checked_citations,
         "explanation": explanation,
     }
 
@@ -707,6 +1051,7 @@ def validate_adjudication_response(
         "screenshot_verifier_miss", "dom_model_verifier_miss", "explanation",
     }
     by_index: dict[int, dict[str, Any]] = {}
+    errors: list[str] = []
     for raw in raw_rows:
         if not isinstance(raw, dict) or set(raw) != expected_row_keys:
             raise ValueError("Adjudicator criterion row has an invalid schema")
@@ -716,41 +1061,76 @@ def validate_adjudication_response(
         explanation = str(raw.get("explanation") or "").strip()
         if not explanation:
             raise ValueError("Adjudicator criterion explanation must be non-empty")
-        by_index[index] = {
-            "screenshot_evidence_loss": _validate_finding(
-                raw.get("screenshot_evidence_loss"),
-                label="screenshot evidence loss",
-                citation_modality="dom_model",
-                allowed_sources=dom_sources,
-                source_root=dom_root,
-            ),
-            "dom_model_evidence_loss": _validate_finding(
-                raw.get("dom_model_evidence_loss"),
-                label="DOM evidence loss",
-                citation_modality="screenshot",
-                allowed_sources=screenshot_sources,
-                source_root=screenshot_root,
-            ),
-            "screenshot_verifier_miss": _validate_finding(
-                raw.get("screenshot_verifier_miss"),
-                label="screenshot verifier miss",
-                citation_modality="screenshot",
-                allowed_sources=screenshot_sources,
-                source_root=screenshot_root,
-            ),
-            "dom_model_verifier_miss": _validate_finding(
-                raw.get("dom_model_verifier_miss"),
-                label="DOM verifier miss",
-                citation_modality="dom_model",
-                allowed_sources=dom_sources,
-                source_root=dom_root,
-            ),
-            "explanation": explanation,
-        }
+        findings = {}
+        for field, label, modality, sources, source_root in (
+            ("screenshot_evidence_loss", "screenshot evidence loss", "dom_model", dom_sources, dom_root),
+            ("dom_model_evidence_loss", "DOM evidence loss", "screenshot", screenshot_sources, screenshot_root),
+            ("screenshot_verifier_miss", "screenshot verifier miss", "screenshot", screenshot_sources, screenshot_root),
+            ("dom_model_verifier_miss", "DOM verifier miss", "dom_model", dom_sources, dom_root),
+        ):
+            try:
+                findings[field] = _validate_finding(
+                    raw.get(field), label=label, citation_modality=modality,
+                    allowed_sources=sources, source_root=source_root,
+                    counterpart_sources=screenshot_sources if modality == "dom_model" else dom_sources,
+                    counterpart_root=screenshot_root if modality == "dom_model" else dom_root,
+                )
+            except (ValueError, TypeError) as error:
+                errors.append(f"criterion {index}, {field}: {error}")
+        by_index[index] = {**findings, "explanation": explanation}
+    if errors:
+        raise ValueError("\n".join(errors))
     expected = list(range(len(criteria)))
     if sorted(by_index) != expected:
         raise ValueError(f"Adjudicator criterion indices differ: {sorted(by_index)} != {expected}")
     return [{"criterion_index": index, **by_index[index]} for index in expected]
+
+
+def _record_retry_flag_changes(invalid_attempts: list, accepted: dict, *, inventory: bool) -> None:
+    """Compare observable booleans only; missing/malformed flags stay unknown."""
+    def flags(payload):
+        result, seen = {}, set()
+        rows = payload.get("criteria", []) if isinstance(payload, dict) else []
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict) or type(row.get("criterion_index")) is not int:
+                continue
+            index = row["criterion_index"]
+            if index in seen:
+                result[index] = {}
+                continue
+            seen.add(index)
+            result[index] = {}
+            for mode in ("screenshot", "dom_model"):
+                for kind in ("evidence_loss", "verifier_miss"):
+                    field = f"{mode}_{kind}"
+                    if inventory:
+                        modality = row.get(mode)
+                        value = (row.get(field) if kind == "evidence_loss"
+                                 else modality.get("verifier_caught") if isinstance(modality, dict) else None)
+                        if type(value) is bool and kind == "verifier_miss":
+                            value = not value
+                    else:
+                        value = row.get(field)
+                        value = value.get("confirmed") if isinstance(value, dict) else None
+                    if type(value) is bool:
+                        result[index][field] = value
+        return result
+
+    final = flags(accepted)
+    for receipt in invalid_attempts:
+        before = flags(receipt["raw_response"])
+        changes, unknown = [], []
+        for index in sorted(set(before) | set(final)):
+            for field in ("screenshot_evidence_loss", "dom_model_evidence_loss",
+                          "screenshot_verifier_miss", "dom_model_verifier_miss"):
+                a, b = before.get(index, {}).get(field), final.get(index, {}).get(field)
+                if a is None or b is None:
+                    unknown.append({"criterion_index": index, "flag": field})
+                elif a != b:
+                    changes.append({"criterion_index": index, "flag": field,
+                                    "failed_value": a, "accepted_value": b})
+        receipt.update(flag_flips_detected=bool(changes), flag_flips=changes,
+                       uncomparable_flags=unknown)
 
 
 def _request_validated_audit(
@@ -764,10 +1144,11 @@ def _request_validated_audit(
     dom_root: Path,
     complete: Callable[[str, list[dict[str, Any]]], dict[str, Any]],
     max_attempts: int = 3,
+    invalid_receipts: list | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any], int]:
     current_messages = list(messages)
     last_error: Exception | None = None
-    invalid_attempts: list[dict[str, Any]] = []
+    invalid_attempts: list[dict[str, Any]] = invalid_receipts if invalid_receipts is not None else []
     for attempt in range(1, max_attempts + 1):
         raw = complete(model, current_messages)
         try:
@@ -779,6 +1160,7 @@ def _request_validated_audit(
                 screenshot_root=screenshot_root,
                 dom_root=dom_root,
             )
+            _record_retry_flag_changes(invalid_attempts, raw, inventory=True)
             return decisions, raw, attempt
         except (TypeError, ValueError) as exc:
             last_error = exc
@@ -814,10 +1196,11 @@ def _request_validated_adjudication(
     dom_root: Path,
     complete: Callable[[str, list[dict[str, Any]]], dict[str, Any]],
     max_attempts: int = 3,
+    invalid_receipts: list | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any], int]:
     current_messages = list(messages)
     last_error: Exception | None = None
-    invalid_attempts: list[dict[str, Any]] = []
+    invalid_attempts: list[dict[str, Any]] = invalid_receipts if invalid_receipts is not None else []
     for attempt in range(1, max_attempts + 1):
         raw = complete(model, current_messages)
         try:
@@ -829,6 +1212,7 @@ def _request_validated_adjudication(
                 screenshot_root=screenshot_root,
                 dom_root=dom_root,
             )
+            _record_retry_flag_changes(invalid_attempts, raw, inventory=False)
             return decisions, raw, attempt
         except (TypeError, ValueError) as exc:
             last_error = exc
@@ -900,8 +1284,30 @@ def calculate_metrics(criteria: list[dict[str, Any]]) -> dict[str, Any]:
     def rate(count: int, denominator: int) -> float | None:
         return count / denominator if denominator else None
 
+    agreement = {}
+    for mode in ("screenshot", "dom_model"):
+        statuses = {key: 0 for key in ("confirmed", "rejected", "added", "not_proposed")}
+        for row in criteria:
+            decision = row.get("loss_agreement", {}).get(mode)
+            if decision:
+                statuses[decision["status"]] += 1
+        comparable = sum(statuses.values())
+        same = statuses["confirmed"] + statuses["not_proposed"]
+        agreement[mode] = {**statuses, "compared": comparable,
+                           "agreement_count": same, "disagreement_count": comparable - same,
+                           "agreement_rate": rate(same, comparable)}
     return {
         "total_criteria": total,
+        "inventory_adjudication_agreement": agreement,
+        "coverage_conflicts": {
+            "criteria": sum(bool(row.get("coverage_conflict")) for row in criteria),
+            "flags": sum(len({item["side"] for item in row.get("coverage_conflicts", [])}) for row in criteria),
+            "details": sum(len(row.get("coverage_conflicts", [])) for row in criteria),
+        },
+        "requires_human_review": sum(bool(row["screenshot_evidence_loss"] or row["dom_model_evidence_loss"]
+                                          or not row["screenshot"]["verifier_caught"]
+                                          or not row["dom_model"]["verifier_caught"]) for row in criteria),
+        "retry_flag_flips": sum(len(row.get("retry_flag_flips", [])) for row in criteria),
         "screenshot_evidence_loss": {
             "count": screenshot_loss, "denominator": total, "rate": rate(screenshot_loss, total)
         },
@@ -935,9 +1341,20 @@ def run_evidence_audit(
     screenshot_result: str | Path,
     dom_result: str | Path,
     task_alias: str | None = None,
-    model: str = DEFAULT_AUDIT_MODEL,
+    model: str | None = None,
+    adjudicator_model: str | None = None,
+    audit_provider: str | None = None,
+    adjudicator_provider: str | None = None,
+    model_check: dict | None = None,
     complete: Callable[[str, list[dict[str, Any]]], dict[str, Any]] | None = None,
+    call_records: list[dict[str, Any]] | None = None,
+    run_name: str | None = None,
 ) -> dict[str, Any]:
+    started_at = datetime.now(timezone.utc).isoformat()
+    from w8bench.run_paths import resolve_run_name
+    run_name = resolve_run_name(run_name)
+    config = resolve_audit_config(model, adjudicator_model, audit_provider, adjudicator_provider)
+    model, adjudicator_model = config["inventory"]["model"], config["adjudication"]["model"]
     frozen = load_canonical_rubric(rubric_file)
     criteria = _criteria_payload(frozen.rubric)
     screenshot_raw = load_json(screenshot_result)
@@ -953,7 +1370,19 @@ def run_evidence_audit(
     shared_trajectory = shared_trajectory_payload(screenshot_root, dom_root)
     screen_sources = {path.name for path in ordered_audit_screenshots(screenshot_root)}
     dom_sources = {path.name for path in ordered_dom_states(dom_root)}
-    call = complete or (lambda selected_model, messages: _completion(selected_model, messages))
+    records = call_records if call_records is not None else []
+    inventory_invalid, adjudication_invalid = [], []
+    if model_check is None and complete is None:
+        model_check = check_audit_models(config)
+    if model_check is not None:
+        for stage, selected in config.items():
+            checked = model_check.get("stages", {}).get(stage, {})
+            if any(checked.get(key) != value for key, value in selected.items()) or not checked.get("model_listed") or not checked.get("listed_at"):
+                raise ValueError(f"Model-list check does not match configured {stage}")
+    call = complete or (lambda selected_model, messages: _completion(
+        selected_model, messages, records=records,
+        provider=config["adjudication" if messages[0]["content"] == ADJUDICATION_SYSTEM_PROMPT else "inventory"]["provider"],
+    ))
     decisions, raw_audit, attempts = _request_validated_audit(
         model=model,
         messages=pairwise_messages(
@@ -970,9 +1399,10 @@ def run_evidence_audit(
         screenshot_root=screenshot_root,
         dom_root=dom_root,
         complete=call,
+        invalid_receipts=inventory_invalid,
     )
     adjudications, raw_adjudication, adjudication_attempts = _request_validated_adjudication(
-        model=model,
+        model=adjudicator_model,
         messages=adjudication_messages(
             screenshot_dir=screenshot_root,
             dom_dir=dom_root,
@@ -988,6 +1418,7 @@ def run_evidence_audit(
         screenshot_root=screenshot_root,
         dom_root=dom_root,
         complete=call,
+        invalid_receipts=adjudication_invalid,
     )
     rows: list[dict[str, Any]] = []
     for criterion, decision, adjudication, screen_context, dom_verifier_context in zip(
@@ -1007,6 +1438,23 @@ def run_evidence_audit(
             "verifier_caught": dom_caught,
             "verifier_output": dom_verifier_context,
         }
+        conflicts, agreement = [], {}
+        for side, counterpart in (("screenshot", "dom_model"), ("dom_model", "screenshot")):
+            proposal = decision[side + "_evidence_loss"]
+            final = adjudication[side + "_evidence_loss"]["confirmed"]
+            agreement[side] = {"inventory_proposed": proposal, "adjudicator_confirmed": final,
+                "status": ("confirmed" if final else "rejected") if proposal else ("added" if final else "not_proposed")}
+            if final:
+                if decision[side]["coverage"] == "COMPLETE":
+                    conflicts.append({"side": side, "reason": "loss_confirmed_despite_complete_inventory_coverage",
+                                      "inventory_coverage": "COMPLETE"})
+                if decision[counterpart]["coverage"] == "ABSENT":
+                    conflicts.append({"side": side, "reason": "counterpart_inventory_coverage_absent",
+                                      "counterpart": counterpart, "inventory_coverage": "ABSENT"})
+        flips = [{"stage": stage, "failed_attempt": receipt["attempt"], **change}
+                 for stage, receipts in (("inventory", inventory_invalid), ("adjudication", adjudication_invalid))
+                 for receipt in receipts for change in receipt.get("flag_flips", [])
+                 if change["criterion_index"] == criterion["criterion_index"]]
         rows.append(
             {
                 **criterion,
@@ -1015,6 +1463,11 @@ def run_evidence_audit(
                 "dom_model": dom_decision,
                 "screenshot_evidence_loss": screenshot_loss,
                 "dom_model_evidence_loss": dom_loss,
+                "coverage_conflict": bool(conflicts),
+                "coverage_conflicts": conflicts,
+                "loss_agreement": agreement,
+                "retry_flag_flips": flips,
+                "requires_human_review": screenshot_loss or dom_loss or not screenshot_caught or not dom_caught,
                 "classification": classification(
                     screenshot_decision, dom_decision, screenshot_loss, dom_loss
                 ),
@@ -1025,17 +1478,71 @@ def run_evidence_audit(
         )
     return {
         "schema_version": SCHEMA_VERSION,
+        "run_name": run_name,
         "prompt_version": PROMPT_VERSION,
         "audit_method": "automated_llm",
         "audit_model": model,
+        "adjudicator_model": adjudicator_model,
+        "audit_provider": config["inventory"]["provider"],
+        "adjudicator_provider": config["adjudication"]["provider"],
+        "run_manifest": {
+            "models": {
+                stage: {"requested_model": selected["model"], "provider": selected["provider"],
+                        "listing_time": (model_check or {}).get("stages", {}).get(stage, {}).get("listed_at"),
+                        "response_models": sorted({record["response_model"] for record in records
+                                                   if record.get("stage") == stage and record.get("response_model")})}
+                for stage, selected in config.items()
+            },
+            "response_model_drift": any(len({record["response_model"] for record in records
+                                             if record.get("stage") == stage and record.get("response_model")}) > 1
+                                        for stage in config),
+            "transport_policy": {"max_attempts": 3, "backoff_seconds": [1, 2],
+                                 "retry_statuses": [429, "5xx"], "retry_connection_errors": True},
+        },
+        "started_at": started_at,
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "generation_settings": {
+            stage: {
+                "requested": (GEMINI_GENERATION_SETTINGS if config[stage]["provider"] == "google"
+                              else OPENAI_GENERATION_SETTINGS).copy(),
+                "provider": config[stage]["provider"],
+                "api_version": GEMINI_API_VERSION if config[stage]["provider"] == "google" else None,
+                "actual": [record["generation_settings"] for record in records
+                           if record.get("stage") == stage and record.get("generation_settings") is not None],
+                "injected_complete": complete is not None,
+            }
+            for stage, selected in (("inventory", model), ("adjudication", adjudicator_model))
+        },
+        "calls": records,
         "task_id": frozen.task_id,
         "task_alias": task_alias,
         "frozen_rubric_sha256": frozen.sha256,
+        "evidence_paths": {
+            "screenshots": [os.path.relpath(screenshot_root / name, Path(__file__).resolve().parents[2]) for name in sorted(screen_sources)],
+            "dom_states": [os.path.relpath(dom_root / name, Path(__file__).resolve().parents[2]) for name in sorted(dom_sources)],
+            "action_history": {"screenshot": os.path.relpath(screenshot_root / "web_surfer.log", Path(__file__).resolve().parents[2]),
+                               "dom_model": os.path.relpath(dom_root / "web_surfer.log", Path(__file__).resolve().parents[2])},
+        },
+        "input_fingerprints": {
+            "frozen_rubric": frozen.sha256,
+            "shared_trajectory": canonical_sha256(shared_trajectory),
+            "screenshot_verifier_result": hashlib.sha256(Path(screenshot_result).read_bytes()).hexdigest(),
+            "dom_verifier_result": hashlib.sha256(Path(dom_result).read_bytes()).hexdigest(),
+            "screenshot_sources": {
+                name: hashlib.sha256((screenshot_root / name).read_bytes()).hexdigest()
+                for name in sorted(screen_sources)
+            },
+            "dom_sources": {
+                name: hashlib.sha256((dom_root / name).read_bytes()).hexdigest()
+                for name in sorted(dom_sources)
+            },
+        },
         "shared_trajectory": shared_trajectory,
-        "primary_auditor_output": {"attempts": attempts, "raw": raw_audit},
+        "primary_auditor_output": {"attempts": attempts, "raw": raw_audit, "invalid_attempts": inventory_invalid},
         "adjudicator_output": {
             "attempts": adjudication_attempts,
             "raw": raw_adjudication,
+            "invalid_attempts": adjudication_invalid,
         },
         "criteria": rows,
         "metrics": calculate_metrics(rows),
@@ -1043,11 +1550,111 @@ def run_evidence_audit(
 
 
 def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]] | None = None) -> dict[str, Any]:
+    protocol_fields = ("schema_version", "prompt_version", "audit_model", "adjudicator_model")
+    if audits:
+        for field in protocol_fields:
+            values = [audit.get(field) for audit in audits]
+            if any(not isinstance(value, str) or not value for value in values):
+                raise ValueError(f"Every audit must record {field}")
+            if len(set(values)) != 1:
+                raise ValueError(f"Audit protocol mismatch: {field}")
     all_rows = [row for audit in audits for row in audit.get("criteria", [])]
     if not all_rows:
         raise ValueError("No completed evidence audits to aggregate")
+    task_ids = [audit["task_id"] for audit in audits]
+    if len(set(task_ids)) != len(task_ids):
+        raise ValueError("Completed evidence audits must have unique task identities")
+    if any(not audit.get("criteria") for audit in audits):
+        raise ValueError("Every completed evidence audit must contain criteria")
+    metrics = calculate_metrics(all_rows)
+    interval_keys = (
+        "screenshot_evidence_loss", "dom_model_evidence_loss",
+        "screenshot_minus_dom_loss_rate", "relative_reduction",
+    )
+    estimates = (
+        metrics["screenshot_evidence_loss"]["rate"],
+        metrics["dom_model_evidence_loss"]["rate"],
+        metrics["screenshot_evidence_loss"]["rate"] - metrics["dom_model_evidence_loss"]["rate"],
+        ((metrics["screenshot_evidence_loss"]["count"] - metrics["dom_model_evidence_loss"]["count"])
+         / metrics["screenshot_evidence_loss"]["count"]
+         if metrics["screenshot_evidence_loss"]["count"] else None),
+    )
+    confidence = {
+        "method": "paired_task_cluster_percentile_bootstrap",
+        "confidence_level": 0.95,
+        "resampling_unit": "task",
+        "estimator": "criterion_weighted_rate",
+        "clusters": len(audits),
+        "resamples": 20000,
+        "seed": 0,
+        "interpretation": (
+            "Assumes independent tasks and holds audit labels fixed; it does not "
+            "measure annotation error. A degenerate empirical interval does not "
+            "establish zero uncertainty."
+        ),
+    }
+    samples: list[list[float]] = [[], [], [], []]
+    undefined_reduction = 0
+    if len(audits) >= 2:
+        # Keep every criterion and both modalities together when sampling a task.
+        # Sum counts before dividing so tasks with more criteria retain their weight.
+        clusters = [
+            (len(audit["criteria"]),
+             sum(row["screenshot_evidence_loss"] for row in audit["criteria"]),
+             sum(row["dom_model_evidence_loss"] for row in audit["criteria"]))
+            for audit in sorted(audits, key=lambda audit: audit["task_id"])
+        ]
+        rng = random.Random(confidence["seed"])
+        for _ in range(confidence["resamples"]):
+            selected = rng.choices(clusters, k=len(clusters))
+            denominator = sum(task[0] for task in selected)
+            screen_rate = sum(task[1] for task in selected) / denominator
+            dom_rate = sum(task[2] for task in selected) / denominator
+            samples[0].append(screen_rate)
+            samples[1].append(dom_rate)
+            samples[2].append(screen_rate - dom_rate)
+            if screen_rate:
+                samples[3].append((screen_rate - dom_rate) / screen_rate)
+            else:
+                undefined_reduction += 1
+    for key, estimate, values in zip(interval_keys, estimates, samples):
+        interval = None
+        status = "insufficient_tasks"
+        if len(values) >= 2:
+            cutpoints = quantiles(values, n=40, method="inclusive")
+            interval = [cutpoints[0], cutpoints[-1]]
+            status = "degenerate" if min(values) == max(values) else "estimated"
+        confidence[key] = {"estimate": estimate, "ci95": interval, "status": status}
+        if key == "relative_reduction":
+            confidence[key].update(
+                defined_resamples=len(values), undefined_resamples=undefined_reduction,
+                performed_resamples=len(values) + undefined_reduction,
+                units="fraction", conditional_on="resampled screenshot loss count > 0",
+            )
+            if len(audits) >= 2 and not values:
+                confidence[key]["status"] = "all_resamples_undefined"
+            elif len(values) == 1:
+                confidence[key]["status"] = "insufficient_defined_resamples"
+    reviews = [
+        {"task_id": audit["task_id"], "task_alias": audit.get("task_alias"),
+         "criterion_index": row.get("criterion_index", index), "criterion": row.get("criterion"),
+         "requires_human_review": True,
+         "reason": "Source-availability and verifier-miss labels require evidence review.",
+         "findings": {key: row.get("adjudication", {}).get(key) for key in
+                      ("screenshot_evidence_loss", "dom_model_evidence_loss",
+                       "screenshot_verifier_miss", "dom_model_verifier_miss")
+                      if row.get("adjudication", {}).get(key, {}).get("confirmed")}}
+        for audit in audits for index, row in enumerate(audit["criteria"])
+        if (row["screenshot_evidence_loss"] or row["dom_model_evidence_loss"]
+            or not row["screenshot"]["verifier_caught"] or not row["dom_model"]["verifier_caught"])
+    ]
+    conflicts = [
+        {"task_id": audit["task_id"], "task_alias": audit.get("task_alias"),
+         "criterion_index": row.get("criterion_index", index), "details": row.get("coverage_conflicts", [])}
+        for audit in audits for index, row in enumerate(audit["criteria"]) if row.get("coverage_conflict")
+    ]
     return {
-        "schema_version": SCHEMA_VERSION,
+        **{field: audits[0][field] for field in protocol_fields},
         "audit_method": "automated_llm",
         "completed_tasks": len(audits),
         "failed_tasks": failures or [],
@@ -1059,7 +1666,10 @@ def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]
             }
             for audit in audits
         ],
-        "metrics": calculate_metrics(all_rows),
+        "metrics": metrics,
+        "confidence_intervals": confidence,
+        "coverage_conflict_list": conflicts,
+        "requires_human_review": {"count": len(reviews), "items": reviews},
     }
 
 
@@ -1096,21 +1706,26 @@ def render_markdown(audit: dict[str, Any]) -> str:
 
 def render_aggregate_markdown(summary: dict[str, Any]) -> str:
     metrics = summary["metrics"]
+    confidence = summary.get("confidence_intervals", {})
     lines = [
         "# Aggregate automated evidence audit", "",
         f"Completed tasks: {summary['completed_tasks']}",
         f"Failed tasks: {len(summary.get('failed_tasks', []))}", "",
-        "| Modality | Missing evidence | Rate |",
-        "|---|---:|---:|",
+        "| Modality | Missing evidence | Rate | 95% task-cluster interval |",
+        "|---|---:|---:|---:|",
     ]
     for label, key in (
         ("Screenshot", "screenshot_evidence_loss"),
         ("DOM-model", "dom_model_evidence_loss"),
     ):
         item = metrics[key]
+        interval = confidence.get(key, {}).get("ci95")
+        interval_text = "n/a" if interval is None else " to ".join(_pct(value) for value in interval)
         lines.append(
-            f"| {label} | {item['count']}/{item['denominator']} | {_pct(item['rate'])} |"
+            f"| {label} | {item['count']}/{item['denominator']} | {_pct(item['rate'])} | {interval_text} |"
         )
+    if confidence:
+        lines.extend(["", confidence["interpretation"]])
     if summary.get("failed_tasks"):
         lines.extend(["", "## Failed tasks", ""])
         for failure in summary["failed_tasks"]:
@@ -1125,7 +1740,7 @@ def append_audit_to_comparison(
     comparison = load_json(comparison_json)
     comparison["evidence_audit"] = audit["metrics"]
     write_json(comparison_json, comparison)
-    existing = comparison_markdown.read_text(encoding="utf-8").rstrip()
+    existing = comparison_markdown.read_text(encoding="utf-8").split("\n## Automated evidence audit", 1)[0].rstrip()
     comparison_markdown.write_text(
         existing + "\n\n## Automated evidence audit\n\n"
         + "| Modality | Missing evidence | Rate |\n|---|---:|---:|\n"

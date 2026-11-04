@@ -3,6 +3,18 @@ FROM node:24-bookworm-slim AS node-runtime
 
 FROM ubuntu:24.04
 
+ARG VCS_REF
+ARG BROWSER_OVERLAY_REVISION
+ARG CHROMIUM_REVISION
+ARG BROWSER_PROTOCOL_SHA256
+RUN for source in "40:$VCS_REF" "40:$BROWSER_OVERLAY_REVISION" \
+      "40:$CHROMIUM_REVISION" "64:$BROWSER_PROTOCOL_SHA256"; do \
+      digest="${source#*:}"; \
+      case "$digest" in ''|*[!0-9a-f]*) echo 'Valid source hashes are required.' >&2; exit 1;; esac; \
+      test "${#digest}" -eq "${source%%:*}" \
+        || { echo 'Full source hashes are required.' >&2; exit 1; }; \
+    done
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
@@ -98,13 +110,15 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     && agent-browser --version
 
 ARG IMAGE_VERSION=dev
-ARG VCS_REF=unknown
 
 LABEL org.opencontainers.image.title="w8-core browser engine" \
       org.opencontainers.image.description="w8-core with ChromiumRL CDP and agent-browser" \
       org.opencontainers.image.source="https://github.com/wootzapp/w8-domdiff-bench" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
-      org.opencontainers.image.revision="${VCS_REF}"
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.wootzapp.browser.overlay.revision="${BROWSER_OVERLAY_REVISION}" \
+      org.wootzapp.browser.chromium.revision="${CHROMIUM_REVISION}" \
+      org.wootzapp.browser.protocol.sha256="${BROWSER_PROTOCOL_SHA256}"
 
 WORKDIR /home/wootz
 EXPOSE 9222 5900 6080
