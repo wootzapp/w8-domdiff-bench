@@ -483,11 +483,23 @@ python -m w8bench.verifier.aggregate_runs evaluations/run_1 evaluations/run_2 ev
 
 This command writes the matched-panel calculation outside the checkout and makes no model calls. Compare its loss counts, denominators, category means, paired outcomes, and intervals with [summary.json](results/summary.json). The exploratory subset is defined separately in Section D.2 and recorded in the published summary.
 
+Reproduction uses the evaluation directories and run manifests in their released relative layout. File-size means and recording-outcome counts additionally require the corresponding `recordings/run_*/` folders, since those summaries use raw recordings rather than prepared trajectories.
+
+The output contains `summary.json`, `evidence_categories.tsv`, and `comparison.md`. Each matched run has the same criterion denominator. Its four paired-outcome cells partition those criteria, and category counts sum to each representation's loss count. Rates and interval bounds in JSON are fractions, converted to percentages by multiplying by 100. Calculations use unrounded counts and rates.
+
 The aggregation accepts any number of complete run catalogs. It uses tasks audited in every selected run, checks the same frozen rubric for each task, and does not treat missing audits as zero loss.
 
 ### D.4 Source Verification
 
 The [run manifests](manifests/) identify the selected audits, retained recordings, frozen rubric hashes, and protected-input hashes. Each audit also records its source fingerprints, shared trajectory, model calls, and final adjudication. The [category table](results/evidence_categories.tsv) keys annotations by run, task, criterion, and representation and includes a hash of the associated finding.
+
+Source verification covers three relationships:
+
+1. The run and task alias identify the audit selected by the manifest. Its frozen rubric hash agrees with the manifest and with the other runs for that task.
+2. Final source-loss flags agree with `criteria[*].adjudication`; verifier-miss flags agree with the saved `verifier_caught` values. Evidence paths and source fingerprints identify the associated screenshots, DOM states, shared history, and verifier results.
+3. Each positive source-loss finding matches a category row by run, task, criterion index, representation, and finding hash. No-loss criteria remain in the audit but have no row in the loss-category table.
+
+The aggregator checks protocol consistency, rubric signatures, flag agreement, shared-trajectory fingerprints, and recording provenance. Image interpretation and recomputation of individual evidence-file checksums are separate from these aggregation checks.
 
 These records support checking which saved inputs produced each result. Hash agreement establishes artifact identity; it does not independently validate an audit's interpretation of the screenshots or DOM.
 
@@ -503,6 +515,8 @@ The [recorded-run aggregator](w8bench/verifier/aggregate_runs.py) implements pro
 
 The 296 saved audits contain all 1,892 available criterion/run records, including no-loss judgments. Of these, 1,857 belong to the matched panel. Each audit retains the criterion text, source coverage, adjudicated loss and verifier-miss flags, explanations, and citations. The [category table](results/evidence_categories.tsv) contains one row for each of the 222 confirmed representation-level source losses on that panel.
 
+`criterion_index` is zero-based: C0 is the first frozen criterion. For each representation, `evidence_loss` flags describe source availability and `verifier_miss` flags describe interpretation of available evidence. Both positive and negative judgments remain in the saved criterion records.
+
 Audits are available by run in the pinned dataset:
 
 - [run_1: 100 tasks](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/70059e9d842429779141d24f5cee10a2da5a6341/evaluations/run_1).
@@ -511,14 +525,18 @@ Audits are available by run in the pinned dataset:
 
 ### E.3 Task Summaries
 
-The manifests for [run_1](manifests/run_1.json), [run_2](manifests/run_2.json), and [run_3](manifests/run_3.json) map catalog tasks to their recording, preparation, and evaluation artifacts. Per-run task counts, criterion denominators, paired outcomes, and verifier-miss totals are recorded in [summary.json](results/summary.json). Action counts can be recovered from each audit's `shared_trajectory.actions`.
+The manifests for [run_1](manifests/run_1.json), [run_2](manifests/run_2.json), and [run_3](manifests/run_3.json) map catalog tasks to their recording, preparation, and evaluation artifacts. Per-run task counts, criterion denominators, paired outcomes, and verifier-miss totals are recorded in [summary.json](results/summary.json), separately for available audits and the matched panel. Action counts come from each audit's `shared_trajectory.actions` and exclude rejected model proposals; captured-state counts and recording outcomes are separate fields.
 
 ### E.4 Reference Results
 
 [summary.json](results/summary.json) stores the unrounded rates, relative reduction, confidence intervals, category means, available coverage, exploratory subset, recording outcomes, and file-size statistics. [evidence_categories.tsv](results/evidence_categories.tsv) stores the source-loss assignments. The [figure directory](docs/assets/evaluations/) contains PNG and SVG versions of the plotted results.
 
+The aggregator derives loss counts from the saved audit flags and category assignments from the annotation table. Offline reproduction recalculates the reported statistics while holding the model judgments fixed.
+
 ### E.5 Source Manifest
 
 The analysis uses dataset revision `70059e9d842429779141d24f5cee10a2da5a6341` and repository commit `0143092182bf43473282594497cd8ef9db85f58a`. Run manifests and audit fingerprints identify the selected source files and frozen rubrics. These pins identify the saved inputs independently of later changes to either repository.
+
+File checksums and canonical JSON hashes identify different artifacts. `protected_input_sha256` and the screenshot, DOM, and verifier-result fingerprints hash the stored file bytes. The frozen rubric hash covers the `precomputed_rubric` object, and the shared-trajectory hash covers its parsed JSON object. A category row's `finding_sha256` covers the criterion wording and that representation's adjudicated source-loss object. These JSON hashes use sorted keys, compact separators, UTF-8, and unescaped Unicode through [canonical hashing](w8bench/verifier/common.py), so indentation does not affect their values.
 
 The source materials and their attribution remain with the [WootzApp repository](https://github.com/wootzapp/w8-domdiff-bench) and [dataset release](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks).
