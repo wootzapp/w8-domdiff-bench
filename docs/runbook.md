@@ -2,9 +2,11 @@
 
 This is the detailed operational guide for `w8-domdiff-bench`. It contains the
 commands for browser setup, task recording, verifier-input preparation, and
-verifier scoring. The [README operating section](../README.md#7-run-the-benchmark)
-contains the complete end-to-end flow; this runbook adds focused checks,
-artifact details, and troubleshooting.
+verifier scoring. The [README](../README.md) presents the study and results;
+this runbook contains the full setup and execution steps, artifact details,
+and troubleshooting.
+ 
+
 
 Two workflows are available:
 
@@ -386,16 +388,17 @@ PNG rendering uses the Cairo system library. On Ubuntu or WSL, install it
 with `sudo apt install libcairo2` if it is not already available.
 
 ```bash
-python -m w8bench.verifier.aggregate_runs evaluations/run_* --output-dir results --categories results/evidence_categories.tsv --readme README.md --figures-dir docs/assets/evaluations
+python -m w8bench.verifier.aggregate_runs evaluations/run_* --output-dir results --categories results/evidence_categories.tsv --figures-dir docs/assets/evaluations
 ```
 
 The summary reports each run and the mean rates, with paired task-then-run
 bootstrap intervals.
 Category annotations must match the saved finding hashes; unassigned findings
 remain explicitly unclassified. Sizes use all captured states and KiB (1,024 bytes).
-Each figure is written as both SVG and PNG from the same drawing. The README's
-marked results table and `results/comparison.md` are generated from the summary;
-the explanatory sections retain their existing text.
+The command writes `results/summary.json`, `results/evidence_categories.tsv`,
+and `results/comparison.md`. Each figure is written as both SVG and PNG from
+the same drawing. README tables and captions are maintained separately and
+should match the generated summary and figures.
 Run manifests identify the complete catalog and frozen rubrics. Recordings with
 no captured state remain unscored; the mean uses the audited tasks common to
 every run, with available task counts reported separately.
