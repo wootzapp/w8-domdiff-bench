@@ -19,7 +19,7 @@ def test_rubric_agent_imports_are_self_contained():
     """The ``screenshot_verifier`` package should import cleanly and
     every exported class should resolve to a module inside this package
     (i.e. no accidental leaks from outside ``screenshot_verifier``)."""
-    from w8bench.screenshot_verifier import (
+    from w8bench.verifier.screenshot_verifier import (
         DataPoint,
         MMRubricAgent,
         MMRubricAgentConfig,
@@ -36,9 +36,9 @@ def test_rubric_agent_imports_are_self_contained():
         MMRubricResult,
         MMRubricOutcomeResult,
     ):
-        assert cls.__module__.startswith("w8bench.screenshot_verifier"), (
+        assert cls.__module__.startswith("w8bench.verifier.screenshot_verifier"), (
             f"{cls.__name__} resolved to {cls.__module__}, expected a "
-            "module inside w8bench.screenshot_verifier"
+            "module inside w8bench.verifier.screenshot_verifier"
         )
 
     # DataPoint round-trip
@@ -52,7 +52,7 @@ def test_rubric_agent_imports_are_self_contained():
 def test_wrapper_accepts_openai_dicts_without_conversion():
     """The rubric agent emits raw OpenAI dicts. The wrappers' ``_to_oai_messages``
     must pass dicts through unchanged so no adapter is needed."""
-    from w8bench.screenshot_verifier.clients.wrapper import _to_oai_messages
+    from w8bench.verifier.screenshot_verifier.clients.wrapper import _to_oai_messages
 
     buf = io.BytesIO()
     PILImage.new("RGB", (4, 4), (255, 0, 0)).save(buf, format="PNG")
@@ -80,7 +80,7 @@ def test_wrapper_accepts_openai_dicts_without_conversion():
 def test_mm_rubric_agent_config_requires_clients():
     """MMRubricAgentConfig needs at least one of the two clients or a
     config dict — construction should assert when both are missing."""
-    from w8bench.screenshot_verifier import MMRubricAgent, MMRubricAgentConfig
+    from w8bench.verifier.screenshot_verifier import MMRubricAgent, MMRubricAgentConfig
 
     with pytest.raises(AssertionError):
         MMRubricAgent(config=MMRubricAgentConfig())
@@ -96,7 +96,7 @@ def test_mm_rubric_agent_accepts_client_instance():
         def supports_json(self):
             return True
 
-    from w8bench.screenshot_verifier import MMRubricAgent, MMRubricAgentConfig
+    from w8bench.verifier.screenshot_verifier import MMRubricAgent, MMRubricAgentConfig
 
     agent = MMRubricAgent(
         config=MMRubricAgentConfig(

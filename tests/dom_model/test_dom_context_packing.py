@@ -1,5 +1,5 @@
-from w8bench.dom_model.context_packing import pack_state
-from w8bench.dom_model.state_parser import load_dom_model_states
+from w8bench.verifier.dom_model.context_packing import pack_state
+from w8bench.verifier.dom_model.state_parser import load_dom_model_states
 
 
 def test_oversized_state_packs_records_and_reports_every_omission(tmp_path):

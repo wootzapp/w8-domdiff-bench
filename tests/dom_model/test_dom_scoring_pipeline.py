@@ -1,5 +1,5 @@
-from w8bench.dom_model.dom_model_agent import DomModelRubricAgent
-from w8bench.dom_model.rubric_agent import MMRubricAgent
+from w8bench.verifier.dom_model.dom_model_agent import DomModelRubricAgent
+from w8bench.verifier.dom_model.rubric_agent import MMRubricAgent
 
 
 EVIDENCE_HOOKS = {

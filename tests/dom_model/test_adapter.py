@@ -48,8 +48,8 @@ def _make_trajectory_dir(root: Path, n_actions: int = 2) -> Path:
 
 
 def test_create_datapoint_normalizes_actions(tmp_path):
-    from w8bench.dom_model.adapter import create_datapoint
-    from w8bench.dom_model.trajectory import Trajectory
+    from w8bench.verifier.dom_model.adapter import create_datapoint
+    from w8bench.verifier.dom_model.trajectory import Trajectory
 
     traj_dir = _make_trajectory_dir(tmp_path, n_actions=3)
     traj = Trajectory(traj_dir, gpt_solver=True)
@@ -78,8 +78,8 @@ def test_create_datapoint_normalizes_actions(tmp_path):
 def test_create_datapoint_handles_missing_init_url(tmp_path):
     """Task_data without ``init_url`` should default to an empty string
     rather than crashing — WebTailBench TSV does not ship init_url."""
-    from w8bench.dom_model.adapter import create_datapoint
-    from w8bench.dom_model.trajectory import Trajectory
+    from w8bench.verifier.dom_model.adapter import create_datapoint
+    from w8bench.verifier.dom_model.trajectory import Trajectory
 
     traj_dir = _make_trajectory_dir(tmp_path, n_actions=1)
     traj = Trajectory(traj_dir, gpt_solver=True)

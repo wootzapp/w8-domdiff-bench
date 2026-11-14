@@ -1,0 +1,663 @@
+"""Chat completion client wrappers around the OpenAI / Azure OpenAI / Azure ML SDKs.
+
+Auth: Azure clients accept ``azure_ad_token_provider`` as a callable or
+the string ``"DEFAULT"`` (resolves to
+``azure.identity.get_bearer_token_provider(DefaultAzureCredential(), ...)``).
+"""
+
+from __future__ import annotations
+
+import json
+from contextvars import ContextVar
+import logging
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Union
+
+import httpx
+import tiktoken
+from openai import AsyncAzureOpenAI, AsyncOpenAI
+
+from .messages import (
+    CreateResult,
+    LLMMessage,
+    RequestUsage,
+    ToolSchema,
+    message_to_openai_format,
+)
+
+logger = logging.getLogger(__name__)
+
+
+_COGNITIVE_SCOPE = "https://cognitiveservices.azure.com/.default"
+
+
+def _default_azure_token_provider(scope: str = _COGNITIVE_SCOPE) -> Callable[[], str]:
+    """Build a bearer-token provider with sensible Azure credential priority.
+
+    Order: AzureCliCredential → ManagedIdentityCredential →
+    DefaultAzureCredential. We try the CLI first because shared workstations
+    often have a system-assigned managed identity that does NOT carry the
+    `Cognitive Services OpenAI User` role on the deployments we hit, while
+    the user's `az login` (or `az login --identity` against a different
+    user-assigned identity) does — so the CLI credential is the one we
+    actually want when both are available. Override with the
+    ``AZURE_TOKEN_CREDENTIALS`` env var (azure-identity 1.16+) if you need
+    a different ordering.
+    """
+    from azure.identity import (
+        AzureCliCredential,
+        ChainedTokenCredential,
+        DefaultAzureCredential,
+        ManagedIdentityCredential,
+        get_bearer_token_provider,
+    )
+
+    cred = ChainedTokenCredential(
+        AzureCliCredential(),
+        ManagedIdentityCredential(),
+        DefaultAzureCredential(exclude_cli_credential=True, exclude_managed_identity_credential=True),
+    )
+    return get_bearer_token_provider(cred, scope)
+
+
+def _resolve_token_provider(
+    value: Union[None, str, Callable[[], str]],
+    scope: str = _COGNITIVE_SCOPE,
+) -> Optional[Callable[[], str]]:
+    """Coerce an ``azure_ad_token_provider`` config value into a callable.
+
+    Accepts ``None`` (default → DefaultAzureCredential), ``"DEFAULT"``
+    (same), any other string (raises), or a callable (returned as-is).
+    """
+    if value is None or (isinstance(value, str) and value.upper() == "DEFAULT"):
+        return _default_azure_token_provider(scope)
+    if callable(value):
+        return value
+    if isinstance(value, str):
+        raise ValueError(
+            f"azure_ad_token_provider={value!r} is not a recognised value. "
+            "Use the string 'DEFAULT' or pass a callable returning a bearer token."
+        )
+    return value
+
+
+@dataclass
+class ModelCapabilities:
+    json_output: bool = True
+    function_calling: bool = True
+
+
+_VLLM_ONLY_SAMPLING_KEYS = frozenset(
+    {
+        "top_k",
+        "min_p",
+        "repetition_penalty",
+        "length_penalty",
+        "early_stopping",
+        "use_beam_search",
+        "best_of",
+        "guided_choice",
+        "guided_regex",
+        "guided_json",
+        "guided_grammar",
+        "skip_special_tokens",
+        "spaces_between_special_tokens",
+    }
+)
+
+
+def _route_vllm_extras_to_body(kwargs: Dict[str, Any]) -> None:
+    """Move vLLM-only sampling params into ``extra_body`` so the OpenAI SDK accepts them."""
+    extras = {k: kwargs.pop(k) for k in list(kwargs) if k in _VLLM_ONLY_SAMPLING_KEYS}
+    if extras:
+        body = kwargs.setdefault("extra_body", {})
+        body.update(extras)
+
+
+class ChatCompletionClient:
+    """Base interface for chat completion clients."""
+
+    def __init__(self, max_tokens: Optional[int] = None):
+        self.metadata: Dict[str, Any] = {}
+        self._last_usage = RequestUsage()
+        self._total_usage = RequestUsage()
+        self._max_tokens = max_tokens or 115000
+        self._encoding = None
+        self._call_records: list[dict[str, Any]] = []
+        self._http_attempts = 0
+        self._http_attempts_observed = False
+        self._active_call = ContextVar(f"verifier_call_{id(self)}", default=None)
+        self._logical_stage = ContextVar(f"verifier_stage_{id(self)}", default=())
+
+    async def _record_http_request(self, request: httpx.Request) -> None:
+        """Observe wire attempts, including SDK retries, without changing requests."""
+        self._http_attempts += 1
+        record = self._active_call.get()
+        if record is not None:
+            record["http_attempts"] += 1
+
+    async def create(
+        self,
+        messages: Sequence[LLMMessage],
+        tools: Sequence[ToolSchema] = (),
+        json_output: Optional[bool] = None,
+        extra_create_args: Mapping[str, Any] = {},
+    ) -> CreateResult:
+        raise NotImplementedError
+
+    async def close(self) -> None:
+        pass
+
+    def supports_json(self) -> bool:
+        return True
+
+    def _get_encoding(self):
+        if self._encoding is None:
+            self._encoding = tiktoken.get_encoding("cl100k_base")
+        return self._encoding
+
+    def count_tokens(
+        self,
+        messages: Sequence[LLMMessage],
+        tools: Sequence[ToolSchema] = (),
+    ) -> int:
+        encoding = self._get_encoding()
+        total = 0
+        for msg in messages:
+            content = msg.get("content", "") if isinstance(msg, dict) else getattr(msg, "content", "")
+            if isinstance(content, str):
+                total += len(encoding.encode(content))
+            elif isinstance(content, list):
+                for item in content:
+                    if isinstance(item, str):
+                        total += len(encoding.encode(item))
+                    elif isinstance(item, dict):
+                        item_type = item.get("type", "")
+                        if item_type == "text":
+                            total += len(encoding.encode(item.get("text", "")))
+                        else:
+                            total += len(encoding.encode(str(item)))
+        for tool in tools:
+            total += len(encoding.encode(str(tool)))
+        return total
+
+    def remaining_tokens(
+        self,
+        messages: Sequence[LLMMessage],
+        tools: Sequence[ToolSchema] = (),
+    ) -> int:
+        return self._max_tokens - self.count_tokens(messages, tools)
+
+    def actual_usage(self) -> RequestUsage:
+        return self._last_usage
+
+    def total_usage(self) -> RequestUsage:
+        return self._total_usage
+
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        return ModelCapabilities()
+
+    @property
+    def endpoint(self) -> str:
+        if "azure_endpoint" in self.metadata and "azure_deployment" in self.metadata:
+            return f"{self.metadata['azure_endpoint']}{self.metadata['azure_deployment']}"
+        if "model" in self.metadata:
+            return self.metadata["model"]
+        return "unknown_endpoint"
+
+    @property
+    def description(self) -> str:
+        if "azure_endpoint" in self.metadata and "azure_deployment" in self.metadata:
+            return f"{self.metadata['azure_endpoint']}{self.metadata['azure_deployment']}"
+        if "model" in self.metadata:
+            return self.metadata["model"]
+        return "unknown_client"
+
+
+def _to_oai_messages(messages: Sequence[LLMMessage]) -> list[Dict[str, Any]]:
+    out: list[Dict[str, Any]] = []
+    for msg in messages:
+        if isinstance(msg, dict) and "role" in msg:
+            out.append(msg)
+        else:
+            out.append(message_to_openai_format(msg))
+    return out
+
+
+def _record_openai_usage(response, client: ChatCompletionClient, *, record=None) -> RequestUsage:
+    # Reasoning is an output subset and cached reads are an input subset.
+    raw = response if isinstance(response, dict) else (
+        response.model_dump() if hasattr(response, "model_dump") else {})
+    provider_usage = raw.get("usage") or {}
+    if not provider_usage and getattr(response, "usage", None) is not None:
+        value = response.usage
+        provider_usage = value.model_dump() if hasattr(value, "model_dump") else vars(value)
+    if not provider_usage and isinstance(response, dict) and (
+            "initial_input_tokens" in response or "output_tokens" in response):
+        provider_usage = {"input_tokens": response.get("initial_input_tokens", 0),
+                          "output_tokens": response.get("output_tokens", 0)}
+    prompt = int(provider_usage.get("prompt_tokens", provider_usage.get("input_tokens", 0)) or 0)
+    completion = int(provider_usage.get("completion_tokens", provider_usage.get("output_tokens", 0)) or 0)
+    input_details = provider_usage.get("prompt_tokens_details") or provider_usage.get("input_tokens_details") or {}
+    output_details = provider_usage.get("completion_tokens_details") or provider_usage.get("output_tokens_details") or {}
+    if not isinstance(input_details, dict):
+        input_details = input_details.model_dump() if hasattr(input_details, "model_dump") else vars(input_details)
+    if not isinstance(output_details, dict):
+        output_details = output_details.model_dump() if hasattr(output_details, "model_dump") else vars(output_details)
+    reasoning = int(output_details.get("reasoning_tokens", 0) or 0)
+    usage = RequestUsage(prompt_tokens=prompt, completion_tokens=completion, reasoning_tokens=reasoning)
+    client._last_usage = usage
+    client._total_usage += usage
+    if record is not None:
+        choices = raw.get("choices") or []
+        finish = choices[0].get("finish_reason") if choices else raw.get("status")
+        if finish is None and getattr(response, "choices", None):
+            finish = response.choices[0].finish_reason
+        returned_model = raw.get("model", getattr(response, "model", None))
+        incomplete = raw.get("incomplete_details", getattr(response, "incomplete_details", None))
+        if hasattr(incomplete, "model_dump"):
+            incomplete = incomplete.model_dump()
+        record.update(returned_model=returned_model, response_status=raw.get("status", getattr(response, "status", None)),
+            finish_reason=finish, incomplete_details=incomplete,
+            output_limit_hit=(finish in {"length", "max_tokens"} or
+                record.get("max_output_tokens") is not None and completion >= record["max_output_tokens"] or
+                isinstance(incomplete, dict) and incomplete.get("reason") == "max_output_tokens"),
+            usage_reported=bool(provider_usage),
+            input_tokens=prompt if provider_usage.get("prompt_tokens", provider_usage.get("input_tokens")) is not None else None,
+            output_tokens=completion if provider_usage.get("completion_tokens", provider_usage.get("output_tokens")) is not None else None,
+            cached_input_tokens=(int(input_details["cached_tokens"]) if input_details.get("cached_tokens") is not None else None),
+            cache_write_input_tokens=provider_usage.get("cache_creation_input_tokens",
+                input_details.get("cache_write_tokens")),
+            reasoning_tokens=reasoning if output_details.get("reasoning_tokens") is not None else None,
+            total_tokens=prompt + completion if provider_usage.get("prompt_tokens", provider_usage.get("input_tokens")) is not None
+                or provider_usage.get("completion_tokens", provider_usage.get("output_tokens")) is not None else None,
+            usage_fields_reported={"input_tokens": provider_usage.get("prompt_tokens", provider_usage.get("input_tokens")) is not None,
+                "output_tokens": provider_usage.get("completion_tokens", provider_usage.get("output_tokens")) is not None,
+                "reasoning_tokens": output_details.get("reasoning_tokens") is not None,
+                "cached_input_tokens": input_details.get("cached_tokens") is not None,
+                "cache_write_input_tokens": provider_usage.get("cache_creation_input_tokens", input_details.get("cache_write_tokens")) is not None})
+    return usage
+
+
+class OpenAIClientWrapper(ChatCompletionClient):
+    """Wrapper around the OpenAI Python SDK (``openai.AsyncOpenAI``)."""
+
+    def __init__(self, **kwargs):
+        max_tokens = kwargs.pop("max_tokens", None)
+        super().__init__(max_tokens=max_tokens)
+        self.model = kwargs.pop("model", "gpt-4")
+        self.metadata = {"model": self.model, "provider": "openai"}
+        kwargs.pop("model_capabilities", None)
+        kwargs.pop("max_retries", None)
+        self.client = AsyncOpenAI(**kwargs)
+        if "http_client" not in kwargs and isinstance(getattr(self.client, "_client", None), httpx.AsyncClient):
+            self.client._client.event_hooks["request"].append(self._record_http_request)
+            self._http_attempts_observed = True
+
+    async def close(self) -> None:
+        await self.client.close()
+
+    async def create(
+        self,
+        messages: Sequence[LLMMessage],
+        tools: Sequence[ToolSchema] = (),
+        json_output: Optional[bool] = None,
+        extra_create_args: Mapping[str, Any] = {},
+    ) -> CreateResult:
+        kwargs: Dict[str, Any] = {"model": self.model, "messages": _to_oai_messages(messages)}
+        if json_output:
+            kwargs["response_format"] = {"type": "json_object"}
+        if tools:
+            kwargs["tools"] = list(tools)
+        kwargs.update(extra_create_args)
+        _route_vllm_extras_to_body(kwargs)
+
+        record = {"configured_model": self.model, "requested_model": kwargs["model"],
+            "reasoning_effort": kwargs.get("reasoning_effort", (kwargs.get("reasoning") or {}).get("effort")),
+            "temperature": kwargs.get("temperature"),
+            "max_output_tokens": kwargs.get("max_completion_tokens", kwargs.get("max_output_tokens", kwargs.get("max_tokens"))),
+            "http_attempts": 0, "http_attempts_observed": self._http_attempts_observed,
+            "usage_reported": False, "returned_model": None, "error_type": None}
+        stage_path = self._logical_stage.get()
+        record.update(stage=stage_path[0] if stage_path else "unattributed", stage_call_path=list(stage_path))
+        self._call_records.append(record)
+        token = self._active_call.set(record)
+        try:
+            response = await self.client.chat.completions.create(**kwargs)
+        except BaseException as error:
+            record["error_type"] = type(error).__name__
+            raise
+        finally:
+            self._active_call.reset(token)
+        usage = _record_openai_usage(response, self, record=record)
+        msg = response.choices[0].message
+        return CreateResult(
+            content=msg.content if msg.content is not None else "",
+            usage=usage,
+            finish_reason=response.choices[0].finish_reason,
+            message=msg,
+            tool_calls=list(msg.tool_calls) if getattr(msg, "tool_calls", None) else None,
+        )
+
+
+class AzureOpenAIClientWrapper(ChatCompletionClient):
+    """Wrapper around Azure OpenAI Chat Completions."""
+
+    def __init__(self, **kwargs):
+        max_tokens = kwargs.pop("max_tokens", None)
+        super().__init__(max_tokens=max_tokens)
+        self.model = kwargs.pop("azure_deployment", kwargs.pop("model", "gpt-4"))
+        self.metadata = {
+            "azure_endpoint": kwargs.get("azure_endpoint", ""),
+            "azure_deployment": self.model,
+            "provider": "azure",
+        }
+        kwargs.pop("model_capabilities", None)
+        kwargs.pop("max_retries", None)
+
+        if "api_key" not in kwargs:
+            kwargs["azure_ad_token_provider"] = _resolve_token_provider(
+                kwargs.pop("azure_ad_token_provider", None)
+            )
+        else:
+            kwargs.pop("azure_ad_token_provider", None)
+
+        self._azure_kwargs = kwargs.copy()
+        self.client = AsyncAzureOpenAI(**kwargs)
+        if "http_client" not in kwargs and isinstance(getattr(self.client, "_client", None), httpx.AsyncClient):
+            self.client._client.event_hooks["request"].append(self._record_http_request)
+            self._http_attempts_observed = True
+
+    async def close(self) -> None:
+        await self.client.close()
+
+    def refresh_credentials(self) -> None:
+        if "api_key" in self._azure_kwargs:
+            return
+        self._azure_kwargs["azure_ad_token_provider"] = _resolve_token_provider(None)
+        self.client = AsyncAzureOpenAI(**self._azure_kwargs)
+        if "http_client" not in self._azure_kwargs and isinstance(getattr(self.client, "_client", None), httpx.AsyncClient):
+            self.client._client.event_hooks["request"].append(self._record_http_request)
+            self._http_attempts_observed = True
+
+    async def create(
+        self,
+        messages: Sequence[LLMMessage],
+        tools: Sequence[ToolSchema] = (),
+        json_output: Optional[bool] = None,
+        extra_create_args: Mapping[str, Any] = {},
+    ) -> CreateResult:
+        kwargs: Dict[str, Any] = {"model": self.model, "messages": _to_oai_messages(messages)}
+        if json_output:
+            kwargs["response_format"] = {"type": "json_object"}
+        if tools:
+            kwargs["tools"] = list(tools)
+        kwargs.update(extra_create_args)
+        _route_vllm_extras_to_body(kwargs)
+
+        record = {"configured_model": self.model, "requested_model": kwargs["model"],
+            "reasoning_effort": kwargs.get("reasoning_effort", (kwargs.get("reasoning") or {}).get("effort")),
+            "temperature": kwargs.get("temperature"),
+            "max_output_tokens": kwargs.get("max_completion_tokens", kwargs.get("max_output_tokens", kwargs.get("max_tokens"))),
+            "http_attempts": 0, "http_attempts_observed": self._http_attempts_observed,
+            "usage_reported": False, "returned_model": None, "error_type": None}
+        stage_path = self._logical_stage.get()
+        record.update(stage=stage_path[0] if stage_path else "unattributed", stage_call_path=list(stage_path))
+        self._call_records.append(record)
+        token = self._active_call.set(record)
+        try:
+            response = await self.client.chat.completions.create(**kwargs)
+        except BaseException as error:
+            record["error_type"] = type(error).__name__
+            raise
+        finally:
+            self._active_call.reset(token)
+        usage = _record_openai_usage(response, self, record=record)
+        msg = response.choices[0].message
+        return CreateResult(
+            content=msg.content if msg.content is not None else "",
+            usage=usage,
+            finish_reason=response.choices[0].finish_reason,
+            message=msg,
+            tool_calls=list(msg.tool_calls) if getattr(msg, "tool_calls", None) else None,
+        )
+
+
+class AzureOpenAIResponsesWrapper(ChatCompletionClient):
+    """Wrapper around the Azure OpenAI Responses API (codex / o3-pro / gpt-5)."""
+
+    def __init__(self, **kwargs):
+        max_tokens = kwargs.pop("max_tokens", None)
+        super().__init__(max_tokens=max_tokens)
+        self.model = kwargs.pop("azure_deployment", kwargs.pop("model", "gpt-4"))
+        self.metadata = {
+            "azure_endpoint": kwargs.get("azure_endpoint", ""),
+            "azure_deployment": self.model,
+            "provider": "azure_responses",
+        }
+        kwargs.pop("model_capabilities", None)
+        kwargs.pop("max_retries", None)
+
+        if kwargs.get("api_version", "") < "2025-03-01":
+            kwargs["api_version"] = "2025-03-01-preview"
+
+        if "api_key" not in kwargs:
+            kwargs["azure_ad_token_provider"] = _resolve_token_provider(
+                kwargs.pop("azure_ad_token_provider", None)
+            )
+        else:
+            kwargs.pop("azure_ad_token_provider", None)
+
+        self._azure_kwargs = kwargs.copy()
+        self.client = AsyncAzureOpenAI(**kwargs)
+        if "http_client" not in kwargs and isinstance(getattr(self.client, "_client", None), httpx.AsyncClient):
+            self.client._client.event_hooks["request"].append(self._record_http_request)
+            self._http_attempts_observed = True
+
+    async def close(self) -> None:
+        await self.client.close()
+
+    def refresh_credentials(self) -> None:
+        if "api_key" in self._azure_kwargs:
+            return
+        self._azure_kwargs["azure_ad_token_provider"] = _resolve_token_provider(None)
+        self.client = AsyncAzureOpenAI(**self._azure_kwargs)
+        if "http_client" not in self._azure_kwargs and isinstance(getattr(self.client, "_client", None), httpx.AsyncClient):
+            self.client._client.event_hooks["request"].append(self._record_http_request)
+            self._http_attempts_observed = True
+
+    async def create(
+        self,
+        messages: Sequence[LLMMessage],
+        tools: Sequence[ToolSchema] = (),
+        json_output: Optional[bool] = None,
+        extra_create_args: Mapping[str, Any] = {},
+    ) -> CreateResult:
+        kwargs: Dict[str, Any] = {"model": self.model, "input": _to_oai_messages(messages)}
+        if json_output:
+            kwargs["text"] = {"format": {"type": "json_object"}}
+        if tools:
+            kwargs["tools"] = list(tools)
+        kwargs.update(extra_create_args)
+
+        if "reasoning_effort" in kwargs:
+            effort = kwargs.pop("reasoning_effort")
+            reasoning = kwargs.get("reasoning", {})
+            reasoning["effort"] = effort
+            kwargs["reasoning"] = reasoning
+
+        record = {"configured_model": self.model, "requested_model": kwargs["model"],
+            "reasoning_effort": kwargs.get("reasoning_effort", (kwargs.get("reasoning") or {}).get("effort")),
+            "temperature": kwargs.get("temperature"),
+            "max_output_tokens": kwargs.get("max_completion_tokens", kwargs.get("max_output_tokens", kwargs.get("max_tokens"))),
+            "http_attempts": 0, "http_attempts_observed": self._http_attempts_observed,
+            "usage_reported": False, "returned_model": None, "error_type": None}
+        stage_path = self._logical_stage.get()
+        record.update(stage=stage_path[0] if stage_path else "unattributed", stage_call_path=list(stage_path))
+        self._call_records.append(record)
+        token = self._active_call.set(record)
+        try:
+            response = await self.client.responses.create(**kwargs)
+        except BaseException as error:
+            record["error_type"] = type(error).__name__
+            raise
+        finally:
+            self._active_call.reset(token)
+
+        usage = _record_openai_usage(response, self, record=record)
+
+        text = getattr(response, "output_text", None)
+        if not text:
+            chunks: list[str] = []
+            for item in getattr(response, "output", []) or []:
+                content = getattr(item, "content", None)
+                if not content:
+                    continue
+                for block in content:
+                    block_text = getattr(block, "text", None)
+                    if block_text:
+                        chunks.append(block_text)
+            text = "".join(chunks)
+        return CreateResult(
+            content=text,
+            usage=usage,
+            finish_reason=response.status,
+            message=response,
+        )
+
+
+class AzureMLClientWrapper(ChatCompletionClient):
+    """Wrapper for Azure ML managed-online endpoints with a custom ``/score`` API."""
+
+    def __init__(self, **kwargs):
+        max_tokens = kwargs.pop("max_tokens", None)
+        super().__init__(max_tokens=max_tokens)
+        self.model = kwargs.pop("model", "unknown")
+        self._score_url = kwargs.pop("score_url")
+        capability_config = kwargs.pop("model_capabilities", {})
+        self._capabilities = ModelCapabilities(
+            json_output=capability_config.get("json_output", True),
+            function_calling=capability_config.get("function_calling", True),
+        )
+        self._max_completion_tokens = kwargs.pop("max_completion_tokens", 10000)
+
+        self._token_scope = kwargs.pop("azure_ad_token_scope", "https://ml.azure.com")
+        self._token_provider = _resolve_token_provider(
+            kwargs.pop("azure_ad_token_provider", None), self._token_scope
+        )
+
+        self.metadata = {
+            "model": self.model,
+            "provider": "azure_ml",
+            "score_url": self._score_url,
+        }
+
+    def refresh_credentials(self) -> None:
+        self._token_provider = _resolve_token_provider(None, self._token_scope)
+
+    @property
+    def capabilities(self) -> ModelCapabilities:
+        return self._capabilities
+
+    async def create(
+        self,
+        messages: Sequence[LLMMessage],
+        tools: Sequence[ToolSchema] = (),
+        json_output: Optional[bool] = None,
+        extra_create_args: Mapping[str, Any] = {},
+    ) -> CreateResult:
+        parts: list[str] = []
+        for msg in messages:
+            if isinstance(msg, dict):
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+            else:
+                role = msg.source
+                content = msg.content
+
+            if isinstance(content, list):
+                for item in content:
+                    if isinstance(item, str):
+                        parts.append(item)
+                    elif isinstance(item, dict):
+                        if item.get("type") == "text":
+                            parts.append(item["text"])
+            elif isinstance(content, str) and content:
+                prefix = f"[{role}] " if role == "system" else ""
+                parts.append(prefix + content)
+
+        data: Dict[str, Any] = {
+            "user_prompt": "\n".join(parts),
+            "max_new_tokens": self._max_completion_tokens,
+        }
+        token = self._token_provider() if self._token_provider else ""
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+
+        self._http_attempts_observed = True
+        record = {"configured_model": self.model, "requested_model": self.model,
+            "reasoning_effort": None, "temperature": None,
+            "max_output_tokens": self._max_completion_tokens,
+            "http_attempts": 0, "http_attempts_observed": True,
+            "usage_reported": False, "returned_model": None, "error_type": None}
+        stage_path = self._logical_stage.get()
+        record.update(stage=stage_path[0] if stage_path else "unattributed", stage_call_path=list(stage_path))
+        self._call_records.append(record)
+        token = self._active_call.set(record)
+        try:
+            async with httpx.AsyncClient(timeout=300, event_hooks={"request": [self._record_http_request]}) as http:
+                resp = await http.post(self._score_url, headers=headers, content=json.dumps(data))
+                if resp.status_code >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"{resp.status_code} for {self._score_url}: {resp.text}",
+                        request=resp.request,
+                        response=resp,
+                    )
+                result = resp.json()
+        except BaseException as error:
+            record["error_type"] = type(error).__name__
+            raise
+        finally:
+            self._active_call.reset(token)
+
+        if isinstance(result, dict):
+            raw = result.get("output", result.get("result", ""))
+        else:
+            raw = result
+
+        if isinstance(raw, list):
+            text = "".join(str(item) for item in raw)
+        elif isinstance(raw, str):
+            text = raw
+        else:
+            text = json.dumps(raw) if raw else ""
+
+        usage = _record_openai_usage(result if isinstance(result, dict) else {}, self, record=record)
+
+        message = type("Message", (), {"content": text, "tool_calls": None})()
+        return CreateResult(content=message, usage=usage, finish_reason="stop")
+
+
+class ClientWrapper:
+    """Namespace for the two ChatCompletionClient construction helpers.
+
+    The wrappers in this module already carry the metadata callers
+    historically read from a separate adapter, so this class just
+    forwards to ``create_client_from_config`` / ``create_client_from_file``.
+    """
+
+    @staticmethod
+    def from_config(config: Dict[str, Any]) -> ChatCompletionClient:
+        from .create_utils import create_client_from_config
+
+        return create_client_from_config(config)
+
+    @staticmethod
+    def from_file(path: str) -> ChatCompletionClient:
+        from .create_utils import create_client_from_file
+
+        return create_client_from_file(path)

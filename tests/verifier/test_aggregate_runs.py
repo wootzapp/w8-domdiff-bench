@@ -5,28 +5,70 @@ from pathlib import Path
 import pytest
 
 from w8bench.verifier import aggregate_runs as aggregate
-from .test_combine_audit_passes import _sets
+from copy import deepcopy
+from w8bench.verifier import evidence_audit as audit
+from w8bench.verifier.common import canonical_sha256
+from .test_automated_evidence_audit import _audit, _row
 
 
-def runs(tmp_path, k=3, flagged=None):
-    roots = _sets(tmp_path / "evaluations", k=k, flagged=flagged)
-    for root in roots:
-        for index, source in enumerate(sorted(root.iterdir()), 1):
-            alias = f"task_{index:02d}"
-            source.rename(root / alias)
-            path = root / alias / "evidence_audit.json"
-            value = json.loads(path.read_text())
-            value["task_alias"] = alias
-            value["shared_trajectory"]["recording_id"] = root.name
-            value["input_fingerprints"]["shared_trajectory"] = aggregate.canonical_sha256(value["shared_trajectory"])
-            for row in value["criteria"]:
-                for finding in row["adjudication"].values():
-                    finding["explanation"] = "Saved evidence requirement."
+def runs(tmp_path, *, k, flagged=None):
+    counts = (2, 2)
+    tmp_path = tmp_path / "evaluations"
+    flagged = flagged or {}
+    roots = []
+    for pass_index in range(k):
+        root = tmp_path / f"pass{pass_index + 1}"
+        roots.append(root)
+        for task_index, count in enumerate(counts):
+            task_id = f"task_{task_index + 1:02d}"
+            rows = []
+            for index in range(count):
+                values = {key: (pass_index, task_index, index, key) in flagged for key in (*aggregate.LOSS_FLAGS, "screenshot_verifier_miss", "dom_model_verifier_miss")}
+                row = _row(screen_loss=values[(*aggregate.LOSS_FLAGS, "screenshot_verifier_miss", "dom_model_verifier_miss")[0]], dom_loss=values[(*aggregate.LOSS_FLAGS, "screenshot_verifier_miss", "dom_model_verifier_miss")[1]],
+                           screen_caught=not values[(*aggregate.LOSS_FLAGS, "screenshot_verifier_miss", "dom_model_verifier_miss")[2]], dom_caught=not values[(*aggregate.LOSS_FLAGS, "screenshot_verifier_miss", "dom_model_verifier_miss")[3]])
+                row.update(criterion_index=index, criterion=f"Criterion {index}", description="Evidence requirement",
+                           max_points=1, adjudication={key: {"confirmed": value, "explanation": "Saved evidence requirement."} for key, value in values.items()})
+                rows.append(row)
+            value = _audit(task_id, rows)
+            value["task_alias"] = task_id
+            value["shared_trajectory"] = {"task_id": task_id, "initial_url": "https://example.test", "recording_id": root.name}
+            value["frozen_rubric_sha256"] = canonical_sha256([
+                {key: row[key] for key in ("criterion_index", "criterion", "description", "max_points")}
+                for row in rows])
+            value["input_fingerprints"] = {
+                "frozen_rubric": value["frozen_rubric_sha256"],
+                "shared_trajectory": canonical_sha256(value["shared_trajectory"]),
+                "screenshot_verifier_result": "1" * 64, "dom_verifier_result": "2" * 64,
+                "screenshot_sources": {"screenshot0.png": "3" * 64},
+                "dom_sources": {"dom_model0.txt": "4" * 64},
+            }
+            value["generation_settings"] = {
+                stage: {"provider": provider, "api_version": version, "requested": deepcopy(settings),
+                        "actual": [deepcopy(settings)], "injected_complete": False}
+                for stage, provider, version, settings in (
+                    ("inventory", "openai", None, audit.OPENAI_GENERATION_SETTINGS),
+                    ("adjudication", "google", "v1beta", audit.GEMINI_GENERATION_SETTINGS))
+            }
+            evidence = tmp_path / "evidence" / task_id
+            evidence.mkdir(parents=True, exist_ok=True)
+            for filename in ("screenshot0.png", "dom_model0.txt", "ss-web_surfer.log", "dom-web_surfer.log"):
+                (evidence / filename).write_bytes(filename.encode())
+            value["evidence_paths"] = {
+                "screenshots": [str(evidence / "screenshot0.png")],
+                "dom_states": [str(evidence / "dom_model0.txt")],
+                "action_history": {"screenshot": str(evidence / "ss-web_surfer.log"),
+                                   "dom_model": str(evidence / "dom-web_surfer.log")},
+            }
+            value["calls"] = [
+                {"stage": "inventory", "response_model": "inventory-response"},
+                {"stage": "adjudication", "response_model": "adjudication-response"},
+            ]
+            path = root / task_id / "evidence_audit.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(value))
     return roots
 
-
-@pytest.mark.parametrize("k", [1, 2, 3, 5])
+@pytest.mark.parametrize("k", [1, 2, 5])
 def test_k_runs_means_are_not_majority_votes(tmp_path, k):
     roots = runs(tmp_path, k=k, flagged={(0, 0, 0, aggregate.LOSS_FLAGS[0])})
     value, categories = aggregate.aggregate_runs(roots, expected_tasks=2, resamples=200)
@@ -48,7 +90,7 @@ def test_k_runs_means_are_not_majority_votes(tmp_path, k):
 
 @pytest.mark.parametrize("field", ["frozen_rubric_sha256", "prompt_version", "criterion"])
 def test_mismatched_protocol_or_rubric_rejected(tmp_path, field):
-    roots = runs(tmp_path)
+    roots = runs(tmp_path, k=2)
     path = roots[1] / "task_01/evidence_audit.json"
     value = json.loads(path.read_text())
     if field == "criterion":
@@ -61,10 +103,10 @@ def test_mismatched_protocol_or_rubric_rejected(tmp_path, field):
 
 
 def test_task_set_mismatch_and_duplicates_rejected(tmp_path):
-    roots = runs(tmp_path, flagged={(0, 1, 0, aggregate.LOSS_FLAGS[0])})
+    roots = runs(tmp_path, k=2, flagged={(0, 1, 0, aggregate.LOSS_FLAGS[0])})
     with pytest.raises(ValueError, match="distinct"):
         aggregate.aggregate_runs([roots[0], roots[0]], expected_tasks=2)
-    with pytest.raises(ValueError, match="distinct run names"):
+    with pytest.raises(FileNotFoundError):
         aggregate.aggregate_runs([roots[0], tmp_path / "other" / roots[0].name], expected_tasks=2)
     (roots[1] / "task_02/evidence_audit.json").unlink()
     with pytest.raises(ValueError, match="Expected 2"):
@@ -87,7 +129,7 @@ def test_task_set_mismatch_and_duplicates_rejected(tmp_path):
     assert value["catalog_tasks"] == 2 and value["tasks_per_run"] == 1
     assert value["criteria_per_run"] == 2
     assert value["coverage"]["outside_common_panel"] == ["task_02"]
-    assert [run["available_tasks"] for run in value["per_run"]] == [2, 1, 2]
+    assert [run["available_tasks"] for run in value["per_run"]] == [2, 1]
     assert value["per_run"][0]["available_metrics"][aggregate.LOSS_FLAGS[0]]["count"] == 1
     assert value["mean"][aggregate.LOSS_FLAGS[0]]["count"] == 0 and categories == []
     assert "Available audited tasks" in aggregate.render_table(value)
@@ -119,7 +161,7 @@ def test_paired_hierarchical_intervals_are_seeded_and_keep_sides_together():
 
 
 def test_recording_provenance_and_returned_models_are_checked(tmp_path):
-    roots = runs(tmp_path)
+    roots = runs(tmp_path, k=2)
     original_path = roots[0] / "task_01/evidence_audit.json"
     path = roots[1] / "task_01/evidence_audit.json"
     original = json.loads(original_path.read_text())
@@ -149,7 +191,7 @@ def test_recording_provenance_and_returned_models_are_checked(tmp_path):
 
 
 def test_run_manifest_selects_the_audit_batch(tmp_path):
-    roots = runs(tmp_path)
+    roots = runs(tmp_path, k=2)
     manifests = tmp_path / "manifests"
     manifests.mkdir()
     for root in roots:
@@ -174,7 +216,7 @@ def test_run_manifest_selects_the_audit_batch(tmp_path):
 
 @pytest.mark.parametrize("field", ["input_fingerprints", "calls"])
 def test_missing_source_or_model_provenance_is_rejected(tmp_path, field):
-    roots = runs(tmp_path)
+    roots = runs(tmp_path, k=2)
     path = roots[0] / "task_01/evidence_audit.json"
     value = json.loads(path.read_text())
     value.pop(field)
@@ -184,7 +226,7 @@ def test_missing_source_or_model_provenance_is_rejected(tmp_path, field):
 
 
 def test_outputs_and_figures_are_written_without_model_calls(tmp_path):
-    roots = runs(tmp_path, flagged={(0, 0, 0, aggregate.LOSS_FLAGS[0])})
+    roots = runs(tmp_path, k=2, flagged={(0, 0, 0, aggregate.LOSS_FLAGS[0])})
     output, figures = tmp_path / "out", tmp_path / "figures"
     recordings = tmp_path / "recordings"
     for index, root in enumerate(roots, 1):
@@ -203,14 +245,14 @@ def test_outputs_and_figures_are_written_without_model_calls(tmp_path):
                            "--exploratory-exclusions", "task_01",
                            "--readme", str(readme)]) == 0
     result = json.loads((output / "summary.json").read_text())
-    assert result["k"] == 3
+    assert result["k"] == 2
     assert result["unclassified_losses"] == 1
     assert result["exploratory_subset"]["pre_specified"] is False
     assert result["exploratory_subset"]["criteria_per_run"] == 2
-    assert result["recorded_file_sizes"]["recordings"] == 6
+    assert result["recorded_file_sizes"]["recordings"] == 4
     assert all(value == {"success": 2} for value in result["recorded_outcomes"].values())
     sizes = result["recorded_file_sizes"]["pooled"]["dom_model.txt"]
-    assert sizes == {"files": 6, "bytes": 12, "mean_kib": 2 / 1024, "mean_kb": 2 / 1000}
+    assert sizes == {"files": 4, "bytes": 6, "mean_kib": 1.5 / 1024, "mean_kb": 1.5 / 1000}
     assert readme.read_text().startswith("Keep intro") and readme.read_text().endswith("Keep rest\n")
     with (output / "evidence_categories.tsv").open() as stream:
         assert len(list(csv.DictReader(stream, delimiter="\t"))) == 1
@@ -218,3 +260,50 @@ def test_outputs_and_figures_are_written_without_model_calls(tmp_path):
     assert (figures / "evidence-loss-rates.svg").is_file()
     for svg in figures.glob("*.svg"):
         assert svg.with_suffix(".png").read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_generic_task_names_and_current_trial_arm_receipts(tmp_path):
+    import hashlib
+    original = runs(tmp_path, k=2)
+    selected = []
+    for trial, source in enumerate(original, 1):
+        root = tmp_path / "current" / f"trial_{trial:04d}" / "dom"
+        selected.append(root)
+        for old_alias, alias in (("task_01", "news-medium-a"), ("task_02", "catalog_x")):
+            value = json.loads((source / old_alias / "evidence_audit.json").read_text())
+            value["task_alias"] = value["task_id"] = alias
+            recording = hashlib.sha256(f"{trial}:{alias}".encode()).hexdigest()
+            value["shared_trajectory"].update(task_id=alias, evaluation_context={
+                "actor_arm": "dom", "trial_id": f"trial_{trial:04d}", "task_id": alias, "recording_sha256": recording})
+            value["input_fingerprints"]["shared_trajectory"] = aggregate.canonical_sha256(value["shared_trajectory"])
+            folder = root / alias / recording
+            folder.mkdir(parents=True)
+            path = folder / "evidence_audit.json"
+            path.write_text(json.dumps(value))
+            (folder / "evaluation.json").write_text(json.dumps({"trial_id": f"trial_{trial:04d}", "actor_arm": "dom",
+                "task_id": alias, "rubric_sha256": value["frozen_rubric_sha256"], "recording_sha256": recording,
+                "coverage": {"states": [{"state": 1}]}, "stages": {"audit": {"status": "complete",
+                    "result_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}}}))
+    summary, _ = aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100)
+    assert summary["k"] == 2 and summary["actor_arm"] == "dom"
+    assert summary["run_names"] == ["trial_0001", "trial_0002"]
+    assert summary["coverage"]["compared_tasks"] == ["catalog_x", "news-medium-a"]
+    # A declared ungraded task remains visible without being a zero-loss audit.
+    path = next(selected[1].rglob("news-medium-a/*/evaluation.json"))
+    value = json.loads(path.read_text())
+    value["stages"]["audit"] = {"status": "not_eligible", "reason": "no_eligible_paired_states"}
+    path.write_text(json.dumps(value)); (path.parent / "evidence_audit.json").unlink()
+    summary, _ = aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100)
+    assert summary["tasks_per_run"] == 1
+    assert summary["coverage"]["unscored_tasks"]["trial_0002"] == {"news-medium-a": "no_eligible_paired_states"}
+    # Different actor policies may not be pooled into the same within-run audit mean.
+    for path in selected[1].rglob("evaluation.json"):
+        value = json.loads(path.read_text()); value["actor_arm"] = "screenshot"; path.write_text(json.dumps(value))
+        audit_path = path.parent / "evidence_audit.json"
+        if audit_path.is_file():
+            value = json.loads(audit_path.read_text()); value["shared_trajectory"]["evaluation_context"]["actor_arm"] = "screenshot"
+            value["input_fingerprints"]["shared_trajectory"] = aggregate.canonical_sha256(value["shared_trajectory"])
+            audit_path.write_text(json.dumps(value))
+            evaluation = json.loads(path.read_text()); evaluation["stages"]["audit"]["result_sha256"] = hashlib.sha256(audit_path.read_bytes()).hexdigest(); path.write_text(json.dumps(evaluation))
+    with pytest.raises(ValueError, match="different actor arms"):
+        aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100)

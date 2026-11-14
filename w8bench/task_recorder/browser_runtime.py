@@ -97,19 +97,21 @@ CONTAINER_NAME={values['CONTAINER_NAME']}
 CDP_HOST_PORT={values['CDP_HOST_PORT']}
 NOVNC_HOST_PORT={values['NOVNC_HOST_PORT']}
 VNC_HOST_PORT={values['VNC_HOST_PORT']}
-RUNNER_NOVNC_URL={values['RUNNER_NOVNC_URL']}
 
 OPENAI_API_KEY={values['OPENAI_API_KEY']}
 OPENAI_MODEL={values['OPENAI_MODEL']}
-EVIDENCE_AUDIT_MODEL={values['EVIDENCE_AUDIT_MODEL']}
-EVIDENCE_ADJUDICATOR_MODEL={values['EVIDENCE_ADJUDICATOR_MODEL']}
-GEMINI_API_KEY={values.get('GEMINI_API_KEY', '')}
+OPENAI_BASE_URL={values.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')}
+W8_RUN_NAME={values.get('W8_RUN_NAME', 'run_1')}
+TASK_CATALOG_FILE={values.get('TASK_CATALOG_FILE', '')}
+
+EVIDENCE_AUDIT_MODEL={values.get('EVIDENCE_AUDIT_MODEL', '')}
+EVIDENCE_ADJUDICATOR_MODEL={values.get('EVIDENCE_ADJUDICATOR_MODEL', '')}
 EVIDENCE_AUDIT_PROVIDER={values.get('EVIDENCE_AUDIT_PROVIDER', '')}
 EVIDENCE_ADJUDICATOR_PROVIDER={values.get('EVIDENCE_ADJUDICATOR_PROVIDER', '')}
-W8_RUN_NAME={values.get('W8_RUN_NAME', 'run_1')}
+GEMINI_API_KEY={values.get('GEMINI_API_KEY', '')}
 
 CHROMIUM_HEADLESS=0
-CHROMIUM_RESET_PROFILE=0
+CHROMIUM_RESET_PROFILE=1
 """
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(content, encoding="utf-8")
@@ -125,42 +127,44 @@ def configure(env_path: Path, refresh_ports: bool) -> int:
         print_runtime_urls(existing)
         return 0
 
+    defaults = read_env(ROOT / ".env.example")
+    if not defaults.get("OPENAI_MODEL"):
+        raise RuntimeError(".env.example must configure OPENAI_MODEL")
     suffix = runtime_identity()
     used: set[int] = set()
-    cdp_port = choose_port(49335, used)
-    novnc_port = choose_port(16191, used)
-    vnc_port = choose_port(15911, used)
+    cdp_port = choose_port(49345, used)
+    novnc_port = choose_port(16291, used)
+    vnc_port = choose_port(16011, used)
     container_name = existing.get("CONTAINER_NAME")
     if not container_name:
-        container_name = unique_container_name(f"w8-core-browser-{suffix}")
+        container_name = unique_container_name(f"w8-turns-browser-{suffix}")
     values = {
-        "IMAGE": existing.get("IMAGE", "w8-core:domdiff-bench"),
+        "IMAGE": existing.get("IMAGE", "wootzapp/w8-core:latest"),
         "COMPOSE_PROJECT_NAME": existing.get(
-            "COMPOSE_PROJECT_NAME", f"w8-recorder-{suffix}"
+            "COMPOSE_PROJECT_NAME", f"w8-turns-{suffix}"
         ),
         "CONTAINER_NAME": container_name,
         "CDP_HOST_PORT": str(cdp_port),
         "NOVNC_HOST_PORT": str(novnc_port),
         "VNC_HOST_PORT": str(vnc_port),
-        "RUNNER_NOVNC_URL": f"http://127.0.0.1:{novnc_port}{NOVNC_PATH}",
         "OPENAI_API_KEY": existing.get(
             "OPENAI_API_KEY", "replace-with-your-openai-api-key"
         ),
         "OPENAI_MODEL": existing.get(
-            "OPENAI_MODEL", "replace-with-a-supported-model-name"
+            "OPENAI_MODEL", defaults["OPENAI_MODEL"]
         ),
-        "EVIDENCE_AUDIT_MODEL": existing.get("EVIDENCE_AUDIT_MODEL", ""),
-        "EVIDENCE_ADJUDICATOR_MODEL": existing.get("EVIDENCE_ADJUDICATOR_MODEL", ""),
+        "OPENAI_BASE_URL": existing.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+        "TASK_CATALOG_FILE": existing.get("TASK_CATALOG_FILE", defaults.get("TASK_CATALOG_FILE", "")),
         "W8_RUN_NAME": existing.get("W8_RUN_NAME", "run_1"),
-        "GEMINI_API_KEY": existing.get("GEMINI_API_KEY", ""),
-        "EVIDENCE_AUDIT_PROVIDER": existing.get("EVIDENCE_AUDIT_PROVIDER", ""),
-        "EVIDENCE_ADJUDICATOR_PROVIDER": existing.get("EVIDENCE_ADJUDICATOR_PROVIDER", ""),
     }
+    for key in ("EVIDENCE_AUDIT_MODEL", "EVIDENCE_ADJUDICATOR_MODEL",
+                "EVIDENCE_AUDIT_PROVIDER", "EVIDENCE_ADJUDICATOR_PROVIDER", "GEMINI_API_KEY"):
+        values[key] = existing.get(key, defaults.get(key, ""))
     env_path.parent.mkdir(parents=True, exist_ok=True)
     write_env(env_path, values)
     print(f"Created conflict-free w8-core configuration: {env_path}")
     print_runtime_urls(values)
-    print("Edit OPENAI_API_KEY and OPENAI_MODEL before running a model-driven task.")
+    print("Set OPENAI_API_KEY and GEMINI_API_KEY credentials before running the benchmark.")
     return 0
 
 
@@ -206,7 +210,7 @@ def status(env_path: Path) -> int:
     values = read_env(env_path)
     if not values:
         raise RuntimeError(f"configuration not found: {env_path}")
-    container_name = values.get("CONTAINER_NAME", "w8-core-browser-engine")
+    container_name = values.get("CONTAINER_NAME", "w8-turns-browser-engine")
     cdp_port = required_port(values, "CDP_HOST_PORT")
     novnc_port = required_port(values, "NOVNC_HOST_PORT")
 

@@ -8,13 +8,12 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from w8bench.verifier.generate_frozen_rubric import main as generate_main
 from w8bench.verifier.run_comparison import commands, validate_command_parity
 from w8bench.verifier.validate_inputs import compare_semantic_actions, parse_actions, validate_pair
 
 
 def test_action_judge_model_matches_both_packages_and_endpoint_config():
-    from w8bench.dom_model.control import CANONICAL_ACTION_MODEL as dom_model
+    from w8bench.verifier.dom_model.control import CANONICAL_ACTION_MODEL as dom_model
     from w8bench.verifier.common import CANONICAL_ACTION_MODEL, validate_endpoint_configs
 
     root = Path(__file__).resolve().parents[2]
@@ -25,15 +24,18 @@ def test_action_judge_model_matches_both_packages_and_endpoint_config():
 
 
 @pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
-def test_standalone_action_judge_defaults_to_terra_and_allows_override(package):
-    module = importlib.import_module(f"w8bench.{package}.runner")
+def test_standalone_verifier_models_are_pinned(package):
+    module = importlib.import_module(f"w8bench.verifier.{package}.runner")
     arguments = ["--input", "task", "--rubric-file", "rubric.json",
                  "--eval-config", "config", "--output", "result.json"]
     if package == "dom_model":
         arguments += ["--generation-metrics", "metrics.json"]
     assert module.parse_args(arguments).action_model == "gpt-5.6-terra"
-    # Allow an explicit action/validity model selection.
-    assert module.parse_args(arguments + ["--action-model", "custom-model"]).action_model == "custom-model"
+    assert module.parse_args(arguments).judge_model == "gpt-5.2"
+    with pytest.raises(SystemExit):
+        module.parse_args(arguments + ["--action-model", "custom-model"])
+    with pytest.raises(SystemExit):
+        module.parse_args(arguments + ["--judge-model", "custom-model"])
 
 
 @pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
@@ -53,8 +55,8 @@ def test_standalone_action_judge_defaults_to_terra_and_allows_override(package):
     ("invented_action", ["ref", "thoughts"], "6.2"),
 ])
 def test_diagnostics_recognize_commands_without_hiding_real_errors(package, action, keys, expected):
-    module = importlib.import_module(f"w8bench.{package}.rubric_agent")
-    schema = importlib.import_module(f"w8bench.{package}.utils.action_schema")
+    module = importlib.import_module(f"w8bench.verifier.{package}.rubric_agent")
+    schema = importlib.import_module(f"w8bench.verifier.{package}.utils.action_schema")
     steps = [{"step_number": 1, "action_name": action, "action_args_keys": keys}]
     original = copy.deepcopy(steps)
     errors = module.MMRubricAgent._detect_tool_interaction_errors(steps, schema.FARA_ACTION_DEFINITIONS)
@@ -63,17 +65,17 @@ def test_diagnostics_recognize_commands_without_hiding_real_errors(package, acti
 
 
 def test_both_verifiers_use_identical_diagnostic_definitions():
-    from w8bench.dom_model.utils.action_schema import ACTION_METADATA_KEYS, FARA_ACTION_DEFINITIONS
-    from w8bench.screenshot_verifier.utils import action_schema
+    from w8bench.verifier.dom_model.utils.action_schema import ACTION_METADATA_KEYS, FARA_ACTION_DEFINITIONS
+    from w8bench.verifier.screenshot_verifier.utils import action_schema
     assert FARA_ACTION_DEFINITIONS == action_schema.FARA_ACTION_DEFINITIONS
     assert ACTION_METADATA_KEYS == action_schema.ACTION_METADATA_KEYS == {"thoughts", "target"}
 
 
 @pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
 def test_diagnostic_filter_does_not_strip_judge_action_context(package):
-    module = importlib.import_module(f"w8bench.{package}.rubric_agent")
-    models = importlib.import_module(f"w8bench.{package}.models")
-    schema = importlib.import_module(f"w8bench.{package}.utils.action_schema")
+    module = importlib.import_module(f"w8bench.verifier.{package}.rubric_agent")
+    models = importlib.import_module(f"w8bench.verifier.{package}.models")
+    schema = importlib.import_module(f"w8bench.verifier.{package}.utils.action_schema")
     arguments = {"ref": "e1", "target": {"role": "button", "name": "Save"},
                  "coordinate": [20, 30], "thoughts": "Save the value."}
     summary = models.StepSummary(index=1, action_name="left_click", action_args=arguments)
@@ -87,8 +89,8 @@ def test_diagnostic_filter_does_not_strip_judge_action_context(package):
 
 @pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
 def test_failure_analysis_explains_metadata_without_changing_history(package):
-    module = importlib.import_module(f"w8bench.{package}.rubric_agent")
-    schema = importlib.import_module(f"w8bench.{package}.utils.action_schema")
+    module = importlib.import_module(f"w8bench.verifier.{package}.rubric_agent")
+    schema = importlib.import_module(f"w8bench.verifier.{package}.utils.action_schema")
     agent = object.__new__(module.MMRubricAgent)
     agent.config = SimpleNamespace(action_definitions=schema.FARA_ACTION_DEFINITIONS,
                                    max_iters=1, gpt5_client=None)
@@ -115,7 +117,7 @@ def test_failure_analysis_explains_metadata_without_changing_history(package):
 @pytest.mark.parametrize("earned", [0, 5, 10])
 @pytest.mark.parametrize("success", [False, True])
 def test_failure_diagnostics_do_not_change_numeric_or_outcome_scores(package, earned, success):
-    module = importlib.import_module(f"w8bench.{package}.rubric_agent")
+    module = importlib.import_module(f"w8bench.verifier.{package}.rubric_agent")
     # Exercise pure result wrapping without constructing any API clients.
     agent = object.__new__(module.MMRubricAgent)
     agent.config = SimpleNamespace(rubric_score_threshold=0.8)
@@ -232,26 +234,6 @@ def test_history_back_aliases_normalize_to_screenshot_action(tmp_path):
     assert dom_actions[0]["action"] == "history_back"
 
 
-def test_generator_dry_run_has_zero_writes(pair_factory, capsys, tmp_path):
-    pair = pair_factory(sidecars=False, metrics=False)
-    experiment = Path(__file__).resolve().parents[2]
-    rubric = experiment / "__offline_dry_run_rubric.json"
-    metrics = experiment / "__offline_dry_run_metrics.json"
-    rc = generate_main(
-        [
-            "--screenshot-task", str(pair["screenshot"]),
-            "--dom-task", str(pair["dom"]),
-            "--staged-root", str(pair["staged"]),
-            "--rubric-file", str(rubric),
-            "--metrics-file", str(metrics),
-            "--eval-config", str(pair["config"]),
-        ]
-    )
-    assert rc == 0
-    assert '"paid_calls_authorized": false' in capsys.readouterr().out
-    assert not rubric.exists() and not metrics.exists()
-    assert not (pair["screenshot"] / "task_data_with_canonical_rubric.json").exists()
-    assert not (pair["dom"] / "task_data_with_canonical_rubric.json").exists()
 
 
 def test_phase_b_requires_matching_sidecars_metrics_and_rubric(pair_factory):
@@ -312,19 +294,3 @@ def test_command_parity_rejects_any_shared_control_drift(tmp_path):
     dom[dom.index("--rubric-threshold") + 1] = "0.9"
     with pytest.raises(ValueError, match="rubric_threshold"):
         validate_command_parity(built)
-
-
-def test_phase_a_rejects_protected_source_tree_as_staging_root():
-    repository = Path(__file__).resolve().parents[2]
-    protected = repository / "benchmarks"
-    with pytest.raises(ValueError, match="protected source tree"):
-        generate_main(
-            [
-                "--screenshot-task", str(protected / "unused-screenshot"),
-                "--dom-task", str(protected / "unused-dom"),
-                "--staged-root", str(protected),
-                "--rubric-file", str(repository / "unused-rubric.json"),
-                "--metrics-file", str(repository / "unused-metrics.json"),
-                "--eval-config", str(repository / "config"),
-            ]
-        )

@@ -113,6 +113,8 @@ def _normalize(
     combined_calls = sum_call_metrics(calls_judge, calls_action)
     outcome = raw.get("outcome") or {}
     failure = intermediate.get("step9_first_point_of_failure") or {}
+    trajectory_validity = intermediate.get("step9b_task_verification_with_trajectory") or {}
+    task_validity = intermediate.get("step10_task_verification") or {}
     return {
         "task_id": task,
         "evidence_mode": mode,
@@ -125,8 +127,16 @@ def _normalize(
             "action_and_validity_judge": CANONICAL_ACTION_MODEL,
         },
         "pipeline_settings": dict(CANONICAL_SETTINGS),
+        "evaluation_context": raw.get("evaluation_context"),
+        "validity_date": raw.get("validity_date"),
+        "dom_model_evidence_audit": raw.get("dom_model_evidence_audit"),
+        "provider_call_metrics": {"judge": calls_judge, "action_judge": calls_action},
         "trajectory": raw.get("preflight", {}),
         "result": {
+            "frozen_full_score": all(item["final_points"] == item["max_points"] for item in criteria),
+            "frozen_total_earned_points": sum(item["final_points"] for item in criteria),
+            "frozen_total_max_points": frozen_denominator,
+            "runtime_penalty_total_max_points": sum(item["max_points"] for item in penalties if item["is_applicable"]),
             "process_score": float(raw.get("rubric_score", 0)),
             "total_earned_points": float(raw.get("rubric_total_earned_points", 0)),
             "total_max_points": result_denominator,
@@ -134,9 +144,11 @@ def _normalize(
             "outcome_success": outcome.get("output_success"),
             "has_failure": failure.get("has_failure"),
             "first_failure_step": failure.get("first_failure_step"),
-            "is_ambiguous": failure.get("is_ambiguous", False),
-            "ambiguity_codes": failure.get("ambiguity_codes", []),
-            "is_invalid": (intermediate.get("step10_task_verification") or {}).get("is_invalid", False),
+            "is_ambiguous": trajectory_validity.get("is_ambiguous"),
+            "ambiguity_codes": trajectory_validity.get("ambiguity_codes"),
+            "is_invalid": task_validity.get("is_invalid"),
+            "trajectory_task_verification": trajectory_validity or None,
+            "task_only_verification": task_validity or None,
             "duration_seconds": raw.get("duration_sec", 0),
         },
         "criteria": criteria,

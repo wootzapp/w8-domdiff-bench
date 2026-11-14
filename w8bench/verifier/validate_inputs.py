@@ -9,9 +9,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from w8bench.dom_model.alignment import validate_alignment
-from w8bench.dom_model.state_parser import load_dom_model_states
-from w8bench.dom_model.trajectory_helpers import action_events, load_trajectory
+from w8bench.verifier.dom_model.alignment import validate_alignment
+from w8bench.verifier.dom_model.state_parser import load_dom_model_states
+from w8bench.verifier.dom_model.trajectory_helpers import action_events, load_trajectory
 
 from .common import (
     canonical_json_bytes,
@@ -58,7 +58,7 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
         if raw_name not in ACTION_NAMES:
             raise ValueError(f"{path}:{line_number}: unsupported action {raw_name!r}")
         name = ACTION_NAMES[raw_name]
-        if mode == "screenshot" and name == "click":
+        if name == "click":
             coordinate = arguments.get("coordinate")
             valid_coordinate = (
                 isinstance(coordinate, list)
@@ -70,7 +70,7 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
         # WebSurfer "type" also represents keyboard input to the focused control
         # (including browser Find). Only an explicit fill or click requires a
         # DOM target; inventing a ref for keyboard typing changes the recording.
-        if mode == "dom_model" and (name == "click" or raw_name == "fill"):
+        if mode == "dom_model" and raw_name == "fill":
             if arguments.get("ref") is None and arguments.get("target") is None:
                 raise ValueError(f"{path}:{line_number}: DOM-model {name} requires ref or target")
         signature: dict[str, Any] = {
@@ -95,6 +95,8 @@ def parse_actions(path: Path, *, mode: str) -> list[dict[str, Any]]:
             for key in ("role", "name"):
                 if target.get(key) is not None:
                     signature[f"target_{key}"] = target[key]
+        if "coordinate" in arguments:
+            signature["coordinate"] = arguments["coordinate"]
         if arguments.get("ref") is not None:
             signature["ref"] = arguments["ref"]
         actions.append(signature)
@@ -109,7 +111,7 @@ def compare_semantic_actions(screenshot: list[dict], dom_model: list[dict]) -> N
         "scroll": {"direction", "delta_x", "delta_y", "amount"},
         "wait": {"seconds"},
         "key": {"key"},
-        "click": {"ref", "target_role", "target_name"},
+        "click": {"ref", "target_role", "target_name", "coordinate"},
     }
     for ordinal, (left, right) in enumerate(zip(screenshot, dom_model), start=1):
         for key in {"action", "after_url"}:
@@ -133,7 +135,12 @@ def ordered_screenshots(root: Path) -> list[Path]:
             raise ValueError(f"Duplicate screenshot index {index} in {root}")
         indexed[index] = child
     actual = sorted(indexed)
-    if actual != list(range(len(actual))):
+    task = load_one_task(root / "task_data.json") if (root / "task_data.json").is_file() else {}
+    context = task.get("evaluation_context") or {}
+    expected = list(range(len(actual)))
+    if context:
+        expected = [index for index in context["expected_state_ids"] if index not in context.get("format_gaps", {}).get("screenshot", [])]
+    if actual != expected:
         raise ValueError(f"Screenshots must be contiguous from 0, got {actual}")
     return [indexed[index] for index in actual]
 
@@ -203,7 +210,8 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
     if verifier_action_history(screenshot) != verifier_action_history(dom):
         raise ValueError("Screenshot and DOM judge-visible action histories differ")
     screenshots = ordered_screenshots(screenshot)
-    if len(screenshots) != len(screenshot_actions) + 1:
+    context = screenshot_data.get("evaluation_context") or {}
+    if not context and len(screenshots) != len(screenshot_actions) + 1:
         raise ValueError("Screenshot task requires intentional N+1 states")
     trajectory = load_trajectory(dom)
     events = action_events(trajectory)
@@ -215,6 +223,7 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
         initial_url=task_init_url(dom_data),
         actions=events,
         states=states,
+        evaluation_context=context,
     )
     screenshot_answer = load_answer(screenshot / "final_answer.json")
     dom_answer = load_answer(dom / "final_answer.json")
@@ -233,6 +242,9 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
         "screenshots": len(screenshots),
         "dom_model_states": len(states),
         "alignment": alignment.as_dict(),
+        **({"format_gaps": context.get("format_gaps", {}),
+            "navigation_states": context.get("navigation_states", []),
+            "audit_eligible_states": context.get("audit_eligible_states", [])} if context else {}),
     }
 
 

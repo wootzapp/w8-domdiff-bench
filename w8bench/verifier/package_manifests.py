@@ -11,8 +11,8 @@ from typing import Any
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_ROOT = REPOSITORY_ROOT / "manifests"
 PACKAGE_ROOTS = {
-    "screenshot_verifier": REPOSITORY_ROOT / "w8bench" / "screenshot_verifier",
-    "dom_model": REPOSITORY_ROOT / "w8bench" / "dom_model",
+    "screenshot_verifier": REPOSITORY_ROOT / "w8bench" / "verifier" / "screenshot_verifier",
+    "dom_model": REPOSITORY_ROOT / "w8bench" / "verifier" / "dom_model",
 }
 IGNORED_PARTS = {"__pycache__", ".pytest_cache", ".git", ".venv"}
 

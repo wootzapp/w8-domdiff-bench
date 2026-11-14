@@ -81,8 +81,8 @@ def _fake_google(monkeypatch, text='{"ok":true}'):
     types.Content = lambda **k: k
     types.GenerateContentConfig = lambda **k: k
     types.HttpOptions = lambda **k: k
-    usage = SimpleNamespace(prompt_token_count=10, candidates_token_count=3, thoughts_token_count=2,
-                            model_dump=lambda: {"prompt_token_count": 10, "candidates_token_count": 3, "thoughts_token_count": 2})
+    usage = SimpleNamespace(prompt_token_count=10, candidates_token_count=3, thoughts_token_count=2, cached_content_token_count=4,
+                            model_dump=lambda: {"prompt_token_count": 10, "candidates_token_count": 3, "thoughts_token_count": 2, "cached_content_token_count": 4})
     generate = Mock(return_value=SimpleNamespace(text=text, response_id="gemini-id",
                                                model_version="resolved-gemini", usage_metadata=usage))
     client = Mock()
@@ -128,7 +128,7 @@ def test_gemini_native_routing_preserves_base64_and_retry_roles(monkeypatch):
     assert args["config"]["response_mime_type"] == "application/json"
     assert records[0]["provider"] == "google" and records[0]["response_model"] == "resolved-gemini"
     assert records[0]["usage"] == {"prompt_tokens": 10, "completion_tokens": 5,
-                                    "reasoning_tokens": 2, "total_tokens": 15}
+                                    "reasoning_tokens": 2, "cached_input_tokens": 4, "cache_write_input_tokens": None, "total_tokens": 15}
     openai.assert_not_called()
 
 
@@ -211,8 +211,8 @@ def test_post_adjudication_conflicts_are_recorded_not_overridden(pair_factory):
     final["criteria"][0]["screenshot_evidence_loss"] = _finding(True, modality="dom_model")
     final["criteria"][1]["dom_model_evidence_loss"] = _finding(True, modality="screenshot")
     result = _run(pair, _complete(inventory, final))
-    assert result["schema_version"] == "automated-evidence-audit/v5"
-    assert result["prompt_version"].endswith("/v5")
+    assert result["schema_version"] == "automated-evidence-audit/v6"
+    assert result["prompt_version"] == "paired-capture-eligible-state-adjudication/v6"
     assert result["criteria"][0]["screenshot_evidence_loss"] is True
     assert result["criteria"][1]["dom_model_evidence_loss"] is True
     assert all(r["coverage_conflict"] for r in result["criteria"])

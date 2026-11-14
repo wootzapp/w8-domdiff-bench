@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from w8bench.dom_model.control import canonical_sha256
+from w8bench.verifier.dom_model.control import canonical_sha256
 
 
 RUBRIC = {

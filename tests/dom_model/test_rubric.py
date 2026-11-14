@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from w8bench.dom_model.utils.rubric import (
+from w8bench.verifier.dom_model.utils.rubric import (
     load_frozen_rubric,
     require_matching_embedded_rubric,
 )

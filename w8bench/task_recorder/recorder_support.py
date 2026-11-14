@@ -27,23 +27,6 @@ def clean_dom_text(value: Any) -> str:
     return re.sub(r"\s+", " ", "" if value is None else str(value)).strip()
 
 
-def same_document_except_fragment(first_url: str, second_url: str) -> bool:
-    """Return whether two HTTP URLs differ only by their fragment."""
-    first = urlsplit(first_url)
-    second = urlsplit(second_url)
-    return (
-        first.scheme.lower(),
-        first.netloc.lower(),
-        first.path,
-        first.query,
-    ) == (
-        second.scheme.lower(),
-        second.netloc.lower(),
-        second.path,
-        second.query,
-    )
-
-
 def utc_now() -> str:
     """Return a millisecond-resolution UTC timestamp in JSON-friendly form."""
     return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")

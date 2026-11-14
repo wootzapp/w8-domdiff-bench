@@ -30,8 +30,8 @@ def test_both_local_packages_match_fixed_manifests():
 
 
 def test_packages_do_not_import_each_other_or_shared_or_protected_runtime():
-    screenshot = _top_level_imports(ROOT / "w8bench/screenshot_verifier")
-    dom_model = _top_level_imports(ROOT / "w8bench/dom_model")
+    screenshot = _top_level_imports(ROOT / "w8bench/verifier/screenshot_verifier")
+    dom_model = _top_level_imports(ROOT / "w8bench/verifier/dom_model")
     forbidden_common = {
         "benchmarks",
         "dom_diff_text",
@@ -47,14 +47,14 @@ def test_packages_do_not_import_each_other_or_shared_or_protected_runtime():
 
 
 def test_packages_have_no_symlinks():
-    for package in (ROOT / "w8bench/screenshot_verifier", ROOT / "w8bench/dom_model"):
+    for package in (ROOT / "w8bench/verifier/screenshot_verifier", ROOT / "w8bench/verifier/dom_model"):
         assert not [path for path in package.rglob("*") if path.is_symlink()]
 
 
 def test_each_runner_imports_from_the_installed_package(tmp_path):
     for module in (
-        "w8bench.screenshot_verifier.runner",
-        "w8bench.dom_model.runner",
+        "w8bench.verifier.screenshot_verifier.runner",
+        "w8bench.verifier.dom_model.runner",
     ):
         completed = subprocess.run(
             [sys.executable, "-c", f"import {module}"],

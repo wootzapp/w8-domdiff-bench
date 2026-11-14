@@ -1,6 +1,6 @@
 import asyncio
 
-from w8bench.dom_model.dom_model_agent import DomModelRubricAgent
+from w8bench.verifier.dom_model.dom_model_agent import DomModelRubricAgent
 
 
 def test_grouping_is_inherited_and_prefers_later_state_on_tie():

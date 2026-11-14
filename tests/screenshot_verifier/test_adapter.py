@@ -57,11 +57,11 @@ def _make_trajectory_dir(root: Path, n_actions: int = 2) -> Path:
 
 
 def test_create_datapoint_normalizes_screenshots_and_actions(tmp_path):
-    from w8bench.screenshot_verifier.adapter import (
+    from w8bench.verifier.screenshot_verifier.adapter import (
         create_datapoint,
         normalize_all_screenshot_evidence,
     )
-    from w8bench.screenshot_verifier.trajectory import Trajectory
+    from w8bench.verifier.screenshot_verifier.trajectory import Trajectory
 
     traj_dir = _make_trajectory_dir(tmp_path, n_actions=3)
     traj = Trajectory(traj_dir, gpt_solver=True)
@@ -92,7 +92,7 @@ def test_create_datapoint_normalizes_screenshots_and_actions(tmp_path):
 
 
 def test_runner_binds_all_states_without_changing_action_history():
-    from w8bench.screenshot_verifier.runner import _bind_all_screenshot_evidence
+    from w8bench.verifier.screenshot_verifier.runner import _bind_all_screenshot_evidence
 
     original = {
         "action_history": "State 1: example\\nAction 1: click({})",
@@ -113,8 +113,8 @@ def test_runner_binds_all_states_without_changing_action_history():
 def test_create_datapoint_handles_missing_init_url(tmp_path):
     """Task_data without ``init_url`` should default to an empty string
     rather than crashing — WebTailBench TSV does not ship init_url."""
-    from w8bench.screenshot_verifier.adapter import create_datapoint
-    from w8bench.screenshot_verifier.trajectory import Trajectory
+    from w8bench.verifier.screenshot_verifier.adapter import create_datapoint
+    from w8bench.verifier.screenshot_verifier.trajectory import Trajectory
 
     traj_dir = _make_trajectory_dir(tmp_path, n_actions=1)
     traj = Trajectory(traj_dir, gpt_solver=True)

@@ -1,63 +1,13 @@
 import json
-from copy import deepcopy
 
 import pytest
 
-from w8bench.verifier.compare_results import compare
-from w8bench.verifier.common import CANONICAL_ACTION_MODEL, CANONICAL_SETTINGS, canonical_sha256
+from w8bench.verifier.common import canonical_sha256
 from w8bench.verifier.normalize_results import normalize_dom_model, normalize_screenshot
 
 
-def _run(mode):
-    return {
-        "task_id": "task",
-        "evidence_mode": mode,
-        "frozen_rubric_sha256": "abc",
-        "phase_a_generation_metrics": "/same/metrics.json",
-        "judge_models": {"judge": "gpt-5.2", "action_and_validity_judge": CANONICAL_ACTION_MODEL},
-        "pipeline_settings": dict(CANONICAL_SETTINGS),
-        "result": {"process_score": 1.0, "total_earned_points": 10.0, "total_max_points": 10.0, "outcome_success": True},
-        "criteria": [
-            {"criterion": "a", "action_only_points": 5.0, "final_points": 7.0, "max_points": 7.0},
-            {"criterion": "b", "action_only_points": 2.0, "final_points": 3.0, "max_points": 3.0},
-        ],
-        "llm_calls": {"total": 2, "api_attempts": 3, "retries": 1, "rubric_generation_calls": 0},
-        "token_usage": {"combined": {"prompt_tokens": 10, "completion_tokens": 5, "reasoning_tokens": 2, "total_tokens": 15}},
-    }
-
-
-def test_comparison_accepts_controlled_matching_receipts():
-    receipt, markdown = compare(_run("screenshot"), _run("dom_model"))
-    assert receipt["status"] == "pass"
-    assert set(receipt) == {
-        "status", "task_id", "criterion_denominator", "screenshot", "dom_model", "criteria"
-    }
-    assert set(receipt["screenshot"]) == {
-        "process_score", "earned_points", "maximum_points", "outcome_success"
-    }
-    assert set(receipt["dom_model"]) == set(receipt["screenshot"])
-    assert "token" not in markdown.lower()
-    assert "calls" not in markdown.lower()
-    assert "DOM-model" in markdown
-
-    screenshot = _run("screenshot")
-    dom = _run("dom_model")
-    for run in (screenshot, dom):
-        run["criteria"][1]["condition"] = "Only when needed"
-    dom["criteria"][1]["is_applicable"] = False
-    dom["criteria"][1]["final_points"] = 0.0
-    dom["result"].update(total_max_points=7.0, total_earned_points=7.0)
-    original = deepcopy((screenshot, dom))
-    receipt, markdown = compare(screenshot, dom)
-    assert receipt["criterion_denominator"] == 10.0
-    assert receipt["screenshot"]["maximum_points"] == 10.0
-    assert receipt["dom_model"]["maximum_points"] == 7.0
-    assert (screenshot, dom) == original
-    assert "conditional criteria" in markdown
-
-
 @pytest.mark.parametrize("points_field", ["post_image_earned_points", "post_dom_earned_points"])
-def test_penalties_normalize_and_compare_without_changing_frozen_criteria(pair_factory, tmp_path, points_field):
+def test_penalties_normalize_without_changing_frozen_criteria(pair_factory, tmp_path, points_field):
     pair = pair_factory()
     original_rubric = pair["rubric"].read_bytes()
     rubric = json.loads(original_rubric)["precomputed_rubric"]
@@ -76,10 +26,13 @@ def test_penalties_normalize_and_compare_without_changing_frozen_criteria(pair_f
               "generation_metrics": pair["metrics"], "run_log": tmp_path / "run.log"}
     screenshot = normalize_screenshot(result_file, **kwargs)
     dom = normalize_dom_model(result_file, **kwargs)
-    receipt, markdown = compare(screenshot, dom)
-    assert receipt["criterion_denominator"] == 10
+    assert screenshot["frozen_rubric_sha256"] == dom["frozen_rubric_sha256"] == canonical_sha256(rubric)
     for value in (screenshot, dom):
         assert sum(item["max_points"] for item in value["criteria"]) == 10
+        assert value["result"]["frozen_full_score"] is True
+        assert value["result"]["frozen_total_earned_points"] == 10
+        assert value["result"]["frozen_total_max_points"] == 10
+        assert value["result"]["runtime_penalty_total_max_points"] == 2
         assert value["result"]["process_score"] == 10 / 12
         assert value["result"]["total_max_points"] == 12
         assert value["penalty_criteria"][0]["final_points"] == 0
@@ -90,23 +43,30 @@ def test_penalties_normalize_and_compare_without_changing_frozen_criteria(pair_f
         (normalize_dom_model if points_field.startswith("post_dom") else normalize_screenshot)(result_file, **kwargs)
 
 
+@pytest.mark.parametrize("normalizer", [normalize_screenshot, normalize_dom_model])
 @pytest.mark.parametrize("drift", ["hash", "order", "maximum", "generation", "denominator"])
-def test_comparison_rejects_frozen_contract_drift(drift):
-    screenshot = _run("screenshot")
-    dom = deepcopy(_run("dom_model"))
+def test_normalizer_rejects_frozen_contract_drift(pair_factory, tmp_path, drift, normalizer):
+    pair = pair_factory()
+    rubric = json.loads(pair["rubric"].read_text())["precomputed_rubric"]
+    rows = [{**item, "earned_points": item["max_points"], "post_image_earned_points": item["max_points"],
+             "post_dom_earned_points": item["max_points"]} for item in rubric["items"]]
+    raw = {"task_id": pair["task"]["task_id"], "rubric_sha256": canonical_sha256(rubric),
+        "criterion_denominator": 10, "rubric_total_max_points": 10, "rubric_total_earned_points": 10,
+        "rubric_score": 1, "intermediate_mm_rubric_steps": {"step6_rescoring_summary": rows}}
     if drift == "hash":
-        dom["frozen_rubric_sha256"] = "different"
+        raw["rubric_sha256"] = "different"
     elif drift == "order":
-        dom["criteria"].reverse()
+        rows.reverse()
     elif drift == "maximum":
-        dom["criteria"][0]["max_points"] = 6.0
-        dom["criteria"][1]["max_points"] = 4.0
-    elif drift == "denominator":
-        dom["result"]["total_max_points"] = 9.0
+        rows[0]["max_points"] = 6; rows[1]["max_points"] = 4
+    elif drift == "generation":
+        raw["rubric_generation_calls"] = 1
     else:
-        dom["llm_calls"]["rubric_generation_calls"] = 1
+        raw["rubric_total_max_points"] = 9
+    path = tmp_path / "result.json"
+    path.write_text(json.dumps(raw))
     with pytest.raises(ValueError):
-        compare(screenshot, dom)
+        normalizer(path, input_task=pair["dom"], rubric_file=pair["rubric"], generation_metrics=pair["metrics"], run_log=tmp_path / "run.log")
 
 
 
@@ -185,3 +145,32 @@ def test_normalizer_accepts_conditional_denominator(
 
     assert normalized["result"]["total_max_points"] == 7
     assert normalized["criteria"][1]["is_applicable"] is False
+    assert normalized["result"]["process_score"] == 1
+    assert normalized["result"]["frozen_full_score"] is False
+    assert normalized["result"]["frozen_total_earned_points"] == 7
+    assert normalized["result"]["frozen_total_max_points"] == 10
+
+
+@pytest.mark.parametrize("normalizer", [normalize_screenshot, normalize_dom_model])
+@pytest.mark.parametrize("include_validity", [False, True])
+def test_normalizer_reads_ambiguity_from_its_actual_stage_and_preserves_missing(pair_factory, tmp_path, normalizer, include_validity):
+    pair = pair_factory()
+    rubric = json.loads(pair["rubric"].read_text())["precomputed_rubric"]
+    steps = {"step6_rescoring_summary": [{**item, "earned_points": item["max_points"]} for item in rubric["items"]],
+        "step9_first_point_of_failure": {"has_failure": False, "is_ambiguous": False, "ambiguity_codes": []}}
+    if include_validity:
+        steps["step9b_task_verification_with_trajectory"] = {"is_ambiguous": True, "ambiguity_codes": ["7.1"], "is_invalid": False}
+        steps["step10_task_verification"] = {"is_ambiguous": False, "ambiguity_codes": [], "is_invalid": True}
+    raw = {"task_id": pair["task"]["task_id"], "rubric_sha256": canonical_sha256(rubric),
+        "rubric_total_max_points": 10, "rubric_total_earned_points": 10, "rubric_score": 1,
+        "intermediate_mm_rubric_steps": steps}
+    path = tmp_path / "result.json"
+    path.write_text(json.dumps(raw))
+    value = normalizer(path, input_task=pair["dom"], rubric_file=pair["rubric"],
+        generation_metrics=pair["metrics"], run_log=tmp_path / "run.log")["result"]
+    assert value["is_ambiguous"] is (True if include_validity else None)
+    assert value["ambiguity_codes"] == (["7.1"] if include_validity else None)
+    assert value["is_invalid"] is (True if include_validity else None)
+    assert value["trajectory_task_verification"] == (steps["step9b_task_verification_with_trajectory"] if include_validity else None)
+    assert value["task_only_verification"] == (steps["step10_task_verification"] if include_validity else None)
+    assert value["process_score"] == 1 and value["frozen_full_score"] is True

@@ -2,8 +2,8 @@ from dataclasses import replace
 
 import pytest
 
-from w8bench.dom_model.alignment import validate_alignment
-from w8bench.dom_model.state_parser import load_dom_model_states
+from w8bench.verifier.dom_model.alignment import validate_alignment
+from w8bench.verifier.dom_model.state_parser import load_dom_model_states
 
 
 def test_alignment_receipt_has_initial_transition_and_final(pair_factory):
@@ -107,3 +107,18 @@ def test_same_origin_canonical_path_redirect_is_a_warning(pair_factory):
         states=states,
     )
     assert [warning.code for warning in receipt.warnings] == ["initial_url_same_origin_redirect"]
+
+def test_sparse_alignment_keeps_full_transitions_without_inventing_missing_state(pair_factory):
+    pair = pair_factory()
+    original = load_dom_model_states(pair["dom"], action_count=1)
+    states = [replace(original[0], index=1), replace(original[1], index=3)]
+    context = {"expected_state_ids": [1, 2, 3], "format_gaps": {"dom_model": [2]}}
+    receipt = validate_alignment(task_id="x", initial_url=states[0].url,
+        actions=[{"action": "click", "arguments": {}}, {"action": "wait", "arguments": {}}],
+        states=states, evaluation_context=context)
+    assert [(item["from_state"], item["to_state"]) for item in receipt.transitions] == [(1, 2), (2, 3)]
+    assert receipt.transitions[0]["after_sha256"] is None
+    assert receipt.transitions[1]["before_sha256"] is None
+    assert receipt.transitions[1]["after_sha256"] == states[1].sha256
+    assert receipt.initial_state == 1 and receipt.final_state == 3
+    assert [warning.state_index for warning in receipt.warnings if warning.code == "missing_recorded_state"] == [2]

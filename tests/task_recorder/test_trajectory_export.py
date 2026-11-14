@@ -17,11 +17,12 @@ class TrajectoryExportTests(unittest.TestCase):
             state_dir / "dom.json",
             {"result": {"snapshot": {"url": url, "nodes": []}}},
         )
+        (state_dir / "dom_model.txt").write_text("URL: " + url + "\n")
         return state_dir
 
     def write_action(self, state_dir: Path, number: int) -> dict[str, Any]:
         record: dict[str, Any] = {
-            "step": number,
+            "state": number,
             "next_state": number + 1,
             "model_turn": number,
             "started_at": "2026-08-10T05:45:01.071Z",
@@ -53,46 +54,44 @@ class TrajectoryExportTests(unittest.TestCase):
             action = self.write_action(first, 1)
             manifest = {
                 "task_id": "fixture",
-                "status": "running",
-                "states": [{"state": 1}, {"state": 2}],
+                "status": "running", "observation_mode": "dom", "model_turns": 2,
+                "states": [{"state": n, "directory": f"steps/step_{n:03d}",
+                    "observation": f"steps/step_{n:03d}/dom_model.txt", "artifacts": {},
+                    "capture": {"url_after": url}} for n, url in
+                    [(1, "https://example.test/start"), (2, "https://example.test/next")]],
                 "steps": [action],
             }
             final, report = runner.finalize_recording_artifacts(
                 run_dir,
                 manifest,
-                {"status": "success", "final_answer": "done", "model_turn": 2},
+                {"status": "success", "run_status": "completed", "final_answer": "done"},
             )
             self.assertEqual(final["recorded_steps"], 1)
             self.assertEqual(report["status"], "complete")
             self.assertEqual(report["captured_states"], 2)
             row = self.read_jsonl(run_dir / "trajectory.jsonl")[0]
-            self.assertEqual(row["state_url"], "https://example.test/start")
-            self.assertEqual(row["next_state_url"], "https://example.test/next")
-            self.assertEqual(
-                set(row),
-                {
-                    "schema_version", "task_id", "action_number", "step",
-                    "source_step", "next_step", "timestamp", "thought",
-                    "action", "arguments", "state_url", "next_state_url",
-                    "execution_status",
-                },
-            )
+            self.assertEqual(row["before_capture"]["url_after"], "https://example.test/start")
+            self.assertEqual(row["after_capture"]["url_after"], "https://example.test/next")
+            self.assertEqual(row["source_step"], "steps/step_001")
+            self.assertEqual(row["next_step"], "steps/step_002")
+            self.assertEqual(row["model_turn"], 1)
+            self.assertEqual(row["execution_status"], "success")
             self.assertFalse((first / "before").exists())
             self.assertFalse((first / "after").exists())
 
     def test_error_before_first_action_writes_empty_logs(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             run_dir = Path(temporary)
-            manifest = {"task_id": "fixture", "status": "running", "states": [], "steps": []}
+            manifest = {"task_id": "fixture", "status": "running", "observation_mode": "dom", "model_turns": 0, "states": [], "steps": []}
             final, report = runner.finalize_recording_artifacts(
                 run_dir,
                 manifest,
-                {"status": "failure", "final_answer": "CDP connection failed", "model_turn": None},
+                {"status": "failure", "run_status": "error", "final_answer": "CDP connection failed"},
                 manifest_status="error",
                 error="CDP connection failed",
             )
             self.assertEqual(final["recorded_steps"], 0)
-            self.assertEqual(report["status"], "complete")
+            self.assertEqual(report["status"], "incomplete")
             self.assertEqual((run_dir / "trajectory.jsonl").read_text(), "")
             self.assertEqual((run_dir / "web_surfer.log").read_text(), "")
 

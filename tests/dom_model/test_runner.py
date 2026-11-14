@@ -1,6 +1,6 @@
 import json
 
-from w8bench.dom_model.runner import _read_task_data, parse_args
+from w8bench.verifier.dom_model.runner import _read_task_data, parse_args
 
 
 def test_runner_requires_shared_canonical_rubric(tmp_path):

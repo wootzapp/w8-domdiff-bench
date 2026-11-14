@@ -1,4 +1,4 @@
-"""Browser-facing ChromiumRL capture, target synchronization, and coordinates."""
+"""Paired recorder capture with isolated actor observations and target synchronization."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import base64
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -20,16 +21,15 @@ import aiohttp
 from .agent_browser import (
     AgentBrowserBaseError,
     AgentBrowserClient,
-    AgentBrowserError,
-    AgentBrowserObservation,
     AgentBrowserPage,
 )
 from .recorder_support import (
     RunnerError,
     clean_dom_text,
     normalized_http_url,
-    same_document_except_fragment,
     write_json,
+    append_json_line,
+    utc_now,
     write_text,
 )
 
@@ -61,31 +61,6 @@ def is_cdp_transport_error(error: BaseException) -> bool:
         )
     )
 
-async def recorded_action_coordinate(
-    cdp: CDPClient,
-    bundle: CaptureBundle,
-    target: dict[str, str] | None,
-) -> dict[str, Any] | None:
-    """Resolve action coordinates without changing DOM capture or diff inputs.
-
-    getAgentObservation is used only for center coordinates. Existing structured
-    snapshot bounds are a conservative fallback when that lookup is unavailable.
-    """
-    primary = await chromiumrl_action_coordinate(cdp, target)
-    if isinstance(primary, dict):
-        primary["coordinate_source"] = "get_agent_observation"
-    if isinstance(primary, dict) and primary.get("status") == "resolved":
-        return primary
-    fallback = structured_snapshot_action_coordinate(bundle.snapshot, target)
-    if isinstance(fallback, dict):
-        fallback["coordinate_source"] = "structured_snapshot_bounds"
-    if isinstance(fallback, dict) and fallback.get("status") == "resolved":
-        fallback["get_agent_observation"] = primary
-        return fallback
-    if isinstance(primary, dict) and isinstance(fallback, dict):
-        primary["structured_snapshot_fallback"] = fallback
-    return primary or fallback
-
 
 def action_observation_context(
     decision: dict[str, Any],
@@ -112,103 +87,21 @@ def action_observation_context(
     }
 
 
-def verify_agent_browser_action(
-    decision: dict[str, Any],
-    before: CaptureBundle,
-    after: CaptureBundle,
-) -> dict[str, Any]:
-    """Check writable-control results using the next official CLI observation."""
-    action = clean_dom_text(decision.get("action")).lower()
-    if action not in {"fill", "type", "select"}:
-        return {"applicable": False, "status": "not_applicable"}
-    requested = clean_dom_text(decision.get("text"))
-    ref = AgentBrowserClient.action_ref(decision.get("id"))
-    result: dict[str, Any] = {
-        "applicable": True,
-        "action": action,
-        "ref": ref or None,
-        "requested_text": requested,
-    }
-    if not ref:
-        result.update(
-            status="unavailable",
-            reason="focused control has no attributable snapshot ref",
-        )
-        return result
-    before_line = agent_browser_ref_line(before.executable_agent_browser_text(), ref)
-    if not before_line:
-        result.update(
-            status="unavailable",
-            reason="target ref is absent from the before-action observation",
-        )
-        return result
-    signature = agent_browser_control_signature(before_line)
-    same_ref_line = agent_browser_ref_line(after.executable_agent_browser_text(), ref)
-    candidates = [
-        line.strip()
-        for line in after.executable_agent_browser_text().splitlines()
-        if signature and agent_browser_control_signature(line) == signature
-    ]
-    if same_ref_line and agent_browser_control_signature(same_ref_line) == signature:
-        line = same_ref_line
-    else:
-        matching_value = [
-            line
-            for line in candidates
-            if requested
-            and normalized_observation_text(requested) in normalized_observation_text(line)
-        ]
-        line = matching_value[0] if len(matching_value) == 1 else candidates[0] if len(candidates) == 1 else ""
-    if not line:
-        result.update(
-            status="unavailable",
-            reason="control identity is not unique in the after-action observation",
-        )
-        return result
-    result["control_signature"] = signature
-    result["observed_line"] = line[:500]
-    if requested and normalized_observation_text(requested) in normalized_observation_text(line):
-        result["status"] = "verified"
-    else:
-        result.update(
-            status="mismatch",
-            reason="requested value is not visible on the target control",
-        )
-    return result
-
-
-def action_progress(
-    before: CaptureBundle,
-    after: CaptureBundle,
-) -> dict[str, bool]:
-    """Conservative progress facts; any changed evidence prevents a false stall."""
-    before_url = clean_dom_text(before.snapshot.get("url") or before.document_url)
-    after_url = clean_dom_text(after.snapshot.get("url") or after.document_url)
-    screenshot_changed = (
-        before.screenshot_path.exists()
-        and after.screenshot_path.exists()
-        and before.screenshot_path.read_bytes() != after.screenshot_path.read_bytes()
-    )
-    observation_changed = bool(
-        before.executable_agent_browser_text()
-        and after.executable_agent_browser_text()
-        and before.executable_agent_browser_text() != after.executable_agent_browser_text()
-        and not after.executable_agent_browser_text().startswith(
-            "[agent-browser snapshot unavailable:"
-        )
-    )
+def action_progress(before: CaptureBundle, after: CaptureBundle) -> dict[str, bool]:
+    """Report changes using only the selected observation channel."""
+    if before.observation_mode != after.observation_mode:
+        raise RunnerError("cannot compare progress across observation modes")
+    if before.observation_mode == "screenshot":
+        changed = before.screenshot_path.read_bytes() != after.screenshot_path.read_bytes()
+        return {"screenshot_changed": changed, "made_progress": changed}
     result = {
-        "url_changed": before_url != after_url,
-        "agent_browser_observation_changed": observation_changed,
-        "screenshot_changed": screenshot_changed,
+        "url_changed": before.document_url != after.document_url,
+        "dom_changed": before.model_text != after.model_text,
+        "agent_browser_observation_changed": (
+            before.executable_agent_browser_text() != after.executable_agent_browser_text()
+        ),
     }
-    # Keep the persisted progress schema stable while recognizing changes in
-    # the same model-DOM evidence that drives the next decision.
-    result["made_progress"] = before.model_text != after.model_text or any(
-        result.values()
-    )
-    return result
-
+    return {**result, "made_progress": any(result.values())}
 
 
 def normalized_observation_text(value: Any) -> str:
@@ -278,197 +171,6 @@ def agent_browser_target_identity(
     }
 
 
-async def chromiumrl_action_coordinate(
-    cdp: CDPClient,
-    target: dict[str, str] | None,
-) -> dict[str, Any] | None:
-    """Resolve only a target coordinate through getAgentObservation.
-
-    This supplementary call does not supply model evidence and is never written
-    as a DOM capture. Diff and baseline options are explicitly disabled. The
-    action ref and semantic identity continue to come from agent-browser; the
-    ChromiumRL response is consumed only to obtain the matching element centre.
-    """
-    if not target:
-        return None
-    role = clean_dom_text(target.get("role")).casefold()
-    name = clean_dom_text(target.get("name"))
-    if not name:
-        return None
-    result = await capture_call(
-        cdp,
-        "ChromiumRL.getAgentObservation",
-        {
-            "inViewportOnly": False,
-            "includeContent": False,
-            "includeDiff": False,
-            "updateBaseline": False,
-            "maxElements": 10000,
-            "maxInteractiveElements": 10000,
-            "maxContentBlocks": 0,
-            "maxDiffItems": 0,
-        },
-    )
-    observation = result.get("observation")
-    if not isinstance(observation, dict):
-        raise RunnerError(
-            f"unexpected ChromiumRL coordinate response: {result}"
-        )
-    elements = [
-        item for item in observation.get("elements", []) if isinstance(item, dict)
-    ]
-    normalized_name = normalized_observation_text(name)
-    name_matches = [
-        item
-        for item in elements
-        if normalized_observation_text(item.get("accessibleName")) == normalized_name
-    ]
-    exact_matches = [
-        item
-        for item in name_matches
-        if normalized_observation_text(item.get("role")) == role
-    ]
-    candidates = exact_matches or name_matches
-    hit_testable = [
-        item for item in candidates if item.get("isHitTestable") is True
-    ]
-    visible = [
-        item
-        for item in (hit_testable or candidates)
-        if item.get("isVisible") is not False
-    ]
-    preferred = hit_testable if len(hit_testable) == 1 else visible
-    if len(preferred) == 1:
-        match = preferred[0]
-        if exact_matches:
-            match_method = "exact_role_name"
-        else:
-            match_method = "unique_accessible_name"
-        if hit_testable:
-            match_method += "_hit_testable"
-    elif len(exact_matches) == 1:
-        match = exact_matches[0]
-        match_method = "exact_role_name"
-    elif not exact_matches and len(name_matches) == 1:
-        match = name_matches[0]
-        match_method = "unique_accessible_name"
-    else:
-        return {
-            "status": "ambiguous" if exact_matches or name_matches else "not_found",
-            "source": "ChromiumRL.getAgentObservation",
-            "match_method": None,
-            "candidate_count": len(candidates),
-        }
-    center_x = match.get("centerX")
-    center_y = match.get("centerY")
-    if not isinstance(center_x, (int, float)) or not isinstance(center_y, (int, float)):
-        bounds = match.get("bounds")
-        if isinstance(bounds, dict):
-            x = bounds.get("x")
-            y = bounds.get("y")
-            width = bounds.get("width")
-            height = bounds.get("height")
-            if all(isinstance(value, (int, float)) for value in (x, y, width, height)):
-                center_x = float(x) + float(width) / 2
-                center_y = float(y) + float(height) / 2
-    if not isinstance(center_x, (int, float)) or not isinstance(center_y, (int, float)):
-        return {
-            "status": "missing_geometry",
-            "source": "ChromiumRL.getAgentObservation",
-            "match_method": match_method,
-            "candidate_count": 1,
-        }
-    return {
-        "status": "resolved",
-        "source": "ChromiumRL.getAgentObservation",
-        "match_method": match_method,
-        "candidate_count": 1,
-        "coordinate": [int(round(float(center_x))), int(round(float(center_y)))],
-    }
-
-
-def structured_snapshot_action_coordinate(
-    snapshot: dict[str, Any],
-    target: dict[str, str] | None,
-) -> dict[str, Any] | None:
-    """Use existing structured-snapshot geometry when an action is omitted.
-
-    No additional snapshot is taken. This fallback is accepted only for one
-    visible, hit-testable node with the same semantic name. Agent-browser's
-    LabelText pseudo-role maps to an actual HTML label; all other role matches
-    use exact browser roles, with a unique-name fallback for cross-AX naming.
-    """
-    if not target:
-        return None
-    target_name = normalized_observation_text(target.get("name"))
-    target_role = normalized_observation_text(target.get("role"))
-    if not target_name:
-        return None
-    nodes = [
-        node for node in snapshot.get("nodes", []) if isinstance(node, dict)
-    ]
-    name_matches = [
-        node
-        for node in nodes
-        if normalized_observation_text(node.get("accessibleName")) == target_name
-        and node.get("visible") is not False
-        and node.get("hitTestable") is True
-    ]
-
-    def role_matches(node: dict[str, Any]) -> bool:
-        """Match exact roles, with agent-browser LabelText mapped to HTML label."""
-        node_role = normalized_observation_text(node.get("role"))
-        node_tag = normalized_observation_text(node.get("tag"))
-        if target_role == "labeltext":
-            return node_tag == "label"
-        return bool(target_role and node_role == target_role)
-
-    exact_matches = [node for node in name_matches if role_matches(node)]
-    candidates = exact_matches or name_matches
-    if len(candidates) != 1:
-        return {
-            "status": "ambiguous" if candidates else "not_found",
-            "source": "ChromiumRL.captureStructuredSnapshot.bounds",
-            "match_method": None,
-            "candidate_count": len(candidates),
-        }
-    node = candidates[0]
-    bounds = node.get("clippedBounds") or node.get("bounds")
-    if not isinstance(bounds, dict):
-        return {
-            "status": "missing_geometry",
-            "source": "ChromiumRL.captureStructuredSnapshot.bounds",
-            "match_method": (
-                "exact_role_name" if exact_matches else "unique_accessible_name"
-            ),
-            "candidate_count": 1,
-        }
-    values = [bounds.get(key) for key in ("x", "y", "width", "height")]
-    if not all(isinstance(value, (int, float)) for value in values):
-        return {
-            "status": "missing_geometry",
-            "source": "ChromiumRL.captureStructuredSnapshot.bounds",
-            "match_method": (
-                "exact_role_name" if exact_matches else "unique_accessible_name"
-            ),
-            "candidate_count": 1,
-        }
-    x, y, width, height = (float(value) for value in values)
-    return {
-        "status": "resolved",
-        "source": "ChromiumRL.captureStructuredSnapshot.bounds",
-        "match_method": (
-            "exact_role_name" if exact_matches else "unique_accessible_name"
-        ),
-        "candidate_count": 1,
-        "coordinate": [
-            int(round(x + width / 2)),
-            int(round(y + height / 2)),
-        ],
-    }
-
-
-
 def run_renderer(arguments: list[str]) -> None:
     """Run a renderer as a checked subprocess and surface its stderr on failure."""
     try:
@@ -514,17 +216,6 @@ def render_model_dom_stored_projection(model_dom_path: Path) -> None:
             str(model_dom_path.with_suffix(".txt")),
         ]
     )
-
-
-def render_stored_snapshot(snapshot_path: Path) -> None:
-    """Regenerate projections from their matching stored JSON artifacts."""
-    model_dom_path = snapshot_path.with_name("dom_model.json")
-    if not model_dom_path.exists():
-        raise RunnerError(
-            f"required browser-produced model DOM is missing: {model_dom_path}"
-        )
-    render_full_stored_snapshot(snapshot_path)
-    render_model_dom_stored_projection(model_dom_path)
 
 
 def file_version(path: Path) -> dict[str, str]:
@@ -613,7 +304,6 @@ async def capture_structured_snapshot(
     )
 
 
-
 async def model_dom_from_snapshot(
     cdp: CDPClient,
     snapshot: dict[str, Any],
@@ -637,78 +327,35 @@ async def model_dom_from_snapshot(
     return model_dom
 
 
-
-
-async def materialize_bundle(
-    cdp: CDPClient,
-    directory: Path,
-    snapshot: dict[str, Any],
-) -> CaptureBundle:
-    """Atomically materialize one snapshot, screenshot, and two text views."""
-    model_dom = await model_dom_from_snapshot(cdp, snapshot)
-    screenshot_result = await capture_call(
-        cdp,
-        "Page.captureScreenshot",
-        {"format": "png", "fromSurface": True, "captureBeyondViewport": False},
-    )
-    screenshot_data = screenshot_result.get("data")
-    if not isinstance(screenshot_data, str):
-        raise RunnerError("Page.captureScreenshot returned no image")
-    language_state = await page_language_state(cdp)
-
-    # Do not materialize a partial state directory if the CDP transport drops
-    # between snapshot and screenshot capture; the caller can reconnect and retry.
-    directory.mkdir(parents=True, exist_ok=False)
-    snapshot_path = directory / "dom.json"
-    write_json(snapshot_path, {"result": {"snapshot": snapshot}})
-    screenshot_path = directory / "screenshot.png"
-    screenshot_path.write_bytes(base64.b64decode(screenshot_data))
-    render_full_stored_snapshot(snapshot_path)
-    model_dom_path = directory / "dom_model.json"
-    write_json(model_dom_path, {"result": {"modelDOM": model_dom}})
-    render_model_dom_stored_projection(model_dom_path)
-    model_path = directory / "dom_model.txt"
-    model_text = model_path.read_text(encoding="utf-8")
-    return CaptureBundle(
-        snapshot=snapshot,
-        snapshot_path=snapshot_path,
-        model_text=model_text,
-        screenshot_path=screenshot_path,
-        document_language=language_state.language,
-        document_url=language_state.url,
-        document_language_error=language_state.error,
-    )
-
-
 async def capture_after_action_bundle(
     cdp: CDPClient,
-    agent_browser: AgentBrowserClient,
+    agent_browser: AgentBrowserClient | None,
     directory: Path,
     *,
     max_nodes: int,
     max_text_chars: int,
+    observation_mode: str = "dom",
     attempts: int = 3,
 ) -> tuple[CaptureBundle, list[dict[str, Any]]]:
-    """Capture after an action, reattaching only if the CDP transport was lost."""
-    reconnects: list[dict[str, Any]] = []
+    """Retry observation transport only; never replay an executed action."""
+    reconnects = []
     for attempt in range(1, max(1, attempts) + 1):
         try:
-            snapshot = await capture_structured_snapshot(
-                cdp,
-                max_nodes=max_nodes,
-                max_text_chars=max_text_chars,
-            )
-            bundle = await materialize_bundle(cdp, directory, snapshot)
+            bundle = await capture_bundle(cdp, directory, max_nodes=max_nodes,
+                max_text_chars=max_text_chars, observation_mode=observation_mode)
             return bundle, reconnects
         except RunnerError as error:
-            if not is_cdp_transport_error(error) or attempt >= max(1, attempts):
+            if not is_cdp_transport_error(error) or attempt >= attempts:
                 raise
-            reconnect = await synchronize_recorder_target(cdp, agent_browser)
-            reconnect["capture_attempt"] = attempt
-            reconnects.append(reconnect)
+            failed_metadata = directory / "capture.json"
+            append_json_line(directory.parent.parent / "capture_failures.jsonl", {
+                "directory": str(directory.relative_to(directory.parent.parent)), "attempt": attempt,
+                "recorded_at": utc_now(), "error": f"{type(error).__name__}: {error}",
+                "capture": json.loads(failed_metadata.read_text()) if failed_metadata.is_file() else None})
+            shutil.rmtree(directory, ignore_errors=True)
+            reconnects.append(await synchronize_recorder_target(cdp, agent_browser))
             await asyncio.sleep(0.75 * attempt)
     raise AssertionError("unreachable")
-
 
 
 async def capture_bundle(
@@ -717,27 +364,130 @@ async def capture_bundle(
     *,
     max_nodes: int,
     max_text_chars: int,
+    observation_mode: str = "dom",
 ) -> CaptureBundle:
-    """Capture and materialize one evidence bundle."""
-    snapshot = await capture_structured_snapshot(
-        cdp,
-        max_nodes=max_nodes,
-        max_text_chars=max_text_chars,
-    )
-    return await materialize_bundle(cdp, directory, snapshot)
+    """Capture paired recorder evidence; only the selected observation drives actors.
+
+    Passive failures never reconnect, retry an action, or enter actor feedback.
+    Such states remain usable by their actor but are incomplete for paired audits.
+    """
+    if observation_mode not in {"dom", "screenshot"}:
+        raise RunnerError("unknown observation mode")
+    directory.mkdir(parents=True, exist_ok=False)
+    metadata = {"started_at": utc_now(), "target_id": str(cdp.target.get("targetId", "")),
+        "session_id": getattr(cdp, "session_id", ""), "captures": [],
+        "capture_order": ["structured_dom", "dom_model_artifacts", "screenshot"],
+        "paired_complete": True, "navigation_during_capture": False,
+        "setup_errors": list(getattr(cdp, "capture_setup_errors", [])), "metadata_errors": []}
+    interval_started = time.monotonic()
+    navigation_start = len(cdp.navigation_events)
+    try:
+        before = await cdp.call("Page.getFrameTree")
+        frame_before = before.get("frameTree", {}).get("frame", {})
+    except Exception as error:
+        frame_before = {}
+        metadata["metadata_errors"].append({"kind": "url_before", "error": f"{type(error).__name__}: {error}"})
+    metadata["url_before"] = str(frame_before.get("url", cdp.target.get("url", "")))
+    metadata["loader_id_before"] = frame_before.get("loaderId", "")
+    snapshot, model_text, snapshot_path, screenshot_path = {}, "", None, None
+    dom_error = None
+    for phase in metadata["capture_order"]:
+        record = {"kind": phase, "started_at": utc_now()}
+        started = time.monotonic()
+        try:
+            if phase == "structured_dom":
+                snapshot = await capture_structured_snapshot(cdp, max_nodes=max_nodes,
+                    max_text_chars=max_text_chars)
+                snapshot_path = directory / "dom.json"
+                write_json(snapshot_path, {"result": {"snapshot": snapshot}})
+                render_full_stored_snapshot(snapshot_path)
+            elif phase == "dom_model_artifacts":
+                if dom_error is not None:
+                    raise RunnerError("structured DOM capture unavailable")
+                model_dom = await model_dom_from_snapshot(cdp, snapshot)
+                model_path = directory / "dom_model.json"
+                write_json(model_path, {"result": {"modelDOM": model_dom}})
+                render_model_dom_stored_projection(model_path)
+                model_text = model_path.with_suffix(".txt").read_text(encoding="utf-8")
+            else:
+                result = await capture_call(cdp, "Page.captureScreenshot", {
+                    "format": "png", "fromSurface": True, "captureBeyondViewport": False})
+                data = base64.b64decode(result["data"], validate=True)
+                import io
+                from PIL import Image
+                with Image.open(io.BytesIO(data)) as image:
+                    if cdp.viewport is not None and image.size != cdp.viewport:
+                        raise RunnerError("screenshot dimensions differ from the coordinate viewport")
+                    image.verify()
+                screenshot_path = directory / "screenshot.png"
+                screenshot_path.write_bytes(data)
+            record["status"] = "captured"
+        except Exception as error:
+            record.update(status="error", error=f"{type(error).__name__}: {error}")
+            metadata["paired_complete"] = False
+            # Never expose a failed partial artifact as usable judge/audit evidence.
+            names = {"structured_dom": ("dom.json", "dom_full.txt"),
+                "dom_model_artifacts": ("dom_model.json", "dom_model.txt"),
+                "screenshot": ("screenshot.png",)}[phase]
+            for name in names:
+                for path in (directory / name, directory / f".{name}.tmp"):
+                    try:
+                        path.unlink(missing_ok=True)
+                    except OSError as cleanup_error:
+                        record.setdefault("cleanup_errors", []).append(str(cleanup_error))
+            if phase == "structured_dom":
+                snapshot_path = None
+            elif phase == "dom_model_artifacts":
+                model_text = ""
+            else:
+                screenshot_path = None
+            if phase != "screenshot":
+                dom_error = error
+            if (phase == "screenshot") == (observation_mode == "screenshot"):
+                raise
+        finally:
+            record.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
+            metadata["captures"].append(record)
+            metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic() - interval_started)
+            # Persist failures even when the active capture cannot produce a state.
+            write_json(directory / "capture.json", metadata)
+    try:
+        after = await cdp.call("Page.getFrameTree")
+        frame_after = after.get("frameTree", {}).get("frame", {})
+    except Exception as error:
+        frame_after = {}
+        metadata["metadata_errors"].append({"kind": "url_after", "error": f"{type(error).__name__}: {error}"})
+    metadata["url_after"] = str(frame_after.get("url", metadata["url_before"]))
+    metadata["loader_id_after"] = frame_after.get("loaderId", "")
+    metadata["navigation_during_capture"] = (metadata["url_before"] != metadata["url_after"]
+        or metadata["loader_id_before"] != metadata["loader_id_after"]
+        or len(cdp.navigation_events) != navigation_start)
+    metadata["navigation_events"] = cdp.navigation_events[navigation_start:]
+    metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic() - interval_started,
+        url_metadata_complete=not metadata["metadata_errors"],
+        document_language=str(snapshot.get("documentLanguage") or snapshot.get("language") or "")
+            if observation_mode == "dom" else None)
+    write_json(directory / "capture.json", metadata)
+    return CaptureBundle(snapshot=snapshot, snapshot_path=snapshot_path, model_text=model_text,
+        screenshot_path=screenshot_path, observation_mode=observation_mode,
+        document_url=metadata["url_after"], capture_metadata=metadata,
+        document_language=str(snapshot.get("documentLanguage") or snapshot.get("language") or ""))
 
 
 async def attach_agent_browser_observation(
     bundle: CaptureBundle,
     agent_browser: AgentBrowserClient,
+    cdp: CDPClient,
     *,
     attempts: int = 3,
 ) -> CaptureBundle:
     """Store the exact agent-browser ref snapshot supplied to the model."""
+    if bundle.observation_mode != "dom":
+        raise RunnerError("accessibility observations are forbidden in screenshot mode")
+    refs_started_at, refs_started = utc_now(), time.monotonic()
     for attempt in range(1, max(1, attempts) + 1):
         try:
-            observation = await agent_browser.snapshot()
-            action_observation = await agent_browser.snapshot(interactive=True)
+            action_observation = await agent_browser.snapshot()
             break
         except Exception:
             if attempt >= max(1, attempts):
@@ -746,182 +496,41 @@ async def attach_agent_browser_observation(
             await asyncio.sleep(0.75 * attempt)
     else:
         raise AssertionError("unreachable")
-    path = bundle.snapshot_path.with_name("agent_browser.txt")
     action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
-    write_text(path, observation.text)
     write_text(action_path, action_observation.text)
-    return CaptureBundle(
-        snapshot=bundle.snapshot,
-        snapshot_path=bundle.snapshot_path,
-        model_text=bundle.model_text,
-        screenshot_path=bundle.screenshot_path,
-        agent_browser_text=observation.text,
-        agent_browser_action_text=action_observation.text,
-        agent_browser_refs=action_observation.refs,
-        agent_browser_targets=action_observation.targets,
-        agent_browser_path=path,
-        agent_browser_action_path=action_path,
-        agent_browser_snapshot_command=observation.command,
-        agent_browser_action_snapshot_command=action_observation.command,
-        document_language=bundle.document_language,
-        document_url=bundle.document_url,
-        document_language_error=bundle.document_language_error,
-    )
-
-
-def attach_agent_browser_observation_error(
-    bundle: CaptureBundle,
-    error: BaseException,
-) -> CaptureBundle:
-    """Materialize a failed supplementary observation alongside the DOM evidence."""
-    path = bundle.snapshot_path.with_name("agent_browser.txt")
-    action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
-    text = f"[agent-browser snapshot unavailable: {type(error).__name__}: {error}]\n"
-    write_text(path, text)
-    write_text(action_path, text)
-    return CaptureBundle(
-        snapshot=bundle.snapshot,
-        snapshot_path=bundle.snapshot_path,
-        model_text=bundle.model_text,
-        screenshot_path=bundle.screenshot_path,
-        agent_browser_text=text,
-        agent_browser_action_text=text,
-        agent_browser_refs=frozenset(),
-        agent_browser_targets={},
-        agent_browser_path=path,
-        agent_browser_action_path=action_path,
-        agent_browser_snapshot_command=(),
-        agent_browser_action_snapshot_command=(),
-        document_language=bundle.document_language,
-        document_url=bundle.document_url,
-        document_language_error=bundle.document_language_error,
-    )
-
-
-
-@dataclass(frozen=True)
-class PageLanguageState:
-    url: str = ""
-    language: str = ""
-    english_alternate_url: str = ""
-    error: str = ""
-
-
-def is_english_language(value: str) -> bool:
-    """Accept plain English and any English BCP-47 regional variant."""
-    language = value.strip().lower().replace("_", "-")
-    return language == "en" or language.startswith("en-")
-
-
-def english_locale_path_url(value: str) -> str:
-    """Replace one BCP-47 locale path segment with en-US, generically."""
-    parsed = urlsplit(value)
-    parts = parsed.path.split("/")
-    for index, part in enumerate(parts):
-        if re.fullmatch(r"[A-Za-z]{2}-[A-Za-z]{2}", part) and not is_english_language(part):
-            parts[index] = "en-US"
-            return urlunsplit(
-                (parsed.scheme, parsed.netloc, "/".join(parts), parsed.query, parsed.fragment)
-            )
-    return ""
-
-
-async def page_language_state(cdp: CDPClient) -> PageLanguageState:
-    """Read the live document locale without changing ChromiumRL capture output."""
-    expression = """(() => {
-      const alternates = [...document.querySelectorAll('link[rel="alternate"][hreflang]')]
-        .map(node => ({
-          language: node.hreflang || '',
-          label: '',
-          url: node.href || '',
-          authoritative: true,
-        }));
-      const languageLinks = [...document.querySelectorAll('a[href]')]
-        .map(node => ({
-          language: node.hreflang || node.lang || '',
-          label: (node.innerText || node.textContent || node.getAttribute('aria-label') || '').trim(),
-          url: node.href || '',
-          authoritative: false,
-        }));
-      return {
-        url: location.href,
-        language: document.documentElement.lang || '',
-        alternates: [...alternates, ...languageLinks],
-      };
-    })()"""
+    bundle.agent_browser_action_text = action_observation.text
+    bundle.agent_browser_refs = action_observation.refs
+    bundle.agent_browser_targets = action_observation.targets
+    bundle.agent_browser_action_path = action_path
+    bundle.capture_metadata["capture_order"].append("executable_refs")
+    bundle.capture_metadata["captures"].append({"kind": "executable_refs", "status": "captured",
+        "started_at": refs_started_at, "ended_at": utc_now(),
+        "duration_seconds": time.monotonic() - refs_started})
     try:
-        result = await cdp.call(
-            "Runtime.evaluate",
-            {"expression": expression, "returnByValue": True},
-        )
-        value = (result.get("result") or {}).get("value")
-        if not isinstance(value, dict):
-            raise RunnerError("Runtime.evaluate returned no page-language object")
-        candidates = [
-            item
-            for item in value.get("alternates", []) or []
-            if isinstance(item, dict)
-            and (
-                is_english_language(str(item.get("language", "")))
-                or bool(
-                    re.fullmatch(
-                        r"english(?:\s*\([^)]*\))?",
-                        clean_dom_text(item.get("label")),
-                        re.IGNORECASE,
-                    )
-                )
-            )
-            and str(item.get("url", "")).startswith(("http://", "https://"))
-        ]
-        candidates.sort(
-            key=lambda item: (
-                0 if item.get("authoritative") is True else 1,
-                0 if str(item.get("language", "")).lower().replace("_", "-") == "en-us" else 1,
-                0 if str(item.get("language", "")).lower() == "en" else 1,
-                0 if clean_dom_text(item.get("label")).lower() == "english" else 1,
-            )
-        )
-        return PageLanguageState(
-            url=str(value.get("url", "")),
-            language=str(value.get("language", "")).strip(),
-            english_alternate_url=str(candidates[0]["url"]) if candidates else "",
-        )
+        frame = (await cdp.call("Page.getFrameTree")).get("frameTree", {}).get("frame", {})
     except Exception as error:
-        return PageLanguageState(error=f"{type(error).__name__}: {error}")
-
-
-async def ensure_english_page(
-    cdp: CDPClient,
-    agent_browser: "AgentBrowserClient",
-    *,
-    settle_seconds: float,
-    max_redirects: int = 2,
-) -> tuple[PageLanguageState, list[dict[str, str]]]:
-    """Follow authoritative English alternates before exposing a page to the model."""
-    redirects: list[dict[str, str]] = []
-    state = await page_language_state(cdp)
-    for _ in range(max(0, max_redirects)):
-        if not state.language or is_english_language(state.language):
-            break
-        candidate = state.english_alternate_url or english_locale_path_url(state.url)
-        if not candidate or candidate == state.url:
-            break
-        redirects.append(
-            {
-                "from_url": state.url,
-                "from_language": state.language,
-                "to_url": candidate,
-            }
-        )
-        await agent_browser.execute({"action": "navigate", "url": candidate})
-        await asyncio.sleep(settle_seconds)
-        state = await page_language_state(cdp)
-    return state, redirects
+        frame = {}
+        bundle.capture_metadata["metadata_errors"].append(
+            {"kind": "url_after_refs", "error": f"{type(error).__name__}: {error}"})
+        bundle.capture_metadata["url_metadata_complete"] = False
+    bundle.capture_metadata["url_after"] = str(frame.get("url", bundle.capture_metadata["url_after"]))
+    bundle.capture_metadata["loader_id_after"] = frame.get("loaderId", bundle.capture_metadata["loader_id_after"])
+    bundle.capture_metadata["navigation_events"] = [event for event in cdp.navigation_events
+        if event["recorded_at"] >= bundle.capture_metadata["started_at"]]
+    bundle.capture_metadata["navigation_during_capture"] = bool(
+        bundle.capture_metadata["navigation_events"]
+        or bundle.capture_metadata["url_before"] != bundle.capture_metadata["url_after"]
+        or bundle.capture_metadata["loader_id_before"] != bundle.capture_metadata["loader_id_after"])
+    bundle.document_url = bundle.capture_metadata["url_after"]
+    bundle.capture_metadata["ended_at"] = utc_now()
+    bundle.capture_metadata["duration_seconds"] += time.monotonic() - refs_started
+    write_json(bundle.directory / "capture.json", bundle.capture_metadata)
+    return bundle
 
 
 async def synchronize_recorder_target(
     cdp: CDPClient,
-    agent_browser: AgentBrowserClient,
+    agent_browser: AgentBrowserClient | None,
     *,
     attempts: int = 6,
 ) -> dict[str, Any]:
@@ -931,6 +540,26 @@ async def synchronize_recorder_target(
     Give Chromium enough time to retire duplicate transient targets, but never
     fall back to capturing the previously attached page or choose ambiguously.
     """
+    if agent_browser is None:
+        # Target metadata identifies tabs without reading page content.
+        try:
+            targets = (await cdp.call("Target.getTargets", attached=False)).get("targetInfos", [])
+        except RunnerError as error:
+            if not is_cdp_transport_error(error):
+                raise
+            target = cdp.target
+            return await cdp.reconnect_active_page(AgentBrowserPage(
+                str(target.get("targetId", "")), str(target.get("url", "")), ""))
+        children = [item for item in targets if item.get("type") == "page"
+            and item.get("openerId") == cdp.target.get("targetId")]
+        if len(children) > 1:
+            raise RunnerError("multiple popup tabs opened; target is ambiguous")
+        selected = children[0] if children else next((item for item in targets
+            if item.get("targetId") == cdp.target.get("targetId")), None)
+        if selected is None:
+            raise RunnerError("the task tab closed without a unique popup")
+        return await cdp.synchronize_target(AgentBrowserPage(
+            str(selected["targetId"]), str(selected.get("url", "")), ""))
     last_error: BaseException | None = None
     for attempt in range(1, max(1, attempts) + 1):
         try:
@@ -963,26 +592,36 @@ async def synchronize_recorder_target(
 
 @dataclass
 class CaptureBundle:
-    snapshot: dict[str, Any]
-    snapshot_path: Path
-    model_text: str
-    screenshot_path: Path
-    agent_browser_text: str = ""
+    snapshot: dict[str, Any] = field(default_factory=dict)
+    snapshot_path: Path | None = None
+    model_text: str = ""
+    screenshot_path: Path | None = None
+    observation_mode: str = "dom"
     agent_browser_action_text: str = ""
     agent_browser_refs: frozenset[str] = field(default_factory=frozenset)
     agent_browser_targets: dict[str, dict[str, str]] = field(default_factory=dict)
-    agent_browser_path: Path | None = None
     agent_browser_action_path: Path | None = None
-    agent_browser_snapshot_command: tuple[str, ...] = field(default_factory=tuple)
-    agent_browser_action_snapshot_command: tuple[str, ...] = field(default_factory=tuple)
     document_language: str = ""
     document_url: str = ""
-    document_language_error: str = ""
+    capture_metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def directory(self) -> Path:
+        path = self.snapshot_path if self.observation_mode == "dom" else self.screenshot_path
+        if path is None:
+            raise RunnerError("capture has no active observation artifact")
+        return path.parent
+
+    @property
+    def observation_path(self) -> Path:
+        path = self.snapshot_path.with_name("dom_model.txt") if self.observation_mode == "dom" else self.screenshot_path
+        if path is None:
+            raise RunnerError("capture has no active observation artifact")
+        return path
 
     def executable_agent_browser_text(self) -> str:
-        """Prefer the interactive-only ref snapshot used for executable actions."""
-        return self.agent_browser_action_text or self.agent_browser_text
-
+        """Supply only the filtered action snapshot; never fall back to the full tree."""
+        return self.agent_browser_action_text
 
 
 class CDPClient:
@@ -994,8 +633,14 @@ class CDPClient:
         keep_existing_tabs: bool = False,
         browser_language: str = "",
         browser_accept_language: str = "",
+        observation_mode: str = "dom",
+        viewport: tuple[int, int] | None = None,
     ):
         """Configure one flattened CDP session and its tab/locale policy."""
+        if observation_mode not in {"dom", "screenshot"}:
+            raise RunnerError("unknown observation mode")
+        self.observation_mode = observation_mode
+        self.viewport = viewport
         self.http_url = normalized_http_url(http_url)
         self.timeout = timeout
         self.keep_existing_tabs = keep_existing_tabs
@@ -1008,14 +653,25 @@ class CDPClient:
         self.next_id = 0
         self.pending: dict[int, tuple[str, asyncio.Future[dict[str, Any]]]] = {}
         self.session_id = ""
+        self.navigation_events: list[dict[str, Any]] = []
+        self.capture_setup_errors: list[dict[str, Any]] = []
         self.target: dict[str, Any] = {}
         self.connection_report: dict[str, Any] = {}
         self._failure_target_cleanup_attempted = False
 
     async def _enable_attached_target(self) -> dict[str, Any]:
         """Enable required domains and best-effort English locale overrides."""
-        for method in ("Page.enable", "DOM.enable", "Runtime.enable", "ChromiumRL.enable"):
-            await self.call(method)
+        await self.call("Page.enable")
+        try:
+            await self.call("ChromiumRL.enable")
+        except Exception as error:
+            if self.observation_mode == "dom":
+                raise
+            self.capture_setup_errors.append({"method": "ChromiumRL.enable", "recorded_at": utc_now(),
+                "error": f"{type(error).__name__}: {error}"})
+        if self.viewport is not None:
+            await self.call("Emulation.setDeviceMetricsOverride", {"width": self.viewport[0],
+                "height": self.viewport[1], "deviceScaleFactor": 1, "mobile": False})
         locale_setup: dict[str, Any] = {}
         for label, method, params in (
             ("network_enable", "Network.enable", {}),
@@ -1321,6 +977,8 @@ class CDPClient:
             for item in pages
             if comparable_page_url(str(item.get("url", ""))) == active_key
         ]
+        if self.observation_mode == "screenshot":
+            candidates = [item for item in pages if item.get("targetId") == active_page.tab_id]
         if len(candidates) > 1 and active_page.title:
             title_matches = [
                 item
@@ -1366,6 +1024,9 @@ class CDPClient:
             "selected_target_url": str(selected.get("url", "")),
             "switched": new_target_id != old_target_id,
         }
+        if self.observation_mode == "screenshot":
+            report = {"previous_target_id": old_target_id, "selected_target_id": new_target_id,
+                      "switched": new_target_id != old_target_id}
         if new_target_id == old_target_id:
             self.target = selected
             return report
@@ -1416,6 +1077,10 @@ class CDPClient:
                     break
                 continue
             payload = json.loads(message.data)
+            if payload.get("method") in {"Page.frameNavigated", "Page.navigatedWithinDocument"}:
+                self.navigation_events.append({"method": payload["method"],
+                    "params": payload.get("params", {}), "session_id": payload.get("sessionId"),
+                    "recorded_at": utc_now()})
             message_id = payload.get("id")
             if isinstance(message_id, int) and message_id in self.pending:
                 _method, future = self.pending.pop(message_id)
@@ -1463,36 +1128,6 @@ class CDPClient:
             raise CDPError(method, response["error"])
         result = response.get("result", {})
         return result if isinstance(result, dict) else {}
-
-
-
-
-def is_recoverable_action_error(error: BaseException) -> bool:
-    """Return whether an action hit a transient browser-state failure.
-
-    Dynamic pages can replace an element after a snapshot is captured but before
-    the next action reaches CDP. The failed action remains recorded; the runner
-    can then continue from the fresh after-action snapshot instead of treating a
-    transient stale node or action timeout as a terminal task failure.
-    """
-    if isinstance(error, TimeoutError):
-        return True
-    if isinstance(error, AgentBrowserError):
-        detail = error.error.lower()
-        return any(
-            marker in detail
-            for marker in (
-                "not found",
-                "no element",
-                "stale",
-                "covered",
-                "intercepts pointer events",
-                "could not compute box model",
-                "timeout",
-                "timed out",
-            )
-        )
-    return False
 
 
 def rewrite_ws_url(value: str, http_url: str) -> str:

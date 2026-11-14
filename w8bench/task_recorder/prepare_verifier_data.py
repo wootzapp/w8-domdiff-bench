@@ -1,466 +1,331 @@
-"""Prepare paired screenshot and DOM verifier inputs from local recordings.
-
-Usage: python -m w8bench.task_recorder.prepare_verifier_data RECORDINGS OUTPUT
-   or: python w8bench/task_recorder/prepare_verifier_data.py RECORDINGS OUTPUT
-"""
-
+"""Validate paired recordings while proving each actor uses only its permitted input."""
 from __future__ import annotations
 
 import argparse
-from collections import Counter
-from dataclasses import dataclass
+from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from pathlib import Path
-import re
 import shutil
-import sys
 import tempfile
 from typing import Any
 
-if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-from PIL import Image
-
-from w8bench.screenshot_verifier.trajectory import Trajectory
-from w8bench.screenshot_verifier.utils.preflight import preflight_screenshot_task
-from w8bench.verifier.validate_inputs import dataset_only_preflight
-
-from w8bench.task_recorder.recorder_support import RunnerError, write_json
-from w8bench.task_recorder.trajectory import snapshot_url, step_directory_number, websurfer_action
-
-
-@dataclass
-class Recording:
-    source: Path
-    alias: str
-    task: dict[str, Any]
-    final: dict[str, Any]
-    states: list[Path]
-    actions: int
-    input_sha256: dict[str, str]
-    manifest_status: str
-    coordinate_provenance: list[dict[str, Any]]
-    metadata_warnings: list[dict[str, Any]]
-
-
-def input_hashes(source: Path) -> dict[str, str]:
-    """Identify consumed files and reject evidence links outside this run."""
-    paths = [source / name for name in (
-        "task.json", "manifest.json", "final.json", "trajectory.jsonl", "web_surfer.log"
-    )]
-    for state in (source / "steps").iterdir():
-        step_directory_number(state)
-        if not state.is_dir():
-            raise ValueError(f"Not a captured state directory: {state}")
-        paths.extend(state / name for name in ("dom.json", "dom_model.txt", "screenshot.png"))
-        if (state / "action.json").exists():
-            paths.append(state / "action.json")
-    hashes = {}
-    for path in sorted(paths):
-        if not path.resolve(strict=True).is_relative_to(source):
-            raise ValueError(f"Recording evidence escapes its source directory: {path}")
-        hashes[path.relative_to(source).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
-    return hashes
+from .recorder_support import RunnerError, write_json, write_json_lines
 
 
 def read_object(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
-        raise ValueError(f"Expected a JSON object: {path}")
+        raise ValueError(f"expected JSON object: {path}")
     return value
 
 
 def read_events(path: Path) -> list[dict[str, Any]]:
-    rows = []
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        if not line.strip():
-            continue
-        value = json.loads(line)
-        if not isinstance(value, dict):
-            raise ValueError(f"Expected a JSON object: {path}:{number}")
-        rows.append(value)
+    if not path.exists():
+        return []
+    rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError(f"expected JSONL objects: {path}")
     return rows
 
 
-def inspect_recording(source: Path) -> Recording:
-    """Check source metadata, executed actions, and all corresponding states."""
+def inspect_recording(source: Path) -> dict[str, Any]:
+    """Fail closed on channel mixing, broken provenance or inconsistent counters.
+
+    Failed/zero-state runs are still valid experiment outcomes. Their incomplete
+    exports are disclosed; they are never silently dropped from the denominator.
+    """
+    from .prompts import DOM_PROMPT, SCREENSHOT_PROMPT
+    from .runner import ACTION_SCHEMA, chromiumrl_evidence_for_model
     source = source.resolve(strict=True)
-    hashes = input_hashes(source)
-    task = read_object(source / "task.json")
-    manifest = read_object(source / "manifest.json")
-    final = read_object(source / "final.json")
-    for field in ("task_id", "instruction", "start_url"):
-        if not isinstance(task.get(field), str) or not task[field].strip():
-            raise ValueError(f"{source}: task.json needs non-empty {field}")
-    if manifest.get("task_id") != task["task_id"]:
-        raise ValueError(f"{source}: task and manifest IDs differ")
-    if manifest.get("status") in {None, "running"}:
-        raise ValueError(f"{source}: recording has not been finalized")
-    if not isinstance(final.get("status"), str) or not isinstance(
-        final.get("final_answer"), str
-    ):
-        raise ValueError(f"{source}: final.json needs a completed status and final_answer text")
-    # A recorded failure or runtime error is not an evidence-format failure.
-    # Usability depends on the action/state checks below, not on task outcome.
-    if manifest.get("final") != final:
-        raise ValueError(f"{source}: final.json differs from the manifest's final result")
-    for name in ("steps", "states"):
-        rows = manifest.get(name)
-        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
-            raise ValueError(f"{source}: manifest {name} must be a list of objects")
-    if "is_aborted" in final and not isinstance(final["is_aborted"], bool):
-        raise ValueError(f"{source}: is_aborted must be a boolean")
-    export = manifest.get("trajectory_export")
-    if not isinstance(export, dict) or export.get("status") != "complete" or export.get("errors"):
-        raise ValueError(f"{source}: trajectory export is incomplete or invalid")
-    if export.get("skipped"):
-        raise ValueError(f"{source}: skipped human-intervention states need separate preparation")
+    task, manifest, final = [read_object(source / name) for name in ("task.json", "manifest.json", "final.json")]
+    mode = manifest.get("observation_mode")
+    if mode not in {"dom", "screenshot"} or task.get("observation_mode") != mode:
+        raise ValueError("expected an independent DOM or screenshot run")
+    if manifest.get("status") == "running" or manifest.get("final") != final:
+        raise ValueError("recording is unfinished or final metadata disagrees")
+    if any(task.get(key) != manifest.get(key) for key in ("task_id", "source_task_id", "instruction", "start_url", "model")):
+        raise ValueError("task and manifest identity differ")
+    allowed = {"dom.json", "dom_full.txt", "dom_model.json", "dom_model.txt",
+        "screenshot.png", "capture.json", "action.json"}
+    if mode == "dom":
+        allowed.add("agent_browser_actions.txt")
+    states = manifest.get("states", [])
+    steps = manifest.get("steps", [])
+    for index, state in enumerate(states, 1):
+        if (source / state.get("directory", "") / "action.json").is_file() != (index <= len(steps)):
+            raise ValueError("action file chronology differs from executed action records")
+        if state.get("state") != index or state.get("directory") != f"steps/step_{index:03d}":
+            raise ValueError("state sequence is not contiguous")
+        expected = f"{state['directory']}/" + ("dom_model.txt" if mode == "dom" else "screenshot.png")
+        if state.get("observation") != expected:
+            raise ValueError("observation path does not match its mode/state")
+        path = (source / expected).resolve(strict=True)
+        if not path.is_relative_to(source):
+            raise ValueError("observation escapes its run")
+        if hashlib.sha256(path.read_bytes()).hexdigest() != state.get("observation_sha256"):
+            raise ValueError("observation digest changed")
+        artifacts = state["artifacts"]
+        for name, asset in artifacts.items():
+            path = (source / asset["path"]).resolve(strict=True)
+            if name not in allowed or path != source / state["directory"] / name:
+                raise ValueError("forbidden artifact path")
+            if hashlib.sha256(path.read_bytes()).hexdigest() != asset["sha256"]:
+                raise ValueError("artifact digest changed")
+        paired_names = {"dom.json", "dom_full.txt", "dom_model.json", "dom_model.txt", "screenshot.png"}
+        if state["capture"]["paired_complete"] and not paired_names <= artifacts.keys():
+            raise ValueError("paired capture is missing artifacts")
+        if state["capture"] != read_object(source / state["directory"] / "capture.json"):
+            raise ValueError("capture metadata disagrees")
+        if "screenshot.png" in artifacts:
+            from PIL import Image
+            with Image.open(source / artifacts["screenshot.png"]["path"]) as image:
+                if list(image.size) != manifest["controls"]["viewport"]:
+                    raise ValueError("screenshot dimensions differ from the coordinate space")
+                image.verify()
+        for asset in (source / state["directory"]).iterdir():
+            if (not asset.is_file() or asset.name not in allowed or not asset.resolve().is_relative_to(source)
+                    or asset.name != "action.json" and asset.name not in artifacts):
+                raise ValueError(f"forbidden {mode} state artifact: {asset.name}")
+    for path in source.rglob("*"):
+        if path.is_symlink():
+            raise ValueError("recordings must be self-contained, without symlinks")
+    decisions = read_events(source / "decisions.jsonl")
+    if [row.get("model_turn") for row in decisions] != list(range(1, len(decisions) + 1)):
+        raise ValueError("actor turns are not uniquely sequential")
+    if manifest.get("model_turns") != len(decisions) or final.get("model_turns") != len(decisions):
+        raise ValueError("actor call counts disagree")
+    steps = manifest.get("steps", [])
+    if final.get("run_status") in {"completed", "turn_limit", "captured"} and len(states) != len(steps) + 1:
+        raise ValueError("a normally finalized run needs N+1 states for N actions")
+    if len(states) > len(steps) + 1:
+        raise ValueError("extra states are not attributable to executed actions")
+    if final.get("recorded_steps") != len(steps):
+        raise ValueError("executed action count disagrees")
+    action_turns = [step.get("model_turn") for step in steps]
+    if action_turns != sorted(set(action_turns)):
+        raise ValueError("multiple actions refer to one model turn, or action order changed")
+    for number, step in enumerate(steps, 1):
+        if step.get("state") != number or number > len(states):
+            raise ValueError("action state sequence is invalid")
+        if read_object(source / states[number - 1]["directory"] / "action.json") != step:
+            raise ValueError("action file differs from the manifest")
+        turn = step.get("model_turn")
+        if not isinstance(turn, int) or not 1 <= turn <= len(decisions) or not decisions[turn - 1].get("accepted"):
+            raise ValueError("action does not reference an accepted model turn")
+        if mode == "screenshot" and (step["action"].get("id") is not None or "target" in step):
+            raise ValueError("screenshot action contains DOM target information")
+    recent = []
+    memory = ""
+    for row in decisions:
+        turn = row["model_turn"]
+        directory = source / "turns" / f"turn_{turn:06d}"
+        if row.get("request") != f"turns/turn_{turn:06d}/request.json":
+            raise ValueError("turn request path is not local to the turn")
+        if row.get("response") and row["response"] != f"turns/turn_{turn:06d}/response.json":
+            raise ValueError("turn response path is not local to the turn")
+        if not 1 <= row.get("state", 0) <= len(states):
+            raise ValueError("model turn refers to a nonexistent state")
+        if read_object(directory / "result.json") != row:
+            raise ValueError("turn result differs from decision log")
+        state = states[row["state"] - 1]
+        artifact = row.get("model_input", {}).get("observation", {})
+        if artifact.get("sha256") != state["observation_sha256"]:
+            raise ValueError("model turn refers to a different observation digest")
+        request = read_object(directory / "request.json")
+        content = request["input"][0]["content"]
+        if row.get("task_memory_before") != memory:
+            raise ValueError("actor memory does not match established actor history")
+        expected_instructions = DOM_PROMPT if mode == "dom" else SCREENSHOT_PROMPT
+        controls = manifest["controls"]
+        if (set(request) - {"model", "instructions", "input", "max_output_tokens", "reasoning", "text", "temperature"}
+                or request.get("instructions") != expected_instructions
+                or request.get("model") != task["model"]
+                or request.get("max_output_tokens") != controls["max_output_tokens"]
+                or request.get("reasoning") != {"effort": controls["reasoning_effort"]}
+                or request.get("temperature") != controls["temperature"]
+                or request.get("text") != {"format": {"type": "json_schema", "name": "browser_action",
+                    "strict": True, "schema": ACTION_SCHEMA}}
+                or len(request["input"]) != 1 or request["input"][0].get("role") != "user"):
+            raise ValueError("actor request settings or instructions differ from its frozen policy")
+        if mode == "dom":
+            if [item.get("type") for item in content] != ["input_text"]:
+                raise ValueError("DOM actor request contains an image or extra observation")
+        else:
+            if [item.get("type") for item in content] != ["input_text", "input_image"]:
+                raise ValueError("screenshot actor request lacks its image")
+            artifact = content[1]["artifact"]
+            image = (directory / artifact["path"]).resolve(strict=True)
+            if (image != source / state["observation"] or artifact["sha256"] != state["observation_sha256"]
+                    or content[1] != {"type": "input_image", "artifact": artifact, "detail": "high"}):
+                raise ValueError("model request references a different screenshot")
+        # Rebuild from actor-permitted sources. Passive disk files grant no prompt access.
+        budget = controls["max_turns"]
+        expected = (f"task:\n{task['instruction']}\n\nstep: {turn} of {budget}\n"
+            f"model_turn: {turn}\nturns_remaining_including_current: {budget-turn+1}\n"
+            f"turns_remaining_after_this_call: {budget-turn}\nhuman_intervention_available: false\n"
+            f"viewport_css_pixels: {controls['viewport'][0]} x {controls['viewport'][1]}\n\n"
+            f"task_memory_from_prior_steps:\n{memory or '(none)'}\n\n"
+            f"current_document_url: {state['capture']['url_after']}\n\n")
+        if mode == "dom":
+            refs = state["artifacts"]["agent_browser_actions.txt"]["path"]
+            dom = state["artifacts"]["dom_model.txt"]["path"]
+            expected += (f"current_document_language: {state['capture']['document_language'] or 'unknown'}\n"
+                f"current_agent_browser_snapshot:\n{(source / refs).read_text(encoding='utf-8')}\n\n"
+                f"current_chromiumrl_evidence:\n{chromiumrl_evidence_for_model((source / dom).read_text(encoding='utf-8'))}")
+        expected += (f"\n\nrecent_action_outcomes:\n{json.dumps(recent[-6:], ensure_ascii=False)}\n\n"
+            "Use the recorded progress signals. If an action made no observable progress, "
+            "change strategy instead of assuming it worked. Return one JSON action and "
+            "wait for the harness to execute it and supply the next observation.")
+        if content[0] != {"type": "input_text", "text": expected}:
+            raise ValueError(f"{mode} actor text contains an unapproved observation source")
+        if not row.get("accepted"):
+            recent.append({"model_turn": turn, "rejected_action": row.get("decision"),
+                "reason": row.get("rejection_reason") or row.get("error")})
+        else:
+            step = next((item for item in steps if item["model_turn"] == turn), None)
+            if step and "progress" in step:
+                if mode == "screenshot":
+                    if set(step["progress"]) != {"made_progress", "screenshot_changed"}:
+                        raise ValueError("screenshot progress contains passive observation data")
+                    after = states[step["next_state"]-1]
+                    changed = (source / state["observation"]).read_bytes() != (source / after["observation"]).read_bytes()
+                    if step["progress"] != {"made_progress": changed, "screenshot_changed": changed}:
+                        raise ValueError("screenshot progress differs from screenshot change")
+                if step["action_succeeded"]:
+                    candidate = (row.get("decision") or {}).get("memory")
+                    memory = candidate.strip() if isinstance(candidate, str) and candidate.strip() else memory
+                recent.append({"model_turn": turn, "action": step["action"],
+                    "action_succeeded": step["action_succeeded"], "action_error": step.get("action_error"),
+                    "progress": step["progress"],
+                    **({"action_context": step["action_context"]} if mode == "dom" else {})})
+    files = {path.relative_to(source).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in source.rglob("*") if path.is_file() and path.name not in {"completion.json", "completion_actor_native.json"}}
+    fingerprint = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
+    expected_ids = list(range(1, len(steps) + 2))
+    coverage = {"expected_state_ids": expected_ids,
+        "format_gaps": {"screenshot": [], "dom_model": []},
+        "navigation_states": [], "audit_eligible_states": [], "states": [],
+        "observed_url_timeline": []}
+    for state_id in expected_ids:
+        state = next((s for s in states if s["state"] == state_id), None)
+        artifacts = state["artifacts"] if state else {}
+        capture = state["capture"] if state else {}
+        for mode_name, filename in (("screenshot", "screenshot.png"), ("dom_model", "dom_model.txt")):
+            if filename not in artifacts:
+                coverage["format_gaps"][mode_name].append(state_id)
+        navigation = capture.get("navigation_during_capture") is True
+        if navigation:
+            coverage["navigation_states"].append(state_id)
+        complete = capture.get("paired_complete") is True and all(name in artifacts for name in
+            ("dom.json", "dom_full.txt", "dom_model.json", "dom_model.txt", "screenshot.png"))
+        verified = capture.get("url_metadata_complete") is True and bool(capture.get("url_after"))
+        eligible = complete and not navigation
+        reasons = ([] if complete else ["incomplete_paired_capture"]) + (["navigation_during_capture"] if navigation else [])
+        metadata_warnings = [] if verified else ["observed_url_metadata_missing"]
+        if eligible:
+            coverage["audit_eligible_states"].append(state_id)
+        coverage["observed_url_timeline"].append({"state": state_id,
+            "url": capture.get("url_after") if verified else None, "verified": verified})
+        coverage["states"].append({"state": state_id, "source_index": state_id,
+            "eligible": eligible, "reasons": reasons, "metadata_warnings": metadata_warnings, "artifacts": artifacts,
+            "navigation_during_capture": navigation, "capture": capture})
+    coverage["eligible_fraction"] = len(coverage["audit_eligible_states"]) / len(expected_ids) if expected_ids else None
+    coverage["reason"] = None if coverage["audit_eligible_states"] else "no_eligible_paired_states"
+    return {"source": str(source), "task": task, "manifest": manifest, "final": final,
+        "decisions": decisions, "files": files, "recording_sha256": fingerprint, "coverage": coverage}
 
-    trajectory = read_events(source / "trajectory.jsonl")
-    events = read_events(source / "web_surfer.log")
-    count = len(trajectory)
-    states = sorted((source / "steps").iterdir(), key=step_directory_number)
-    if [step_directory_number(path) for path in states] != list(range(1, count + 2)):
-        raise ValueError(f"{source}: N actions require contiguous step_001 through step_{count + 1:03d}")
-    if (
-        len(events) != count
-        or len(manifest.get("steps", [])) != count
-        or final.get("recorded_steps") != count
-        or export.get("exported_actions") != count
-        or export.get("captured_states") != len(states)
-    ):
-        raise ValueError(f"{source}: action/state counts disagree across source artifacts")
-    recorded_states = manifest.get("states", [])
-    if [row.get("state") for row in recorded_states] != list(range(1, count + 2)):
-        raise ValueError(f"{source}: manifest state sequence differs from captured steps")
 
-    urls = []
-    metadata_warnings = []
-    for state, metadata in zip(states, recorded_states):
-        url = snapshot_url(state / "dom.json")
-        text = (state / "dom_model.txt").read_text(encoding="utf-8")
-        dom_url = next((line[4:].strip() for line in text.splitlines() if line.startswith("URL:")), "")
-        if dom_url != url:
-            raise ValueError(f"{state}: snapshot and DOM text URLs differ")
-        if metadata.get("document_url") != url:
-            # The manifest URL is a separate live read. Keep the captured URL
-            # and action chronology authoritative, and disclose that mismatch.
-            metadata_warnings.append({
-                "code": "manifest_document_url_mismatch", "state": state.name,
-                "manifest_url": metadata.get("document_url"), "snapshot_url": url,
-            })
-        with Image.open(state / "screenshot.png") as screenshot:
-            if screenshot.format != "PNG":
-                raise ValueError(f"{state}: screenshot.png is not a PNG image")
-            screenshot.verify()
-        urls.append(url)
-
-    coordinate_provenance = []
-    for index, (row, event) in enumerate(zip(trajectory, events)):
-        action_record = read_object(states[index] / "action.json")
-        if not isinstance(action_record.get("started_at"), str) or not action_record["started_at"].strip():
-            raise ValueError(f"{source}: action {index + 1} has no recorded timestamp")
-        action, arguments, thought = websurfer_action(action_record)
-        result = action_record.get("action_result")
-        succeeded = (
-            action_record.get("action_succeeded") is True
-            and action_record.get("action_error") in (None, "")
-            and isinstance(result, dict) and result.get("success") is True
-        )
-        expected = {
-            "action_number": index + 1,
-            "source_step": states[index].name,
-            "next_step": states[index + 1].name,
-            "state_url": urls[index],
-            "next_state_url": urls[index + 1],
-            "action": action,
-            "arguments": arguments,
-            "timestamp": action_record.get("started_at"),
-            "thought": thought,
-            "execution_status": "success" if succeeded else "failure",
-        }
-        for key, value in expected.items():
-            if row.get(key) != value:
-                raise ValueError(f"{source}: trajectory action {index + 1} disagrees with capture for {key}")
-        for key in ("action", "arguments", "timestamp", "execution_status"):
-            if event.get(key) != row.get(key):
-                raise ValueError(f"{source}: WebSurfer action {index + 1} differs for {key}")
-        if event.get("url") != urls[index + 1]:
-            raise ValueError(f"{source}: WebSurfer action {index + 1} has the wrong after-URL")
-        # Copy the recorded resolver result, including unresolved/error cases.
-        # This stays outside verifier inputs: it must not change judge context.
-        coordinate_provenance.append({
-            "action_number": index + 1,
-            "action_record": f"steps/{states[index].name}/action.json",
-            "coordinate_capture": action_record.get("coordinate_capture"),
-        })
-    if (states[-1] / "action.json").exists():
-        raise ValueError(f"{source}: final state has an action without an after-state")
-
-    source_id = str(task.get("source_task_id") or task["task_id"])
-    numeric = re.fullmatch(r"(?:browser_)?task[_-]?(\d+)", source_id)
-    alias = f"task_{int(numeric.group(1)):02d}" if numeric else source.name
-    if input_hashes(source) != hashes:
-        raise ValueError(f"Recording changed during inspection: {source}")
-    return Recording(source, alias, task, final, states, count, hashes,
-                     str(manifest["status"]), coordinate_provenance, metadata_warnings)
-
-
-def copy_evidence(source: Path, destination: Path, expected: str) -> None:
-    """Keep every physical state, including repeated images, byte-for-byte."""
-    shutil.copyfile(source, destination)
-    if hashlib.sha256(destination.read_bytes()).hexdigest() != expected:
-        raise ValueError(f"Evidence changed while copying: {source}")
-
-
-def prepare_recording(recording: Recording, staging: Path, *, task_id: str | None = None) -> dict[str, Any]:
-    if input_hashes(recording.source) != recording.input_sha256:
-        raise ValueError(f"Recording changed after inspection: {recording.source}")
-    screenshot = staging / "data-ss" / recording.alias
-    dom = staging / "data-dom" / recording.alias
-    screenshot.mkdir(parents=True)
-    dom.mkdir(parents=True)
-    task_data = [{
-        "task_id": task_id or recording.task["task_id"],
-        "confirmed_task": recording.task["instruction"],
-        "website": recording.task["start_url"],
-        "level": "recorded_browser_task",
-    }]
-    answer = {
-        "final_answer": recording.final["final_answer"],
-        "env_state_json": recording.final.get("env_state_json", "<no_answer>"),
-        "env_state_raw": recording.final.get("env_state_raw", "<no_answer>"),
-        "is_aborted": recording.final.get("is_aborted", False)
-        or recording.final.get("run_status") == "interrupted",
-        "is_rel_paths": True,
-        "token_usage": {},
-    }
-    for root in (screenshot, dom):
-        write_json(root / "task_data.json", task_data)
-        copy_evidence(recording.source / "web_surfer.log", root / "web_surfer.log",
-                      recording.input_sha256["web_surfer.log"])
-    write_json(dom / "final_answer.json", answer)
-    write_json(screenshot / "final_answer.json", {
-        **answer,
-        "screenshots": [f"screenshot{index}.png" for index in range(len(recording.states))],
-    })
-    for index, state in enumerate(recording.states):
-        for name, destination in (
-            ("screenshot.png", screenshot / f"screenshot{index}.png"),
-            ("dom_model.txt", dom / f"dom_model{index}.txt"),
-        ):
-            original = state / name
-            copy_evidence(original, destination,
-                          recording.input_sha256[original.relative_to(recording.source).as_posix()])
-
-    receipt = dataset_only_preflight(screenshot, dom)
-    preflight_screenshot_task(screenshot)
-    if Trajectory.from_folder(screenshot) is None:
-        raise ValueError(f"Screenshot trajectory parser could not load {screenshot}")
-    if input_hashes(recording.source) != recording.input_sha256:
-        raise ValueError(f"Recording changed during preparation: {recording.source}")
-    return receipt
+def prepare_recording(recording: dict[str, Any], output: Path) -> dict[str, Any]:
+    source = Path(recording["source"])
+    task, manifest = recording["task"], recording["manifest"]
+    mode, task_id = task["observation_mode"], task["source_task_id"]
+    destination = output / str(task.get("run_name") or manifest["run_name"]) / mode / task_id / recording["recording_sha256"]
+    if destination.resolve().is_relative_to(source):
+        raise ValueError("export output must be outside the source recording")
+    if destination.exists():
+        raise ValueError(f"output already exists: {destination}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    # One receipt binds both evidence projections to one immutable actor run.
+    created_at = manifest.get("created_at") or task.get("created_at")
+    if not isinstance(created_at, str):
+        raise ValueError("recording needs a creation timestamp to freeze task-validity date")
+    validity_date = datetime.fromisoformat(created_at.replace("Z", "+00:00")).astimezone(timezone.utc).date().isoformat()
+    context = {"schema_version": "same-run-evidence/v1", "recording_sha256": recording["recording_sha256"],
+        "task_id": task_id, "actor_arm": mode, "trial_id": str(task.get("run_name") or manifest["run_name"]),
+        "validity_date": validity_date, "run_status": recording["final"]["run_status"],
+        "source_files_sha256": recording["files"], **recording["coverage"]}
+    from .trajectory import websurfer_action
+    events = []
+    for step in manifest["steps"]:
+        name, arguments, _ = websurfer_action(step)
+        arguments = {key: value for key, value in arguments.items()
+            if key in {"action", "url", "id", "ref", "coordinate", "x", "y", "text", "key", "keys", "pixels", "seconds"}
+            and value is not None}
+        arguments["thoughts"] = ""  # Required parser field; actor notes are not shared verifier evidence.
+        if "id" in arguments:
+            ref = str(arguments.pop("id")).lstrip("@")
+            arguments["ref"] = ref if ref.startswith("e") else f"e{ref}"
+        if "x" in arguments and "y" in arguments:
+            arguments["coordinate"] = [arguments.pop("x"), arguments.pop("y")]
+        events.append({"source": "WebSurfer", "action": name, "arguments": arguments,
+            "model_turn": step["model_turn"], "state": step["state"], "next_state": step.get("next_state"),
+            "execution_status": "success" if step["action_succeeded"] else "failure"})
+    with tempfile.TemporaryDirectory(dir=destination.parent) as temp:
+        staging = Path(temp) / "recording"
+        answer = {"final_answer": recording["final"]["final_answer"], "env_state_json": "<no_answer>",
+            "env_state_raw": "<no_answer>", "is_aborted": recording["final"]["run_status"] != "completed",
+            "is_rel_paths": True, "token_usage": {}}
+        task_data = [{"task_id": task_id, "confirmed_task": task["instruction"], "website": task["start_url"],
+            "level": task.get("difficulty") or task.get("category") or "recorded_browser_task", "evaluation_context": context}]
+        projected = {}
+        for folder, filename, stem in (("data-ss", "screenshot.png", "screenshot"), ("data-dom", "dom_model.txt", "dom_model")):
+            root = staging / folder / task_id
+            root.mkdir(parents=True)
+            write_json(root / "task_data.json", task_data)
+            write_json_lines(root / "web_surfer.log", events)
+            names = []
+            for state in manifest["states"]:
+                artifact = state["artifacts"].get(filename)
+                if artifact is None:
+                    continue
+                original = source / artifact["path"]
+                if hashlib.sha256(original.read_bytes()).hexdigest() != artifact["sha256"]:
+                    raise ValueError("source evidence changed during export")
+                name = f"{stem}{state['state']}{original.suffix}"
+                shutil.copyfile(original, root / name)
+                names.append(name)
+            write_json(root / "final_answer.json", {**answer, **({"screenshots": names} if folder == "data-ss" else {})})
+            projected[folder] = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in root.iterdir()}
+        if inspect_recording(source)["recording_sha256"] != recording["recording_sha256"]:
+            raise ValueError("source changed during export")
+        write_json(staging / "input_receipt.json", {**context, "projected_files_sha256": projected})
+        staging.rename(destination)
+    return {"source": str(source), "output": str(destination), "observation_mode": mode,
+        "screenshot_task": str(destination / "data-ss" / task_id), "dom_task": str(destination / "data-dom" / task_id),
+        "recording_sha256": recording["recording_sha256"], "evaluation_context": context}
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("input_dir", nargs="?", type=Path,
-                        help="Recordings directory or a single recorded run (default: recordings)")
-    parser.add_argument("output_dir", nargs="?", type=Path,
-                        help="New folder for paired verifier inputs (default: trajectories)")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Check conversion in temporary storage without publishing inputs")
-    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
-    parser.add_argument("--env-file", type=Path, default=Path(".env"))
-    parser.add_argument("--frozen-rubrics", type=Path,
-                        help="Reference evaluations containing the unchanged per-task frozen rubrics")
+    parser.add_argument("recordings", type=Path)
+    parser.add_argument("output", type=Path)
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
-    from w8bench.verifier.common import load_env_file
-    if args.env_file.is_file():
-        load_env_file(args.env_file)
-    from w8bench.run_paths import run_directory, resolve_run_name
-    run_name = resolve_run_name(args.run_name)
-    source = (args.input_dir or run_directory("recordings", run_name)).resolve(strict=True)
-    output = (args.output_dir or run_directory("trajectories", run_name)).resolve()
-    if not source.is_dir():
-        raise ValueError(f"Input is not a directory: {source}")
-    if source == output or source in output.parents or output in source.parents:
-        raise ValueError("Input and output directories must not overlap")
-    previous = None
-    report_hash = None
-    if output.is_symlink():
-        raise ValueError(f"Output must not be a symlink: {output}")
-    if output.exists():
-        if not (output / "preparation_report.json").is_file():
-            raise ValueError(f"Refusing to mix with or overwrite unrecognised verifier inputs: {output}")
-        previous = read_object(output / "preparation_report.json")
-        report_hash = hashlib.sha256((output / "preparation_report.json").read_bytes()).hexdigest()
-        if (previous.get("schema_version") != "1.0"
-            or (output / previous.get("source_root", "")).resolve() != source
-            or not isinstance(previous.get("prepared"), list)
-            or not isinstance(previous.get("excluded"), list)):
-            raise ValueError("Existing preparation report does not describe this source collection")
-        if (previous.get("prepared_count") != len(previous["prepared"])
-            or previous.get("excluded_count") != len(previous["excluded"])
-            or previous.get("selected_recordings") != len(previous["prepared"]) + len(previous["excluded"])):
-            raise ValueError("Existing preparation report counts disagree")
-    runs = [source] if (source / "task.json").is_file() else sorted(
-        path for path in source.iterdir() if path.is_dir() and not path.name.startswith(".")
-    )
-    if not runs:
-        raise ValueError(f"No recordings found: {source}")
-    if previous:
-        prior_sources = {str((output / row["source"]).resolve())
-                         for row in previous["prepared"] + previous["excluded"]}
-        if prior_sources != {str(run.resolve()) for run in runs}:
-            raise ValueError("Append must use the same recorded attempts; source collection changed")
-        prior_aliases = {row["task"] for row in previous["prepared"]}
-        if len(prior_aliases) != len(previous["prepared"]):
-            raise ValueError("Existing preparation report has duplicate task aliases")
-        for side in ("data-ss", "data-dom"):
-            if {p.name for p in (output / side).iterdir()} != prior_aliases:
-                raise ValueError(f"Existing {side} folders differ from the preparation report")
-        for row in previous["prepared"]:
-            actual = {}
-            for side in ("data-ss", "data-dom"):
-                for path in (output / side / row["task"]).rglob("*"):
-                    if path.is_symlink():
-                        raise ValueError(f"Existing verifier input must not be a symlink: {path}")
-                    if path.is_file():
-                        actual[path.relative_to(output).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
-            if not actual or actual != row.get("output_sha256"):
-                raise ValueError(f"Existing verifier inputs changed: {row['task']}")
-    recordings = []
-    excluded = []
-    for run in runs:
-        try:
-            if run.is_symlink():
-                raise ValueError(f"Recording directory must not be a symlink: {run}")
-            recordings.append(inspect_recording(run))
-        except (OSError, ValueError, TypeError, KeyError, RunnerError) as error:
-            excluded.append({"source": os.path.relpath(run, output),
-                             "error": f"{type(error).__name__}: {error}".replace(
-                                 str(run), os.path.relpath(run, output))})
-    counts = Counter(recording.alias for recording in recordings)
-    for recording in recordings:
-        if counts[recording.alias] > 1:
-            recording.alias = f"{recording.alias}-{recording.source.name}"
-    aliases = [recording.alias for recording in recordings]
-    if len(set(aliases)) != len(aliases):
-        raise ValueError("Recordings map to duplicate output task names")
-    if not args.dry_run:
-        output.parent.mkdir(parents=True, exist_ok=True)
-    # Stage each task separately: a bad task cannot leave half a published pair.
-    # Append only to a verified report for the same source attempts. Existing
-    # inputs are reused byte-for-byte, not regenerated or selected by outcome.
-    with tempfile.TemporaryDirectory(
-        prefix=".prepare-verifier-", dir=None if args.dry_run else output.parent
-    ) as name:
-        staging = Path(name)
-        bundle = staging / "inputs"
-        bundle.mkdir()
-        prepared = []
-        for recording in recordings:
-            existing = next((row for row in previous["prepared"]
-                             if row["task"] == recording.alias), None) if previous else None
-            if existing:
-                if ((output / existing["source"]).resolve() != recording.source
-                    or existing.get("source_sha256") != recording.input_sha256):
-                    raise ValueError(f"Previously prepared source changed: {recording.alias}")
-                prepared.append(existing)
-                continue
-            try:
-                with tempfile.TemporaryDirectory(prefix="task-", dir=staging) as task_stage:
-                    task_root = Path(task_stage)
-                    reference_id = None
-                    if args.frozen_rubrics:
-                        references = list((args.frozen_rubrics / recording.alias).glob("*/frozen_rubric.json"))
-                        if len(references) != 1:
-                            raise ValueError(f"Expected one frozen rubric for {recording.alias}")
-                        reference_id = read_object(references[0])["task_id"]
-                        reference_task = read_object(references[0].with_name("evidence_audit.json"))["shared_trajectory"]
-                        if (reference_task["task_instruction"] != recording.task["instruction"]
-                            or reference_task["initial_url"] != recording.task["start_url"]):
-                            raise ValueError(f"Task text or start URL differs from frozen reference: {recording.alias}")
-                    receipt = prepare_recording(recording, task_root, task_id=reference_id)
-                    for modality in ("data-ss", "data-dom"):
-                        destination = bundle / modality / recording.alias
-                        destination.parent.mkdir(parents=True, exist_ok=True)
-                        (task_root / modality / recording.alias).rename(destination)
-                prepared.append({
-                    "source": os.path.relpath(recording.source, output),
-                    "task": recording.alias,
-                    "recorded_status": recording.final["status"],
-                    "run_status": recording.final.get("run_status"),
-                    "manifest_status": recording.manifest_status,
-                    "coordinate_provenance": recording.coordinate_provenance,
-                    "metadata_warnings": recording.metadata_warnings,
-                    "source_sha256": recording.input_sha256,
-                    "output_sha256": {
-                        path.relative_to(bundle).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
-                        for modality in ("data-ss", "data-dom")
-                        for path in (bundle / modality / recording.alias).iterdir()
-                        if path.is_file()
-                    },
-                    "actions": receipt["actions"],
-                    "screenshots": receipt["screenshots"],
-                    "dom_model_states": receipt["dom_model_states"],
-                    "alignment_warnings": receipt["alignment"].get("warnings", []),
-                })
-            except (OSError, ValueError, TypeError, KeyError, RunnerError) as error:
-                # Only these exact paths in our owned staging directory can be removed.
-                for modality in ("data-ss", "data-dom"):
-                    target = bundle / modality / recording.alias
-                    if target.exists():
-                        shutil.rmtree(target)
-                excluded.append({"source": os.path.relpath(recording.source, output),
-                                 "error": f"{type(error).__name__}: {error}".replace(
-                                     str(recording.source), os.path.relpath(recording.source, output))})
-        report = {
-            "schema_version": "1.0", "run_name": run_name, "source_root": os.path.relpath(source, output),
-            "output_root": ".", "dry_run": args.dry_run,
-            "selected_recordings": len(runs), "prepared_count": len(prepared),
-            "excluded_count": len(excluded), "prepared": prepared, "excluded": excluded,
-            "coordinate_semantics": (
-                "Recorder coordinates describe matched element centres, not exact pointer-event positions. "
-                "Per-action coordinate_capture preserves the recorded source, phase, and resolution status."
-            ),
-        }
-        if not args.dry_run:
-            write_json(bundle / "preparation_report.json", report)
-            if previous is None:
-                bundle.rename(output)
-            else:
-                if hashlib.sha256((output / "preparation_report.json").read_bytes()).hexdigest() != report_hash:
-                    raise ValueError("Preparation report changed during append")
-                if not {row["source"] for row in previous["prepared"]}.issubset(
-                    {row["source"] for row in prepared}
-                ):
-                    raise ValueError("Append would remove previously prepared inputs")
-                created = []
-                try:
-                    for side in ("data-ss", "data-dom"):
-                        for path in sorted((bundle / side).iterdir()) if (bundle / side).exists() else []:
-                            target = output / side / path.name
-                            if target.exists() or target.is_symlink():
-                                raise ValueError(f"Refusing to overwrite existing task: {target}")
-                            path.rename(target)
-                            created.append(target)
-                    write_json(output / "preparation_report.json", report)
-                except BaseException:
-                    for target in reversed(created):
-                        shutil.rmtree(target)
-                    raise
-    print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 1 if excluded else 0
+    root = args.recordings.resolve(strict=True)
+    if args.output.resolve().is_relative_to(root):
+        raise ValueError("export output must be outside its source tree")
+    sources = [root] if (root / "task.json").exists() else sorted(p.parent for p in root.rglob("task.json"))
+    if not sources:
+        raise ValueError("no independent recordings found")
+    result = []
+    for source in sources:
+        recording = inspect_recording(source)
+        result.append({"source": str(source), "status": "valid"} if args.dry_run
+            else prepare_recording(recording, args.output))
+    print(json.dumps(result, indent=2))
+    return 0
 
 
 if __name__ == "__main__":
-    try:
-        raise SystemExit(main())
-    except (OSError, ValueError, RunnerError) as error:
-        print(f"error: {error}", file=sys.stderr)
-        raise SystemExit(1)
+    raise SystemExit(main())

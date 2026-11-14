@@ -136,9 +136,9 @@ def test_incomplete_citation_feedback_names_the_missing_contract(pair_factory):
 
 
 def test_shared_history_matches_the_existing_judge_projection(pair_factory):
-    from w8bench.screenshot_verifier.adapter import create_datapoint
-    from w8bench.screenshot_verifier.trajectory import Trajectory
-    from w8bench.screenshot_verifier.rubric_agent import MMRubricAgent
+    from w8bench.verifier.screenshot_verifier.adapter import create_datapoint
+    from w8bench.verifier.screenshot_verifier.trajectory import Trajectory
+    from w8bench.verifier.screenshot_verifier.rubric_agent import MMRubricAgent
 
     pair = pair_factory()
     event_path = pair["screenshot"] / "web_surfer.log"
@@ -616,3 +616,94 @@ def test_aggregate_report_renders_task_cluster_intervals_without_mutating_audits
     assert "| Screenshot | 1/2 | 50.0% | 0.0% to 100.0% |" in report
     assert "does not measure annotation error" in report
     assert audits == original
+
+def _paired_capture_context(pair, *, dom_gaps=(), screenshot_gaps=(), navigation=()):
+    """Create real same-run origin receipts around the offline paired fixture."""
+    import hashlib
+    for key, prefix, extension in (("screenshot", "screenshot", "png"), ("dom", "dom_model", "txt")):
+        root = pair[key]
+        for old in (1, 0):
+            (root / f"{prefix}{old}.{extension}").rename(root / f"{prefix}{old + 1}.{extension}")
+    if dom_gaps:
+        for state in dom_gaps:
+            (pair["dom"] / f"dom_model{state}.txt").unlink()
+    for state in screenshot_gaps:
+        (pair["screenshot"] / f"screenshot{state}.png").unlink()
+    context = {"recording_sha256": "a" * 64, "task_id": pair["task"]["task_id"],
+        "actor_arm": "screenshot", "trial_id": "trial_09", "validity_date": "2026-11-01",
+        "expected_state_ids": [1, 2], "format_gaps": {"screenshot": list(screenshot_gaps), "dom_model": list(dom_gaps)},
+        "navigation_states": list(navigation),
+        "audit_eligible_states": [index for index in (1, 2) if index not in set(dom_gaps) | set(screenshot_gaps) | set(navigation)],
+        "observed_url_timeline": [
+            {"state": 1, "url": "https://example.test/start?full=query#fragment", "verified": True},
+            {"state": 2, "url": "https://unverified.test/SECRET", "verified": False}],
+        "source_files_sha256": {"manifest.json": "b" * 64}, "states": []}
+    for state in (1, 2):
+        artifacts = {}
+        for key, artifact, filename in (("screenshot", "screenshot.png", f"screenshot{state}.png"), ("dom", "dom_model.txt", f"dom_model{state}.txt")):
+            path = pair[key] / filename
+            if path.exists():
+                artifacts[artifact] = {"path": f"states/{state}/{artifact}", "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+        context["states"].append({"state": state, "source_index": state, "eligible": state in context["audit_eligible_states"], "reason": "navigation" if state in navigation else "capture_failed" if state in dom_gaps else "paired", "artifacts": artifacts})
+    for key in ("screenshot", "dom"):
+        root = pair[key]
+        task = json.loads((root / "task_data.json").read_text())
+        task["evaluation_context"] = context
+        (root / "task_data.json").write_text(json.dumps(task))
+    answer_path = pair["screenshot"] / "final_answer.json"
+    answer = json.loads(answer_path.read_text())
+    answer["screenshots"] = [f"screenshot{index}.png" for index in (1, 2) if index not in screenshot_gaps]
+    answer_path.write_text(json.dumps(answer))
+    return context
+
+
+def test_audit_origin_binding_and_verified_url_context(pair_factory):
+    from w8bench.verifier.evidence_audit import shared_trajectory_payload
+    pair = pair_factory()
+    context = _paired_capture_context(pair)
+    payload = shared_trajectory_payload(pair["screenshot"], pair["dom"])
+    assert payload["evaluation_context"] == context
+    history = payload["verifier_action_history"]["screenshot"]
+    assert "https://example.test/start?full=query#fragment" in history
+    assert "unavailable (not verified)" in history
+    assert "SECRET" not in history
+    assert history == payload["verifier_action_history"]["dom_model"]
+    from w8bench.verifier.evidence_audit import pairwise_messages
+    messages = json.dumps(pairwise_messages(screenshot_dir=pair["screenshot"], dom_dir=pair["dom"],
+        criteria=[], screenshot_context=[], dom_context=[], shared_trajectory=payload))
+    assert "actor_arm" not in messages and "source_files_sha256" not in messages
+    assert "SAME original state IDs" in messages
+    (pair["dom"] / "dom_model1.txt").write_text("modified")
+    with pytest.raises(ValueError, match="same-run receipt"):
+        shared_trajectory_payload(pair["screenshot"], pair["dom"])
+
+
+def test_audit_gaps_do_not_drop_available_opposite_format_states(pair_factory):
+    from w8bench.verifier.evidence_audit import ordered_dom_states, shared_trajectory_payload
+    pair = pair_factory()
+    _paired_capture_context(pair, dom_gaps=(2,))
+    assert [path.name for path in ordered_audit_screenshots(pair["screenshot"])] == ["screenshot1.png", "screenshot2.png"]
+    assert [path.name for path in ordered_dom_states(pair["dom"])] == ["dom_model1.txt"]
+    context = shared_trajectory_payload(pair["screenshot"], pair["dom"])["evaluation_context"]
+    assert context["audit_eligible_states"] == [1]
+    assert context["format_gaps"] == {"screenshot": [], "dom_model": [2]}
+
+
+def test_navigation_state_is_available_for_miss_but_not_directional_loss(pair_factory):
+    pair = pair_factory()
+    _paired_capture_context(pair, navigation=(2,))
+    criteria = [{"criterion_index": 0}]
+    false = _finding()
+    citation = {"source": "dom_model2.txt", "location": "L5-L7", "quote": "Saved"}
+    positive = {**_finding(True), "citations": [citation]}
+    row = {"criterion_index": 0, "screenshot_evidence_loss": false,
+        "dom_model_evidence_loss": false, "screenshot_verifier_miss": false,
+        "dom_model_verifier_miss": positive, "explanation": "miss in own available navigation state"}
+    kwargs = {"criteria": criteria, "screenshot_sources": {"screenshot1.png", "screenshot2.png"},
+        "dom_sources": {"dom_model1.txt", "dom_model2.txt"}, "screenshot_root": pair["screenshot"], "dom_root": pair["dom"]}
+    result = validate_adjudication_response({"criteria": [row]}, **kwargs)
+    assert result[0]["dom_model_verifier_miss"]["confirmed"] is True
+    row["dom_model_verifier_miss"] = false
+    row["screenshot_evidence_loss"] = positive
+    with pytest.raises(ValueError, match="Unknown dom_model citation"):
+        validate_adjudication_response({"criteria": [row]}, **kwargs)

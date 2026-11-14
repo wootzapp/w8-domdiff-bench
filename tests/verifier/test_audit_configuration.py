@@ -23,15 +23,20 @@ def test_models_are_required_and_flags_override_environment(monkeypatch):
         audit.resolve_audit_config()
 
 
-@pytest.mark.parametrize("entry", [run_comparison, run_full_comparison])
-def test_cli_model_and_provider_flags(entry):
-    args = ["--task", "task_01", "--audit-model", "custom-a", "--adjudicator-model", "custom-b",
-            "--audit-provider", "google", "--adjudicator-provider", "openai"]
-    if entry is run_comparison:
-        args += ["--rubric-file", "rubric.json", "--generation-metrics", "metrics.json"]
-    parsed = entry.parse_args(args)
-    assert audit.resolve_audit_config(parsed.audit_model, parsed.adjudicator_model,
-                                      parsed.audit_provider, parsed.adjudicator_provider)["adjudication"]["model"] == "custom-b"
+def test_cli_requires_explicit_completion_judge_and_keeps_audit_provider_config(monkeypatch):
+    parsed = run_comparison.parse_args(["--run", "recording", "--rubric", "rubric.json", "--judge-model", "gpt-5.6-sol"])
+    assert parsed.judge_model == "gpt-5.6-sol"
+    assert parsed.judge_evidence_policy == "paired"
+    with pytest.raises(SystemExit):
+        run_comparison.parse_args(["--run", "recording", "--rubric", "rubric.json"])
+    with pytest.raises(SystemExit):
+        run_comparison.parse_args(["--run", "recording", "--rubric", "rubric.json", "--judge-model", "actor-model"])
+    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gpt-5.6-sol")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "google")
+    selected = audit.resolve_audit_config()
+    assert selected["inventory"]["model"] == "gpt-5.6-sol"
+    assert selected["adjudication"] == {"model": "gemini-3.1-pro-preview", "provider": "google"}
 
 
 @pytest.mark.parametrize("model,provider", [("gemini-test", "google"), ("gpt-test", "openai"), ("o3", "openai"), ("o4-mini", "openai")])

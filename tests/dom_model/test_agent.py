@@ -15,7 +15,7 @@ def test_rubric_agent_imports_are_self_contained():
     """The ``dom_model`` package should import cleanly and
     every exported class should resolve to a module inside this package
     (i.e. no accidental leaks from outside ``dom_model``)."""
-    from w8bench.dom_model import (
+    from w8bench.verifier.dom_model import (
         DataPoint,
         MMRubricAgent,
         MMRubricAgentConfig,
@@ -32,9 +32,9 @@ def test_rubric_agent_imports_are_self_contained():
         MMRubricResult,
         MMRubricOutcomeResult,
     ):
-        assert cls.__module__.startswith("w8bench.dom_model"), (
+        assert cls.__module__.startswith("w8bench.verifier.dom_model"), (
             f"{cls.__name__} resolved to {cls.__module__}, expected a "
-            "module inside w8bench.dom_model"
+            "module inside w8bench.verifier.dom_model"
         )
 
     # DataPoint round-trip
@@ -48,7 +48,7 @@ def test_rubric_agent_imports_are_self_contained():
 def test_wrapper_accepts_openai_dicts_without_conversion():
     """The rubric agent emits raw OpenAI dicts. The wrappers' ``_to_oai_messages``
     must pass dicts through unchanged so no adapter is needed."""
-    from w8bench.dom_model.clients.wrapper import _to_oai_messages
+    from w8bench.verifier.dom_model.clients.wrapper import _to_oai_messages
 
     messages = [
         {"role": "system", "content": "You are a helpful AI assistant."},
@@ -68,7 +68,7 @@ def test_wrapper_accepts_openai_dicts_without_conversion():
 def test_mm_rubric_agent_config_requires_clients():
     """MMRubricAgentConfig needs at least one of the two clients or a
     config dict — construction should assert when both are missing."""
-    from w8bench.dom_model import MMRubricAgent, MMRubricAgentConfig
+    from w8bench.verifier.dom_model import MMRubricAgent, MMRubricAgentConfig
 
     with pytest.raises(AssertionError):
         MMRubricAgent(config=MMRubricAgentConfig())
@@ -84,7 +84,7 @@ def test_mm_rubric_agent_accepts_client_instance():
         def supports_json(self):
             return True
 
-    from w8bench.dom_model import MMRubricAgent, MMRubricAgentConfig
+    from w8bench.verifier.dom_model import MMRubricAgent, MMRubricAgentConfig
 
     agent = MMRubricAgent(
         config=MMRubricAgentConfig(

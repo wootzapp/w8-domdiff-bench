@@ -1,2 +1,1 @@
-"""Browser recording and evidence evaluation tools for w8-domdiff-bench."""
-
+"""Browser task recording, paired evidence audits and task evaluation."""

@@ -1,6 +1,6 @@
-from w8bench.dom_model.adapter import create_datapoint
-from w8bench.dom_model.trajectory_helpers import load_trajectory
-from w8bench.dom_model.rubric_agent import MMRubricAgent
+from w8bench.verifier.dom_model.adapter import create_datapoint
+from w8bench.verifier.dom_model.trajectory_helpers import load_trajectory
+from w8bench.verifier.dom_model.rubric_agent import MMRubricAgent
 
 
 def test_adapter_preserves_screenshot_action_history_without_writes(pair_factory):

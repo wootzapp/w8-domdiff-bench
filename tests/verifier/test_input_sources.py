@@ -1,203 +1,97 @@
 import json
-import hashlib
-import shutil
 from pathlib import Path
 
 import pytest
 
-from w8bench.verifier import run_full_comparison as workflow
+from w8bench.verifier.validate_inputs import dataset_only_preflight, parse_actions
+from w8bench.verifier.run_comparison import commands, validate_command_parity
+from .conftest import tree_digest
+from .test_automated_evidence_audit import _paired_capture_context
 
 
-@pytest.fixture
-def inputs(pair_factory):
-    return pair_factory(sidecars=False, metrics=False)
-
-
-def forbid_fetch(**kwargs):
-    raise AssertionError("Local mode must not download published trajectories")
-
-
-def test_local_single_input_has_no_fetch_or_paid_calls(inputs, monkeypatch, capsys):
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    monkeypatch.setattr(workflow, "generate_rubric", lambda *a: pytest.fail("Paid path entered"))
-    before = sorted(inputs["staged"].rglob("*"))
-    assert workflow.main(["--task", "task1", "--data-source", "local",
-                          "--data-root", str(inputs["staged"])]) == 0
-    receipt = json.loads(capsys.readouterr().out)
-    assert receipt["input_source"]["data_source"] == "local"
-    assert not Path(receipt["screenshot_task"]).is_absolute()
-    assert (workflow.REPOSITORY_ROOT / receipt["screenshot_task"]).resolve() == inputs["screenshot"]
-    assert receipt["validation"]["actions"] == 1
-    assert receipt["paid_calls_authorized"] is False
-    assert sorted(inputs["staged"].rglob("*")) == before
-
-
-def test_local_batch_validates_all_pairs_without_download(inputs, monkeypatch, capsys):
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    assert workflow.main(["--all", "--data-source", "local", "--data-root", str(inputs["staged"])]) == 0
-    receipt = json.loads(capsys.readouterr().out)
-    assert receipt["selected_tasks"] == 1 and receipt["tasks"] == ["task1"]
-
-
-def test_local_missing_input_does_not_fall_back(tmp_path, monkeypatch):
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    with pytest.raises(FileNotFoundError):
-        workflow.main(["--task", "task1", "--data-source", "local", "--data-root", str(tmp_path / "missing")])
-
-
-def test_invalid_local_pair_fails_before_clients(inputs, monkeypatch):
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    monkeypatch.setattr(workflow, "generate_rubric", lambda *a: pytest.fail("Paid path entered"))
-    (inputs["dom"] / "dom_model1.txt").unlink()
-    with pytest.raises(ValueError, match="N actions require"):
-        workflow.main(["--all", "--data-source", "local", "--data-root", str(inputs["staged"]), "--execute"])
-
-
-@pytest.mark.parametrize("explicit", [False, True])
-def test_huggingface_source_fetches_to_download_folder(inputs, monkeypatch, capsys, explicit):
-    calls = []
-    monkeypatch.setattr(workflow, "DEFAULT_DATASET_ROOT", inputs["staged"])
-    monkeypatch.setattr(workflow, "fetch_trajectories", lambda **kw: calls.append(kw) or {"status": "fetched"})
-    args = ["--task", "task1", "--hf-revision", "pinned-revision", "--run-name", "staged"]
-    if explicit:
-        args += ["--data-source", "huggingface"]
-    assert workflow.main(args) == 0
-    assert len(calls) == 1 and calls[0]["revision"] == "pinned-revision"
-    assert calls[0]["data_root"] == inputs["staged"]
-    assert '"data_source": "huggingface"' in capsys.readouterr().out
-
-
-def test_local_default_uses_trajectories_not_download_folder(inputs, tmp_path, monkeypatch):
-    monkeypatch.setattr(workflow, "REPOSITORY_ROOT", tmp_path)
-    shutil.copytree(inputs["staged"], tmp_path / "trajectories/run_1")
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    assert workflow.main(["--all", "--data-source", "local"]) == 0
-
-
-def test_download_mode_refuses_locally_prepared_root(inputs, monkeypatch):
-    monkeypatch.setattr(workflow, "DEFAULT_DATASET_ROOT", inputs["staged"])
-    (inputs["staged"] / "preparation_report.json").write_text("{}")
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    with pytest.raises(ValueError, match="locally prepared"):
-        workflow.main(["--task", "task1", "--data-source", "huggingface", "--run-name", "staged"])
-
-
-@pytest.mark.parametrize("argv", [
-    ["--all", "--data-root", "/tmp/local"],
-    ["--task", "../task1", "--data-source", "local"],
-    ["--task", "..", "--data-source", "local"],
-])
-def test_source_and_path_conflicts_are_rejected(argv):
-    with pytest.raises(SystemExit):
-        workflow.parse_args(argv)
-
-
-def test_execute_passes_only_selected_local_inputs(inputs, tmp_path, monkeypatch):
-    monkeypatch.setattr(workflow, "REPOSITORY_ROOT", tmp_path)
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    env = tmp_path / ".env"; env.write_text("")
-    seen = []
-    def generate(argv):
-        screenshot = Path(argv[argv.index("--screenshot-task") + 1])
-        assert (screenshot / "final_answer.json").read_bytes() == (inputs["screenshot"] / "final_answer.json").read_bytes()
-        seen.append("generate")
-        return 0
-    def score(argv):
-        seen.append("score")
-        root = tmp_path / "evaluations/run_1/task1/check"
-        root.mkdir(parents=True)
-        return 0
-    monkeypatch.setattr(workflow, "generate_rubric", generate)
-    monkeypatch.setattr(workflow, "run_comparison", score)
-    arguments = ["--task", "task1", "--data-source", "local", "--data-root", str(inputs["staged"]),
-                 "--env-file", str(env), "--eval-config", str(inputs["config"]),
-                 "--run-id", "check", "--execute"]
-    assert workflow.main(arguments) == 0
-    assert seen == ["generate", "score"]
-    receipt = json.loads((tmp_path / "evaluations/run_1/task1/check/input_source.json").read_text())
-    assert receipt["data_source"] == "local"
-    assert not Path(receipt["data_root"]).is_absolute()
-    assert (tmp_path / receipt["data_root"]).resolve() == inputs["staged"]
-
-    existing = {p.relative_to(tmp_path): p.read_bytes() for p in (tmp_path / "evaluations").rglob("*") if p.is_file()}
-    with pytest.raises(ValueError, match="Run output already exists"):
-        workflow.main(arguments)
-    assert seen == ["generate", "score"]
-    assert {p.relative_to(tmp_path): p.read_bytes() for p in (tmp_path / "evaluations").rglob("*") if p.is_file()} == existing
-
-
-def test_preparation_hashes_block_edited_inputs_before_paid_calls(inputs, monkeypatch):
-    root = inputs["staged"]
-    hashes = {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-              for side in ("data-ss", "data-dom") for p in (root / side / "task1").iterdir() if p.is_file()}
-    report = {"schema_version": "1.0", "selected_recordings": 1, "prepared_count": 1,
-              "excluded_count": 0, "excluded": [],
-              "prepared": [{"task": "task1", "output_sha256": hashes}]}
-    (root / "preparation_report.json").write_text(json.dumps(report))
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    assert workflow.main(["--all", "--data-source", "local", "--data-root", str(root)]) == 0
-    with (inputs["dom"] / "dom_model0.txt").open("a") as stream:
-        stream.write("An unrecorded fact.\n")
-    monkeypatch.setattr(workflow, "generate_rubric", lambda *a: pytest.fail("Paid path entered"))
-    with pytest.raises(ValueError, match="differ from the preparation receipt"):
-        workflow.main(["--all", "--data-source", "local", "--data-root", str(root), "--execute"])
-
-
-def test_huggingface_batch_downloads_once_and_keeps_source_in_children(inputs, tmp_path, monkeypatch):
-    root = inputs["staged"]
-    calls, children = [], []
-    monkeypatch.setattr(workflow, "REPOSITORY_ROOT", tmp_path)
-    monkeypatch.setattr(workflow, "DEFAULT_DATASET_ROOT", root)
-    monkeypatch.setattr(workflow, "fetch_trajectories", lambda **kw: calls.append(kw) or {})
-    monkeypatch.setattr(workflow, "_run_task", lambda args, selected: children.append((args.data_source, selected)) or 1)
-    with pytest.raises(RuntimeError, match="All selected task comparisons failed"):
-        workflow.main(["--all", "--data-source", "huggingface", "--run-name", "staged", "--execute"])
-    assert len(calls) == 1 and calls[0]["task"] is None
-    assert children == [("huggingface", root)]
-
-
-def test_malformed_local_preparation_report_is_rejected(inputs, monkeypatch):
-    root = inputs["staged"]
-    (root / "preparation_report.json").write_text("[]")
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    with pytest.raises(ValueError, match="report schema"):
-        workflow.main(["--all", "--data-source", "local", "--data-root", str(root)])
-
-
-def test_reference_rubric_is_copied_unchanged_without_generation(pair_factory, tmp_path, monkeypatch):
+def test_local_pair_preflight_never_downloads_or_calls_models(pair_factory, monkeypatch):
     pair = pair_factory()
-    (tmp_path / "missing.env").write_text("")
-    reference = tmp_path / "reference/task1/batch_01"
-    reference.mkdir(parents=True)
-    shutil.copyfile(pair["rubric"], reference / "frozen_rubric.json")
-    shutil.copyfile(pair["metrics"], reference / "rubric_generation_metrics.json")
-    original = pair["rubric"].read_bytes()
-    monkeypatch.setattr(workflow, "REPOSITORY_ROOT", tmp_path)
-    monkeypatch.setattr(workflow, "generate_rubric", lambda *a: pytest.fail("Frozen rubric was regenerated"))
-    monkeypatch.setattr(workflow, "fetch_trajectories", forbid_fetch)
-    calls = []
-    def score(args):
-        rubric = Path(args[args.index("--rubric-file") + 1])
-        assert rubric.read_bytes() == original
-        screenshot = Path(args[args.index("--screenshot-task") + 1])
-        assert (screenshot / "task_data_with_canonical_rubric.json").is_file()
-        assert args[args.index("--run-name") + 1] == "run_2"
-        output = Path(args[args.index("--results-root") + 1]) / "task1" / args[args.index("--run-id") + 1]
-        output.mkdir(parents=True)
-        (output / "evidence_audit.json").write_text(json.dumps({"evidence_paths": {
-            "screenshots": [str(screenshot / "screenshot0.png")],
-            "dom_states": ["temporary/dom_model0.txt"],
-            "action_history": {"screenshot": "temporary/log", "dom_model": "temporary/log"}}}))
-        calls.append(args)
-        return 0
-    monkeypatch.setattr(workflow, "run_comparison", score)
-    assert workflow.main(["--task", "task1", "--run-name", "run_2", "--data-source", "local",
-                          "--data-root", str(pair["staged"]), "--eval-config", str(pair["config"]),
-                          "--env-file", str(tmp_path / "missing.env"), "--execute",
-                          "--frozen-rubrics", str(tmp_path / "reference")]) == 0
-    assert len(calls) == 1
-    assert pair["rubric"].read_bytes() == original
-    audit = json.loads((tmp_path / "evaluations/run_2/task1/batch_01/evidence_audit.json").read_text())
-    for path in audit["evidence_paths"]["screenshots"] + audit["evidence_paths"]["dom_states"] + list(audit["evidence_paths"]["action_history"].values()):
-        assert not Path(path).is_absolute()
-        assert (tmp_path / path).is_file()
+    before = tree_digest(pair["staged"])
+    monkeypatch.setattr("httpx.Client.send", lambda *args, **kwargs: pytest.fail("Unexpected network request"))
+    monkeypatch.setattr("httpx.AsyncClient.send", lambda *args, **kwargs: pytest.fail("Unexpected network request"))
+    receipt = dataset_only_preflight(pair["screenshot"], pair["dom"])
+    assert receipt["actions"] == 1 and receipt["screenshots"] == receipt["dom_model_states"] == 2
+    assert tree_digest(pair["staged"]) == before
+
+
+def test_local_missing_input_does_not_fall_back(pair_factory, tmp_path):
+    pair = pair_factory()
+    with pytest.raises((ValueError, FileNotFoundError)):
+        dataset_only_preflight(tmp_path / "missing", pair["dom"])
+
+
+@pytest.mark.parametrize("mutation", ["instruction", "answer", "action", "state"])
+def test_local_pair_mismatch_fails_before_clients(pair_factory, mutation):
+    pair = pair_factory()
+    if mutation == "instruction":
+        path = pair["dom"] / "task_data.json"
+        value = json.loads(path.read_text()); value["confirmed_task"] = "Another task"
+        path.write_text(json.dumps(value))
+    elif mutation == "answer":
+        path = pair["dom"] / "final_answer.json"
+        value = json.loads(path.read_text()); value["final_answer"] = "Another answer"
+        path.write_text(json.dumps(value))
+    elif mutation == "action":
+        path = pair["dom"] / "web_surfer.log"
+        value = json.loads(path.read_text()); value["arguments"]["coordinate"] = [90, 80]
+        path.write_text(json.dumps(value))
+    else:
+        (pair["dom"] / "dom_model1.txt").unlink()
+    with pytest.raises(ValueError):
+        dataset_only_preflight(pair["screenshot"], pair["dom"])
+
+
+def test_coordinate_only_history_is_identical_without_invented_dom_targets(pair_factory):
+    pair = pair_factory()
+    for key in ("screenshot", "dom"):
+        path = pair[key] / "web_surfer.log"
+        value = json.loads(path.read_text())
+        value["arguments"].pop("ref"); value["arguments"].pop("target")
+        path.write_text(json.dumps(value))
+    left = parse_actions(pair["screenshot"] / "web_surfer.log", mode="screenshot")
+    right = parse_actions(pair["dom"] / "web_surfer.log", mode="dom_model")
+    assert left == right
+    assert left[0]["coordinate"] == [10, 20]
+    assert "ref" not in right[0] and "target_name" not in right[0]
+    assert dataset_only_preflight(pair["screenshot"], pair["dom"])["actions"] == 1
+
+
+def test_paired_preflight_reports_gaps_without_deleting_opposite_evidence(pair_factory):
+    pair = pair_factory(sidecars=False, metrics=False)
+    _paired_capture_context(pair, dom_gaps=(2,))
+    receipt = dataset_only_preflight(pair["screenshot"], pair["dom"])
+    assert receipt["screenshots"] == 2 and receipt["dom_model_states"] == 1
+    assert receipt["audit_eligible_states"] == [1]
+    assert receipt["format_gaps"] == {"screenshot": [], "dom_model": [2]}
+    assert (pair["screenshot"] / "screenshot2.png").is_file()
+
+
+def test_controlled_commands_bind_only_selected_inputs_and_frozen_rubric(pair_factory, tmp_path):
+    pair = pair_factory()
+    selected = commands(screenshot_task=pair["screenshot"], dom_task=pair["dom"], rubric_file=pair["rubric"],
+        generation_metrics=pair["metrics"], eval_config=pair["config"], run_root=tmp_path / "evaluation")
+    controls = validate_command_parity(selected)
+    assert controls["judge_model"] == "gpt-5.2"
+    assert controls["action_judge_model"] == "gpt-5.6-terra"
+    for name, command in selected.items():
+        expected = pair["screenshot"] if name == "screenshot_verifier" else pair["dom"]
+        assert Path(command[command.index("--input") + 1]) == expected
+        assert Path(command[command.index("--rubric-file") + 1]) == pair["rubric"]
+        assert command[command.index("--majority-vote-instances") + 1] == "1"
+
+
+@pytest.mark.parametrize("missing_format", ["dom_model", "screenshot"])
+def test_fully_missing_passive_format_does_not_block_available_format_preflight(pair_factory, missing_format):
+    pair = pair_factory(sidecars=False, metrics=False)
+    kwargs = {"dom_gaps": (1, 2)} if missing_format == "dom_model" else {"screenshot_gaps": (1, 2)}
+    _paired_capture_context(pair, **kwargs)
+    receipt = dataset_only_preflight(pair["screenshot"], pair["dom"])
+    assert receipt["audit_eligible_states"] == []
+    assert receipt["dom_model_states"] == (0 if missing_format == "dom_model" else 2)
+    assert receipt["screenshots"] == (0 if missing_format == "screenshot" else 2)
+    assert len(receipt["alignment"]["transitions"]) == 1

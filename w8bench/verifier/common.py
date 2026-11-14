@@ -225,12 +225,43 @@ def write_json(path: str | Path, value: object) -> Path:
     return destination
 
 
-def sum_usage(*rows: dict[str, Any]) -> dict[str, int]:
+def sum_usage(*rows: dict[str, Any]) -> dict[str, Any]:
     keys = ("prompt_tokens", "completion_tokens", "reasoning_tokens", "total_tokens")
-    return {key: sum(int(row.get(key, 0) or 0) for row in rows) for key in keys}
+    totals = {key: sum(int(row[key]) for row in rows if row.get(key) is not None)
+        if any(row.get(key) is not None for row in rows) else None for key in keys}
+    if any("cached_input_tokens" in row for row in rows):
+        totals["input_tokens"] = totals["prompt_tokens"]
+        totals["output_tokens"] = totals["completion_tokens"]
+        reads = [row["cached_input_tokens"] for row in rows if row.get("cached_input_tokens") is not None]
+        reasoning = [row["reasoning_tokens"] for row in rows if row.get("reasoning_tokens") is not None]
+        totals["cached_input_tokens"] = sum(reads) if reads else None
+        totals["reasoning_tokens"] = sum(reasoning) if reasoning else None
+        writes = [row["cache_write_input_tokens"] for row in rows if row.get("cache_write_input_tokens") is not None]
+        totals["cache_write_input_tokens"] = sum(writes) if writes else None
+        totals["calls_without_reported_usage"] = sum(int(row.get("calls_without_reported_usage", 0)) for row in rows)
+        totals["cache_write_usage_reported_calls"] = sum(int(row.get("cache_write_usage_reported_calls", 0)) for row in rows)
+        totals["cached_input_usage_reported_calls"] = sum(int(row.get("cached_input_usage_reported_calls", 0)) for row in rows)
+        totals["reasoning_usage_reported_calls"] = sum(int(row.get("reasoning_usage_reported_calls", 0)) for row in rows)
+        totals["usage_known_calls"] = {key: sum(int((row.get("usage_known_calls") or {}).get(key, 0)) for row in rows)
+            for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens")}
+        if totals["calls_without_reported_usage"] and all("usage_known_calls" in row for row in rows):
+            for key, source in (("input_tokens", "prompt_tokens"), ("output_tokens", "completion_tokens"),
+                    ("reasoning_tokens", "reasoning_tokens"), ("cached_input_tokens", "cached_input_tokens"),
+                    ("cache_write_input_tokens", "cache_write_input_tokens")):
+                if not totals["usage_known_calls"][key]:
+                    totals[key] = totals[source] = None
+            if totals["input_tokens"] is None and totals["output_tokens"] is None:
+                totals["total_tokens"] = None
+    return totals
 
 
-def sum_call_metrics(*rows: dict[str, Any]) -> dict[str, int]:
+def sum_call_metrics(*rows: dict[str, Any]) -> dict[str, Any]:
     logical = sum(int(row.get("logical_calls", 0) or 0) for row in rows)
     attempts = sum(int(row.get("api_attempts", 0) or 0) for row in rows)
-    return {"logical_calls": logical, "api_attempts": attempts, "retries": max(0, attempts - logical)}
+    totals = {"logical_calls": logical, "api_attempts": attempts, "retries": max(0, attempts - logical)}
+    if any("http_attempts_complete" in row for row in rows):
+        complete = all(row.get("http_attempts_complete") is True for row in rows)
+        totals.update(http_attempts=attempts, http_attempts_complete=complete,
+                      retries=max(0, attempts - logical) if complete else None,
+                      endpoint_calls=sum(int(row.get("endpoint_calls", 0)) for row in rows))
+    return totals
