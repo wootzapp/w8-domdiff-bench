@@ -1,19 +1,19 @@
-name: ${COMPOSE_PROJECT_NAME:-w8-core-harness}
+name: ${COMPOSE_PROJECT_NAME:-w8-turns-harness}
 
 # w8-core: a new kind of browser engine.
 # The model-driven runner stays host-side in runner.py. OPENAI_API_KEY and
 # OPENAI_MODEL are therefore not injected into this browser service.
 services:
   w8-core:
-    image: ${IMAGE:-w8-core:domdiff-bench}
-    pull_policy: never
-    container_name: ${CONTAINER_NAME:-w8-core-browser-engine}
+    image: ${IMAGE:-wootzapp/w8-core:latest}
+    pull_policy: missing
+    container_name: ${CONTAINER_NAME:-w8-turns-browser-engine}
     restart: unless-stopped
     shm_size: "2gb"
     ports:
-      - "127.0.0.1:${CDP_HOST_PORT:-49335}:9222"
-      - "127.0.0.1:${NOVNC_HOST_PORT:-16191}:6080"
-      - "127.0.0.1:${VNC_HOST_PORT:-15911}:5900"
+      - "127.0.0.1:${CDP_HOST_PORT:-49345}:9222"
+      - "127.0.0.1:${NOVNC_HOST_PORT:-16291}:6080"
+      - "127.0.0.1:${VNC_HOST_PORT:-16011}:5900"
     environment:
       NOVNC_PORT: "6080"
       VNC_PORT: "5900"
@@ -26,7 +26,7 @@ services:
       BROWSER_ACCEPT_LANGUAGE: ${BROWSER_ACCEPT_LANGUAGE:-en-US,en;q=0.9}
       CHROMIUM_EXTRA_ARGS: "${CHROMIUM_EXTRA_ARGS:---lang=en-US}"
       CHROMIUM_HEADLESS: ${CHROMIUM_HEADLESS:-0}
-      CHROMIUM_RESET_PROFILE: ${CHROMIUM_RESET_PROFILE:-0}
+      CHROMIUM_RESET_PROFILE: ${CHROMIUM_RESET_PROFILE:-1}
       CDP_PORT: "9222"
       CHROMIUM_CDP_PORT: "9223"
       CHROMIUM_START_URL: ${START_URL:-about:blank}
