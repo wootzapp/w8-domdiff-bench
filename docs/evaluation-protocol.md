@@ -1,152 +1,219 @@
-# Evaluation Protocol
+# Evaluation protocol
 
-The comparison uses one recorded task, one final answer, one action history,
-and one frozen rubric for both evidence modes.
+Evaluation compares two independent browser actors on the same task, with an
+explicit positive trial count per arm. Each actor has its own action history,
+observations, memory and final answer. Completion is graded against the same
+frozen task criteria, using evidence saved within the run being assessed.
 
-## Inputs
+The [datacard](datacard.md#observation-modes) defines permitted arm
+differences and shared controls. The [recordings guide](recordings.md) describes
+artifacts and provenance, and the [runbook](runbook.md) provides commands.
 
-Each paired task contains:
+## Task and rubric contract
 
-- ordered screenshots for the screenshot verifier;
-- ordered `dom_modelN.txt` states for the DOM-model verifier;
-- the same `web_surfer.log` action history;
-- the same final answer;
-- the same task definition and frozen rubric.
+A task consists of an instruction, start URL, stopping condition and constraints.
+The launcher combines the instruction, stopping condition and constraints into
+the instruction stored in `task.json`. A rubric must match that expanded text,
+the source task ID and the start URL.
 
-The preflight checks task identity, action alignment, state ordering, rubric
-shape, and required files before model clients are created.
+Freeze one rubric per task before collection and reuse it across arms and trials.
+Criterion IDs and descriptions remain unchanged. Rubrics are neither inferred
+from an actor's final answer nor supplied as additional actor context. Criteria
+with matching IDs in different tasks remain separate criteria.
 
-## Controlled scoring
+The configured actor settings, browser build, capture policy and grading settings
+must remain consistent across the selected tasks and trials. Requested model IDs
+and returned model IDs are both retained. Environment variables take precedence
+over `.env` values.
 
-Both sides use the same judge model, action model, rubric threshold, evidence
-count, majority-vote count, and success rule. Each representation has its own
-evidence loader, grounding instructions and context packing.
-The comparison command fails if those controls drift.
+## Scheduling and execution
 
-One rubric is generated or imported first. Its canonical SHA-256 and point
-denominator are recorded, then the unchanged object is passed to both sides.
+Trial count is a positive integer supplied through `--trials`; it has no default.
+Before launching child processes, `task_cli.main()` writes one `ledger.jsonl` row
+per `(task, arm, trial)`. Rows bind task/configuration identity, catalog and rubric
+file hashes, intended recording paths and execution order.
 
-Both modes receive the recorded refs, targets, and available coordinates.
-Coordinates are derived element centres, not exact click-event traces;
-provenance stays outside judge inputs. Some published pairs projected these
-fields separately, so comparisons across collections must account for that
-input difference.
+Both arms of a task/trial run back to back, alternating which arm starts by task
+and trial. Each attempt starts with a fresh browser profile. When batch grading
+is selected, both actor attempts finish before their judges start.
 
-Tool-failure diagnostics distinguish command parameters from `thoughts` and
-`target` annotations. They run after scoring and outcome verification, without
-changing points, penalties, thresholds, or the recorded action history.
+An attempt remains in the schedule regardless of its outcome. Resume skips
+finished actor attempts, reconciles orphaned started rows and continues unstarted
+work. It does not replace failed trials. A changed task set, trial count or frozen
+configuration requires a distinct batch name.
 
-### Success rules
+## Validation
 
-The normalized rubric score is the earned point total divided by the maximum
-available points, using only criteria the verifier marks applicable.
-Additional side-effect penalties are recorded separately from the frozen
-criteria. They contribute to the verifier's point total without changing the
-frozen rubric or the evidence-loss denominator.
-Inapplicable criteria remain in the separate evidence-loss denominator.
-`rubric_is_success` records whether that ratio meets the
-rubric threshold, currently **0.8** in the paired comparison. A strict
-full-score success means earning every available point (`x/x`).
+[`inspect_recording()`](../w8bench/task_recorder/prepare_verifier_data.py) checks
+finalized recordings before grading or export. It validates task/final metadata,
+state and turn numbering, action records, local paths, artifact hashes,
+screenshot dimensions and the selected observation hash. Actor request text is
+reconstructed from permitted sources; instructions, schema and request settings
+must match the frozen policy. Passive files on disk are not actor input.
+Screenshot progress must agree with screenshot change.
 
-The standalone verifier runners select their binary `score` with `--success`:
+[`run_full_comparison.main()`](../w8bench/verifier/run_full_comparison.py) validates
+the scheduled task/arm/trial set and unique recording paths. Finalized recordings
+must match their scheduled task, arm, run name and controls. The comparison also
+checks returned actor models, fresh-profile provenance, browser builds/runtime
+environments, capture policies and grading controls. Within each arm, its actor
+policy must remain consistent across trials.
 
-| Rule | Binary success condition |
-| --- | --- |
-| `outcome` | The outcome judge returns `output_success=true`. |
-| `process` | The normalized rubric score meets the rubric threshold. |
-| `both` | Both the outcome and process conditions hold. |
+A finalized recording that fails validation stops comparison. A missing or
+unfinished recording remains represented by its ledger outcome and recoverable
+usage. Public page content and model aliases can change independently of these
+recorded settings.
 
-The paired comparison currently fixes **`--success outcome`**. It separately
-retains rubric points, the normalized score, and `rubric_is_success`, so its
-binary result can differ from a strict full-score summary. The shared
-controls also fix five evidence items per criterion, a screenshot keypoint
-threshold of 3, a minimum relevance threshold of 0, and one voting instance.
-See the [implementation](../w8bench/verifier/common.py) and the
-[formal definitions](technical-report.md#rubric-scores-and-task-success-rules).
-Saved run manifests establish the settings used for a particular run.
+## Completion grading
 
-## Evidence-loss audit
+[`grade_run()`](../w8bench/verifier/run_comparison.py) uses the `paired` primary
+evidence policy for both actor arms. The judge receives the task, start URL,
+frozen criteria, ordered `dom_model.txt` states and screenshots, executed-action
+records, final answer and technical run status from the same recording. Primary
+grading does not add executable-reference snapshots or another run's evidence.
+Missing passive artifacts are identified as unavailable rather than substituted.
 
-The audit asks whether a rubric fact is present in each ordered evidence
-source. It keeps missing source evidence separate from judge disagreement.
-The headline counts are therefore evidence-availability measurements, not a
-general claim that one verifier always scores tasks better.
+The judge is explicitly selected as `--judge-model gpt-5.6-sol`; it never derives
+from the actor. Model grading uses medium reasoning, a 10,000-token output budget
+and no action tools or automatic retry. `--execute` enables full evaluation;
+without it, the command performs a read-only preflight.
 
-Review routing covers losses and verifier misses on either side. The blind
-review builder also selects 75 seeded unflagged criteria, or all remaining
-criteria if fewer are available. Votes and selection reasons stay outside
-the blind review file. Review selection does not alter audit labels.
+Each criterion receives `success`, `failure` or `uncertain`, a reason and existing
+state references. Success requires an observation citation. Changed criterion
+IDs/order, invalid verdicts or nonexistent cited states are rejected. The overall
+verdict is failure if any criterion fails, otherwise uncertain if any criterion
+is uncertain, otherwise success.
 
-### Source-loss counting
+A rubric containing an author-designated `expected_answer` uses an offline exact
+answer check. It passes only when the run completed normally and the stripped
+answer matches exactly. This checks the designated answer, not browser side
+effects, and makes no judge call.
 
-A representation loses evidence for a criterion when at least one required
-item is absent from that representation and present in the other, across
-the eligible ordered source states, shared task inputs and formatted action history.
-A criterion contributes at most one loss per representation even when
-several required items are missing.
-Items absent from both representations, or present in both, do not trigger
-paired source loss. Evidence that a verifier overlooks or misinterprets is
-a separate interpretation error.
+`completion.json` binds the grade to the recording fingerprint, rubric hash,
+evidence policy, judge prompt/schema hashes, model IDs, endpoint and output budget.
+It stores criterion verdicts, response ID and returned usage. The recording is
+checked again before saving the grade. A failed, malformed or incomplete judge
+response yields an ungraded result with `judge_error` and any returned usage.
 
-Each representation/criterion loss receives one primary
-[category](evidence-categories.md). A criterion can lose different items in
-both representations and have a different category on each side. Such a
-criterion contributes once to each marginal count; the counts overlap.
-Multiple criteria can also depend on the same capture omission.
+The optional `actor_native` policy uses the actor's observation type: DOM-model
+text plus interactive references, or screenshots. It writes
+`completion_actor_native.json` and leaves the primary grade intact. It does not
+replay the actor's complete prompt or memory. Primary success comparisons continue
+to use `completion.json`; evidence policies and grading controls cannot be mixed.
 
-Rates divide confirmed criterion-level losses by all audited criteria in
-the selected cohort, including criteria with no loss. This measures paired
-availability differences rather than absolute information loss against the
-live webpage, since gaps shared by both representations remain undetected.
-The report gives the [availability indicators and rate equations](technical-report.md#paired-source-evidence-loss)
-and their [current numerical values](technical-report.md#current-counts-and-relative-reduction).
+## Measurements
 
-### Benchmark evaluation
+Each trial runs both auxiliary verifiers and one within-run evidence audit.
+Verifier process scores, threshold success (`rubric_is_success` at 0.8), outcome
+success and full points on frozen criteria are auxiliary signals. Runtime
+side-effect penalties remain separate from that frozen full-score check and
+never change the primary completion rubric.
 
-The [technical report](technical-report.md) contains the published counts and
-the [category annotations](../results/evidence_categories.tsv). Inventory uses
-`gpt-5.6-sol` and adjudication uses `gemini-3.1-pro-preview`.
+The audit compares only the same run's screenshots and DOM-model text. Available
+states remain in their own verifier even if the other format is missing.
+Directional decisions use shared state IDs with complete captures and no navigation within the capture interval. Missing URL
+metadata is explicitly unavailable in the shared timeline. Report gaps, navigation,
+eligible states and coverage; retain failed actor runs with usable evidence.
+No eligible states or failed auxiliary results produce a missing audit with a
+reason, not zero loss. Preserve both directions for each driver arm.
 
-Evaluation requires usable, aligned captures. Audit failures remain listed
-separately and do not count as either confirmed loss or confirmed absence of
-loss. Verifier scores remain available when an audit fails validation.
+All judges receive the same verified observed-URL timeline, including initial
+state, and the recorded task-validity date. Shared history contains execution
+facts, not actor notes or DOM-derived target descriptions. Evidence selection,
+scoring, penalties and citation rules retain their original semantics. Judge
+repair calls, exhausted fallbacks and unknown usage are reported separately.
 
-The acting agent uses `gpt-5.6` for browser-action generation. The verifiers
-use `gpt-5.2` for rubric generation and evidence judgments and `gpt-5.6-terra`
-for action/validity judgments. See
-[models and review roles](technical-report.md#models-and-evaluation-provenance).
+| Measurement | Definition | Artifacts |
+|---|---|---|
+| Model turns | Dispatched actor API calls, including rejected proposals, malformed/incomplete responses and termination. Failures before dispatch do not count. | `decisions.jsonl`, per-turn `result.json`, manifest/final `model_turns`. |
+| Action attempts | Accepted executable actions delivered to the browser, including execution errors. Rejections and termination execute no browser action. | Manifest `steps`, state `action.json`, trajectory. |
+| Captured states | Committed active observations. Normally N actions produce N+1 states; capture errors can leave an incomplete transition. | Manifest `states`, `trajectory_export`. |
+| Completion | Independent rubric verdict, separate from actor claims and technical status. | `completion.json`. |
+| Actor usage | Returned input/output totals, plus cached-input and reasoning subsets. | Provider response and decision `usage`. |
+| Tokens per model turn | Input and output separately, with all dispatched actor calls counted. Missing usage uses labelled known-call denominators. | Per-run `tokens_per_turn`, arm/category distributions. |
+| Judge usage | Primary/native completion, each verifier, audit inventory/adjudication and rubric preparation, separate from actor usage. | Completion/evaluation receipts and named usage streams. |
+| Timing | Decision-call latency, action delivery duration and recorder capture durations. | Decision `latency_seconds`, action `duration_seconds`, state `capture`. |
 
-Standalone verifier commands select this model with `--action-model`.
-The paired comparison supplies the same model to both verifiers.
+Actors use configured `gpt-6.1-terra`, exactly 10,000 maximum output tokens, medium reasoning and
+8,000 memory characters, identically configured in both arms. Cached input is a
+subset of input tokens; reasoning is a subset of output tokens. Neither is added
+again to input-plus-output totals. Local file token estimates are not provider
+itemization. Passive recording alone consumes no model tokens; judge requests
+using that evidence have their own usage.
 
-In `.env`, `EVIDENCE_AUDIT_MODEL` selects the inventory model and
-`EVIDENCE_ADJUDICATOR_MODEL` selects the adjudicator. Both are required.
-The matching CLI flags override these settings.
-Process environment values take precedence over `.env`. The selected audit
-models are saved in the run manifest; these settings do not change the
-recording or verifier models.
+Decisions record `response_status`, `incomplete_details`, `returned_model`,
+`reasoning` and `output_limit_hit`. The limit flag is true when the provider reports
+`max_output_tokens` as the incomplete reason or output at the configured budget;
+it is null without a response. Inspect status and incomplete details before
+interpreting the flag as truncation. An incomplete actor response executes no
+action, while its call and returned usage remain counted.
 
-Aggregate intervals resample whole tasks, keeping their criteria and both
-modalities together. The reported rate remains total losses divided by total
-criteria, not the average of task rates. The paired difference uses the same
-task draws. The percentile bootstrap uses 20,000 draws and records its seed.
+Decision latency includes request preparation and response handling; it is not
+total browser-task wall time. Action durations and settling/capture work are
+separate. Capture phases are sequential, so their durations and navigation flags
+matter when interpreting the paired evidence.
 
-For multiple independent recorded runs, report the mean criterion-level rate
-across runs. Compute relative reduction from mean screenshot and DOM counts.
-Intervals draw tasks with replacement, then runs within each selected task;
-all criteria and both representations stay paired. Task sets, rubric hashes,
-prompt versions, model IDs and generation settings must match across runs.
-It assumes independent tasks and does not measure annotation error. A single
-task has no estimable interval; constant samples are marked as degenerate.
-The selected audit paths come from each run manifest when one is present.
-Returned model versions must agree. Repeated evidence requires distinct
-recording provenance; identical static page content alone does not establish
-that two recordings are duplicates.
-Website blockers, recorded execution failures, task scores, and source-loss
-counts are separate measurements.
+## Denominators and coverage
 
-## Operation
+Technical outcomes, actor-reported status and completion grades are separate.
+`completed` means normal actor-loop termination, not verified task success.
+Startup errors, API/recorder errors, interruptions and turn limits remain scheduled
+attempts. Technical status alone is not substituted for a completion grade.
 
-See the [runbook](runbook.md#score-a-prepared-task) for preparation, validation,
-and comparison commands. Saved rubrics, scores, audits, and provenance are
-written under `evaluations/<run-name>/`.
+Completion labels are success, failure, uncertain and ungraded. Uncertain and
+ungraded are not confirmed failures. Report grading coverage together with
+`confirmed_success_rate_all_attempts` and `success_rate_definitively_graded`.
+The all-attempt confirmed-success fraction is a lower bound when grades remain
+unknown. Both `definitively_graded_runs` and `definitively_graded_tasks` count
+definitively graded attempts.
+
+`scheduled_attempts`, `scheduled_pairs` and `scheduled_tasks` describe the full
+ledger. `paired_attempts` counts task/trial pairs with both finalized recordings;
+`paired_tasks` counts tasks with at least one such pair. `unmatched_arms` lists
+missing or unfinalized recordings. Paired-only counts do not replace the full
+scheduled denominator.
+
+Interrupted or partial recordings retain known decision usage as lower bounds.
+`cost_coverage`, `tokens_complete`, `turns_complete` and `turns_missing_usage`
+identify gaps. Exact all-attempt means/medians are null when coverage is incomplete;
+`mean_tokens_all_attempts_lower_bound` and `mean_turns_all_attempts_lower_bound`
+use known totals divided by all scheduled attempts. A startup failure with no
+request is a known-zero actor cost; an unknown interrupted request is not.
+
+Saved judge costs include primary and optional secondary grades.
+`judge_calls_missing_usage` and `judge_processes_without_usage` disclose missing
+receipts. A judge process without a saved result does not establish a zero-cost
+request. Regrading writes the selected grade file again; saved files alone are
+not an append-only history of every manual grading invocation.
+
+## Repeated-trial results
+
+For n scheduled trials, c confirmed successes and an evaluated k with
+`1 <= k <= n`, the estimator is:
+
+```text
+pass@k = 1 - C(n-c, k) / C(n, k)
+```
+
+The numerator is zero when `n-c < k`. With u uncertain/ungraded outcomes, c gives
+the confirmed lower bound and c+u the possible upper bound. `estimate` is null
+when those bounds differ. Results are task-macro averages over the same scheduled
+tasks, with task-specific criterion results retained separately. Unsupported k
+values are rejected. All-trials-success reliability measures a different event
+from at least one success among k attempts.
+
+All-attempt costs include failed trials. Success-conditioned means can use
+different task sets in each arm. Paired successful deltas use the same task/trial
+with both primary grades successful; positive screenshot-minus-DOM deltas mean
+more screenshot cost or turns. These summaries do not calculate confidence
+intervals or verify completion through an application-state oracle.
+
+## Verification checks
+
+Offline tests cover actor request isolation, artifact binding, counters, grading,
+and ledger scheduling/resume/failure handling with synthetic responses. Browser
+capture checks test scroll/focus preservation on a synthetic page. These establish
+specific file and execution contracts; completion on public tasks is assessed
+through recorded runs and independent grades. Sequential capture, page changes,
+grounding differences and judge uncertainty remain relevant when interpreting
+results.
