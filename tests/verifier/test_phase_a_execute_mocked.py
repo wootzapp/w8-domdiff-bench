@@ -174,6 +174,24 @@ def test_catalog_edit_and_unsafe_task_id_fail_before_generation(catalog_case):
         generator.main(args + ["--stage", "draft"])
 
 
+def test_public_catalog_has_only_eight_fields_and_shared_constraints():
+    from collections import Counter
+    root = Path(__file__).resolve().parents[2]
+    rows = [json.loads(line) for line in (root / "data/tasks.jsonl").read_text().splitlines()]
+    fields = {"task_id", "task_name", "category", "difficulty", "instruction", "start_url",
+        "stopping_condition", "constraints"}
+    assert len(rows) == 25
+    assert {row["task_id"] for row in rows} == {f"task_{number:02d}" for number in range(1, 26)}
+    assert Counter(row["difficulty"] for row in rows) == {"medium": 10, "hard": 10, "complex": 5}
+    constraints = rows[0]["constraints"]
+    assert len(constraints) >= 5 and all(isinstance(item, str) and item.strip() for item in constraints)
+    for row in rows:
+        assert set(row) == fields
+        assert row["constraints"] == constraints
+        assert len(row["instruction"].splitlines()) == 1 and len(row["instruction"]) <= 1800
+        assert len(row["stopping_condition"].splitlines()) == 1
+        assert all(isinstance(row[field], str) and row[field].strip() for field in fields - {"constraints"})
+        generator.validate_task_definition(generator.catalog_task_instruction(row), row["start_url"])
 
 
 def test_unreceipted_prior_attempt_is_unknown_not_zero_in_review(catalog_case):

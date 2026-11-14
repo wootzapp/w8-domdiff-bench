@@ -1922,6 +1922,19 @@ def test_pre_rubric_planning_is_separate_and_cannot_resume_as_execution(tmp_path
     assert (root / "schedule_preview.jsonl").is_file()
 
 
+def test_published_catalog_has_exact_compact_schema():
+    root = Path(__file__).resolve().parents[2]
+    expected = {"task_id", "task_name", "category", "instruction", "start_url", "stopping_condition", "constraints", "difficulty"}
+    first_constraint = ("Only use the browser actions available to you. Do not open API endpoints, raw data files, "
+        "view-source pages or downloads, and do not use external programs.")
+    rows = [json.loads(line) for line in (root / "data/tasks.jsonl").read_text().splitlines()]
+    assert len(rows) == 25
+    assert all(set(row) == expected and row["constraints"][0] == first_constraint for row in rows)
+    validity = json.loads((root / "internal/task_validity.json").read_text())
+    assert set(validity) == {"catalog", "tasks"}
+    assert validity["catalog"] == "data/tasks.jsonl"
+    assert set(validity["tasks"]) == {row["task_id"] for row in rows}
+    assert all(set(item) == {"valid_until"} for item in validity["tasks"].values())
 
 
 def test_batch_resume_rejects_byte_changes_to_frozen_catalog(tmp_path, monkeypatch):
