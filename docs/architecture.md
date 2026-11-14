@@ -1,98 +1,126 @@
-# Browser Evidence Architecture
+# Architecture
 
-`w8-core` captures browser states, DOM-diff Optimized renders compact
-structured observations, and `w8-domdiff-bench` compares those observations
-with screenshots from the same trajectory. The recorder connects model
-decisions to executed actions; the paired verifier pipeline evaluates the
-prepared evidence against one frozen rubric and audits source availability.
+`w8-domdiff-bench` records paired browser evidence for evidence-loss analysis and
+runs browser tasks with two independent actor arms. Execution metrics include
+actor turns, token usage and task completion. The launcher schedules the work,
+the recorder connects observations
+to executed actions, and a separate judge grades each run against frozen task
+criteria.
 
-The [technical report](technical-report.md) describes saved results;
-the [runbook](runbook.md) contains the commands for operating the system.
+The browser runs in a `w8-core` container. The recorder and model clients run on
+the host, connecting to the browser through CDP and the installed action CLI.
+A task's two arms use separate browser profiles, memory and trajectories. Their
+permitted differences are defined in the
+[datacard](datacard.md#observation-modes).
 
-| Component | Role | Evidence or current status | How to verify | Files and controls |
-| --- | --- | --- | --- | --- |
-| Browser capture | Records screenshots and structured page state in `w8-core`. | Initial state and states following executed actions are indexed in each recording manifest. | Follow the manifest’s state and action references. | [Recorder](../w8bench/task_recorder/) · [ChromiumRL protocol](../protocol/ChromiumRL.pdl) |
-| Action harness | Validates model proposals and executes actions through `agent-browser` in the same tab. | Rejected proposals and executed actions have separate records. | Compare `decisions.jsonl`, `trajectory.jsonl`, and state transitions. | [Recording guide](recordings.md) |
-| DOM-diff Optimized | Describes each captured state as compact structured text. | Preserves page content, controls, tables, relationships, and scroll context within capture limits. | Inspect `dom_model.txt` alongside the detailed capture and screenshot. | [Recorder renderers](../w8bench/task_recorder/renderers/) |
-| Prepared pairs | Aligns screenshots and DOM text by action step. | Both sides share task inputs, action history, and final answer. | Run the comparison preflight. | [Preparation](../w8bench/task_recorder/prepare_verifier_data.py) · [Input contract](runbook.md#recording-and-evaluation-inputs) |
-| Paired verifiers | Scores both representations using the same frozen rubric and controls. | Screenshot and DOM loaders supply different evidence to the same comparison protocol. | Check rubric hashes, commands, results, and run provenance. | [Screenshot verifier](../w8bench/screenshot_verifier/) · [DOM verifier](../w8bench/dom_model/) |
-| Evidence audit | Separates missing source evidence from verifier interpretation errors. | Inventory from `gpt-5.6-sol` and adjudication by `gemini-3.1-pro-preview` identify required items present in one representation and absent in the other. | Inspect `evidence_audit.json` and its source citations. | [Verifier orchestration](../w8bench/verifier/) · [Evaluation protocol](evaluation-protocol.md) |
+| Component | Responsibility | Main implementation |
+| --- | --- | --- |
+| Task launcher | Load task definitions, create the schedule, start fresh browser profiles, record attempt outcomes and resume unfinished schedules. | [`task_cli.py`](../w8bench/task_recorder/task_cli.py) |
+| Browser runtime | Configure the container, CDP endpoint, viewport and locale; record browser build and profile provenance. | [`browser_runtime.py`](../w8bench/task_recorder/browser_runtime.py), [`docker-compose.yml`](../docker-compose.yml) |
+| Capture | Save structured DOM, readable DOM, model DOM and screenshot evidence with timing and identity metadata. | [`capture.py`](../w8bench/task_recorder/capture.py), [renderers](../w8bench/task_recorder/renderers/) |
+| Actor loop | Build the selected observation request, validate one proposed action, execute it and record model usage and state transitions. | [`runner.py`](../w8bench/task_recorder/runner.py), [`prompts.py`](../w8bench/task_recorder/prompts.py) |
+| Action driver | Execute reference-targeted actions and shared browser input primitives. | [`agent_browser/client.py`](../w8bench/task_recorder/agent_browser/client.py) |
+| Recording validation/export | Check actor isolation, hashes and chronology; stage paired flat inputs with explicit gaps and provenance. | [`prepare_verifier_data.py`](../w8bench/task_recorder/prepare_verifier_data.py), [`trajectory.py`](../w8bench/task_recorder/trajectory.py) |
+| Completion grading | Apply a frozen task rubric to each run using a common judge evidence policy. | [`run_comparison.py`](../w8bench/verifier/run_comparison.py) |
+| DOM verification | Grade rubric criteria using recorded DOM text and action history. | [`verifier/dom_model/`](../w8bench/verifier/dom_model/) |
+| Screenshot verification | Grade the same rubric using recorded screenshots and action history. | [`verifier/screenshot_verifier/`](../w8bench/verifier/screenshot_verifier/) |
+| Evidence audit | Compare both formats within one run and distinguish source loss from judge interpretation errors. | [`evidence_audit.py`](../w8bench/verifier/evidence_audit.py) |
+| Comparison | Validate matching controls and aggregate scheduled outcomes, turns, tokens and completion statistics. | [`compare_results.py`](../w8bench/verifier/compare_results.py), [`run_full_comparison.py`](../w8bench/verifier/run_full_comparison.py) |
 
-## Evolution of the representation
+## Execution flow
 
-The browser evidence pipeline progressed through several representations:
+```mermaid
+flowchart TD
+    A[Task catalog and explicit trial count] --> B[Write complete schedule]
+    B --> C[Fresh browser profile]
+    C --> D[Initial paired capture]
+    D --> E[Actor observation and common task context]
+    E --> F[Model proposes one action]
+    F --> G{Valid action?}
+    G -->|Rejected| E
+    G -->|Browser input| H[Execute, settle and synchronize target]
+    H --> I[Capture and commit next state]
+    I --> E
+    G -->|Terminate| J[Finalize run]
+    J --> K[Run partner arm with a fresh profile]
+    K --> L[Grade both runs independently]
+    L --> M[Update ledger and compare results]
+```
 
-1. **Detailed DOM capture** recorded text, attributes, element relationships,
-   styles, accessibility data, and layout geometry for inspection.
-2. **DOM-diff** compared pre-action and post-action states to associate an
-   action with changes in content and controls.
-3. **DOM-diff Optimized** reorganized each captured state into content,
-   tables, media descriptions, controls, and scroll regions. Each state is
-   inspectable without a separate diff file.
-4. **Browser-native processing** moved selection and grouping onto the
-   captured Chromium snapshot. Preservation refinements addressed nested
-   text, contextual deduplication, author labels, control state, and
-   visibility after scrolling.
-5. **Subtree-text-limit removal** removed the former 500-character limit
-   that could truncate relevant nested content.
+The schedule contains one row per task, arm and trial. The two arms of each
+task/trial run back to back, with the starting arm alternating across tasks and
+trials. Grading follows both actor runs. Technical failures remain scheduled
+outcomes, and resume skips completed attempts rather than silently retrying them.
 
-These stages describe the representation’s development. The published
-source-loss comparison evaluates the saved paired evidence; it is not an
-ablation measuring the effect of each engineering change.
+Each actor request contains the task, current URL, turn budget, viewport,
+bounded task memory, recent action outcomes and its selected page observation.
+The model returns one JSON action. Rejected proposals consume a model turn but
+do not execute browser input or create a new state. Normally, `N` action attempts
+produce `N + 1` captured states: the initial state and one after each action.
+A state's `action.json` describes the action taken from that state.
 
-## Current observation size
+## Capture and actor isolation
 
-The model-facing DOM-diff Optimized observations are more compact than text-dense readable DOM and full structured snapshots. The mean serialized sizes across the same 2,592 recorded states are:
+After browser input, the recorder waits for the configured settling interval,
+synchronizes the target, and captures in this order:
 
-| Representation | Artifact | Captured observations | Mean kB | Mean KiB |
-| --- | --- | ---: | ---: | ---: |
-| DOM-diff Optimized | `dom_model.txt` — compact model-facing text | 2,592 | 5.37 | **5.25** |
-| Text-dense DOM | `dom_full.txt` — detailed readable text | 2,592 | 48.40 | **47.26** |
-| Full DOM | `dom.json` — structured snapshot | 2,592 | 211.40 | **206.45** |
+1. Structured DOM and its readable projection.
+2. Browser-produced model DOM and its text projection.
+3. The viewport screenshot.
+4. Executable references when required by the actor.
+5. The committed state record, artifact hashes and capture metadata.
 
-A kB is 1,000 bytes; a KiB is 1,024 bytes. Token counts depend on the tokenizer. These sizes do not measure evidence completeness. A full snapshot remains subject to the capture boundaries below. See the [report’s size comparison](technical-report.md#current-representation-size).
+Every complete state contains `dom.json`, `dom_full.txt`, `dom_model.json`,
+`dom_model.txt` and `screenshot.png`. The reference snapshot is saved as
+`agent_browser_actions.txt`. It is observation text produced by the action CLI,
+not executable code written by the model.
 
-## Actions and recorded states
+The selected actor observation and passive evidence have separate roles.
+Passive evidence stays available for inspection and judging without entering the
+actor's prompt, memory, progress or rejection feedback. If a passive capture
+fails, the usable actor observation can continue while the state records
+`paired_complete=false`. Active observation failures are technical outcomes.
 
-The acting model, `gpt-5.6`, generates actions from compact page text,
-interactive control references, task memory, and recent action outcomes.
-Screenshots are retained for inspection and screenshot-based verification, rather than being sent to
-the acting model. Chromium node identifiers and executable `agent-browser`
-references belong to separate namespaces.
+`inspect_recording()` checks the saved request against permitted sources,
+verifies artifact and image hashes, and validates the action/state sequence.
+Capture metadata includes target/session identity, per-phase timings, URLs and
+navigation events. Capture is sequential; changing pages can produce differences
+within the recorded interval even when the URL stays the same.
 
-An execution with `N` actions normally yields `N + 1` captured states: an
-initial state and one state after each executed action. Raw recordings
-number those folders from `steps/step_001/`; prepared pairs number their
-initial evidence as `screenshot0.png` or `dom_model0.txt`. A raw state’s
-`action.json` describes the action leading to the next state. Rejected
-model proposals do not create executed-action entries.
+## DOM representation
 
-See the [recording artifact guide](recordings.md) for the manifest, decision
-logs, normalized action logs, detailed snapshots, and model-facing states.
+The structured snapshot is viewport-scoped, with default limits of 7,000 nodes
+and 200,000 text characters. `dom_full.txt` is a detailed rendering of that
+bounded snapshot. `ChromiumRL.getModelDOM` organizes its content into
+`dom_model.json`, and the text renderer creates `dom_model.txt`.
 
-## Verification and boundaries
+Stored model DOM retains the browser's identifiers. Actor-facing text masks
+numeric ChromiumRL IDs so they cannot be mistaken for executable references.
+The reference snapshot is filtered by viewport bounding-box overlap; partially
+visible targets can retain complete accessible labels. Overlap does not itself
+prove that a target is unobscured or clickable.
 
-The repository code, stored manifests, and prepared pairs establish the
-capture and alignment contracts above. The comparison preflight checks
-file presence and alignment; it does not prove answer correctness or
-faithful live replay. Saved model-generated audit findings are the source of the loss counts. Category annotations and internal WootzApp verification are separate review steps, as explained in the
-[technical report](technical-report.md#source-evidence-gaps-by-task-and-criterion).
+## Grading and results
 
-DOM state, screenshots, and action-tool observations are captured
-sequentially. They can diverge on rapidly changing pages. Viewport filtering
-and capture limits also mean a detailed or “full” snapshot does not imply
-the entire live page or all offscreen content has been preserved.
+The primary judge policy combines screenshots and model DOM text from the same
+run with its action records, final answer and technical status. Both actor arms
+use the same task rubric and judge controls. The optional actor-native policy
+writes a separate secondary grade.
 
-Color, typography, spacing, geometry, clipping, z-order, responsive layout,
-image content, canvas, and video can require screenshots or additional
-instrumentation. Uncaptured cross-origin or shadow-DOM content can require
-additional capture support. Screenshots can omit off-viewport content or
-render exact text and symbols ambiguously; DOM can lose relationships,
-control states, or rendered notation.
+Both auxiliary verifiers grade each run independently using its own evidence.
+The DOM package packs and analyses DOM-model text; the screenshot package
+selects and analyses images. They retain original process/outcome scoring and
+separate runtime penalties. The audit inventories both source formats and
+adjudicates directional losses and verifier interpretation errors. Its shared
+context includes only recorded execution facts and verified observed URLs.
 
-The paired metric does not detect items absent from both representations.
-Multiple criteria can depend on one capture gap, and a criterion can lose
-different required items in both representations. The
-[counting rules](evaluation-protocol.md#source-loss-counting) retain those
-overlaps explicitly. Broader visual coverage, live replay, downstream
-training gains, and acting-agent improvement require separate evaluation.
+Available states retain their source IDs and remain in their own verifier even
+when the other format is missing. Directional audit decisions use only complete,
+stable paired states. Staged evidence, judge results and coverage live outside
+the immutable actor recording and are bound by hashes.
+
+Actor-reported success, technical outcome and independent completion are
+separate fields. Aggregation uses the schedule as its denominator, exposes
+missing recordings and grading coverage, and accounts for actor and judge usage
+separately. See the [evaluation protocol](evaluation-protocol.md) for metric
+definitions and the [recording guide](recordings.md) for artifact fields.
