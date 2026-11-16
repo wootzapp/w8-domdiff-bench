@@ -101,8 +101,6 @@ class AgentBrowserClient:
         )
         self.connected = False
         self.version = ""
-        self.connection_result: dict[str, Any] = {}
-        self.reconnect_count = 0
 
     def _invoke_sync(
         self,
@@ -186,18 +184,13 @@ class AgentBrowserClient:
             use_session=False,
         )
         self.version = str(version).strip()
-        result = await self._invoke(["connect", self.cdp_target])
-        assert isinstance(result, dict)
-        self.connection_result = result
-        self.connected = True
+        await self.reconnect()
 
     async def reconnect(self) -> None:
         """Reattach the named CLI session without closing the browser target."""
         result = await self._invoke(["connect", self.cdp_target])
         assert isinstance(result, dict)
-        self.connection_result = result
         self.connected = True
-        self.reconnect_count += 1
 
     async def close(self) -> None:
         """Close only this CLI session; failures during cleanup are non-fatal."""
