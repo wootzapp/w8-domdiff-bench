@@ -21,11 +21,20 @@ permitted differences are defined in the
 | Actor loop | Build the selected observation request, validate one proposed action, execute it and record model usage and state transitions. | [`runner.py`](../w8bench/task_recorder/runner.py), [`prompts.py`](../w8bench/task_recorder/prompts.py) |
 | Action driver | Execute reference-targeted actions and shared browser input primitives. | [`agent_browser/client.py`](../w8bench/task_recorder/agent_browser/client.py) |
 | Recording validation/export | Check actor isolation, hashes and chronology; stage paired flat inputs with explicit gaps and provenance. | [`prepare_verifier_data.py`](../w8bench/task_recorder/prepare_verifier_data.py), [`trajectory.py`](../w8bench/task_recorder/trajectory.py) |
-| Completion grading | Apply a frozen task rubric to each run using a common judge evidence policy. | [`run_comparison.py`](../w8bench/verifier/run_comparison.py) |
+| Completion grading | Apply a frozen task rubric to each run using a common judge evidence policy. | [`completion.py`](../w8bench/verifier/completion.py) |
 | DOM verification | Grade rubric criteria using recorded DOM text and action history. | [`verifier/dom_model/`](../w8bench/verifier/dom_model/) |
 | Screenshot verification | Grade the same rubric using recorded screenshots and action history. | [`verifier/screenshot_verifier/`](../w8bench/verifier/screenshot_verifier/) |
+| Verifier clients and types | Handle provider requests, usage, shared event/result types and frozen-rubric controls; retain modality-specific schemas in each scorer. | [`clients/`](../w8bench/verifier/clients/), [`models.py`](../w8bench/verifier/models.py), [`common.py`](../w8bench/verifier/common.py) |
+| Rubric execution | Run rubric preparation, scoring, voting, outcome and task checks through one engine with explicit modality prompts and evidence hooks. | [`rubric_agent.py`](../w8bench/verifier/rubric_agent.py), [`rubric_scoring.py`](../w8bench/verifier/rubric_scoring.py), [`validity.py`](../w8bench/verifier/validity.py) |
+| DOM evidence | Render ordered DOM states, bind grounding prompts, validate cited evidence and record selections. | [`evidence.py`](../w8bench/verifier/dom_model/evidence.py), [`prompts.py`](../w8bench/verifier/dom_model/prompts.py) |
+| Screenshot input validation | Check action chronology, declared state gaps and final-answer screenshots before scoring. | [`screenshot_verifier/preflight.py`](../w8bench/verifier/screenshot_verifier/preflight.py) |
+| Rubric scoring | Validate criteria, combine scores, select median results and check action arguments. | [`rubric_scoring.py`](../w8bench/verifier/rubric_scoring.py) |
+| Verifier trajectories | Parse logs and answers with shared accounting and native field declarations. | [`trajectory.py`](../w8bench/verifier/trajectory.py), [`dom_model/models.py`](../w8bench/verifier/dom_model/models.py), [`screenshot_verifier/models.py`](../w8bench/verifier/screenshot_verifier/models.py) |
+| Task validity | Classify task ambiguity and validity using each scorer’s prompt, date and logger. | [`validity.py`](../w8bench/verifier/validity.py) |
+| Verifier taxonomy | Parse failure categories and Template variables from each scorer’s policy resource. | [`error_taxonomy.py`](../w8bench/verifier/error_taxonomy.py) |
+| DOM state loading and packing | Parse chronological DOM states and pack complete evidence records within the configured budget. | [`dom_model/states.py`](../w8bench/verifier/dom_model/states.py) |
 | Evidence audit | Compare both formats within one run and distinguish source loss from judge interpretation errors. | [`evidence_audit.py`](../w8bench/verifier/evidence_audit.py) |
-| Comparison | Validate matching controls and aggregate scheduled outcomes, turns, tokens and completion statistics. | [`compare_results.py`](../w8bench/verifier/compare_results.py), [`run_full_comparison.py`](../w8bench/verifier/run_full_comparison.py) |
+| Comparison | Validate matching controls and aggregate scheduled outcomes, turns, tokens and completion statistics. | [`compare_results.py`](../w8bench/verifier/compare_results.py), [`run_full_comparison.py`](../w8bench/verifier/run_full_comparison.py), [`run_metrics.py`](../w8bench/verifier/run_metrics.py), [`paired_metrics.py`](../w8bench/verifier/paired_metrics.py) |
 
 ## Execution flow
 

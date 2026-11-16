@@ -19,14 +19,15 @@ network access for dependencies, browser images, task pages and model calls.
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[test,gemini]'
+.venv/bin/python -m pip install -e '.[test]'
 [ -f .env ] || cp .env.example .env
 ```
 
-Set the actor through `OPENAI_MODEL` in `.env`; it must be `gpt-6.1-terra`.
+Set the actor through `ACTOR_MODEL` in `.env`; it must be `gemini-3.1-pro-preview`.
 Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` and the audit models shown in
-`.env.example`. Completion uses an explicit `gpt-5.6-sol` judge. Set
-`OPENAI_BASE_URL` when a different OpenAI endpoint is required.
+`.env.example`. Completion uses an explicit `gpt-6.1-sol` judge.
+`GEMINI_BASE_URL` selects the actor endpoint; `OPENAI_BASE_URL` selects the
+OpenAI endpoint.
 Set `IMAGE` to a browser image tag or immutable digest. The hosted
 `wootzapp/w8-core` image provides the browser runtime; the runbook also describes
 [building an image](docs/runbook.md#browser-image-build).
@@ -36,6 +37,16 @@ The default container is `w8-turns-browser-engine`, with CDP on 49345, noVNC on
 profile and verifies service ownership. Script wrappers use this directory's
 `.venv/bin/python`. Check [browser status](docs/runbook.md#browser-runtime)
 before recording.
+
+| Component | Model |
+| --- | --- |
+| Browser actor, both arms | `gemini-3.1-pro-preview` |
+| Rubric generation and dependency check | `gpt-5.2` |
+| Screenshot verifier | `gemini-3.1-pro-preview`; action-only scoring and validity: `gemini-3.8-flash` |
+| DOM verifier | `gemini-3.1-pro-preview`; action-only scoring and validity: `gemini-3.8-flash` |
+| Evidence inventory | `gemini-3.1-pro-preview` |
+| Evidence-loss adjudication | `gpt-6.1-sol` |
+| Common completion judge | `gpt-6.1-sol` |
 
 ## Record tasks
 
@@ -55,7 +66,7 @@ common completion, both auxiliary verifiers and a within-run evidence-loss audit
   --catalog-file data/tasks.jsonl \
   --output-dir recordings --run-name benchmark \
   --rubric-dir data/rubrics \
-  --judge-model gpt-5.6-sol
+  --judge-model gpt-6.1-sol
 ```
 
 Use `--dry-run` to write and inspect the schedule without starting tasks. Repeat

@@ -9,7 +9,7 @@ from w8bench.task_recorder.prepare_verifier_data import inspect_recording
 from w8bench.task_recorder.recorder_support import write_json
 from .run_metrics import summarize
 
-def compare(dom: dict[str, Any], screenshot: dict[str, Any]) -> tuple[dict[str, Any], str]:
+def _validate_recording_pair(dom, screenshot):
     for recording, mode in ((dom, "dom"), (screenshot, "screenshot")):
         if recording["task"]["observation_mode"] != mode:
             raise ValueError(f"expected a {mode} recording")
@@ -28,7 +28,10 @@ def compare(dom: dict[str, Any], screenshot: dict[str, Any]) -> tuple[dict[str, 
             raise ValueError(f"shared capture policies differ for {key}")
     if any(dom["task"].get(key) != screenshot["task"].get(key) for key in ("category", "difficulty", "catalog_sha256")):
         raise ValueError("task category, difficulty or catalog hash differs between arms")
-    summaries = {"dom": summarize(dom), "screenshot": summarize(screenshot)}
+    return left
+
+
+def _validate_summary_pair(summaries):
     evaluation_hashes = {row["evaluation"]["rubric_sha256"] for row in summaries.values() if row.get("evaluation")}
     if len(evaluation_hashes) > 1:
         raise ValueError("frozen evaluation rubric differs between arms")
@@ -43,6 +46,10 @@ def compare(dom: dict[str, Any], screenshot: dict[str, Any]) -> tuple[dict[str, 
     actual_models = [summaries[m]["returned_actor_models"] for m in ("dom", "screenshot")]
     if actual_models[0] and actual_models[1] and actual_models[0] != actual_models[1]:
         raise ValueError("returned actor model versions differ")
+    return grades
+
+
+def _validate_browser_pair(dom, screenshot):
     builds, environments = [], []
     for recording in (dom, screenshot):
         profile = recording["manifest"].get("browser_profile_provenance") or {}
@@ -58,6 +65,13 @@ def compare(dom: dict[str, Any], screenshot: dict[str, Any]) -> tuple[dict[str, 
         raise ValueError("browser image IDs differ")
     if not all(builds):
         raise ValueError("browser builds are unverified")
+
+
+def compare(dom: dict[str, Any], screenshot: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    left = _validate_recording_pair(dom, screenshot)
+    summaries = {"dom": summarize(dom), "screenshot": summarize(screenshot)}
+    grades = _validate_summary_pair(summaries)
+    _validate_browser_pair(dom, screenshot)
     both_success = all(g.get("verdict") == "success" for g in grades)
     receipt = {"schema_version": "2.0", "task_id": dom["task"]["source_task_id"],
         "shared_controls": {k: v for k, v in left.items() if k != "prompt_sha256"},

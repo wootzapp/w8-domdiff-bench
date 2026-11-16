@@ -66,14 +66,14 @@ recorded settings.
 
 ## Completion grading
 
-[`grade_run()`](../w8bench/verifier/run_comparison.py) uses the `paired` primary
+[`grade_run()`](../w8bench/verifier/completion.py) uses the `paired` primary
 evidence policy for both actor arms. The judge receives the task, start URL,
 frozen criteria, ordered `dom_model.txt` states and screenshots, executed-action
 records, final answer and technical run status from the same recording. Primary
 grading does not add executable-reference snapshots or another run's evidence.
 Missing passive artifacts are identified as unavailable rather than substituted.
 
-The judge is explicitly selected as `--judge-model gpt-5.6-sol`; it never derives
+The judge is explicitly selected as `--judge-model gpt-6.1-sol`; it never derives
 from the actor. Model grading uses medium reasoning, a 10,000-token output budget
 and no action tools or automatic retry. `--execute` enables full evaluation;
 without it, the command performs a read-only preflight.
@@ -117,9 +117,10 @@ eligible states and coverage; retain failed actor runs with usable evidence.
 No eligible states or failed auxiliary results produce a missing audit with a
 reason, not zero loss. Preserve both directions for each driver arm.
 
-All judges receive the same verified observed-URL timeline, including initial
-state, and the recorded task-validity date. Shared history contains execution
-facts, not actor notes or DOM-derived target descriptions. Evidence selection,
+All judges receive the same verified observed-URL timeline, including the initial
+state. Auxiliary verifiers and the audit use the recorded task-validity date.
+Shared history contains execution facts, not actor notes or DOM-derived target
+descriptions. Evidence selection,
 scoring, penalties and citation rules retain their original semantics. Judge
 repair calls, exhausted fallbacks and unknown usage are reported separately.
 
@@ -134,7 +135,7 @@ repair calls, exhausted fallbacks and unknown usage are reported separately.
 | Judge usage | Primary/native completion, each verifier, audit inventory/adjudication and rubric preparation, separate from actor usage. | Completion/evaluation receipts and named usage streams. |
 | Timing | Decision-call latency, action delivery duration and recorder capture durations. | Decision `latency_seconds`, action `duration_seconds`, state `capture`. |
 
-Actors use configured `gpt-6.1-terra`, exactly 10,000 maximum output tokens, medium reasoning and
+Actors use configured `gemini-3.1-pro-preview`, exactly 10,000 maximum output tokens, medium reasoning and
 8,000 memory characters, identically configured in both arms. Cached input is a
 subset of input tokens; reasoning is a subset of output tokens. Neither is added
 again to input-plus-output totals. Local file token estimates are not provider

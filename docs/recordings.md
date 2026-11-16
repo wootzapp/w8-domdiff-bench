@@ -148,6 +148,13 @@ Each decision records `response_status`, `incomplete_details`, `output_limit_hit
 reason before interpreting a limit hit as truncation. Cached-input and reasoning
 counts are subsets of input/output totals.
 
+Actor request receipts contain the Gemini `systemInstruction`, `contents` and
+`generationConfig`. Image parts reference the saved PNG by path and SHA-256;
+the transport sends that file's bytes as inline image data. Response receipts
+retain native provider metadata alongside normalized input/output usage.
+Normalized output includes reasoning tokens once, with reasoning also recorded
+as a subset for reporting.
+
 Start an inspection with the ledger row and log, then read `task.json`,
 `manifest.json` and `final.json`. Follow state/action/turn references to inspect
 the sequence, and read `completion.json` separately for the judge's assessment.

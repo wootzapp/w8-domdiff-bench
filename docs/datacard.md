@@ -18,7 +18,7 @@ match for a comparison.
 
 | Difference | DOM arm | Screenshot arm |
 | --- | --- | --- |
-| Page observation | Formatted `dom_model.txt` and viewport-filtered interactive reference text. Numeric ChromiumRL IDs are masked in actor text. | The saved `screenshot.png`, sent once per call at `detail: high`; no extracted DOM, accessibility text, selectors or references. |
+| Page observation | Formatted `dom_model.txt` and viewport-filtered interactive reference text. Numeric ChromiumRL IDs are masked in actor text. | The saved `screenshot.png`, sent once per call with `MEDIA_RESOLUTION_HIGH`; no extracted DOM, accessibility text, selectors or references. |
 | Targeting | Current agent-browser `e` references for reference-targeted actions. | CSS-pixel coordinates through raw CDP input events. |
 | Ref-click scrolling | The action CLI can scroll a referenced target into view while resolving and clicking it. Supplied references pass viewport bounding-box filtering. | Coordinate clicks operate at the selected viewport point without reference-based scroll-into-view. |
 | Progress source | DOM text, URL and interactive reference changes. | Screenshot change only. |
@@ -33,7 +33,7 @@ the shared action driver.
 
 | Control | Configuration |
 | --- | --- |
-| Actor model and endpoint | `OPENAI_MODEL` is the sole actor-model configuration and must identify `gpt-6.1-terra`; the same value is used across arms. A non-Terra returned ID stops the run. `OPENAI_BASE_URL` selects the endpoint. |
+| Actor model and endpoint | `ACTOR_MODEL` is the sole actor-model configuration and must identify `gemini-3.1-pro-preview`; the same value is used across arms. A different returned model family stops the run. `GEMINI_BASE_URL` selects the endpoint. |
 | Model-turn budget | 200 by default and at most 200; lower positive budgets must match across compared runs. |
 | Maximum actor output | Exactly 10,000 tokens, including reasoning. |
 | Task memory | At most 8,000 characters. |
@@ -78,7 +78,7 @@ The primary `paired` grading policy uses the run's screenshots and saved model
 DOM text, action records, final answer and technical status. A frozen task rubric
 is reused across arms and trials. `completion.json` records criterion verdicts,
 evidence policy, rubric/prompt hashes, configured and returned judge models and
-judge usage. The judge must be explicitly set to `gpt-5.6-sol`, with 10,000 maximum output tokens and `medium` reasoning. It never falls back to the actor model.
+judge usage. The judge must be explicitly set to `gpt-6.1-sol`, with 10,000 maximum output tokens and `medium` reasoning. It never falls back to the actor model.
 
 The optional `actor_native` policy uses the actor's observation type and writes
 `completion_actor_native.json`. It is a modality policy rather than a replay of
@@ -134,11 +134,14 @@ observations.
 ## Verifiers and within-run audit
 
 Every actor trial receives common completion grading, both auxiliary verifiers
-and the audit. Auxiliary stages use `gpt-5.2` for rubric/evidence/scoring work and
-`gpt-5.6-terra` for action-only scoring and validity. Their original generation
-limits remain unset; the 115,000-token input guard remains active. Inventory uses
-`gpt-5.6-sol`; adjudication uses Google `gemini-3.1-pro-preview` at high media
-resolution. Task-only validity uses a recorded UTC date frozen from the run.
+and the audit. Rubric generation and dependency checking use `gpt-5.2`.
+Both verifiers use `gemini-3.1-pro-preview` for relevance, evidence analysis,
+disambiguation, reality checks, rescoring, side effects, outcome and failure
+analysis. Action-only scoring and both validity stages use `gemini-3.8-flash`.
+Inventory uses `gemini-3.1-pro-preview`; evidence-loss adjudication and common
+completion use `gpt-6.1-sol`. Verifier and audit output limits remain unset;
+the 115,000-token verifier input guard remains active. Images use high detail.
+Task-only validity uses a recorded UTC date frozen from the run.
 
 Staged screenshot and DOM inputs always originate from one recording hash.
 Each verifier sees every state available in its own format, including states

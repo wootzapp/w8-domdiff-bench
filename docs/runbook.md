@@ -34,14 +34,14 @@ ownership. Run one batch at a time and keep separate single-task commands off th
 same browser while a batch is active.
 
 Environment values take precedence over `.env`; conflicting actor-model values
-are rejected. Set `OPENAI_API_KEY` and, if required, `OPENAI_BASE_URL`; keep
-`OPENAI_MODEL` consistent with `.env.example`. Pin the browser image by digest
+are rejected. Set `GEMINI_API_KEY` and `OPENAI_API_KEY`; keep
+`ACTOR_MODEL` consistent with `.env.example`. Pin the browser image by digest
 for comparisons with a consistent build.
 
-The actor configuration must name `gpt-6.1-terra`. Completion requires an
-explicit `--judge-model gpt-5.6-sol`. Configure `GEMINI_API_KEY`,
-`EVIDENCE_AUDIT_MODEL=gpt-5.6-sol` and
-`EVIDENCE_ADJUDICATOR_MODEL=gemini-3.1-pro-preview` for full evaluation.
+The actor configuration must name `gemini-3.1-pro-preview`. Completion requires an
+explicit `--judge-model gpt-6.1-sol`. Configure
+`EVIDENCE_AUDIT_MODEL=gemini-3.1-pro-preview` and
+`EVIDENCE_ADJUDICATOR_MODEL=gpt-6.1-sol` for full evaluation.
 
 | Setting | Purpose |
 | --- | --- |
@@ -50,8 +50,9 @@ explicit `--judge-model gpt-5.6-sol`. Configure `GEMINI_API_KEY`,
 | `CDP_HOST_PORT`, `NOVNC_HOST_PORT`, `VNC_HOST_PORT` | Published browser-control and viewing ports. |
 | `CHROMIUM_HEADLESS` | Browser display mode. |
 | `CHROMIUM_RESET_PROFILE` | `1` clears the Chromium profile at startup; `0` preserves it. Browser history, cookies and site storage belong to this profile. Host-side recordings are separate. |
-| `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL` | Model credentials, model ID and endpoint. |
-| `GEMINI_API_KEY`, `EVIDENCE_AUDIT_MODEL`, `EVIDENCE_ADJUDICATOR_MODEL` | Google credentials and explicitly selected audit models. |
+| `ACTOR_MODEL`, `GEMINI_API_KEY`, `GEMINI_BASE_URL` | Actor model, Google credentials and endpoint. The key also serves the verifier and inventory stages. |
+| `OPENAI_API_KEY`, `OPENAI_BASE_URL` | OpenAI credentials and endpoint for rubric preparation, completion and evidence-loss adjudication. |
+| `EVIDENCE_AUDIT_MODEL`, `EVIDENCE_ADJUDICATOR_MODEL` | Explicit inventory and adjudication models. |
 | `TASK_CATALOG_FILE` | Default local task catalog. |
 | `W8_RUN_NAME` | Default output run name. |
 
@@ -68,7 +69,7 @@ fixed across arms and trials.
   --catalog-file data/tasks.jsonl \
   --output-dir recordings --run-name benchmark \
   --rubric-dir data/rubrics \
-  --judge-model gpt-5.6-sol --dry-run
+  --judge-model gpt-6.1-sol --dry-run
 ```
 
 With all frozen rubrics present, this writes `recordings/benchmark/ledger.jsonl`
@@ -97,7 +98,7 @@ recording or marked interrupted. Completed attempts are not retried under the
 same trial identity or copied into automatic `-2` directories. Use the standalone
 grader to retry grading without repeating actor execution.
 
-Stale ownership markers are cleaned without signalling unrelated processes.
+Stale ownership markers are discarded without signalling unrelated processes.
 Resume refuses reconciliation while a verified recorder or scheduled
 launcher/judge is active; finish or stop that process first.
 
@@ -142,7 +143,7 @@ Use the same rubric and judge settings across arms and trials.
 .venv/bin/python -m w8bench.verifier.run_comparison \
   --run recordings/benchmark/trial_0001/dom/task_08 \
   --rubric data/rubrics/task_08.json \
-  --judge-model gpt-5.6-sol --execute
+  --judge-model gpt-6.1-sol --execute
 ```
 
 The primary grade is saved in `completion.json`. Full evaluation stages both
