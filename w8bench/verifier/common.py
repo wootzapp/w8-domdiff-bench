@@ -11,8 +11,9 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-CANONICAL_JUDGE_MODEL = "gpt-5.2"
-CANONICAL_ACTION_MODEL = "gpt-5.6-terra"
+CANONICAL_RUBRIC_MODEL = "gpt-5.2"
+CANONICAL_JUDGE_MODEL = "gemini-3.1-pro-preview"
+CANONICAL_ACTION_MODEL = "gemini-3.8-flash"
 CANONICAL_SETTINGS = {
     "rubric_threshold": 0.8,
     "max_evidence_items_per_criterion": 5,
@@ -32,6 +33,14 @@ class CanonicalRubric:
     rubric: dict[str, Any]
     sha256: str
     denominator: float
+    path: Path
+
+
+@dataclass(frozen=True)
+class FrozenRubric:
+    task_id: str
+    precomputed_rubric: dict[str, Any]
+    sha256: str
     path: Path
 
 
@@ -120,7 +129,49 @@ def load_canonical_rubric(path: str | Path, *, expected_task_id: str | None = No
     )
 
 
-def validate_generation_metrics(path: str | Path, frozen: CanonicalRubric) -> dict[str, Any]:
+def load_frozen_rubric(path: str | Path, *, expected_task_id: str) -> FrozenRubric:
+    source = Path(path).resolve(strict=True)
+    payload = load_json(source)
+    if not isinstance(payload, dict):
+        raise ValueError("Canonical rubric file must contain a JSON object")
+    task_id = str(payload.get("task_id") or "")
+    if task_id != expected_task_id:
+        raise ValueError(
+            f"Rubric task_id mismatch: expected {expected_task_id!r}, got {task_id!r}"
+        )
+    rubric = payload.get("precomputed_rubric")
+    if not isinstance(rubric, dict) or not isinstance(rubric.get("items"), list):
+        raise ValueError("precomputed_rubric must be an object with an items list")
+    if not rubric["items"]:
+        raise ValueError("Frozen rubric must contain at least one criterion")
+    digest = hashlib.sha256(canonical_json_bytes(rubric)).hexdigest()
+    return FrozenRubric(task_id, rubric, digest, source)
+
+
+def require_matching_embedded_rubric(
+    task_data: dict[str, Any], frozen: FrozenRubric
+) -> dict[str, Any]:
+    embedded = task_data.get("precomputed_rubric")
+    if embedded is not None and canonical_json_bytes(embedded) != canonical_json_bytes(
+        frozen.precomputed_rubric
+    ):
+        raise ValueError("Task data rubric differs from the canonical frozen rubric")
+    merged = dict(task_data)
+    merged["precomputed_rubric"] = frozen.precomputed_rubric
+    return merged
+
+
+def rubric_receipt(*, path: str, sha256: str, rubric: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "rubric_path": os.path.relpath(Path(path).resolve(), Path(__file__).resolve().parents[2]),
+        "rubric_sha256": sha256,
+        "criterion_denominator": sum(
+            int(item.get("max_points", 0)) for item in rubric.get("items", [])
+        ),
+    }
+
+
+def validate_generation_metrics(path: str | Path, frozen: CanonicalRubric, *, native: bool = False) -> dict[str, Any]:
     source = Path(path).resolve(strict=True)
     value = load_json(source)
     if not isinstance(value, dict):
@@ -140,9 +191,12 @@ def validate_generation_metrics(path: str | Path, frozen: CanonicalRubric) -> di
         if key == "maximum_points" and isinstance(actual, list):
             actual = [float(point) for point in actual]
         if actual != expected_value:
-            raise ValueError(f"Rubric generation metrics drift for {key}: {actual!r} != {expected_value!r}")
+            label = "Generation metrics" if native else "Rubric generation metrics"
+            raise ValueError(f"{label} drift for {key}: {actual!r} != {expected_value!r}")
     if int(value.get("rubric_generation_calls", 0)) <= 0 and value.get("origin") != "validated_import":
-        raise ValueError("Phase A receipt has neither generation calls nor validated_import origin")
+        message = ("Phase A receipt has no generation calls or validated import origin" if native
+                   else "Phase A receipt has neither generation calls nor validated_import origin")
+        raise ValueError(message)
     return value
 
 
@@ -157,17 +211,22 @@ def validate_endpoint_configs(path: str | Path) -> dict[str, Any]:
         payload = load_json(source)
         if not isinstance(payload, dict):
             raise ValueError(f"Endpoint config must be an object: {source}")
-        if str(payload.get("CHAT_COMPLETION_PROVIDER") or "").casefold() != "openai":
-            raise ValueError(f"Only OpenAI endpoint configs are allowed: {source}")
+        provider = str(payload.get("CHAT_COMPLETION_PROVIDER") or "").casefold()
+        if provider not in {"openai", "google"}:
+            raise ValueError(f"Only OpenAI and Google endpoint configs are allowed: {source}")
         keys = " ".join(_walk_keys(payload)).casefold()
         if any(fragment in keys for fragment in ("api_key", "token", "secret", "password")):
             raise ValueError(f"Endpoint config appears to contain credentials: {source}")
         kwargs = payload.get("CHAT_COMPLETION_KWARGS_JSON")
         if not isinstance(kwargs, dict) or not isinstance(kwargs.get("model"), str):
             raise ValueError(f"Endpoint config has no model: {source}")
+        expected_provider = "google" if kwargs["model"].startswith("gemini-") else "openai"
+        if provider != expected_provider:
+            raise ValueError(f"Endpoint provider does not match model: {source}")
         models.add(kwargs["model"])
-        receipts.append({"path": os.path.relpath(source, Path(__file__).resolve().parents[2]), "model": kwargs["model"]})
-    required = {CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL}
+        receipts.append({"path": os.path.relpath(source, Path(__file__).resolve().parents[2]),
+                         "model": kwargs["model"], "provider": provider})
+    required = {CANONICAL_RUBRIC_MODEL, CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL}
     if models != required:
         raise ValueError(f"Endpoint models must be exactly {sorted(required)}, got {sorted(models)}")
     return {"models": sorted(models), "files": receipts}

@@ -5,16 +5,18 @@ from __future__ import annotations
 from typing import Any
 
 from .models import (
-    Action,
     ComputerObservation,
     DataPoint,
+    SolverLog,
+    Task,
+    Trajectory,
+)
+from ..models import (
+    Action,
     DataPointMetadata,
     Outcome,
-    SolverLog,
     SolverStatus,
-    Task,
 )
-from .trajectory import Trajectory
 
 
 def create_datapoint(task_data: dict[str, Any], trajectory: Trajectory) -> DataPoint:

@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from contextvars import ContextVar
 import logging
+import math
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Union
 
@@ -19,6 +20,7 @@ from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 from .messages import (
     CreateResult,
+    ImageObj,
     LLMMessage,
     RequestUsage,
     ToolSchema,
@@ -85,6 +87,26 @@ def _resolve_token_provider(
 class ModelCapabilities:
     json_output: bool = True
     function_calling: bool = True
+    vision: bool = False
+
+
+@dataclass
+class DomModelCapabilities:
+    json_output: bool = True
+    function_calling: bool = True
+
+
+def _image_token_cost(width: int = 1920, height: int = 1080) -> int:
+    """Approximate image token cost (OpenAI high-detail vision pricing)."""
+    w, h = float(width), float(height)
+    if max(w, h) > 2048:
+        scale = 2048 / max(w, h)
+        w, h = w * scale, h * scale
+    if min(w, h) > 768:
+        scale = 768 / min(w, h)
+        w, h = w * scale, h * scale
+    tiles = math.ceil(w / 512) * math.ceil(h / 512)
+    return tiles * 170 + 85
 
 
 _VLLM_ONLY_SAMPLING_KEYS = frozenset(
@@ -117,7 +139,8 @@ def _route_vllm_extras_to_body(kwargs: Dict[str, Any]) -> None:
 class ChatCompletionClient:
     """Base interface for chat completion clients."""
 
-    def __init__(self, max_tokens: Optional[int] = None):
+    def __init__(self, max_tokens: Optional[int] = None, *, evidence_mode: str = "screenshot_verifier"):
+        self._evidence_mode = evidence_mode
         self.metadata: Dict[str, Any] = {}
         self._last_usage = RequestUsage()
         self._total_usage = RequestUsage()
@@ -171,9 +194,13 @@ class ChatCompletionClient:
                 for item in content:
                     if isinstance(item, str):
                         total += len(encoding.encode(item))
+                    elif self._evidence_mode == "screenshot_verifier" and isinstance(item, ImageObj):
+                        total += _image_token_cost(item.image.width, item.image.height)
                     elif isinstance(item, dict):
                         item_type = item.get("type", "")
-                        if item_type == "text":
+                        if self._evidence_mode == "screenshot_verifier" and item_type in ("image_url", "image"):
+                            total += _image_token_cost()
+                        elif item_type == "text":
                             total += len(encoding.encode(item.get("text", "")))
                         else:
                             total += len(encoding.encode(str(item)))
@@ -196,7 +223,7 @@ class ChatCompletionClient:
 
     @property
     def capabilities(self) -> ModelCapabilities:
-        return ModelCapabilities()
+        return ModelCapabilities() if self._evidence_mode == "screenshot_verifier" else DomModelCapabilities()
 
     @property
     def endpoint(self) -> str:
@@ -215,13 +242,15 @@ class ChatCompletionClient:
         return "unknown_client"
 
 
-def _to_oai_messages(messages: Sequence[LLMMessage]) -> list[Dict[str, Any]]:
+def _to_oai_messages(
+    messages: Sequence[LLMMessage], *, evidence_mode: str = "screenshot_verifier"
+) -> list[Dict[str, Any]]:
     out: list[Dict[str, Any]] = []
     for msg in messages:
         if isinstance(msg, dict) and "role" in msg:
             out.append(msg)
         else:
-            out.append(message_to_openai_format(msg))
+            out.append(message_to_openai_format(msg, evidence_mode=evidence_mode))
     return out
 
 
@@ -281,13 +310,15 @@ def _record_openai_usage(response, client: ChatCompletionClient, *, record=None)
 
 
 class OpenAIClientWrapper(ChatCompletionClient):
-    """Wrapper around the OpenAI Python SDK (``openai.AsyncOpenAI``)."""
+    """OpenAI-compatible chat client for OpenAI and Google endpoints."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, *mode, **kwargs):
+        evidence_mode = mode[0] if mode else "screenshot_verifier"
         max_tokens = kwargs.pop("max_tokens", None)
-        super().__init__(max_tokens=max_tokens)
-        self.model = kwargs.pop("model", "gpt-4")
-        self.metadata = {"model": self.model, "provider": "openai"}
+        super().__init__(max_tokens=max_tokens, evidence_mode=evidence_mode)
+        self.model = kwargs.pop("model")
+        self.metadata = {"model": self.model, "provider": kwargs.pop("provider", "openai")}
+        self._default_reasoning_effort = kwargs.pop("reasoning_effort", None)
         kwargs.pop("model_capabilities", None)
         kwargs.pop("max_retries", None)
         self.client = AsyncOpenAI(**kwargs)
@@ -305,15 +336,18 @@ class OpenAIClientWrapper(ChatCompletionClient):
         json_output: Optional[bool] = None,
         extra_create_args: Mapping[str, Any] = {},
     ) -> CreateResult:
-        kwargs: Dict[str, Any] = {"model": self.model, "messages": _to_oai_messages(messages)}
+        kwargs: Dict[str, Any] = {"model": self.model, "messages": _to_oai_messages(messages, evidence_mode=self._evidence_mode)}
         if json_output:
             kwargs["response_format"] = {"type": "json_object"}
         if tools:
             kwargs["tools"] = list(tools)
+        if getattr(self, "_default_reasoning_effort", None) is not None:
+            kwargs["reasoning_effort"] = self._default_reasoning_effort
         kwargs.update(extra_create_args)
         _route_vllm_extras_to_body(kwargs)
 
         record = {"configured_model": self.model, "requested_model": kwargs["model"],
+            "provider": self.metadata.get("provider"),
             "reasoning_effort": kwargs.get("reasoning_effort", (kwargs.get("reasoning") or {}).get("effort")),
             "temperature": kwargs.get("temperature"),
             "max_output_tokens": kwargs.get("max_completion_tokens", kwargs.get("max_output_tokens", kwargs.get("max_tokens"))),
@@ -344,10 +378,11 @@ class OpenAIClientWrapper(ChatCompletionClient):
 class AzureOpenAIClientWrapper(ChatCompletionClient):
     """Wrapper around Azure OpenAI Chat Completions."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, *mode, **kwargs):
+        evidence_mode = mode[0] if mode else "screenshot_verifier"
         max_tokens = kwargs.pop("max_tokens", None)
-        super().__init__(max_tokens=max_tokens)
-        self.model = kwargs.pop("azure_deployment", kwargs.pop("model", "gpt-4"))
+        super().__init__(max_tokens=max_tokens, evidence_mode=evidence_mode)
+        self.model = kwargs.pop("azure_deployment", None) or kwargs.pop("model")
         self.metadata = {
             "azure_endpoint": kwargs.get("azure_endpoint", ""),
             "azure_deployment": self.model,
@@ -369,8 +404,7 @@ class AzureOpenAIClientWrapper(ChatCompletionClient):
             self.client._client.event_hooks["request"].append(self._record_http_request)
             self._http_attempts_observed = True
 
-    async def close(self) -> None:
-        await self.client.close()
+    close = OpenAIClientWrapper.close
 
     def refresh_credentials(self) -> None:
         if "api_key" in self._azure_kwargs:
@@ -381,56 +415,17 @@ class AzureOpenAIClientWrapper(ChatCompletionClient):
             self.client._client.event_hooks["request"].append(self._record_http_request)
             self._http_attempts_observed = True
 
-    async def create(
-        self,
-        messages: Sequence[LLMMessage],
-        tools: Sequence[ToolSchema] = (),
-        json_output: Optional[bool] = None,
-        extra_create_args: Mapping[str, Any] = {},
-    ) -> CreateResult:
-        kwargs: Dict[str, Any] = {"model": self.model, "messages": _to_oai_messages(messages)}
-        if json_output:
-            kwargs["response_format"] = {"type": "json_object"}
-        if tools:
-            kwargs["tools"] = list(tools)
-        kwargs.update(extra_create_args)
-        _route_vllm_extras_to_body(kwargs)
-
-        record = {"configured_model": self.model, "requested_model": kwargs["model"],
-            "reasoning_effort": kwargs.get("reasoning_effort", (kwargs.get("reasoning") or {}).get("effort")),
-            "temperature": kwargs.get("temperature"),
-            "max_output_tokens": kwargs.get("max_completion_tokens", kwargs.get("max_output_tokens", kwargs.get("max_tokens"))),
-            "http_attempts": 0, "http_attempts_observed": self._http_attempts_observed,
-            "usage_reported": False, "returned_model": None, "error_type": None}
-        stage_path = self._logical_stage.get()
-        record.update(stage=stage_path[0] if stage_path else "unattributed", stage_call_path=list(stage_path))
-        self._call_records.append(record)
-        token = self._active_call.set(record)
-        try:
-            response = await self.client.chat.completions.create(**kwargs)
-        except BaseException as error:
-            record["error_type"] = type(error).__name__
-            raise
-        finally:
-            self._active_call.reset(token)
-        usage = _record_openai_usage(response, self, record=record)
-        msg = response.choices[0].message
-        return CreateResult(
-            content=msg.content if msg.content is not None else "",
-            usage=usage,
-            finish_reason=response.choices[0].finish_reason,
-            message=msg,
-            tool_calls=list(msg.tool_calls) if getattr(msg, "tool_calls", None) else None,
-        )
+    create = OpenAIClientWrapper.create
 
 
 class AzureOpenAIResponsesWrapper(ChatCompletionClient):
     """Wrapper around the Azure OpenAI Responses API (codex / o3-pro / gpt-5)."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, *mode, **kwargs):
+        evidence_mode = mode[0] if mode else "screenshot_verifier"
         max_tokens = kwargs.pop("max_tokens", None)
-        super().__init__(max_tokens=max_tokens)
-        self.model = kwargs.pop("azure_deployment", kwargs.pop("model", "gpt-4"))
+        super().__init__(max_tokens=max_tokens, evidence_mode=evidence_mode)
+        self.model = kwargs.pop("azure_deployment", None) or kwargs.pop("model")
         self.metadata = {
             "azure_endpoint": kwargs.get("azure_endpoint", ""),
             "azure_deployment": self.model,
@@ -474,7 +469,7 @@ class AzureOpenAIResponsesWrapper(ChatCompletionClient):
         json_output: Optional[bool] = None,
         extra_create_args: Mapping[str, Any] = {},
     ) -> CreateResult:
-        kwargs: Dict[str, Any] = {"model": self.model, "input": _to_oai_messages(messages)}
+        kwargs: Dict[str, Any] = {"model": self.model, "input": _to_oai_messages(messages, evidence_mode=self._evidence_mode)}
         if json_output:
             kwargs["text"] = {"format": {"type": "json_object"}}
         if tools:
@@ -530,16 +525,20 @@ class AzureOpenAIResponsesWrapper(ChatCompletionClient):
 class AzureMLClientWrapper(ChatCompletionClient):
     """Wrapper for Azure ML managed-online endpoints with a custom ``/score`` API."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, *mode, **kwargs):
+        evidence_mode = mode[0] if mode else "screenshot_verifier"
         max_tokens = kwargs.pop("max_tokens", None)
-        super().__init__(max_tokens=max_tokens)
+        super().__init__(max_tokens=max_tokens, evidence_mode=evidence_mode)
         self.model = kwargs.pop("model", "unknown")
         self._score_url = kwargs.pop("score_url")
         capability_config = kwargs.pop("model_capabilities", {})
-        self._capabilities = ModelCapabilities(
-            json_output=capability_config.get("json_output", True),
-            function_calling=capability_config.get("function_calling", True),
-        )
+        if self._evidence_mode == "dom_model":
+            self._capabilities = DomModelCapabilities(
+                json_output=capability_config.get("json_output", True),
+                function_calling=capability_config.get("function_calling", True),
+            )
+        else:
+            self._capabilities = ModelCapabilities(**capability_config)
         self._max_completion_tokens = kwargs.pop("max_completion_tokens", 10000)
 
         self._token_scope = kwargs.pop("azure_ad_token_scope", "https://ml.azure.com")
@@ -568,6 +567,7 @@ class AzureMLClientWrapper(ChatCompletionClient):
         extra_create_args: Mapping[str, Any] = {},
     ) -> CreateResult:
         parts: list[str] = []
+        image_b64: Optional[str] = None
         for msg in messages:
             if isinstance(msg, dict):
                 role = msg.get("role", "user")
@@ -578,11 +578,17 @@ class AzureMLClientWrapper(ChatCompletionClient):
 
             if isinstance(content, list):
                 for item in content:
-                    if isinstance(item, str):
+                    if self._evidence_mode == "screenshot_verifier" and isinstance(item, ImageObj):
+                        image_b64 = item.to_base64()
+                    elif isinstance(item, str):
                         parts.append(item)
                     elif isinstance(item, dict):
                         if item.get("type") == "text":
                             parts.append(item["text"])
+                        elif self._evidence_mode == "screenshot_verifier" and item.get("type") == "image_url":
+                            url = item.get("image_url", {}).get("url", "")
+                            if url.startswith("data:"):
+                                image_b64 = url.split(",", 1)[-1]
             elif isinstance(content, str) and content:
                 prefix = f"[{role}] " if role == "system" else ""
                 parts.append(prefix + content)
@@ -591,6 +597,9 @@ class AzureMLClientWrapper(ChatCompletionClient):
             "user_prompt": "\n".join(parts),
             "max_new_tokens": self._max_completion_tokens,
         }
+        if image_b64:
+            data["image_input"] = image_b64
+
         token = self._token_provider() if self._token_provider else ""
         headers = {
             "Content-Type": "application/json",
@@ -643,21 +652,16 @@ class AzureMLClientWrapper(ChatCompletionClient):
 
 
 class ClientWrapper:
-    """Namespace for the two ChatCompletionClient construction helpers.
-
-    The wrappers in this module already carry the metadata callers
-    historically read from a separate adapter, so this class just
-    forwards to ``create_client_from_config`` / ``create_client_from_file``.
-    """
+    """Construct completion clients from endpoint configuration."""
 
     @staticmethod
-    def from_config(config: Dict[str, Any]) -> ChatCompletionClient:
-        from .create_utils import create_client_from_config
+    def from_config(config: Dict[str, Any], *, evidence_mode: str = "screenshot_verifier") -> ChatCompletionClient:
+        from .factory import create_client_from_config
 
-        return create_client_from_config(config)
+        return create_client_from_config(config, evidence_mode=evidence_mode)
 
     @staticmethod
-    def from_file(path: str) -> ChatCompletionClient:
-        from .create_utils import create_client_from_file
+    def from_file(path: str, *, evidence_mode: str = "screenshot_verifier") -> ChatCompletionClient:
+        from .factory import create_client_from_file
 
-        return create_client_from_file(path)
+        return create_client_from_file(path, evidence_mode=evidence_mode)

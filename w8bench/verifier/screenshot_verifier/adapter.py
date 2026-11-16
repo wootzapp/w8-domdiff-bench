@@ -1,18 +1,4 @@
-"""Convert screenshot baseline ``Trajectory`` (web_surfer.log + screenshots + FinalAnswer)
-into a :class:`DataPoint` consumable by :class:`MMRubricAgent`.
-
-The main entry point is :func:`create_datapoint` which returns a DataPoint
-whose ``solver_log.get_step_summaries()`` output is compatible with
-``MMRubricAgent._extract_input_from_datapoint``.
-
-Screenshot normalization
-------------------------
-``MMRubricAgent._load_screenshots`` uses the regex ``screenshot_(\\d+)`` to
-extract the 1-based screenshot index and validates it against the action
-id. Old screenshot baseline/screenshot verifier trajectories sometimes use ``screenshot0.png`` (no
-underscore, 0-based) or other conventions. The adapter creates
-``screenshot_{1-based}.png`` symlinks when the naming convention differs.
-"""
+"""Build screenshot data points and normalize screenshot aliases."""
 
 from __future__ import annotations
 
@@ -22,16 +8,18 @@ from pathlib import Path
 from typing import Any, Dict
 
 from .models import (
-    Action,
     ComputerObservation,
     DataPoint,
+    SolverLog,
+    Task,
+    Trajectory,
+)
+from ..models import (
+    Action,
     DataPointMetadata,
     Outcome,
-    SolverLog,
     SolverStatus,
-    Task,
 )
-from .trajectory import Trajectory
 
 
 def _screenshot_sort_key(s) -> int:

@@ -1,5 +1,4 @@
 from copy import deepcopy
-import importlib
 import json
 import sys
 from types import ModuleType, SimpleNamespace
@@ -9,7 +8,7 @@ import pytest
 
 from w8bench.verifier import evidence_audit as audit
 from w8bench.verifier.common import canonical_sha256
-from .test_automated_evidence_audit import _audit, _row, _source_decision, _finding
+from .test_automated_evidence_audit import _source_decision, _finding
 
 
 def _responses():
@@ -43,10 +42,10 @@ def _run(pair, complete):
 
 
 def _complete(inventory, adjudication):
-    return lambda model, messages: deepcopy(adjudication if model.startswith("gemini-") else inventory)
+    return lambda model, messages: deepcopy(inventory if model.startswith("gemini-") else adjudication)
 
 
-@pytest.mark.parametrize("model", ["gpt-5", "gpt-5.1", "gpt-5.6-sol", "gpt-4.1"])
+@pytest.mark.parametrize("model", ["gpt-5.2", "gpt-6.1-sol"])
 def test_openai_routing_records_actual_request_settings(monkeypatch, model):
     create = Mock(return_value=SimpleNamespace(id="openai-id", model="resolved-openai",
         usage=None, system_fingerprint="fingerprint",
@@ -68,6 +67,8 @@ def test_openai_routing_records_actual_request_settings(monkeypatch, model):
     assert "temperature" not in records[0]["generation_settings"]
     assert "seed" not in records[0]["generation_settings"]
     assert records[0]["completed_at"] >= records[0]["started_at"]
+    assert records[0]["requested_reasoning_effort"] is None
+    assert records[0]["requested_max_output_tokens"] is None
     assert constructor.call_args.kwargs["max_retries"] == 0
     hook = audit.DefaultHttpxClient.call_args.kwargs["event_hooks"]["request"][0]
     hook(SimpleNamespace(content=json.dumps({"model": model, "messages": ["private prompt"],
@@ -125,6 +126,8 @@ def test_gemini_native_routing_preserves_base64_and_retry_roles(monkeypatch):
     hook(SimpleNamespace(content=json.dumps({"generationConfig": config, "contents": ["private image"]}).encode()))
     assert records[0]["api_attempts"][0]["request_settings"] == config
     assert records[0]["api_version"] == "v1beta"
+    assert records[0]["requested_reasoning_effort"] is None
+    assert records[0]["requested_max_output_tokens"] is None
     assert args["config"]["response_mime_type"] == "application/json"
     assert records[0]["provider"] == "google" and records[0]["response_model"] == "resolved-gemini"
     assert records[0]["usage"] == {"prompt_tokens": 10, "completion_tokens": 5,
@@ -168,10 +171,10 @@ def test_gemini_rejects_non_inline_image_before_request(monkeypatch):
 def test_every_audit_records_the_settings_sent_by_both_providers(pair_factory, monkeypatch):
     inventory, final = _responses()
     monkeypatch.setenv("GEMINI_API_KEY", "fake-gemini-key")
-    _fake_google(monkeypatch, json.dumps(final))
+    _fake_google(monkeypatch, json.dumps(inventory))
     response = SimpleNamespace(
         id="inventory-id", model="resolved-inventory", usage=None,
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(inventory)))],
+        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(final)))],
     )
     client = Mock()
     client.__enter__ = Mock(return_value=SimpleNamespace(
@@ -185,7 +188,7 @@ def test_every_audit_records_the_settings_sent_by_both_providers(pair_factory, m
                    for stage, value in config.items()}})
     result = _run(pair_factory(), None)
     assert [(call["provider"], call["response_model"]) for call in result["calls"]] == [
-        ("openai", "resolved-inventory"), ("google", "resolved-gemini"),
+        ("google", "resolved-gemini"), ("openai", "resolved-inventory"),
     ]
     for stage in ("inventory", "adjudication"):
         settings = result["generation_settings"][stage]
@@ -194,10 +197,10 @@ def test_every_audit_records_the_settings_sent_by_both_providers(pair_factory, m
         assert "temperature" not in settings["actual"][0]
         assert "seed" not in settings["actual"][0]
         assert settings["requested"] == settings["actual"][0]
-    assert result["generation_settings"]["inventory"]["actual"][0]["response_format"] == {"type": "json_object"}
-    assert result["generation_settings"]["adjudication"]["actual"][0]["response_mime_type"] == "application/json"
-    assert "thinking_config" not in result["generation_settings"]["adjudication"]["actual"][0]
-    assert result["generation_settings"]["adjudication"]["actual"][0]["media_resolution"] == "MEDIA_RESOLUTION_HIGH"
+    assert result["generation_settings"]["adjudication"]["actual"][0]["response_format"] == {"type": "json_object"}
+    assert result["generation_settings"]["inventory"]["actual"][0]["response_mime_type"] == "application/json"
+    assert "thinking_config" not in result["generation_settings"]["inventory"]["actual"][0]
+    assert result["generation_settings"]["inventory"]["actual"][0]["media_resolution"] == "MEDIA_RESOLUTION_HIGH"
     assert result["input_fingerprints"]["frozen_rubric"] == result["frozen_rubric_sha256"]
     assert result["input_fingerprints"]["screenshot_sources"].keys() == {"screenshot0.png", "screenshot1.png"}
     assert result["input_fingerprints"]["dom_sources"].keys() == {"dom_model0.txt", "dom_model1.txt"}
@@ -219,13 +222,6 @@ def test_post_adjudication_conflicts_are_recorded_not_overridden(pair_factory):
     assert result["metrics"]["coverage_conflicts"] == {"criteria": 2, "flags": 2, "details": 4}
     assert result["criteria"][1]["requires_human_review"] is True
     assert result["criteria"][0]["requires_human_review"] is True
-    aggregate = audit.aggregate_audits([result])
-    assert aggregate["requires_human_review"]["count"] == 2
-    assert {item["criterion_index"] for item in aggregate["requires_human_review"]["items"]} == {0, 1}
-    assert len(aggregate["coverage_conflict_list"]) == 2
-    for side in ("screenshot", "dom_model"):
-        agreement = aggregate["metrics"]["inventory_adjudication_agreement"][side]
-        assert agreement["added"] == 1 and agreement["not_proposed"] == 1
     assert result["generation_settings"]["inventory"]["actual"] == []
     assert result["generation_settings"]["adjudication"]["injected_complete"] is True
 
@@ -266,7 +262,7 @@ def test_validation_retry_logs_loss_and_miss_flips_without_overriding(pair_facto
         invalid["criteria"][0]["screenshot_verifier_miss"] = _finding(True, modality="screenshot")
     seen = {"inventory": 0, "adjudication": 0}
     def complete(model, messages):
-        current = "adjudication" if model.startswith("gemini-") else "inventory"
+        current = "inventory" if model.startswith("gemini-") else "adjudication"
         seen[current] += 1
         if current == stage and seen[current] == 1:
             return deepcopy(invalid)
@@ -289,37 +285,3 @@ def test_retry_missing_flags_remain_unknown_not_false():
     assert receipts[0]["flag_flips"] == []
     assert len(receipts[0]["uncomparable_flags"]) == 8
     audit._record_retry_flag_changes([{"raw_response": {"criteria": [{"criterion_index": 0, "screenshot": "bad"}]}}], inventory, inventory=True)
-
-
-@pytest.mark.parametrize("field", ["schema_version", "prompt_version", "audit_model", "adjudicator_model"])
-def test_aggregation_rejects_each_protocol_mismatch(field):
-    first, second = _audit("a", [_row()]), _audit("b", [_row()])
-    second[field] += "-different"
-    with pytest.raises(ValueError, match=field):
-        audit.aggregate_audits([first, second])
-    del second[field]
-    with pytest.raises(ValueError, match=field):
-        audit.aggregate_audits([first, second])
-
-
-def test_relative_reduction_reports_undefined_resamples_without_dropping_other_intervals():
-    values = [_audit("a", [_row(screen_loss=True)]), _audit("b", [_row(dom_loss=True)])]
-    summary = audit.aggregate_audits(values)
-    ratio = summary["confidence_intervals"]["relative_reduction"]
-    assert ratio["estimate"] == 0
-    assert ratio["ci95"] == [0, 1]
-    assert 0 < ratio["undefined_resamples"] < 20000
-    assert ratio["defined_resamples"] + ratio["undefined_resamples"] == 20000
-    assert summary["confidence_intervals"]["screenshot_evidence_loss"]["ci95"] == [0, 1]
-    assert ratio == audit.aggregate_audits(list(reversed(values)))["confidence_intervals"]["relative_reduction"]
-
-
-def test_relative_reduction_all_zero_screenshot_and_negative_values():
-    zero = audit.aggregate_audits([_audit("a", [_row()]), _audit("b", [_row()])])
-    ratio = zero["confidence_intervals"]["relative_reduction"]
-    assert ratio["estimate"] is None and ratio["ci95"] is None
-    assert ratio["undefined_resamples"] == 20000
-    assert ratio["status"] == "all_resamples_undefined"
-    negative = audit.aggregate_audits([_audit(task, [_row(screen_loss=True, dom_loss=True), _row(dom_loss=True)]) for task in ("a", "b")])
-    assert negative["confidence_intervals"]["relative_reduction"]["estimate"] == -1
-    assert negative["confidence_intervals"]["relative_reduction"]["ci95"] == [-1, -1]

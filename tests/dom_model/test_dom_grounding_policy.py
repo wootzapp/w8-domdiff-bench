@@ -3,22 +3,21 @@ from pathlib import Path
 
 import pytest
 
-from w8bench.verifier.dom_model.dom_model_agent import DomModelRubricAgent
-from w8bench.verifier.dom_model.evidence_backend import base_audit, batched_prompt, criterion_prompt, relevance_prompt
-from w8bench.verifier.dom_model.grounding import (
+from w8bench.verifier.dom_model.evidence import (
+    DomModelRubricAgent, base_audit, batched_prompt, criterion_prompt,
+    relevance_prompt, validate_grounded_analysis,
+)
+from w8bench.verifier.dom_model.prompts import (
     EVIDENCE_ANALYSIS_GROUNDING_POLICY,
     GROUNDING_POLICY_VERSION,
     REALITY_CHECK_GROUNDING_POLICY,
     RELEVANCE_GROUNDING_POLICY,
     RESCORING_GROUNDING_POLICY,
-    validate_grounded_analysis,
-)
-from w8bench.verifier.dom_model.prompts import (
     MM_CRITERION_RESCORING_PROMPT,
     MM_RUBRIC_RESCORING_PROMPT,
     RUBRIC_REALITY_CHECK_PROMPT,
 )
-from w8bench.verifier.dom_model.schemas import DomModelState
+from w8bench.verifier.dom_model.states import DomModelState
 
 
 def _state() -> DomModelState:

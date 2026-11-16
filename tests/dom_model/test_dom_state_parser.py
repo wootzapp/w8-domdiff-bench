@@ -1,8 +1,6 @@
-from pathlib import Path
-
 import pytest
 
-from w8bench.verifier.dom_model.state_parser import load_dom_model_states
+from w8bench.verifier.dom_model.states import load_dom_model_states
 
 
 def test_lossless_ordered_state_loading(pair_factory):

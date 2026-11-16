@@ -1,11 +1,7 @@
-"""Self-contained DOM-model Universal Verifier."""
+"""DOM evidence and rubric verification."""
 
-from .rubric_agent import (
-    MMRubricAgent,
-    MMRubricAgentConfig,
-    MMRubricOutcomeResult,
-    MMRubricResult,
-)
+from .rubric_agent import MMRubricAgent, MMRubricAgentConfig
+from ..models import MMRubricOutcomeResult, MMRubricResult
 from .models import DataPoint, Task
 
 __all__ = [

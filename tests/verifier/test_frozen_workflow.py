@@ -8,18 +8,20 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from w8bench.verifier import rubric_scoring
+
 from w8bench.verifier.run_comparison import commands, validate_command_parity
 from w8bench.verifier.validate_inputs import compare_semantic_actions, parse_actions, validate_pair
 
 
 def test_action_judge_model_matches_both_packages_and_endpoint_config():
-    from w8bench.verifier.dom_model.control import CANONICAL_ACTION_MODEL as dom_model
+    from w8bench.verifier.dom_model.runner import CANONICAL_ACTION_MODEL as dom_model
     from w8bench.verifier.common import CANONICAL_ACTION_MODEL, validate_endpoint_configs
 
     root = Path(__file__).resolve().parents[2]
-    assert CANONICAL_ACTION_MODEL == dom_model == "gpt-5.6-terra"
+    assert CANONICAL_ACTION_MODEL == dom_model == "gemini-3.8-flash"
     validate_endpoint_configs(root / "config")
-    endpoint = json.loads((root / "config/openai_gpt5_6_terra.json").read_text())
+    endpoint = json.loads((root / "config/google_gemini3_8_flash.json").read_text())
     assert endpoint["CHAT_COMPLETION_KWARGS_JSON"]["model"] == CANONICAL_ACTION_MODEL
 
 
@@ -30,8 +32,8 @@ def test_standalone_verifier_models_are_pinned(package):
                  "--eval-config", "config", "--output", "result.json"]
     if package == "dom_model":
         arguments += ["--generation-metrics", "metrics.json"]
-    assert module.parse_args(arguments).action_model == "gpt-5.6-terra"
-    assert module.parse_args(arguments).judge_model == "gpt-5.2"
+    assert module.parse_args(arguments).action_model == "gemini-3.8-flash"
+    assert module.parse_args(arguments).judge_model == "gemini-3.1-pro-preview"
     with pytest.raises(SystemExit):
         module.parse_args(arguments + ["--action-model", "custom-model"])
     with pytest.raises(SystemExit):
@@ -56,32 +58,32 @@ def test_standalone_verifier_models_are_pinned(package):
 ])
 def test_diagnostics_recognize_commands_without_hiding_real_errors(package, action, keys, expected):
     module = importlib.import_module(f"w8bench.verifier.{package}.rubric_agent")
-    schema = importlib.import_module(f"w8bench.verifier.{package}.utils.action_schema")
+    schema = rubric_scoring
     steps = [{"step_number": 1, "action_name": action, "action_args_keys": keys}]
     original = copy.deepcopy(steps)
-    errors = module.MMRubricAgent._detect_tool_interaction_errors(steps, schema.FARA_ACTION_DEFINITIONS)
+    errors = rubric_scoring.detect_tool_interaction_errors(steps, schema.FARA_ACTION_DEFINITIONS)
     assert [row["error_code"] for row in errors] == ([expected] if expected else [])
     assert steps == original
 
 
 def test_both_verifiers_use_identical_diagnostic_definitions():
-    from w8bench.verifier.dom_model.utils.action_schema import ACTION_METADATA_KEYS, FARA_ACTION_DEFINITIONS
-    from w8bench.verifier.screenshot_verifier.utils import action_schema
-    assert FARA_ACTION_DEFINITIONS == action_schema.FARA_ACTION_DEFINITIONS
-    assert ACTION_METADATA_KEYS == action_schema.ACTION_METADATA_KEYS == {"thoughts", "target"}
+    from w8bench.verifier.dom_model.runner import FARA_ACTION_DEFINITIONS as dom_definitions
+    from w8bench.verifier.screenshot_verifier.runner import FARA_ACTION_DEFINITIONS as screenshot_definitions
+    assert dom_definitions is screenshot_definitions is rubric_scoring.FARA_ACTION_DEFINITIONS
+    assert rubric_scoring.ACTION_METADATA_KEYS == {"thoughts", "target"}
 
 
 @pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
 def test_diagnostic_filter_does_not_strip_judge_action_context(package):
     module = importlib.import_module(f"w8bench.verifier.{package}.rubric_agent")
     models = importlib.import_module(f"w8bench.verifier.{package}.models")
-    schema = importlib.import_module(f"w8bench.verifier.{package}.utils.action_schema")
+    schema = rubric_scoring
     arguments = {"ref": "e1", "target": {"role": "button", "name": "Save"},
                  "coordinate": [20, 30], "thoughts": "Save the value."}
     summary = models.StepSummary(index=1, action_name="left_click", action_args=arguments)
     history = module.MMRubricAgent._format_action_history([summary])
     steps = [{"step_number": 1, "action_name": "left_click", "action_args_keys": list(arguments)}]
-    assert module.MMRubricAgent._detect_tool_interaction_errors(steps, schema.FARA_ACTION_DEFINITIONS) == []
+    assert rubric_scoring.detect_tool_interaction_errors(steps, schema.FARA_ACTION_DEFINITIONS) == []
     assert module.MMRubricAgent._format_action_history([summary]) == history
     for key in arguments:
         assert f'"{key}"' in history
@@ -90,10 +92,10 @@ def test_diagnostic_filter_does_not_strip_judge_action_context(package):
 @pytest.mark.parametrize("package", ["screenshot_verifier", "dom_model"])
 def test_failure_analysis_explains_metadata_without_changing_history(package):
     module = importlib.import_module(f"w8bench.verifier.{package}.rubric_agent")
-    schema = importlib.import_module(f"w8bench.verifier.{package}.utils.action_schema")
+    schema = rubric_scoring
     agent = object.__new__(module.MMRubricAgent)
     agent.config = SimpleNamespace(action_definitions=schema.FARA_ACTION_DEFINITIONS,
-                                   max_iters=1, gpt5_client=None)
+                                   max_iters=1, judge_client=None)
     agent._call_llm = AsyncMock(return_value=json.dumps({
         "reasoning": "The recorded command is valid.", "has_failure": False, "failure_points": []
     }))
@@ -132,7 +134,7 @@ def test_failure_diagnostics_do_not_change_numeric_or_outcome_scores(package, ea
     assert before[0].score == after[0].score == earned / 10
     assert before[0].rubric_is_success == after[0].rubric_is_success == (earned >= 8)
     assert before[1].output_success == after[1].output_success == success
-    assert module.MMRubricAgent._compute_final_scores(result) == module.MMRubricAgent._compute_final_scores(changed)
+    assert rubric_scoring.compute_final_scores(result, field) == rubric_scoring.compute_final_scores(changed, field)
     assert module.MMRubricAgent._build_scored_rubric_summary(result) == module.MMRubricAgent._build_scored_rubric_summary(changed)
 
 

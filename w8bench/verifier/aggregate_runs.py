@@ -342,8 +342,7 @@ def aggregate_runs(roots: list[Path], *, expected_tasks: int,
             "relative_reduction": (s - d) / s if s else None,
             "confidence_intervals": hierarchical_intervals(clusters, resamples=resamples, seed=seed),
             "response_models": {key: sorted(values) for key, values in returned.items()},
-            "response_model_drift": any(len(values) > 1 for values in returned.values()),
-            "frozen_rubrics": reference_hashes}, categories
+            "response_model_drift": any(len(values) > 1 for values in returned.values())}, categories
 
 
 def render_table(summary: dict) -> str:

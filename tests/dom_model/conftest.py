@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
 import pytest
 
-from w8bench.verifier.dom_model.control import canonical_sha256
+from w8bench.verifier.common import canonical_sha256
 
 
 RUBRIC = {
@@ -108,7 +107,12 @@ def pair_factory(tmp_path):
         )
         _write_json(
             config / "action_judge.json",
-            {"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-5.6-terra"}},
+            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.8-flash", "reasoning_effort": "medium"}},
+        )
+        _write_json(
+            config / "judge.json",
+            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {
+                "model": "gemini-3.1-pro-preview", "reasoning_effort": "medium"}},
         )
         return {
             "staged": staged,
@@ -120,15 +124,3 @@ def pair_factory(tmp_path):
         }
 
     return make
-
-
-def tree_digest(root: Path) -> str:
-    digest = hashlib.sha256()
-    for path in sorted(root.rglob("*")):
-        if not path.is_file() or any(part in {".venv", "__pycache__", ".pytest_cache", ".git"} for part in path.parts):
-            continue
-        digest.update(path.relative_to(root).as_posix().encode())
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-    return digest.hexdigest()
-

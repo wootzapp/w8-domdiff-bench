@@ -1,7 +1,11 @@
-"""Native message and result types for DOM-model verifier clients."""
+"""Message and result types for verifier clients."""
 
+import io
+import base64
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+from PIL import Image
 
 ToolSchema = Dict[str, Any]
 Tool = ToolSchema
@@ -27,6 +31,29 @@ class UserMessage(LLMMessage):
 @dataclass
 class AssistantMessage(LLMMessage):
     source: str = "assistant"
+
+
+@dataclass
+class ImageObj:
+    """Image wrapper for handling screenshots and images."""
+
+    image: Image.Image
+
+    @classmethod
+    def from_pil(cls, image: Image.Image) -> "ImageObj":
+        return cls(image=image)
+
+    @classmethod
+    def from_base64(cls, b64: str) -> "ImageObj":
+        return cls(image=Image.open(io.BytesIO(base64.b64decode(b64))))
+
+    def to_base64(self) -> str:
+        buffered = io.BytesIO()
+        self.image.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+    def resize(self, size: Tuple[int, int]) -> Image.Image:
+        return self.image.resize(size)
 
 
 @dataclass
@@ -82,7 +109,9 @@ class FunctionCall:
     arguments: Dict[str, Any]
 
 
-def message_to_openai_format(message: LLMMessage) -> Dict[str, Any]:
+def message_to_openai_format(
+    message: LLMMessage, *, evidence_mode: str = "screenshot_verifier"
+) -> Dict[str, Any]:
     """Convert an :class:`LLMMessage` to an OpenAI chat-completion dict."""
     role = (
         "system"
@@ -95,7 +124,23 @@ def message_to_openai_format(message: LLMMessage) -> Dict[str, Any]:
     if isinstance(message.content, list):
         content_parts: List[Dict[str, Any]] = []
         for item in message.content:
-            if isinstance(item, str):
+            if evidence_mode == "screenshot_verifier" and isinstance(item, ImageObj):
+                b64 = item.to_base64()
+                content_parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{b64}"},
+                    }
+                )
+            elif evidence_mode == "screenshot_verifier" and isinstance(item, Image.Image):
+                b64 = ImageObj.from_pil(item).to_base64()
+                content_parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{b64}"},
+                    }
+                )
+            elif isinstance(item, str):
                 content_parts.append({"type": "text", "text": item})
             elif isinstance(item, dict):
                 content_parts.append(item)

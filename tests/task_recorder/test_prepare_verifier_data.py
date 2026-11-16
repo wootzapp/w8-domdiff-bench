@@ -41,14 +41,14 @@ def recording_factory(tmp_path, monkeypatch, no_network):
         queue.append({"action": "terminate", "status": status, "termination_reason": "completed" if status == "success" else "blocked",
             "final_answer": "The recorded answer.", "thought": "Finished"})
         def post(self, payload):
-            return {"model": "gpt-6.1-terra", "output_text": json.dumps(queue.pop(0)),
+            return {"model": "gemini-3.1-pro-preview", "output_text": json.dumps(queue.pop(0)),
                 "usage": {"input_tokens": 20, "output_tokens": 10}}
         monkeypatch.setattr(runner.ModelClient, "_post", post)
         output = tmp_path / "recordings" / name
         args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"), "--observation-mode", mode,
             "--task", "Inspect the example page.", "--task-id", name, "--source-task-id", "task1",
             "--start-url", "https://example.test/", "--output-dir", str(output), "--run-name", name,
-            "--model", "gpt-6.1-terra", "--api-key", "offline", "--max-turns", str(actions + 2), "--settle-seconds", "0"])
+            "--model", "gemini-3.1-pro-preview", "--api-key", "offline", "--max-turns", str(actions + 2), "--settle-seconds", "0"])
         assert asyncio.run(runner.run(args)) in {0, 2}
         return output / name
     return make

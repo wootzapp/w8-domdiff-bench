@@ -1,3 +1,4 @@
+from functools import partial
 import json
 
 import pytest
@@ -12,15 +13,12 @@ from w8bench.verifier.evidence_audit import (
     AuditValidationError,
     _resolve_source_name,
     _request_validated_audit,
-    _request_validated_adjudication,
     _validate_finding,
     _validate_modality_decision,
     _source_instructions,
-    aggregate_audits,
     calculate_metrics,
     classification,
     ordered_audit_screenshots,
-    render_aggregate_markdown,
     run_evidence_audit,
     validate_audit_response,
     validate_adjudication_response,
@@ -44,7 +42,7 @@ def _row(*, screen_loss=False, dom_loss=False, screen_caught=True, dom_caught=Tr
 def _audit(task_id, rows):
     return {"task_id": task_id, "criteria": rows, "metrics": calculate_metrics(rows),
             "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
-            "audit_model": "gpt-5.6-sol", "adjudicator_model": "gemini-3.1-pro-preview"}
+            "audit_model": "gemini-3.1-pro-preview", "adjudicator_model": "gpt-6.1-sol"}
 
 
 def _source_decision(modality, *, coverage="COMPLETE", caught=True):
@@ -137,7 +135,7 @@ def test_incomplete_citation_feedback_names_the_missing_contract(pair_factory):
 
 def test_shared_history_matches_the_existing_judge_projection(pair_factory):
     from w8bench.verifier.screenshot_verifier.adapter import create_datapoint
-    from w8bench.verifier.screenshot_verifier.trajectory import Trajectory
+    from w8bench.verifier.screenshot_verifier.models import Trajectory
     from w8bench.verifier.screenshot_verifier.rubric_agent import MMRubricAgent
 
     pair = pair_factory()
@@ -325,7 +323,7 @@ def test_adjudication_feedback_reports_all_invalid_findings(pair_factory):
     assert "invented dom_model_verifier_miss" in str(caught.value)
 
 
-@pytest.mark.parametrize("requester", [_request_validated_audit, _request_validated_adjudication])
+@pytest.mark.parametrize("requester", [_request_validated_audit, partial(_request_validated_audit, inventory=False)])
 def test_validation_correction_retains_the_previous_response(requester, tmp_path):
     messages = [{"role": "system", "content": "policy"}, {"role": "user", "content": "evidence"}]
     invalid = {"criteria": []}
@@ -490,9 +488,9 @@ def test_run_audit_uses_inventory_and_adjudication_calls(pair_factory):
         complete=fake_complete,
     )
     assert len(calls) == 2
-    assert calls[0][0] == "gpt-5.6-sol"
-    assert calls[1][0] == "gemini-3.1-pro-preview" == "gemini-3.1-pro-preview"
-    assert audit["adjudicator_model"] == "gemini-3.1-pro-preview"
+    assert calls[0][0] == "gemini-3.1-pro-preview"
+    assert calls[1][0] == "gpt-6.1-sol"
+    assert audit["adjudicator_model"] == "gpt-6.1-sol"
     content = calls[0][1][1]["content"]
     text_parts = [part.get("text", "") for part in content]
     assert any("SCREENSHOT SOURCE FILE: screenshot0.png" in text for text in text_parts)
@@ -538,84 +536,6 @@ def test_validation_rejects_partial_relationship_reported_as_complete(pair_facto
             dom_root=pair["dom"],
         )
 
-
-def test_aggregate_reports_failures_without_counting_them_as_evidence_loss():
-    rows = [_row(screen_loss=True)]
-    audit = _audit("task-a", rows)
-    summary = aggregate_audits([audit], [{"task": "task-b", "error": "infra"}])
-    assert summary["completed_tasks"] == 1
-    assert len(summary["failed_tasks"]) == 1
-    assert summary["metrics"]["total_criteria"] == 1
-    confidence = summary["confidence_intervals"]
-    assert confidence["clusters"] == 1
-    assert confidence["screenshot_evidence_loss"]["status"] == "insufficient_tasks"
-    assert confidence["screenshot_evidence_loss"]["ci95"] is None
-
-
-def test_cluster_intervals_keep_correlated_criteria_in_their_tasks():
-    audits = []
-    for task, loss in (("a", True), ("b", False)):
-        rows = [_row(screen_loss=loss) for _ in range(100)]
-        audits.append(_audit(task, rows))
-    confidence = aggregate_audits(audits)["confidence_intervals"]
-    assert confidence["resampling_unit"] == "task"
-    assert confidence["clusters"] == 2
-    assert confidence["screenshot_evidence_loss"]["estimate"] == 0.5
-    # Only two independent clusters, not 200 independent Bernoulli observations.
-    assert confidence["screenshot_evidence_loss"]["ci95"] == [0.0, 1.0]
-
-
-def test_cluster_estimates_weight_criteria_and_keep_modalities_paired():
-    audits = []
-    for task, count, loss in (("a", 1, True), ("b", 9, False)):
-        rows = [_row(screen_loss=loss, dom_loss=loss) for _ in range(count)]
-        audits.append(_audit(task, rows))
-    confidence = aggregate_audits(audits)["confidence_intervals"]
-    assert confidence["estimator"] == "criterion_weighted_rate"
-    assert confidence["screenshot_evidence_loss"]["estimate"] == 0.1
-    assert confidence["dom_model_evidence_loss"]["ci95"] == confidence["screenshot_evidence_loss"]["ci95"]
-    difference = confidence["screenshot_minus_dom_loss_rate"]
-    assert difference["estimate"] == 0.0
-    assert difference["ci95"] == [0.0, 0.0]
-    assert difference["status"] == "degenerate"
-    assert confidence == aggregate_audits(list(reversed(audits)))["confidence_intervals"]
-
-
-def test_cluster_intervals_report_constant_empirical_data_without_claiming_certainty():
-    rows = [_row()]
-    audits = [_audit(task, rows)
-              for task in ("a", "b")]
-    confidence = aggregate_audits(audits)["confidence_intervals"]
-    assert confidence["screenshot_evidence_loss"]["ci95"] == [0.0, 0.0]
-    assert confidence["screenshot_evidence_loss"]["status"] == "degenerate"
-    assert "does not establish zero uncertainty" in confidence["interpretation"]
-
-
-def test_cluster_intervals_reject_duplicate_task_identities():
-    rows = [_row()]
-    audit = _audit("same-task", rows)
-    with pytest.raises(ValueError, match="unique task identities"):
-        aggregate_audits([audit, audit])
-
-
-def test_cluster_intervals_reject_empty_completed_tasks():
-    rows = [_row()]
-    audit = _audit("a", rows)
-    with pytest.raises(ValueError, match="must contain criteria"):
-        aggregate_audits([audit, {**_audit("b", rows), "criteria": []}])
-
-
-def test_aggregate_report_renders_task_cluster_intervals_without_mutating_audits():
-    audits = []
-    for task, loss in (("a", True), ("b", False)):
-        rows = [_row(screen_loss=loss)]
-        audits.append(_audit(task, rows))
-    original = json.loads(json.dumps(audits))
-    report = render_aggregate_markdown(aggregate_audits(audits))
-    assert "95% task-cluster interval" in report
-    assert "| Screenshot | 1/2 | 50.0% | 0.0% to 100.0% |" in report
-    assert "does not measure annotation error" in report
-    assert audits == original
 
 def _paired_capture_context(pair, *, dom_gaps=(), screenshot_gaps=(), navigation=()):
     """Create real same-run origin receipts around the offline paired fixture."""
@@ -707,3 +627,192 @@ def test_navigation_state_is_available_for_miss_but_not_directional_loss(pair_fa
     row["screenshot_evidence_loss"] = positive
     with pytest.raises(ValueError, match="Unknown dom_model citation"):
         validate_adjudication_response({"criteria": [row]}, **kwargs)
+
+
+def _validated_request_case(pair, stage):
+    if stage == "inventory":
+        response = {"criteria": [{
+            "criterion_index": 0, "required_evidence": "Saved status",
+            "screenshot": _source_decision("screenshot"),
+            "dom_model": _source_decision("dom_model"),
+            "screenshot_evidence_loss": False, "dom_model_evidence_loss": False,
+            "explanation": "Both sources show Saved.",
+        }]}
+        requester = _request_validated_audit
+        validation_error = "Evidence auditor returned an incomplete criteria list"
+        error_stage = "primary evidence inventory"
+        feedback = (
+            "Your JSON failed validation: Evidence auditor returned an incomplete criteria list. "
+            "Return a corrected complete JSON object using the required schema and the same supplied evidence."
+        )
+    else:
+        response = {"criteria": [{
+            "criterion_index": 0,
+            **{field: _finding() for field in (
+                "screenshot_evidence_loss", "dom_model_evidence_loss",
+                "screenshot_verifier_miss", "dom_model_verifier_miss",
+            )},
+            "explanation": "Both sources show Saved.",
+        }]}
+        requester = partial(_request_validated_audit, inventory=False)
+        validation_error = "Adjudicator returned an incomplete criteria list"
+        error_stage = "final evidence adjudication"
+        feedback = (
+            "Your adjudication JSON failed validation: Adjudicator returned an incomplete criteria list. "
+            "Return a corrected complete JSON object using the required schema and same evidence."
+        )
+    options = {
+        "model": "configured-model",
+        "messages": [{"role": "system", "content": "policy"}, {"role": "user", "content": "evidence"}],
+        "criteria": [{"criterion_index": 0}],
+        "screenshot_sources": {"screenshot1.png"}, "dom_sources": {"dom_model1.txt"},
+        "screenshot_root": pair["screenshot"], "dom_root": pair["dom"],
+    }
+    return requester, response, options, validation_error, error_stage, feedback
+
+
+@pytest.mark.parametrize("stage", ["inventory", "adjudication"])
+def test_validated_request_accepts_one_response_without_mutating_messages(pair_factory, stage):
+    pair = pair_factory()
+    requester, response, options, _, _, _ = _validated_request_case(pair, stage)
+    messages = json.loads(json.dumps(options["messages"]))
+    calls, receipts = [], []
+
+    def complete(model, current):
+        calls.append((model, current))
+        return response
+
+    decisions, raw, attempts = requester(**options, complete=complete, invalid_receipts=receipts)
+    assert calls == [("configured-model", messages)]
+    assert options["messages"] == messages
+    assert raw is response
+    assert attempts == 1 and receipts == []
+    assert decisions[0]["criterion_index"] == 0
+    assert decisions[0]["explanation"] == "Both sources show Saved."
+    if stage == "inventory":
+        assert decisions[0]["classification"] == "BOTH_CAUGHT"
+        assert decisions[0]["dom_model"]["citations"] == response["criteria"][0]["dom_model"]["citations"]
+    else:
+        assert decisions[0] == response["criteria"][0]
+
+
+@pytest.mark.parametrize("stage", ["inventory", "adjudication"])
+def test_validated_request_retry_preserves_exact_feedback_and_receipt(pair_factory, stage):
+    pair = pair_factory()
+    requester, response, options, validation_error, _, feedback = _validated_request_case(pair, stage)
+    original_messages = json.loads(json.dumps(options["messages"]))
+    invalid = {"criteria": []}
+    calls, receipts = [], []
+
+    def complete(model, current):
+        calls.append((model, current))
+        return invalid if len(calls) == 1 else response
+
+    decisions, raw, attempts = requester(**options, complete=complete, invalid_receipts=receipts)
+    assert attempts == 2 and raw is response
+    assert decisions[0]["criterion_index"] == 0
+    assert options["messages"] == original_messages
+    assert calls == [
+        ("configured-model", original_messages),
+        ("configured-model", [*original_messages,
+            {"role": "assistant", "content": '{"criteria": []}'},
+            {"role": "user", "content": feedback}]),
+    ]
+    assert receipts == [{
+        "attempt": 1, "validation_error": validation_error, "raw_response": invalid,
+        "flag_flips_detected": False, "flag_flips": [],
+        "uncomparable_flags": [{"criterion_index": 0, "flag": field} for field in (
+            "screenshot_evidence_loss", "dom_model_evidence_loss",
+            "screenshot_verifier_miss", "dom_model_verifier_miss",
+        )],
+    }]
+
+
+@pytest.mark.parametrize("stage", ["inventory", "adjudication"])
+def test_validated_request_exhaustion_retains_every_response_and_stage(pair_factory, stage):
+    pair = pair_factory()
+    requester, _, options, validation_error, error_stage, feedback = _validated_request_case(pair, stage)
+    original_messages = json.loads(json.dumps(options["messages"]))
+    invalid = {"criteria": []}
+    calls, receipts = [], []
+
+    def complete(model, current):
+        calls.append((model, current))
+        return invalid
+
+    with pytest.raises(AuditValidationError) as caught:
+        requester(**options, complete=complete, max_attempts=3, invalid_receipts=receipts)
+    repair = [{"role": "assistant", "content": '{"criteria": []}'}, {"role": "user", "content": feedback}]
+    assert calls == [("configured-model", [*original_messages, *(repair * count)]) for count in range(3)]
+    assert options["messages"] == original_messages
+    assert caught.value.attempts is receipts
+    assert caught.value.receipt() == {
+        "stage": error_stage, "attempt_count": 3, "last_validation_error": validation_error,
+        "attempts": [{"attempt": attempt, "validation_error": validation_error, "raw_response": invalid}
+            for attempt in (1, 2, 3)],
+    }
+    assert str(caught.value) == f"{error_stage} remained invalid after 3 attempts: {validation_error}"
+
+
+@pytest.mark.parametrize("stage", ["inventory", "adjudication"])
+def test_validated_request_with_zero_attempts_has_no_completion_call(pair_factory, stage):
+    requester, _, options, _, error_stage, _ = _validated_request_case(pair_factory(), stage)
+    receipts = []
+
+    def complete(model, current):
+        pytest.fail("A zero-attempt request reached the completion function")
+
+    with pytest.raises(AuditValidationError) as caught:
+        requester(**options, complete=complete, max_attempts=0, invalid_receipts=receipts)
+    assert caught.value.attempts is receipts
+    assert caught.value.receipt() == {
+        "stage": error_stage, "attempt_count": 0,
+        "last_validation_error": "unknown validation error", "attempts": [],
+    }
+
+
+@pytest.mark.parametrize("stage", ["inventory", "adjudication"])
+def test_validated_request_updates_the_supplied_prior_receipt(pair_factory, stage):
+    requester, response, options, _, _, _ = _validated_request_case(pair_factory(), stage)
+    field = "screenshot_evidence_loss"
+    prior_value = True if stage == "inventory" else {"confirmed": True}
+    prior = {"attempt": 0, "validation_error": "prior issue",
+        "raw_response": {"criteria": [{"criterion_index": 0, field: prior_value}]}}
+    receipts = [prior]
+    _, raw, attempts = requester(**options, complete=lambda model, messages: response, invalid_receipts=receipts)
+    assert raw is response and attempts == 1
+    assert receipts == [prior] and receipts[0] is prior
+    assert prior["flag_flips_detected"] is True
+    assert prior["flag_flips"] == [{"criterion_index": 0, "flag": field, "failed_value": True, "accepted_value": False}]
+    assert prior["uncomparable_flags"] == [{"criterion_index": 0, "flag": field} for field in (
+        "dom_model_evidence_loss", "screenshot_verifier_miss", "dom_model_verifier_miss",
+    )]
+
+
+@pytest.mark.parametrize("stage", ["inventory", "adjudication"])
+def test_completion_errors_propagate_without_validation_retry(pair_factory, stage):
+    requester, _, options, _, _, _ = _validated_request_case(pair_factory(), stage)
+    calls, receipts = [], []
+
+    def complete(model, current):
+        calls.append((model, current))
+        raise ValueError("completion unavailable")
+
+    with pytest.raises(ValueError, match="^completion unavailable$"):
+        requester(**options, complete=complete, invalid_receipts=receipts)
+    assert calls == [("configured-model", options["messages"])]
+    assert receipts == []
+
+
+def test_finding_feedback_preserves_nested_citation_errors(pair_factory):
+    pair = pair_factory()
+    finding = _finding(True, modality="dom_model")
+    finding["citations"][0]["location"] = "L9999"
+    with pytest.raises(ValueError) as caught:
+        _validate_finding(finding, label="screenshot evidence loss", citation_modality="dom_model",
+            allowed_sources={"dom_model1.txt"}, source_root=pair["dom"])
+    assert str(caught.value) == (
+        "screenshot evidence loss requires dom_model evidence: citation 1: citation 1: "
+        "DOM citation line range is outside its source file: dom_model1.txt, "
+        "'L9999'; source has 7 lines"
+    )

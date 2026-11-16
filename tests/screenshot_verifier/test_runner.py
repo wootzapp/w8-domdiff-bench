@@ -43,7 +43,7 @@ def test_sparse_screenshot_binding_and_loading_keep_original_ids(tmp_path):
         Image.new("RGB", (3, 2), (index * 70, 0, 0)).save(tmp_path / name)
     bound = _bind_all_screenshot_evidence({"action_history": "full 3 actions"}, names, 3, context)
     assert [item["id"] for item in bound["actions_list"]] == [1, 3, 4]
-    images = MMRubricAgent._load_screenshots(str(tmp_path), bound["actions_list"])
+    images = MMRubricAgent._load_evidence(str(tmp_path), bound["actions_list"])
     assert list(images) == [1, 3, 4]
     assert images[3].getpixel((0, 0)) == (70, 0, 0)
     assert bound["action_history"] == "full 3 actions"
@@ -60,7 +60,7 @@ def test_sparse_evidence_labels_preserve_source_id_without_dense_count_confusion
     from w8bench.verifier.screenshot_verifier.rubric_agent import MMRubricAgent
     rubric = {"items": [{"criterion": "saved"}]}
     base = {"screenshot_idx": 4, "source_state_id": 4, "screenshot_evidence": "Saved", "criterion_analysis": "Shown", "discrepancies": "None"}
-    text = MMRubricAgent._build_all_screenshot_evidence_text(rubric, {0: [base]}, 3)
+    text = MMRubricAgent._build_all_evidence_text(rubric, {0: [base]}, 3)
     assert "Screenshot state 4 (3 available)" in text and "4 of 3" not in text
     original = {key: value for key, value in base.items() if key != "source_state_id"}
-    assert "Screenshot 5 of 6" in MMRubricAgent._build_all_screenshot_evidence_text(rubric, {0: [original]}, 6)
+    assert "Screenshot 5 of 6" in MMRubricAgent._build_all_evidence_text(rubric, {0: [original]}, 6)

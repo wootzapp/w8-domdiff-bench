@@ -10,8 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from w8bench.verifier.dom_model.alignment import validate_alignment
-from w8bench.verifier.dom_model.state_parser import load_dom_model_states
-from w8bench.verifier.dom_model.trajectory_helpers import action_events, load_trajectory
+from w8bench.verifier.dom_model.states import load_dom_model_states
+from w8bench.verifier.trajectory import action_events, load_trajectory
+from w8bench.verifier.dom_model.models import Trajectory
 
 from .common import (
     canonical_json_bytes,
@@ -213,7 +214,7 @@ def dataset_only_preflight(screenshot_task: str | Path, dom_task: str | Path) ->
     context = screenshot_data.get("evaluation_context") or {}
     if not context and len(screenshots) != len(screenshot_actions) + 1:
         raise ValueError("Screenshot task requires intentional N+1 states")
-    trajectory = load_trajectory(dom)
+    trajectory = load_trajectory(dom, Trajectory)
     events = action_events(trajectory)
     if len(events) != len(dom_actions):
         raise ValueError("screenshot trajectory parsing changed the DOM-model action count")
@@ -279,9 +280,8 @@ def validate_pair(
         dom_allowed.add(SIDECAR)
     _require_allowed_files(screenshot, screenshot_allowed, "screenshot")
     _require_allowed_files(dom, dom_allowed, "DOM-model")
-    metrics_receipt = None
     if generation_metrics is not None:
-        metrics_receipt = validate_generation_metrics(generation_metrics, frozen)
+        validate_generation_metrics(generation_metrics, frozen)
     elif require_sidecars:
         raise ValueError("Phase B requires --generation-metrics from Phase A")
     receipt.update(

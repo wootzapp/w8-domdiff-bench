@@ -5,13 +5,13 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 
 _SCREENSHOT_RE = re.compile(r"^screenshot_?(\d+)\.png$")
 
 
-def preflight_screenshot_task(task_dir: str | Path) -> dict[str, int]:
-    root = Path(task_dir).resolve(strict=True)
+def _count_actions(root: Path) -> int:
     logs = [path for path in (root / "web_surfer.log", root / "websurfer.log") if path.is_file()]
     if len(logs) != 1:
         raise ValueError(f"Expected exactly one web surfer log, found {len(logs)}")
@@ -22,14 +22,10 @@ def preflight_screenshot_task(task_dir: str | Path) -> dict[str, int]:
         event = json.loads(line)
         if isinstance(event, dict) and event.get("action") is not None:
             actions += 1
-    screenshots = sorted(
-        (
-            path
-            for path in root.iterdir()
-            if path.is_file() and _SCREENSHOT_RE.match(path.name)
-        ),
-        key=lambda path: int(_SCREENSHOT_RE.match(path.name).group(1)),
-    )
+    return actions
+
+
+def _state_receipt(root: Path, screenshots: list[Path], actions: int) -> dict[str, Any]:
     context = {}
     task_path = root / "task_data.json"
     if task_path.is_file():
@@ -49,6 +45,14 @@ def preflight_screenshot_task(task_dir: str | Path) -> dict[str, int]:
             f"Expected exactly N+1 screenshots for {actions} actions; "
             f"found {len(screenshots)}"
         )
+    receipt = {"actions": actions, "screenshots": len(screenshots)}
+    if context:
+        receipt.update(expected_state_ids=expected, missing_states=gaps, available_state_ids=actual,
+                       navigation_states=context.get("navigation_states", []))
+    return receipt
+
+
+def _validate_answer(root: Path, screenshots: list[Path]) -> None:
     answers = list(root.glob("*_answer.json"))
     if len(answers) != 1:
         raise ValueError(f"Expected exactly one *_answer.json, found {len(answers)}")
@@ -60,8 +64,19 @@ def preflight_screenshot_task(task_dir: str | Path) -> dict[str, int]:
             "Final answer must declare all N+1 screenshots in chronological order; "
             f"expected {expected_names}, found {declared}"
         )
-    receipt = {"actions": actions, "screenshots": len(screenshots)}
-    if context:
-        receipt.update(expected_state_ids=expected, missing_states=gaps, available_state_ids=actual,
-                       navigation_states=context.get("navigation_states", []))
+
+
+def preflight_screenshot_task(task_dir: str | Path) -> dict[str, int]:
+    root = Path(task_dir).resolve(strict=True)
+    actions = _count_actions(root)
+    screenshots = sorted(
+        (
+            path
+            for path in root.iterdir()
+            if path.is_file() and _SCREENSHOT_RE.match(path.name)
+        ),
+        key=lambda path: int(_SCREENSHOT_RE.match(path.name).group(1)),
+    )
+    receipt = _state_receipt(root, screenshots, actions)
+    _validate_answer(root, screenshots)
     return receipt

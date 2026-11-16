@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
-
 import argparse
 import asyncio
 import json
@@ -16,18 +14,14 @@ from pathlib import Path
 from typing import Any
 
 from .adapter import create_datapoint, normalize_all_screenshot_evidence
-from .clients.graceful_client import GracefulRetryClient
-from .rubric_agent import (
-    MMRubricAgent,
-    MMRubricAgentConfig,
-    MMRubricOutcomeResult,
-    MMRubricResult,
-)
-from .trajectory import Trajectory
-from .utils.action_schema import FARA_ACTION_DEFINITIONS
-from .utils.metrics import rubric_receipt
-from .utils.preflight import preflight_screenshot_task
-from .utils.rubric import load_frozen_rubric, require_matching_embedded_rubric
+from w8bench.verifier.clients.retry import GracefulRetryClient
+from ..instrumentation import call_metrics, instrument_client_calls, usage_dict
+from .rubric_agent import MMRubricAgent, MMRubricAgentConfig
+from ..models import MMRubricOutcomeResult, MMRubricResult
+from .models import Trajectory
+from ..rubric_scoring import FARA_ACTION_DEFINITIONS
+from .preflight import preflight_screenshot_task
+from ..common import load_frozen_rubric, require_matching_embedded_rubric, rubric_receipt
 
 
 logger = logging.getLogger("screenshot_verifier")
@@ -51,99 +45,6 @@ def _read_task_data(task_dir: Path) -> dict[str, Any]:
     )
     normalized["init_url"] = str(value.get("init_url") or value.get("website") or "")
     return normalized
-
-
-def _instrument_client_calls(client: Any) -> None:
-    if hasattr(client, "_benchmark_call_metrics"):
-        return
-    metrics = {"logical_calls": 0, "endpoint_calls": 0}
-    original_create = client.create
-
-    async def counted_logical_create(*args: Any, **kwargs: Any):
-        metrics["logical_calls"] += 1
-        stage_path = []
-        frame = inspect.currentframe()
-        try:
-            while frame is not None:
-                module = frame.f_globals.get("__name__", "")
-                if (module.endswith(".rubric_agent") or module.endswith(".dom_model_agent")) and frame.f_code.co_name != "_call_llm":
-                    stage_path.append(f"{module}.{frame.f_code.co_name}")
-                frame = frame.f_back
-        finally:
-            del frame
-        stage_tokens = [(endpoint, endpoint._logical_stage.set(tuple(stage_path)))
-            for endpoint in getattr(client, "_clients", []) if hasattr(endpoint, "_logical_stage")]
-        try:
-            return await original_create(*args, **kwargs)
-        finally:
-            for endpoint, token in stage_tokens:
-                endpoint._logical_stage.reset(token)
-
-    client.create = counted_logical_create
-    for endpoint in getattr(client, "_clients", []):
-        original_endpoint_create = endpoint.create
-
-        async def counted_endpoint_create(
-            *args: Any, _original=original_endpoint_create, **kwargs: Any
-        ):
-            metrics["endpoint_calls"] += 1
-            return await _original(*args, **kwargs)
-
-        endpoint.create = counted_endpoint_create
-    client._benchmark_call_metrics = metrics
-
-
-def _call_metrics(client: Any) -> dict[str, Any]:
-    metrics = getattr(client, "_benchmark_call_metrics", {})
-    logical = int(metrics.get("logical_calls", 0))
-    endpoint_calls = int(metrics.get("endpoint_calls", 0))
-    endpoints = list(getattr(client, "_clients", []))
-    attempts = sum(int(getattr(endpoint, "_http_attempts", 0)) for endpoint in endpoints)
-    complete = bool(endpoints) and all(getattr(endpoint, "_http_attempts_observed", False) for endpoint in endpoints)
-    records = [dict(record) for endpoint in endpoints for record in getattr(endpoint, "_call_records", [])]
-    return {
-        "logical_calls": logical, "endpoint_calls": endpoint_calls,
-        "api_attempts": attempts, "http_attempts": attempts,
-        "http_attempts_complete": complete,
-        "retries": max(0, attempts - logical) if complete else None,
-        "endpoint_retries": max(0, endpoint_calls - logical),
-        "sdk_http_retries": max(0, attempts - endpoint_calls) if complete else None,
-        "configured_models": sorted({record["configured_model"] for record in records}),
-        "returned_models": sorted({record["returned_model"] for record in records if record.get("returned_model")}),
-        "calls": records,
-    }
-
-
-def _usage_dict(client: Any) -> dict[str, Any]:
-    prompt = completion = 0
-    records = []
-    for inner in getattr(client, "_clients", []):
-        usage = inner.total_usage()
-        prompt += int(getattr(usage, "prompt_tokens", 0))
-        completion += int(getattr(usage, "completion_tokens", 0))
-        records.extend(getattr(inner, "_call_records", []))
-    if records:
-        inputs = [record["input_tokens"] for record in records if record.get("input_tokens") is not None]
-        outputs = [record["output_tokens"] for record in records if record.get("output_tokens") is not None]
-        prompt = sum(inputs) if inputs else None
-        completion = sum(outputs) if outputs else None
-    writes = [record["cache_write_input_tokens"] for record in records if record.get("cache_write_input_tokens") is not None]
-    reads = [record["cached_input_tokens"] for record in records if record.get("cached_input_tokens") is not None]
-    thinking = [record["reasoning_tokens"] for record in records if record.get("reasoning_tokens") is not None]
-    return {
-        "prompt_tokens": prompt, "input_tokens": prompt,
-        "completion_tokens": completion, "output_tokens": completion,
-        "cached_input_tokens": sum(reads) if reads else None,
-        "cache_write_input_tokens": sum(writes) if writes else None,
-        "reasoning_tokens": sum(thinking) if thinking else None,
-        "total_tokens": (prompt or 0) + (completion or 0) if prompt is not None or completion is not None else None,
-        "usage_known_calls": {key: sum(record.get("usage_fields_reported", {}).get(key, False) for record in records)
-            for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens")},
-        "cached_input_usage_reported_calls": len(reads), "reasoning_usage_reported_calls": len(thinking),
-        "calls_without_reported_usage": sum(not record.get("usage_reported", False) for record in records),
-        "cache_write_usage_reported_calls": len(writes),
-    }
-
 
 
 def _jsonable(value: Any) -> Any:
@@ -192,18 +93,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     eval_config = Path(args.eval_config).resolve(strict=True)
     action_client = GracefulRetryClient.from_path(
-        path=str(eval_config), logger=logger, eval_model=args.action_model
+        path=str(eval_config), logger=logger, eval_model=args.action_model, evidence_mode='screenshot_verifier'
     )
-    gpt5_client = GracefulRetryClient.from_path(
-        path=str(eval_config), logger=logger, eval_model=args.judge_model
+    judge_client = GracefulRetryClient.from_path(
+        path=str(eval_config), logger=logger, eval_model=args.judge_model, evidence_mode='screenshot_verifier'
     )
-    _instrument_client_calls(action_client)
-    _instrument_client_calls(gpt5_client)
+    instrument_client_calls(action_client)
+    instrument_client_calls(judge_client)
     agent = MMRubricAgent(
         config=MMRubricAgentConfig(
             action_client=action_client,
             validity_date=(task_data.get("evaluation_context") or {}).get("validity_date") or datetime.now(timezone.utc).date().isoformat(),
-            gpt5_client=gpt5_client,
+            judge_client=judge_client,
             max_images_per_criterion=args.max_images_per_criterion,
             majority_vote_instances=args.majority_vote_instances,
             redo_eval=args.redo_eval,
@@ -216,7 +117,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError(f"Unable to load trajectory: {task_dir}")
     datapoint = create_datapoint(task_data, trajectory)
     agent_input = MMRubricAgent._extract_input_from_datapoint(
-        datapoint, screenshots_dir=str(task_dir), redo_eval=args.redo_eval
+        datapoint, evidence_dir=str(task_dir), redo_eval=args.redo_eval
     )
     # Evidence selection receives every 0..N browser state. Action history and
     # step metadata above still contain only the N actions actually performed.
@@ -259,12 +160,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "evaluation_context": task_data.get("evaluation_context"),
         "validity_date": agent.config.validity_date,
         "token_usage": {
-            "judge": _usage_dict(gpt5_client),
-            "action_judge": _usage_dict(action_client),
+            "judge": usage_dict(judge_client),
+            "action_judge": usage_dict(action_client),
         },
         "call_metrics": {
-            "judge": _call_metrics(gpt5_client),
-            "action_judge": _call_metrics(action_client),
+            "judge": call_metrics(judge_client),
+            "action_judge": call_metrics(action_client),
         },
         "intermediate_mm_rubric_steps": raw.get("intermediate_mm_rubric_steps"),
         "duration_sec": round(time.time() - started, 3),
@@ -283,8 +184,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--rubric-file", required=True)
     parser.add_argument("--eval-config", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--judge-model", default="gpt-5.2")
-    parser.add_argument("--action-model", default="gpt-5.6-terra",
+    parser.add_argument("--judge-model", default="gemini-3.1-pro-preview")
+    parser.add_argument("--action-model", default="gemini-3.8-flash",
                         help="Action/validity judge model")
     parser.add_argument("--rubric-threshold", type=float, default=0.8)
     parser.add_argument("--max-images-per-criterion", type=int, default=5)
@@ -292,8 +193,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--success", choices=("outcome", "process", "both"), default="outcome")
     parser.add_argument("--redo-eval", action="store_true")
     args = parser.parse_args(argv)
-    if args.judge_model != "gpt-5.2" or args.action_model != "gpt-5.6-terra":
-        parser.error("verifier models are pinned to judge gpt-5.2 and action/validity gpt-5.6-terra")
+    if args.judge_model != "gemini-3.1-pro-preview" or args.action_model != "gemini-3.8-flash":
+        parser.error("verifier models are pinned to judge gemini-3.1-pro-preview and action/validity gemini-3.8-flash")
     return args
 
 

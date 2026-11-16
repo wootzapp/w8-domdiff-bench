@@ -1,12 +1,13 @@
-from .utils.error_taxonomy import (
+from pathlib import Path
+from ..error_taxonomy import (
     escape_for_template,
     extract_subcategory_bullets,
     get_taxonomy_for_failure_prompt,
 )
 
-_FAILURE_TAXONOMY, _FAILURE_SUMMARY_TABLE = get_taxonomy_for_failure_prompt()
-_CAT7_BULLETS = escape_for_template(extract_subcategory_bullets(7))
-_CAT8_BULLETS = escape_for_template(extract_subcategory_bullets(8))
+_FAILURE_TAXONOMY, _FAILURE_SUMMARY_TABLE = get_taxonomy_for_failure_prompt(Path(__file__).parent)
+_CAT7_BULLETS = escape_for_template(extract_subcategory_bullets(Path(__file__).parent, 7))
+_CAT8_BULLETS = escape_for_template(extract_subcategory_bullets(Path(__file__).parent, 8))
 
 # Shared axis definitions used by both CHECK_VALID_TASK_*_PROMPT variants.
 _AXIS1_AMBIGUITY_DEFINITION = """\

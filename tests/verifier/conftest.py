@@ -11,10 +11,10 @@ from w8bench.verifier.common import canonical_sha256
 
 @pytest.fixture(autouse=True)
 def audit_test_configuration(monkeypatch):
-    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gpt-5.6-sol")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-3.1-pro-preview")
-    monkeypatch.setenv("EVIDENCE_AUDIT_PROVIDER", "openai")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "google")
+    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
+    monkeypatch.setenv("EVIDENCE_AUDIT_PROVIDER", "google")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "openai")
 
 
 
@@ -134,7 +134,12 @@ def pair_factory(tmp_path):
         )
         _write_json(
             config / "action_judge.json",
-            {"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-5.6-terra"}},
+            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.8-flash", "reasoning_effort": "medium"}},
+        )
+        _write_json(
+            config / "judge.json",
+            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {
+                "model": "gemini-3.1-pro-preview", "reasoning_effort": "medium"}},
         )
         return {
             "staged": staged,

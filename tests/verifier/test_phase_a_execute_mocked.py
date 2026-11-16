@@ -54,13 +54,16 @@ def catalog_case(tmp_path, monkeypatch):
     monkeypatch.setattr(generator, "validate_endpoint_configs", lambda path: {})
     monkeypatch.setattr(generator, "load_env_file", lambda path: None)
     monkeypatch.setattr(generator, "require_openai_key", lambda: None)
-    monkeypatch.setattr(generator.GracefulRetryClient, "from_path", lambda *args, **kwargs: _Client())
+    def rubric_client(*args, **kwargs):
+        assert kwargs["eval_model"] == "gpt-5.2"
+        return _Client()
+    monkeypatch.setattr(generator.GracefulRetryClient, "from_path", rubric_client)
 
     async def generate(self, task, context):
         assert "Stopping condition: Report the visible fact." in task
         assert "Constraints:\n- Use run-time evidence." in task
-        await self._call_llm([{"role": "user", "content": "generation"}], self._gpt5_client)
-        await self._call_llm([{"role": "user", "content": "dependency"}], self._gpt5_client)
+        await self._call_llm([{"role": "user", "content": "generation"}], self._judge_client)
+        await self._call_llm([{"role": "user", "content": "dependency"}], self._judge_client)
         return copy.deepcopy(RUBRIC)
 
     monkeypatch.setattr(generator.MMRubricAgent, "_generate_rubric", generate)
@@ -74,7 +77,9 @@ def test_catalog_draft_dry_preflight_has_no_calls_or_writes(catalog_case, monkey
     monkeypatch.setattr(generator.GracefulRetryClient, "from_path",
         lambda *args, **kwargs: pytest.fail("dry preflight constructed a model client"))
     assert generator.main(catalog_case["args"] + ["--stage", "draft"]) == 0
-    assert '"paid_calls_authorized": false' in capsys.readouterr().out
+    preflight = json.loads(capsys.readouterr().out)
+    assert preflight["paid_calls_authorized"] is False
+    assert preflight["models"] == ["gpt-5.2"]
     assert not catalog_case["drafts"].exists()
     assert not catalog_case["frozen"].exists()
 
@@ -86,7 +91,7 @@ def test_catalog_drafts_use_original_workflow_then_resume_without_calls(catalog_
         receipt = json.loads((catalog_case["drafts"] / f"task_{number:02d}.metrics.json").read_text())
         assert receipt["status"] == "complete" and receipt["rubric_generation_calls"] == 2
         assert receipt["token_usage"]["gpt-5.2"]["total_tokens"] == 10
-        assert receipt["token_usage"]["gpt-5.6-terra"]["total_tokens"] == 0
+        assert set(receipt["token_usage"]) == {"gpt-5.2"}
     monkeypatch.setattr(generator.GracefulRetryClient, "from_path",
         lambda *args, **kwargs: pytest.fail("completed rubric was regenerated"))
     assert generator.main(args) == 0
@@ -142,7 +147,7 @@ def test_failed_draft_preserves_calls_and_resume_attempt_history(catalog_case, m
 
     async def fail_second(self, task, context):
         if "page 2" in task:
-            await self._call_llm([{"role": "user", "content": "attempt"}], self._gpt5_client)
+            await self._call_llm([{"role": "user", "content": "attempt"}], self._judge_client)
             raise KeyboardInterrupt()
         return await original(self, task, context)
 

@@ -74,7 +74,7 @@ def action_observation_context(
     checks compare observed controls rather than coincidentally equal ref strings.
     """
     ref = AgentBrowserClient.action_ref(decision.get("id"))
-    line = agent_browser_ref_line(bundle.executable_agent_browser_text(), ref) if ref else ""
+    line = agent_browser_ref_line(bundle.agent_browser_action_text, ref) if ref else ""
     target = agent_browser_target_identity(decision, bundle)
     return {
         "document_url": clean_dom_text(
@@ -98,7 +98,7 @@ def action_progress(before: CaptureBundle, after: CaptureBundle) -> dict[str, bo
         "url_changed": before.document_url != after.document_url,
         "dom_changed": before.model_text != after.model_text,
         "agent_browser_observation_changed": (
-            before.executable_agent_browser_text() != after.executable_agent_browser_text()
+            before.agent_browser_action_text != after.agent_browser_action_text
         ),
     }
     return {**result, "made_progress": any(result.values())}
@@ -158,7 +158,7 @@ def agent_browser_target_identity(
     role = str(target.get("role", ""))
     name = str(target.get("name", ""))
     if not clean_dom_text(role) or not clean_dom_text(name):
-        line = agent_browser_ref_line(bundle.executable_agent_browser_text(), ref)
+        line = agent_browser_ref_line(bundle.agent_browser_action_text, ref)
         line_identity = agent_browser_line_identity(line)
         if not clean_dom_text(role):
             role = line_identity["role"]
@@ -242,18 +242,15 @@ async def capture_call(
     cdp: CDPClient,
     method: str,
     params: dict[str, Any],
-    *,
-    attempts: int = 2,
 ) -> dict[str, Any]:
     """Retry a read-only capture command only when its response times out."""
-    for attempt in range(1, attempts + 1):
+    for attempt in range(1, 3):
         try:
             return await cdp.call(method, params)
         except (asyncio.TimeoutError, TimeoutError) as error:
-            if attempt == attempts:
-                raise RunnerError(f"{method} timed out after {attempts} attempts") from error
+            if attempt == 2:
+                raise RunnerError(f"{method} timed out after 2 attempts") from error
             await asyncio.sleep(0.5 * attempt)
-    raise AssertionError("unreachable")
 
 
 async def capture_structured_snapshot(
@@ -310,8 +307,6 @@ async def model_dom_from_snapshot(
 ) -> dict[str, Any]:
     """Build structured model-facing DOM JSON inside Chromium."""
     result = await capture_call(cdp, MODEL_DOM_COMMAND, {"snapshot": snapshot})
-    if "modelDOM" not in result:
-        raise RunnerError(f"unexpected {MODEL_DOM_COMMAND} response: {result}")
     model_dom = result.get("modelDOM")
     if not isinstance(model_dom, dict):
         raise RunnerError(f"unexpected {MODEL_DOM_COMMAND} response: {result}")
@@ -619,9 +614,6 @@ class CaptureBundle:
             raise RunnerError("capture has no active observation artifact")
         return path
 
-    def executable_agent_browser_text(self) -> str:
-        """Supply only the filtered action snapshot; never fall back to the full tree."""
-        return self.agent_browser_action_text
 
 
 class CDPClient:
@@ -651,7 +643,7 @@ class CDPClient:
         self.ws: aiohttp.ClientWebSocketResponse | None = None
         self.reader: asyncio.Task[None] | None = None
         self.next_id = 0
-        self.pending: dict[int, tuple[str, asyncio.Future[dict[str, Any]]]] = {}
+        self.pending: dict[int, asyncio.Future[dict[str, Any]]] = {}
         self.session_id = ""
         self.navigation_events: list[dict[str, Any]] = []
         self.capture_setup_errors: list[dict[str, Any]] = []
@@ -1083,12 +1075,12 @@ class CDPClient:
                     "recorded_at": utc_now()})
             message_id = payload.get("id")
             if isinstance(message_id, int) and message_id in self.pending:
-                _method, future = self.pending.pop(message_id)
+                future = self.pending.pop(message_id)
                 if not future.done():
                     future.set_result(payload)
                 continue
         error = RunnerError("CDP websocket closed")
-        for _method, future in self.pending.values():
+        for future in self.pending.values():
             if not future.done():
                 future.set_exception(error)
         self.pending.clear()
@@ -1109,7 +1101,7 @@ class CDPClient:
         if attached and self.session_id:
             request["sessionId"] = self.session_id
         future: asyncio.Future[dict[str, Any]] = asyncio.get_running_loop().create_future()
-        self.pending[message_id] = (method, future)
+        self.pending[message_id] = future
         try:
             await self.ws.send_json(request)
         except (aiohttp.ClientError, ConnectionError, RuntimeError) as error:

@@ -1,30 +1,53 @@
-"""Call and provider-token accounting for the standalone DOM-model runner."""
-
+"""Logical calls, provider attempts, stages and token usage."""
 from __future__ import annotations
 
 import inspect
-
 from typing import Any
 
 
-def instrument_client_calls(client: Any) -> None:
-    if hasattr(client, "_benchmark_call_metrics"):
-        return
+def _stage_path() -> list[str]:
+    stack = []
+    frame = inspect.currentframe()
+    try:
+        while frame is not None:
+            stack.append((frame.f_globals, frame.f_code.co_name, type(frame.f_locals.get("self"))))
+            frame = frame.f_back
+    finally:
+        del frame
+    stage_path = []
+    evidence_mode = None
+    for namespace, name, owner in reversed(stack):
+        module = namespace.get("__name__", "")
+        for cls in owner.__mro__:
+            for kind in ("dom_model", "screenshot_verifier"):
+                if cls.__module__.startswith(f"w8bench.verifier.{kind}."):
+                    evidence_mode = kind
+                    break
+            else:
+                continue
+            break
+        stages = namespace.get("_LOGICAL_STAGE_NAMES", {})
+        label = stages.get(evidence_mode, {}).get(name)
+        if name == "_call_llm" or name in namespace.get("_LOGICAL_STAGE_EXCLUDES", ()):
+            continue
+        if label is not None:
+            stage_path.append(label)
+        elif (module.endswith(".rubric_agent") or module.endswith(".dom_model_agent")) and module != "w8bench.verifier.rubric_agent":
+            stage_path.append(f"{module}.{name}")
+    return list(reversed(stage_path))
+
+
+def instrument_client_calls(client: Any, *, receipt: bool = False) -> dict[str, Any] | None:
+    if not receipt and hasattr(client, "_benchmark_call_metrics"):
+        return None
     metrics = {"logical_calls": 0, "endpoint_calls": 0}
+    if receipt:
+        metrics.update(api_attempts=0, http_attempts=0, http_attempts_complete=False, calls=[])
     original_create = client.create
 
     async def counted_logical_create(*args: Any, **kwargs: Any):
         metrics["logical_calls"] += 1
-        stage_path = []
-        frame = inspect.currentframe()
-        try:
-            while frame is not None:
-                module = frame.f_globals.get("__name__", "")
-                if (module.endswith(".rubric_agent") or module.endswith(".dom_model_agent")) and frame.f_code.co_name != "_call_llm":
-                    stage_path.append(f"{module}.{frame.f_code.co_name}")
-                frame = frame.f_back
-        finally:
-            del frame
+        stage_path = _stage_path()
         stage_tokens = [(endpoint, endpoint._logical_stage.set(tuple(stage_path)))
             for endpoint in getattr(client, "_clients", []) if hasattr(endpoint, "_logical_stage")]
         try:
@@ -32,23 +55,28 @@ def instrument_client_calls(client: Any) -> None:
         finally:
             for endpoint, token in stage_tokens:
                 endpoint._logical_stage.reset(token)
+            if receipt:
+                details = call_metrics(client, counters=metrics)
+                metrics.update((key, details[key]) for key in (
+                    "api_attempts", "http_attempts", "http_attempts_complete", "calls",
+                    "configured_models", "returned_models", "endpoint_retries", "sdk_http_retries"))
 
     client.create = counted_logical_create
     for endpoint in getattr(client, "_clients", []):
         original_endpoint_create = endpoint.create
 
-        async def counted_endpoint_create(
-            *args: Any, _original=original_endpoint_create, **kwargs: Any
-        ):
+        async def counted_endpoint_create(*args: Any, _original=original_endpoint_create, **kwargs: Any):
             metrics["endpoint_calls"] += 1
             return await _original(*args, **kwargs)
 
         endpoint.create = counted_endpoint_create
+    if receipt:
+        return metrics
     client._benchmark_call_metrics = metrics
 
 
-def call_metrics(client: Any) -> dict[str, Any]:
-    metrics = getattr(client, "_benchmark_call_metrics", {})
+def call_metrics(client: Any, *, counters: dict[str, Any] | None = None) -> dict[str, Any]:
+    metrics = getattr(client, "_benchmark_call_metrics", {}) if counters is None else counters
     logical = int(metrics.get("logical_calls", 0))
     endpoint_calls = int(metrics.get("endpoint_calls", 0))
     endpoints = list(getattr(client, "_clients", []))

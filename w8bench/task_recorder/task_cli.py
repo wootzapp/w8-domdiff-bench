@@ -21,10 +21,7 @@ from pathlib import Path
 from typing import Any, Iterator
 from urllib.parse import urlsplit
 
-# Local runner exports reused here so validation and environment handling have
-# one canonical implementation across direct and wrapper-based invocations.
 from .runner import load_env, safe_task_id
-# Shared exception avoids defining a second CLI-only error hierarchy.
 from .recorder_support import RunnerError, write_json_lines, utc_now
 
 
@@ -35,8 +32,6 @@ ACTIVE_RUN_PATH = RUNTIME_ROOT / "active-run.json"
 TRANSITION_LOCK_PATH = RUNTIME_ROOT / "task-transition.lock"
 DEFAULT_STOP_TIMEOUT_SECONDS = 15.0
 DEFAULT_PROFILE_TASK_COUNT_PATH = "/home/wootz/.task-recorder-dom-diff-task-count"
-# This grace period lets the old runner flush its manifest before SIGKILL; the
-# CLI exposes an override for unusually slow filesystems.
 
 
 def process_start_ticks(pid: int) -> int | None:
@@ -596,9 +591,9 @@ def build_runner_command(
         "--max-steps",
         str(max_steps),
     ]
-    configured_model = os.environ.get("OPENAI_MODEL", "").strip()
-    if configured_model != "gpt-6.1-terra" or model and model != configured_model:
-        raise RunnerError("actor model must match the single OPENAI_MODEL=gpt-6.1-terra configuration")
+    configured_model = os.environ.get("ACTOR_MODEL", "").strip()
+    if configured_model != "gemini-3.1-pro-preview" or model and model != configured_model:
+        raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
     command.extend(["--model", configured_model])
     if definition.get("source_catalog"):
         command.extend(["--source-catalog", str(definition["source_catalog"])])
@@ -613,7 +608,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("task_id", nargs="*", help="catalog task selectors; omitted in a batch means the full catalog")
     parser.add_argument("--trials", type=int, help="positive trial count per arm; required to schedule a batch")
     parser.add_argument("--rubric-dir", type=Path, help="frozen task rubrics; required for full evaluation of every batch recording")
-    parser.add_argument("--judge-model", help="explicit gpt-5.6-sol completion judge; required for batches")
+    parser.add_argument("--judge-model", help="explicit gpt-6.1-sol completion judge; required for batches")
     parser.add_argument("--task", help="complete manual task instruction and constraints")
     parser.add_argument("--start-url", help="absolute HTTP(S) starting URL for a manual task")
     catalog_group = parser.add_mutually_exclusive_group()
@@ -656,224 +651,209 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Validate one task, prepare this checkout's browser, and wait for its runner."""
-    args = parse_args(argv)
-    load_env(args.env_file)
-    configured_model = os.environ.get("OPENAI_MODEL", "").strip()
-    if configured_model != "gpt-6.1-terra" or args.model and args.model != configured_model:
-        raise RunnerError("actor model must match the single OPENAI_MODEL=gpt-6.1-terra configuration")
-    args.model = configured_model
-    if args.rubric_dir and not args.judge_model:
-        raise RunnerError("completion grading requires explicit --judge-model gpt-5.6-sol; actor fallback is forbidden")
-    if args.judge_model and args.judge_model != "gpt-5.6-sol":
-        raise RunnerError("completion judge must be explicitly configured as gpt-5.6-sol")
-    if args.max_steps <= 0 or min(args.viewport_width, args.viewport_height, args.max_output_tokens) <= 0:
-        raise RunnerError("turn budget, viewport and output budget must be positive")
-    if args.max_output_tokens != 10000:
-        raise RunnerError("actor output limit must be exactly 10000 tokens")
-    if args.max_steps > 200:
-        raise RunnerError("actor turn budget must be positive and no greater than 200")
-    if args.previous_run_stop_timeout < 0:
-        raise RunnerError("--previous-run-stop-timeout must not be negative")
-    if args.trials is not None:
-        if args.trials <= 0 or args.observation_mode or args.task or args.start_url or args.no_browser_start or args.catalog_url:
-            raise RunnerError("a batch requires positive --trials, catalog tasks, fresh profiles and both arms")
-        if args.judge_model != "gpt-5.6-sol" or not args.dry_run and args.rubric_dir is None:
-            raise RunnerError("every batch trial requires explicit --judge-model gpt-5.6-sol and execution requires --rubric-dir")
-        from w8bench.run_paths import run_directory, resolve_run_name
-        catalog_path = args.catalog_file or Path(os.environ.get("TASK_CATALOG_FILE", ""))
-        if not catalog_path.is_file():
-            raise RunnerError("a batch needs a frozen local --catalog-file")
-        catalog_bytes = catalog_path.read_bytes()
-        raw_catalog = catalog_bytes.decode("utf-8")
-        catalog_hash = hashlib.sha256(catalog_bytes).hexdigest()
-        selectors = args.task_id or [str(json.loads(line)["task_id"]) for line in raw_catalog.splitlines() if line.strip()]
-        definitions = [fetch_catalog_task(str(catalog_path), selector) for selector in selectors]
-        if any(definition["catalog_sha256"] != catalog_hash for definition in definitions):
-            raise RunnerError("task catalog changed while selecting batch tasks")
-        if not definitions or len({d["source_task_id"] for d in definitions}) != len(definitions):
-            raise RunnerError("batch task identities must be nonempty and unique")
-        checked_at = datetime.now(timezone.utc)
-        for definition in definitions:
-            if definition.get("valid_until") and checked_at.date() > date.fromisoformat(definition["valid_until"]):
-                print(f"Warning: task {definition['source_task_id']} expired after {definition['valid_until']} UTC.", file=sys.stderr)
-                if not args.allow_expired:
-                    raise RunnerError("expired catalog task; review it or explicitly use --allow-expired")
-        planning_only = args.dry_run and (args.rubric_dir is None or any(
-            not (args.rubric_dir.resolve() / f"{safe_task_id(definition['source_task_id'])}.json").is_file()
-            for definition in definitions))
-        batch_dir = run_directory(args.output_dir, resolve_run_name(args.run_name)).resolve()
-        batch_dir.mkdir(parents=True, exist_ok=True)
-        frozen_catalog = batch_dir / "catalog.jsonl"
-        if frozen_catalog.exists() and frozen_catalog.read_bytes() != catalog_bytes:
-            raise RunnerError("saved batch catalog differs from the requested catalog")
-        if not frozen_catalog.exists():
-            frozen_catalog.write_bytes(catalog_bytes)
-        for definition in definitions:
-            definition["source_catalog"] = str(frozen_catalog)
-        ledger_path = batch_dir / ("schedule_preview.jsonl" if planning_only else "ledger.jsonl")
-        model_name = args.model
-        schedule = []
-        for trial in range(1, args.trials + 1):
-            for index, definition in enumerate(definitions):
-                modes = ["dom", "screenshot"] if (index + trial - 1) % 2 == 0 else ["screenshot", "dom"]
-                for order, mode in enumerate(modes, 1):
-                    identity = safe_task_id(definition["source_task_id"])
-                    rubric = args.rubric_dir.resolve() / f"{identity}.json" if args.rubric_dir else None
-                    if not args.dry_run and (rubric is None or not rubric.is_file()):
-                        raise RunnerError(f"missing frozen rubric: {rubric}")
-                    schedule.append({"sequence": len(schedule)+1, "task_id": identity, "arm": mode,
-                        "trial": trial, "trials": args.trials, "arm_order": order,
-                        "run_name": f"trial_{trial:04d}", "task": definition,
-                        "catalog_sha256": catalog_hash,
-                        "recording": str(batch_dir / f"trial_{trial:04d}" / mode / identity),
-                        "configuration": {"model": model_name, "max_turns": args.max_steps,
-                            "max_output_tokens": args.max_output_tokens,
-                            "viewport": [args.viewport_width, args.viewport_height],
-                            "image": os.environ.get("IMAGE"), "reasoning_effort": "medium",
-                            "allow_expired": args.allow_expired,
-                            "base_url": os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-                            "browser_lang": os.environ.get("BROWSER_LANG", "en-US"),
-                            "browser_accept_language": os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"),
-                            "recorder_code_sha256": hashlib.sha256(b"".join(
-                                f.read_bytes() for f in sorted((ROOT / "w8bench").rglob("*.py")))).hexdigest()},
-                        "rubric": str(rubric) if rubric else None,
-                        "rubric_sha256": hashlib.sha256(rubric.read_bytes()).hexdigest() if rubric and rubric.is_file() else None,
-                        "planning_only": planning_only,
-                        "judge_model": args.judge_model,
-                        "completed": False, "technical_outcome": "not_started", "grade_outcome": "ungraded",
-                        "grade_completed": False, "evaluation_outcome": "not_started"})
-        # The global batch lock prevents two schedules from alternating through one browser.
-        with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
-            if ledger_path.exists() and not planning_only:
-                ledger = [json.loads(line) for line in ledger_path.read_text().splitlines() if line.strip()]
-                if any(row.get("planning_only") for row in ledger):
-                    raise RunnerError("a planning-only schedule cannot be resumed as an execution ledger")
-                if len(ledger) != len(schedule):
-                    raise RunnerError("saved schedule differs from requested task/arm/trial set")
-                for saved, expected in zip(ledger, schedule):
-                    if any(saved.get(key) != value for key, value in expected.items()
-                           if key not in {"completed", "technical_outcome", "grade_outcome", "grade_completed", "evaluation_outcome"}):
-                        raise RunnerError("saved schedule configuration differs; choose a new run name")
-            else:
-                ledger = schedule
-                write_json_lines(ledger_path, ledger)  # Commit the entire denominator before starting work.
-            marker = read_active_run()
-            if marker is not None:
-                if owned_process_group(marker) is not None:
-                    raise RunnerError("a recorder is still running; finish or stop it before resuming the batch")
-                ACTIVE_RUN_PATH.unlink(missing_ok=True)
-            # A killed batch may leave its launcher or judge alive before/after the recorder marker.
-            # Refuse reconciliation while those processes can still mutate scheduled artifacts.
-            for entry in Path("/proc").iterdir():
-                if not entry.name.isdigit() or int(entry.name) == os.getpid():
-                    continue
-                command = process_command(int(entry.name))
-                if ("w8bench.task_recorder.task_cli" in command and str(batch_dir) in command
-                        or "w8bench.verifier.run_comparison" in command
-                        and any(row["recording"] in command for row in ledger)):
-                    raise RunnerError(f"a scheduled launcher or judge is still running: pid {entry.name}")
-            if args.dry_run:
-                print(f"{'Planning-only schedule' if planning_only else 'Schedule'}: {ledger_path}; {len(ledger)} rows; no tasks started" +
-                    ("; execution requires frozen rubrics" if planning_only else ""))
-                return 0
-            for row in ledger:
-                if hashlib.sha256(frozen_catalog.read_bytes()).hexdigest() != row["catalog_sha256"]:
-                    raise RunnerError("frozen batch catalog changed after scheduling")
-                directory = Path(row["recording"])
-                if not row["completed"]:
-                    # A started attempt is terminal on resume; never silently buy another attempt.
-                    if row["technical_outcome"] == "running" or row.get("started_at"):
+def run_batch(args: argparse.Namespace) -> int:
+    """Schedule and resume paired actor attempts and their evaluation."""
+    if args.trials <= 0 or args.observation_mode or args.task or args.start_url or args.no_browser_start or args.catalog_url:
+        raise RunnerError("a batch requires positive --trials, catalog tasks, fresh profiles and both arms")
+    if args.judge_model != "gpt-6.1-sol" or not args.dry_run and args.rubric_dir is None:
+        raise RunnerError("every batch trial requires explicit --judge-model gpt-6.1-sol and execution requires --rubric-dir")
+    from w8bench.run_paths import run_directory, resolve_run_name
+    catalog_path = args.catalog_file or Path(os.environ.get("TASK_CATALOG_FILE", ""))
+    if not catalog_path.is_file():
+        raise RunnerError("a batch needs a frozen local --catalog-file")
+    catalog_bytes = catalog_path.read_bytes()
+    raw_catalog = catalog_bytes.decode("utf-8")
+    catalog_hash = hashlib.sha256(catalog_bytes).hexdigest()
+    selectors = args.task_id or [str(json.loads(line)["task_id"]) for line in raw_catalog.splitlines() if line.strip()]
+    definitions = [fetch_catalog_task(str(catalog_path), selector) for selector in selectors]
+    if any(definition["catalog_sha256"] != catalog_hash for definition in definitions):
+        raise RunnerError("task catalog changed while selecting batch tasks")
+    if not definitions or len({d["source_task_id"] for d in definitions}) != len(definitions):
+        raise RunnerError("batch task identities must be nonempty and unique")
+    checked_at = datetime.now(timezone.utc)
+    for definition in definitions:
+        if definition.get("valid_until") and checked_at.date() > date.fromisoformat(definition["valid_until"]):
+            print(f"Warning: task {definition['source_task_id']} expired after {definition['valid_until']} UTC.", file=sys.stderr)
+            if not args.allow_expired:
+                raise RunnerError("expired catalog task; review it or explicitly use --allow-expired")
+    planning_only = args.dry_run and (args.rubric_dir is None or any(
+        not (args.rubric_dir.resolve() / f"{safe_task_id(definition['source_task_id'])}.json").is_file()
+        for definition in definitions))
+    batch_dir = run_directory(args.output_dir, resolve_run_name(args.run_name)).resolve()
+    batch_dir.mkdir(parents=True, exist_ok=True)
+    frozen_catalog = batch_dir / "catalog.jsonl"
+    if frozen_catalog.exists() and frozen_catalog.read_bytes() != catalog_bytes:
+        raise RunnerError("saved batch catalog differs from the requested catalog")
+    if not frozen_catalog.exists():
+        frozen_catalog.write_bytes(catalog_bytes)
+    for definition in definitions:
+        definition["source_catalog"] = str(frozen_catalog)
+    ledger_path = batch_dir / ("schedule_preview.jsonl" if planning_only else "ledger.jsonl")
+    model_name = args.model
+    schedule = []
+    for trial in range(1, args.trials + 1):
+        for index, definition in enumerate(definitions):
+            modes = ["dom", "screenshot"] if (index + trial - 1) % 2 == 0 else ["screenshot", "dom"]
+            for order, mode in enumerate(modes, 1):
+                identity = safe_task_id(definition["source_task_id"])
+                rubric = args.rubric_dir.resolve() / f"{identity}.json" if args.rubric_dir else None
+                if not args.dry_run and (rubric is None or not rubric.is_file()):
+                    raise RunnerError(f"missing frozen rubric: {rubric}")
+                schedule.append({"sequence": len(schedule)+1, "task_id": identity, "arm": mode,
+                    "trial": trial, "trials": args.trials, "arm_order": order,
+                    "run_name": f"trial_{trial:04d}", "task": definition,
+                    "catalog_sha256": catalog_hash,
+                    "recording": str(batch_dir / f"trial_{trial:04d}" / mode / identity),
+                    "configuration": {"model": model_name, "max_turns": args.max_steps,
+                        "max_output_tokens": args.max_output_tokens,
+                        "viewport": [args.viewport_width, args.viewport_height],
+                        "image": os.environ.get("IMAGE"), "reasoning_effort": "medium",
+                        "allow_expired": args.allow_expired,
+                        "base_url": os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
+                        "browser_lang": os.environ.get("BROWSER_LANG", "en-US"),
+                        "browser_accept_language": os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"),
+                        "recorder_code_sha256": hashlib.sha256(b"".join(
+                            f.read_bytes() for f in sorted((ROOT / "w8bench").rglob("*.py")))).hexdigest()},
+                    "rubric": str(rubric) if rubric else None,
+                    "rubric_sha256": hashlib.sha256(rubric.read_bytes()).hexdigest() if rubric and rubric.is_file() else None,
+                    "planning_only": planning_only,
+                    "judge_model": args.judge_model,
+                    "completed": False, "technical_outcome": "not_started", "grade_outcome": "ungraded",
+                    "grade_completed": False, "evaluation_outcome": "not_started"})
+    # The global batch lock prevents two schedules from alternating through one browser.
+    with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
+        if ledger_path.exists() and not planning_only:
+            ledger = [json.loads(line) for line in ledger_path.read_text().splitlines() if line.strip()]
+            if any(row.get("planning_only") for row in ledger):
+                raise RunnerError("a planning-only schedule cannot be resumed as an execution ledger")
+            if len(ledger) != len(schedule):
+                raise RunnerError("saved schedule differs from requested task/arm/trial set")
+            for saved, expected in zip(ledger, schedule):
+                if any(saved.get(key) != value for key, value in expected.items()
+                       if key not in {"completed", "technical_outcome", "grade_outcome", "grade_completed", "evaluation_outcome"}):
+                    raise RunnerError("saved schedule configuration differs; choose a new run name")
+        else:
+            ledger = schedule
+            write_json_lines(ledger_path, ledger)  # Commit the entire denominator before starting work.
+        marker = read_active_run()
+        if marker is not None:
+            if owned_process_group(marker) is not None:
+                raise RunnerError("a recorder is still running; finish or stop it before resuming the batch")
+            ACTIVE_RUN_PATH.unlink(missing_ok=True)
+        # A killed batch may leave its launcher or judge alive before/after the recorder marker.
+        # Refuse reconciliation while those processes can still mutate scheduled artifacts.
+        for entry in Path("/proc").iterdir():
+            if not entry.name.isdigit() or int(entry.name) == os.getpid():
+                continue
+            command = process_command(int(entry.name))
+            if ("w8bench.task_recorder.task_cli" in command and str(batch_dir) in command
+                    or "w8bench.verifier.run_comparison" in command
+                    and any(row["recording"] in command for row in ledger)):
+                raise RunnerError(f"a scheduled launcher or judge is still running: pid {entry.name}")
+        if args.dry_run:
+            print(f"{'Planning-only schedule' if planning_only else 'Schedule'}: {ledger_path}; {len(ledger)} rows; no tasks started" +
+                ("; execution requires frozen rubrics" if planning_only else ""))
+            return 0
+        for row in ledger:
+            if hashlib.sha256(frozen_catalog.read_bytes()).hexdigest() != row["catalog_sha256"]:
+                raise RunnerError("frozen batch catalog changed after scheduling")
+            directory = Path(row["recording"])
+            if not row["completed"]:
+                # A started attempt is terminal on resume; never silently buy another attempt.
+                if row["technical_outcome"] == "running" or row.get("started_at"):
+                    final_path = directory / "final.json"
+                    row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
+                        if final_path.is_file() else "interrupted")
+                    row.update(completed=True, ended_at=utc_now())
+                    if args.rubric_dir and final_path.is_file():
+                        row["grade_outcome"] = "pending"
+                else:
+                    row.update(technical_outcome="running", started_at=utc_now(), launcher_pid=os.getpid())
+                    write_json_lines(ledger_path, ledger)
+                    log_path = batch_dir / "logs" / f"attempt_{row['sequence']:06d}.log"
+                    log_path.parent.mkdir(parents=True, exist_ok=True)
+                    row["log"] = str(log_path)
+                    command = [sys.executable, "-m", "w8bench.task_recorder.task_cli", row["task_id"],
+                        "--catalog-file", str(catalog_path.resolve()), "--env-file", str(args.env_file.resolve()),
+                        "--observation-mode", row["arm"], "--output-dir", str(batch_dir),
+                        "--run-name", row["run_name"], "--model", model_name,
+                        "--max-turns", str(args.max_steps), "--max-output-tokens", str(args.max_output_tokens),
+                        "--viewport-width", str(args.viewport_width), "--viewport-height", str(args.viewport_height),
+                        "--previous-run-stop-timeout", str(args.previous_run_stop_timeout)]
+                    if args.allow_expired:
+                        command.append("--allow-expired")
+                    try:
+                        with log_path.open("a", encoding="utf-8") as log:
+                            result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+                        row["exit_code"] = result.returncode
                         final_path = directory / "final.json"
                         row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
-                            if final_path.is_file() else "interrupted")
-                        row.update(completed=True, ended_at=utc_now())
+                            if final_path.is_file() else "incomplete_recording" if directory.exists() else "startup_failure")
                         if args.rubric_dir and final_path.is_file():
                             row["grade_outcome"] = "pending"
-                    else:
-                        row.update(technical_outcome="running", started_at=utc_now(), launcher_pid=os.getpid())
+                    except KeyboardInterrupt:
+                        row.update(technical_outcome="interrupted", completed=True, ended_at=utc_now())
                         write_json_lines(ledger_path, ledger)
-                        log_path = batch_dir / "logs" / f"attempt_{row['sequence']:06d}.log"
-                        log_path.parent.mkdir(parents=True, exist_ok=True)
-                        row["log"] = str(log_path)
-                        command = [sys.executable, "-m", "w8bench.task_recorder.task_cli", row["task_id"],
-                            "--catalog-file", str(catalog_path.resolve()), "--env-file", str(args.env_file.resolve()),
-                            "--observation-mode", row["arm"], "--output-dir", str(batch_dir),
-                            "--run-name", row["run_name"], "--model", model_name,
-                            "--max-turns", str(args.max_steps), "--max-output-tokens", str(args.max_output_tokens),
-                            "--viewport-width", str(args.viewport_width), "--viewport-height", str(args.viewport_height),
-                            "--previous-run-stop-timeout", str(args.previous_run_stop_timeout)]
-                        if args.allow_expired:
-                            command.append("--allow-expired")
-                        try:
-                            with log_path.open("a", encoding="utf-8") as log:
-                                result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
-                            row["exit_code"] = result.returncode
-                            final_path = directory / "final.json"
-                            row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
-                                if final_path.is_file() else "incomplete_recording" if directory.exists() else "startup_failure")
-                            if args.rubric_dir and final_path.is_file():
-                                row["grade_outcome"] = "pending"
-                        except KeyboardInterrupt:
-                            row.update(technical_outcome="interrupted", completed=True, ended_at=utc_now())
-                            write_json_lines(ledger_path, ledger)
-                            raise
-                        except Exception as error:
-                            row["technical_outcome"] = "startup_failure" if not directory.exists() else "incomplete_recording"
-                            row["error"] = f"{type(error).__name__}: {error}"
-                        row.update(completed=True, ended_at=utc_now(), actor_ended_at=utc_now())
+                        raise
+                    except Exception as error:
+                        row["technical_outcome"] = "startup_failure" if not directory.exists() else "incomplete_recording"
+                        row["error"] = f"{type(error).__name__}: {error}"
+                    row.update(completed=True, ended_at=utc_now(), actor_ended_at=utc_now())
+                write_json_lines(ledger_path, ledger)
+                print(f"{row['sequence']}/{len(ledger)} {row['task_id']} {row['arm']} trial {row['trial']}: "
+                    f"{row['technical_outcome']}; grade={row['grade_outcome']}", flush=True)
+            # Record both arms back to back before any grading latency.
+            if row["arm_order"] == 2:
+                for partner in ledger[row["sequence"]-2:row["sequence"]]:
+                    if partner["grade_completed"]:
+                        continue
+                    recording_path = Path(partner["recording"])
+                    if not (recording_path / "final.json").is_file():
+                        partner.update(grade_completed=True, grade_outcome="ungraded",
+                            evaluation_outcome="unavailable", evaluation_reason="recording_not_finalized")
+                        write_json_lines(ledger_path, ledger)
+                        continue
+                    if "log" not in partner:
+                        path = batch_dir / "logs" / f"attempt_{partner['sequence']:06d}.log"
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        partner["log"] = str(path)
+                    grade_path = recording_path / "completion.json"
+                    if partner["grade_outcome"] == "running":
+                        partner["evaluation_previous_interruption"] = True
+                    partner.update(grade_outcome="running", evaluation_outcome="running", judge_started_at=utc_now())
                     write_json_lines(ledger_path, ledger)
-                    print(f"{row['sequence']}/{len(ledger)} {row['task_id']} {row['arm']} trial {row['trial']}: "
-                        f"{row['technical_outcome']}; grade={row['grade_outcome']}", flush=True)
-                # Record both arms back to back before any grading latency.
-                if row["arm_order"] == 2:
-                    for partner in ledger[row["sequence"]-2:row["sequence"]]:
-                        if partner["grade_completed"]:
-                            continue
-                        recording_path = Path(partner["recording"])
-                        if not (recording_path / "final.json").is_file():
-                            partner.update(grade_completed=True, grade_outcome="ungraded",
-                                evaluation_outcome="unavailable", evaluation_reason="recording_not_finalized")
-                            write_json_lines(ledger_path, ledger)
-                            continue
-                        if "log" not in partner:
-                            path = batch_dir / "logs" / f"attempt_{partner['sequence']:06d}.log"
-                            path.parent.mkdir(parents=True, exist_ok=True)
-                            partner["log"] = str(path)
-                        grade_path = recording_path / "completion.json"
-                        if partner["grade_outcome"] == "running":
-                            partner["evaluation_previous_interruption"] = True
-                        partner.update(grade_outcome="running", evaluation_outcome="running", judge_started_at=utc_now())
+                    try:
+                        with Path(partner["log"]).open("a", encoding="utf-8") as log:
+                            grade = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
+                                "--run", str(recording_path), "--rubric", partner["rubric"],
+                                "--env-file", str(args.env_file.resolve()), "--judge-model", partner["judge_model"], "--execute"],
+                                cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+                        partner["judge_exit_code"] = grade.returncode
+                        partner["grade_outcome"] = (json.loads(grade_path.read_text())["verdict"]
+                            if grade_path.is_file() else "grading_error")
+                        from .prepare_verifier_data import inspect_recording
+                        checked = inspect_recording(recording_path)
+                        evaluation_path = (recording_path.parent.parent / "evaluations" / partner["run_name"] /
+                            partner["arm"] / partner["task_id"] / checked["recording_sha256"] / "evaluation.json")
+                        partner["evaluation_path"] = str(evaluation_path)
+                        partner["evaluation_outcome"] = (json.loads(evaluation_path.read_text())["status"]
+                            if evaluation_path.is_file() else "unavailable")
+                    except KeyboardInterrupt:
+                        partner.update(grade_outcome="interrupted", evaluation_outcome="interrupted",
+                            grade_completed=False, judge_ended_at=utc_now())
                         write_json_lines(ledger_path, ledger)
-                        try:
-                            with Path(partner["log"]).open("a", encoding="utf-8") as log:
-                                grade = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
-                                    "--run", str(recording_path), "--rubric", partner["rubric"],
-                                    "--env-file", str(args.env_file.resolve()), "--judge-model", partner["judge_model"], "--execute"],
-                                    cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
-                            partner["judge_exit_code"] = grade.returncode
-                            partner["grade_outcome"] = (json.loads(grade_path.read_text())["verdict"]
-                                if grade_path.is_file() else "grading_error")
-                            from .prepare_verifier_data import inspect_recording
-                            checked = inspect_recording(recording_path)
-                            evaluation_path = (recording_path.parent.parent / "evaluations" / partner["run_name"] /
-                                partner["arm"] / partner["task_id"] / checked["recording_sha256"] / "evaluation.json")
-                            partner["evaluation_path"] = str(evaluation_path)
-                            partner["evaluation_outcome"] = (json.loads(evaluation_path.read_text())["status"]
-                                if evaluation_path.is_file() else "unavailable")
-                        except KeyboardInterrupt:
-                            partner.update(grade_outcome="interrupted", evaluation_outcome="interrupted",
-                                grade_completed=False, judge_ended_at=utc_now())
-                            write_json_lines(ledger_path, ledger)
-                            raise
-                        except Exception as error:
-                            partner.update(grade_outcome="grading_error", evaluation_outcome="failed",
-                                judge_error=f"{type(error).__name__}: {error}")
-                        partner.update(grade_completed=True, judge_ended_at=utc_now())
-                        write_json_lines(ledger_path, ledger)
-            print(ledger_path)
-            return 0
+                        raise
+                    except Exception as error:
+                        partner.update(grade_outcome="grading_error", evaluation_outcome="failed",
+                            judge_error=f"{type(error).__name__}: {error}")
+                    partner.update(grade_completed=True, judge_ended_at=utc_now())
+                    write_json_lines(ledger_path, ledger)
+        print(ledger_path)
+        return 0
+
+
+def run_single_task(args: argparse.Namespace) -> int:
+    """Run one task with browser-profile and process-group ownership."""
     if len(args.task_id) != 1 or not args.observation_mode:
         raise RunnerError("one task needs --observation-mode; a batch needs --trials")
     if args.rubric_dir or args.judge_model:
@@ -1000,6 +980,31 @@ def main(argv: list[str] | None = None) -> int:
             return process.wait()
     finally:
         clear_active_run(process.pid)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Validate configuration and dispatch one task or a paired trial schedule."""
+    args = parse_args(argv)
+    load_env(args.env_file)
+    configured_model = os.environ.get("ACTOR_MODEL", "").strip()
+    if configured_model != "gemini-3.1-pro-preview" or args.model and args.model != configured_model:
+        raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
+    args.model = configured_model
+    if args.rubric_dir and not args.judge_model:
+        raise RunnerError("completion grading requires explicit --judge-model gpt-6.1-sol; actor fallback is forbidden")
+    if args.judge_model and args.judge_model != "gpt-6.1-sol":
+        raise RunnerError("completion judge must be explicitly configured as gpt-6.1-sol")
+    if args.max_steps <= 0 or min(args.viewport_width, args.viewport_height, args.max_output_tokens) <= 0:
+        raise RunnerError("turn budget, viewport and output budget must be positive")
+    if args.max_output_tokens != 10000:
+        raise RunnerError("actor output limit must be exactly 10000 tokens")
+    if args.max_steps > 200:
+        raise RunnerError("actor turn budget must be positive and no greater than 200")
+    if args.previous_run_stop_timeout < 0:
+        raise RunnerError("--previous-run-stop-timeout must not be negative")
+    if args.trials is not None:
+        return run_batch(args)
+    return run_single_task(args)
 
 
 if __name__ == "__main__":

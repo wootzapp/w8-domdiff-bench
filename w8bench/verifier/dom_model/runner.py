@@ -13,33 +13,32 @@ import os
 from pathlib import Path
 from typing import Any
 
-from .clients.graceful_client import GracefulRetryClient
-from .rubric_agent import (
-    MMRubricAgent,
-    MMRubricAgentConfig,
-    MMRubricOutcomeResult,
-    MMRubricResult,
-)
-from .utils.action_schema import FARA_ACTION_DEFINITIONS
-from .utils.metrics import rubric_receipt
-from .utils.rubric import load_frozen_rubric, require_matching_embedded_rubric
+from w8bench.verifier.clients.retry import GracefulRetryClient
+from .rubric_agent import MMRubricAgent, MMRubricAgentConfig
+from ..models import MMRubricOutcomeResult, MMRubricResult
+from ..rubric_scoring import FARA_ACTION_DEFINITIONS
 
-from .control import (
+from ..common import (
+    CanonicalRubric,
     CANONICAL_ACTION_MODEL,
     CANONICAL_JUDGE_MODEL,
     canonical_json_bytes,
     load_one_task,
+    load_frozen_rubric,
+    require_matching_embedded_rubric,
+    rubric_receipt,
     validate_generation_metrics,
     write_json,
 )
 
 from .adapter import create_datapoint
-from .dom_model_agent import DomModelRubricAgent
+from .evidence import DomModelRubricAgent
 from .alignment import validate_alignment
-from .instrumentation import call_metrics, instrument_client_calls, usage_dict
-from .package_manifest import source_receipt
-from .state_parser import load_dom_model_states
-from .trajectory_helpers import action_events, load_trajectory
+from ..instrumentation import call_metrics, instrument_client_calls, usage_dict
+from ..package_manifests import dom_source_receipt
+from .states import load_dom_model_states
+from ..trajectory import action_events, load_trajectory
+from .models import Trajectory
 
 
 logger = logging.getLogger("dom_model")
@@ -67,7 +66,7 @@ def _read_task_data(task_dir: Path) -> dict[str, Any]:
 def preflight_dom_model_task(
     task_dir: Path, *, rubric_file: str | Path, generation_metrics: str | Path
 ) -> tuple[dict[str, Any], dict[str, Any], Any]:
-    package = source_receipt()
+    package = dom_source_receipt()
     for filename in ("task_data.json", "web_surfer.log", "final_answer.json", "task_data_with_canonical_rubric.json"):
         if not (task_dir / filename).is_file():
             raise ValueError(f"Missing DOM-model control file: {task_dir / filename}")
@@ -83,13 +82,15 @@ def preflight_dom_model_task(
         raise ValueError("Frozen-rubric sidecar task fields drifted")
     if canonical_json_bytes(embedded) != canonical_json_bytes(frozen.precomputed_rubric):
         raise ValueError("Frozen-rubric sidecar rubric drifted")
-    metrics = validate_generation_metrics(generation_metrics, type("Frozen", (), {
-        "task_id": task_id,
-        "rubric": frozen.precomputed_rubric,
-        "sha256": frozen.sha256,
-        "denominator": sum(float(item["max_points"]) for item in frozen.precomputed_rubric["items"]),
-    })())
-    trajectory = load_trajectory(task_dir)
+    metrics_rubric = CanonicalRubric(
+        task_id=task_id,
+        rubric=frozen.precomputed_rubric,
+        sha256=frozen.sha256,
+        denominator=sum(float(item["max_points"]) for item in frozen.precomputed_rubric["items"]),
+        path=frozen.path,
+    )
+    metrics = validate_generation_metrics(generation_metrics, metrics_rubric, native=True)
+    trajectory = load_trajectory(task_dir, Trajectory)
     actions = action_events(trajectory)
     states = load_dom_model_states(task_dir, action_count=len(actions))
     alignment = validate_alignment(
@@ -160,18 +161,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         }
     eval_config = Path(args.eval_config).resolve(strict=True)
     action_client = GracefulRetryClient.from_path(
-        path=str(eval_config), logger=logger, eval_model=args.action_model
+        path=str(eval_config), logger=logger, eval_model=args.action_model, evidence_mode='dom_model'
     )
-    gpt5_client = GracefulRetryClient.from_path(
-        path=str(eval_config), logger=logger, eval_model=args.judge_model
+    judge_client = GracefulRetryClient.from_path(
+        path=str(eval_config), logger=logger, eval_model=args.judge_model, evidence_mode='dom_model'
     )
     instrument_client_calls(action_client)
-    instrument_client_calls(gpt5_client)
+    instrument_client_calls(judge_client)
     agent = DomModelRubricAgent(
         config=MMRubricAgentConfig(
             action_client=action_client,
             validity_date=(task_data.get("evaluation_context") or {}).get("validity_date") or datetime.now(timezone.utc).date().isoformat(),
-            gpt5_client=gpt5_client,
+            judge_client=judge_client,
             max_states_per_criterion=args.max_evidence_per_criterion,
             min_relevance_threshold=args.min_relevance_threshold,
             majority_vote_instances=args.majority_vote_instances,
@@ -218,11 +219,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "evaluation_context": task_data.get("evaluation_context"),
         "validity_date": agent.config.validity_date,
         "token_usage": {
-            "judge": usage_dict(gpt5_client),
+            "judge": usage_dict(judge_client),
             "action_judge": usage_dict(action_client),
         },
         "call_metrics": {
-            "judge": call_metrics(gpt5_client),
+            "judge": call_metrics(judge_client),
             "action_judge": call_metrics(action_client),
             "rubric_generation_calls": 0,
         },
@@ -257,8 +258,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--redo-eval", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
-    if args.judge_model != "gpt-5.2" or args.action_model != "gpt-5.6-terra":
-        parser.error("verifier models are pinned to judge gpt-5.2 and action/validity gpt-5.6-terra")
+    if args.judge_model != "gemini-3.1-pro-preview" or args.action_model != "gemini-3.8-flash":
+        parser.error("verifier models are pinned to judge gemini-3.1-pro-preview and action/validity gemini-3.8-flash")
     return args
 
 

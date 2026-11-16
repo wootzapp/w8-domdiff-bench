@@ -99,8 +99,9 @@ NOVNC_HOST_PORT={values['NOVNC_HOST_PORT']}
 VNC_HOST_PORT={values['VNC_HOST_PORT']}
 
 OPENAI_API_KEY={values['OPENAI_API_KEY']}
-OPENAI_MODEL={values['OPENAI_MODEL']}
+ACTOR_MODEL={values['ACTOR_MODEL']}
 OPENAI_BASE_URL={values.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')}
+GEMINI_BASE_URL={values.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')}
 W8_RUN_NAME={values.get('W8_RUN_NAME', 'run_1')}
 TASK_CATALOG_FILE={values.get('TASK_CATALOG_FILE', '')}
 
@@ -128,8 +129,8 @@ def configure(env_path: Path, refresh_ports: bool) -> int:
         return 0
 
     defaults = read_env(ROOT / ".env.example")
-    if not defaults.get("OPENAI_MODEL"):
-        raise RuntimeError(".env.example must configure OPENAI_MODEL")
+    if not defaults.get("ACTOR_MODEL"):
+        raise RuntimeError(".env.example must configure ACTOR_MODEL")
     suffix = runtime_identity()
     used: set[int] = set()
     cdp_port = choose_port(49345, used)
@@ -150,10 +151,11 @@ def configure(env_path: Path, refresh_ports: bool) -> int:
         "OPENAI_API_KEY": existing.get(
             "OPENAI_API_KEY", "replace-with-your-openai-api-key"
         ),
-        "OPENAI_MODEL": existing.get(
-            "OPENAI_MODEL", defaults["OPENAI_MODEL"]
+        "ACTOR_MODEL": existing.get(
+            "ACTOR_MODEL", defaults["ACTOR_MODEL"]
         ),
         "OPENAI_BASE_URL": existing.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+        "GEMINI_BASE_URL": existing.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
         "TASK_CATALOG_FILE": existing.get("TASK_CATALOG_FILE", defaults.get("TASK_CATALOG_FILE", "")),
         "W8_RUN_NAME": existing.get("W8_RUN_NAME", "run_1"),
     }

@@ -12,9 +12,7 @@ import pytest
 
 
 def test_rubric_agent_imports_are_self_contained():
-    """The ``dom_model`` package should import cleanly and
-    every exported class should resolve to a module inside this package
-    (i.e. no accidental leaks from outside ``dom_model``)."""
+    """Exported classes resolve to their native or shared model modules."""
     from w8bench.verifier.dom_model import (
         DataPoint,
         MMRubricAgent,
@@ -32,9 +30,11 @@ def test_rubric_agent_imports_are_self_contained():
         MMRubricResult,
         MMRubricOutcomeResult,
     ):
-        assert cls.__module__.startswith("w8bench.verifier.dom_model"), (
+        expected_module = ("w8bench.verifier.models" if cls in
+            (MMRubricResult, MMRubricOutcomeResult) else "w8bench.verifier.dom_model")
+        assert cls.__module__.startswith(expected_module), (
             f"{cls.__name__} resolved to {cls.__module__}, expected a "
-            "module inside w8bench.verifier.dom_model"
+            f"module inside {expected_module}"
         )
 
     # DataPoint round-trip
@@ -48,7 +48,7 @@ def test_rubric_agent_imports_are_self_contained():
 def test_wrapper_accepts_openai_dicts_without_conversion():
     """The rubric agent emits raw OpenAI dicts. The wrappers' ``_to_oai_messages``
     must pass dicts through unchanged so no adapter is needed."""
-    from w8bench.verifier.dom_model.clients.wrapper import _to_oai_messages
+    from w8bench.verifier.clients.providers import _to_oai_messages
 
     messages = [
         {"role": "system", "content": "You are a helpful AI assistant."},
@@ -59,7 +59,7 @@ def test_wrapper_accepts_openai_dicts_without_conversion():
             ],
         },
     ]
-    out = _to_oai_messages(messages)
+    out = _to_oai_messages(messages, evidence_mode='dom_model')
     # Identical-by-reference because each dict round-trips unchanged.
     assert out is not messages  # new list…
     assert out == messages       # …with the same contents
@@ -89,8 +89,8 @@ def test_mm_rubric_agent_accepts_client_instance():
     agent = MMRubricAgent(
         config=MMRubricAgentConfig(
             action_client=_DummyClient(),
-            gpt5_client=_DummyClient(),
+            judge_client=_DummyClient(),
         )
     )
     assert agent.config.action_client is not None
-    assert agent.config.gpt5_client is not None
+    assert agent.config.judge_client is not None

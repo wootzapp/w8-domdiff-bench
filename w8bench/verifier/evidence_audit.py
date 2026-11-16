@@ -14,9 +14,7 @@ import hashlib
 import json
 import mimetypes
 import os
-import random
 import re
-from statistics import quantiles
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -24,7 +22,7 @@ from typing import Any, Callable
 import httpx
 from openai import APIConnectionError, DefaultHttpxClient, OpenAI
 
-from .common import canonical_sha256, load_canonical_rubric, load_json, write_json
+from .common import canonical_sha256, load_canonical_rubric, load_json
 from .validate_inputs import SCREENSHOT_RE
 
 
@@ -387,9 +385,8 @@ def shared_trajectory_payload(screenshot_root: Path, dom_root: Path) -> dict[str
         for index in eligible:
             if not (screenshot_root / f"screenshot{index}.png").is_file() or not (dom_root / f"dom_model{index}.txt").is_file():
                 raise ValueError("Audit-eligible paired state artifact is missing")
-        receipts = {row["state"]: row for row in context["states"]}
         for state in expected:
-            receipt = receipts.get(state, {})
+            receipt = receipt_by_state.get(state, {})
             for name, root, filename in (("screenshot.png", screenshot_root, f"screenshot{state}.png"), ("dom_model.txt", dom_root, f"dom_model{state}.txt")):
                 path = root / filename
                 artifact = receipt.get("artifacts", {}).get(name)
@@ -419,13 +416,7 @@ def shared_trajectory_payload(screenshot_root: Path, dom_root: Path) -> dict[str
     }
 
 
-def _audit_request_text(
-    *,
-    criteria: list[dict[str, Any]],
-    screenshot_context: list[dict[str, Any]],
-    dom_context: list[dict[str, Any]],
-    shared_trajectory: dict[str, Any],
-) -> str:
+def _capture_eligibility_text(shared_trajectory: dict[str, Any]) -> str:
     eligibility = shared_trajectory.get("evaluation_context")
     eligibility_text = ""
     if eligibility:
@@ -438,6 +429,17 @@ def _audit_request_text(
             "exclude navigation states from those diagnostics. Shared full action history and verified "
             "observed URLs remain shared context for every decision.\n\n"
         )
+    return eligibility_text
+
+
+def _audit_request_text(
+    *,
+    criteria: list[dict[str, Any]],
+    screenshot_context: list[dict[str, Any]],
+    dom_context: list[dict[str, Any]],
+    shared_trajectory: dict[str, Any],
+) -> str:
+    eligibility_text = _capture_eligibility_text(shared_trajectory)
     return (
         eligibility_text + "RUBRIC CRITERIA:\n"
         + json.dumps(criteria, ensure_ascii=False, indent=2)
@@ -587,18 +589,7 @@ def _adjudication_request_text(
         '{"confirmed":false,"decisive_evidence":"",'
         '"citations":[],"explanation":"why this is or is not confirmed"}'
     )
-    eligibility = shared_trajectory.get("evaluation_context")
-    eligibility_text = ""
-    if eligibility:
-        eligibility_text = (
-            "PAIRED CAPTURE ELIGIBILITY: Directional evidence-loss coverage and decisions use ONLY "
-            "the SAME original state IDs in both formats: " + json.dumps(eligibility["audit_eligible_states"]) + ". "
-            "A state missing either capture or marked navigation-in-capture is unavailable for both "
-            "directions of evidence-loss comparison. Do not treat a capture gap as modality loss. "
-            "All available own-format states remain supplied for verifier-miss diagnostics; do not "
-            "exclude navigation states from those diagnostics. Shared full action history and verified "
-            "observed URLs remain shared context for every decision.\n\n"
-        )
+    eligibility_text = _capture_eligibility_text(shared_trajectory)
     return (
         eligibility_text + "RUBRIC CRITERIA:\n" + json.dumps(criteria, ensure_ascii=False, indent=2)
         + "\n\nSHARED REPRESENTATION-NEUTRAL TRAJECTORY:\n"
@@ -701,8 +692,6 @@ def _completion(model: str, messages: list[dict[str, Any]], *, records: list | N
 
     try:
         if provider == "google":
-            if model.endswith("-latest"):
-                raise ValueError("Gemini audits require an exact model ID, not a -latest alias")
             key = os.environ.get("GEMINI_API_KEY", "").strip()
             if not key:
                 raise ValueError("GEMINI_API_KEY is required for Gemini audit models")
@@ -710,7 +699,7 @@ def _completion(model: str, messages: list[dict[str, Any]], *, records: list | N
                 from google import genai
                 from google.genai import types
             except ImportError as error:
-                raise RuntimeError("Install the gemini extra: pip install -e '.[gemini]'") from error
+                raise RuntimeError("Install the project dependencies: pip install -e .") from error
             system, contents = [], []
             for message in messages:
                 role, body = message["role"], message["content"]
@@ -949,38 +938,13 @@ def _resolve_source_name(source: object, allowed_sources: set[str], modality: st
     )
 
 
-def _validate_modality_decision(
-    value: object,
+def _validate_citations(
+    citations: list,
     *,
     modality: str,
     allowed_sources: set[str],
     source_root: Path,
-) -> dict[str, Any]:
-    keys = {
-        "coverage", "available_evidence", "missing_required_evidence",
-        "verifier_caught", "citations",
-    }
-    if not isinstance(value, dict) or set(value) != keys:
-        raise ValueError(f"{modality} decision has an invalid schema")
-    coverage = value.get("coverage")
-    if coverage not in {"COMPLETE", "PARTIAL", "ABSENT"}:
-        raise ValueError(f"{modality} coverage must be COMPLETE, PARTIAL, or ABSENT")
-    available = _validate_string_list(value.get("available_evidence"), "available_evidence")
-    missing = _validate_string_list(
-        value.get("missing_required_evidence"), "missing_required_evidence"
-    )
-    caught = value.get("verifier_caught")
-    if not isinstance(caught, bool):
-        raise ValueError(f"{modality} verifier_caught must be boolean")
-    citations = value.get("citations")
-    if not isinstance(citations, list):
-        raise ValueError(f"{modality} citations must be a list")
-    if coverage == "COMPLETE" and (not available or missing or not citations):
-        raise ValueError(f"{modality} COMPLETE coverage has inconsistent detail")
-    if coverage == "PARTIAL" and (not available or not missing or not citations):
-        raise ValueError(f"{modality} PARTIAL coverage has inconsistent detail")
-    if coverage == "ABSENT" and (available or not missing or citations):
-        raise ValueError(f"{modality} ABSENT coverage has inconsistent detail")
+) -> list[dict[str, str]]:
     clean_citations: list[dict[str, str]] = []
     citation_errors: list[str] = []
     for ordinal, citation in enumerate(citations, start=1):
@@ -1028,6 +992,43 @@ def _validate_modality_decision(
             citation_errors.append(f"citation {ordinal}: {error}")
     if citation_errors:
         raise ValueError("\n".join(citation_errors))
+    return clean_citations
+
+
+def _validate_modality_decision(
+    value: object,
+    *,
+    modality: str,
+    allowed_sources: set[str],
+    source_root: Path,
+) -> dict[str, Any]:
+    keys = {
+        "coverage", "available_evidence", "missing_required_evidence",
+        "verifier_caught", "citations",
+    }
+    if not isinstance(value, dict) or set(value) != keys:
+        raise ValueError(f"{modality} decision has an invalid schema")
+    coverage = value.get("coverage")
+    if coverage not in {"COMPLETE", "PARTIAL", "ABSENT"}:
+        raise ValueError(f"{modality} coverage must be COMPLETE, PARTIAL, or ABSENT")
+    available = _validate_string_list(value.get("available_evidence"), "available_evidence")
+    missing = _validate_string_list(
+        value.get("missing_required_evidence"), "missing_required_evidence"
+    )
+    caught = value.get("verifier_caught")
+    if not isinstance(caught, bool):
+        raise ValueError(f"{modality} verifier_caught must be boolean")
+    citations = value.get("citations")
+    if not isinstance(citations, list):
+        raise ValueError(f"{modality} citations must be a list")
+    if coverage == "COMPLETE" and (not available or missing or not citations):
+        raise ValueError(f"{modality} COMPLETE coverage has inconsistent detail")
+    if coverage == "PARTIAL" and (not available or not missing or not citations):
+        raise ValueError(f"{modality} PARTIAL coverage has inconsistent detail")
+    if coverage == "ABSENT" and (available or not missing or citations):
+        raise ValueError(f"{modality} ABSENT coverage has inconsistent detail")
+    clean_citations = _validate_citations(citations, modality=modality,
+        allowed_sources=allowed_sources, source_root=source_root)
     return {
         "coverage": coverage,
         "available_evidence": available,
@@ -1093,15 +1094,12 @@ def _validate_finding(
             actual_modality = citation_modality if primary else (
                 "screenshot" if citation_modality == "dom_model" else "dom_model"
             )
-            checked = _validate_modality_decision(
-                {"coverage": "COMPLETE", "available_evidence": [evidence],
-                 "missing_required_evidence": [], "verifier_caught": True,
-                 "citations": [{**citation, "source": source}]},
+            checked_citations.extend(_validate_citations(
+                [{**citation, "source": source}],
                 modality=actual_modality,
                 allowed_sources=allowed_sources if primary else counterpart_sources,
                 source_root=source_root if primary else counterpart_root,
-            )
-            checked_citations.extend(checked["citations"])
+            ))
             if primary and (not label.endswith("evidence loss") or source != "action_history"):
                 decisive = True
         except (ValueError, TypeError) as error:
@@ -1235,6 +1233,7 @@ def _request_validated_audit(
     complete: Callable[[str, list[dict[str, Any]]], dict[str, Any]],
     max_attempts: int = 3,
     invalid_receipts: list | None = None,
+    inventory: bool = True,
 ) -> tuple[list[dict[str, Any]], dict[str, Any], int]:
     current_messages = list(messages)
     last_error: Exception | None = None
@@ -1242,7 +1241,8 @@ def _request_validated_audit(
     for attempt in range(1, max_attempts + 1):
         raw = complete(model, current_messages)
         try:
-            decisions = validate_audit_response(
+            validator = validate_audit_response if inventory else validate_adjudication_response
+            decisions = validator(
                 raw,
                 criteria=criteria,
                 screenshot_sources=screenshot_sources,
@@ -1250,7 +1250,7 @@ def _request_validated_audit(
                 screenshot_root=screenshot_root,
                 dom_root=dom_root,
             )
-            _record_retry_flag_changes(invalid_attempts, raw, inventory=True)
+            _record_retry_flag_changes(invalid_attempts, raw, inventory=inventory)
             return decisions, raw, attempt
         except (TypeError, ValueError) as exc:
             last_error = exc
@@ -1265,63 +1265,14 @@ def _request_validated_audit(
                         "content": (
                             f"Your JSON failed validation: {exc}. Return a corrected complete JSON "
                             "object using the required schema and the same supplied evidence."
-                        ),
-                    },
-                ]
-    raise AuditValidationError(
-        "primary evidence inventory",
-        invalid_attempts,
-        last_error or ValueError("unknown validation error"),
-    )
-
-
-def _request_validated_adjudication(
-    *,
-    model: str,
-    messages: list[dict[str, Any]],
-    criteria: list[dict[str, Any]],
-    screenshot_sources: set[str],
-    dom_sources: set[str],
-    screenshot_root: Path,
-    dom_root: Path,
-    complete: Callable[[str, list[dict[str, Any]]], dict[str, Any]],
-    max_attempts: int = 3,
-    invalid_receipts: list | None = None,
-) -> tuple[list[dict[str, Any]], dict[str, Any], int]:
-    current_messages = list(messages)
-    last_error: Exception | None = None
-    invalid_attempts: list[dict[str, Any]] = invalid_receipts if invalid_receipts is not None else []
-    for attempt in range(1, max_attempts + 1):
-        raw = complete(model, current_messages)
-        try:
-            decisions = validate_adjudication_response(
-                raw,
-                criteria=criteria,
-                screenshot_sources=screenshot_sources,
-                dom_sources=dom_sources,
-                screenshot_root=screenshot_root,
-                dom_root=dom_root,
-            )
-            _record_retry_flag_changes(invalid_attempts, raw, inventory=False)
-            return decisions, raw, attempt
-        except (TypeError, ValueError) as exc:
-            last_error = exc
-            invalid_attempts.append(
-                {"attempt": attempt, "validation_error": str(exc), "raw_response": raw}
-            )
-            if attempt < max_attempts:
-                current_messages = current_messages + [
-                    {"role": "assistant", "content": json.dumps(raw, ensure_ascii=False)},
-                    {
-                        "role": "user",
-                        "content": (
+                            if inventory else
                             f"Your adjudication JSON failed validation: {exc}. Return a corrected "
                             "complete JSON object using the required schema and same evidence."
                         ),
                     },
                 ]
     raise AuditValidationError(
-        "final evidence adjudication",
+        "primary evidence inventory" if inventory else "final evidence adjudication",
         invalid_attempts,
         last_error or ValueError("unknown validation error"),
     )
@@ -1493,7 +1444,8 @@ def run_evidence_audit(
         complete=call,
         invalid_receipts=inventory_invalid,
     )
-    adjudications, raw_adjudication, adjudication_attempts = _request_validated_adjudication(
+    adjudications, raw_adjudication, adjudication_attempts = _request_validated_audit(
+        inventory=False,
         model=adjudicator_model,
         messages=adjudication_messages(
             screenshot_dir=screenshot_root,
@@ -1640,212 +1592,3 @@ def run_evidence_audit(
         "criteria": rows,
         "metrics": calculate_metrics(rows),
     }
-
-
-def aggregate_audits(audits: list[dict[str, Any]], failures: list[dict[str, str]] | None = None) -> dict[str, Any]:
-    protocol_fields = ("schema_version", "prompt_version", "audit_model", "adjudicator_model")
-    if audits:
-        for field in protocol_fields:
-            values = [audit.get(field) for audit in audits]
-            if any(not isinstance(value, str) or not value for value in values):
-                raise ValueError(f"Every audit must record {field}")
-            if len(set(values)) != 1:
-                raise ValueError(f"Audit protocol mismatch: {field}")
-    all_rows = [row for audit in audits for row in audit.get("criteria", [])]
-    if not all_rows:
-        raise ValueError("No completed evidence audits to aggregate")
-    task_ids = [audit["task_id"] for audit in audits]
-    if len(set(task_ids)) != len(task_ids):
-        raise ValueError("Completed evidence audits must have unique task identities")
-    if any(not audit.get("criteria") for audit in audits):
-        raise ValueError("Every completed evidence audit must contain criteria")
-    metrics = calculate_metrics(all_rows)
-    interval_keys = (
-        "screenshot_evidence_loss", "dom_model_evidence_loss",
-        "screenshot_minus_dom_loss_rate", "relative_reduction",
-    )
-    estimates = (
-        metrics["screenshot_evidence_loss"]["rate"],
-        metrics["dom_model_evidence_loss"]["rate"],
-        metrics["screenshot_evidence_loss"]["rate"] - metrics["dom_model_evidence_loss"]["rate"],
-        ((metrics["screenshot_evidence_loss"]["count"] - metrics["dom_model_evidence_loss"]["count"])
-         / metrics["screenshot_evidence_loss"]["count"]
-         if metrics["screenshot_evidence_loss"]["count"] else None),
-    )
-    confidence = {
-        "method": "paired_task_cluster_percentile_bootstrap",
-        "confidence_level": 0.95,
-        "resampling_unit": "task",
-        "estimator": "criterion_weighted_rate",
-        "clusters": len(audits),
-        "resamples": 20000,
-        "seed": 0,
-        "interpretation": (
-            "Assumes independent tasks and holds audit labels fixed; it does not "
-            "measure annotation error. A degenerate empirical interval does not "
-            "establish zero uncertainty."
-        ),
-    }
-    samples: list[list[float]] = [[], [], [], []]
-    undefined_reduction = 0
-    if len(audits) >= 2:
-        # Keep every criterion and both modalities together when sampling a task.
-        # Sum counts before dividing so tasks with more criteria retain their weight.
-        clusters = [
-            (len(audit["criteria"]),
-             sum(row["screenshot_evidence_loss"] for row in audit["criteria"]),
-             sum(row["dom_model_evidence_loss"] for row in audit["criteria"]))
-            for audit in sorted(audits, key=lambda audit: audit["task_id"])
-        ]
-        rng = random.Random(confidence["seed"])
-        for _ in range(confidence["resamples"]):
-            selected = rng.choices(clusters, k=len(clusters))
-            denominator = sum(task[0] for task in selected)
-            screen_rate = sum(task[1] for task in selected) / denominator
-            dom_rate = sum(task[2] for task in selected) / denominator
-            samples[0].append(screen_rate)
-            samples[1].append(dom_rate)
-            samples[2].append(screen_rate - dom_rate)
-            if screen_rate:
-                samples[3].append((screen_rate - dom_rate) / screen_rate)
-            else:
-                undefined_reduction += 1
-    for key, estimate, values in zip(interval_keys, estimates, samples):
-        interval = None
-        status = "insufficient_tasks"
-        if len(values) >= 2:
-            cutpoints = quantiles(values, n=40, method="inclusive")
-            interval = [cutpoints[0], cutpoints[-1]]
-            status = "degenerate" if min(values) == max(values) else "estimated"
-        confidence[key] = {"estimate": estimate, "ci95": interval, "status": status}
-        if key == "relative_reduction":
-            confidence[key].update(
-                defined_resamples=len(values), undefined_resamples=undefined_reduction,
-                performed_resamples=len(values) + undefined_reduction,
-                units="fraction", conditional_on="resampled screenshot loss count > 0",
-            )
-            if len(audits) >= 2 and not values:
-                confidence[key]["status"] = "all_resamples_undefined"
-            elif len(values) == 1:
-                confidence[key]["status"] = "insufficient_defined_resamples"
-    reviews = [
-        {"task_id": audit["task_id"], "task_alias": audit.get("task_alias"),
-         "criterion_index": row.get("criterion_index", index), "criterion": row.get("criterion"),
-         "requires_human_review": True,
-         "reason": "Source-availability and verifier-miss labels require evidence review.",
-         "findings": {key: row.get("adjudication", {}).get(key) for key in
-                      ("screenshot_evidence_loss", "dom_model_evidence_loss",
-                       "screenshot_verifier_miss", "dom_model_verifier_miss")
-                      if row.get("adjudication", {}).get(key, {}).get("confirmed")}}
-        for audit in audits for index, row in enumerate(audit["criteria"])
-        if (row["screenshot_evidence_loss"] or row["dom_model_evidence_loss"]
-            or not row["screenshot"]["verifier_caught"] or not row["dom_model"]["verifier_caught"])
-    ]
-    conflicts = [
-        {"task_id": audit["task_id"], "task_alias": audit.get("task_alias"),
-         "criterion_index": row.get("criterion_index", index), "details": row.get("coverage_conflicts", [])}
-        for audit in audits for index, row in enumerate(audit["criteria"]) if row.get("coverage_conflict")
-    ]
-    return {
-        **{field: audits[0][field] for field in protocol_fields},
-        "audit_method": "automated_llm",
-        "completed_tasks": len(audits),
-        "failed_tasks": failures or [],
-        "per_task": [
-            {
-                "task_alias": audit.get("task_alias"),
-                "task_id": audit["task_id"],
-                "metrics": audit["metrics"],
-            }
-            for audit in audits
-        ],
-        "metrics": metrics,
-        "confidence_intervals": confidence,
-        "coverage_conflict_list": conflicts,
-        "requires_human_review": {"count": len(reviews), "items": reviews},
-    }
-
-
-def _pct(value: float | None) -> str:
-    return "n/a" if value is None else f"{value * 100:.1f}%"
-
-
-def render_markdown(audit: dict[str, Any]) -> str:
-    metrics = audit["metrics"]
-    lines = [
-        f"# Evidence audit: {audit['task_id']}", "",
-        "| Criterion | Screenshot coverage/caught | DOM coverage/caught | Classification |",
-        "|---|:---:|:---:|---|",
-    ]
-    for row in audit["criteria"]:
-        screen = row["screenshot"]
-        dom = row["dom_model"]
-        lines.append(
-            f"| {row['criterion']} | {screen['coverage']}/{screen['verifier_caught']} | "
-            f"{dom['coverage']}/{dom['verifier_caught']} | {row['classification']} |"
-        )
-    lines.extend(["", "## Evidence-loss summary", ""])
-    for label, key in (
-        ("Screenshot", "screenshot_evidence_loss"),
-        ("DOM-model", "dom_model_evidence_loss"),
-    ):
-        item = metrics[key]
-        lines.append(
-            f"- {label}: {item['count']}/{item['denominator']} ({_pct(item['rate'])})"
-        )
-    lines.append("")
-    return "\n".join(lines)
-
-
-def render_aggregate_markdown(summary: dict[str, Any]) -> str:
-    metrics = summary["metrics"]
-    confidence = summary.get("confidence_intervals", {})
-    lines = [
-        "# Aggregate automated evidence audit", "",
-        f"Completed tasks: {summary['completed_tasks']}",
-        f"Failed tasks: {len(summary.get('failed_tasks', []))}", "",
-        "| Modality | Missing evidence | Rate | 95% task-cluster interval |",
-        "|---|---:|---:|---:|",
-    ]
-    for label, key in (
-        ("Screenshot", "screenshot_evidence_loss"),
-        ("DOM-model", "dom_model_evidence_loss"),
-    ):
-        item = metrics[key]
-        interval = confidence.get(key, {}).get("ci95")
-        interval_text = "n/a" if interval is None else " to ".join(_pct(value) for value in interval)
-        lines.append(
-            f"| {label} | {item['count']}/{item['denominator']} | {_pct(item['rate'])} | {interval_text} |"
-        )
-    if confidence:
-        lines.extend(["", confidence["interpretation"]])
-    if summary.get("failed_tasks"):
-        lines.extend(["", "## Failed tasks", ""])
-        for failure in summary["failed_tasks"]:
-            lines.append(f"- `{failure['task']}`: {failure['error']}")
-    lines.append("")
-    return "\n".join(lines)
-
-
-def append_audit_to_comparison(
-    *, comparison_json: Path, comparison_markdown: Path, audit: dict[str, Any]
-) -> None:
-    comparison = load_json(comparison_json)
-    comparison["evidence_audit"] = audit["metrics"]
-    write_json(comparison_json, comparison)
-    existing = comparison_markdown.read_text(encoding="utf-8").split("\n## Automated evidence audit", 1)[0].rstrip()
-    comparison_markdown.write_text(
-        existing + "\n\n## Automated evidence audit\n\n"
-        + "| Modality | Missing evidence | Rate |\n|---|---:|---:|\n"
-        + "| Screenshot | {}/{} | {} |\n".format(
-            audit["metrics"]["screenshot_evidence_loss"]["count"],
-            audit["metrics"]["screenshot_evidence_loss"]["denominator"],
-            _pct(audit["metrics"]["screenshot_evidence_loss"]["rate"]),
-        )
-        + "| DOM-model | {}/{} | {} |\n".format(
-            audit["metrics"]["dom_model_evidence_loss"]["count"],
-            audit["metrics"]["dom_model_evidence_loss"]["denominator"],
-            _pct(audit["metrics"]["dom_model_evidence_loss"]["rate"]),
-        ),
-        encoding="utf-8",
-    )

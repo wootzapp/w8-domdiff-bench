@@ -10,7 +10,7 @@ import shutil
 import tempfile
 from typing import Any
 
-from .recorder_support import RunnerError, write_json, write_json_lines
+from .recorder_support import write_json, write_json_lines
 
 
 def read_object(path: Path) -> dict[str, Any]:
@@ -95,7 +95,6 @@ def inspect_recording(source: Path) -> dict[str, Any]:
         raise ValueError("actor turns are not uniquely sequential")
     if manifest.get("model_turns") != len(decisions) or final.get("model_turns") != len(decisions):
         raise ValueError("actor call counts disagree")
-    steps = manifest.get("steps", [])
     if final.get("run_status") in {"completed", "turn_limit", "captured"} and len(states) != len(steps) + 1:
         raise ValueError("a normally finalized run needs N+1 states for N actions")
     if len(states) > len(steps) + 1:
@@ -115,6 +114,7 @@ def inspect_recording(source: Path) -> dict[str, Any]:
             raise ValueError("action does not reference an accepted model turn")
         if mode == "screenshot" and (step["action"].get("id") is not None or "target" in step):
             raise ValueError("screenshot action contains DOM target information")
+    steps_by_turn = {step["model_turn"]: step for step in steps}
     recent = []
     memory = ""
     for row in decisions:
@@ -133,31 +133,31 @@ def inspect_recording(source: Path) -> dict[str, Any]:
         if artifact.get("sha256") != state["observation_sha256"]:
             raise ValueError("model turn refers to a different observation digest")
         request = read_object(directory / "request.json")
-        content = request["input"][0]["content"]
+        content = request["contents"][0]["parts"]
         if row.get("task_memory_before") != memory:
             raise ValueError("actor memory does not match established actor history")
         expected_instructions = DOM_PROMPT if mode == "dom" else SCREENSHOT_PROMPT
         controls = manifest["controls"]
-        if (set(request) - {"model", "instructions", "input", "max_output_tokens", "reasoning", "text", "temperature"}
-                or request.get("instructions") != expected_instructions
+        if (set(request) != {"model", "systemInstruction", "contents", "generationConfig"}
+                or request.get("systemInstruction") != {"parts": [{"text": expected_instructions}]}
                 or request.get("model") != task["model"]
-                or request.get("max_output_tokens") != controls["max_output_tokens"]
-                or request.get("reasoning") != {"effort": controls["reasoning_effort"]}
-                or request.get("temperature") != controls["temperature"]
-                or request.get("text") != {"format": {"type": "json_schema", "name": "browser_action",
-                    "strict": True, "schema": ACTION_SCHEMA}}
-                or len(request["input"]) != 1 or request["input"][0].get("role") != "user"):
+                or request.get("generationConfig") != {"maxOutputTokens": controls["max_output_tokens"],
+                    "thinkingConfig": {"thinkingLevel": controls["reasoning_effort"].upper()},
+                    "mediaResolution": "MEDIA_RESOLUTION_HIGH", "responseMimeType": "application/json",
+                    "responseJsonSchema": ACTION_SCHEMA}
+                or len(request["contents"]) != 1 or set(request["contents"][0]) != {"role", "parts"}
+                or request["contents"][0].get("role") != "user"):
             raise ValueError("actor request settings or instructions differ from its frozen policy")
         if mode == "dom":
-            if [item.get("type") for item in content] != ["input_text"]:
+            if len(content) != 1 or set(content[0]) != {"text"}:
                 raise ValueError("DOM actor request contains an image or extra observation")
         else:
-            if [item.get("type") for item in content] != ["input_text", "input_image"]:
+            if len(content) != 2 or set(content[0]) != {"text"} or set(content[1]) != {"inlineData"}:
                 raise ValueError("screenshot actor request lacks its image")
-            artifact = content[1]["artifact"]
+            artifact = content[1]["inlineData"]["artifact"]
             image = (directory / artifact["path"]).resolve(strict=True)
             if (image != source / state["observation"] or artifact["sha256"] != state["observation_sha256"]
-                    or content[1] != {"type": "input_image", "artifact": artifact, "detail": "high"}):
+                    or content[1] != {"inlineData": {"mimeType": "image/png", "artifact": artifact}}):
                 raise ValueError("model request references a different screenshot")
         # Rebuild from actor-permitted sources. Passive disk files grant no prompt access.
         budget = controls["max_turns"]
@@ -177,13 +177,13 @@ def inspect_recording(source: Path) -> dict[str, Any]:
             "Use the recorded progress signals. If an action made no observable progress, "
             "change strategy instead of assuming it worked. Return one JSON action and "
             "wait for the harness to execute it and supply the next observation.")
-        if content[0] != {"type": "input_text", "text": expected}:
+        if content[0] != {"text": expected}:
             raise ValueError(f"{mode} actor text contains an unapproved observation source")
         if not row.get("accepted"):
             recent.append({"model_turn": turn, "rejected_action": row.get("decision"),
                 "reason": row.get("rejection_reason") or row.get("error")})
         else:
-            step = next((item for item in steps if item["model_turn"] == turn), None)
+            step = steps_by_turn.get(turn)
             if step and "progress" in step:
                 if mode == "screenshot":
                     if set(step["progress"]) != {"made_progress", "screenshot_changed"}:
@@ -208,7 +208,7 @@ def inspect_recording(source: Path) -> dict[str, Any]:
         "navigation_states": [], "audit_eligible_states": [], "states": [],
         "observed_url_timeline": []}
     for state_id in expected_ids:
-        state = next((s for s in states if s["state"] == state_id), None)
+        state = states[state_id - 1] if state_id <= len(states) else None
         artifacts = state["artifacts"] if state else {}
         capture = state["capture"] if state else {}
         for mode_name, filename in (("screenshot", "screenshot.png"), ("dom_model", "dom_model.txt")):
@@ -230,7 +230,7 @@ def inspect_recording(source: Path) -> dict[str, Any]:
         coverage["states"].append({"state": state_id, "source_index": state_id,
             "eligible": eligible, "reasons": reasons, "metadata_warnings": metadata_warnings, "artifacts": artifacts,
             "navigation_during_capture": navigation, "capture": capture})
-    coverage["eligible_fraction"] = len(coverage["audit_eligible_states"]) / len(expected_ids) if expected_ids else None
+    coverage["eligible_fraction"] = len(coverage["audit_eligible_states"]) / len(expected_ids)
     coverage["reason"] = None if coverage["audit_eligible_states"] else "no_eligible_paired_states"
     return {"source": str(source), "task": task, "manifest": manifest, "final": final,
         "decisions": decisions, "files": files, "recording_sha256": fingerprint, "coverage": coverage}

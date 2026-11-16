@@ -3,7 +3,7 @@ from dataclasses import replace
 import pytest
 
 from w8bench.verifier.dom_model.alignment import validate_alignment
-from w8bench.verifier.dom_model.state_parser import load_dom_model_states
+from w8bench.verifier.dom_model.states import load_dom_model_states
 
 
 def test_alignment_receipt_has_initial_transition_and_final(pair_factory):

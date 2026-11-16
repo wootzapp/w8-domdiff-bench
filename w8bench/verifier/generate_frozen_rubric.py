@@ -8,7 +8,6 @@ freeze are offline, and frozen rubrics are shared across arms and trials.
 
 from __future__ import annotations
 
-import inspect
 import hashlib
 
 import argparse
@@ -20,13 +19,13 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from w8bench.verifier.screenshot_verifier.clients.graceful_client import GracefulRetryClient
+from w8bench.verifier.clients.retry import GracefulRetryClient
 from w8bench.verifier.screenshot_verifier.rubric_agent import MMRubricAgent, MMRubricAgentConfig
-from w8bench.verifier.screenshot_verifier.utils.action_schema import FARA_ACTION_DEFINITIONS
+from .instrumentation import instrument_client_calls, usage_dict
+from .rubric_scoring import FARA_ACTION_DEFINITIONS, get_init_url_context
 
 from .common import (
-    CANONICAL_ACTION_MODEL,
-    CANONICAL_JUDGE_MODEL,
+    CANONICAL_RUBRIC_MODEL,
     canonical_sha256,
     ensure_under,
     load_env_file,
@@ -42,85 +41,6 @@ from w8bench.task_recorder.task_cli import (catalog_task_instruction, parse_task
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPOSITORY_ROOT / "config"
-
-
-def _usage(client: Any) -> dict[str, Any]:
-    prompt = completion = 0
-    records = []
-    for inner in getattr(client, "_clients", []):
-        usage = inner.total_usage()
-        prompt += int(getattr(usage, "prompt_tokens", 0))
-        completion += int(getattr(usage, "completion_tokens", 0))
-        records.extend(getattr(inner, "_call_records", []))
-    if records:
-        inputs = [record["input_tokens"] for record in records if record.get("input_tokens") is not None]
-        outputs = [record["output_tokens"] for record in records if record.get("output_tokens") is not None]
-        prompt = sum(inputs) if inputs else None
-        completion = sum(outputs) if outputs else None
-    writes = [record["cache_write_input_tokens"] for record in records if record.get("cache_write_input_tokens") is not None]
-    reads = [record["cached_input_tokens"] for record in records if record.get("cached_input_tokens") is not None]
-    thinking = [record["reasoning_tokens"] for record in records if record.get("reasoning_tokens") is not None]
-    return {
-        "prompt_tokens": prompt, "input_tokens": prompt,
-        "completion_tokens": completion, "output_tokens": completion,
-        "cached_input_tokens": sum(reads) if reads else None,
-        "cache_write_input_tokens": sum(writes) if writes else None,
-        "reasoning_tokens": sum(thinking) if thinking else None,
-        "total_tokens": (prompt or 0) + (completion or 0) if prompt is not None or completion is not None else None,
-        "usage_known_calls": {key: sum(record.get("usage_fields_reported", {}).get(key, False) for record in records)
-            for key in ("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens")},
-        "cached_input_usage_reported_calls": len(reads), "reasoning_usage_reported_calls": len(thinking),
-        "calls_without_reported_usage": sum(not record.get("usage_reported", False) for record in records),
-        "cache_write_usage_reported_calls": len(writes),
-    }
-
-
-def _instrument(client: Any) -> dict[str, Any]:
-    metrics = {"logical_calls": 0, "endpoint_calls": 0, "api_attempts": 0,
-               "http_attempts": 0, "http_attempts_complete": False, "calls": []}
-    original_create = client.create
-
-    async def logical(*args: Any, **kwargs: Any) -> Any:
-        metrics["logical_calls"] += 1
-        stage_path = []
-        frame = inspect.currentframe()
-        try:
-            while frame is not None:
-                module = frame.f_globals.get("__name__", "")
-                if (module.endswith(".rubric_agent") or module.endswith(".dom_model_agent")) and frame.f_code.co_name != "_call_llm":
-                    stage_path.append(f"{module}.{frame.f_code.co_name}")
-                frame = frame.f_back
-        finally:
-            del frame
-        stage_tokens = [(endpoint, endpoint._logical_stage.set(tuple(stage_path)))
-            for endpoint in getattr(client, "_clients", []) if hasattr(endpoint, "_logical_stage")]
-        try:
-            return await original_create(*args, **kwargs)
-        finally:
-            for endpoint, token in stage_tokens:
-                endpoint._logical_stage.reset(token)
-            endpoints = list(getattr(client, "_clients", []))
-            attempts = sum(int(getattr(endpoint, "_http_attempts", 0)) for endpoint in endpoints)
-            complete = bool(endpoints) and all(getattr(endpoint, "_http_attempts_observed", False) for endpoint in endpoints)
-            records = [dict(record) for endpoint in endpoints for record in getattr(endpoint, "_call_records", [])]
-            metrics.update(api_attempts=attempts, http_attempts=attempts, http_attempts_complete=complete,
-                calls=records,
-                configured_models=sorted({record["configured_model"] for record in records}),
-                returned_models=sorted({record["returned_model"] for record in records if record.get("returned_model")}),
-                endpoint_retries=max(0, metrics["endpoint_calls"] - metrics["logical_calls"]),
-                sdk_http_retries=max(0, attempts - metrics["endpoint_calls"]) if complete else None)
-
-    client.create = logical
-    for endpoint in getattr(client, "_clients", []):
-        original_endpoint_create = endpoint.create
-
-        async def attempt(*args: Any, _original=original_endpoint_create, **kwargs: Any) -> Any:
-            metrics["endpoint_calls"] += 1
-            return await _original(*args, **kwargs)
-
-        endpoint.create = attempt
-    return metrics
-
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -164,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         definition = validate_task_definition(catalog_task_instruction(row), str(row.get("start_url", "")))
         tasks.append({"task_id": identity, **definition})
     preflight = {"status": "ready", "stage": args.stage, "task_count": len(tasks),
-        "catalog_sha256": catalog_hash, "models": [CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL],
+        "models": [CANONICAL_RUBRIC_MODEL],
         "paid_calls_authorized": bool(args.execute and args.stage == "draft"),
         "writes_authorized": bool(args.execute), "endpoint_config": endpoint_receipt,
         "verifier_packages": packages,
@@ -207,15 +127,15 @@ def main(argv: list[str] | None = None) -> int:
             calls = {}
             agent = None
             try:
-                for model in (CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL):
+                for model in (CANONICAL_RUBRIC_MODEL,):
                     clients[model] = GracefulRetryClient.from_path(path=args.eval_config,
-                        logger=logging.getLogger("generate_frozen_rubric"), eval_model=model)
-                    calls[model] = _instrument(clients[model])
+                        logger=logging.getLogger("generate_frozen_rubric"), eval_model=model, evidence_mode='screenshot_verifier')
+                    calls[model] = instrument_client_calls(clients[model], receipt=True)
                 agent = MMRubricAgent(config=MMRubricAgentConfig(
-                    action_client=clients[CANONICAL_ACTION_MODEL], gpt5_client=clients[CANONICAL_JUDGE_MODEL],
+                    action_client=clients[CANONICAL_RUBRIC_MODEL], judge_client=clients[CANONICAL_RUBRIC_MODEL],
                     action_definitions=FARA_ACTION_DEFINITIONS, majority_vote_instances=1, redo_eval=True))
                 rubric = asyncio.run(agent._generate_rubric(task["instruction"],
-                    MMRubricAgent._get_init_url_context(task["start_url"])))
+                    get_init_url_context(task["start_url"])))
                 denominator = validate_rubric(rubric)
                 write_json(draft_path, {**expected, "precomputed_rubric": rubric})
                 receipt.update(status="complete", rubric_sha256=canonical_sha256(rubric),
@@ -226,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
                     error_type=type(error).__name__)
                 raise
             finally:
-                receipt.update(call_metrics=calls, token_usage={model: _usage(client) for model, client in clients.items()},
+                receipt.update(call_metrics=calls, token_usage={model: usage_dict(client) for model, client in clients.items()},
                     rubric_generation_calls=sum(value["logical_calls"] for value in calls.values()),
                     generation_trace=getattr(agent, "rubric_generation_trace", []))
                 write_json(receipt_path, receipt)
@@ -297,18 +217,18 @@ def main(argv: list[str] | None = None) -> int:
             if not archive.exists():
                 write_json(archive, previous_review)
         write_json(review_path, review)
-        lines = ["# Rubric review", "", f"Catalog SHA-256: `{catalog_hash}`", "",
+        lines = ["# Rubric review", "",
             "Review the drafts and this checklist, then set each approved field and review notes in review.json.",
             "Set approved_by and approval_date only after approval. Freeze refuses changed task or draft hashes.", ""]
         for task, entry in zip(tasks, review["tasks"]):
             lines.extend([f"## {task['task_id']}", "", task["instruction"], "", f"Start URL: {task['start_url']}",
-                f"Draft SHA-256: `{entry['draft_sha256']}`", "", "| Criterion | Description | Points |",
+                "", "| Criterion | Description | Points |",
                 "| --- | --- | --- |"])
             for item in entry["criteria"]:
                 lines.append("| " + " | ".join(str(item[key]).replace("|", "\\|").replace("\n", " ")
                     for key in ("criterion", "description", "max_points")) + " |")
             lines.extend(["", "### Preparation receipt", "",
-                f"Receipt: `{entry['generation_receipt']}` (SHA-256 `{entry['generation_receipt_sha256']}`).",
+                f"Receipt: `{entry['generation_receipt']}`.",
                 f"Logical calls: {entry['generation_calls']} latest attempt; {entry['generation_calls_all_attempts']} across all attempts "
                     f"(unknown when an attempt lacks a receipt count; known lower bound {entry['generation_calls_known_lower_bound']}).",
                 "Estimated USD cost: unknown; no trusted price configuration is supplied. Usage is retained per model.",
@@ -338,17 +258,15 @@ def main(argv: list[str] | None = None) -> int:
         if path.exists() and json.loads(path.read_text()) != payload:
             raise ValueError(f"Refusing to change an existing frozen rubric: {path}")
     if not args.execute:
-        print(json.dumps({**preflight, "approved_rubrics_validated": len(tasks),
-            "rubric_approval_sha256": approval_hash}, ensure_ascii=False, indent=2))
+        print(json.dumps({**preflight, "approved_rubrics_validated": len(tasks)},
+            ensure_ascii=False, indent=2))
         return 0
     for path, payload in frozen_payloads:
         if not path.exists():
             write_json(path, payload)
-    result = {"status": "frozen", "task_count": len(tasks), "catalog_sha256": catalog_hash,
-        "rubric_approval_sha256": approval_hash, "rubrics": [
-            {"task_id": payload["task_id"], "path": os.path.relpath(path, REPOSITORY_ROOT),
-             "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-             "rubric_sha256": canonical_sha256(payload["precomputed_rubric"])} for path, payload in frozen_payloads]}
+    result = {"status": "frozen", "task_count": len(tasks), "rubrics": [
+            {"task_id": payload["task_id"], "path": os.path.relpath(path, REPOSITORY_ROOT)}
+            for path, payload in frozen_payloads]}
     write_json(metrics_path, result)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0

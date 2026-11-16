@@ -1,13 +1,13 @@
 import asyncio
 
-from w8bench.verifier.dom_model.dom_model_agent import DomModelRubricAgent
+from w8bench.verifier.dom_model.evidence import DomModelRubricAgent
 
 
 def test_grouping_is_inherited_and_prefers_later_state_on_tie():
-    assert "_group_dom_states_by_criterion" not in DomModelRubricAgent.__dict__
+    assert "_group_evidence_by_criterion" not in DomModelRubricAgent.__dict__
     agent = object.__new__(DomModelRubricAgent)
     agent.config = type("Config", (), {"max_states_per_criterion": 2})()
-    grouped = agent._group_dom_states_by_criterion(
+    grouped = agent._group_evidence_by_criterion(
         {
             0: {0: 8, "dom_model_state_idx": 0},
             1: {0: 8, "dom_model_state_idx": 1},
@@ -24,7 +24,7 @@ def test_loader_includes_all_n_plus_one_states(pair_factory):
     agent = object.__new__(DomModelRubricAgent)
     agent.config = type("Config", (), {"dom_model_state_char_budget": 350000})()
 
-    states = agent._load_dom_states(str(pair["dom"]), actions_list=[{}])
+    states = agent._load_evidence(str(pair["dom"]), actions_list=[{}])
 
     assert [state.index for state in states] == [0, 1]
     assert [state.path.name for state in states] == ["dom_model0.txt", "dom_model1.txt"]
@@ -34,7 +34,7 @@ def test_loader_includes_all_n_plus_one_states(pair_factory):
     assert agent.evidence_audit["excluded_source_states"] == []
 
 def test_filtering_is_inherited_unchanged():
-    assert "_filter_irrelevant_dom_states" not in DomModelRubricAgent.__dict__
+    assert "_filter_irrelevant_evidence" not in DomModelRubricAgent.__dict__
 
 
 def test_screenshot_default_does_not_drop_zero_relevance_top_k():
@@ -49,7 +49,7 @@ def test_screenshot_default_does_not_drop_zero_relevance_top_k():
         1: {0: 0, "dom_model_state_idx": 1},
         2: {0: 0, "dom_model_state_idx": 2},
     }
-    grouped = agent._group_dom_states_by_criterion(relevance, 1)
+    grouped = agent._group_evidence_by_criterion(relevance, 1)
 
     assert grouped == {0: [2, 1]}
     assert agent.config.min_relevance_threshold == 0
@@ -73,7 +73,7 @@ def test_zero_relevance_top_k_reaches_dom_evidence_analysis():
 
     agent._analyze_pair = fake_analyze_pair
     evidence = asyncio.run(
-        agent._analyze_dom_evidence_batched(
+        agent._analyze_evidence_batched(
             dom_states=[object(), object(), object()],
             rubric={"items": [{"criterion": "Deliver final recommendation"}]},
             grouped_dom_states={0: [2, 1]},

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from w8bench.verifier import evidence_audit as audit
-from w8bench.verifier import run_comparison, run_full_comparison
+from w8bench.verifier import run_comparison
 from .test_evidence_audit_cross_provider import _fake_google
 
 
@@ -24,19 +24,19 @@ def test_models_are_required_and_flags_override_environment(monkeypatch):
 
 
 def test_cli_requires_explicit_completion_judge_and_keeps_audit_provider_config(monkeypatch):
-    parsed = run_comparison.parse_args(["--run", "recording", "--rubric", "rubric.json", "--judge-model", "gpt-5.6-sol"])
-    assert parsed.judge_model == "gpt-5.6-sol"
+    parsed = run_comparison.parse_args(["--run", "recording", "--rubric", "rubric.json", "--judge-model", "gpt-6.1-sol"])
+    assert parsed.judge_model == "gpt-6.1-sol"
     assert parsed.judge_evidence_policy == "paired"
     with pytest.raises(SystemExit):
         run_comparison.parse_args(["--run", "recording", "--rubric", "rubric.json"])
     with pytest.raises(SystemExit):
         run_comparison.parse_args(["--run", "recording", "--rubric", "rubric.json", "--judge-model", "actor-model"])
-    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gpt-5.6-sol")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gemini-3.1-pro-preview")
-    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "google")
+    monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
+    monkeypatch.setenv("EVIDENCE_ADJUDICATOR_PROVIDER", "openai")
     selected = audit.resolve_audit_config()
-    assert selected["inventory"]["model"] == "gpt-5.6-sol"
-    assert selected["adjudication"] == {"model": "gemini-3.1-pro-preview", "provider": "google"}
+    assert selected["inventory"] == {"model": "gemini-3.1-pro-preview", "provider": "google"}
+    assert selected["adjudication"] == {"model": "gpt-6.1-sol", "provider": "openai"}
 
 
 @pytest.mark.parametrize("model,provider", [("gemini-test", "google"), ("gpt-test", "openai"), ("o3", "openai"), ("o4-mini", "openai")])

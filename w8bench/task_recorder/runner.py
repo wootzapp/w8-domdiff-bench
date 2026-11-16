@@ -21,7 +21,7 @@ from typing import Any
 
 from .recorder_support import RunnerError, append_json_line, utc_now, write_json
 from .capture import (
-    ROOT, CDPClient, CDPError, CaptureBundle, action_progress, action_observation_context,
+    CDPClient, CDPError, CaptureBundle, action_progress, action_observation_context,
     agent_browser_target_identity, attach_agent_browser_observation,
     capture_bundle, capture_after_action_bundle, synchronize_recorder_target,
     renderer_versions,
@@ -37,7 +37,7 @@ TASK_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 MAX_TASK_MEMORY_CHARS = 8000
 MAX_ACTION_THOUGHT_CHARS = 1200
 ACTOR_PROTOCOL = {"type": "json_schema", "name": "browser_action", "strict": True,
-                  "policy": "baseline_with_budget_validation_v2", "output_message": "last_final_answer"}
+                  "policy": "baseline_with_budget_validation_v2", "output_message": "single_candidate_text"}
 MAX_CONSECUTIVE_REJECTIONS = 4
 
 
@@ -119,12 +119,12 @@ def load_env(path: Path) -> None:
         key, value = line.split("=", 1)
         key = key.strip()
         value = value.strip().strip('"').strip("'")
-        if key == "OPENAI_MODEL":
+        if key == "ACTOR_MODEL":
             if model_seen:
-                raise RunnerError("OPENAI_MODEL must have exactly one configured value")
+                raise RunnerError("ACTOR_MODEL must have exactly one configured value")
             model_seen = True
             if key in os.environ and os.environ[key] != value:
-                raise RunnerError("OPENAI_MODEL in the environment conflicts with the selected env file")
+                raise RunnerError("ACTOR_MODEL in the environment conflicts with the selected env file")
         if key and key not in os.environ:
             os.environ[key] = value
 
@@ -268,15 +268,20 @@ def parse_decision(text: str) -> dict[str, Any]:
 class ModelClient:
     def __init__(self, api_key: str, model: str, base_url: str):
         if not api_key or not model:
-            raise RunnerError("OPENAI_API_KEY and OPENAI_MODEL are required")
+            raise RunnerError("model API key and model id are required")
         self.api_key, self.model, self.base_url = api_key, model, base_url.rstrip("/")
         self.last_input_report: dict[str, Any] = {}
         self.last_response: dict[str, Any] | None = None
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
-        request = urllib.request.Request(self.base_url + "/responses",
-            data=json.dumps(payload).encode(), method="POST",
-            headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"})
+        gemini = self.model.startswith("gemini-")
+        native_payload = {key: value for key, value in payload.items() if key != "model"} if gemini else payload
+        endpoint = (self.base_url + "/models/" + self.model + ":generateContent"
+                    if gemini else self.base_url + "/responses")
+        headers = {"Content-Type": "application/json"}
+        headers["x-goog-api-key" if gemini else "Authorization"] = self.api_key if gemini else f"Bearer {self.api_key}"
+        request = urllib.request.Request(endpoint,
+            data=json.dumps(native_payload).encode(), method="POST", headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=180) as response:
                 result = json.loads(response.read().decode())
@@ -287,6 +292,36 @@ class ModelClient:
             raise RunnerError(f"model request failed: {type(error).__name__}") from error
         if not isinstance(result, dict):
             raise RunnerError("model response is not an object")
+        if gemini:
+            candidates = result.get("candidates") or []
+            candidate = candidates[0] if len(candidates) == 1 else {}
+            finish_reason = candidate.get("finishReason")
+            parts = (candidate.get("content") or {}).get("parts") or []
+            usage = result.get("usageMetadata")
+            normalized_usage = {}
+            if isinstance(usage, dict):
+                # Gemini candidate tokens exclude thoughts. Our output total
+                # includes them, with reasoning disclosed as a subset.
+                if usage.get("promptTokenCount") is not None:
+                    normalized_usage["input_tokens"] = usage["promptTokenCount"]
+                if usage.get("candidatesTokenCount") is not None and usage.get("thoughtsTokenCount") is not None:
+                    normalized_usage["output_tokens"] = usage["candidatesTokenCount"] + usage["thoughtsTokenCount"]
+                elif usage.get("candidatesTokenCount") is not None:
+                    normalized_usage["output_tokens"] = usage["candidatesTokenCount"]
+                if usage.get("cachedContentTokenCount") is not None:
+                    normalized_usage["input_tokens_details"] = {"cached_tokens": usage["cachedContentTokenCount"]}
+                if usage.get("thoughtsTokenCount") is not None:
+                    normalized_usage["output_tokens_details"] = {"reasoning_tokens": usage["thoughtsTokenCount"]}
+                if usage.get("totalTokenCount") is not None:
+                    normalized_usage["total_tokens"] = usage["totalTokenCount"]
+            result = {"provider": "google", "provider_response": result,
+                "id": result.get("responseId"), "model": result.get("modelVersion"),
+                "output_text": "".join(part["text"] for part in parts
+                    if isinstance(part.get("text"), str) and not part.get("thought")),
+                "status": "completed" if finish_reason == "STOP" and not any("functionCall" in part for part in parts) else "incomplete",
+                "incomplete_details": ({"reason": "max_output_tokens"} if finish_reason == "MAX_TOKENS"
+                    else {"reason": finish_reason or "missing_or_multiple_candidates"}) if finish_reason != "STOP" else None,
+                "reasoning": {"effort": "medium"}, "usage": normalized_usage}
         return result
 
     async def decide(self, *, task: str, step: int, max_steps: int,
@@ -296,9 +331,9 @@ class ModelClient:
                      ) -> tuple[dict[str, Any], dict[str, Any]]:
         self.last_response = None
         self.last_input_report = {}
-        configured_model = os.environ.get("OPENAI_MODEL", "").strip()
-        if configured_model != "gpt-6.1-terra" or self.model != configured_model:
-            raise RunnerError("actor model must match the single OPENAI_MODEL=gpt-6.1-terra configuration")
+        configured_model = os.environ.get("ACTOR_MODEL", "").strip()
+        if configured_model != "gemini-3.1-pro-preview" or self.model != configured_model:
+            raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
         if max_output_tokens != 10000:
             raise RunnerError("actor output limit must be exactly 10000 tokens")
         if not 1 <= max_steps <= 200:
@@ -318,28 +353,31 @@ class ModelClient:
                     "sha256": hashlib.sha256(observation_bytes).hexdigest()}
         if bundle.observation_mode == "dom":
             prompt += (f"current_document_language: {bundle.document_language or 'unknown'}\n"
-                f"current_agent_browser_snapshot:\n{bundle.executable_agent_browser_text()}\n\n"
+                f"current_agent_browser_snapshot:\n{bundle.agent_browser_action_text}\n\n"
                 f"current_chromiumrl_evidence:\n{chromiumrl_evidence_for_model(bundle.model_text)}")
             instructions = DOM_PROMPT
         else:
             instructions = SCREENSHOT_PROMPT
-            content.append({"type": "input_image", "image_url": "data:image/png;base64," +
-                base64.b64encode(observation_bytes).decode(), "detail": "high"})
+            content.append({"inlineData": {"mimeType": "image/png", "data":
+                base64.b64encode(observation_bytes).decode()}})
         prompt += (f"\n\nrecent_action_outcomes:\n{json.dumps(recent_actions[-6:], ensure_ascii=False)}\n\n"
             "Use the recorded progress signals. If an action made no observable progress, "
             "change strategy instead of assuming it worked. Return one JSON action and "
             "wait for the harness to execute it and supply the next observation.")
-        content.insert(0, {"type": "input_text", "text": prompt})
-        payload = {"model": self.model, "instructions": instructions,
-            "input": [{"role": "user", "content": content}], "max_output_tokens": max_output_tokens,
-            "reasoning": {"effort": "medium"},
-            "text": {"format": {"type": "json_schema", "name": "browser_action",
-                                "strict": True, "schema": ACTION_SCHEMA}}}
+        content.insert(0, {"text": prompt})
+        # model identifies the URL path; the remaining fields are the exact
+        # generateContent request body sent by _post.
+        payload = {"model": self.model, "systemInstruction": {"parts": [{"text": instructions}]},
+            "contents": [{"role": "user", "parts": content}],
+            "generationConfig": {"maxOutputTokens": max_output_tokens,
+                "thinkingConfig": {"thinkingLevel": "MEDIUM"},
+                "mediaResolution": "MEDIA_RESOLUTION_HIGH",
+                "responseMimeType": "application/json", "responseJsonSchema": ACTION_SCHEMA}}
         # Persist the exact text and an immutable reference to the exact image
         # bytes sent, avoiding another base64 copy in every turn directory.
         stored = json.loads(json.dumps(payload))
         if bundle.observation_mode == "screenshot":
-            stored["input"][0]["content"][1] = {"type": "input_image", "artifact": artifact, "detail": "high"}
+            stored["contents"][0]["parts"][1] = {"inlineData": {"mimeType": "image/png", "artifact": artifact}}
         write_json(turn_dir / "request.json", stored)
         self.last_input_report = {"observation_mode": bundle.observation_mode,
             "observation": artifact, "request": "request.json", "text_chars": len(prompt)}
@@ -349,10 +387,10 @@ class ModelClient:
         write_json(turn_dir / "response.json", response)
         returned_model = response.get("model")
         if not isinstance(returned_model, str) or not re.fullmatch(
-                r"gpt-6\.1-terra(?:-\d{4}-\d{2}-\d{2})?", returned_model):
+                r"gemini-3\.1-pro-preview(?:-\d{2}-\d{2}|-\d{4}-\d{2}-\d{2})?", returned_model):
             raise ModelProtocolError(
                 f"actor model mismatch: configured {self.model!r}, returned {returned_model!r}; "
-                "expected GPT-6.1 Terra; no action executed")
+                "expected Gemini 3.1 Pro Preview; no action executed")
         if response.get("status") not in {None, "completed"}:
             raise ModelProtocolError(f"model response status is {response.get('status')!r}; no action executed")
         if any(isinstance(item, dict) and item.get("type") == "function_call"
@@ -516,10 +554,10 @@ async def run(args: argparse.Namespace) -> int:
     if args.start_url and not re.match(r"^https?://[^/\s]+", args.start_url):
         raise RunnerError("--start-url must be HTTP(S)")
     if not args.capture_only:
-        configured_model = os.environ.get("OPENAI_MODEL", "").strip()
-        if configured_model != "gpt-6.1-terra" or args.model != configured_model:
-            raise RunnerError("actor model must match the single OPENAI_MODEL=gpt-6.1-terra configuration")
-    model = None if args.capture_only else ModelClient(args.api_key, args.model, args.openai_base_url)
+        configured_model = os.environ.get("ACTOR_MODEL", "").strip()
+        if configured_model != "gemini-3.1-pro-preview" or args.model != configured_model:
+            raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
+    model = None if args.capture_only else ModelClient(args.api_key, args.model, args.api_base_url)
     task_id = safe_task_id(args.task_id or default_task_id(Path(args.output_dir)))
     run_dir = Path(args.output_dir).resolve() / task_id
     viewport = (args.viewport_width, args.viewport_height)
@@ -556,8 +594,8 @@ async def run(args: argparse.Namespace) -> int:
     manifest = {**task, "schema_version": "3.0", "created_at": utc_now(), "status": "running",
         "model_input_policy": f"{mode}_only", "states": [], "steps": [], "model_turns": 0,
         "browser_profile_provenance": profile,
-        "configured_actor_model": args.model, "returned_actor_models": [], "reasoning_effort": "medium",
-        "controls": {"model": args.model, "base_url": args.openai_base_url,
+        "configured_actor_model": args.model, "actor_provider": "google", "returned_actor_models": [], "reasoning_effort": "medium",
+        "controls": {"model": args.model, "base_url": args.api_base_url,
             "reasoning_effort": "medium", "temperature": None, "memory_max_chars": MAX_TASK_MEMORY_CHARS,
             "max_turns": args.max_steps, "max_output_tokens": args.max_output_tokens,
             "viewport": list(viewport), "settle_seconds": args.settle_seconds,
@@ -573,11 +611,10 @@ async def run(args: argparse.Namespace) -> int:
             "keep_existing_tabs": args.keep_existing_tabs},
         "turn_definition": "one actor API call, including rejected proposals, parse failures and termination",
         "action_driver": "agent-browser refs + CDP.Input" if mode == "dom" else "CDP.Input"}
-    if mode in {"dom", "screenshot"}:
-        manifest["dom_capture_parameters"] = {"max_nodes": args.snapshot_max_nodes,
-            "max_text_chars": args.snapshot_max_text_chars, "in_viewport_only": True,
-            "action_snapshot_policy": "viewport_bbox_overlap_v1"}
-        manifest["renderer_versions"] = renderer_versions()
+    manifest["dom_capture_parameters"] = {"max_nodes": args.snapshot_max_nodes,
+        "max_text_chars": args.snapshot_max_text_chars, "in_viewport_only": True,
+        "action_snapshot_policy": "viewport_bbox_overlap_v1"}
+    manifest["renderer_versions"] = renderer_versions()
     write_json(run_dir / "manifest.json", manifest)
     print(f"Recorder: mode={mode}, model={args.model or '(capture only)'}, turn budget={args.max_steps}", flush=True)
     final = {"status": "failure", "run_status": "turn_limit", "termination_reason": "budget_exhausted", "final_answer": "Actor turn budget exhausted"}
@@ -847,10 +884,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     # A capture that reaches them reports ChromiumRL's own truncated statistics.
     parser.add_argument("--snapshot-max-nodes", type=int, default=int(os.environ.get("SNAPSHOT_MAX_NODES", "7000")))
     parser.add_argument("--snapshot-max-text-chars", type=int, default=int(os.environ.get("SNAPSHOT_MAX_TEXT_CHARS", "200000")))
-    parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", ""))
-    parser.add_argument("--model", default=os.environ.get("OPENAI_MODEL", ""),
-        help="must repeat the single configured OPENAI_MODEL; model overrides are rejected")
-    parser.add_argument("--openai-base-url", default=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"))
+    parser.add_argument("--api-key", default=os.environ.get("GEMINI_API_KEY", ""))
+    parser.add_argument("--model", default=os.environ.get("ACTOR_MODEL", ""),
+        help="must repeat the single configured ACTOR_MODEL; model overrides are rejected")
+    parser.add_argument("--api-base-url", default=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"))
     parser.add_argument("--browser-lang", default=os.environ.get("BROWSER_LANG", "en-US"))
     parser.add_argument(
         "--browser-accept-language",

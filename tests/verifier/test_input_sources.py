@@ -76,8 +76,8 @@ def test_controlled_commands_bind_only_selected_inputs_and_frozen_rubric(pair_fa
     selected = commands(screenshot_task=pair["screenshot"], dom_task=pair["dom"], rubric_file=pair["rubric"],
         generation_metrics=pair["metrics"], eval_config=pair["config"], run_root=tmp_path / "evaluation")
     controls = validate_command_parity(selected)
-    assert controls["judge_model"] == "gpt-5.2"
-    assert controls["action_judge_model"] == "gpt-5.6-terra"
+    assert controls["judge_model"] == "gemini-3.1-pro-preview"
+    assert controls["action_judge_model"] == "gemini-3.8-flash"
     for name, command in selected.items():
         expected = pair["screenshot"] if name == "screenshot_verifier" else pair["dom"]
         assert Path(command[command.index("--input") + 1]) == expected

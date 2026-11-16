@@ -1,4 +1,4 @@
-"""Small offline contract suite. No browser, network, or model service is used."""
+"""Actor, capture, scheduling, grading and accounting contracts."""
 import asyncio
 import ast
 import statistics
@@ -20,14 +20,16 @@ from w8bench.task_recorder.agent_browser import AgentBrowserClient, AgentBrowser
 from w8bench.task_recorder.agent_browser.client import AgentBrowserError
 from w8bench.task_recorder.prepare_verifier_data import inspect_recording, prepare_recording
 from w8bench.task_recorder.recorder_support import RunnerError, write_json, write_json_lines
-from w8bench.verifier.compare_results import compare, summarize
-from w8bench.verifier.run_comparison import grade_run
-from w8bench.verifier.run_full_comparison import aggregate, main as compare_main
+from w8bench.verifier.compare_results import compare
+from w8bench.verifier.run_metrics import summarize
+from w8bench.verifier.completion import grade_run
+from w8bench.verifier.paired_metrics import aggregate
+from w8bench.verifier.run_full_comparison import main as compare_main
 
 
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    monkeypatch.setenv("OPENAI_MODEL", "gpt-6.1-terra")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
     def forbidden(*args, **kwargs):
         raise AssertionError("offline tests must never access the network")
     monkeypatch.setattr("urllib.request.urlopen", forbidden)
@@ -101,7 +103,7 @@ def run_pair(tmp_path, monkeypatch):
         def post(self, payload, queue=sequence, selected=mode):
             payloads[selected].append(payload)
             item = queue.pop(0)
-            return {"id": f"response-{len(payloads[selected])}", "model": "gpt-6.1-terra",
+            return {"id": f"response-{len(payloads[selected])}", "model": "gemini-3.1-pro-preview",
                 "output_text": item if isinstance(item, str) else json.dumps(item),
                 "usage": {"input_tokens": 20, "output_tokens": 10,
                     "input_tokens_details": {"cached_tokens": 5}, "output_tokens_details": {"reasoning_tokens": 3}}}
@@ -110,7 +112,7 @@ def run_pair(tmp_path, monkeypatch):
         args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"),
             "--observation-mode", mode, "--task", "Report done.", "--task-id", "task_01",
             "--source-task-id", "task_01", "--start-url", "https://example.test",
-            "--output-dir", str(root), "--model", "gpt-6.1-terra", "--api-key", "offline-placeholder",
+            "--output-dir", str(root), "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder",
             "--max-turns", "6", "--settle-seconds", "0"])
         assert asyncio.run(runner.run(args)) == 0
         paths[mode] = root / "task_01"
@@ -126,13 +128,13 @@ def test_modes_capture_and_send_only_their_channel(run_pair):
     assert connect.await_count == 1  # Screenshot mode never connects the DOM action tool.
     assert snapshot.await_count == 2  # One interactive reference snapshot per DOM state.
     for payload in payloads["dom"]:
-        content = payload["input"][0]["content"]
-        assert [c["type"] for c in content] == ["input_text"]
+        content = payload["contents"][0]["parts"]
+        assert [list(c) for c in content] == [["text"]]
         assert "DOM_ONLY_SECRET" in content[0]["text"]
     for payload in payloads["screenshot"]:
-        content = payload["input"][0]["content"]
-        assert [c["type"] for c in content] == ["input_text", "input_image"]
-        assert content[1]["image_url"].startswith("data:image/png;base64,")
+        content = payload["contents"][0]["parts"]
+        assert [list(c) for c in content] == [["text"], ["inlineData"]]
+        assert content[1]["inlineData"]["mimeType"] == "image/png"
         assert "DOM_ONLY_SECRET" not in json.dumps(payload)
         assert "[ref=e1]" not in json.dumps(payload)
         assert "current_agent_browser_snapshot:" not in json.dumps(payload)
@@ -141,7 +143,7 @@ def test_modes_capture_and_send_only_their_channel(run_pair):
         for state in inspect_recording(paths[mode])["manifest"]["states"]:
             assert {"screenshot.png", "dom.json", "dom_full.txt", "dom_model.json", "dom_model.txt"} <= state["artifacts"].keys()
     for payload, row in zip(payloads["screenshot"], ss["decisions"]):
-        actual = base64.b64decode(payload["input"][0]["content"][1]["image_url"].split(",", 1)[1])
+        actual = base64.b64decode(payload["contents"][0]["parts"][1]["inlineData"]["data"])
         saved = paths["screenshot"] / ss["manifest"]["states"][row["state"]-1]["observation"]
         assert hashlib.sha256(actual).hexdigest() == hashlib.sha256(saved.read_bytes()).hexdigest()
 
@@ -284,7 +286,7 @@ def test_empty_action_snapshot_never_falls_back_to_full_page(monkeypatch):
     assert not observation.refs and not observation.targets
     assert "Full page secret" not in observation.text
     bundle = capture.CaptureBundle(snapshot_path=Path("dom.json"))
-    assert bundle.executable_agent_browser_text() == ""
+    assert bundle.agent_browser_action_text == ""
 
 
 def test_arbitrary_trial_count_pass_k_unknowns_and_criterion_identity(run_pair):
@@ -431,7 +433,7 @@ def test_failed_runs_retain_attempt_counts(run_pair, tmp_path, monkeypatch, fail
         if failure == "model_transport":
             raise RunnerError("offline injected transport error")
         return {"output_text": json.dumps({"action": "click", "x": 10, "y": 20, "thought": "click"}),
-                "model": "gpt-6.1-terra", "usage": {"input_tokens": 2, "output_tokens": 1}}
+                "model": "gemini-3.1-pro-preview", "usage": {"input_tokens": 2, "output_tokens": 1}}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
     original = FakeCDP.call
     async def call(self, method, params=None, **kwargs):
@@ -443,7 +445,7 @@ def test_failed_runs_retain_attempt_counts(run_pair, tmp_path, monkeypatch, fail
     root = tmp_path / "failure"
     args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"), "--observation-mode", "screenshot",
         "--task", "Report done.", "--task-id", "failed", "--output-dir", str(root),
-        "--model", "gpt-6.1-terra", "--api-key", "offline-placeholder", "--settle-seconds", "0"])
+        "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder", "--settle-seconds", "0"])
     assert asyncio.run(runner.run(args)) == 2
     recording = inspect_recording(root / "failed")
     assert recording["final"]["run_status"] == "error"
@@ -460,11 +462,11 @@ def test_optional_judge_uses_only_its_runs_channel(run_pair, tmp_path, monkeypat
     payloads = []
     def post(self, payload):
         payloads.append(payload)
-        return {"model": "gpt-5.6-sol", "output_text": json.dumps({"criteria": [
+        return {"model": "gpt-6.1-sol", "output_text": json.dumps({"criteria": [
             {"id": "C1", "verdict": "uncertain", "reason": "insufficient support", "states": [1]}]})}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
     for mode, path in paths.items():
-        grade = asyncio.run(grade_run(path, rubric, judge_model="gpt-5.6-sol", api_key="offline-placeholder", execute=True, evidence_policy="actor_native"))
+        grade = asyncio.run(grade_run(path, rubric, judge_model="gpt-6.1-sol", api_key="offline-placeholder", execute=True, evidence_policy="actor_native"))
         assert grade["verdict"] == "uncertain" and grade["judge_calls"] == 1
         content = payloads[-1]["input"][0]["content"]
         assert any(c["type"] == "input_image" for c in content) == (mode == "screenshot")
@@ -572,10 +574,10 @@ def test_actor_reads_one_final_json_message(run_pair, tmp_path, monkeypatch, sha
         sent.append(payload)
         earlier_final = {**commentary, 'phase': 'final_answer'}
         output = [commentary] if shape == 'commentary_only' else [earlier_final, final] if shape == 'multiple_finals' else [commentary, final]
-        return {'model': 'gpt-6.1-terra', 'status': 'incomplete' if shape == 'incomplete' else 'completed', 'output': output,
+        return {'model': 'gemini-3.1-pro-preview', 'status': 'incomplete' if shape == 'incomplete' else 'completed', 'output': output,
             'output_text': json.dumps(fake_termination) + '\n' + json.dumps(click)}
     monkeypatch.setattr(runner.ModelClient, '_post', post)
-    client = runner.ModelClient('offline-placeholder', 'gpt-6.1-terra', 'https://offline.test')
+    client = runner.ModelClient('offline-placeholder', 'gemini-3.1-pro-preview', 'https://offline.test')
     pending = client.decide(task='Activate the control.', step=8, max_steps=80, bundle=bundle,
         task_memory='', recent_actions=[], turn_dir=tmp_path / 'protocol-turn', viewport=(1365,768))
     if shape in {'final_with_commentary', 'multiple_finals'}:
@@ -586,11 +588,11 @@ def test_actor_reads_one_final_json_message(run_pair, tmp_path, monkeypatch, sha
             asyncio.run(pending)
     request = sent[0]
     assert not {'tools', 'tool_choice', 'parallel_tool_calls'} & request.keys()
-    assert request['text']['format']['type'] == 'json_schema'
-    assert request['text']['format']['strict'] is True
-    assert request['text']['format']['schema'] == runner.ACTION_SCHEMA
-    assert 'step: 8 of 80' in request['input'][0]['content'][0]['text']
-    assert 'turns_remaining_after_this_call: 72' in request['input'][0]['content'][0]['text']
+    assert request['generationConfig']['responseMimeType'] == 'application/json'
+    assert request['generationConfig']['responseJsonSchema']['additionalProperties'] is False
+    assert request['generationConfig']['responseJsonSchema'] == runner.ACTION_SCHEMA
+    assert 'step: 8 of 80' in request['contents'][0]['parts'][0]['text']
+    assert 'turns_remaining_after_this_call: 72' in request['contents'][0]['parts'][0]['text']
 
 
 @pytest.mark.parametrize('mode', ['dom', 'screenshot'])
@@ -623,7 +625,7 @@ def test_rejected_termination_and_failed_action_do_not_commit_memory(run_pair, t
     inputs = []
     def post(self, payload):
         inputs.append(payload)
-        return {'model': 'gpt-6.1-terra', 'output_text': json.dumps(queue.pop(0)), 'usage': {'input_tokens': 1, 'output_tokens': 1}}
+        return {'model': 'gemini-3.1-pro-preview', 'output_text': json.dumps(queue.pop(0)), 'usage': {'input_tokens': 1, 'output_tokens': 1}}
     attempts = []
     async def execute(self, decision, **kwargs):
         attempts.append(decision)
@@ -635,7 +637,7 @@ def test_rejected_termination_and_failed_action_do_not_commit_memory(run_pair, t
     root = tmp_path / 'budget-check'
     args = runner.parse_args(['--env-file', str(tmp_path/'absent.env'), '--observation-mode', 'screenshot',
         '--task', 'Inspect the page.', '--task-id', 'sample', '--output-dir', str(root),
-        '--model', 'gpt-6.1-terra', '--api-key', 'offline-placeholder', '--max-turns', '80', '--settle-seconds', '0'])
+        '--model', 'gemini-3.1-pro-preview', '--api-key', 'offline-placeholder', '--max-turns', '80', '--settle-seconds', '0'])
     assert asyncio.run(runner.run(args)) == 2
     recording = inspect_recording(root/'sample')
     assert recording['manifest']['model_turns'] == 4
@@ -645,7 +647,7 @@ def test_rejected_termination_and_failed_action_do_not_commit_memory(run_pair, t
     assert '78 calls remain' in recording['decisions'][1]['rejection_reason']
     assert recording['decisions'][2]['task_memory_before'] == 'established fact'
     assert recording['decisions'][3]['task_memory_before'] == 'established fact'
-    assert 'unconfirmed action fact' not in inputs[3]['input'][0]['content'][0]['text']
+    assert 'unconfirmed action fact' not in inputs[3]['contents'][0]['parts'][0]['text']
 
 
 def test_baseline_stall_and_success_checks():
@@ -677,8 +679,8 @@ def test_passive_capture_failure_never_enters_actor_or_progress(run_pair, tmp_pa
     assert set(capture.action_progress(before, after)) == {"made_progress", "screenshot_changed"}
     seen = []
     monkeypatch.setattr(runner.ModelClient, "_post", lambda self,payload: seen.append(payload) or
-        {"model": "gpt-6.1-terra", "output_text": '{"action":"wait","seconds":0,"thought":"observe"}'})
-    asyncio.run(runner.ModelClient("unused", "gpt-6.1-terra", "unused").decide(task="Inspect page", step=1,
+        {"model": "gemini-3.1-pro-preview", "output_text": '{"action":"wait","seconds":0,"thought":"observe"}'})
+    asyncio.run(runner.ModelClient("unused", "gemini-3.1-pro-preview", "unused").decide(task="Inspect page", step=1,
         max_steps=5, bundle=before, task_memory="", recent_actions=[], turn_dir=tmp_path,
         viewport=(1365,768)))
     assert "PASSIVE_DOM_ERROR_SECRET" not in json.dumps(seen)
@@ -759,14 +761,14 @@ def test_actor_settings_and_output_limit_metadata(run_pair):
     for mode in ("dom", "screenshot"):
         recording = inspect_recording(paths[mode])
         assert recording["manifest"]["reasoning_effort"] == "medium"
-        assert recording["manifest"]["returned_actor_models"] == ["gpt-6.1-terra"]
-        assert recording["manifest"]["configured_actor_model"] == "gpt-6.1-terra"
+        assert recording["manifest"]["returned_actor_models"] == ["gemini-3.1-pro-preview"]
+        assert recording["manifest"]["configured_actor_model"] == "gemini-3.1-pro-preview"
         for payload, row in zip(payloads[mode], recording["decisions"]):
-            assert payload["max_output_tokens"] == 10000
-            assert payload["reasoning"] == {"effort": "medium"}
-            assert payload["text"]["format"]["schema"]["properties"]["memory"]["maxLength"] == 8000
+            assert payload["generationConfig"]["maxOutputTokens"] == 10000
+            assert payload["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "MEDIUM"}
+            assert payload["generationConfig"]["responseJsonSchema"]["properties"]["memory"]["maxLength"] == 8000
             assert row["output_limit_hit"] is False
-            assert row["configured_model"] == "gpt-6.1-terra"
+            assert row["configured_model"] == "gemini-3.1-pro-preview"
             assert row["max_output_tokens"] == 10000
             assert row["requested_reasoning_effort"] == "medium"
 
@@ -774,7 +776,7 @@ def test_actor_settings_and_output_limit_metadata(run_pair):
 def test_current_url_is_shared_but_language_is_dom_only(run_pair):
     _, payloads, *_ = run_pair
     for mode in ("dom", "screenshot"):
-        text = payloads[mode][0]["input"][0]["content"][0]["text"]
+        text = payloads[mode][0]["contents"][0]["parts"][0]["text"]
         assert "current_document_url: https://example.test" in text
         assert ("current_document_language:" in text) == (mode == "dom")
 
@@ -787,19 +789,19 @@ def test_common_judge_evidence_and_secondary_policy(run_pair, tmp_path, monkeypa
     seen = []
     def post(self, payload):
         seen.append(payload)
-        return {"model": "gpt-5.6-sol", "output_text": json.dumps({"criteria": [
+        return {"model": "gpt-6.1-sol", "output_text": json.dumps({"criteria": [
             {"id": "result", "verdict": "success", "reason": "Observed", "states": [1]}]}),
             "usage": {"input_tokens": 100, "output_tokens": 10}}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
     for mode in ("dom", "screenshot"):
-        grade = asyncio.run(grade_run(paths[mode], rubric, judge_model="gpt-5.6-sol", api_key="test", execute=True))
+        grade = asyncio.run(grade_run(paths[mode], rubric, judge_model="gpt-6.1-sol", api_key="test", execute=True))
         content = seen[-1]["input"][0]["content"]
         assert grade["evidence_policy"] == "paired"
         assert any(item["type"] == "input_image" for item in content)
         assert "DOM_ONLY_SECRET" in json.dumps(content)
         assert "[ref=e1]" not in json.dumps(content)
     primary = (paths["dom"] / "completion.json").read_bytes()
-    grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gpt-5.6-sol", api_key="test", execute=True,
+    grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gpt-6.1-sol", api_key="test", execute=True,
         evidence_policy="actor_native"))
     assert grade["evidence_policy"] == "actor_native"
     assert (paths["dom"] / "completion_actor_native.json").exists()
@@ -832,8 +834,8 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
             "criteria": [{"id": "heading", "description": "Read the heading."}]})
     output = tmp_path / "recordings"
     arguments = ["--trials", str(trials), "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-5.6-sol", "--output-dir", str(output),
-        "--run-name", "batch", "--env-file", str(tmp_path / "absent.env"), "--model", "gpt-6.1-terra"]
+        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--run-name", "batch", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]
     ledger = output / "batch" / "ledger.jsonl"
     calls = []
     def run(command, **kwargs):
@@ -901,8 +903,8 @@ def test_batch_resume_retains_dead_started_attempt_and_runs_pending_rows(tmp_pat
             "criteria": [{"id": "heading", "description": "Read the heading."}]})
     output = tmp_path / "recordings"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-5.6-sol", "--output-dir", str(output),
-        "--run-name", "resumed", "--env-file", str(tmp_path / "absent.env"), "--model", "gpt-6.1-terra"]
+        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--run-name", "resumed", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]
     assert task_cli.main(arguments + ["--dry-run"]) == 0
     ledger = output / "resumed" / "ledger.jsonl"
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
@@ -926,7 +928,7 @@ def test_inspector_rejects_passive_observation_text_in_actor_request(run_pair, m
     paths, *_ = run_pair
     request = paths[mode] / "turns/turn_000001/request.json"
     payload = json.loads(request.read_text())
-    payload["input"][0]["content"][0]["text"] += "\nPASSIVE_OBSERVATION_SECRET"
+    payload["contents"][0]["parts"][0]["text"] += "\nPASSIVE_OBSERVATION_SECRET"
     write_json(request, payload)
     with pytest.raises(ValueError, match="unapproved|prompt|actor text"):
         inspect_recording(paths[mode])
@@ -951,13 +953,13 @@ def test_passive_screenshot_failure_does_not_change_dom_actor_or_progress(run_pa
     assert capture.action_progress(before, after)["made_progress"] is False
     seen = []
     monkeypatch.setattr(runner.ModelClient, "_post", lambda self, payload: seen.append(payload) or
-        {"model": "gpt-6.1-terra", "output_text": '{"action":"wait","seconds":0,"thought":"observe"}'})
-    asyncio.run(runner.ModelClient("unused", "gpt-6.1-terra", "unused").decide(task="Inspect page", step=1,
+        {"model": "gemini-3.1-pro-preview", "output_text": '{"action":"wait","seconds":0,"thought":"observe"}'})
+    asyncio.run(runner.ModelClient("unused", "gemini-3.1-pro-preview", "unused").decide(task="Inspect page", step=1,
         max_steps=5, bundle=before, task_memory="", recent_actions=[], turn_dir=tmp_path,
         viewport=(1365, 768)))
     assert "PASSIVE_SCREENSHOT_ERROR_SECRET" not in json.dumps(seen)
     assert "DOM_ONLY_SECRET" in json.dumps(seen)
-    assert all(item["type"] == "input_text" for item in seen[0]["input"][0]["content"])
+    assert all(set(item) == {"text"} for item in seen[0]["contents"][0]["parts"])
 
 
 @pytest.mark.parametrize("navigation_kind", ["same_url", "different_url"])
@@ -995,7 +997,7 @@ def test_incomplete_actor_records_limit_hit_and_reasoning_usage(run_pair, tmp_pa
     calls = []
     def post(self, payload):
         calls.append(payload)
-        return {"id": "limited-response", "model": "gpt-6.1-terra", "status": "incomplete",
+        return {"id": "limited-response", "model": "gemini-3.1-pro-preview", "status": "incomplete",
             "incomplete_details": {"reason": "max_output_tokens"},
             "reasoning": {"effort": "medium"}, "output": [],
             "usage": {"input_tokens": 23, "output_tokens": 10000,
@@ -1005,14 +1007,14 @@ def test_incomplete_actor_records_limit_hit_and_reasoning_usage(run_pair, tmp_pa
     root = tmp_path / f"limit_{mode}"
     args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"), "--observation-mode", mode,
         "--task", "Inspect the page.", "--task-id", "limited", "--start-url", "https://example.test",
-        "--output-dir", str(root), "--model", "gpt-6.1-terra", "--api-key", "offline-placeholder",
+        "--output-dir", str(root), "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder",
         "--max-turns", "2", "--settle-seconds", "0"])
     assert asyncio.run(runner.run(args)) == 2
     recording = inspect_recording(root / "limited")
     assert len(calls) == 1
     assert recording["manifest"]["model_turns"] == 1
     assert recording["manifest"]["steps"] == []
-    assert recording["manifest"]["returned_actor_models"] == ["gpt-6.1-terra"]
+    assert recording["manifest"]["returned_actor_models"] == ["gemini-3.1-pro-preview"]
     row = recording["decisions"][0]
     assert row["response_status"] == "incomplete"
     assert row["incomplete_details"] == {"reason": "max_output_tokens"}
@@ -1029,16 +1031,16 @@ def test_judge_failure_is_ungraded_and_keeps_its_usage_separate(run_pair, tmp_pa
     write_json(rubric, {"task_id": "task_01", "instruction": "Report done.", "start_url": "https://example.test",
         "criteria": [{"id": "result", "description": "The result is established."}]})
     def post(self, payload):
-        return {"id": "failed-judge-response", "model": "gpt-5.6-sol", "status": "incomplete" if failure == "incomplete" else "completed",
+        return {"id": "failed-judge-response", "model": "gpt-6.1-sol", "status": "incomplete" if failure == "incomplete" else "completed",
             "incomplete_details": {"reason": "max_output_tokens"} if failure == "incomplete" else None,
             "output_text": "malformed judge JSON", "usage": {"input_tokens": 101, "output_tokens": 17,
                 "output_tokens_details": {"reasoning_tokens": 11}}}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
-    grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gpt-5.6-sol", api_key="test", execute=True))
+    grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gpt-6.1-sol", api_key="test", execute=True))
     assert grade["method"] == "ungraded" and grade["verdict"] == "ungraded"
     assert grade["judge_calls"] == 1 and grade["judge_error"]
     assert grade["usage"]["input_tokens"] == 101 and grade["usage"]["output_tokens"] == 17
-    assert grade["returned_judge_model"] == "gpt-5.6-sol"
+    assert grade["returned_judge_model"] == "gpt-6.1-sol"
     assert grade["evidence_policy"] == "paired"
     assert json.loads((paths["dom"] / "completion.json").read_text()) == grade
     receipt, _ = compare(*(inspect_recording(paths[mode]) for mode in ("dom", "screenshot")))
@@ -1096,8 +1098,8 @@ def test_batch_grading_error_does_not_abort_or_replace_actor_outcome(tmp_path, m
         return SimpleNamespace(returncode=1)
     monkeypatch.setattr(task_cli.subprocess, "run", run)
     assert task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog),
-        "--rubric-dir", str(rubrics), "--judge-model", "gpt-5.6-sol", "--output-dir", str(output),
-        "--run-name", "judging", "--env-file", str(tmp_path / "absent.env"), "--model", "gpt-6.1-terra"]) == 0
+        "--rubric-dir", str(rubrics), "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--run-name", "judging", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]) == 0
     rows = [json.loads(line) for line in (output / "judging" / "ledger.jsonl").read_text().splitlines()]
     assert actors == ["dom", "screenshot"]
     assert len(judges) == 2
@@ -1179,8 +1181,8 @@ def test_batch_keyboard_interrupt_during_judge_preserves_actor_outcome(tmp_path,
     monkeypatch.setattr(task_cli.subprocess, "run", run)
     with pytest.raises(KeyboardInterrupt):
         task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-            "--judge-model", "gpt-5.6-sol", "--output-dir", str(output), "--run-name", "interrupted_judge",
-            "--env-file", str(tmp_path / "absent.env"), "--model", "gpt-6.1-terra"])
+            "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "interrupted_judge",
+            "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"])
     assert events == ["actor", "actor", "judge"]
     rows = [json.loads(line) for line in (output / "interrupted_judge" / "ledger.jsonl").read_text().splitlines()]
     assert all(row["technical_outcome"] == "completed" for row in rows)
@@ -1202,8 +1204,8 @@ def test_batch_resume_refuses_live_owned_recorder(tmp_path, monkeypatch):
             "criteria": [{"id": "heading", "description": "Read the heading."}]})
     output = tmp_path / "recordings"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-5.6-sol", "--output-dir", str(output),
-        "--run-name", "live", "--env-file", str(tmp_path / "absent.env"), "--model", "gpt-6.1-terra"]
+        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--run-name", "live", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]
     assert task_cli.main(arguments + ["--dry-run"]) == 0
     ledger = output / "live" / "ledger.jsonl"
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
@@ -1265,15 +1267,15 @@ def test_comparison_rejects_grade_not_bound_to_schedule(run_pair, tmp_path, monk
     write_json(rubric, {"task_id": "task_01", "instruction": "Report done.", "start_url": "https://example.test",
         "criteria": [{"id": "result", "description": "The result is established."}]})
     monkeypatch.setattr(runner.ModelClient, "_post", lambda self, payload: {
-        "model": "gpt-5.6-sol", "output_text": json.dumps({"criteria": [{"id": "result", "verdict": "success",
+        "model": "gpt-6.1-sol", "output_text": json.dumps({"criteria": [{"id": "result", "verdict": "success",
             "reason": "Observed", "states": [1]}]}), "usage": {"input_tokens": 100, "output_tokens": 10}})
     for path in paths.values():
-        asyncio.run(grade_run(path, rubric, judge_model="gpt-5.6-sol", api_key="test", execute=True))
+        asyncio.run(grade_run(path, rubric, judge_model="gpt-6.1-sol", api_key="test", execute=True))
     ledger = tmp_path / "ledger.jsonl"
     rows = write_attempt_ledger(ledger, {(1, mode): path for mode, path in paths.items()}, 1)
     for row in rows:
         row.update(rubric=str(rubric), rubric_sha256=hashlib.sha256(rubric.read_bytes()).hexdigest(),
-            judge_model="gpt-5.6-sol")
+            judge_model="gpt-6.1-sol")
         row[binding] = "0" * 64 if binding == "rubric_sha256" else "different-judge"
     write_json_lines(ledger, rows)
     with pytest.raises(ValueError, match="rubric|judge|grading"):
@@ -1338,8 +1340,8 @@ def test_batch_partial_recording_is_not_zero_cost_startup_failure(tmp_path, monk
         return SimpleNamespace(returncode=1)
     monkeypatch.setattr(task_cli.subprocess, "run", run)
     assert task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-5.6-sol", "--output-dir", str(output),
-        "--run-name", "partial", "--env-file", str(tmp_path / "absent.env"), "--model", "gpt-6.1-terra"]) == 0
+        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--run-name", "partial", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]) == 0
     ledger = output / "partial" / "ledger.jsonl"
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
     assert all(row["completed"] and row["technical_outcome"] == "incomplete_recording" for row in rows)
@@ -1373,7 +1375,7 @@ def test_comparison_rejects_unverified_profiles_and_changed_runtime(run_pair):
 def test_local_request_preparation_failure_is_not_a_model_call(run_pair, tmp_path, monkeypatch):
     monkeypatch.setattr(runner.Path, "read_bytes", lambda self: (_ for _ in ()).throw(OSError("unreadable observation")))
     # Read failure occurs before ModelClient starts an API request.
-    client = runner.ModelClient("unused","gpt-6.1-terra","unused")
+    client = runner.ModelClient("unused","gemini-3.1-pro-preview","unused")
     bundle = capture.CaptureBundle(observation_mode="screenshot", screenshot_path=tmp_path/"missing.png")
     with pytest.raises(OSError):
         asyncio.run(client.decide(task="inspect",step=1,max_steps=5,bundle=bundle,task_memory="",
@@ -1426,49 +1428,49 @@ def test_ledger_requires_shared_capture_and_environment_across_all_trials(run_pa
 
 def test_actor_default_limits_and_single_model_configuration(tmp_path, monkeypatch):
     args = runner.parse_args(["--env-file", str(tmp_path/"absent.env")])
-    assert args.model == "gpt-6.1-terra"
+    assert args.model == "gemini-3.1-pro-preview"
     assert args.max_steps == 200 and args.max_output_tokens == 10000
     launched = task_cli.parse_args(["sample", "--output-dir", str(tmp_path)])
     assert launched.max_steps == 200 and launched.max_output_tokens == 10000
     assert runner.MAX_TASK_MEMORY_CHARS == 8000
-    definition = {"instruction": "Read heading", "start_url": "https://example.test", "model": "gpt-5.6-sol"}
+    definition = {"instruction": "Read heading", "start_url": "https://example.test", "model": "gpt-6.1-sol"}
     command = task_cli.build_runner_command(definition, task_id="sample", task_name="sample",
         run_id="sample", output_dir=tmp_path, env_file=tmp_path/"absent.env", model="",
         max_steps=200, observation_mode="dom")
-    assert command[command.index("--model")+1] == "gpt-6.1-terra"
+    assert command[command.index("--model")+1] == "gemini-3.1-pro-preview"
     assert command[command.index("--max-output-tokens")+1] == "10000"
-    assert "gpt-5.6-sol" not in command  # Catalog metadata cannot select a second actor.
+    assert "gpt-6.1-sol" not in command  # Catalog metadata cannot select a second actor.
 
 
-@pytest.mark.parametrize("configured,override", [("", None), ("gpt-5.6-sol", None),
-    ("gpt-6.1-terra", "gpt-6.1-sol")])
+@pytest.mark.parametrize("configured,override", [("", None), ("gpt-6.1-sol", None),
+    ("gemini-3.1-pro-preview", "gpt-6.1-sol")])
 def test_actor_startup_rejects_missing_wrong_or_overridden_model(tmp_path, monkeypatch, configured, override):
-    monkeypatch.setenv("OPENAI_MODEL", configured)
+    monkeypatch.setenv("ACTOR_MODEL", configured)
     monkeypatch.setattr(runner, "CDPClient", lambda *a,**k: pytest.fail("invalid model opened a browser"))
     common = ["--env-file", str(tmp_path/"absent.env"), "--observation-mode", "dom",
         "--task", "Read heading", "--start-url", "https://example.test", "--output-dir", str(tmp_path/"run")]
     options = ["--model", override] if override is not None else []
     args = runner.parse_args(common+options)
-    with pytest.raises(RunnerError, match="OPENAI_MODEL=gpt-6.1-terra"):
+    with pytest.raises(RunnerError, match="ACTOR_MODEL=gemini-3.1-pro-preview"):
         asyncio.run(runner.run(args))
-    with pytest.raises(RunnerError, match="OPENAI_MODEL=gpt-6.1-terra"):
+    with pytest.raises(RunnerError, match="ACTOR_MODEL=gemini-3.1-pro-preview"):
         task_cli.main(["sample", *common, "--dry-run", *options])
     assert not (tmp_path/"run").exists()
 
 
 def test_actor_env_rejects_duplicate_or_conflicting_model_values(tmp_path, monkeypatch):
     envfile = tmp_path/"models.env"
-    envfile.write_text("OPENAI_MODEL=gpt-6.1-terra\nOPENAI_MODEL=gpt-6.1-terra\n")
+    envfile.write_text("ACTOR_MODEL=gemini-3.1-pro-preview\nACTOR_MODEL=gemini-3.1-pro-preview\n")
     with pytest.raises(RunnerError, match="exactly one"):
         runner.load_env(envfile)
-    envfile.write_text("OPENAI_MODEL=gpt-5.6-sol\n")
+    envfile.write_text("ACTOR_MODEL=gpt-6.1-sol\n")
     with pytest.raises(RunnerError, match="conflicts"):
         runner.load_env(envfile)
 
 
-@pytest.mark.parametrize("returned", ["gpt-6.1-sol", "gpt-5.6-sol", "gpt-6.1-terra-mini", None])
+@pytest.mark.parametrize("returned", ["gpt-6.1-sol", "gpt-6.1-sol", "gemini-3.1-pro-preview-mini", None])
 @pytest.mark.parametrize("mode", ["dom", "screenshot"])
-def test_non_terra_actor_response_stops_before_any_action(run_pair, tmp_path, monkeypatch, mode, returned):
+def test_non_gemini_actor_response_stops_before_any_action(run_pair, tmp_path, monkeypatch, mode, returned):
     calls = []
     def post(self,payload):
         calls.append(payload)
@@ -1485,12 +1487,12 @@ def test_non_terra_actor_response_stops_before_any_action(run_pair, tmp_path, mo
     recording = inspect_recording(root/"mismatch")
     assert len(calls) == 1 and recording["manifest"]["model_turns"] == 1
     assert recording["manifest"]["steps"] == []
-    assert recording["manifest"]["configured_actor_model"] == "gpt-6.1-terra"
+    assert recording["manifest"]["configured_actor_model"] == "gemini-3.1-pro-preview"
     assert recording["decisions"][0]["returned_model"] == returned
     assert "actor model mismatch" in recording["final"]["error"]
 
 
-@pytest.mark.parametrize("judge", [None, "gpt-6.1-terra", "gpt-5.6"])
+@pytest.mark.parametrize("judge", [None, "gemini-3.1-pro-preview", "gpt-5.6"])
 def test_batch_completion_judge_is_explicit_and_cannot_fall_back_to_actor(tmp_path, monkeypatch, judge):
     arguments = ["--trials", "1", "--rubric-dir", str(tmp_path/"rubrics"),
         "--output-dir", str(tmp_path/"out"), "--env-file", str(tmp_path/"absent.env"), "--dry-run"]
@@ -1516,7 +1518,7 @@ def test_actor_rejects_output_override_and_turns_above_cap(tmp_path, monkeypatch
         task_cli.build_runner_command({"instruction":"Read heading", "start_url":"https://example.test"},
             task_id="sample", task_name="sample", run_id="sample", output_dir=tmp_path,
             env_file=tmp_path/"absent.env", **kwargs)
-    client = runner.ModelClient("test", "gpt-6.1-terra", "https://unused.test")
+    client = runner.ModelClient("test", "gemini-3.1-pro-preview", "https://unused.test")
     bundle = capture.CaptureBundle(snapshot_path=tmp_path/"dom.json")
     with pytest.raises(RunnerError, match=error):
         asyncio.run(client.decide(task="Read heading", step=1, max_steps=kwargs.get("max_steps", 200),
@@ -1562,7 +1564,7 @@ def test_evaluation_join_checks_identity_and_keeps_four_directional_metrics(run_
     evaluation = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "actor_arm": "dom", "trial_id": str(task["run_name"]), "rubric_sha256": "frozen",
         "coverage": {"audit_eligible_states": [1]}, "stages": {"audit": {"status": "complete", "metrics": metrics,
-        "calls": [{"stage": "inventory", "requested_model": "gpt-5.6-sol", "usage": {"prompt_tokens": 11, "completion_tokens": 7,
+        "calls": [{"stage": "inventory", "requested_model": "gpt-6.1-sol", "usage": {"prompt_tokens": 11, "completion_tokens": 7,
             "completion_tokens_details": {"reasoning_tokens": 5}}}]}}}
     root.mkdir(parents=True)
     write_json(root / "evaluation.json", evaluation)
@@ -1639,7 +1641,7 @@ def test_no_reported_actor_usage_remains_unknown_in_totals_and_tpt(run_pair):
     assert result["modes"]["dom"]["distributions"]["input_tokens"]["known_runs"] == 0
 
 
-@pytest.mark.parametrize("dry_run,judge", [(False, None), (False, "gpt-5.6-sol"), (True, None)])
+@pytest.mark.parametrize("dry_run,judge", [(False, None), (False, "gpt-6.1-sol"), (True, None)])
 def test_batch_execution_requires_frozen_rubrics_and_planning_requires_judge(tmp_path, judge, dry_run):
     arguments = ["--trials", "1", "--env-file", str(tmp_path / "absent.env"), "--output-dir", str(tmp_path / "recordings")]
     if judge is not None:
@@ -1658,15 +1660,15 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
     root.mkdir(parents=True)
     grade = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "observation_mode": "dom", "rubric_sha256": "frozen", "evidence_policy": "paired",
-        "method": "model_judge", "verdict": "success", "judge_model": "gpt-5.6-sol", "judge_calls": 1,
-        "returned_judge_model": "gpt-5.6-sol-2026-10-01",
+        "method": "model_judge", "verdict": "success", "judge_model": "gpt-6.1-sol", "judge_calls": 1,
+        "returned_judge_model": "gpt-6.1-sol-2026-10-01",
         "usage": {"input_tokens": 30, "output_tokens": 10}}
     write_json(paths["dom"] / "completion.json", grade)
     evaluation = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "actor_arm": "dom", "trial_id": str(task["run_name"]), "rubric_sha256": "frozen", "stages": {
         "paired_completion": {"status": "model_judge", "attempt_history": [
             {"status": "ungraded", "calls": 1, "usage": {"input_tokens": 20, "output_tokens": 5}, "usage_coverage": "complete",
-                "model_settings": {"returned_model": "gpt-5.6-sol-2026-10-01"}},
+                "model_settings": {"returned_model": "gpt-6.1-sol-2026-10-01"}},
             {"status": "interrupted", "usage_coverage": "unknown"}]},
         "dom_model": {"status": "complete", "usage_coverage": "complete", "calls": {"gpt-5.2": 2},
             "usage": {"gpt-5.2": {"input_tokens": 60, "output_tokens": 15}}, "attempt_history": [
@@ -1678,7 +1680,7 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
     assert stream["usage"]["total_tokens"] == 65
     assert stream["calls"] is None and stream["known_calls"] == 2
     assert stream["unknown_attempts"] == 1 and stream["usage_coverage"] == "partial"
-    assert {row["returned_model"] for row in stream["call_records"]} == {"gpt-5.6-sol-2026-10-01"}
+    assert {row["returned_model"] for row in stream["call_records"]} == {"gpt-6.1-sol-2026-10-01"}
     auxiliary = result["judge_usage_streams"]["dom_model:gpt-5.2"]
     assert auxiliary["usage"]["input_tokens"] == 70 and auxiliary["usage"]["output_tokens"] == 17
     assert auxiliary["calls"] == 3 and auxiliary["usage_coverage"] == "complete"
@@ -1688,7 +1690,7 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
 
 @pytest.mark.parametrize('large_context', [False, True])
 def test_actor_list_price_estimate_uses_per_call_tiers_and_subsets(run_pair, large_context):
-    from w8bench.verifier.compare_results import summarize
+    from w8bench.verifier.run_metrics import summarize
     paths, *_ = run_pair
     recording = inspect_recording(paths['dom'])
     for row in recording['decisions']:
@@ -1696,14 +1698,14 @@ def test_actor_list_price_estimate_uses_per_call_tiers_and_subsets(run_pair, lar
             'input_tokens_details': {'cached_tokens': 40, 'cache_write_tokens': 20},
             'output_tokens_details': {'reasoning_tokens': 10}}
     priced = summarize(recording)['cost_streams']['actor']['cost']
-    per_call = ((300000 - 60) * 2 + 40 * .1 + 20 * 2.5 + 20 * 7.5) / 1000000 if large_context else .000167
+    per_call = ((300000 - 60) * 4 + 40 * .4 + 20 * 4 + 20 * 18) / 1000000 if large_context else .000368
     assert priced['estimated_usd'] == pytest.approx(per_call * len(recording['decisions']))
     assert priced['priced_calls'] == len(recording['decisions'])
     assert priced['kind'] == 'estimated_from_list_prices'
 
 
 def test_actor_cost_missing_usage_is_not_a_zero_price(run_pair):
-    from w8bench.verifier.compare_results import summarize
+    from w8bench.verifier.run_metrics import summarize
     paths, *_ = run_pair
     recording = inspect_recording(paths['dom'])
     recording['decisions'][0]['usage'] = {}
@@ -1719,14 +1721,14 @@ def test_runtime_fresh_configuration_reads_actor_and_audit_defaults_from_templat
     monkeypatch.setattr(browser_runtime, "ROOT", tmp_path)
     monkeypatch.setattr(browser_runtime, "choose_port", lambda preferred, used: preferred)
     monkeypatch.setattr(browser_runtime, "unique_container_name", lambda base: base)
-    (tmp_path / ".env.example").write_text("OPENAI_MODEL=actor-from-template\n"
+    (tmp_path / ".env.example").write_text("ACTOR_MODEL=actor-from-template\n"
         "EVIDENCE_AUDIT_MODEL=inventory-from-template\nEVIDENCE_ADJUDICATOR_MODEL=adjudicator-from-template\n"
         "EVIDENCE_AUDIT_PROVIDER=openai\nEVIDENCE_ADJUDICATOR_PROVIDER=google\nGEMINI_API_KEY=\n"
         "TASK_CATALOG_FILE=tasks.jsonl\n")
     path = tmp_path / "fresh.env"
     assert browser_runtime.configure(path, False) == 0
     values = browser_runtime.read_env(path)
-    assert values["OPENAI_MODEL"] == "actor-from-template"
+    assert values["ACTOR_MODEL"] == "actor-from-template"
     assert values["EVIDENCE_AUDIT_MODEL"] == "inventory-from-template"
     assert values["EVIDENCE_ADJUDICATOR_MODEL"] == "adjudicator-from-template"
     assert values["EVIDENCE_AUDIT_PROVIDER"] == "openai"
@@ -1735,7 +1737,7 @@ def test_runtime_fresh_configuration_reads_actor_and_audit_defaults_from_templat
     assert values["TASK_CATALOG_FILE"] == "tasks.jsonl"
     output = capsys.readouterr().out
     assert "Set OPENAI_API_KEY and GEMINI_API_KEY credentials" in output
-    assert "Edit OPENAI_API_KEY and OPENAI_MODEL" not in output
+    assert "Edit OPENAI_API_KEY and ACTOR_MODEL" not in output
 
 
 def test_runtime_port_refresh_preserves_audit_settings_and_fake_credentials(tmp_path, monkeypatch, capsys):
@@ -1743,11 +1745,11 @@ def test_runtime_port_refresh_preserves_audit_settings_and_fake_credentials(tmp_
     monkeypatch.setattr(browser_runtime, "ROOT", tmp_path)
     monkeypatch.setattr(browser_runtime, "choose_port", lambda preferred, used: preferred)
     monkeypatch.setattr(browser_runtime, "unique_container_name", lambda base: base)
-    (tmp_path / ".env.example").write_text("OPENAI_MODEL=gpt-6.1-terra\n"
+    (tmp_path / ".env.example").write_text("ACTOR_MODEL=gemini-3.1-pro-preview\n"
         "EVIDENCE_AUDIT_MODEL=template-inventory\nEVIDENCE_ADJUDICATOR_MODEL=template-adjudicator\n"
         "TASK_CATALOG_FILE=tasks.jsonl\n")
     path = tmp_path / "existing.env"
-    expected = {"OPENAI_MODEL": "gpt-6.1-terra", "OPENAI_API_KEY": "fake-openai-test-value",
+    expected = {"ACTOR_MODEL": "gemini-3.1-pro-preview", "OPENAI_API_KEY": "fake-openai-test-value",
         "GEMINI_API_KEY": "fake-google-test-value", "EVIDENCE_AUDIT_MODEL": "configured-inventory",
         "EVIDENCE_ADJUDICATOR_MODEL": "configured-adjudicator", "EVIDENCE_AUDIT_PROVIDER": "openai",
         "EVIDENCE_ADJUDICATOR_PROVIDER": "google", "CONTAINER_NAME": "owned-browser",
@@ -1785,13 +1787,13 @@ def test_compact_catalog_runs_in_both_arms_and_records_hash(run_pair, tmp_path, 
         {"action": "terminate", "status": "success", "termination_reason": "completed",
          "final_answer": "done", "thought": "Observed heading."}]
     monkeypatch.setattr(runner.ModelClient, "_post", lambda self, payload: {
-        "model": "gpt-6.1-terra", "output_text": json.dumps(proposals.pop(0)),
+        "model": "gemini-3.1-pro-preview", "output_text": json.dumps(proposals.pop(0)),
         "usage": {"input_tokens": 1, "output_tokens": 1}})
     output = tmp_path / "catalog-runs" / mode
     args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"), "--observation-mode", mode,
         "--task", definition["instruction"], "--start-url", row["start_url"], "--task-id", "task_08",
         "--source-task-id", "task_08", "--source-catalog", str(catalog), "--output-dir", str(output),
-        "--model", "gpt-6.1-terra", "--api-key", "offline-placeholder", "--max-turns", "2", "--settle-seconds", "0"])
+        "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder", "--max-turns", "2", "--settle-seconds", "0"])
     assert asyncio.run(runner.run(args)) == 0
     recording = inspect_recording(output / "task_08")
     for item in (recording["task"], recording["manifest"]):
@@ -1843,7 +1845,7 @@ def test_launcher_refuses_expired_before_scheduling_and_allows_explicit_override
     output = tmp_path / "recordings"
     args = [row["task_id"], "--catalog-file", str(catalog), "--output-dir", str(output),
         "--run-name", "expiry", "--env-file", str(tmp_path / "absent.env"), "--dry-run"]
-    args += ["--trials", "2", "--judge-model", "gpt-5.6-sol"] if batch else ["--observation-mode", "dom"]
+    args += ["--trials", "2", "--judge-model", "gpt-6.1-sol"] if batch else ["--observation-mode", "dom"]
     with pytest.raises(RunnerError, match="expired catalog task"):
         task_cli.main(args)
     assert not output.exists()
@@ -1867,14 +1869,14 @@ def test_runner_expiry_refusal_override_and_inclusive_utc_date(run_pair, curated
         calls.append(payload)
         decision = ({"action": "wait", "seconds": 0, "thought": "Observe the current page."} if len(calls) % 2 else
             {"action": "terminate", "status": "success", "termination_reason": "completed", "final_answer": "done", "thought": "Observed heading."})
-        return {"model": "gpt-6.1-terra", "output_text": json.dumps(decision),
+        return {"model": "gemini-3.1-pro-preview", "output_text": json.dumps(decision),
             "usage": {"input_tokens": 1, "output_tokens": 1}}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
     output = tmp_path / "expired-run"
     args = ["--env-file", str(tmp_path / "absent.env"), "--observation-mode", mode,
         "--task", definition["instruction"], "--start-url", row["start_url"], "--task-id", row["task_id"],
         "--source-task-id", row["task_id"], "--source-catalog", str(catalog), "--output-dir", str(output),
-        "--model", "gpt-6.1-terra", "--api-key", "offline-placeholder", "--settle-seconds", "0"]
+        "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder", "--settle-seconds", "0"]
     with pytest.raises(RunnerError, match="expired catalog task"):
         asyncio.run(runner.run(runner.parse_args(args)))
     assert calls == [] and not output.exists()
@@ -1898,7 +1900,7 @@ def test_pre_rubric_planning_is_separate_and_cannot_resume_as_execution(tmp_path
     monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
     catalog = tmp_path / "catalog.jsonl"
     catalog.write_text(json.dumps({"task_id": "custom", "instruction": "Read heading.", "start_url": "https://example.test"}) + "\n")
-    args = ["--trials", "2", "--catalog-file", str(catalog), "--judge-model", "gpt-5.6-sol",
+    args = ["--trials", "2", "--catalog-file", str(catalog), "--judge-model", "gpt-6.1-sol",
         "--env-file", str(tmp_path / "absent.env"), "--output-dir", str(tmp_path / "recordings"), "--run-name", "plan"]
     monkeypatch.setattr(task_cli.subprocess, "run", lambda *args, **kwargs: pytest.fail("planning launched a child"))
     assert task_cli.main(args + ["--dry-run"]) == 0
@@ -1947,7 +1949,7 @@ def test_batch_resume_rejects_byte_changes_to_frozen_catalog(tmp_path, monkeypat
     monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
     output = tmp_path / "output"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-5.6-sol", "--output-dir", str(output), "--run-name", "hash-check",
+        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "hash-check",
         "--env-file", str(tmp_path / "absent.env"), "--dry-run"]
     assert task_cli.main(arguments) == 0
     frozen = output / "hash-check/catalog.jsonl"
@@ -1993,3 +1995,399 @@ def test_comparison_rejects_selected_catalog_hash_mismatch(run_pair):
     second.update(trial_id="2", catalog_sha256="e" * 64)
     with pytest.raises(ValueError, match="catalog hashes differ across"):
         aggregate([first, second])
+
+
+@pytest.mark.parametrize("failure", [None, "version", "attach"])
+def test_action_session_connection_preserves_version_and_attachment(monkeypatch, failure):
+    driver = AgentBrowserClient("unused", session="fixture", cdp_url="http://localhost:9222", timeout=1)
+    error = AgentBrowserError(["connect"], "fixture failure")
+    replies = ([error] if failure == "version" else
+               ["agent-browser fixture", error if failure == "attach" else {"success": True}])
+    invoke = AsyncMock(side_effect=replies)
+    monkeypatch.setattr(driver, "_invoke", invoke)
+    if failure:
+        with pytest.raises(AgentBrowserError, match="fixture failure"):
+            asyncio.run(driver.connect())
+    else:
+        asyncio.run(driver.connect())
+    assert driver.connected is (failure is None)
+    assert driver.version == ("" if failure == "version" else "agent-browser fixture")
+    assert invoke.await_args_list[0].args == (["--version"],)
+    assert invoke.await_args_list[0].kwargs == {"json_output": False, "use_session": False}
+    if failure != "version":
+        assert invoke.await_args_list[1].args == (["connect", "9222"],)
+        assert invoke.await_args_list[1].kwargs == {}
+
+
+@pytest.mark.parametrize("failures", [0, 1, 2])
+def test_capture_command_retries_only_read_timeouts(monkeypatch, failures):
+    from types import SimpleNamespace
+    cdp = SimpleNamespace(call=AsyncMock(side_effect=[TimeoutError()] * failures + [{"captured": True}]))
+    sleep = AsyncMock()
+    monkeypatch.setattr(capture.asyncio, "sleep", sleep)
+    pending = capture.capture_call(cdp, "Read.fixture", {"viewport": True})
+    if failures == 2:
+        with pytest.raises(RunnerError, match="Read.fixture timed out after 2 attempts") as caught:
+            asyncio.run(pending)
+        assert isinstance(caught.value.__cause__, TimeoutError)
+    else:
+        assert asyncio.run(pending) == {"captured": True}
+    assert cdp.call.await_count == min(failures + 1, 2)
+    assert all(call.args == ("Read.fixture", {"viewport": True}) for call in cdp.call.await_args_list)
+    assert sleep.await_count == int(failures > 0)
+    if failures:
+        assert sleep.await_args.args == (0.5,)
+
+
+@pytest.mark.parametrize("outcome", ["success", "protocol_error", "disconnect", "timeout", "send_error"])
+def test_cdp_requests_preserve_responses_and_transport_failures(outcome):
+    from types import SimpleNamespace
+    cdp = capture.CDPClient("http://localhost:9222", timeout=0.001)
+    cdp.session_id = "fixture-session"
+    requests = []
+    class Socket:
+        async def send_json(self, request):
+            requests.append(request)
+            if outcome == "send_error":
+                raise RuntimeError("CDP websocket is not connected")
+            if outcome != "timeout":
+                await cdp._read_messages()
+        async def __aiter__(self):
+            if outcome != "disconnect":
+                yield SimpleNamespace(type=capture.aiohttp.WSMsgType.TEXT, data=json.dumps({
+                    "method": "Page.navigatedWithinDocument", "sessionId": "fixture-session",
+                    "params": {"url": "https://example.test/next"}}))
+                payload = {"id": 1, "error": {"message": "fixture protocol error"}} if outcome == "protocol_error" else {
+                    "id": 1, "result": {"captured": True}}
+                yield SimpleNamespace(type=capture.aiohttp.WSMsgType.TEXT, data=json.dumps(payload))
+    cdp.ws = Socket()
+    pending = cdp.call("Page.getFrameTree", {"viewport": True})
+    if outcome == "success":
+        assert asyncio.run(pending) == {"captured": True}
+    elif outcome == "protocol_error":
+        with pytest.raises(capture.CDPError) as caught:
+            asyncio.run(pending)
+        assert caught.value.method == "Page.getFrameTree"
+        assert caught.value.error == {"message": "fixture protocol error"}
+    elif outcome == "timeout":
+        with pytest.raises(TimeoutError):
+            asyncio.run(pending)
+    else:
+        expected = ("CDP websocket closed while sending Page.getFrameTree: CDP websocket is not connected"
+                    if outcome == "send_error" else "CDP websocket closed")
+        with pytest.raises(RunnerError) as caught:
+            asyncio.run(pending)
+        assert str(caught.value) == expected
+    assert requests == [{"id": 1, "method": "Page.getFrameTree", "params": {"viewport": True}, "sessionId": "fixture-session"}]
+    assert cdp.pending == {}
+    assert [row["params"]["url"] for row in cdp.navigation_events] == (
+        ["https://example.test/next"] if outcome in {"success", "protocol_error"} else [])
+
+
+@pytest.mark.parametrize("outcome", ["success", "interrupt", "interrupt_gone", "missing_owner"])
+@pytest.mark.parametrize("mode", ["dom", "screenshot"])
+@pytest.mark.parametrize("no_browser_start", [False, True])
+def test_single_task_launcher_preserves_ownership_and_shutdown(tmp_path, monkeypatch, capsys, outcome, mode, no_browser_start):
+    from contextlib import nullcontext
+    events, launches, markers = [], [], []
+    monkeypatch.delenv("AGENT_BROWSER_CDP_URL", raising=False)
+    if no_browser_start:
+        monkeypatch.setenv("AGENT_BROWSER_CDP_URL", "http://browser.fixture:9222")
+    monkeypatch.setattr(task_cli, "task_transition_lock", lambda: nullcontext())
+    monkeypatch.setattr(task_cli, "stop_previous_run", lambda **kwargs: events.append("handoff") or ({"status": "stopped", "run_id": "prior", "pid": 27182} if no_browser_start else {"status": "none"}))
+    monkeypatch.setattr(task_cli, "restart_browser_service", lambda path: events.append("browser"))
+    monkeypatch.setattr(task_cli, "claim_browser_profile_provenance", lambda name: events.append("profile") or {"fixture": True})
+    monkeypatch.setattr(task_cli, "browser_container_cdp_url", lambda name: events.append("cdp_url") or "http://127.0.0.1:9222")
+    monkeypatch.setattr(task_cli, "process_start_ticks", lambda pid: None if outcome == "missing_owner" else 42)
+    monkeypatch.setattr(task_cli, "write_active_run", lambda record: markers.append(record) or events.append("publish"))
+    monkeypatch.setattr(task_cli, "clear_active_run", lambda pid: events.append(("clear", pid)))
+    def signal_group(pid, sig):
+        events.append(("signal", pid, sig))
+        if outcome == "interrupt_gone":
+            raise ProcessLookupError(pid)
+    monkeypatch.setattr(task_cli.os, "killpg", signal_group)
+    class Process:
+        pid = 31415
+        waits = 0
+        def wait(self, timeout=None):
+            self.waits += 1
+            events.append(("wait", timeout))
+            if outcome.startswith("interrupt") and self.waits == 1:
+                raise KeyboardInterrupt()
+            if outcome.startswith("interrupt") and self.waits == 2:
+                raise subprocess.TimeoutExpired("fixture", timeout)
+            return -9 if outcome.startswith("interrupt") else 0
+        def terminate(self):
+            events.append("terminate")
+    def launch(command, **kwargs):
+        launches.append((command, kwargs))
+        events.append("launch")
+        return Process()
+    monkeypatch.setattr(task_cli.subprocess, "Popen", launch)
+    args = ["fixture", "--task", "Read the heading.", "--start-url", "https://example.test",
+        "--observation-mode", mode, "--output-dir", str(tmp_path / "recordings"), "--run-name", "collection",
+        "--env-file", str(tmp_path / "absent.env")]
+    if no_browser_start:
+        args.append("--no-browser-start")
+    startup = ["handoff", *([] if no_browser_start else ["browser"]), "profile",
+        *([] if no_browser_start else ["cdp_url"]), "launch"]
+    if outcome == "missing_owner":
+        with pytest.raises(RunnerError, match="runner process exited before ownership could be recorded"):
+            task_cli.main(args)
+        assert events == [*startup, "terminate"]
+        assert markers == []
+    else:
+        assert task_cli.main(args) == (-9 if outcome.startswith("interrupt") else 0)
+        assert events[:len(startup) + 1] == [*startup, "publish"]
+        assert events[-1] == ("clear", 31415)
+        assert markers[0]["pid"] == markers[0]["pgid"] == 31415
+        assert markers[0]["process_start_ticks"] == 42
+        if outcome.startswith("interrupt"):
+            assert [event for event in events if isinstance(event, tuple) and event[0] == "signal"] == [
+                ("signal", 31415, task_cli.signal.SIGTERM), ("signal", 31415, task_cli.signal.SIGKILL)]
+    command, kwargs = launches[0]
+    parsed = runner.parse_args(command[3:])
+    assert parsed.observation_mode == mode and parsed.task == "Read the heading."
+    assert parsed.task_id == parsed.source_task_id == "fixture" and parsed.run_name == "collection"
+    assert parsed.max_steps == 200 and parsed.max_output_tokens == 10000 and parsed.model == "gemini-3.1-pro-preview"
+    assert kwargs["start_new_session"] is True
+    assert json.loads(kwargs["env"]["RUNNER_BROWSER_PROFILE_PROVENANCE"]) == {"fixture": True}
+    assert kwargs["env"]["AGENT_BROWSER_CDP_URL"] == ("http://browser.fixture:9222" if no_browser_start else "http://127.0.0.1:9222")
+    output = capsys.readouterr().out
+    assert ("Previous task process: stopped (run=prior, pid=27182)" in output) is no_browser_start
+
+
+@pytest.mark.parametrize("selectors,options,message", [
+    ([], [], "one task needs --observation-mode"),
+    (["one", "two"], ["--observation-mode", "dom"], "one task needs --observation-mode"),
+    (["one"], ["--observation-mode", "dom", "--task", "Read heading."], "manual tasks require both"),
+    (["one"], ["--observation-mode", "dom", "--start-url", "https://example.test"], "manual tasks require both"),
+    (["one"], ["--observation-mode", "dom"], "task selection requires"),
+    (["one"], ["--observation-mode", "dom", "--judge-model", "gpt-6.1-sol"], "batch grading options require --trials"),
+    (["one"], ["--observation-mode", "dom", "--rubric-dir", "rubrics", "--judge-model", "gpt-6.1-sol"], "batch grading options require --trials"),
+    (["one"], ["--previous-run-stop-timeout", "-1"], "must not be negative"),
+])
+def test_launcher_validates_selection_before_launch(tmp_path, monkeypatch, selectors, options, message):
+    monkeypatch.delenv("TASK_CATALOG_FILE", raising=False)
+    monkeypatch.delenv("TASK_CATALOG_URL", raising=False)
+    monkeypatch.setattr(task_cli.subprocess, "Popen", lambda *args, **kwargs: pytest.fail("invalid selection launched a process"))
+    output = tmp_path / "recordings"
+    with pytest.raises(RunnerError, match=message):
+        task_cli.main([*selectors, "--env-file", str(tmp_path / "absent.env"), "--output-dir", str(output), *options])
+    assert not output.exists()
+
+
+def test_single_launcher_preserves_existing_attempt(tmp_path, monkeypatch):
+    directory = tmp_path / "recordings" / "collection" / "dom" / "fixture"
+    write_json(directory / "final.json", {"run_status": "completed"})
+    original = (directory / "final.json").read_bytes()
+    monkeypatch.setattr(task_cli.subprocess, "Popen", lambda *args, **kwargs: pytest.fail("existing attempt launched a process"))
+    with pytest.raises(RunnerError, match="attempt directory already exists"):
+        task_cli.main(["fixture", "--task", "Read heading.", "--start-url", "https://example.test",
+            "--observation-mode", "dom", "--output-dir", str(tmp_path / "recordings"),
+            "--run-name", "collection", "--env-file", str(tmp_path / "absent.env")])
+    assert (directory / "final.json").read_bytes() == original
+
+
+@pytest.fixture
+def launcher_batch(tmp_path, monkeypatch):
+    catalog = tmp_path / "catalog.jsonl"
+    catalog.write_text(json.dumps({"task_id": "custom", "instruction": "Read heading.",
+        "start_url": "https://example.test"}) + "\n")
+    rubrics = tmp_path / "rubrics"
+    write_json(rubrics / "custom.json", {"task_id": "custom", "criteria": [{"id": "heading", "description": "Read heading."}]})
+    monkeypatch.setattr(task_cli, "RUNTIME_ROOT", tmp_path / "runtime")
+    monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
+    original_iterdir = Path.iterdir
+    monkeypatch.setattr(Path, "iterdir", lambda path: iter(()) if path == Path("/proc") else original_iterdir(path))
+    monkeypatch.setattr(task_cli.subprocess, "run", lambda *args, **kwargs: pytest.fail("unexpected batch process"))
+    output = tmp_path / "recordings"
+    args = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
+        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "collection",
+        "--env-file", str(tmp_path / "absent.env")]
+    return args, output / "collection" / "ledger.jsonl", catalog, rubrics
+
+
+@pytest.mark.parametrize("case", ["missing_catalog", "changed_catalog", "duplicate_ids", "empty_catalog", "missing_rubric"])
+def test_batch_requires_bound_unique_tasks_and_rubrics(launcher_batch, monkeypatch, case):
+    args, ledger, catalog, rubrics = launcher_batch
+    if case == "missing_catalog":
+        catalog.unlink()
+        message = "needs a frozen local --catalog-file"
+    elif case == "changed_catalog":
+        fetch = task_cli.fetch_catalog_task
+        def selected(*args, **kwargs):
+            return {**fetch(*args, **kwargs), "catalog_sha256": "0" * 64}
+        monkeypatch.setattr(task_cli, "fetch_catalog_task", selected)
+        message = "catalog changed while selecting"
+    elif case == "duplicate_ids":
+        args.insert(0, "custom")
+        message = "identities must be nonempty and unique"
+    elif case == "empty_catalog":
+        args.pop(0)
+        catalog.write_text("")
+        message = "identities must be nonempty and unique"
+    else:
+        (rubrics / "custom.json").unlink()
+        message = "missing frozen rubric"
+    with pytest.raises(RunnerError, match=message):
+        task_cli.main(args)
+    assert not ledger.exists()
+
+
+def test_batch_resume_requires_complete_schedule(launcher_batch):
+    args, ledger, *_ = launcher_batch
+    assert task_cli.main(args + ["--dry-run"]) == 0
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    write_json_lines(ledger, rows[:1])
+    original = ledger.read_bytes()
+    with pytest.raises(RunnerError, match="saved schedule differs from requested task/arm/trial set"):
+        task_cli.main(args)
+    assert ledger.read_bytes() == original
+
+
+@pytest.mark.parametrize("role", ["launcher", "judge"])
+def test_batch_resume_refuses_live_scheduled_process(launcher_batch, monkeypatch, role):
+    args, ledger, *_ = launcher_batch
+    assert task_cli.main(args + ["--dry-run"]) == 0
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    original = ledger.read_bytes()
+    command = (["python", "-m", "w8bench.task_recorder.task_cli", str(ledger.parent)] if role == "launcher" else
+               ["python", "-m", "w8bench.verifier.run_comparison", "--run", rows[0]["recording"]])
+    original_iterdir = Path.iterdir
+    monkeypatch.setattr(Path, "iterdir", lambda path: iter([Path("/proc/self"), Path(f"/proc/{os.getpid()}"), Path("/proc/654321")])
+        if path == Path("/proc") else original_iterdir(path))
+    monkeypatch.setattr(task_cli, "process_command", lambda pid: command)
+    with pytest.raises(RunnerError, match="scheduled launcher or judge is still running: pid 654321"):
+        task_cli.main(args)
+    assert ledger.read_bytes() == original
+
+
+@pytest.mark.parametrize("partial", [False, True])
+@pytest.mark.parametrize("failure", ["interrupt", "os_error"])
+def test_batch_actor_failure_preserves_attempt_state(launcher_batch, monkeypatch, partial, failure):
+    args, ledger, *_ = launcher_batch
+    args.append("--allow-expired")
+    launches = []
+    def launch(command, **kwargs):
+        assert command[2] == "w8bench.task_recorder.task_cli"
+        assert "--allow-expired" in command
+        rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+        row = rows[len(launches)]
+        launches.append(row["arm"])
+        if partial:
+            write_json(Path(row["recording"]) / "task.json", {"instruction": "Read heading."})
+        if failure == "interrupt":
+            raise KeyboardInterrupt()
+        raise OSError("actor executable unavailable")
+    monkeypatch.setattr(task_cli.subprocess, "run", launch)
+    if failure == "interrupt":
+        with pytest.raises(KeyboardInterrupt):
+            task_cli.main(args)
+    else:
+        assert task_cli.main(args) == 0
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert rows[0]["completed"] is True and rows[0]["ended_at"]
+    if failure == "interrupt":
+        assert launches == ["dom"]
+        assert rows[0]["technical_outcome"] == "interrupted"
+        assert rows[1]["completed"] is False and rows[1]["technical_outcome"] == "not_started"
+    else:
+        assert launches == ["dom", "screenshot"]
+        assert all(row["technical_outcome"] == ("incomplete_recording" if partial else "startup_failure") for row in rows)
+        assert all(row["error"] == "OSError: actor executable unavailable" for row in rows)
+        assert all(row["grade_completed"] and row["evaluation_reason"] == "recording_not_finalized" for row in rows)
+
+
+def test_batch_rechecks_catalog_before_actor_start(launcher_batch, monkeypatch):
+    args, ledger, *_ = launcher_batch
+    writer = task_cli.write_json_lines
+    def scheduled(path, rows):
+        writer(path, rows)
+        if path == ledger:
+            (ledger.parent / "catalog.jsonl").write_text("changed while scheduling\n")
+    monkeypatch.setattr(task_cli, "write_json_lines", scheduled)
+    with pytest.raises(RunnerError, match="frozen batch catalog changed after scheduling"):
+        task_cli.main(args)
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert all(row["technical_outcome"] == "not_started" and not row["completed"] for row in rows)
+
+
+@pytest.mark.parametrize("judge_running", [False, True])
+def test_batch_resume_uses_final_recording_and_tracks_judge_interruption(launcher_batch, monkeypatch, judge_running):
+    from types import SimpleNamespace
+    from w8bench.task_recorder import prepare_verifier_data
+    args, ledger, *_ = launcher_batch
+    assert task_cli.main(args + ["--dry-run"]) == 0
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    first, second = rows
+    first.update(technical_outcome="completed" if judge_running else "running", completed=judge_running,
+        started_at="2026-11-12T00:00:00Z", grade_outcome="running" if judge_running else "ungraded")
+    second.update(technical_outcome="completed", completed=True, grade_completed=True, grade_outcome="success")
+    write_json(Path(first["recording"]) / "final.json", {"run_status": "completed"})
+    write_json_lines(ledger, rows)
+    monkeypatch.setattr(prepare_verifier_data, "inspect_recording", lambda path: {"recording_sha256": "r" * 64})
+    judges = []
+    def judge(command, **kwargs):
+        assert command[2] == "w8bench.verifier.run_comparison"
+        judges.append(command)
+        recording = Path(command[command.index("--run") + 1])
+        write_json(recording / "completion.json", {"verdict": "success"})
+        evaluation = recording.parent.parent / "evaluations" / first["run_name"] / first["arm"] / first["task_id"] / ("r" * 64) / "evaluation.json"
+        write_json(evaluation, {"status": "complete"})
+        return SimpleNamespace(returncode=0)
+    monkeypatch.setattr(task_cli.subprocess, "run", judge)
+    assert task_cli.main(args) == 0
+    resumed = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert len(judges) == 1
+    assert resumed[0]["technical_outcome"] == "completed" and resumed[0]["completed"] is True
+    assert resumed[0]["grade_outcome"] == "success" and resumed[0]["grade_completed"] is True
+    assert resumed[0]["evaluation_outcome"] == "complete" and Path(resumed[0]["evaluation_path"]).is_file()
+    assert resumed[0].get("evaluation_previous_interruption", False) is judge_running
+    assert resumed[1] == second
+
+
+@pytest.mark.parametrize("finish_reason", ["STOP", "MAX_TOKENS", "SAFETY"])
+def test_gemini_actor_native_transport_and_token_accounting(monkeypatch, finish_reason):
+    requests = []
+    native = {"responseId": "google-response", "modelVersion": "gemini-3.1-pro-preview",
+        "candidates": [{"finishReason": finish_reason, "content": {"parts": [
+            {"text": "private thought summary", "thought": True},
+            {"text": '{"action":"wait","seconds":0,"thought":"observe"}'}]}}],
+        "usageMetadata": {"promptTokenCount": 100, "cachedContentTokenCount": 40,
+            "candidatesTokenCount": 20, "thoughtsTokenCount": 30, "totalTokenCount": 150}}
+    def respond(request, **kwargs):
+        requests.append(request)
+        return io.BytesIO(json.dumps(native).encode())
+    monkeypatch.setattr("urllib.request.urlopen", respond)
+    png = base64.b64encode(b"exact screenshot bytes").decode()
+    payload = {"model": "gemini-3.1-pro-preview", "systemInstruction": {"parts": [{"text": "Act"}]},
+        "contents": [{"role": "user", "parts": [{"text": "Task"},
+            {"inlineData": {"mimeType": "image/png", "data": png}}]}],
+        "generationConfig": {"maxOutputTokens": 10000, "thinkingConfig": {"thinkingLevel": "MEDIUM"},
+            "mediaResolution": "MEDIA_RESOLUTION_HIGH", "responseMimeType": "application/json",
+            "responseJsonSchema": runner.ACTION_SCHEMA}}
+    result = runner.ModelClient("fake-google-key", "gemini-3.1-pro-preview",
+        "https://generativelanguage.googleapis.com/v1beta")._post(payload)
+    request = requests[0]
+    assert request.full_url.endswith("/models/gemini-3.1-pro-preview:generateContent")
+    assert request.get_header("X-goog-api-key") == "fake-google-key"
+    assert request.get_header("Authorization") is None
+    wire = json.loads(request.data)
+    assert wire == {key: value for key, value in payload.items() if key != "model"}
+    assert base64.b64decode(wire["contents"][0]["parts"][1]["inlineData"]["data"]) == b"exact screenshot bytes"
+    assert result["model"] == "gemini-3.1-pro-preview" and result["provider_response"] == native
+    assert result["usage"] == {"input_tokens": 100, "output_tokens": 50, "total_tokens": 150,
+        "input_tokens_details": {"cached_tokens": 40}, "output_tokens_details": {"reasoning_tokens": 30}}
+    assert "private thought" not in result["output_text"]
+    assert result["status"] == ("completed" if finish_reason == "STOP" else "incomplete")
+    if finish_reason == "MAX_TOKENS":
+        assert result["incomplete_details"] == {"reason": "max_output_tokens"}
+
+
+def test_gemini_actor_missing_usage_remains_unknown(monkeypatch):
+    native = {"modelVersion": "gemini-3.1-pro-preview", "candidates": [
+        {"finishReason": "STOP", "content": {"parts": [{"text": "{}"}]}}]}
+    monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: io.BytesIO(json.dumps(native).encode()))
+    result = runner.ModelClient("fake-google-key", "gemini-3.1-pro-preview", "https://offline.test")._post({})
+    assert result["usage"] == {}

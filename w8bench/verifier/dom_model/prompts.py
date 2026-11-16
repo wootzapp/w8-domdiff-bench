@@ -1,14 +1,59 @@
 
-from .grounding import REALITY_CHECK_GROUNDING_POLICY, RESCORING_GROUNDING_POLICY
-from .utils.error_taxonomy import (
+GROUNDING_POLICY_VERSION = "dom_model_evidence_grounding_v1"
+
+
+EVIDENCE_STATUSES = frozenset({"SUPPORTED", "PARTIAL", "CONTRADICTED", "UNKNOWN"})
+
+
+RELEVANCE_GROUNDING_POLICY = """
+DOM relevance rule: judge only explicit state content. Do not infer relevance from the answer,
+actions, outside knowledge, or plausibility. Absent, omitted, truncated, and pixel-only facts are
+unproven.
+""".strip()
+
+
+EVIDENCE_ANALYSIS_GROUNDING_POLICY = """
+DOM evidence rule:
+- Start criterion_analysis with exactly one status:
+  EVIDENCE_STATUS: SUPPORTED
+  EVIDENCE_STATUS: PARTIAL
+  EVIDENCE_STATUS: CONTRADICTED
+  EVIDENCE_STATUS: UNKNOWN
+- SUPPORTED means all material browser facts are explicit; PARTIAL means some are; CONTRADICTED means
+  the state conflicts; UNKNOWN means relevant coverage is absent, omitted, truncated, or pixel-only.
+- Cite DOM_MODEL_STATE_INDEX and exact text, labels, values, controls, URL, dialogs, or errors.
+- Actions prove actions and the final answer proves delivery; neither proves browser facts. The answer
+  need not appear in the DOM, but its browser-derived claims require DOM support.
+- Never fill gaps with outside knowledge or plausibility: not contradicted is not supported. Absence
+  proves nonexistence only when the relevant scope is represented and was explored.
+""".strip()
+
+
+REALITY_CHECK_GROUNDING_POLICY = """
+DOM rule: use only explicit state evidence. PARTIAL or UNKNOWN cannot establish facts, limitations,
+or nonexistence. Never replace missing support with plausibility or outside knowledge.
+""".strip()
+
+
+RESCORING_GROUNDING_POLICY = """
+DOM rule: browser facts require explicit DOM support for full credit. Actions prove actions; answers
+prove delivery; neither proves browser state. SUPPORTED can justify credit; PARTIAL supports only
+its represented portion; UNKNOWN gives no confirmation; CONTRADICTED warrants a proportional
+deduction. Do not fill gaps with outside knowledge,
+plausibility, or "not contradicted." Missing or pixel-only evidence is unproven, not automatically
+false. Do not penalize an answer merely because its text is not rendered.
+""".strip()
+
+from pathlib import Path
+from ..error_taxonomy import (
     escape_for_template,
     extract_subcategory_bullets,
     get_taxonomy_for_failure_prompt,
 )
 
-_FAILURE_TAXONOMY, _FAILURE_SUMMARY_TABLE = get_taxonomy_for_failure_prompt()
-_CAT7_BULLETS = escape_for_template(extract_subcategory_bullets(7))
-_CAT8_BULLETS = escape_for_template(extract_subcategory_bullets(8))
+_FAILURE_TAXONOMY, _FAILURE_SUMMARY_TABLE = get_taxonomy_for_failure_prompt(Path(__file__).parent)
+_CAT7_BULLETS = escape_for_template(extract_subcategory_bullets(Path(__file__).parent, 7))
+_CAT8_BULLETS = escape_for_template(extract_subcategory_bullets(Path(__file__).parent, 8))
 
 # Shared axis definitions used by both CHECK_VALID_TASK_*_PROMPT variants.
 _AXIS1_AMBIGUITY_DEFINITION = """\

@@ -1,6 +1,5 @@
 import csv
 import json
-from pathlib import Path
 
 import pytest
 
@@ -307,3 +306,47 @@ def test_generic_task_names_and_current_trial_arm_receipts(tmp_path):
             evaluation = json.loads(path.read_text()); evaluation["stages"]["audit"]["result_sha256"] = hashlib.sha256(audit_path.read_bytes()).hexdigest(); path.write_text(json.dumps(evaluation))
     with pytest.raises(ValueError, match="different actor arms"):
         aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100)
+
+
+def _actor_trial_pair(trial, verdict):
+    row = {
+        "returned_actor_models": ["gemini-3.1-pro-preview"],
+        "completion": {"method": "ungraded" if verdict == "ungraded" else "model_judge",
+            "verdict": verdict, "criteria": [{"id": "done", "verdict": verdict}]},
+        "token_usage": {"input_tokens": 1, "output_tokens": 1, "total_tokens": 2},
+        "model_turns": 1, "rejected_turns": 0, "turns_missing_usage": 0,
+        "action_attempts": 1, "actor_latency_seconds": 0,
+        "action_errors": 0, "model_error_turns": 0, "parse_error_turns": 0,
+        "run_status": "completed",
+    }
+    return {"task_id": "task", "trial_id": str(trial), "shared_controls": {},
+        "both_successful": verdict == "success", "successful_pair_turn_delta": 0,
+        "dom": deepcopy(row), "screenshot": deepcopy(row)}
+
+
+@pytest.mark.parametrize("verdicts,bounds", [
+    (("success",), [(1, 1)]),
+    (("failure",), [(0, 0)]),
+    (("ungraded",), [(0, 1)]),
+    (("success", "failure", "failure"), [(1 / 3, 1 / 3), (2 / 3, 2 / 3), (1, 1)]),
+    (("uncertain", "failure", "failure"), [(0, 1 / 3), (0, 2 / 3), (0, 1)]),
+    (("success", "uncertain", "failure"), [(1 / 3, 2 / 3), (2 / 3, 1), (1, 1)]),
+    (("uncertain", "ungraded", "failure"), [(0, 2 / 3), (0, 1), (0, 1)]),
+])
+def test_actor_pass_at_k_preserves_task_and_criterion_bounds(verdicts, bounds):
+    from w8bench.verifier.paired_metrics import aggregate as aggregate_actor_trials
+
+    pairs = [_actor_trial_pair(trial, verdict) for trial, verdict in enumerate(verdicts, 1)]
+    result = aggregate_actor_trials(pairs)
+    assert result["evaluated_k"] == list(range(1, len(verdicts) + 1))
+    for mode in ("dom", "screenshot"):
+        task = result["per_task"]["task"][mode]
+        for k, (lower, upper) in enumerate(bounds, 1):
+            expected = {"confirmed_lower": pytest.approx(lower), "possible_upper": pytest.approx(upper),
+                "estimate": pytest.approx(lower) if lower == upper else None}
+            assert task["pass_at_k"][str(k)] == expected
+            if any(verdict != "ungraded" for verdict in verdicts):
+                assert task["criteria"]["done"]["pass_at_k"][str(k)] == expected
+            else:
+                assert task["criteria"] == {}
+            assert result["modes"][mode]["pass_at_k"][str(k)] == {**expected, "tasks": 1}

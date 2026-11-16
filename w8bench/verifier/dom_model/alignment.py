@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-from .schemas import AlignmentReceipt, AlignmentWarning, DomModelState
+from .states import AlignmentReceipt, AlignmentWarning, DomModelState
 
 
 def normalize_url(value: str) -> str:

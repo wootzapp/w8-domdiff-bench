@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from w8bench.verifier.screenshot_verifier.utils.preflight import preflight_screenshot_task
+from w8bench.verifier.screenshot_verifier.preflight import preflight_screenshot_task
 
 
 def _task(tmp_path, screenshots=2):

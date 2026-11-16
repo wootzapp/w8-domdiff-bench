@@ -23,34 +23,34 @@ from PIL import Image as PILImage
 def test_oai_clients_does_not_pull_autogen():
     # Force a clean import.
     for mod in list(sys.modules):
-        if mod.startswith("w8bench.verifier.screenshot_verifier.clients") or mod.startswith("autogen"):
+        if mod.startswith("w8bench.verifier.clients") or mod.startswith("autogen"):
             del sys.modules[mod]
 
-    import w8bench.verifier.screenshot_verifier.clients  # noqa: F401
+    import w8bench.verifier.clients  # noqa: F401
 
     leaked = [m for m in sys.modules if m.startswith("autogen")]
     assert not leaked, f"oai_clients pulled in autogen modules: {leaked}"
 
 
 def test_message_to_openai_format_text_only():
-    from w8bench.verifier.screenshot_verifier.clients import SystemMessage, UserMessage, message_to_openai_format
+    from w8bench.verifier.clients import SystemMessage, UserMessage, message_to_openai_format
 
-    assert message_to_openai_format(SystemMessage(content="hi")) == {
+    assert message_to_openai_format(SystemMessage(content="hi"), evidence_mode='screenshot_verifier') == {
         "role": "system",
         "content": "hi",
     }
-    assert message_to_openai_format(UserMessage(content="ping")) == {
+    assert message_to_openai_format(UserMessage(content="ping"), evidence_mode='screenshot_verifier') == {
         "role": "user",
         "content": "ping",
     }
 
 
 def test_message_to_openai_format_multimodal():
-    from w8bench.verifier.screenshot_verifier.clients import ImageObj, UserMessage, message_to_openai_format
+    from w8bench.verifier.clients import ImageObj, UserMessage, message_to_openai_format
 
     pil = PILImage.new("RGB", (4, 4), (10, 20, 30))
     msg = UserMessage(content=["look", ImageObj.from_pil(pil)])
-    out = message_to_openai_format(msg)
+    out = message_to_openai_format(msg, evidence_mode='screenshot_verifier')
     assert out["role"] == "user"
     parts = out["content"]
     assert len(parts) == 2
@@ -60,7 +60,7 @@ def test_message_to_openai_format_multimodal():
 
 
 def test_request_usage_addition():
-    from w8bench.verifier.screenshot_verifier.clients import RequestUsage
+    from w8bench.verifier.clients import RequestUsage
 
     a = RequestUsage(prompt_tokens=10, completion_tokens=2)
     b = RequestUsage(prompt_tokens=5, completion_tokens=3)
@@ -71,11 +71,11 @@ def test_request_usage_addition():
 
 
 def test_graceful_retry_from_path_filters_by_eval_model(tmp_path):
-    from w8bench.verifier.screenshot_verifier.clients import GracefulRetryClient
+    from w8bench.verifier.clients import GracefulRetryClient
 
     cfg_dir = tmp_path / "configs"
     cfg_dir.mkdir()
-    # Two configs: one gpt-4o, one gpt-5.6-terra.
+    # Two configs: one gpt-4o, one gemini-3.8-flash.
     (cfg_dir / "a.json").write_text(
         json.dumps(
             {
@@ -90,9 +90,9 @@ def test_graceful_retry_from_path_filters_by_eval_model(tmp_path):
     (cfg_dir / "b.json").write_text(
         json.dumps(
             {
-                "CHAT_COMPLETION_PROVIDER": "openai",
+                "CHAT_COMPLETION_PROVIDER": "google",
                 "CHAT_COMPLETION_KWARGS_JSON": {
-                    "model": "gpt-5.6-terra",
+                    "model": "gemini-3.8-flash",
                     "api_key": "sk-test",
                 },
             }
@@ -103,35 +103,35 @@ def test_graceful_retry_from_path_filters_by_eval_model(tmp_path):
 
     logger = logging.getLogger(__name__)
 
-    g4o = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="gpt-4o")
+    g4o = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="gpt-4o", evidence_mode='screenshot_verifier')
     assert len(g4o._clients) == 1
     assert "gpt-4o" in g4o._clients[0].description
 
-    action = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="gpt-5.6-terra")
+    action = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="gemini-3.8-flash", evidence_mode='screenshot_verifier')
     assert len(action._clients) == 1
-    assert "gpt-5.6-terra" in action._clients[0].description
+    assert "gemini-3.8-flash" in action._clients[0].description
 
-    star = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="*")
+    star = GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="*", evidence_mode='screenshot_verifier')
     assert len(star._clients) == 2
 
     with pytest.raises(ValueError):
-        GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="nope")
+        GracefulRetryClient.from_path(cfg_dir, logger=logger, eval_model="nope", evidence_mode='screenshot_verifier')
 
 
 def test_should_include_model_exact_match():
-    from w8bench.verifier.screenshot_verifier.clients import GracefulRetryClient
+    from w8bench.verifier.clients import GracefulRetryClient
 
     assert GracefulRetryClient._should_include_model("gpt-4o", "gpt-4o")
     assert GracefulRetryClient._should_include_model("gpt-4o", "*")
-    assert GracefulRetryClient._should_include_model("gpt-5.6-terra", ["gpt-4o", "gpt-5.6-terra"])
-    assert not GracefulRetryClient._should_include_model("gpt-4o", "gpt-5.6-terra")
+    assert GracefulRetryClient._should_include_model("gemini-3.8-flash", ["gpt-4o", "gemini-3.8-flash"])
+    assert not GracefulRetryClient._should_include_model("gpt-4o", "gemini-3.8-flash")
     assert not GracefulRetryClient._should_include_model("gpt-4o-mini", "gpt-4o")
 
 
 def test_openai_wrapper_create_round_trip(monkeypatch):
     """Stub the OpenAI client and verify .create() returns a CreateResult
     with text content and updated usage."""
-    from w8bench.verifier.screenshot_verifier.clients import UserMessage, OpenAIClientWrapper
+    from w8bench.verifier.clients import UserMessage, OpenAIClientWrapper
 
     captured = {}
 
@@ -146,7 +146,7 @@ def test_openai_wrapper_create_round_trip(monkeypatch):
         )
         return SimpleNamespace(choices=[choice], usage=usage)
 
-    client = OpenAIClientWrapper(model="gpt-4o", api_key="sk-test")
+    client = OpenAIClientWrapper('screenshot_verifier', model="gpt-4o", api_key="sk-test")
     monkeypatch.setattr(
         client.client.chat.completions, "create", fake_chat_create, raising=True
     )
@@ -166,13 +166,13 @@ def test_openai_wrapper_create_round_trip(monkeypatch):
 
 def test_client_wrapper_from_config_returns_chat_client(monkeypatch):
     """Backwards-compat alias for callers that still use ``ClientWrapper.from_config``."""
-    from w8bench.verifier.screenshot_verifier.clients import ChatCompletionClient, ClientWrapper
+    from w8bench.verifier.clients import ChatCompletionClient, ClientWrapper
 
     cfg = {
         "CHAT_COMPLETION_PROVIDER": "openai",
         "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-4o", "api_key": "sk-test"},
     }
-    client = ClientWrapper.from_config(cfg)
+    client = ClientWrapper.from_config(cfg, evidence_mode='screenshot_verifier')
     assert isinstance(client, ChatCompletionClient)
     assert client.metadata["model"] == "gpt-4o"
     assert client.endpoint == "gpt-4o"

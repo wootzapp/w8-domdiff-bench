@@ -21,10 +21,27 @@ def tree_receipt(package: str) -> dict[str, Any]:
     root = PACKAGE_ROOTS[package].resolve(strict=True)
     if REPOSITORY_ROOT.resolve() not in root.parents:
         raise RuntimeError(f"Package escaped verifier root: {root}")
+    shared = REPOSITORY_ROOT / "w8bench" / "verifier" / "clients"
+    if shared.is_symlink():
+        raise RuntimeError(f"Verifier packages may not contain symlinks: {shared}")
+    shared.resolve(strict=True)
+    models = REPOSITORY_ROOT / "w8bench" / "verifier" / "models.py"
+    models.resolve(strict=True)
+    paths = [*root.rglob("*"), *shared.rglob("*"), models,
+             REPOSITORY_ROOT / "w8bench" / "__init__.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "__init__.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "common.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "instrumentation.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "rubric_agent.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "rubric_scoring.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "error_taxonomy.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "validity.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "trajectory.py",
+             Path(__file__)]
     digest = hashlib.sha256()
     files = 0
-    for path in sorted(root.rglob("*"), key=lambda value: value.relative_to(root).as_posix()):
-        relative = path.relative_to(root)
+    for path in sorted(paths, key=lambda value: value.relative_to(REPOSITORY_ROOT).as_posix()):
+        relative = path.relative_to(REPOSITORY_ROOT)
         if any(part in IGNORED_PARTS for part in relative.parts):
             continue
         if path.is_symlink():
@@ -59,3 +76,9 @@ def require_local_package(package: str) -> dict[str, Any]:
 
 def require_local_packages() -> dict[str, dict[str, Any]]:
     return {name: require_local_package(name) for name in PACKAGE_ROOTS}
+
+
+def dom_source_receipt() -> dict[str, object]:
+    receipt = tree_receipt("dom_model")
+    return {"package": receipt["package"], "root": receipt["root"],
+            "files": receipt["file_count"], "sha256": receipt["tree_sha256"]}
