@@ -345,16 +345,16 @@ output and resolve the configuration rather than changing the benchmark silently
 
 ## 5. Three-task pilot with full evaluation
 
-The pilot uses `task_08`, `task_12`, `task_23`, both arms, one trial each. It is
-separate from the full collection.
+The pilot uses `task_02` (medium), `task_19` (hard) and `task_25` (complex),
+both arms, one trial each. It is separate from the full collection.
 
 ```sh
-./scripts/run-task task_08 task_12 task_23 --trials 1 \
+./scripts/run-task task_02 task_19 task_25 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name pilot --dry-run
 
-./scripts/run-task task_08 task_12 task_23 --trials 1 \
+./scripts/run-task task_02 task_19 task_25 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name pilot

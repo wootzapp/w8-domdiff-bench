@@ -24,6 +24,7 @@ from w8bench.verifier.paired_metrics import aggregate
 from w8bench.verifier.run_comparison import commands, validate_command_parity
 from w8bench.verifier.run_comparison import main as comparison_main
 from w8bench.verifier.run_full_comparison import main as compare_main
+from w8bench.verifier.run_metrics import summarize
 from w8bench.verifier.validate_inputs import validate_pair
 import asyncio
 import hashlib
@@ -824,3 +825,61 @@ def test_unreceipted_prior_attempt_is_unknown_not_zero_in_review(catalog_case):
     assert entry["generation_calls_known_lower_bound"] == 2
     assert entry["prior_attempt_usage"][0]["token_usage"] is None
     assert entry["generation_cost"]["estimated_usd"] is None
+
+
+@pytest.mark.parametrize("native", ["dom_model", "screenshot_verifier"])
+@pytest.mark.parametrize("stage,reason", [
+    ("rubric_rescore", "Invalid earned points after response-repair budget"),
+    ("authentication", "AuthenticationError: invalid credentials after endpoint budget"),
+])
+def test_native_ungraded_blocks_audit_and_excludes_loss_rates(
+    full_evaluation, tmp_path, monkeypatch, native, stage, reason
+):
+    paths, rubric, calls = full_evaluation
+    original = comparison._run_logged
+
+    def score(command, log_path):
+        original(command, log_path)
+        if f"w8bench.verifier.{native}.runner" in command:
+            path = log_path.parent / "result.json"
+            raw = json.loads(path.read_text())
+            raw.update(scoring.ungraded_result(scoring.UngradedVerifierError(stage, reason)),
+                intermediate_mm_rubric_steps=None)
+            path.write_text(json.dumps(raw))
+
+    monkeypatch.setattr(comparison, "_run_logged", score)
+    assert comparison.main(["--run", str(paths["dom"]), "--rubric", str(rubric),
+        "--judge-model", "gpt-6.1-sol", "--execute"]) == 1
+    receipt = next(tmp_path.rglob("evaluation.json"))
+    evaluation = json.loads(receipt.read_text())
+    assert evaluation["status"] == "incomplete"
+    assert evaluation["preflight"]["status"] == "passed"
+    assert evaluation["coverage"]["audit_eligible_states"]
+    assert evaluation["stages"]["paired_completion"]["verdict"] == "success"
+    assert evaluation["stages"][native]["status"] == "ungraded"
+    assert evaluation["stages"][native]["judge_fallback"] == {"stage": stage, "reason": reason}
+    other = "dom_model" if native == "screenshot_verifier" else "screenshot_verifier"
+    assert evaluation["stages"][other]["status"] == "complete"
+    audit = evaluation["stages"]["audit"]
+    assert audit["status"] == "blocked" and audit["reason"] == "verifier_results_unavailable"
+    assert "metrics" not in audit
+    assert not (receipt.parent / "evidence_audit.json").exists()
+    assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2
+    assert calls["audit"] == []
+
+    summaries = {arm: summarize(comparison.inspect_recording(path)) for arm, path in paths.items()}
+    assert summaries["dom"]["evidence_audit"] is None
+    assert summaries["dom"]["evidence_audit_status"] == "blocked"
+    assert summaries["dom"]["auxiliary_verifiers"][native]["signals"]["process_score"] is None
+    stream = summaries["dom"]["judge_usage_streams"][f"{native}:gemini-3.1-pro-preview"]
+    assert stream["usage"]["total_tokens"] == 16
+    result = aggregate([{"task_id": "task_01", "trial_id": evaluation["trial_id"],
+        "shared_controls": {}, "both_successful": False,
+        "successful_pair_turn_delta": None, **summaries}])
+    arm = result["modes"]["dom"]
+    assert arm["audit_status_counts"] == {"blocked": 1}
+    for direction in ("screenshot_evidence_loss", "dom_model_evidence_loss",
+                      "screenshot_verifier_misses", "dom_model_verifier_misses"):
+        metric = arm["evidence_audit"][direction]
+        assert metric == {"count": None, "denominator": None, "rate": None,
+                          "audited_runs": 0, "attempted_runs": 1}

@@ -83,7 +83,7 @@ Use `--dry-run` to write and inspect the schedule without starting tasks. Repeat
 the same command to resume; completed attempts, including failures, are retained.
 Both actors of a task/trial run back to back, alternating which arm starts.
 
-For a subset, add positional IDs such as `task_08 task_12 task_23`.
+For a subset, add positional IDs such as `task_02 task_19 task_25`.
 The launcher accepts any frozen local catalog and task IDs. The schedule binds
 the selected definitions, rubric hashes, effective settings, browser source
 provenance and output paths. Use a distinct run name for a different task set or configuration.

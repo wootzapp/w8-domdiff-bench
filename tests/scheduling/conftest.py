@@ -15,14 +15,14 @@ def curated_catalog(tmp_path, monkeypatch):
     monkeypatch.setattr(task_cli, "ROOT", tmp_path)
     monkeypatch.setattr(task_cli, "RUNTIME_ROOT", tmp_path / "runtime")
     monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
-    row = {"task_id": "task_12", "task_name": "Public heading", "category": "research",
+    row = {"task_id": "task_19", "task_name": "Public heading", "category": "research",
         "instruction": "Read the heading.", "start_url": "https://example.test",
         "stopping_condition": "Report the heading.", "constraints": ["Remain read-only."], "difficulty": "medium"}
     catalog = tmp_path / "data" / "tasks.jsonl"
     catalog.parent.mkdir()
     catalog.write_bytes((json.dumps(row) + "\r\n").encode())
     write_json(tmp_path / "internal" / "task_validity.json", {"catalog": "data/tasks.jsonl",
-        "tasks": {"task_12": {"valid_until": "2000-12-31"}}})
+        "tasks": {"task_19": {"valid_until": "2000-12-31"}}})
     return catalog, row
 
 @pytest.fixture

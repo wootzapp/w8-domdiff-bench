@@ -90,7 +90,7 @@ With all frozen rubrics present, this writes `recordings/benchmark/ledger.jsonl`
 without starting actors or judges. Otherwise, it writes a planning-only
 `schedule_preview.jsonl`; execution remains blocked until rubrics are frozen.
 Inspect task identities, trial count, arm order, configuration, rubric paths and
-output paths. Add positional catalog IDs such as `task_08 task_12 task_23` to
+output paths. Add positional catalog IDs such as `task_02 task_19 task_25` to
 select a subset; omit them to select all tasks. `TASK_CATALOG_FILE` defaults to
 `data/tasks.jsonl`, whose task IDs run from `task_01` through `task_25`.
 
@@ -122,7 +122,7 @@ A single-task command selects one arm and writes a recording without a batch
 ledger:
 
 ```sh
-./scripts/run-task task_08 --observation-mode dom \
+./scripts/run-task task_02 --observation-mode dom \
   --catalog-file data/tasks.jsonl \
   --output-dir recordings --run-name single_task
 ```
@@ -155,8 +155,8 @@ Use the same rubric and judge settings across arms and trials.
 
 ```sh
 .venv/bin/python -m w8bench.verifier.run_comparison \
-  --run recordings/benchmark/trial_0001/dom/task_08 \
-  --rubric data/rubrics/task_08.json \
+  --run recordings/benchmark/trial_0001/dom/task_02 \
+  --rubric data/rubrics/task_02.json \
   --judge-model gpt-6.1-sol --execute
 ```
 

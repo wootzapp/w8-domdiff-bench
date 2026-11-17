@@ -241,7 +241,7 @@ def test_compact_catalog_runs_in_both_arms_and_records_hash(run_pair, tmp_path, 
         assert json.loads((prior / "manifest.json").read_text())["catalog_sha256"] is None
         assert json.loads((prior / "task.json").read_text())["catalog_sha256"] is None
     catalog = tmp_path / "catalog-with-crlf.jsonl"
-    row = {"task_id": "task_08", "task_name": "Read café heading", "category": "research",
+    row = {"task_id": "task_02", "task_name": "Read café heading", "category": "research",
         "instruction": "Read café heading.", "start_url": "https://example.test",
         "stopping_condition": "Report the heading.", "constraints": ["Remain read-only."],
         "difficulty": "medium"}
@@ -262,18 +262,18 @@ def test_compact_catalog_runs_in_both_arms_and_records_hash(run_pair, tmp_path, 
         "usage": {"input_tokens": 1, "output_tokens": 1}})
     output = tmp_path / "catalog-runs" / mode
     args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"), "--observation-mode", mode,
-        "--task", definition["instruction"], "--start-url", row["start_url"], "--task-id", "task_08",
-        "--source-task-id", "task_08", "--source-catalog", str(catalog), "--output-dir", str(output),
+        "--task", definition["instruction"], "--start-url", row["start_url"], "--task-id", "task_02",
+        "--source-task-id", "task_02", "--source-catalog", str(catalog), "--output-dir", str(output),
         "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder", "--max-turns", "2", "--settle-seconds", "0"])
     assert asyncio.run(runner.run(args)) == 0
-    recording = inspect_recording(output / "task_08")
+    recording = inspect_recording(output / "task_02")
     for item in (recording["task"], recording["manifest"]):
         assert item["catalog_sha256"] == expected_hash
         assert item["difficulty"] == row["difficulty"] and item["category"] == row["category"]
         assert item["source_task_id"] == row["task_id"]
         assert item["source_catalog"] == str(catalog.resolve())
         assert "attribution" not in item
-    request = json.loads((output / "task_08" / "turns/turn_000001/request.json").read_text())
+    request = json.loads((output / "task_02" / "turns/turn_000001/request.json").read_text())
     assert expected_hash not in json.dumps(request)
     assert "ATTRIBUTION.md" not in json.dumps(request)
 
