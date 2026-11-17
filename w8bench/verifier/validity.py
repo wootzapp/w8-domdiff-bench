@@ -4,9 +4,11 @@ import logging
 from datetime import datetime, timezone
 from string import Template
 from typing import Any, Dict, List, Optional
+import openai
 
 from .models import TaskAgentResult
 from .clients.providers import ChatCompletionClient
+from .rubric_scoring import UngradedVerifierError
 
 DEFAULT_SYSTEM_MESSAGES: List[Dict[str, str]] = [
     {"role": "system", "content": "You are a helpful AI assistant."}
@@ -37,10 +39,17 @@ async def _call_llm(
             supports_json = bool(fn())
         except TypeError:
             supports_json = bool(fn)
-    result = await client.create(
-        messages=messages,
-        json_output=json_output if supports_json else False,
-    )
+    try:
+        result = await client.create(
+            messages=messages,
+            json_output=json_output if supports_json else False,
+        )
+    except openai.AuthenticationError as error:
+        raise UngradedVerifierError("authentication", f"{type(error).__name__}: {error}") from error
+    except openai.BadRequestError as error:
+        if "check-access-response-enc" in str(error):
+            raise UngradedVerifierError("authentication", f"{type(error).__name__}: {error}") from error
+        raise
     content = result.content
     if hasattr(content, "content"):
         content = content.content
@@ -117,6 +126,8 @@ async def classify_task(
             _validate_verification_result(result)
             return _classification_result(result, logger)
         except Exception as e:
+            if isinstance(e, UngradedVerifierError):
+                raise
             last_error = str(e)
             attempt = MAX_LLM_RETRIES - retries_left + 1
             logger.error(f"Error in task verification classification (attempt {attempt}): {e}")

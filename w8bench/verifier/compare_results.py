@@ -8,6 +8,8 @@ from typing import Any
 from w8bench.task_recorder.prepare_verifier_data import inspect_recording
 from w8bench.task_recorder.recorder_support import write_json
 from .run_metrics import summarize
+from .paired_metrics import validate_completion_policy_versions, validate_recorded_settings
+from w8bench.settings import normalized_settings, require_same_settings
 
 def _validate_recording_pair(dom, screenshot):
     for recording, mode in ((dom, "dom"), (screenshot, "screenshot")):
@@ -21,10 +23,10 @@ def _validate_recording_pair(dom, screenshot):
     left, right = dom["manifest"]["controls"], screenshot["manifest"]["controls"]
     # Policies necessarily describe different observations. All other actor
     # controls must match; histories, final answers and state counts may differ.
-    if {k: v for k, v in left.items() if k != "prompt_sha256"} != {k: v for k, v in right.items() if k != "prompt_sha256"}:
+    if normalized_settings({k: v for k, v in left.items() if k != "prompt_sha256"}) != normalized_settings({k: v for k, v in right.items() if k != "prompt_sha256"}):
         raise ValueError("actor model, budget, viewport, action schema or other shared controls differ")
     for key in ("dom_capture_parameters","renderer_versions"):
-        if not dom["manifest"].get(key) or dom["manifest"][key] != screenshot["manifest"].get(key):
+        if not dom["manifest"].get(key) or normalized_settings(dom["manifest"][key]) != normalized_settings(screenshot["manifest"].get(key)):
             raise ValueError(f"shared capture policies differ for {key}")
     if any(dom["task"].get(key) != screenshot["task"].get(key) for key in ("category", "difficulty", "catalog_sha256")):
         raise ValueError("task category, difficulty or catalog hash differs between arms")
@@ -32,6 +34,8 @@ def _validate_recording_pair(dom, screenshot):
 
 
 def _validate_summary_pair(summaries):
+    validate_completion_policy_versions(summaries.values())
+    validate_recorded_settings([(None, row) for row in summaries.values()])
     evaluation_hashes = {row["evaluation"]["rubric_sha256"] for row in summaries.values() if row.get("evaluation")}
     if len(evaluation_hashes) > 1:
         raise ValueError("frozen evaluation rubric differs between arms")
@@ -41,7 +45,7 @@ def _validate_summary_pair(summaries):
         raise ValueError("completion controls differ for evidence_policy")
     if all(g.get("method") != "ungraded" for g in grades):
         for key in ("rubric_sha256", "evidence_policy", "method", "judge_model", "returned_judge_model", "judge_prompt_sha256", "judge_base_url", "max_output_tokens", "judge_schema_sha256"):
-            if grades[0].get(key) != grades[1].get(key):
+            if normalized_settings({key: grades[0].get(key)}) != normalized_settings({key: grades[1].get(key)}):
                 raise ValueError(f"completion controls differ for {key}")
     actual_models = [summaries[m]["returned_actor_models"] for m in ("dom", "screenshot")]
     if actual_models[0] and actual_models[1] and actual_models[0] != actual_models[1]:
@@ -59,8 +63,7 @@ def _validate_browser_pair(dom, screenshot):
         environments.append(profile.get("browser_environment"))
     if not all(isinstance(environment,dict) and environment for environment in environments):
         raise ValueError("browser runtime environments are unverified")
-    if environments[0] != environments[1]:
-        raise ValueError("browser runtime environments differ")
+    require_same_settings(environments[0], environments[1], label="browser runtime environments")
     if all(builds) and builds[0] != builds[1]:
         raise ValueError("browser image IDs differ")
     if not all(builds):

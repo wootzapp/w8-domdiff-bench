@@ -8,6 +8,9 @@ import re
 from typing import Any
 
 from w8bench.task_recorder.prepare_verifier_data import read_object
+from w8bench.model_identity import match_model_id
+from w8bench.usage import known_token_component, valid_token_component
+from w8bench.settings import actual_browser_source_version
 
 # USD per million tokens; estimates use Standard pricing checked on this date.
 # Columns: input, output, cached input, 30-minute cache write, long-context threshold.
@@ -17,6 +20,55 @@ TOKEN_PRICES = {
     "gpt-5.2": (1.75, 14.0, 0.175, 1.75, None),
     "gemini-3.1-pro-preview": (2.0, 12.0, 0.2, 2.0, 200000),
 }
+
+
+def _object(value):
+    return value if isinstance(value, dict) else {}
+
+
+def _usage_values(value):
+    raw = _object(value)
+    inputs = _object(raw.get("input_tokens_details") or raw.get("prompt_tokens_details"))
+    outputs = _object(raw.get("output_tokens_details") or raw.get("completion_tokens_details"))
+    values = {
+        "input_tokens": raw.get("input_tokens", raw.get("prompt_tokens")),
+        "output_tokens": raw.get("output_tokens", raw.get("completion_tokens")),
+        "total_tokens": raw.get("total_tokens"),
+        "reasoning_tokens": raw.get("reasoning_tokens", outputs.get("reasoning_tokens")),
+        "cached_input_tokens": raw.get("cached_input_tokens", inputs.get("cached_tokens")),
+        "cache_write_input_tokens": raw.get("cache_write_input_tokens", raw.get("cache_creation_input_tokens", inputs.get("cache_write_tokens"))),
+    }
+    values = {key: known_token_component(item) for key, item in values.items()}
+    if values["total_tokens"] is None and all(values[key] is not None for key in ("input_tokens", "output_tokens")):
+        values["total_tokens"] = values["input_tokens"] + values["output_tokens"]
+    return values
+
+
+def _normalized_usage(value):
+    raw = _object(value)
+    if not raw:
+        return None
+    values = _usage_values(raw)
+    normalized = {**raw, **values}
+    for alias, component in (("prompt_tokens", "input_tokens"), ("completion_tokens", "output_tokens"),
+                             ("cache_creation_input_tokens", "cache_write_input_tokens")):
+        if alias in normalized:
+            normalized[alias] = values[component]
+    for key, components in (
+        ("input_tokens_details", {"cached_tokens": "cached_input_tokens", "cache_write_tokens": "cache_write_input_tokens"}),
+        ("prompt_tokens_details", {"cached_tokens": "cached_input_tokens", "cache_write_tokens": "cache_write_input_tokens"}),
+        ("output_tokens_details", {"reasoning_tokens": "reasoning_tokens"}),
+        ("completion_tokens_details", {"reasoning_tokens": "reasoning_tokens"}),
+    ):
+        if key in normalized:
+            details = _object(normalized[key])
+            normalized[key] = {**details, **{name: values[component] for name, component in components.items() if name in details}}
+            if "cache_write_tokens_details" in details:
+                writes = _object(details["cache_write_tokens_details"])
+                normalized[key]["cache_write_tokens_details"] = {
+                    name: known_token_component(item) for name, item in writes.items()
+                }
+    return normalized
 
 
 def _load_receipts(recording, source, task, manifest, partial):
@@ -54,14 +106,13 @@ def _actor_usage(decisions, source, partial):
     usage = dict.fromkeys(("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens"), 0)
     known = dict.fromkeys(usage, 0)
     models = set()
+    missing = 0
     for row in decisions:
-        raw = row.get("usage") or {}
-        components = {"input_tokens": raw.get("input_tokens"), "output_tokens": raw.get("output_tokens"),
-            "reasoning_tokens": (raw.get("output_tokens_details") or {}).get("reasoning_tokens"),
-            "cached_input_tokens": (raw.get("input_tokens_details") or {}).get("cached_tokens"),
-            "cache_write_input_tokens": raw.get("cache_creation_input_tokens", (raw.get("input_tokens_details") or {}).get("cache_write_tokens"))}
-        for key, value in components.items():
-            if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
+        components = _usage_values(row.get("usage"))
+        missing += any(components[key] is None for key in ("input_tokens", "output_tokens"))
+        for key in usage:
+            value = components[key]
+            if valid_token_component(value):
                 usage[key] += value
                 known[key] += 1
         if row.get("returned_model"):
@@ -74,8 +125,6 @@ def _actor_usage(decisions, source, partial):
         if not known[key]:
             usage[key] = None
     usage["total_tokens"] = (usage["input_tokens"] or 0) + (usage["output_tokens"] or 0) if known["input_tokens"] or known["output_tokens"] else None
-    missing = sum(not isinstance((row.get("usage") or {}).get("input_tokens"), (int, float)) or
-                  not isinstance((row.get("usage") or {}).get("output_tokens"), (int, float)) for row in decisions)
     tpt = {key: {"tokens": usage[key], "known_calls": known[key], "total_calls": len(decisions),
         "known_usage_mean": usage[key] / known[key] if known[key] else None,
         "mean": usage[key] / len(decisions) if decisions and known[key] == len(decisions) and not partial else None,
@@ -89,18 +138,11 @@ def _completion_streams(grade, secondary):
     for name, item in (("paired_completion", grade), ("actor_native_completion", secondary)):
         if item is not None:
             calls = item.get("judge_calls", 0)
-            raw = item.get("usage") or {}
-            normalized = {**raw,
-                "cached_input_tokens": raw.get("cached_input_tokens", (raw.get("input_tokens_details") or {}).get("cached_tokens")),
-                "reasoning_tokens": raw.get("reasoning_tokens", (raw.get("output_tokens_details") or {}).get("reasoning_tokens")),
-                "cache_write_input_tokens": raw.get("cache_write_input_tokens", raw.get("cache_creation_input_tokens",
-                    (raw.get("input_tokens_details") or {}).get("cache_write_tokens")))} if raw else None
-            if normalized is not None and normalized.get("total_tokens") is None and all(raw.get(key) is not None for key in ("input_tokens", "output_tokens")):
-                normalized["total_tokens"] = raw["input_tokens"] + raw["output_tokens"]
+            normalized = _normalized_usage(item.get("usage"))
             streams[name] = {"model": item.get("judge_model"), "calls": calls, "usage": normalized,
                 "call_records": [{"model": item.get("judge_model"),
                     "returned_model": item.get("returned_judge_model"), "usage": normalized}] if calls == 1 else [],
-                "usage_coverage": "complete" if not calls or all(raw.get(key) is not None for key in ("input_tokens", "output_tokens")) else "unknown"}
+                "usage_coverage": "complete" if not calls or all((normalized or {}).get(key) is not None for key in ("input_tokens", "output_tokens")) else "unknown"}
     return streams
 
 
@@ -121,17 +163,21 @@ def _verifier_streams(streams, stages, evaluation_path):
         for model, raw in stage_usage.items():
             if model == "combined":
                 continue
+            principal_known = all(_usage_values(raw)[component] is not None for component in ("input_tokens", "output_tokens"))
+            declared_coverage = stage.get("usage_coverage")
+            if not principal_known and (stage.get("calls") or {}).get(model) != 0:
+                declared_coverage = "unknown"
             streams[f"{name}:{model}"] = {"model": model, "calls": (stage.get("calls") or {}).get(model),
                 "call_records": [call for value in provider_metrics.values() for call in value.get("calls", []) if call.get("configured_model") == model],
-                "usage": raw or None, "usage_coverage": stage.get("usage_coverage") or (
+                "usage": _normalized_usage(raw), "usage_coverage": declared_coverage or (
                     "complete" if stage.get("status") == "complete" and isinstance(raw, dict)
-                    and raw.get("input_tokens", raw.get("prompt_tokens")) is not None
-                    and raw.get("output_tokens", raw.get("completion_tokens")) is not None
+                    and all(_usage_values(raw)[component] is not None for component in ("input_tokens", "output_tokens"))
                     and (not raw.get("usage_known_calls") or all(raw["usage_known_calls"].get(component)
                         == (stage.get("calls") or {}).get(model) for component in ("input_tokens", "output_tokens")))
                     and not raw.get("calls_without_reported_usage", 0) else "unknown")}
         if not stage_usage:
             streams[name] = {"model": stage.get("configured_models"), "calls": stage.get("calls"),
+                "call_records": [call for value in provider_metrics.values() for call in value.get("calls", [])],
                 "usage": None, "usage_coverage": stage.get("usage_coverage", "unknown")}
 
 
@@ -145,14 +191,10 @@ def _audit_streams(streams, stages):
         stream_usage = dict.fromkeys(("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens"), None)
         coverage = dict.fromkeys(stream_usage, 0)
         for call in calls:
-            raw = call.get("usage") or {}
-            values = {"input_tokens": raw.get("input_tokens", raw.get("prompt_tokens")),
-                "output_tokens": raw.get("output_tokens", raw.get("completion_tokens")),
-                "reasoning_tokens": raw.get("reasoning_tokens", (raw.get("completion_tokens_details") or {}).get("reasoning_tokens")),
-                "cached_input_tokens": raw.get("cached_input_tokens", (raw.get("prompt_tokens_details") or {}).get("cached_tokens")),
-                "cache_write_input_tokens": raw.get("cache_write_input_tokens", raw.get("cache_creation_input_tokens"))}
-            for key, value in values.items():
-                if value is not None:
+            values = _usage_values(call.get("usage"))
+            for key in stream_usage:
+                value = values[key]
+                if valid_token_component(value):
                     stream_usage[key] = (stream_usage[key] or 0) + value
                     coverage[key] += 1
         stream_usage["total_tokens"] = ((stream_usage["input_tokens"] or 0) + (stream_usage["output_tokens"] or 0)
@@ -166,7 +208,7 @@ def _audit_streams(streams, stages):
     return audit
 
 
-def _append_attempt_history(streams, stages, evaluation_path, models):
+def _append_attempt_history(streams, stages, evaluation_path):
     # Resume histories represent distinct attempted calls. Reused completed stages
     # are only present as the current receipt and are therefore counted once.
     for name in ("paired_completion", "dom_model", "screenshot_verifier"):
@@ -189,19 +231,18 @@ def _append_attempt_history(streams, stages, evaluation_path, models):
                     if not metrics_file.resolve().is_relative_to(evaluation_path.parent.resolve()) or hashlib.sha256(metrics_file.read_bytes()).hexdigest() != snapshot["sha256"]:
                         raise ValueError("historical verifier accounting artifact changed")
                     provider_metrics = read_object(metrics_file).get("provider_call_metrics") or {}
-                models = [model for model in prior_usage if model != "combined"]
-                for model in models or [None]:
+                historical_models = [model for model in prior_usage if model != "combined"]
+                for model in historical_models or [None]:
                     key = f"{name}:{model}" if model else name
                     member = streams.setdefault(key, {"model": model or prior.get("configured_models"),
                         "calls": 0, "usage": None, "usage_coverage": "complete", "_history_only": True})
                     member.setdefault("history_attempts", []).append({"usage": prior_usage.get(model) if model else None,
                         "calls": (prior.get("calls") or {}).get(model) if isinstance(prior.get("calls"), dict) else prior.get("calls"),
                         "usage_coverage": prior.get("usage_coverage", "unknown"), "status": prior.get("status"),
-                        "call_records": [call for value in provider_metrics.values() for call in value.get("calls", []) if model and call.get("configured_model") == model]})
-    return models
+                        "call_records": [call for value in provider_metrics.values() for call in value.get("calls", []) if model is None or call.get("configured_model") == model]})
 
 
-def _combine_attempt_usage(streams, missing):
+def _combine_attempt_usage(streams):
     for member in streams.values():
         histories = member.get("history_attempts", [])
         if not histories:
@@ -211,34 +252,27 @@ def _combine_attempt_usage(streams, missing):
         totals = dict.fromkeys(("input_tokens", "output_tokens", "total_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens"), None)
         reported = dict.fromkeys(totals, 0)
         for attempt in attempts:
-            raw = attempt.get("usage") or {}
-            values = {"input_tokens": raw.get("input_tokens", raw.get("prompt_tokens")),
-                "output_tokens": raw.get("output_tokens", raw.get("completion_tokens")),
-                "total_tokens": raw.get("total_tokens"),
-                "reasoning_tokens": raw.get("reasoning_tokens", (raw.get("output_tokens_details") or raw.get("completion_tokens_details") or {}).get("reasoning_tokens")),
-                "cached_input_tokens": raw.get("cached_input_tokens", (raw.get("input_tokens_details") or raw.get("prompt_tokens_details") or {}).get("cached_tokens")),
-                "cache_write_input_tokens": raw.get("cache_write_input_tokens", raw.get("cache_creation_input_tokens"))}
-            if values["total_tokens"] is None and values["input_tokens"] is not None and values["output_tokens"] is not None:
-                values["total_tokens"] = values["input_tokens"] + values["output_tokens"]
+            values = _usage_values(attempt.get("usage"))
             for key, value in values.items():
-                if isinstance(value, (int, float)):
+                if valid_token_component(value):
                     totals[key] = (totals[key] or 0) + value
                     reported[key] += 1
-        missing = sum(attempt.get("usage_coverage") != "complete" for attempt in attempts)
+        unknown_attempts = sum(attempt.get("usage_coverage") != "complete" or
+            any(_usage_values(attempt.get("usage"))[key] is None for key in ("input_tokens", "output_tokens"))
+            and attempt.get("calls") != 0 for attempt in attempts)
         member.update(current_attempt=current, attempts=attempts, attempt_count=len(attempts), usage=totals,
             call_records=[call for attempt in attempts for call in attempt.get("call_records") or []],
             usage_known_attempts=reported, known_calls=sum(attempt.get("calls", 0) or 0 for attempt in attempts if isinstance(attempt.get("calls"), int)),
             calls=sum(attempt["calls"] for attempt in attempts) if all(isinstance(attempt.get("calls"), int) for attempt in attempts) else None,
-            unknown_attempts=missing, usage_coverage="complete" if not missing else "partial" if any(reported.values()) else "unknown")
-    return missing
+            unknown_attempts=unknown_attempts, usage_coverage="complete" if not unknown_attempts else "partial" if any(reported.values()) else "unknown")
 
 
-def _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary, models, missing):
+def _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary):
     streams = _completion_streams(grade, secondary)
     _verifier_streams(streams, stages, evaluation_path)
     audit = _audit_streams(streams, stages)
-    models = _append_attempt_history(streams, stages, evaluation_path, models)
-    missing = _combine_attempt_usage(streams, missing)
+    _append_attempt_history(streams, stages, evaluation_path)
+    _combine_attempt_usage(streams)
     if evaluation is not None:
         import_path = evaluation_path.parent / "rubric_import.json"
         declaration = read_object(import_path) if import_path.is_file() else None
@@ -246,7 +280,7 @@ def _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary, m
             streams["rubric_import"] = {"calls": 0, "usage": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
                 "usage_coverage": "complete", "preparation_receipt": declaration,
                 "scope": "Frozen-rubric import only; external rubric preparation is not charged per trial."}
-    return streams, audit, models, missing
+    return streams, audit
 
 
 def _price_call(call, stream, assumptions, price_sources):
@@ -258,10 +292,9 @@ def _price_call(call, stream, assumptions, price_sources):
     input_tokens = raw.get("input_tokens", raw.get("prompt_tokens"))
     output_tokens = raw.get("output_tokens", raw.get("completion_tokens"))
     if (not selected or call.get("usage_reported") is False or
-            any(not isinstance(value, (int, float)) or isinstance(value, bool) or value < 0
-                for value in (input_tokens, output_tokens))):
+            any(not valid_token_component(value) for value in (input_tokens, output_tokens))):
         return None
-    details = raw.get("input_tokens_details") or raw.get("prompt_tokens_details") or {}
+    details = _object(raw.get("input_tokens_details") or raw.get("prompt_tokens_details"))
     cached = raw.get("cached_input_tokens", details.get("cached_tokens"))
     written = raw.get("cache_write_input_tokens", raw.get("cache_creation_input_tokens", details.get("cache_write_tokens")))
     if cached is None:
@@ -270,7 +303,7 @@ def _price_call(call, stream, assumptions, price_sources):
     if written is None:
         written = 0
         assumptions.add("unreported_cache_writes_priced_as_ordinary_input")
-    if (any(not isinstance(value, (int, float)) or isinstance(value, bool) or value < 0 for value in (cached, written))
+    if (any(not valid_token_component(value) for value in (cached, written))
             or cached + written > input_tokens):
         return None
     price_sources.add("https://ai.google.dev/gemini-api/docs/pricing" if selected.startswith("gemini-")
@@ -280,11 +313,11 @@ def _price_call(call, stream, assumptions, price_sources):
     pin, pout, pcache, pwrite, threshold = TOKEN_PRICES[selected]
     if threshold is not None and input_tokens > threshold:
         pin, pout, pcache, pwrite = pin * 2, pout * 1.5, pcache * 2, pwrite * 2
-    write_details = details.get("cache_write_tokens_details") or {}
-    written_12h = write_details.get("ttl_12h_tokens", 0) or 0
+    write_details = _object(details.get("cache_write_tokens_details"))
+    written_12h = write_details.get("ttl_12h_tokens", 0)
     if written and not write_details:
         assumptions.add("cache_write_lifetime_assumed_30_minutes")
-    if written_12h > written:
+    if not valid_token_component(written_12h) or written_12h > written:
         return None
     return ((input_tokens - cached - written) * pin + cached * pcache
         + written * pwrite + written_12h * pwrite + output_tokens * pout) / 1000000
@@ -305,7 +338,7 @@ def _price_stream(stream):
         "sources": sorted(price_sources),
         "source": next(iter(price_sources)) if len(price_sources) == 1 else None,
         "estimated_usd": round(estimate, 8) if complete else None,
-        "known_usage_estimate_usd": round(estimate, 8) if priced or calls == 0 else None,
+        "known_usage_estimate_usd": round(estimate, 8) if priced or calls == 0 and complete else None,
         "priced_calls": priced, "unpriced_calls": max(0, calls - priced) if type(calls) is int else None,
         "unknown_attempts": stream.get("unknown_attempts", 0), "coverage": "complete" if complete else "partial" if priced else "unknown",
         "assumptions": sorted(assumptions), "reason": None if complete else "missing_per_call_usage_or_attempt_coverage"}
@@ -330,28 +363,70 @@ def _actor_statistics(recording, manifest, decisions, partial, cap):
         "action_seconds": round(sum(step.get("duration_seconds", 0) for step in manifest.get("steps", [])), 6)}
 
 
+def _native_model_mismatches(streams, task, recording):
+    mismatches = []
+    for stream_name, stream in streams.items():
+        verifier = stream_name.split(":", 1)[0]
+        if verifier not in {"dom_model", "screenshot_verifier"}:
+            continue
+        for index, call in enumerate(stream.get("call_records") or [], 1):
+            match = match_model_id(call.get("configured_model", stream.get("model")), call.get("returned_model"))
+            if not match["matched"]:
+                mismatches.append({"recording_sha256": recording.get("recording_sha256"),
+                    "task_id": task["source_task_id"], "actor_arm": task["observation_mode"],
+                    "trial_id": str(task.get("run_name") or recording["manifest"].get("run_name")),
+                    "verifier": verifier, "stage": call.get("stage", "unattributed"),
+                    "stage_call_path": call.get("stage_call_path"), "stream": stream_name,
+                    "call_index": index, **match})
+    return mismatches
+
+
+def _citation_diagnostics(stages):
+    diagnostics = {}
+    for verifier in ("dom_model", "screenshot_verifier"):
+        stage = stages.get(verifier) or {}
+        value = stage.get("citation_checks")
+        diagnostics[verifier] = value if isinstance(value, dict) else None
+    return diagnostics
+
+
 def summarize(recording: dict[str, Any]) -> dict[str, Any]:
     manifest, decisions, task = recording["manifest"], recording["decisions"], recording["task"]
     source = Path(recording["source"])
     partial = recording.get("partial_recording", False)
     evaluation_path, evaluation, grade, secondary, stages = _load_receipts(recording, source, task, manifest, partial)
-    usage, known, models, missing, tpt = _actor_usage(decisions, source, partial)
-    streams, audit, models, missing = _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary, models, missing)
+    known_zero_calls = not decisions and (not partial or recording.get("actor_calls_known_zero") is True)
+    usage, known, models, missing, tpt = _actor_usage(decisions, source, partial and not known_zero_calls)
+    if known_zero_calls:
+        usage.update(input_tokens=0, output_tokens=0, total_tokens=0)
+    streams, audit = _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary)
     primary_streams = [value for key, value in streams.items() if key in {"paired_completion", "actor_native_completion"}]
-    judge_usage = {key: sum((stream.get("usage") or {}).get(key, 0) or 0 for stream in primary_streams)
-        for key in ("input_tokens", "output_tokens", "total_tokens")}
+    judge_usage = {}
+    for key in ("input_tokens", "output_tokens", "total_tokens"):
+        values = [value for stream in primary_streams
+                  if valid_token_component(value := (stream.get("usage") or {}).get(key))]
+        judge_usage[key] = sum(values) if values else 0 if not primary_streams or all(stream.get("calls") == 0 for stream in primary_streams) else None
     if grade is not None and grade.get("verdict") not in {"success", "failure", "uncertain", "ungraded"}:
         raise ValueError("invalid completion verdict")
     cost_streams = {"actor": {"model": task.get("model"), "calls": len(decisions), "usage": usage,
         "call_records": decisions, "usage_known_calls": known,
-        "usage_coverage": "partial" if partial or missing else "complete"}, **streams}
+        "unknown_attempts": int(partial and not known_zero_calls),
+        "usage_coverage": "partial" if partial and not known_zero_calls or missing else "complete"}, **streams}
     for stream in cost_streams.values():
         _price_stream(stream)
     cap = manifest.get("controls", {}).get("max_turns")
     return {"run": str(source), "recording_available": not partial, "partial_recording": partial,
-        "turns_complete": not partial, "cost_coverage": "partial" if partial or missing else "complete",
+        "turns_complete": not partial or known_zero_calls,
+        "cost_coverage": "partial" if partial and not known_zero_calls or missing else "complete",
         "category": task.get("category"), "difficulty": task.get("difficulty"), "catalog_sha256": task.get("catalog_sha256"),
         "secondary_completion": secondary, "judge_usage": judge_usage, "judge_usage_streams": streams,
+        "native_model_mismatches": _native_model_mismatches(streams, task, recording),
+        "citation_checks": _citation_diagnostics(stages),
+        "actor_effective_settings": manifest.get("effective_settings"),
+        "evaluation_effective_settings": (evaluation or {}).get("effective_settings"),
+        "scheduled_effective_settings": recording.get("scheduled_effective_settings"),
+        "actual_browser_source_version": actual_browser_source_version(manifest),
+        "completion_grade_available": grade is not None,
         "cost_streams": cost_streams,
         "judge_calls": sum(stream.get("calls") if isinstance(stream.get("calls"), int) else stream.get("known_calls", 0) for stream in primary_streams),
         "judge_calls_missing_usage": sum(max(1, stream.get("unknown_attempts", 0)) for stream in primary_streams if stream["usage_coverage"] != "complete"),

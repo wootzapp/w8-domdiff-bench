@@ -258,6 +258,8 @@ class RubricAgent(VerifierAgent):
             except Exception as e:
                 if receipt is not None:
                     receipt["error"] = f"{type(e).__name__}: {e}"
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 self._generation_error(
                     messages, errors, e, attempt, response_text if 'response_text' in dir() else None,
                 )
@@ -305,6 +307,8 @@ class RubricAgent(VerifierAgent):
             except Exception as e:
                 if receipt is not None:
                     receipt["error"] = f"{type(e).__name__}: {e}"
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 self._dependency_error(
                     messages, errors, e, attempt, response_text if 'response_text' in dir() else None,
                 )
@@ -379,6 +383,8 @@ class RubricAgent(VerifierAgent):
                     messages, rubric, conditional_indices
                 )
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self.logger.error(
                     f"Error in conditional criteria disambiguation (attempt {self.config.max_iters + 1 - max_iters}): {e}"
@@ -416,6 +422,8 @@ class RubricAgent(VerifierAgent):
             try:
                 return await self._reality_attempt(messages, rubric, num_criteria)
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self.logger.error(
                     f"Error in rubric reality check (attempt {self.config.max_iters + 1 - max_iters}): {e}"
@@ -476,6 +484,8 @@ class RubricAgent(VerifierAgent):
                     messages, rubric, num_criteria, skipped
                 )
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self.logger.error(
                     f"Error rescoring rubric (attempt {self.config.max_iters + 1 - max_iters}): {e}"
@@ -490,8 +500,7 @@ class RubricAgent(VerifierAgent):
         self.logger.warning(
             f"Failed to rescore rubric after {self.config.max_iters} attempts. Last error: {last_error}"
         )
-        self._rescore_baselines(rubric, skipped, last_error)
-        return rubric
+        raise scoring.UngradedVerifierError("rubric_rescore", str(last_error))
 
     async def _detect_unsolicited_side_effects(
         self, rubric: dict, evidence_by_criterion: dict[int, list[dict]], task: str,
@@ -506,6 +515,8 @@ class RubricAgent(VerifierAgent):
             try:
                 return await self._side_effect_attempt(messages)
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self.logger.error(
                     f"Error detecting side effects (attempt {self.config.max_iters + 1 - max_iters}): {e}"
@@ -520,11 +531,7 @@ class RubricAgent(VerifierAgent):
         self.logger.warning(
             f"Failed to detect side effects after {self.config.max_iters} attempts. Last error: {last_error}"
         )
-        return {
-            "reasoning": f"Failed after {self.config.max_iters} attempts. Last error: {last_error}",
-            "requires_penalty": False,
-            "penalty_criteria": [],
-        }
+        raise scoring.UngradedVerifierError("side_effect_scoring", str(last_error))
 
     async def _outcome_verification(
         self, rubric: dict, evidence_by_criterion: dict[int, list[dict]], task: str,
@@ -540,6 +547,8 @@ class RubricAgent(VerifierAgent):
             try:
                 return await self._outcome_attempt(messages)
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self.logger.error(
                     f"Error in outcome verification (attempt {self.config.max_iters + 1 - max_iters}): {e}"
@@ -580,6 +589,8 @@ class RubricAgent(VerifierAgent):
                     messages, step_actions, action_definitions
                 )
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self.logger.error(
                     f"Error in points of failure analysis (attempt {self.config.max_iters + 1 - max_iters}): {e}"
@@ -631,6 +642,8 @@ class RubricAgent(VerifierAgent):
             try:
                 return await self._trajectory_attempt(messages)
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 attempt = self.config.max_iters + 1 - max_iters
                 self.logger.error(
@@ -959,6 +972,7 @@ class RubricAgent(VerifierAgent):
     async def _score_action_history(self, context, rubric_dict):
         messages = self._action_scoring_messages(context, rubric_dict)
         max_iters = self.config.max_iters
+        last_error = None
         while max_iters > 0:
             try:
                 response_text = await self._call_llm(
@@ -981,19 +995,14 @@ class RubricAgent(VerifierAgent):
                 rubric_dict = response_dict
                 break
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
+                last_error = str(e)
                 self.logger.warning(f"Action-only scoring attempt failed: {e}")
                 messages.append({"role": "user", "content": f"Error: {e}"})
                 max_iters -= 1
         if max_iters == 0:
-            return (
-                {
-                    "error": f"Failed to generate action-only rubric after {self.config.max_iters} attempts.",
-                    "total_max_points": 1,
-                    "total_earned_points": 0,
-                    "items": [],
-                },
-                True,
-            )
+            raise scoring.UngradedVerifierError("action_scoring", str(last_error))
         return (rubric_dict, False)
 
     async def _load_and_score_evidence(self, context, rubric_dict, intermediate):
@@ -1272,6 +1281,8 @@ class RubricAgent(VerifierAgent):
                 majority_output_success,
             )
         except Exception as e:
+            if isinstance(e, scoring.UngradedVerifierError):
+                raise
             tb_str = traceback.format_exc()
             self.logger.error(f"[MM Pipeline] Pipeline failed: {e}\n{tb_str}")
             raise
@@ -1398,13 +1409,7 @@ class RubricAgent(VerifierAgent):
             raise ValueError(
                 f"Penalty criterion {i}: 'description' must be a non-empty string"
             )
-        if (
-            not isinstance(penalty["max_points"], (int, float))
-            or penalty["max_points"] <= 0
-        ):
-            raise ValueError(
-                f"Penalty criterion {i}: 'max_points' must be a positive number"
-            )
+        scoring.validate_points(penalty[self.score_field], penalty["max_points"], field=self.score_field)
         if penalty[self.score_field] != 0:
             raise ValueError(
                 f"Penalty criterion {i}: '{self.score_field}' must be 0 for penalties"
@@ -1646,6 +1651,8 @@ class RubricAgent(VerifierAgent):
         try:
             scoring.verify_rubric(rubric_dict, evidence_mode=self.evidence_mode)
         except Exception as e:
+            if isinstance(e, scoring.UngradedVerifierError):
+                raise
             raise ValueError(
                 f"failure_analysis_only requires a fully scored rubric, but validation failed: {e}"
             ) from e
@@ -1761,14 +1768,6 @@ class RubricAgent(VerifierAgent):
                 skipped.add(c_idx)
         return skipped
 
-    def _rescore_baselines(self, rubric, skipped, last_error):
-        for i, criterion in enumerate(rubric["items"]):
-            if i not in skipped:
-                criterion[self.justification_field] = (
-                    f"Rescoring failed after {self.config.max_iters} attempts, keeping baseline score. Last error: {last_error}"
-                )
-                criterion[self.score_field] = float(criterion.get("earned_points", 0))
-
     async def _rescore_one_criterion(self, messages, criterion, c_idx):
         max_iters = self.config.max_iters
         last_error = None
@@ -1777,6 +1776,8 @@ class RubricAgent(VerifierAgent):
                 await self._criterion_rescore_attempt(messages, criterion)
                 break
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self.logger.error(
                     f"Error rescoring criterion {c_idx} (attempt {self.config.max_iters + 1 - max_iters}): {e}"
@@ -1792,10 +1793,7 @@ class RubricAgent(VerifierAgent):
             self.logger.warning(
                 f"Failed to rescore criterion {c_idx} after {self.config.max_iters} attempts. Last error: {last_error}"
             )
-            criterion[self.justification_field] = (
-                f"Rescoring failed after {self.config.max_iters} attempts, keeping baseline score. Last error: {last_error}"
-            )
-            criterion[self.score_field] = float(criterion.get("earned_points", 0))
+            raise scoring.UngradedVerifierError(f"criterion_rescore:{c_idx}", str(last_error))
 
     async def _rescore_instance(
         self, rubric_copy, evidence_by_criterion, evidence, task, init_url_context, action_history,

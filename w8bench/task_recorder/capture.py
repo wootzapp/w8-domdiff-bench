@@ -661,6 +661,7 @@ class CDPClient:
         self.http: aiohttp.ClientSession | None = None
         self.ws: aiohttp.ClientWebSocketResponse | None = None
         self.reader: asyncio.Task[None] | None = None
+        self._transport_error: RunnerError | None = None
         self.next_id = 0
         self.pending: dict[int, asyncio.Future[dict[str, Any]]] = {}
         self.session_id = ""
@@ -760,6 +761,7 @@ class CDPClient:
 
     async def _open_browser_transport(self) -> None:
         """Open the browser-level CDP websocket used to enumerate/attach targets."""
+        self._transport_error = None
         self.http = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=self.timeout)
         )
@@ -955,43 +957,51 @@ class CDPClient:
     async def close(self) -> None:
         """Cancel the reader and close both CDP transport resources idempotently."""
         if self.reader is not None:
-            self.reader.cancel()
+            reader, self.reader = self.reader, None
+            reader.cancel()
             try:
-                await self.reader
-            except asyncio.CancelledError:
+                await reader
+            except (asyncio.CancelledError, Exception):
                 pass
-            self.reader = None
-        if self.ws is not None:
-            await self.ws.close()
-            self.ws = None
-        if self.http is not None:
-            await self.http.close()
-            self.http = None
+        socket, self.ws = self.ws, None
+        http, self.http = self.http, None
+        try:
+            if socket is not None:
+                await socket.close()
+        finally:
+            if http is not None:
+                await http.close()
 
     async def _read_messages(self) -> None:
         """Route CDP responses to pending calls and fail them if transport closes."""
         assert self.ws is not None
-        async for message in self.ws:
-            if message.type != aiohttp.WSMsgType.TEXT:
-                if message.type in {aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR}:
-                    break
-                continue
-            payload = json.loads(message.data)
-            if payload.get("method") in {"Page.frameNavigated", "Page.navigatedWithinDocument"}:
-                self.navigation_events.append({"method": payload["method"],
-                    "params": payload.get("params", {}), "session_id": payload.get("sessionId"),
-                    "recorded_at": utc_now()})
-            message_id = payload.get("id")
-            if isinstance(message_id, int) and message_id in self.pending:
-                future = self.pending.pop(message_id)
-                if not future.done():
-                    future.set_result(payload)
-                continue
         error = RunnerError("CDP websocket closed")
-        for future in self.pending.values():
-            if not future.done():
-                future.set_exception(error)
-        self.pending.clear()
+        try:
+            async for message in self.ws:
+                if message.type != aiohttp.WSMsgType.TEXT:
+                    if message.type in {aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR}:
+                        break
+                    continue
+                payload = json.loads(message.data)
+                if not isinstance(payload, dict):
+                    raise ValueError("CDP message must be a JSON object")
+                if payload.get("method") in {"Page.frameNavigated", "Page.navigatedWithinDocument"}:
+                    self.navigation_events.append({"method": payload["method"],
+                        "params": payload.get("params", {}), "session_id": payload.get("sessionId"),
+                        "recorded_at": utc_now()})
+                message_id = payload.get("id")
+                if isinstance(message_id, int) and message_id in self.pending:
+                    future = self.pending.pop(message_id)
+                    if not future.done():
+                        future.set_result(payload)
+        except Exception as cause:
+            error = RunnerError(f"CDP websocket closed: reader failed ({type(cause).__name__}: {cause})")
+        finally:
+            self._transport_error = error
+            for future in self.pending.values():
+                if not future.done():
+                    future.set_exception(error)
+            self.pending.clear()
 
     async def call(
         self,
@@ -1001,6 +1011,8 @@ class CDPClient:
         attached: bool = True,
     ) -> dict[str, Any]:
         """Send one CDP command to the page session or browser connection."""
+        if self._transport_error is not None:
+            raise self._transport_error
         if self.ws is None:
             raise RunnerError("CDP websocket is not connected")
         self.next_id += 1

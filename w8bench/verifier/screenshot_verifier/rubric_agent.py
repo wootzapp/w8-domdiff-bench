@@ -131,6 +131,8 @@ def _load_screenshot_action(
         else:
             evidence.append(img)
     except Exception as e:
+        if isinstance(e, scoring.UngradedVerifierError):
+            raise
         load_errors.append(f"Action {action.get('id')}: failed to load - {e}")
 
 
@@ -495,6 +497,8 @@ class MMRubricAgent(RubricAgent):
                     json.loads(response_text), num_criteria, screenshot_idx
                 )
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self._repair_relevance(
                     messages, screenshot_idx, max_iters, num_criteria, e
@@ -549,6 +553,8 @@ class MMRubricAgent(RubricAgent):
                 )
                 return (criterion_idx, analysis)
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self._repair_pair(messages, criterion_idx, screenshot_idx, max_iters, e)
                 max_iters -= 1
@@ -579,6 +585,8 @@ class MMRubricAgent(RubricAgent):
                 )
                 return [(criterion_idx, analysis)]
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self._repair_pair(messages, criterion_idx, screenshot_idx, max_iters, e)
                 max_iters -= 1
@@ -630,6 +638,8 @@ class MMRubricAgent(RubricAgent):
                     screenshot_idx, evidence,
                 )
             except Exception as e:
+                if isinstance(e, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(e)
                 self._repair_batch(
                     messages, screenshot_idx, criterion_indices, max_iters, e

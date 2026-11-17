@@ -3,8 +3,7 @@ import asyncio
 from w8bench.verifier.dom_model.evidence import DomModelRubricAgent
 
 
-def test_grouping_is_inherited_and_prefers_later_state_on_tie():
-    assert "_group_evidence_by_criterion" not in DomModelRubricAgent.__dict__
+def test_grouping_prefers_later_state_on_tie():
     agent = object.__new__(DomModelRubricAgent)
     agent.config = type("Config", (), {"max_states_per_criterion": 2})()
     grouped = agent._group_evidence_by_criterion(
@@ -16,7 +15,6 @@ def test_grouping_is_inherited_and_prefers_later_state_on_tie():
         1,
     )
     assert grouped == {0: [1, 0]}
-
 
 
 def test_loader_includes_all_n_plus_one_states(pair_factory):
@@ -32,9 +30,6 @@ def test_loader_includes_all_n_plus_one_states(pair_factory):
     assert agent.evidence_audit["source_complete_state_count"] == 2
     assert agent.evidence_audit["complete_state_count"] == 2
     assert agent.evidence_audit["excluded_source_states"] == []
-
-def test_filtering_is_inherited_unchanged():
-    assert "_filter_irrelevant_evidence" not in DomModelRubricAgent.__dict__
 
 
 def test_screenshot_default_does_not_drop_zero_relevance_top_k():

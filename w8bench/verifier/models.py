@@ -307,7 +307,7 @@ class TrajectoryDiagnosticsResult(VerificationResult):
 class TaskAgentResult(VerificationResult):
     """Result from the unified task verification classification (Step 10).
 
-    Classifies a task along two axes before execution:
+    Classifies task-only inputs along two axes during evaluation:
       - Task Ambiguity   (Category 7) — populated by :func:`classify_task`
       - Invalid Task     (Category 8) — populated by :func:`classify_task`
         classification step; fields default to empty/``None``

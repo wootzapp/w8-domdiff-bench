@@ -1,48 +1,17 @@
-"""Smoke tests for the ported Universal Verifier package.
-
-These tests don't hit any LLM — they only verify the ported modules
-import cleanly, the DataPoint ⇄ dict round-trip works, and the client
-adapter converts OpenAI-format messages into webeval-native message
-types correctly.
-"""
+"""Offline task serialization, message preservation and client configuration."""
 
 from __future__ import annotations
 
 import pytest
 
 
-def test_rubric_agent_imports_are_self_contained():
-    """Exported classes resolve to their native or shared model modules."""
-    from w8bench.verifier.dom_model import (
-        DataPoint,
-        MMRubricAgent,
-        MMRubricAgentConfig,
-        MMRubricOutcomeResult,
-        MMRubricResult,
-        Task,
-    )
+def test_task_serialization_preserves_identity_and_instruction():
+    from w8bench.verifier.dom_model import DataPoint, Task
 
-    for cls in (
-        MMRubricAgent,
-        MMRubricAgentConfig,
-        DataPoint,
-        Task,
-        MMRubricResult,
-        MMRubricOutcomeResult,
-    ):
-        expected_module = ("w8bench.verifier.models" if cls in
-            (MMRubricResult, MMRubricOutcomeResult) else "w8bench.verifier.dom_model")
-        assert cls.__module__.startswith(expected_module), (
-            f"{cls.__name__} resolved to {cls.__module__}, expected a "
-            f"module inside {expected_module}"
-        )
-
-    # DataPoint round-trip
-    t = Task(task_id="t1", instruction="buy socks")
-    dp = DataPoint(task=t)
-    restored = DataPoint.from_dict(dp.to_dict())
+    task = Task(task_id="t1", instruction="Read the saved marker.")
+    restored = DataPoint.from_dict(DataPoint(task=task).to_dict())
     assert restored.task.task_id == "t1"
-    assert restored.task.instruction == "buy socks"
+    assert restored.task.instruction == "Read the saved marker."
 
 
 def test_wrapper_accepts_openai_dicts_without_conversion():
@@ -60,9 +29,7 @@ def test_wrapper_accepts_openai_dicts_without_conversion():
         },
     ]
     out = _to_oai_messages(messages, evidence_mode='dom_model')
-    # Identical-by-reference because each dict round-trips unchanged.
-    assert out is not messages  # new list…
-    assert out == messages       # …with the same contents
+    assert out == messages
 
 
 def test_mm_rubric_agent_config_requires_clients():

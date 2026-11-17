@@ -422,10 +422,11 @@ class AgentBrowserClient:
 
     async def execute(self, decision: dict[str, Any], *, cdp: Any,
                       viewport: tuple[int, int] = (1365, 768)) -> dict[str, Any] | str:
-        """Map one action to official CLI operations and report normalized input.
+        """Map one action to browser input and report delivery.
 
-        Most actions issue one CLI operation. A ref-targeted scroll first hovers
-        the ref and then issues the wheel operation so nested panes can receive it.
+        Reference clicks use the CLI. A reference-targeted scroll first hovers
+        the ref and then scrolls so nested panes can receive input. Actions
+        without a reference use CDP input or a local wait.
         """
         if decision.get("id") is None:
             return await self._execute_input(decision, cdp, viewport)

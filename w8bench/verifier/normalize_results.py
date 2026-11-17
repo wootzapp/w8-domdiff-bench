@@ -114,6 +114,14 @@ def _accounting(raw):
     return usage_judge, usage_action, calls_judge, calls_action, combined_usage, combined_calls
 
 
+def _evidence_metadata(value):
+    if isinstance(value, dict):
+        return {key: _evidence_metadata(item) for key, item in value.items() if key != "citation_checks"}
+    if isinstance(value, list):
+        return [_evidence_metadata(item) for item in value]
+    return value
+
+
 def _metadata(raw, task, mode, frozen, input_task, generation_metrics):
     return {
         "task_id": task,
@@ -129,7 +137,7 @@ def _metadata(raw, task, mode, frozen, input_task, generation_metrics):
         "pipeline_settings": dict(CANONICAL_SETTINGS),
         "evaluation_context": raw.get("evaluation_context"),
         "validity_date": raw.get("validity_date"),
-        "dom_model_evidence_audit": raw.get("dom_model_evidence_audit"),
+        "dom_model_evidence_audit": _evidence_metadata(raw.get("dom_model_evidence_audit")),
     }
 
 
@@ -159,6 +167,18 @@ def _result_metrics(raw, intermediate, criteria, penalties, frozen_denominator, 
     }
 
 
+def _ungraded_metrics(raw):
+    unavailable = dict.fromkeys((
+        "frozen_full_score", "frozen_total_earned_points", "frozen_total_max_points",
+        "runtime_penalty_total_max_points", "process_score", "total_earned_points",
+        "total_max_points", "rubric_is_success", "outcome_success", "has_failure",
+        "first_failure_step", "is_ambiguous", "ambiguity_codes", "is_invalid",
+        "trajectory_task_verification", "task_only_verification",
+    ))
+    return {**unavailable, "status": "ungraded", "ungraded_reason": raw.get("ungraded_reason"),
+            "judge_fallback": raw.get("judge_fallback"), "duration_seconds": raw.get("duration_sec", 0)}
+
+
 def _llm_calls(calls_judge, calls_action, combined_calls):
     return {
         CANONICAL_JUDGE_MODEL: int(calls_judge.get("logical_calls", 0)),
@@ -180,13 +200,18 @@ def _normalize(
     run_log: str | Path,
 ) -> dict[str, Any]:
     source, raw, task, frozen = _load_bound_result(result_path, rubric_file, mode)
-    intermediate, criteria, penalties, frozen_denominator, result_denominator = _scoring_rows(raw, frozen, mode)
+    if raw.get("status") == "ungraded":
+        criteria, penalties = [], []
+        result = _ungraded_metrics(raw)
+    else:
+        intermediate, criteria, penalties, frozen_denominator, result_denominator = _scoring_rows(raw, frozen, mode)
+        result = _result_metrics(raw, intermediate, criteria, penalties, frozen_denominator, result_denominator)
     usage_judge, usage_action, calls_judge, calls_action, combined_usage, combined_calls = _accounting(raw)
     return {
         **_metadata(raw, task, mode, frozen, input_task, generation_metrics),
         "provider_call_metrics": {"judge": calls_judge, "action_judge": calls_action},
         "trajectory": raw.get("preflight", {}),
-        "result": _result_metrics(raw, intermediate, criteria, penalties, frozen_denominator, result_denominator),
+        "result": result,
         "criteria": criteria,
         **({"penalty_criteria": penalties} if penalties else {}),
         "llm_calls": _llm_calls(calls_judge, calls_action, combined_calls),

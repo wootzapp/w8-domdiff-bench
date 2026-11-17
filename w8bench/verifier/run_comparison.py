@@ -22,6 +22,9 @@ from w8bench.task_recorder.runner import load_env
 from .common import CANONICAL_ACTION_MODEL, CANONICAL_JUDGE_MODEL, CANONICAL_SETTINGS, load_json, canonical_sha256
 
 from .completion import grade_run
+from w8bench.settings import evaluation_settings, stage_settings, require_same_settings, completion_settings
+from w8bench.model_identity import ModelResponseRefusal
+from w8bench.usage import valid_token_component
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPOSITORY_ROOT / "config"
@@ -176,11 +179,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--rubric", type=Path, required=True)
-    parser.add_argument("--judge-model", required=True)
+    parser.add_argument("--judge-model", required=True,
+        help="gpt-6.1-sol completion judge; responses require its exact ID or a numeric/date/version suffix")
     parser.add_argument("--judge-evidence-policy", choices=["paired", "actor_native"], default="paired")
     parser.add_argument("--eval-config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--env-file", type=Path, default=REPOSITORY_ROOT / ".env")
-    parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--execute", action="store_true",
+        help="evaluate the run; saved effective settings must match before any stage resumes")
     args = parser.parse_args(argv)
     if args.judge_model != "gpt-6.1-sol":
         parser.error("completion judge must be explicitly set to gpt-6.1-sol")
@@ -221,6 +226,9 @@ def _prepare_rubric(args, root, task, load_canonical_rubric):
     provided = read_object(args.rubric)
     if provided.get("task_id") != task["source_task_id"]:
         raise ValueError("rubric belongs to another task")
+    for field in ("instruction", "start_url"):
+        if field in provided and provided[field] != task[field]:
+            raise ValueError(f"rubric {field} differs from the task")
     if "precomputed_rubric" in provided:
         canonical = provided
         declaration = {"origin": "validated_import", "weights": "preserved"}
@@ -245,17 +253,23 @@ def _prepare_rubric(args, root, task, load_canonical_rubric):
     return rubric, generation, frozen, rubric_hash
 
 
-def _open_evaluation(root, recording, rubric_hash):
+def _open_evaluation(root, recording, rubric_hash, effective_settings=None):
     task = recording["task"]
     evaluation_file = root / "evaluation.json"
     evaluation = read_object(evaluation_file) if evaluation_file.exists() else {
-        "schema_version": "within-run-evaluation/v1", "recording_sha256": recording["recording_sha256"],
+        "schema_version": "within-run-evaluation/v2", "recording_sha256": recording["recording_sha256"],
         "rubric_sha256": rubric_hash, "task_id": task["source_task_id"], "actor_arm": task["observation_mode"],
         "trial_id": str(task.get("run_name") or recording["manifest"]["run_name"]), "coverage": recording["coverage"],
         "validity_date": read_object(root / "input_receipt.json")["validity_date"],
         "verifier_packages": None, "runtime": _package_versions(), "stages": {}, "preflight": None}
     if evaluation["recording_sha256"] != recording["recording_sha256"] or evaluation["rubric_sha256"] != rubric_hash:
         raise ValueError("evaluation identity or frozen rubric changed")
+    if effective_settings is not None:
+        if evaluation_file.exists():
+            require_same_settings(evaluation.get("effective_settings"), effective_settings, label="evaluation resume")
+            for name, stage in evaluation["stages"].items():
+                require_same_settings(stage.get("effective_settings"), stage_settings(effective_settings, name), label=f"{name} resume")
+        evaluation["effective_settings"] = effective_settings
     evaluation.update(status="running", started_at=evaluation.get("started_at") or datetime.now(timezone.utc).isoformat())
     write_json(evaluation_file, evaluation)
     return evaluation_file, evaluation
@@ -271,6 +285,9 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
         grade = read_object(primary)
         if grade["recording_sha256"] != recording["recording_sha256"] or grade["rubric_sha256"] != rubric_hash:
             raise ValueError("saved primary grade belongs to different inputs")
+        current = completion_settings(recording, rubric_hash=rubric_hash, judge_model=args.judge_model,
+            base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"), evidence_policy="paired")
+        require_same_settings(grade.get("effective_settings"), current, label="saved completion")
     history = list(previous.get("attempt_history", []))
     if grade is None or grade["method"] == "ungraded":
         history = _attempt_history(previous)
@@ -279,7 +296,8 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
             archived.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(primary, archived)
             history[-1].update(result=str(archived))
-        evaluation["stages"]["paired_completion"] = {"status": "running", "usage_coverage": "unknown", "attempt_history": history}
+        evaluation["stages"]["paired_completion"] = {"status": "running", "usage_coverage": "unknown", "attempt_history": history,
+            "effective_settings": stage_settings(evaluation.get("effective_settings"), "paired_completion")}
         write_json(evaluation_file, evaluation)
         try:
             grade = asyncio.run(grade_run(run, rubric, judge_model=args.judge_model,
@@ -295,8 +313,9 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
         "result": str(primary), "result_sha256": hashlib.sha256(primary.read_bytes()).hexdigest(),
         "usage": grade.get("usage"), "calls": grade.get("judge_calls", 0),
         "model_settings": grade.get("model_settings"), "attempt_history": history,
+        "effective_settings": stage_settings(evaluation.get("effective_settings"), "paired_completion"),
         "usage_coverage": "complete" if grade.get("judge_calls", 0) == 0 or all(
-            (grade.get("usage") or {}).get(component) is not None
+            valid_token_component((grade.get("usage") or {}).get(component))
             for component in ("input_tokens", "output_tokens")) else "unknown"}
     write_json(evaluation_file, evaluation)
     return grade
@@ -401,6 +420,7 @@ def _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, g
         _run_logged(run_commands[name], root / name / "run.log")
         metrics = normalizer(root / name / "result.json", input_task=screenshot_task if name == "screenshot_verifier" else dom_task,
             rubric_file=rubric, generation_metrics=generation, run_log=root / name / "run.log")
+        native_result = read_object(root / name / "result.json")
         write_json(root / name / "run_metrics.json", metrics)
         log = (root / name / "run.log").read_text()[stage["log_start_offset"]:]
         fallback_patterns = {
@@ -410,15 +430,18 @@ def _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, g
             "unknown_outcome": r"Failed outcome verification after",
             "evidence_analysis": r"Failed criterion \d+ / DOM state|Failed to analyze criterion|Batched (?:DOM-state )?analysis failed"}
         fallback_counts = {kind: len(re.findall(pattern, log, flags=re.I)) for kind, pattern in fallback_patterns.items()}
-        stage.update(status="complete",
+        stage.update(status="ungraded" if metrics.get("status") == "ungraded" or metrics.get("result", {}).get("status") == "ungraded" else "complete",
             artifacts_sha256={filename: hashlib.sha256((root / name / filename).read_bytes()).hexdigest()
                 for filename in ("result.json", "run_metrics.json", "run.log")},
             usage=metrics.get("token_usage"), calls=metrics.get("llm_calls"),
             signals=metrics["result"], criteria=metrics["criteria"], penalty_criteria=metrics.get("penalty_criteria", []),
             evidence_diagnostics=metrics.get("dom_model_evidence_audit"),
+            citation_checks=native_result.get("citation_checks", (native_result.get("dom_model_evidence_audit") or {}).get("citation_checks")),
             fallback_counts=fallback_counts,
-            judgment_quality="fallback_observed" if any(fallback_counts.values()) else "no_fallback_observed",
+            judgment_quality="fallback_observed" if any(fallback_counts.values()) or metrics.get("result", {}).get("status") == "ungraded" else "no_fallback_observed",
             judgment_quality_basis="Existing warning logs; absence of warnings is not proof that every judgment is correct.",
+            reason=metrics.get("ungraded_reason", metrics.get("result", {}).get("ungraded_reason")),
+            judge_fallback=metrics.get("judge_fallback", metrics.get("result", {}).get("judge_fallback")),
             validation_repair_events=len(re.findall(r"(?:Error .*attempt|attempt failed|invalid.*retry)", log, flags=re.I)),
             fallback_events=[line for line in log.splitlines() if re.search(
                 r"(?:keeping baseline|falling back|fallback|Failed .* after|Failed after)", line, flags=re.I)])
@@ -433,6 +456,7 @@ def _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, g
 
 def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, evaluation, evaluation_file, run_commands, auxiliary_control_error, preflight_screenshot_task, preflight_dom_model_task):
     stage = evaluation["stages"].get(name, {})
+    current_settings = stage_settings(evaluation.get("effective_settings"), name)
     if stage.get("status") == "complete":
         for filename, digest in stage["artifacts_sha256"].items():
             if hashlib.sha256((root / name / filename).read_bytes()).hexdigest() != digest:
@@ -451,15 +475,18 @@ def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, gen
     except Exception as error:
         evaluation["stages"][name] = {"status": "blocked", "reason": "auxiliary_preflight_failed",
             "error": f"{type(error).__name__}: {error}", "calls": 0,
-            "usage": {"combined": {"total_tokens": 0}}, "usage_coverage": "complete", "attempt_history": history}
+            "usage": {"combined": {"total_tokens": 0}}, "usage_coverage": "complete", "attempt_history": history,
+            "effective_settings": current_settings}
         write_json(evaluation_file, evaluation)
         return
     if evidence_count == 0:
         evaluation["stages"][name] = {"status": "not_available", "reason": "no_available_format_states",
-            "calls": 0, "usage": {"combined": {"total_tokens": 0}}, "usage_coverage": "complete"}
+            "calls": 0, "usage": {"combined": {"total_tokens": 0}}, "usage_coverage": "complete",
+            "effective_settings": current_settings}
         write_json(evaluation_file, evaluation)
         return
     stage = {"status": "running", "configured_models": {"judge": CANONICAL_JUDGE_MODEL, "action": CANONICAL_ACTION_MODEL},
+        "effective_settings": current_settings,
         "result": str(root / name / "result.json"), "usage": None, "usage_coverage": "unknown",
         "attempt_history": history, "preflight": format_preflight,
         "log_start_offset": len((root / name / "run.log").read_text()) if (root / name / "run.log").is_file() else 0}
@@ -471,7 +498,8 @@ def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, gen
 def _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, evaluation_file, audit_history, run_evidence_audit):
     call_records = []
     evaluation["stages"]["audit"] = {"status": "running", "calls": call_records,
-        "usage_coverage": "unknown", "attempt_history": audit_history}
+        "usage_coverage": "unknown", "attempt_history": audit_history,
+        "effective_settings": stage_settings(evaluation.get("effective_settings"), "audit")}
     write_json(evaluation_file, evaluation)
     try:
         audit = run_evidence_audit(screenshot_dir=screenshot_task, dom_dir=dom_task, rubric_file=rubric,
@@ -484,10 +512,13 @@ def _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, ev
             "result_sha256": hashlib.sha256((root / "evidence_audit.json").read_bytes()).hexdigest(),
             "metrics": audit["metrics"], "calls": call_records}
     except BaseException as error:
-        audit_stage = {"status": "interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
+        refusal = isinstance(error, ModelResponseRefusal) or any(row.get("refusal_reason") for row in call_records)
+        audit_stage = {"status": "interrupted" if isinstance(error, KeyboardInterrupt) else "ungraded" if refusal else "failed",
+            "reason": str(error) if refusal else None,
             "error": f"{type(error).__name__}: {error}", "calls": call_records, "usage_coverage": "unknown"}
         if not isinstance(error, Exception):
             audit_stage["attempt_history"] = audit_history
+            audit_stage["effective_settings"] = stage_settings(evaluation.get("effective_settings"), "audit")
             evaluation["stages"]["audit"] = audit_stage
             write_json(evaluation_file, evaluation)
             raise
@@ -514,6 +545,7 @@ def _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, ev
         else:
             audit_stage = _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, evaluation_file, audit_history, run_evidence_audit)
         audit_stage["attempt_history"] = audit_history
+        audit_stage["effective_settings"] = stage_settings(evaluation.get("effective_settings"), "audit")
         evaluation["stages"]["audit"] = audit_stage
 
 
@@ -531,7 +563,9 @@ def _evaluate_recording(args, run, recording):
     task = recording["task"]
     root, screenshot_task, dom_task = _prepare_inputs(run, recording)
     rubric, generation, frozen, rubric_hash = _prepare_rubric(args, root, task, load_canonical_rubric)
-    evaluation_file, evaluation = _open_evaluation(root, recording, rubric_hash)
+    current_settings = evaluation_settings(recording, eval_config=args.eval_config, rubric_hash=rubric_hash,
+        judge_model=args.judge_model, evidence_policy="paired")
+    evaluation_file, evaluation = _open_evaluation(root, recording, rubric_hash, current_settings)
     grade = _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluation, evaluation_file)
     audit_configuration_error = _audit_configuration_error(resolve_audit_config)
     evaluation["audit_configuration_error"] = audit_configuration_error

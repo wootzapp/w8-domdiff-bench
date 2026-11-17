@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import argparse
+import math
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,6 +14,27 @@ from urllib.parse import urlsplit, urlunsplit
 
 class RunnerError(RuntimeError):
     """Raised when a task-recording operation cannot safely continue."""
+
+
+def _finite_float(value: str, *, positive: bool) -> float:
+    requirement = "finite and positive" if positive else "finite and nonnegative"
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise argparse.ArgumentTypeError(f"must be {requirement}") from error
+    if not math.isfinite(number) or number < 0 or positive and number == 0:
+        raise argparse.ArgumentTypeError(f"must be {requirement}")
+    return number
+
+
+def finite_nonnegative_float(value: str) -> float:
+    """Parse a finite delay, including an immediate zero delay."""
+    return _finite_float(value, positive=False)
+
+
+def finite_positive_float(value: str) -> float:
+    """Parse a finite timeout with a strictly positive duration."""
+    return _finite_float(value, positive=True)
 
 
 def normalized_http_url(value: str) -> str:

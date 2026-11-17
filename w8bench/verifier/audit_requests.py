@@ -14,6 +14,9 @@ from typing import Any, Callable
 import httpx
 from openai import APIConnectionError, DefaultHttpxClient, OpenAI
 
+from w8bench.model_identity import MODEL_ACCEPTANCE_POLICY, ModelResponseRefusal, response_acceptance
+from w8bench.usage import known_token_component
+
 from .audit_evidence import ordered_audit_screenshots, ordered_dom_states, verifier_action_history
 from .audit_validation import CITATION_KEYS, validate_audit_response, validate_adjudication_response
 
@@ -502,32 +505,42 @@ def _record_gemini_response(record, response, settings):
     usage = response.usage_metadata
     normalized = None
     if usage is not None:
-        prompt = int(usage.prompt_token_count or 0)
-        thinking = int(usage.thoughts_token_count or 0)
-        completion = int(usage.candidates_token_count or 0) + thinking
+        prompt = known_token_component(getattr(usage, "prompt_token_count", None))
+        thinking = known_token_component(getattr(usage, "thoughts_token_count", None))
+        candidates = known_token_component(getattr(usage, "candidates_token_count", None))
+        reported_total = known_token_component(getattr(usage, "total_token_count", None))
+        completion = candidates + thinking if candidates is not None and thinking is not None else None
+        if completion is None and prompt is not None and reported_total is not None and reported_total >= prompt:
+            completion = reported_total - prompt
+        total = reported_total if reported_total is not None else prompt + completion if prompt is not None and completion is not None else None
         normalized = {
             "prompt_tokens": prompt,
             "completion_tokens": completion,
-            "reasoning_tokens": thinking
-            if getattr(usage, "thoughts_token_count", None) is not None
-            else None,
-            "cached_input_tokens": getattr(usage, "cached_content_token_count", None),
+            "reasoning_tokens": thinking,
+            "cached_input_tokens": known_token_component(getattr(usage, "cached_content_token_count", None)),
             "cache_write_input_tokens": None,
-            "total_tokens": prompt + completion,
+            "total_tokens": total,
         }
+        known = [value for value in (prompt, candidates, thinking) if value is not None]
+        output_known = [value for value in (candidates, thinking) if value is not None]
+        record["usage_lower_bound"] = {"prompt_tokens": prompt,
+            "completion_tokens": sum(output_known) if output_known else None,
+            "total_tokens": total if total is not None else sum(known) if known else None}
+        record["usage_known_calls"] = {key: int(value is not None) for key, value in normalized.items()}
+    components = normalized or {}
+    record["usage_coverage"] = ("complete" if all(components.get(key) is not None for key in ("prompt_tokens", "completion_tokens"))
+        else "partial" if any(value is not None for value in components.values()) else "unknown")
     record.update(
         response_id=response.response_id,
         response_model=response.model_version,
         usage=normalized,
         provider_usage=usage.model_dump() if usage is not None else None,
     )
+    finish_reasons = [str(getattr(candidate, "finish_reason", "")).split(".")[-1]
+        for candidate in getattr(response, "candidates", None) or []]
     record.update(
-        incomplete=any(
-            (
-                str(getattr(candidate, "finish_reason", "")).endswith("MAX_TOKENS")
-                for candidate in getattr(response, "candidates", None) or []
-            )
-        ),
+        finish_reason=finish_reasons[0] if len(finish_reasons) == 1 else None,
+        incomplete=any(reason != "STOP" for reason in finish_reasons),
         requested_reasoning_effort=None,
         requested_temperature=settings.get("temperature"),
         requested_max_output_tokens=settings.get("max_output_tokens"),
@@ -588,16 +601,19 @@ def _openai_completion(model, messages, record, hooks):
         system_fingerprint=getattr(response, "system_fingerprint", None),
         usage=response.usage.model_dump() if response.usage is not None else None,
     )
+    choices = response.choices or []
+    choice = choices[0] if len(choices) == 1 else None
+    finish_reason = getattr(choice, "finish_reason", None)
     record.update(
-        finish_reason=getattr(response.choices[0], "finish_reason", None),
-        incomplete=getattr(response.choices[0], "finish_reason", None) == "length",
+        finish_reason=finish_reason,
+        incomplete=choice is None or finish_reason not in {None, "stop"},
         requested_reasoning_effort=settings.get("reasoning_effort"),
         requested_temperature=settings.get("temperature"),
         requested_max_output_tokens=settings.get(
             "max_completion_tokens", settings.get("max_tokens")
         ),
     )
-    return response.choices[0].message.content
+    return getattr(getattr(choice, "message", None), "content", None)
 
 
 def _completion_value(content, record):
@@ -637,6 +653,8 @@ def _completion(
     }
     if records is not None:
         records.append(record)
+    from w8bench.settings import audit_settings
+    record["effective_settings"] = audit_settings({record["stage"]: {"model": model, "provider": provider}})["stages"][record["stage"]]
     print(json.dumps({"stage": record["stage"], "model": model}), flush=True)
     started = time.perf_counter()
     hooks = _audit_http_hooks(record, provider)
@@ -645,6 +663,12 @@ def _completion(
             content = _gemini_completion(model, messages, record, hooks)
         else:
             content = _openai_completion(model, messages, record, hooks)
+        acceptance = response_acceptance(model, record.get("response_model"), record,
+            output_cap=record.get("requested_max_output_tokens"))
+        record.update(acceptance_policy_version=MODEL_ACCEPTANCE_POLICY,
+            model_id_match=acceptance["model_id_match"], refusal_reason=acceptance["refusal_reason"])
+        if not acceptance["accepted"]:
+            raise ModelResponseRefusal(acceptance["refusal_reason"])
     except Exception as error:
         record["error_type"] = type(error).__name__
         raise
@@ -721,7 +745,13 @@ def _request_validated_audit(
     last_error: Exception | None = None
     invalid_attempts: list[dict[str, Any]] = invalid_receipts if invalid_receipts is not None else []
     for attempt in range(1, max_attempts + 1):
-        raw = complete(model, current_messages)
+        try:
+            raw = complete(model, current_messages)
+        except ModelResponseRefusal as exc:
+            last_error = exc
+            invalid_attempts.append({"attempt": attempt, "validation_error": str(exc),
+                "refusal_reason": str(exc), "raw_response": None})
+            continue
         try:
             validator = validate_audit_response if inventory else validate_adjudication_response
             decisions = validator(

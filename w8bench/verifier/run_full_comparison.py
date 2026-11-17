@@ -11,8 +11,10 @@ from pathlib import Path
 from w8bench.task_recorder.prepare_verifier_data import inspect_recording
 from w8bench.task_recorder.recorder_support import write_json
 from .compare_results import compare
-from .paired_metrics import aggregate
+from .paired_metrics import aggregate, validate_settings_contracts, validate_recorded_settings
 from .run_metrics import summarize
+from w8bench.usage import valid_token_component
+from w8bench.settings import normalized_settings, require_same_settings
 
 
 def _read_ledger(path):
@@ -32,6 +34,7 @@ def _read_ledger(path):
     task_ids = {row["task_id"] for row in ledger}
     if set(identities) != {(task, trial, arm) for task in task_ids for trial in range(1,n+1) for arm in ("dom","screenshot")}:
         raise ValueError("ledger omits a scheduled task/arm/trial")
+    validate_settings_contracts(((row["task_id"], row.get("effective_settings")) for row in ledger), label="scheduled")
     return ledger, n, task_ids
 
 
@@ -51,11 +54,17 @@ def _validate_scheduled_recording(row, mode, task, manifest):
 
 def _scheduled_summary(row, recording, manifest):
     configuration = row["configuration"]
-    for key in ("model", "max_turns", "max_output_tokens", "viewport", "reasoning_effort", "base_url",
-                "browser_lang", "browser_accept_language", "recorder_code_sha256"):
-        if key in configuration and manifest["controls"].get(key) != configuration[key]:
-            raise ValueError(f"recording control differs from schedule: {key}")
+    compared = ("model", "max_turns", "max_output_tokens", "viewport", "reasoning_effort", "base_url",
+                "browser_lang", "browser_accept_language", "recorder_code_sha256")
+    require_same_settings({key: configuration[key] for key in compared if key in configuration},
+        {key: manifest["controls"].get(key) for key in compared if key in configuration}, label="recording controls against schedule")
+    expected = row.get("effective_settings")
+    if expected is not None:
+        require_same_settings(expected.get("actor"), manifest.get("effective_settings"), label="scheduled actor")
+    recording["scheduled_effective_settings"] = expected
     summary = summarize(recording)
+    if expected is not None and summary.get("evaluation") is not None:
+        require_same_settings(expected, summary.get("evaluation_effective_settings"), label="scheduled evaluation")
     if row.get("evaluation_path") and summary.get("evaluation_path") and Path(row["evaluation_path"]).resolve() != Path(summary["evaluation_path"]).resolve():
         raise ValueError("evaluation receipt path differs from its scheduled attempt")
     if row.get("evaluation_outcome") in {"complete", "incomplete"} and (
@@ -98,8 +107,9 @@ def _recorded_attempts(ledger):
     records = {}
     protocols, builds, models, grading_policies, configurations = {}, set(), set(), set(), set()
     environments, capture_policies = set(), set()
+    summaries = []
     for row in ledger:
-        configurations.add(json.dumps(row["configuration"], sort_keys=True))
+        configurations.add(json.dumps(normalized_settings(row["configuration"]), sort_keys=True))
         source = Path(row["recording"])
         key = (row["run_name"], row["task_id"])
         if row["technical_outcome"] in {"not_started", "running"}:
@@ -112,48 +122,63 @@ def _recorded_attempts(ledger):
         indexed[0 if mode == "dom" else 1][key] = recording
         records[(row["task_id"],row["trial"],mode)] = recording
         summary = _scheduled_summary(row, recording, manifest)
+        summaries.append((row["task_id"], summary))
         models.update(summary["returned_actor_models"])
         grade = _scheduled_grade(row, summary)
         if grade.get("evidence_policy") is not None:
             grading_policies.add(grade["evidence_policy"])
         build, environment = _browser_identity(manifest)
         builds.add(build)
-        environments.add(json.dumps(environment,sort_keys=True))
-        capture_policies.add(json.dumps({key: manifest.get(key) for key in
-            ("dom_capture_parameters","renderer_versions")},sort_keys=True))
-        protocol = json.dumps({"controls": manifest["controls"],
+        environments.add(json.dumps(normalized_settings(environment),sort_keys=True))
+        capture_policies.add(json.dumps(normalized_settings({key: manifest.get(key) for key in
+            ("dom_capture_parameters","renderer_versions")}),sort_keys=True))
+        protocol = json.dumps(normalized_settings({"controls": manifest["controls"],
             "dom_capture": manifest.get("dom_capture_parameters"), "renderers": manifest.get("renderer_versions"),
-            "action_driver": manifest.get("action_driver"), "action_driver_version": manifest.get("action_driver_version")}, sort_keys=True)
+            "action_driver": manifest.get("action_driver"), "action_driver_version": manifest.get("action_driver_version")}), sort_keys=True)
         if mode in protocols and protocols[mode] != protocol:
             raise ValueError(f"{mode} observation/action policy differs across trials")
         protocols[mode] = protocol
     if (len(configurations)>1 or len(builds)>1 or len(models)>1 or len(grading_policies)>1
             or len(environments)>1 or len(capture_policies)>1):
         raise ValueError("scheduled controls, browser builds/environments, capture policies, actor models or judge policies differ")
+    validate_recorded_settings(summaries)
     return indexed, records
 
 
 def _partial_summary(row, arm, task_id):
     source = Path(row["recording"])
     decisions = []
+    undecodable_decisions = False
     partial = source / "decisions.jsonl"
     if partial.is_file():
         for line in partial.read_text().splitlines():
             try:
                 decision = json.loads(line)
             except json.JSONDecodeError:
+                undecodable_decisions = undecodable_decisions or bool(line.strip())
                 continue
             if isinstance(decision, dict):
                 decisions.append(decision)
+            else:
+                undecodable_decisions = True
     task = {**row["task"], "source_task_id": task_id, "observation_mode": arm,
         "run_name": row["run_name"]}
     partial_manifest = {"steps": [], "states": [], "controls": row["configuration"]}
     if (source / "manifest.json").is_file():
         partial_manifest = json.loads((source / "manifest.json").read_text())
+    turn_evidence = any(any((source / "turns").glob(f"turn_*/{name}.json"))
+                        for name in ("request", "response", "result"))
+    reported_turns = partial_manifest.get("model_turns")
+    counter_clear = ("model_turns" not in partial_manifest or
+                     valid_token_component(reported_turns) and reported_turns == 0)
+    no_calls = (row["technical_outcome"] in {"not_started", "startup_failure"}
+        and not decisions and not undecodable_decisions and not turn_evidence
+        and counter_clear and not partial_manifest.get("steps"))
     summary = summarize({"source": str(source), "task": task,
         "manifest": partial_manifest, "decisions": decisions, "recording_sha256": None,
+        "actor_calls_known_zero": no_calls,
+        "scheduled_effective_settings": row.get("effective_settings"),
         "partial_recording": True, "final": {"run_status": row["technical_outcome"]}})
-    no_calls = row["technical_outcome"] in {"not_started", "startup_failure"} and not decisions
     summary.update(recording_available=False, partial_recording=source.exists(),
         turns_complete=no_calls, cost_coverage="complete" if no_calls else "partial")
     if not no_calls and not decisions:
@@ -199,7 +224,7 @@ def _paired_attempts(ledger, n, task_ids, records):
             unmatched.extend(missing)
             pairs.append(receipt)
     # Shared controls are checked across every recorded attempt, including unmatched ones.
-    shared = {json.dumps({k:v for k,v in r["manifest"]["controls"].items() if k!="prompt_sha256"},sort_keys=True)
+    shared = {json.dumps(normalized_settings({k:v for k,v in r["manifest"]["controls"].items() if k!="prompt_sha256"}),sort_keys=True)
         for r in records.values()}
     if len(shared)>1:
         raise ValueError("shared actor controls differ across recorded attempts")

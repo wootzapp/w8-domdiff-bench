@@ -17,6 +17,7 @@ from statistics import mean, quantiles
 
 from .common import canonical_sha256, write_json
 from .evidence_audit import SCHEMA_VERSION, calculate_metrics
+from w8bench.settings import comparison_settings, normalized_settings, require_same_settings
 
 
 LOSS_FLAGS = ("screenshot_evidence_loss", "dom_model_evidence_loss")
@@ -126,10 +127,15 @@ def _audit_protocol(value):
             raise ValueError(f"Missing or inconsistent provider/API version for {stage}")
         if not isinstance(requested, dict) or not requested or not isinstance(actual, list) or not actual:
             raise ValueError(f"Actual generation settings are required for {stage}")
-        if any(item != requested for item in actual):
+        if any(normalized_settings(item) != normalized_settings(requested) for item in actual):
             raise ValueError(f"Generation settings changed within {stage}")
         stages[stage] = {"provider": provider, "api_version": setting["api_version"], "settings": requested}
-    protocol = {**{key: value[key] for key in protocol_fields}, "generation_settings": stages}
+    effective = value.get("effective_settings")
+    if effective is not None:
+        require_same_settings({"rubric_sha256": value.get("frozen_rubric_sha256")},
+            {"rubric_sha256": effective.get("rubric_sha256")}, label="audit frozen rubric")
+    protocol = {**{key: value[key] for key in protocol_fields}, "generation_settings": stages,
+                "effective_settings": comparison_settings(effective)}
     return protocol
 
 
@@ -180,8 +186,7 @@ def _audit_tasks(root, paths, evaluations, selected, run_name, driver_arms, refe
         protocol = _audit_protocol(value)
         if reference_protocol is None:
             reference_protocol = protocol
-        if protocol != reference_protocol:
-            raise ValueError(f"Audit protocol mismatch: {root.name}/{alias}")
+        require_same_settings(reference_protocol, protocol, label=f"audit protocol {root.name}/{alias}")
         signature = _criterion_signature(value, alias)
         tasks[alias] = {"audit": value, "signature": signature, "path": path}
     return tasks, reference_protocol
@@ -680,7 +685,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             from cairosvg import svg2png
         except (ImportError, OSError) as error:
-            raise ValueError("Figure rendering requires the figures extra and the Cairo system library") from error
+            raise ValueError("Figure rendering requires the test extra and the Cairo system library") from error
     readme_text, start, end = _read_readme(args.readme)
     summary, categories = aggregate_runs(args.runs, expected_tasks=args.expected_tasks,
                                          resamples=args.resamples, seed=args.seed)

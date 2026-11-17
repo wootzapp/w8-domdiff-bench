@@ -2,11 +2,44 @@
 
 from __future__ import annotations
 import copy
+import math
 from difflib import SequenceMatcher
 from typing import Any
 
 CRITERION_SIMILARITY_THRESHOLD = 0.7
 ACTION_METADATA_KEYS = frozenset({"thoughts", "target"})
+
+
+class UngradedVerifierError(RuntimeError):
+    """A scoring stage exhausted its response-repair budget."""
+
+    def __init__(self, stage: str, reason: str):
+        self.stage = stage
+        self.reason = reason
+        super().__init__(f"Native verifier ungraded at {stage}: {reason}")
+
+
+def validate_points(value: Any, max_points: Any, *, field: str) -> None:
+    """Require a finite, nonboolean score within the criterion's weight."""
+    if (isinstance(max_points, bool) or not isinstance(max_points, (int, float))
+            or not math.isfinite(max_points) or max_points <= 0):
+        raise ValueError("max_points must be a positive finite nonboolean number")
+    if (isinstance(value, bool) or not isinstance(value, (int, float))
+            or not math.isfinite(value)):
+        raise ValueError(f"{field} must be a finite nonboolean number")
+    if not 0 <= value <= max_points:
+        raise ValueError(f"{field} must be between 0 and {max_points}, got {value}")
+
+
+def ungraded_result(error: UngradedVerifierError) -> dict[str, Any]:
+    """Represent unavailable native scoring without a numeric substitute."""
+    return {
+        "status": "ungraded", "ungraded_reason": str(error),
+        "judge_fallback": {"stage": error.stage, "reason": error.reason},
+        "score": None, "rubric_score": None,
+        "rubric_total_max_points": None, "rubric_total_earned_points": None,
+        "rubric_is_success": None, "outcome": None,
+    }
 FARA_ACTION_DEFINITIONS: dict[str, set[str]] = {
     "key": {"keys", "key"},
     "type": {"text", "coordinate", "ref", "press_enter", "delete_existing_text"},
@@ -42,9 +75,7 @@ def _verify_scored_item(item: dict, evidence_mode: str):
         "'max_points' should be a number"
     )
     assert "earned_points" in item, "Expected 'earned_points' field in each item"
-    assert isinstance(item["earned_points"], (int, float)), (
-        "'earned_points' should be a number"
-    )
+    validate_points(item["earned_points"], item["max_points"], field="earned_points")
     assert "justification" in item, "Expected 'justification' field in each item"
     assert isinstance(item["justification"], str) and item["justification"], (
         "'justification' should be a string"
@@ -68,12 +99,7 @@ def _verify_evidence_score(item: dict, evidence_mode: str):
             isinstance(item[justification_field], str) and item[justification_field]
         ), f"'{score_prefix}_justification' should be a non-empty string"
     if score_field in item:
-        assert isinstance(item[score_field], (int, float)), (
-            f"'{score_prefix}_earned_points' should be a number"
-        )
-        assert 0 <= item[score_field] <= item["max_points"], (
-            f"'{score_prefix}_earned_points' ({item[score_field]}) must be between 0 and max_points ({item['max_points']})"
-        )
+        validate_points(item[score_field], item["max_points"], field=score_field)
 
 
 def verify_generated_rubric(d: dict) -> bool:
@@ -85,10 +111,7 @@ def verify_generated_rubric(d: dict) -> bool:
         assert "criterion" in item, "Expected 'criterion' field in each item"
         assert "description" in item, "Expected 'description' field in each item"
         assert "max_points" in item, "Expected 'max_points' field in each item"
-        assert isinstance(item["max_points"], (int, float)), (
-            "'max_points' should be a number"
-        )
-        assert item["max_points"] > 0, "'max_points' should be greater than 0"
+        validate_points(0, item["max_points"], field="earned_points")
         assert "justification" in item, "Expected 'justification' field in each item"
         assert "earned_points" in item, "Expected 'earned_points' field in each item"
         assert item["justification"] == "", (
@@ -122,7 +145,9 @@ def graft_scores_onto_rubric(original: dict, scored: dict) -> dict:
                 f"Criterion mismatch at position {i}: expected '{orig_crit}' but got '{scored_crit}' (similarity={similarity:.2f}, threshold={CRITERION_SIMILARITY_THRESHOLD}). Do not rephrase or reorder criteria — return them exactly as they appear in the original rubric."
             )
         orig_item["justification"] = scored_item.get("justification", "")
-        orig_item["earned_points"] = scored_item.get("earned_points", 0)
+        if "earned_points" not in scored_item:
+            raise ValueError(f"Criterion {i} missing earned_points")
+        orig_item["earned_points"] = scored_item["earned_points"]
         if "condition" in orig_item:
             orig_item["is_condition_met"] = scored_item.get("is_condition_met", False)
     return result
@@ -174,12 +199,14 @@ def compute_final_scores(rubric: dict, earned_points_field: str) -> dict[str, fl
                 total_max += sm
                 total_earned += se
             elif "condition" in criterion:
+                validate_points(criterion.get(earned_points_field), criterion.get("max_points"), field=earned_points_field)
                 if criterion.get("is_condition_met", False):
                     total_max += float(criterion["max_points"])
-                    total_earned += float(criterion.get(earned_points_field, 0))
+                    total_earned += float(criterion[earned_points_field])
             else:
+                validate_points(criterion.get(earned_points_field), criterion.get("max_points"), field=earned_points_field)
                 total_max += float(criterion["max_points"])
-                total_earned += float(criterion.get(earned_points_field, 0))
+                total_earned += float(criterion[earned_points_field])
         return (total_max, total_earned)
 
     total_max, total_earned = sum_recursive(rubric["items"])
@@ -309,6 +336,8 @@ def validate_rescore(
     required_fields = ["applicable_evidence", justification_field, score_field]
     missing_fields = []
     type_errors = []
+    valid_max = (not isinstance(max_points, bool) and isinstance(max_points, (int, float))
+        and math.isfinite(max_points) and max_points > 0)
     for field in required_fields:
         if field not in rescore:
             missing_fields.append(field)
@@ -320,14 +349,18 @@ def validate_rescore(
             elif not rescore[field]:
                 type_errors.append(f"{prefix}{field} cannot be empty")
         elif field == score_field:
-            if not isinstance(rescore[field], (int, float)):
+            if isinstance(rescore[field], bool):
+                type_errors.append(f"{prefix}{field} must be a finite nonboolean number")
+            elif not isinstance(rescore[field], (int, float)):
                 type_errors.append(
                     f"{prefix}{field} must be a number, got {type(rescore[field]).__name__}"
                 )
-            elif not 0 <= rescore[field] <= max_points:
+            elif not math.isfinite(rescore[field]) or (valid_max and not 0 <= rescore[field] <= max_points):
                 type_errors.append(
                     f"{prefix}{field} must be between 0 and {max_points}, got {rescore[field]}"
                 )
+    if not valid_max:
+        type_errors.append(f"{prefix}max_points must be a positive finite nonboolean number")
     if missing_fields or type_errors:
         error_msg = "Invalid rescoring output. "
         if missing_fields:

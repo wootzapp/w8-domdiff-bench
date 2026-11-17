@@ -254,9 +254,13 @@ class GracefulRetryClient(ChatCompletionClient):
 
     async def _bad_request_failure(self, error, state):
         if "check-access-response-enc" in str(error):
+            state.tries -= 1
+            state.last_error = error
             self.logger.error(
                 f"GracefulRetryClient.create() AccessTokenError: {state.client.description}, refreshing credentials\n{error}"
             )
+            if state.tries <= 0:
+                return True
             if hasattr(state.client, "refresh_credentials"):
                 state.client.refresh_credentials()
             await self._switch_client_and_wait(state, 1)
@@ -289,9 +293,13 @@ class GracefulRetryClient(ChatCompletionClient):
         await self._switch_client_and_wait(state, 1)
 
     def _authentication_failure(self, error, state):
+        state.tries -= 1
+        state.last_error = error
         self.logger.error(
             f"GracefulRetryClient.create() AuthenticationError: {state.client.description}: {error}"
         )
+        if state.tries <= 0:
+            return
         if hasattr(state.client, "refresh_credentials"):
             state.client.refresh_credentials()
         state.client = self.next_client()

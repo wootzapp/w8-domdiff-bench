@@ -29,6 +29,9 @@ def tree_receipt(package: str) -> dict[str, Any]:
     models.resolve(strict=True)
     paths = [*root.rglob("*"), *shared.rglob("*"), models,
              REPOSITORY_ROOT / "w8bench" / "__init__.py",
+             REPOSITORY_ROOT / "w8bench" / "model_identity.py",
+             REPOSITORY_ROOT / "w8bench" / "settings.py",
+             REPOSITORY_ROOT / "w8bench" / "usage.py",
              REPOSITORY_ROOT / "w8bench" / "verifier" / "__init__.py",
              REPOSITORY_ROOT / "w8bench" / "verifier" / "common.py",
              REPOSITORY_ROOT / "w8bench" / "verifier" / "instrumentation.py",

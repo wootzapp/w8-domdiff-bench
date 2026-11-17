@@ -18,9 +18,11 @@ from ..instrumentation import call_metrics, instrument_client_calls, usage_dict
 from .rubric_agent import MMRubricAgent, MMRubricAgentConfig
 from ..models import MMRubricOutcomeResult, MMRubricResult
 from .models import Trajectory
-from ..rubric_scoring import FARA_ACTION_DEFINITIONS
+from ..rubric_scoring import FARA_ACTION_DEFINITIONS, UngradedVerifierError, ungraded_result
+from .prompts import SCORING_PROMPT_VERSION
 from .preflight import preflight_screenshot_task
 from ..common import load_frozen_rubric, require_matching_embedded_rubric, rubric_receipt
+from w8bench.settings import native_stage_settings, guard_result_settings
 
 
 logger = logging.getLogger("screenshot_verifier")
@@ -142,6 +144,7 @@ def _evaluation_fields(args, task_id, agent, raw):
     else:
         score = int(outcome_pass)
     return {
+        "status": "complete",
         "task_id": task_id,
         "verifier": "screenshot_verifier",
         "score": score,
@@ -156,6 +159,7 @@ def _evaluation_fields(args, task_id, agent, raw):
 
 def _result_receipts(task_data, frozen, preflight, agent, action_client, judge_client, raw, started):
     return {
+        "scoring_prompt_version": SCORING_PROMPT_VERSION,
         "preflight": preflight,
         **rubric_receipt(
             path=str(frozen.path),
@@ -189,18 +193,26 @@ def _write_result(result, output):
 def run(args: argparse.Namespace) -> dict[str, Any]:
     started = time.time()
     task_dir, task_data, task_id, frozen, preflight = _task_inputs(args)
+    effective = native_stage_settings(args, "screenshot_verifier", rubric_hash=frozen.sha256)
+    guard_result_settings(Path(args.output) / "result.json", effective, label="screenshot verifier resume")
     agent, action_client, judge_client = _evaluation_agent(args, task_data)
     agent_input = _evaluation_input(args, task_dir, task_data, preflight)
-    raw = asyncio.run(agent._generate_reply(agent_input))
-    result = _evaluation_fields(args, task_id, agent, raw)
+    try:
+        raw = asyncio.run(agent._generate_reply(agent_input))
+        result = _evaluation_fields(args, task_id, agent, raw)
+    except UngradedVerifierError as error:
+        raw = {}
+        result = {"task_id": task_id, "verifier": "screenshot_verifier",
+            "success_criterion": args.success, **ungraded_result(error)}
     result.update(_result_receipts(
         task_data, frozen, preflight, agent, action_client, judge_client, raw, started
     ))
+    result["effective_settings"] = effective
     return _write_result(result, args.output)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Invalid earned points exhaust validation as ungraded; returned model IDs are diagnostic records. Existing outputs require matching effective settings.")
     parser.add_argument("--input", required=True)
     parser.add_argument("--rubric-file", required=True)
     parser.add_argument("--eval-config", required=True)

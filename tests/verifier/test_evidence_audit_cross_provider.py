@@ -48,7 +48,7 @@ def _complete(inventory, adjudication):
 
 @pytest.mark.parametrize("model", ["gpt-5.2", "gpt-6.1-sol"])
 def test_openai_routing_records_actual_request_settings(monkeypatch, model):
-    create = Mock(return_value=SimpleNamespace(id="openai-id", model="resolved-openai",
+    create = Mock(return_value=SimpleNamespace(id="openai-id", model=model + "-001",
         usage=None, system_fingerprint="fingerprint",
         choices=[SimpleNamespace(message=SimpleNamespace(content='{"ok":true}'))]))
     client = Mock()
@@ -64,7 +64,7 @@ def test_openai_routing_records_actual_request_settings(monkeypatch, model):
     assert args["response_format"] == {"type": "json_object"}
     assert records[0]["provider"] == "openai"
     assert records[0]["requested_model"] == model
-    assert records[0]["response_model"] == "resolved-openai"
+    assert records[0]["response_model"] == model + "-001"
     assert "temperature" not in records[0]["generation_settings"]
     assert "seed" not in records[0]["generation_settings"]
     assert records[0]["completed_at"] >= records[0]["started_at"]
@@ -85,8 +85,8 @@ def _fake_google(monkeypatch, text='{"ok":true}'):
     types.HttpOptions = lambda **k: k
     usage = SimpleNamespace(prompt_token_count=10, candidates_token_count=3, thoughts_token_count=2, cached_content_token_count=4,
                             model_dump=lambda: {"prompt_token_count": 10, "candidates_token_count": 3, "thoughts_token_count": 2, "cached_content_token_count": 4})
-    generate = Mock(return_value=SimpleNamespace(text=text, response_id="gemini-id",
-                                               model_version="resolved-gemini", usage_metadata=usage))
+    generate = Mock(side_effect=lambda **kwargs: SimpleNamespace(text=text, response_id="gemini-id",
+        model_version=kwargs["model"] + "-001", usage_metadata=usage))
     client = Mock()
     client.__enter__ = Mock(return_value=SimpleNamespace(models=SimpleNamespace(generate_content=generate)))
     client.__exit__ = Mock(return_value=False)
@@ -130,7 +130,7 @@ def test_gemini_native_routing_preserves_base64_and_retry_roles(monkeypatch):
     assert records[0]["requested_reasoning_effort"] is None
     assert records[0]["requested_max_output_tokens"] is None
     assert args["config"]["response_mime_type"] == "application/json"
-    assert records[0]["provider"] == "google" and records[0]["response_model"] == "resolved-gemini"
+    assert records[0]["provider"] == "google" and records[0]["response_model"] == "gemini-3.1-pro-preview-001"
     assert records[0]["usage"] == {"prompt_tokens": 10, "completion_tokens": 5,
                                     "reasoning_tokens": 2, "cached_input_tokens": 4, "cache_write_input_tokens": None, "total_tokens": 15}
     openai.assert_not_called()
@@ -174,7 +174,7 @@ def test_every_audit_records_the_settings_sent_by_both_providers(pair_factory, m
     monkeypatch.setenv("GEMINI_API_KEY", "fake-gemini-key")
     _fake_google(monkeypatch, json.dumps(inventory))
     response = SimpleNamespace(
-        id="inventory-id", model="resolved-inventory", usage=None,
+        id="inventory-id", model="gpt-6.1-sol-001", usage=None,
         choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(final)))],
     )
     client = Mock()
@@ -189,7 +189,7 @@ def test_every_audit_records_the_settings_sent_by_both_providers(pair_factory, m
                    for stage, value in config.items()}})
     result = _run(pair_factory(), None)
     assert [(call["provider"], call["response_model"]) for call in result["calls"]] == [
-        ("google", "resolved-gemini"), ("openai", "resolved-inventory"),
+        ("google", "gemini-3.1-pro-preview-001"), ("openai", "gpt-6.1-sol-001"),
     ]
     for stage in ("inventory", "adjudication"):
         settings = result["generation_settings"][stage]
@@ -215,8 +215,8 @@ def test_post_adjudication_conflicts_are_recorded_not_overridden(pair_factory):
     final["criteria"][0]["screenshot_evidence_loss"] = _finding(True, modality="dom_model")
     final["criteria"][1]["dom_model_evidence_loss"] = _finding(True, modality="screenshot")
     result = _run(pair, _complete(inventory, final))
-    assert result["schema_version"] == "automated-evidence-audit/v6"
-    assert result["prompt_version"] == "paired-capture-eligible-state-adjudication/v6"
+    assert result["schema_version"] == "automated-evidence-audit/v7"
+    assert result["prompt_version"] == "paired-capture-eligible-state-adjudication/v7"
     assert result["criteria"][0]["screenshot_evidence_loss"] is True
     assert result["criteria"][1]["dom_model_evidence_loss"] is True
     assert all(r["coverage_conflict"] for r in result["criteria"])

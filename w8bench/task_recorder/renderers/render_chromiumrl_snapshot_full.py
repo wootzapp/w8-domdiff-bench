@@ -552,25 +552,22 @@ class FullSnapshotRenderer:
         lines = ["=== NODE TREE ==="]
         seen: set[str] = set()
 
-        def walk(node: dict[str, Any], depth: int) -> None:
-            """Depth-first render with cycle protection and transparent wrapper collapse."""
+        stack = [(root, 0) for root in reversed(self.roots())]
+        while stack:
+            node, depth = stack.pop()
             ref = str(node.get("ref"))
             if self.node_tag(node) == "#text" and not self.include_text_nodes:
-                return
+                continue
             if ref in seen:
                 lines.append("  " * depth + f"- ref={ref} [already shown]")
-                return
+                continue
             seen.add(ref)
             if self.is_inert_wrapper(node):
-                for child in self.children.get(ref, []):
-                    walk(child, depth)
-                return
-            lines.extend(self.render_node_line(node, depth))
-            for child in self.children.get(ref, []):
-                walk(child, depth + 1)
-
-        for root in self.roots():
-            walk(root, 0)
+                child_depth = depth
+            else:
+                lines.extend(self.render_node_line(node, depth))
+                child_depth = depth + 1
+            stack.extend((child, child_depth) for child in reversed(self.children.get(ref, [])))
 
         missing = [node for node in self.nodes if str(node.get("ref")) not in seen]
         if missing:
@@ -612,8 +609,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         choices=("deduped", "all", "none"),
         default="deduped",
         help=(
-            "How to render subtreeText. deduped keeps useful unique text and suppresses "
-            "ancestor/container repeats; all prints raw subtreeText everywhere; none hides subtreeText."
+            "Text fields: deduped suppresses repeated subtree text; all retains "
+            "subtree text on eligible nodes; none hides text fields."
         ),
     )
     parser.add_argument("--include-suppressed-text-notes", action="store_true",

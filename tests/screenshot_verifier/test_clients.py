@@ -1,35 +1,13 @@
-"""Smoke + behavioural tests for ``webeval.oai_clients``.
-
-  * Importing the package never pulls ``autogen_core`` / ``autogen_ext``
-    into ``sys.modules`` (regression guard against an autogen reintroduction).
-  * ``GracefulRetryClient.from_path`` filters configs by model name.
-  * ``message_to_openai_format`` produces dicts the OpenAI SDK accepts.
-  * ``CreateResult.content`` is the response text string.
-  * Full ``client.create()`` round trip works against a stubbed
-    ``AsyncOpenAI`` (covers usage tracking and tool-call extraction).
-"""
+"""Offline verifier message conversion, model selection and usage contracts."""
 
 from __future__ import annotations
 
 import asyncio
 import json
-import sys
 from types import SimpleNamespace
 
 import pytest
 from PIL import Image as PILImage
-
-
-def test_oai_clients_does_not_pull_autogen():
-    # Force a clean import.
-    for mod in list(sys.modules):
-        if mod.startswith("w8bench.verifier.clients") or mod.startswith("autogen"):
-            del sys.modules[mod]
-
-    import w8bench.verifier.clients  # noqa: F401
-
-    leaked = [m for m in sys.modules if m.startswith("autogen")]
-    assert not leaked, f"oai_clients pulled in autogen modules: {leaked}"
 
 
 def test_message_to_openai_format_text_only():

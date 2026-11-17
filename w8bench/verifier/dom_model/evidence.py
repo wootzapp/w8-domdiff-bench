@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 from .rubric_agent import MMRubricAgent
@@ -236,6 +237,12 @@ class DomModelRubricAgent(MMRubricAgent):
 
     def _initialize_state_audit(self, states, all_states, context) -> None:
         self.evidence_audit = base_audit(states)
+        self.evidence_audit["citation_checks"] = {
+            "schema_version": "dom-citation-checks/v1",
+            "checked_citations": 0, "valid_citations": 0, "invalid_citations": 0,
+            "invalid_citation_rate": None, "quote_checked_citations": 0,
+            "quote_unavailable_citations": 0, "checks": [],
+        }
         self.evidence_audit["state_selection_policy"] = (
             "all_available_original_states" if context else "all_states_0_through_n"
         )
@@ -375,6 +382,8 @@ class DomModelRubricAgent(MMRubricAgent):
                 result["dom_model_state_idx"] = state.index
                 return result
             except Exception as exc:
+                if isinstance(exc, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(exc)
                 self.evidence_audit["validation_retries"] += 1
                 logger.error(
@@ -541,6 +550,8 @@ class DomModelRubricAgent(MMRubricAgent):
                 )
                 return criterion_idx, analysis
             except Exception as exc:
+                if isinstance(exc, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(exc)
                 self.evidence_audit["validation_retries"] += 1
                 logger.error(
@@ -576,7 +587,50 @@ class DomModelRubricAgent(MMRubricAgent):
         )
         validate_grounded_analysis(analysis)
         analysis["dom_model_state_idx"] = state_idx
+        self._record_citation_checks(analysis, state_idx, "pair_analysis")
         return analysis
+
+    def _record_citation_checks(self, analysis: dict, state_idx: int, stage: str) -> None:
+        """Record citation diagnostics without changing accepted evidence or scores."""
+        if not hasattr(self, "evidence_audit") or "citation_checks" not in self.evidence_audit:
+            return
+        diagnostic = self.evidence_audit["citation_checks"]
+        citation = analysis["dom_model_evidence"]
+        markers = list(re.finditer(r"DOM_MODEL_STATE_INDEX\s*[:=]\s*(-?[0-9]+\b(?![\w.+-]))?", citation))
+        for position, marker in enumerate(markers or [None]):
+            identifier = marker.group(1) if marker is not None else None
+            quote_scope = citation
+            if len(markers) > 1:
+                end = markers[position + 1].start() if position + 1 < len(markers) else len(citation)
+                quote_scope = citation[marker.end():end]
+            quotes = [match[0] or match[1] for match in re.findall(r'"([^"\n]+)"|`([^`\n]+)`', quote_scope)]
+            try:
+                cited_idx = int(identifier) if identifier is not None else None
+            except (ValueError, OverflowError):
+                cited_idx = None
+            errors = []
+            state = getattr(self, "_dom_states_by_index", {}).get(cited_idx)
+            if cited_idx is None:
+                errors.append("Missing or malformed DOM_MODEL_STATE_INDEX")
+            elif state is None:
+                errors.append("Cited state is absent from the supplied DOM evidence")
+            supplied = getattr(self, "_dom_rendered_states", {}).get(cited_idx, "")
+            quote_checks = [{"quote": quote,
+                "valid": bool(state is not None and quote in state.raw_text),
+                "supplied_text_match": quote in supplied} for quote in quotes]
+            if any(not item["valid"] for item in quote_checks):
+                errors.append("Quoted text is absent from the recorded state")
+            valid = not errors
+            diagnostic["checks"].append({
+                "stage": stage, "analyzed_state_id": state_idx, "cited_state_id": cited_idx,
+                "matches_analyzed_state": cited_idx == state_idx,
+                "citation": citation, "valid": valid, "errors": errors,
+                "quote_status": "checked" if quotes else "unavailable", "quote_checks": quote_checks,
+            })
+            diagnostic["checked_citations"] += 1
+            diagnostic["valid_citations" if valid else "invalid_citations"] += 1
+            diagnostic["quote_checked_citations" if quotes else "quote_unavailable_citations"] += 1
+        diagnostic["invalid_citation_rate"] = diagnostic["invalid_citations"] / diagnostic["checked_citations"]
 
     def _pair_fallback(self, state_idx: int) -> dict:
         return {
@@ -764,6 +818,8 @@ class DomModelRubricAgent(MMRubricAgent):
                     response_text, criterion_indices, conditional, state_idx
                 )
             except Exception as exc:
+                if isinstance(exc, scoring.UngradedVerifierError):
+                    raise
                 last_error = str(exc)
                 self.evidence_audit["validation_retries"] += 1
                 logger.error(
@@ -823,6 +879,7 @@ class DomModelRubricAgent(MMRubricAgent):
         for analysis, expected_idx in zip(analyses, criterion_indices):
             analysis.pop("criterion_idx", None)
             analysis["dom_model_state_idx"] = state_idx
+            self._record_citation_checks(analysis, state_idx, "batch_analysis")
             results.append((expected_idx, analysis))
         return results
 

@@ -13,10 +13,10 @@ from . import audit_evidence, audit_requests, audit_validation
 from .common import CanonicalRubric, canonical_sha256, load_canonical_rubric, load_json
 
 
-SCHEMA_VERSION = "automated-evidence-audit/v6"
+SCHEMA_VERSION = "automated-evidence-audit/v7"
 
 
-PROMPT_VERSION = "paired-capture-eligible-state-adjudication/v6"
+PROMPT_VERSION = "paired-capture-eligible-state-adjudication/v7"
 
 
 def _criteria_payload(rubric: dict[str, Any]) -> list[dict[str, Any]]:
@@ -601,6 +601,8 @@ def run_evidence_audit(
         config, (model, adjudicator_model), model_check, records, started_at, run_name
     )
     report["generation_settings"] = _generation_settings(config, records, complete)
+    from w8bench.settings import audit_settings
+    report["effective_settings"] = audit_settings(config, rubric_hash=inputs.frozen.sha256)
     report["calls"] = records
     report.update(_report_evidence(inputs, task_alias))
     report.update(_report_decisions(inventory, adjudication, rows))

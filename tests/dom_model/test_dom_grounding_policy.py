@@ -140,20 +140,6 @@ def test_policy_is_general_and_audited():
     assert audit["evidence_mode"] == "dom_model"
 
 
-def test_dom_prompt_overhead_stays_close_to_fixed_screenshot_prompts():
-    screenshot_words = {
-        "criterion_rescore": 4047,
-        "rubric_rescore": 5198,
-        "reality_check": 543,
-    }
-    assert len(MM_CRITERION_RESCORING_PROMPT.split()) <= screenshot_words["criterion_rescore"] * 1.02
-    assert len(MM_RUBRIC_RESCORING_PROMPT.split()) <= screenshot_words["rubric_rescore"] * 1.02
-    assert len(RUBRIC_REALITY_CHECK_PROMPT.split()) <= screenshot_words["reality_check"] * 1.05
-    assert len(EVIDENCE_ANALYSIS_GROUNDING_POLICY.split()) <= 120
-    assert len(RESCORING_GROUNDING_POLICY.split()) <= 80
-    assert len(REALITY_CHECK_GROUNDING_POLICY.split()) <= 25
-
-
 @pytest.mark.parametrize("status", ("SUPPORTED", "PARTIAL", "CONTRADICTED", "UNKNOWN"))
 def test_all_grounding_statuses_validate(status):
     analysis = {

@@ -1,3 +1,5 @@
+SCORING_PROMPT_VERSION = "native-rubric-output-contract/v2"
+
 from pathlib import Path
 from ..error_taxonomy import (
     escape_for_template,
@@ -101,23 +103,23 @@ RUBRIC_GENERATION_PROMPT_TEMPLATE = """Task: $task_id$init_url_context
     3. Make it clear that points are ONLY counted if the condition is met
 
     **Schema for conditional criteria**:
-    {{
+    {
         "criterion": "Brief name of what's being evaluated",
         "condition": "Clear description of when this criterion applies (e.g., 'Only applies if organic blueberries are unavailable')",
         "description": "What to evaluate and how to score IF the condition is met. Full credit for..., partial credit for...",
         "max_points": N,
         "justification": "",
         "earned_points": ""
-    }}
+    }
 
     **Schema for non-conditional criteria** (most criteria):
-    {{
+    {
         "criterion": "Brief name of what's being evaluated",
         "description": "What to evaluate and how to score. Full credit for..., partial credit for...",
         "max_points": N,
         "justification": "",
         "earned_points": ""
-    }}
+    }
     (Note: No "condition" field means the criterion always applies)
 
     **Important**: Do NOT create conditional criteria for requirements that are implicitly satisfied by successful task completion.
@@ -276,31 +278,31 @@ RUBRIC_GENERATION_PROMPT_TEMPLATE = """Task: $task_id$init_url_context
     Example 2 (detailed): Help purchase 'Fosbait: Lanthanum Carbonate 500mg Tablets' for kidney diseases on drugssquare.com.
 
     Example Output Rubric:
-    {{
+    {
     "items": [
-        {{
+        {
         "criterion": "Access drugssquare.com website",
         "description": "Successfully navigate to or access the drugssquare.com website as specified in the task. Full credit if: (a) site is successfully accessed, OR (b) site is inaccessible (blocked, down, error) and agent clearly indicates this and either stops or attempts alternative source. Partial credit if agent immediately uses alternative without attempting drugssquare.com first.",
         "max_points": 2,
         "justification": "",
         "earned_points": ""
-        }},
-        {{
+        },
+        {
         "criterion": "Locate the specific product",
         "description": "Find and identify the exact product 'Fosbait: Lanthanum Carbonate 500mg Tablets' on the website. Full credit if: (a) exact product found, OR (b) product is discontinued/out of stock/not found after reasonable search and agent clearly reports this, OR (c) agent identifies closest alternative (different dosage of same medication) when exact product unavailable and explains the substitution. Partial credit for selecting different dosage when the intended 500mg dosage IS available on the site. No credit for selecting entirely different medication when Fosbait is available.",
         "max_points": 3,
         "justification": "",
         "earned_points": ""
-        }},
-        {{
+        },
+        {
         "criterion": "Facilitate the purchase process until a Critical Point",
         "description": "Help complete the purchase of the identified product up to but not crossing the Critical Point. Full credit if: (a) product is successfully added to cart and agent stops before entering personal/payment information, OR (b) the website's purchase flow is broken/unavailable and agent reports this, OR (c) website requires account creation or payment info before allowing add-to-cart and agent reports this limitation. Partial credit if agent proceeds partially but makes errors in the purchase flow (wrong quantity, wrong shipping option, etc.). No credit if agent either skips the cart entirely OR unnecessarily enters personal information when not required.",
         "max_points": 3,
         "justification": "",
         "earned_points": ""
-        }}
+        }
     ]
-    }}
+    }
     Please output an answer in pure JSON format according to the following schema. The JSON object must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIATE FROM THE ABOVE SCHEMA:"""
 
 RUBRIC_DEPENDENCY_CHECKING_PROMPT = """Input Task: "$task_id"$init_url_context
@@ -428,77 +430,77 @@ RUBRIC_DEPENDENCY_CHECKING_PROMPT = """Input Task: "$task_id"$init_url_context
     - Do not penalize for reasonable variations in presentation format when the core information is complete and correct
 
     **OUTPUT format**:
-    {{
+    {
         "reasoning" : str,  # A brief explanation of your decisions regarding decomposition and removal of criteria
         "needs_reformulation": bool,  # True if the rubric needed further decomposition, False otherwise
         "reformulated_rubric": json (see below rubric format)  # If needs_reformulation is True, else output empty dictionary {}
-    }}
+    }
     
     ==================
     Example Task: "On Yelp.com, find a vegan-friendly dining spot in San Francisco with at least 4.5 stars and 150 reviews or more. Next, search for its contact number using Whitepages.com"
 
     **Example OF Rubric that OUGHT to be reformulated to better account for external factors**:
-    {{
+    {
     "items": [
-        {{
+        {
         "criterion": "Find qualifying vegan-friendly dining spot on Yelp in San Francisco",
         "description": "Use Yelp.com to locate a single vegan-friendly dining spot in San Francisco that meets both thresholds: at least 4.5 stars and 150 or more reviews. The establishment should be clearly identified. Partial credit if Yelp is used but one or more constraints (vegan-friendly, location, rating, or review count) are missed or only partially satisfied. Full credit if no such spot exists and the agent clearly reports that Yelp has no result meeting all constraints.",
         "max_points": 6,
         "justification": "",
         "earned_points": ""
-        }},
-        {{
+        },
+        {
         "criterion": "Search for the establishment’s contact number on Whitepages.com",
         "description": "Using Whitepages.com, search for the selected establishment’s contact phone number. Provide the phone number if found; if not found, clearly state that the Whitepages search did not return the number. Partial credit if a phone number is given but the source is not Whitepages or if the attempt to use Whitepages is unclear or incomplete.",
         "max_points": 4,
         "justification": "",
         "earned_points": ""
-        }},
+        },
     ]
-    }}
+    }
 
     **Example of REFORMULATED Rubric**:
-    "reformulated_rubric" = {{
+    "reformulated_rubric" = {
         "items": [
-            {{
+            {
                 # NOTE: this criterion is decoupled because the external factor of Yelp being down or inaccessible is different than other external factors (like search filters not being met)
                 "criterion": "Access Yelp and search for San Francisco dining spots",
                 "description": "Navigate to Yelp.com and perform a search for dining spots in San Francisco. Full credit if the agent navigates to Yelp but is blocked or the site is down, and it indicates this. Partial credit if the agent searches a broader or incorrect location.",
                 "max_points": 2,
                 "justification": "",
                 "earned_points": ""
-            }},
-            {{
+            },
+            {
                 # NOTE: this criterion is NOT "relaxed" since there are certainly vegan restaurants in SF, hence it must also be decoupled from the other criteria
                 "criterion": "Identify vegan-friendly restaurant(s)",
                 "description": "Correctly apply filters or other search operators/terms to find vegan or vegan-friendly restaurants.",
                 "max_points": 1,
                 "justification": "",
                 "earned_points": ""
-            }},
+            },
                 # NOTE: this criterion is "relaxed" to account for dependency on Yelp search results which the agent cannot control
                 "criterion": "Verify star rating and review count",
                 "description": "Confirm the restaurant has at least a 4.5-star rating and at least 150 reviews, if any such search results are visible. Full credit if it is clear that no such result exists and the agent clearly reports that, or if it outputs an alternative that satisfies the primary intent (vegan, highly-rated restaurant). Partial credit if only one criterion (rating or reviews) is met while more suitable options are visible.",
                 "max_points": 2,
                 "justification": "",
                 "earned_points": ""
-            }},
+            },
                 # NOTE: this criterion is decoupled from the previous one
                 "criterion": "Provide the selected restaurant’s name",
                 "description": "The final answer must output at least one restaurant (regardless if it meets all the criteria, since that is handled above), or state that no suitable restaurant exists.",
                 "max_points": 1,
                 "justification": "",
                 "earned_points": ""
-            }},
+            },
                 # NOTE: this criterion is "relaxed" to account for external dependencies
                 "criterion": "Find the restaurant’s contact number on Whitepages",
                 "description": "Search Whitepages.com using the restaurant’s name (and location if needed) and provide its telephone number. Full credit if the correct search is attempted but no matching restaurant is found (and the agent says this), partial credit if the correct phone number is given, but no attempt is made to use Whitepages.",
                 "max_points": 2,
                 "justification": "",
                 "earned_points": ""
-            }},
+            },
         ]
-    }}
+    }
     NOTE: In the task above, an example of a criteria that is too pedantic is "single" restaurant, since the task does not require only one restaurant. 
     NOTE: in the reformulated rubric above, the agent can still receive full credit if no qualifying restaurant exists, hence the criterion is "relaxed" appropriately.
     
@@ -749,12 +751,12 @@ For EACH criterion listed above, assign a relevance score from 0-10 indicating h
 
 Please output a JSON object with scores for ALL criteria:
 
-{{
+{
   "criterion_0": <score_0_to_10>,
   "criterion_1": <score_0_to_10>,
   ...
   "criterion_N": <score_0_to_10>
-}}
+}
 
 DO NOT OUTPUT ANYTHING OTHER THAN JSON.
 """
@@ -821,12 +823,12 @@ Some criteria evaluate the quality, correctness, or completeness of the agent's 
 $conditional_check
 
 **Output Format:**
-{{
+{
   "screenshot_evidence": "Detailed description of what is visible...",
   "criterion_analysis": "Analysis of how the evidence indicates success/partial/failure...",
   "discrepancies": "Any mismatches between agent claims and visual evidence...",
   "environment_issues_confirmed": true/false$conditional_output
-}}
+}
 
 DO NOT OUTPUT ANYTHING OTHER THAN JSON.
 """
@@ -897,47 +899,47 @@ Some criteria evaluate the quality, correctness, or completeness of the agent's 
 **Output Format:**
 Output a JSON object with a single key "analyses" containing a list. The list must have exactly one entry per criterion above, in order.
 
-{{
+{
   "analyses": [
-    {{
+    {
       "criterion_idx": <criterion number>,
       "screenshot_evidence": "...",
       "criterion_analysis": "...",
       "discrepancies": "...",
       "environment_issues_confirmed": true/false
-    }},
+    },
     ...one object per criterion...
   ]
-}}
+}
 
 For CONDITIONAL criteria (marked above), also include "condition_verification": true/false in that entry.
 
 Example — 3 criteria (0, 1, 2) evaluated against ONE screenshot:
-{{
+{
   "analyses": [
-    {{
+    {
       "criterion_idx": 0,
       "screenshot_evidence": "The screenshot shows a search results page with...",
       "criterion_analysis": "The results confirm the agent found the correct item...",
       "discrepancies": "None — the agent's claims match the visual evidence.",
       "environment_issues_confirmed": false
-    }},
-    {{
+    },
+    {
       "criterion_idx": 1,
       "screenshot_evidence": "The same screenshot also shows a price label reading $$24.99...",
       "criterion_analysis": "The price matches the agent's predicted output...",
       "discrepancies": "None.",
       "environment_issues_confirmed": false
-    }},
-    {{
+    },
+    {
       "criterion_idx": 2,
       "screenshot_evidence": "The screenshot does not show any checkout page or cart...",
       "criterion_analysis": "No evidence of checkout completion is visible...",
       "discrepancies": "Agent claimed checkout was completed but this screenshot shows search results.",
       "environment_issues_confirmed": false
-    }}
+    }
   ]
-}}
+}
 
 DO NOT OUTPUT ANYTHING OTHER THAN JSON.
 """
@@ -1205,11 +1207,11 @@ Task: "Book a compact car on Rentalcars.com from December 15 to December 18, 202
 - Penalize hallucinations where the agent's output or action history claims something contradicted by the LATEST screenshots
 
 **Output Format:**
-{{
+{
   "applicable_evidence": "Explicitly state which Screenshot Evidence Analyses (by screenshot number) are applicable to this criterion. When multiple screenshots show the same UI element or state, identify whether a STATE CHANGE occurred and which screenshot is the LATEST (most recent). The latest screenshot's state supersedes any earlier conflicting screenshots. For example: 'Screenshot 5 shows the date picker with default November dates, but Screenshot 15 (later) shows the dates updated to December 15–18 — the latest state is correct.' If no screenshot evidence is applicable, state that clearly.",
   "post_image_justification": "Based on the applicable evidence identified above — using the LATEST screenshot state when state changes occurred — reason about **how** the score should change (if at all). If keeping the same score, explain why the applicable screenshots confirm the action-history assessment. If changing the score, explain what specific visual evidence led to the change and why.",
   "post_image_earned_points": <number between 0 and $max_points>
-}}
+}
 
 DO NOT OUTPUT ANYTHING OTHER THAN JSON.
 """
@@ -1345,7 +1347,7 @@ You are rescoring the ENTIRE rubric in a single pass based on the screenshot evi
    - Ask: "Was a platform-level blocker (login wall, site down, CAPTCHA) discovered on ANY sibling criterion on the same platform?"
      - If YES → Scenario D: The same blocker applies to all sibling criteria on that platform
 
-7. **Conditional Criteria**: Some criteria have a "condition" field and are marked with "Condition Met" status in the rubric above. Criteria whose condition is NOT met have already been excluded from rescoring — you will not see them in the rubric. For criteria whose condition IS met, score them normally like any other criterion.
+7. **Conditional Criteria**: Some criteria have a "condition" field and are marked with "Condition Met" status in the rubric above. Criteria whose condition is NOT met remain in the rubric and response order; their points do not count toward totals. Preserve the supplied Condition Met status and return all criteria in order. For criteria whose condition IS met, score them normally like any other criterion.
 
 8. **Alternative Source Usage with Transparency**: When a criterion requires finding or extracting information from a specific source:
    - If the specified source has no relevant data or is inaccessible, and the agent uses an alternative source while **clearly disclosing this in its output**, award partial credit — do NOT give zero credit.
@@ -1459,17 +1461,17 @@ Screenshots are numbered in chronological order: Screenshot 1 is the earliest, a
 
 **Output Format:**
 Output a JSON object with an "items" list. Each item corresponds to a criterion (in order), and must contain:
-{{
+{
   "items": [
-    {{
+    {
       "criterion_idx": 0,
       "applicable_evidence": "Which screenshot evidence analyses are applicable to this criterion and what they show. When multiple screenshots show the same element, identify which is the LATEST. If no evidence is applicable, state that clearly.",
       "post_image_justification": "Reason about how the score should change (if at all) based on the applicable evidence. If keeping the same score, explain why.",
       "post_image_earned_points": <number between 0 and max_points for this criterion>
-    }},
-    ...one entry per criterion, in order from criterion 0 to criterion {num_criteria_minus_1}...
+    },
+    ...one entry per criterion, in order from criterion 0 to criterion $num_criteria_minus_1...
   ]
-}}
+}
 
 You MUST output exactly $num_criteria entries, one per criterion, in order.
 
@@ -1566,19 +1568,19 @@ This prompt should only penalize extraneous actions that produce lasting, materi
 - Task: "Buy a Sesame Street Elmo stuffed plush toy on Amazon." Agent finds the correct item is sold out, then searches for and adds a "Big Bird" plush to cart instead. The Scored Rubric Summary shows all existing criteria scored full points — no criterion penalized the wrong substitution. → The agent should have reported the item was unavailable instead of silently substituting a wrong product. This is a controllable failure with a material side effect (wrong item added to cart) that went completely unpenalized by existing criteria. Create a penalty.
 
 **Output Format:**
-{{
+{
   "reasoning": "Step-by-step reasoning about whether any extraneous actions with material side effects occurred. Consider: (1) Were any actions truly extraneous or just exploratory navigation? (2) Did any extraneous actions produce lasting material consequences (cart additions, transactions, enrollments)? (3) Check the Scored Rubric Summary: are any apparent issues ACTUALLY penalized by existing criteria (criterion scored less than full points)? If existing criteria scored full points despite the issue, the issue went unpenalized and warrants a new penalty. (4) Are any apparent issues already covered by Critical Point criteria? Conclude with your decision.",
   "requires_penalty": true/false,
   "penalty_criteria": [
-    {{
+    {
       "criterion": "Penalize <brief description of the extraneous action>",
       "description": "Detailed explanation of why this action was unsolicited and should be penalized",
       "max_points": <weight of this penalty, typically 1-3>,
       "post_image_justification": "Evidence from action history and screenshots showing the extraneous action",
       "post_image_earned_points": 0
-    }}
+    }
   ]
-}}
+}
 
 **Important:**
 - The "reasoning" field MUST contain your chain-of-thought analysis before deciding on penalties
@@ -1823,11 +1825,11 @@ $predicted_output
 *IMPORTANT*
 Please output an answer in pure JSON format according to the following schema. The JSON object must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIATE FROM THIS SCHEMA:
 
-{{
+{
     "primary_intent": str, # 1-2 sentence description of what the user fundamentally wanted to accomplish (strip away incidental details), AND what a reasonable user would or would not be flexible on for this specific task.
     "reasoning": str, # First, explicitly identify which aspects of the agent's output are nitpicks (minor formatting/labeling/precision differences that don't affect usefulness) vs. critical issues (wrong info, missing key elements, hallucinations, fundamentally wrong result). Be specific — if there are no critical issues, say so. Then, analyze to what extent the agent satisfied the primary intent of the task based on the applicable screenshot evidence and actions. Focus on the OUTCOME: were the results relevant, correct, and accurately reported? To what extent would the user be ok with the choices the agent made? Do NOT penalize the agent for process details (which site it used, navigation path, workarounds) as long as the outcome is correct.
     "output_success": bool # True if the Agent's actions largely complete the task as the user intended, False otherwise. Nitpicks alone (minor formatting, labeling, or precision differences) should NOT cause a False verdict — only critical issues should.
-}}
+}
 """
 
 FIRST_POINT_OF_FAILURE_PROMPT = (
@@ -1892,11 +1894,11 @@ Analyze the trajectory and identify ALL distinct failure points. For each failur
 Output your answer in pure JSON format according to the following schema. The JSON object \
 must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIATE FROM THIS SCHEMA:
 
-{{
+{
     "reasoning": str,  // Overall analysis of the trajectory, summarizing the agent's approach and where things went wrong (or confirming success).
     "has_failure": bool,  // True if at least one failure point was identified, False otherwise.
     "failure_points": [  // List of all distinct failure points found. Empty list if has_failure is False.
-        {{
+        {
             "step_numbers": str,  // Step number(s) where the failure occurred. Format: "INT" (e.g. "5"), "INT-INT" (e.g. "5-7"), or "INT,INT,..." (e.g. "5,8,12"). Never use N/A or descriptive text.
             "error_code": str,  // Error code from the taxonomy (e.g. "1.1", "2.3", "3.5").
             "error_category": str,  // Top-level category name (e.g. "Selection", "Hallucination", "Execution & Strategy", "Critical Point", "Side-Effect", "Tool Interaction").
@@ -1905,9 +1907,9 @@ must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIA
             "agent_reasoning": str,  // What the agent was thinking or trying to do when the error occurred.
             "evidence": str,  // Specific evidence from screenshots, tool output, or action history that supports this failure classification.
             "impact": str  // How this failure affected task completion.
-        }}
+        }
     ]
-}}
+}
 """
 )
 
@@ -2020,7 +2022,7 @@ events, future releases).
 Output your answer in pure JSON format according to the following schema. The JSON object \
 must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIATE FROM THIS SCHEMA:
 
-{{
+{
     "reasoning_is_ambiguous": str,  // Analysis of whether the task is ambiguous or underspecified, citing trajectory evidence where relevant.
     "is_ambiguous": bool,  // True if the task is ambiguous, False otherwise.
     "ambiguity_codes": [str],  // List of applicable sub-category codes, e.g. ["7.1"] or ["7.1", "7.2"]. Empty list if not ambiguous.
@@ -2028,7 +2030,7 @@ must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIA
     "reasoning_is_invalid": str,  // Analysis of whether the task is impossible, illegal, NSFW, or an RAI violation, citing trajectory evidence where relevant.
     "is_invalid": bool,  // True if the task is invalid, False otherwise.
     "invalid_task_codes": [str],  // List of applicable sub-category codes, e.g. ["8.1"] or ["8.2", "8.4"]. Empty list if not invalid.
-}}
+}
 """
 )
 
@@ -2238,7 +2240,7 @@ events, future releases).
 Output your answer in pure JSON format according to the following schema. The JSON object \
 must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIATE FROM THIS SCHEMA:
 
-{{
+{
     "reasoning_is_ambiguous": str,  // Analysis of whether the task is ambiguous or underspecified.
     "is_ambiguous": bool,  // True if the task is ambiguous, False otherwise.
     "ambiguity_codes": [str],  // List of applicable sub-category codes, e.g. ["7.1"] or ["7.1", "7.2"]. Empty list if not ambiguous.
@@ -2246,6 +2248,6 @@ must be parsable as-is. DO NOT OUTPUT ANYTHING OTHER THAN JSON, AND DO NOT DEVIA
     "reasoning_is_invalid": str,  // Analysis of whether the task is impossible, illegal, NSFW, or an RAI violation.
     "is_invalid": bool,  // True if the task is invalid, False otherwise.
     "invalid_task_codes": [str],  // List of applicable sub-category codes, e.g. ["8.1"] or ["8.2", "8.4"]. Empty list if not invalid.
-}}
+}
 """
 )

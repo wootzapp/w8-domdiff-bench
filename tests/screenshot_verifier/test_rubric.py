@@ -187,7 +187,7 @@ def test_rescore_validation_preserves_exact_repair_request(package, whole, case)
 
 
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
-@pytest.mark.parametrize("score", [0, 10, True, 2.5])
+@pytest.mark.parametrize("score", [0, 10, 2.5])
 def test_rescore_validation_accepts_numeric_values(package, score):
     import importlib
     module = importlib.import_module(f"w8bench.verifier.{package}.rubric_agent")

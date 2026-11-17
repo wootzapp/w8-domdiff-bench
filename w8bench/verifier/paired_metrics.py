@@ -7,6 +7,57 @@ import math
 import statistics
 from typing import Any
 
+from w8bench.usage import valid_token_component
+from w8bench.settings import comparison_settings, normalized_settings, require_same_settings
+
+
+def validate_settings_contracts(entries, *, label):
+    """Compare shared policy globally and full task bindings within each task."""
+    entries = list(entries)
+    present = [value for _, value in entries if value is not None]
+    if not present:
+        return
+    reference = comparison_settings(present[0])
+    tasks = {}
+    for task_id, value in entries:
+        require_same_settings(reference, comparison_settings(value), label=label)
+        if task_id in tasks:
+            require_same_settings(tasks[task_id], value, label=f"{label} task {task_id}")
+        else:
+            tasks[task_id] = value
+
+
+def validate_recorded_settings(entries):
+    entries = [(task_id, row) for task_id, row in entries if row.get("recording_available", True)]
+    validate_settings_contracts(((task_id, row.get("actor_effective_settings")) for task_id, row in entries), label="recorded actor")
+    evaluations = [(task_id, row) for task_id, row in entries if row.get("evaluation") is not None]
+    validate_settings_contracts(((task_id, row.get("evaluation_effective_settings")) for task_id, row in evaluations), label="recorded evaluation")
+    for _, row in entries:
+        actor, evaluation = row.get("actor_effective_settings"), row.get("evaluation_effective_settings")
+        if actor is not None and evaluation is not None:
+            require_same_settings(actor, evaluation.get("actor"), label="evaluation actor")
+        if actor is not None:
+            actual = row.get("actual_browser_source_version") or {}
+            pinned = actor.get("browser_source") or {}
+            shared = set(actual) & set(pinned)
+            require_same_settings({key: pinned[key] for key in shared}, {key: actual[key] for key in shared},
+                                  label="actual browser source against recorded pin")
+    if entries:
+        source = entries[0][1].get("actual_browser_source_version") or {}
+        for _, row in entries[1:]:
+            require_same_settings(source, row.get("actual_browser_source_version") or {}, label="actual browser source")
+
+
+def validate_completion_policy_versions(rows):
+    signatures = set()
+    for row in rows:
+        grade = row.get("completion") or {}
+        if not row.get("completion_grade_available") and set(grade) <= {"method", "verdict"}:
+            continue
+        signatures.add(tuple(grade.get(key) for key in ("completion_policy_version", "acceptance_policy_version")))
+    if len(signatures) > 1:
+        raise ValueError("completion policy versions differ across saved grade receipts")
+
 def _pass_at_k_bounds(n: int, confirmed: int, unknown: int, ks: list[int]) -> dict[str, dict[str, Any]]:
     estimates = {}
     for k in ks:
@@ -21,6 +72,8 @@ def _pass_at_k_bounds(n: int, confirmed: int, unknown: int, ks: list[int]) -> di
 def _index_pairs(pairs, pass_k):
     if not pairs:
         raise ValueError("no matched task pairs")
+    validate_completion_policy_versions([pair[mode] for pair in pairs for mode in ("dom", "screenshot")])
+    validate_recorded_settings([(pair["task_id"], pair[mode]) for pair in pairs for mode in ("dom", "screenshot")])
     by_task: dict[str, list[dict[str, Any]]] = defaultdict(list)
     identities = set()
     for pair in pairs:
@@ -32,7 +85,7 @@ def _index_pairs(pairs, pass_k):
     catalog_hashes = {pair.get("catalog_sha256", pair["dom"].get("catalog_sha256")) for pair in pairs}
     if len(catalog_hashes) != 1:
         raise ValueError("selected catalog hashes differ across arms, tasks or trials")
-    controls = {json.dumps(pair["shared_controls"], sort_keys=True) for pair in pairs}
+    controls = {json.dumps(normalized_settings(pair["shared_controls"]), sort_keys=True) for pair in pairs}
     if len(controls) != 1:
         raise ValueError("shared actor controls differ across trials/tasks")
     models = {model for pair in pairs for mode in ("dom", "screenshot")
@@ -55,9 +108,10 @@ def _validate_task_grades(task_id, attempts):
         raise ValueError(f"frozen evaluation rubric differs across trials for {task_id}")
     task_grades = [pair[mode]["completion"] for pair in attempts for mode in ("dom", "screenshot")
         if pair[mode]["completion"].get("method") != "ungraded"]
-    signatures = {json.dumps({key: grade.get(key) for key in (
+    signatures = {json.dumps(normalized_settings({key: grade.get(key) for key in (
         "rubric_sha256", "evidence_policy", "method", "judge_model", "returned_judge_model",
-        "judge_prompt_sha256", "judge_base_url", "max_output_tokens", "judge_schema_sha256")},
+        "judge_prompt_sha256", "judge_base_url", "max_output_tokens", "judge_schema_sha256",
+        "completion_policy_version", "acceptance_policy_version")}),
         sort_keys=True) for grade in task_grades}
     task_criterion_sets = {tuple(c["id"] for c in grade.get("criteria", [])) for grade in task_grades}
     if len(signatures) > 1 or len(task_criterion_sets) > 1:
@@ -104,7 +158,8 @@ def _mode_accounting(rows, successes, tokens_complete):
         "model_error_turns": sum(row["model_error_turns"] for row in rows),
         "parse_error_turns": sum(row["parse_error_turns"] for row in rows),
         "run_status_counts": dict(Counter(row["run_status"] for row in rows)),
-        "judge_usage": {key: sum(row.get("judge_usage", row["completion"].get("usage") or {}).get(key, 0) for row in rows)
+        "judge_usage": {key: sum(values) if (values := [value for row in rows
+            if valid_token_component(value := row.get("judge_usage", row["completion"].get("usage") or {}).get(key))]) else None
             for key in ("input_tokens", "output_tokens", "total_tokens")},
         "judge_calls": sum(row.get("judge_calls", row["completion"].get("judge_calls", 0)) for row in rows),
         "judge_calls_missing_usage": sum(row.get("judge_calls_missing_usage",
@@ -257,6 +312,28 @@ def _auxiliary_signals(rows):
     return auxiliary
 
 
+def _citation_metrics(rows):
+    diagnostics = {}
+    for verifier in ("dom_model", "screenshot_verifier"):
+        per_run = [{"run": row.get("run"), "recording_sha256": row.get("recording_sha256"),
+                    "citation_checks": row.get("citation_checks", {}).get(verifier)} for row in rows]
+        available = [entry["citation_checks"] for entry in per_run if isinstance(entry["citation_checks"], dict)
+            and all(type(entry["citation_checks"].get(key)) is int and entry["citation_checks"][key] >= 0
+                    for key in ("checked_citations", "valid_citations", "invalid_citations"))
+            and entry["citation_checks"]["valid_citations"] + entry["citation_checks"]["invalid_citations"] == entry["citation_checks"]["checked_citations"]]
+        counts = {key: sum(value[key] for value in available) if available else None
+                  for key in ("checked_citations", "valid_citations", "invalid_citations")}
+        quote_checks = [value for value in available if all(type(value.get(key)) is int and value[key] >= 0
+                        for key in ("quote_checked_citations", "quote_unavailable_citations"))]
+        quote_counts = {key: sum(value[key] for value in quote_checks) if quote_checks else None
+                        for key in ("quote_checked_citations", "quote_unavailable_citations")}
+        diagnostics[verifier] = {**counts,
+            **quote_counts, "quote_check_known_runs": len(quote_checks),
+            "invalid_citation_rate": counts["invalid_citations"] / counts["checked_citations"] if counts["checked_citations"] else None,
+            "checked_runs": len(available), "attempted_runs": len(rows), "per_run": per_run}
+    return diagnostics
+
+
 def _coverage_rates(rows):
     return dict(step_cap_hits=sum(row.get("step_cap_hit", False) for row in rows),
     step_cap_rate=sum(row.get("step_cap_hit", False) for row in rows) / len(rows),
@@ -313,6 +390,8 @@ def _group_metrics(target, mode, selected):
         definitively_graded_runs=definitive, auxiliary_verifiers=auxiliary,
         distributions=distributions, tokens_per_turn=tpt,
         judge_usage_streams=streams,
+        native_model_mismatches=[finding for row in rows for finding in row.get("native_model_mismatches", [])],
+        citation_checks=_citation_metrics(rows),
         cost_streams={"actor": {"usage": metrics.get("token_usage"),
             "usage_known_calls": metrics.get("token_usage_known_calls"),
             "calls": sum(row["model_turns"] for row in rows),
@@ -372,5 +451,7 @@ def aggregate(pairs: list[dict[str, Any]], *, pass_k: list[int] | None = None) -
         target = result["modes"] if category == "all" else result["categories"].setdefault(category, {})
         for mode in ("dom", "screenshot"):
             _group_metrics(target, mode, selected)
+    result["native_model_mismatches"] = [finding for pair in pairs for mode in ("dom", "screenshot")
+                                          for finding in pair[mode].get("native_model_mismatches", [])]
     _paired_outcomes(result, pairs)
     return result

@@ -2,7 +2,7 @@
 """Generate catalog rubric drafts, review their hashes, then freeze approved rubrics.
 
 Without --execute every stage is an offline, read-only preflight. Draft execution
-uses the unchanged screenshot-verifier rubric/dependency prompts. Review and
+uses the screenshot-verifier rubric/dependency prompts. Review and
 freeze are offline, and frozen rubrics are shared across arms and trials.
 """
 
@@ -22,7 +22,9 @@ from typing import Any
 from w8bench.verifier.clients.retry import GracefulRetryClient
 from w8bench.verifier.screenshot_verifier.rubric_agent import MMRubricAgent, MMRubricAgentConfig
 from .instrumentation import instrument_client_calls, usage_dict
-from .rubric_scoring import FARA_ACTION_DEFINITIONS, get_init_url_context
+from w8bench.settings import preparation_settings, require_same_settings
+from .rubric_scoring import FARA_ACTION_DEFINITIONS, UngradedVerifierError, get_init_url_context
+from .screenshot_verifier.prompts import SCORING_PROMPT_VERSION
 
 from .common import (
     CANONICAL_RUBRIC_MODEL,
@@ -44,7 +46,7 @@ DEFAULT_CONFIG = REPOSITORY_ROOT / "config"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Draft resume requires matching effective model, endpoint, prompt and task settings; credentials and config locations are excluded.")
     parser.add_argument("--catalog-file", type=Path, required=True)
     parser.add_argument("--draft-dir", type=Path, required=True)
     parser.add_argument("--rubric-dir", type=Path, required=True)
@@ -106,8 +108,12 @@ def _generate_draft(args: argparse.Namespace, task: dict, expected: dict, draft_
             draft_sha256=hashlib.sha256(draft_path.read_bytes()).hexdigest(),
             criterion_count=len(rubric["items"]), criterion_denominator=denominator)
     except BaseException as error:
-        receipt.update(status="interrupted" if isinstance(error, (KeyboardInterrupt, asyncio.CancelledError)) else "error",
+        status = ("interrupted" if isinstance(error, (KeyboardInterrupt, asyncio.CancelledError))
+            else "ungraded" if isinstance(error, UngradedVerifierError) else "error")
+        receipt.update(status=status,
             error_type=type(error).__name__)
+        if isinstance(error, UngradedVerifierError):
+            receipt.update(ungraded_reason=str(error), judge_fallback={"stage": error.stage, "reason": error.reason})
         raise
     finally:
         receipt.update(call_metrics=calls, token_usage={model: usage_dict(client) for model, client in clients.items()},
@@ -125,8 +131,11 @@ def _draft_task(args: argparse.Namespace, task: dict, catalog_hash: str, drafts:
     receipt_path = drafts / f"{task['task_id']}.metrics.json"
     previous = json.loads(receipt_path.read_text()) if receipt_path.exists() else None
     expected = {**task, "catalog_sha256": catalog_hash}
+    effective = preparation_settings(args.eval_config, task_hash=canonical_sha256(expected))
     if previous and previous.get("task_binding") != expected:
         raise ValueError(f"Draft receipt task changed: {task['task_id']}")
+    if previous:
+        require_same_settings(previous.get("effective_settings"), effective, label=f"rubric preparation {task['task_id']}")
     if draft_path.exists():
         payload = json.loads(draft_path.read_text())
         if any(payload.get(key) != value for key, value in expected.items()):
@@ -139,6 +148,8 @@ def _draft_task(args: argparse.Namespace, task: dict, catalog_hash: str, drafts:
         write_json(metrics_path, workflow)
         return
     receipt = {"task_binding": expected, "status": "running", "origin": "screenshot_generate_rubric",
+        "effective_settings": effective,
+        "scoring_prompt_version": SCORING_PROMPT_VERSION,
         "attempt_history": ([*previous.get("attempt_history", []),
             {key: value for key, value in previous.items() if key != "attempt_history"}] if previous else [])}
     write_json(receipt_path, receipt)
@@ -153,11 +164,14 @@ def _draft_catalog(args: argparse.Namespace, tasks: list, catalog_hash: str, dra
     workflow = {**preflight, "status": "running", "tasks": []}
     write_json(metrics_path, workflow)
     for task in tasks:
-        _draft_task(args, task, catalog_hash, drafts, workflow, metrics_path)
-    workflow["status"] = "complete"
+        try:
+            _draft_task(args, task, catalog_hash, drafts, workflow, metrics_path)
+        except UngradedVerifierError:
+            continue
+    workflow["status"] = "partial" if any(row["status"] == "ungraded" for row in workflow["tasks"]) else "complete"
     write_json(metrics_path, workflow)
     print(json.dumps(workflow, ensure_ascii=False, indent=2))
-    return 0
+    return 1 if workflow["status"] == "partial" else 0
 
 
 def _generation_summary(generation: dict, receipt_path: Path) -> dict:

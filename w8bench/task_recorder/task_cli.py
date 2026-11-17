@@ -7,6 +7,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+import math
 import os
 import re
 import signal
@@ -22,7 +23,7 @@ from typing import Any, Iterator
 from urllib.parse import urlsplit
 
 from .runner import load_env, safe_task_id
-from .recorder_support import RunnerError, write_json_lines, utc_now
+from .recorder_support import RunnerError, write_json_lines, utc_now, finite_positive_float
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -693,7 +694,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--previous-run-stop-timeout",
-        type=float,
+        type=finite_positive_float,
         default=DEFAULT_STOP_TIMEOUT_SECONDS,
         help="seconds to allow a previous task runner to shut down before it is killed",
     )
@@ -749,6 +750,9 @@ def _batch_schedule(
     model_name: str,
 ) -> list[dict[str, Any]]:
     """Build the complete ordered task, arm and trial denominator."""
+    from w8bench import settings
+    from .runner import parse_args as recorder_args
+    actor_defaults = recorder_args(["--env-file", str(args.env_file.resolve())])
     schedule = []
     for trial in range(1, args.trials + 1):
         for index, definition in enumerate(definitions):
@@ -758,7 +762,7 @@ def _batch_schedule(
                 rubric = args.rubric_dir.resolve() / f"{identity}.json" if args.rubric_dir else None
                 if not args.dry_run and (rubric is None or not rubric.is_file()):
                     raise RunnerError(f"missing frozen rubric: {rubric}")
-                schedule.append({"sequence": len(schedule)+1, "task_id": identity, "arm": mode,
+                row = {"sequence": len(schedule)+1, "task_id": identity, "arm": mode,
                     "trial": trial, "trials": args.trials, "arm_order": order,
                     "run_name": f"trial_{trial:04d}", "task": definition,
                     "catalog_sha256": catalog_hash,
@@ -766,6 +770,11 @@ def _batch_schedule(
                     "configuration": {"model": model_name, "max_turns": args.max_steps,
                         "max_output_tokens": args.max_output_tokens,
                         "viewport": [args.viewport_width, args.viewport_height],
+                        "settle_seconds": actor_defaults.settle_seconds,
+                        "snapshot_max_nodes": actor_defaults.snapshot_max_nodes,
+                        "snapshot_max_text_chars": actor_defaults.snapshot_max_text_chars,
+                        "agent_browser_timeout": actor_defaults.agent_browser_timeout,
+                        "transport_timeout": 180.0, "cdp_timeout": 90.0,
                         "image": os.environ.get("IMAGE"), "reasoning_effort": "medium",
                         "allow_expired": args.allow_expired,
                         "base_url": os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
@@ -778,7 +787,21 @@ def _batch_schedule(
                     "planning_only": planning_only,
                     "judge_model": args.judge_model,
                     "completed": False, "technical_outcome": "not_started", "grade_outcome": "ungraded",
-                    "grade_completed": False, "evaluation_outcome": "not_started"})
+                    "grade_completed": False, "evaluation_outcome": "not_started"}
+                rubric_hash = None
+                if rubric is not None and rubric.is_file():
+                    from w8bench.verifier.common import canonical_sha256
+                    provided = json.loads(rubric.read_text())
+                    canonical = provided.get("precomputed_rubric")
+                    if canonical is None:
+                        canonical = {"items": [{"criterion": item["id"], "description": item["description"],
+                            "max_points": 1, "earned_points": None, "justification": None}
+                            for item in provided["criteria"]]} if "criteria" in provided else provided
+                    rubric_hash = canonical_sha256(canonical)
+                row["effective_settings"] = settings.evaluation_settings(
+                    {"manifest": {"controls": row["configuration"]}}, eval_config=settings.ROOT / "config",
+                    rubric_hash=rubric_hash, judge_model=args.judge_model)
+                schedule.append(row)
     return schedule
 
 
@@ -788,6 +811,7 @@ def _batch_ledger(
     planning_only: bool,
 ) -> list[dict[str, Any]]:
     """Validate a resume schedule or publish its complete initial denominator."""
+    from w8bench.settings import normalized_settings, require_same_settings
     if ledger_path.exists() and not planning_only:
         ledger = [json.loads(line) for line in ledger_path.read_text().splitlines() if line.strip()]
         if any(row.get("planning_only") for row in ledger):
@@ -795,9 +819,18 @@ def _batch_ledger(
         if len(ledger) != len(schedule):
             raise RunnerError("saved schedule differs from requested task/arm/trial set")
         for saved, expected in zip(ledger, schedule):
-            if any(saved.get(key) != value for key, value in expected.items()
-                   if key not in {"completed", "technical_outcome", "grade_outcome", "grade_completed", "evaluation_outcome"}):
+            try:
+                require_same_settings(saved.get("effective_settings"), expected["effective_settings"], label="saved schedule")
+            except ValueError as error:
+                raise RunnerError(f"saved schedule configuration differs: {error}") from error
+            if (normalized_settings(saved.get("configuration")) != normalized_settings(expected["configuration"])
+                or normalized_settings(saved.get("task")) != normalized_settings(expected["task"])
+                or any(saved.get(key) != value for key, value in expected.items()
+                    if key not in {"completed", "technical_outcome", "grade_outcome", "grade_completed", "evaluation_outcome",
+                        "effective_settings", "configuration", "task", "rubric"})):
                 raise RunnerError("saved schedule configuration differs; choose a new run name")
+        for saved, expected in zip(ledger, schedule):
+            saved["rubric"] = expected["rubric"]
     else:
         ledger = schedule
         write_json_lines(ledger_path, ledger)  # Commit the entire denominator before starting work.
@@ -860,7 +893,9 @@ def _execute_batch_actor(
     command = _batch_actor_command(args, row, batch_dir, catalog_path, model_name)
     try:
         with log_path.open("a", encoding="utf-8") as log:
-            result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+            environment = {**os.environ,
+                "W8_EXPECTED_ACTOR_SETTINGS": json.dumps(row["effective_settings"]["actor"], sort_keys=True)}
+            result = subprocess.run(command, cwd=ROOT, env=environment, stdout=log, stderr=subprocess.STDOUT, check=False)
         row["exit_code"] = result.returncode
         final_path = directory / "final.json"
         row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
@@ -1149,6 +1184,7 @@ def run_batch(args: argparse.Namespace) -> int:
     with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
         ledger = _batch_ledger(ledger_path, schedule, planning_only)
         _guard_batch_processes(batch_dir, ledger)
+        write_json_lines(ledger_path, ledger)
         if args.dry_run:
             print(f"{'Planning-only schedule' if planning_only else 'Schedule'}: {ledger_path}; {len(ledger)} rows; no tasks started" +
                 ("; execution requires frozen rubrics" if planning_only else ""))
@@ -1158,7 +1194,7 @@ def run_batch(args: argparse.Namespace) -> int:
                 raise RunnerError("frozen batch catalog changed after scheduling")
             directory = Path(row["recording"])
             if not row["completed"]:
-                _run_batch_actor(args, row, ledger, ledger_path, batch_dir, catalog_path, model_name, directory)
+                _run_batch_actor(args, row, ledger, ledger_path, batch_dir, frozen_catalog, model_name, directory)
             # Record both arms back to back before any grading latency.
             if row["arm_order"] == 2:
                 _grade_batch_pair(args, row, ledger, ledger_path, batch_dir)
@@ -1204,8 +1240,8 @@ def main(argv: list[str] | None = None) -> int:
         raise RunnerError("actor output limit must be exactly 10000 tokens")
     if args.max_steps > 200:
         raise RunnerError("actor turn budget must be positive and no greater than 200")
-    if args.previous_run_stop_timeout < 0:
-        raise RunnerError("--previous-run-stop-timeout must not be negative")
+    if not math.isfinite(args.previous_run_stop_timeout) or args.previous_run_stop_timeout <= 0:
+        raise RunnerError("--previous-run-stop-timeout must be finite and positive")
     if args.trials is not None:
         return run_batch(args)
     return run_single_task(args)

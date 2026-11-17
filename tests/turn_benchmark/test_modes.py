@@ -702,7 +702,7 @@ def test_live_capture_preserves_scroll_and_focus(tmp_path):
                 bundle = await capture.capture_bundle(cdp, tmp_path/mode/"steps"/"step_001", max_nodes=7000,
                     max_text_chars=200000, observation_mode=mode)
                 if mode == "dom":
-                    driver = AgentBrowserClient(args.agent_browser_command, session="paired-capture-test",
+                    driver = AgentBrowserClient(args.agent_browser_command, session="w8-domdiff-bench-test",
                         cdp_url=args.agent_browser_cdp_url, timeout=args.agent_browser_timeout)
                     await driver.connect()
                     try:
@@ -1468,7 +1468,7 @@ def test_actor_env_rejects_duplicate_or_conflicting_model_values(tmp_path, monke
         runner.load_env(envfile)
 
 
-@pytest.mark.parametrize("returned", ["gpt-6.1-sol", "gpt-6.1-sol", "gemini-3.1-pro-preview-mini", None])
+@pytest.mark.parametrize("returned", ["gpt-6.1-sol", "gemini-3.1-pro-preview-mini", None])
 @pytest.mark.parametrize("mode", ["dom", "screenshot"])
 def test_non_gemini_actor_response_stops_before_any_action(run_pair, tmp_path, monkeypatch, mode, returned):
     calls = []
@@ -2165,15 +2165,19 @@ def test_single_task_launcher_preserves_ownership_and_shutdown(tmp_path, monkeyp
     (["one"], ["--observation-mode", "dom"], "task selection requires"),
     (["one"], ["--observation-mode", "dom", "--judge-model", "gpt-6.1-sol"], "batch grading options require --trials"),
     (["one"], ["--observation-mode", "dom", "--rubric-dir", "rubrics", "--judge-model", "gpt-6.1-sol"], "batch grading options require --trials"),
-    (["one"], ["--previous-run-stop-timeout", "-1"], "must not be negative"),
+    (["one"], ["--previous-run-stop-timeout", "-1"], "must be finite and positive"),
 ])
-def test_launcher_validates_selection_before_launch(tmp_path, monkeypatch, selectors, options, message):
+def test_launcher_validates_selection_before_launch(tmp_path, monkeypatch, capsys, selectors, options, message):
     monkeypatch.delenv("TASK_CATALOG_FILE", raising=False)
     monkeypatch.delenv("TASK_CATALOG_URL", raising=False)
     monkeypatch.setattr(task_cli.subprocess, "Popen", lambda *args, **kwargs: pytest.fail("invalid selection launched a process"))
     output = tmp_path / "recordings"
-    with pytest.raises(RunnerError, match=message):
+    argument_error = "--previous-run-stop-timeout" in options
+    with pytest.raises(SystemExit if argument_error else RunnerError) as caught:
         task_cli.main([*selectors, "--env-file", str(tmp_path / "absent.env"), "--output-dir", str(output), *options])
+    assert message in (capsys.readouterr().err if argument_error else str(caught.value))
+    if argument_error:
+        assert caught.value.code == 2
     assert not output.exists()
 
 

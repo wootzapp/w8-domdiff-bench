@@ -20,7 +20,10 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .recorder_support import RunnerError, append_json_line, utc_now, write_json
+from .recorder_support import (
+    RunnerError, append_json_line, utc_now, write_json,
+    finite_nonnegative_float, finite_positive_float,
+)
 from .capture import (
     CDPClient, CDPError, CaptureBundle, action_progress, action_observation_context,
     agent_browser_target_identity, attach_agent_browser_observation,
@@ -614,7 +617,11 @@ def _validate_run_args(args: argparse.Namespace, mode: str) -> None:
         raise RunnerError("actor output limit must be exactly 10000 tokens")
     if args.max_steps > 200:
         raise RunnerError("actor turn budget must be positive and no greater than 200")
-    if args.settle_seconds < 0 or args.snapshot_max_nodes <= 0 or args.snapshot_max_text_chars <= 0:
+    if not math.isfinite(args.settle_seconds) or args.settle_seconds < 0:
+        raise RunnerError("--settle-seconds must be finite and nonnegative")
+    if not math.isfinite(args.agent_browser_timeout) or args.agent_browser_timeout <= 0:
+        raise RunnerError("--agent-browser-timeout must be finite and positive")
+    if args.snapshot_max_nodes <= 0 or args.snapshot_max_text_chars <= 0:
         raise RunnerError("invalid capture budget or settling delay")
     if not args.capture_only and not args.task:
         raise RunnerError("--task is required")
@@ -662,6 +669,10 @@ def _recording_manifest(args, task, profile, mode, viewport):
             "reasoning_effort": "medium", "temperature": None, "memory_max_chars": MAX_TASK_MEMORY_CHARS,
             "max_turns": args.max_steps, "max_output_tokens": args.max_output_tokens,
             "viewport": list(viewport), "settle_seconds": args.settle_seconds,
+            "snapshot_max_nodes": args.snapshot_max_nodes,
+            "snapshot_max_text_chars": args.snapshot_max_text_chars,
+            "agent_browser_timeout": args.agent_browser_timeout,
+            "transport_timeout": 180.0, "cdp_timeout": 90.0,
             "browser_lang": args.browser_lang, "browser_accept_language": args.browser_accept_language,
             "action_vocabulary": ACTION_SCHEMA["properties"]["action"]["enum"],
             "actor_protocol": ACTOR_PROTOCOL,
@@ -678,6 +689,14 @@ def _recording_manifest(args, task, profile, mode, viewport):
         "max_text_chars": args.snapshot_max_text_chars, "in_viewport_only": True,
         "action_snapshot_policy": "viewport_bbox_overlap_v1"}
     manifest["renderer_versions"] = renderer_versions()
+    from w8bench.settings import actor_settings, browser_source_version, require_same_settings
+    manifest["effective_settings"] = actor_settings(manifest["controls"], browser_source=browser_source_version())
+    scheduled = os.environ.get("W8_EXPECTED_ACTOR_SETTINGS")
+    if scheduled:
+        try:
+            require_same_settings(json.loads(scheduled), manifest["effective_settings"], label="scheduled actor")
+        except (ValueError, TypeError) as error:
+            raise RunnerError(str(error)) from error
     return manifest
 
 
@@ -1001,7 +1020,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "AGENT_BROWSER_COMMAND",
             container_agent_browser_command(default_container_name),
         ),
-        help="w8-core agent-browser command used for all task interactions",
+        help="w8-core agent-browser command used for DOM reference-targeted actions",
     )
     parser.add_argument(
         "--agent-browser-cdp-url",
@@ -1013,14 +1032,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--agent-browser-timeout",
-        type=float,
-        default=float(os.environ.get("AGENT_BROWSER_TIMEOUT", "90")),
+        type=finite_positive_float,
+        default=os.environ.get("AGENT_BROWSER_TIMEOUT", "90"),
     )
     parser.add_argument("--output-dir")
     parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
     parser.add_argument("--max-turns", "--max-steps", dest="max_steps", type=int, default=200,
         help="positive actor turn budget, at most 200")
-    parser.add_argument("--settle-seconds", type=float, default=float(os.environ.get("STEP_SETTLE_SECONDS", "1.0")))
+    parser.add_argument("--settle-seconds", type=finite_nonnegative_float, default=os.environ.get("STEP_SETTLE_SECONDS", "1.0"))
     # Raw structured-snapshot budgets are explicit and independently adjustable.
     # A capture that reaches them reports ChromiumRL's own truncated statistics.
     parser.add_argument("--snapshot-max-nodes", type=int, default=int(os.environ.get("SNAPSHOT_MAX_NODES", "7000")))

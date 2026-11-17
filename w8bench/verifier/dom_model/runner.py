@@ -7,6 +7,7 @@ import asyncio
 import json
 import logging
 import time
+from w8bench.settings import native_stage_settings, guard_result_settings
 from datetime import datetime, timezone
 import os
 from pathlib import Path
@@ -15,7 +16,8 @@ from typing import Any
 from w8bench.verifier.clients.retry import GracefulRetryClient
 from .rubric_agent import MMRubricAgent, MMRubricAgentConfig
 from ..models import MMRubricOutcomeResult, MMRubricResult
-from ..rubric_scoring import FARA_ACTION_DEFINITIONS
+from ..rubric_scoring import FARA_ACTION_DEFINITIONS, UngradedVerifierError, ungraded_result
+from .prompts import SCORING_PROMPT_VERSION
 
 from ..common import (
     CanonicalRubric,
@@ -198,21 +200,27 @@ def _dom_result(
     args, task_data, preflight, rubric_result, outcome_result, process_pass, score,
     agent, frozen, action_client, judge_client, started, raw,
 ) -> dict[str, Any]:
-    return {
-        "task_id": task_data["id"],
-        "verifier": "dom_model",
-        "evidence_mode": "dom_model",
+    fields = ungraded_result(raw["ungraded_error"]) if "ungraded_error" in raw else {
+        "status": "complete",
         "score": score,
-        "success_criterion": args.success,
         "rubric_score": rubric_result.score,
         "rubric_total_max_points": rubric_result.total_max_points,
         "rubric_total_earned_points": rubric_result.total_earned_points,
         "rubric_is_success": process_pass,
         "outcome": outcome_result.model_dump(mode="json"),
+    }
+    return {
+        "task_id": task_data["id"],
+        "verifier": "dom_model",
+        "evidence_mode": "dom_model",
+        **fields,
+        "scoring_prompt_version": SCORING_PROMPT_VERSION,
+        "success_criterion": args.success,
         "preflight": preflight,
         **rubric_receipt(path=str(frozen.path), sha256=frozen.sha256, rubric=frozen.precomputed_rubric),
         "rubric_generation_calls": 0,
         "dom_model_evidence_audit": getattr(agent, "evidence_audit", {}),
+        "citation_checks": getattr(agent, "evidence_audit", {}).get("citation_checks"),
         "evaluation_context": task_data.get("evaluation_context"),
         "validity_date": agent.config.validity_date,
         "token_usage": {
@@ -260,18 +268,26 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "preflight": preflight,
         }
     eval_config = Path(args.eval_config).resolve(strict=True)
+    frozen = load_frozen_rubric(args.rubric_file, expected_task_id=task_data["id"])
+    effective = native_stage_settings(args, "dom_model", rubric_hash=frozen.sha256)
+    guard_result_settings(Path(args.output) / "result.json", effective, label="DOM verifier resume")
     action_client, judge_client, agent = _dom_agent(args, task_data, eval_config)
     datapoint = create_datapoint(task_data, trajectory)
     agent_input = MMRubricAgent._extract_input_from_datapoint(
         datapoint, evidence_dir=str(task_dir), redo_eval=args.redo_eval
     )
-    raw = asyncio.run(agent._generate_reply(agent_input))
-    rubric_result, outcome_result, process_pass, score = _dom_scored_results(agent, raw, args)
+    try:
+        raw = asyncio.run(agent._generate_reply(agent_input))
+        rubric_result, outcome_result, process_pass, score = _dom_scored_results(agent, raw, args)
+    except UngradedVerifierError as error:
+        raw = {"ungraded_error": error}
+        rubric_result = outcome_result = process_pass = score = None
     frozen = load_frozen_rubric(args.rubric_file, expected_task_id=task_data["id"])
     result = _dom_result(
         args, task_data, preflight, rubric_result, outcome_result, process_pass, score,
         agent, frozen, action_client, judge_client, started, raw,
     )
+    result["effective_settings"] = effective
     output_dir = Path(args.output).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = write_json(output_dir / "result.json", result)
@@ -280,7 +296,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Invalid earned points exhaust validation as ungraded; model IDs and DOM citations are diagnostic records. Existing outputs require matching effective settings.")
     parser.add_argument("--input", required=True)
     parser.add_argument("--rubric-file", required=True)
     parser.add_argument("--generation-metrics", required=True)
