@@ -33,12 +33,12 @@ Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` and the audit models shown in
 `.env.example`. Completion uses an explicit `gpt-6.1-sol` judge.
 `GEMINI_BASE_URL` selects the actor endpoint; `OPENAI_BASE_URL` selects the
 OpenAI endpoint.
-Set `IMAGE` to a browser image tag or immutable digest. The hosted
-`wootzapp/w8-core` image provides the browser runtime; the runbook also describes
-[building an image](docs/runbook.md#browser-image-build).
+Build the browser image as `w8-core:domdiff-bench`, the default `IMAGE` value,
+using the [image build instructions](docs/runbook.md#browser-image-build).
+An explicit tag or immutable digest can select another prepared browser build.
 
-The default container is `w8-turns-browser-engine`, with CDP on 49345, noVNC on
-16291 and VNC on 16011. The launcher starts each attempt with a fresh browser
+The default container is `w8-core-browser-engine`, with CDP on 49335, noVNC on
+16191 and VNC on 15911. The launcher starts each attempt with a fresh browser
 profile and verifies service ownership. Script wrappers use this directory's
 `.venv/bin/python`. Check [browser status](docs/runbook.md#browser-runtime)
 before recording.
@@ -63,6 +63,11 @@ Set `BENCH_TRIALS` to a positive integer. Without positional task IDs, the comma
 selects every task in the explicit local catalog. Each batch requires frozen
 rubrics and the completion judge. After each adjacent actor pair, every run gets
 common completion, both auxiliary verifiers and a within-run evidence-loss audit.
+Returned completion/audit model IDs and complete responses are validated;
+refusals remain ungraded with their usage retained. Native model mismatches and
+DOM citation checks are diagnostics. Exhausted native scoring has null scores
+with an explicit reason. See the [evaluation protocol](docs/evaluation-protocol.md)
+for acceptance, repair budgets and coverage.
 
 ```sh
 : "${BENCH_TRIALS:?Set a positive trial count per arm}"
@@ -80,8 +85,8 @@ Both actors of a task/trial run back to back, alternating which arm starts.
 
 For a subset, add positional IDs such as `task_08 task_12 task_23`.
 The launcher accepts any frozen local catalog and task IDs. The schedule binds
-the selected definitions, rubric hashes, model settings, recorder source and
-output paths. Use a distinct run name for a different task set or configuration.
+the selected definitions, rubric hashes, effective settings, browser source
+provenance and output paths. Use a distinct run name for a different task set or configuration.
 
 ## Outputs
 
@@ -121,6 +126,9 @@ Comparison runs offline and includes startup failures and missing recordings in
 the scheduled denominator. Reports contain completion, turns, tokens, grading
 coverage, unmatched arms, tokens per turn, directional losses by driver/category and pass@k. Shared settings, browser provenance, capture
 policies and grading controls are checked across arms and trials.
+The [effective settings contract](docs/evaluation-protocol.md#effective-settings-contract)
+binds model routes, request limits, prompts, rubrics and browser source provenance;
+credentials, ports, deployment names and file locations do not define that contract.
 
 Actor and judge usage are reported separately. Cached-input and reasoning tokens
 are subsets of provider totals. Incomplete recordings or missing usage produce

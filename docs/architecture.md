@@ -118,15 +118,25 @@ writes a separate secondary grade.
 
 Both auxiliary verifiers grade each run independently using its own evidence.
 The DOM package packs and analyses DOM-model text; the screenshot package
-selects and analyses images. They retain original process/outcome scoring and
+selects and analyses images. They use native process/outcome policies and
 separate runtime penalties. The audit inventories both source formats and
 adjudicates directional losses and verifier interpretation errors. Its shared
 context includes only recorded execution facts and verified observed URLs.
+Native earned points require finite nonboolean values within each criterion's
+weight; exhausted scoring is ungraded with null scores and a reason. Native
+model-ID mismatches and DOM citation checks are separate diagnostics. Completion
+and audit responses require matching returned IDs and complete output. All failed
+attempt usage remains in receipts; ungraded audits have no pooled loss rate.
 
 Available states retain their source IDs and remain in their own verifier even
 when the other format is missing. Directional audit decisions use only complete,
 stable paired states. Staged evidence, judge results and coverage live outside
 the immutable actor recording and are bound by hashes.
+Resume and comparison use the normalized
+[effective settings contract](evaluation-protocol.md#effective-settings-contract),
+including request policies, prompt/schema identities, rubric bindings and browser
+source provenance. Credentials and deployment locations are excluded from this
+behavioral contract.
 
 Actor-reported success, technical outcome and independent completion are
 separate fields. Aggregation uses the schedule as its denominator, exposes

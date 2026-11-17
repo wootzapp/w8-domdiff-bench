@@ -26,6 +26,24 @@ must remain consistent across the selected tasks and trials. Requested model IDs
 and returned model IDs are both retained. Environment variables take precedence
 over `.env` values.
 
+## Effective settings contract
+
+`effective-settings/v1` records the behavior that must remain consistent on
+resume and across compared arms/trials: configured models and providers, routes
+and normalized base URLs, reasoning and temperature, output caps, turn and memory
+limits, browser/capture controls, prompt/schema hashes and versions, frozen rubric
+hashes, normalized endpoint-configuration content hashes, browser protocol pins
+and available actual browser source revisions. Rubric hashes bind one task;
+different tasks naturally have different rubric hashes.
+
+Credentials, connection ports, container and Compose names, image names/tags and
+file locations do not define behavioral settings. Normalization excludes those
+deployment details while preserving the endpoint host/path and actual browser
+source provenance. Source receipts and artifact hashes remain available for
+integrity checks. A changed effective contract is refused before new work or a
+cached stage is reused, with the differing fields identified. Relocating an
+identical configuration does not change its normalized content hash.
+
 ## Scheduling and execution
 
 Trial count is a positive integer supplied through `--trials`; it has no default.
@@ -75,7 +93,8 @@ Missing passive artifacts are identified as unavailable rather than substituted.
 
 The judge is explicitly selected as `--judge-model gpt-6.1-sol`; it never derives
 from the actor. Model grading uses medium reasoning, a 10,000-token output budget
-and no action tools or automatic retry. `--execute` enables full evaluation;
+and no action tools. Completion has one request per grading attempt and no
+automatic response-repair loop. `--execute` enables full evaluation;
 without it, the command performs a read-only preflight.
 
 Each criterion receives `success`, `failure` or `uncertain`, a reason and existing
@@ -94,6 +113,12 @@ evidence policy, judge prompt/schema hashes, model IDs, endpoint and output budg
 It stores criterion verdicts, response ID and returned usage. The recording is
 checked again before saving the grade. A failed, malformed or incomplete judge
 response yields an ungraded result with `judge_error` and any returned usage.
+The shared `returned-model-acceptance/v2` policy accepts the exact case-sensitive
+configured ID or that ID with a numeric/date/version suffix, such as
+`gpt-6.1-sol-2026-11-17` or `gpt-6.1-sol-v2`. A different family such as
+`gpt-6.1-sol-mini`, an absent ID, incomplete status or truncation is refused.
+Refused attempts retain their usage and reason. An explicit evaluation resume may
+retry the ungraded stage under the same effective settings.
 
 The optional `actor_native` policy uses the actor's observation type: DOM-model
 text plus interactive references, or screenshots. It writes
@@ -121,8 +146,39 @@ All judges receive the same verified observed-URL timeline, including the initia
 state. Auxiliary verifiers and the audit use the recorded task-validity date.
 Shared history contains execution facts, not actor notes or DOM-derived target
 descriptions. Evidence selection,
-scoring, penalties and citation rules retain their original semantics. Judge
-repair calls, exhausted fallbacks and unknown usage are reported separately.
+scoring and penalties use the native rubric policies. Native returned-model
+mismatches are diagnostic and do not themselves refuse a grade. Every native
+call retains configured/requested/returned IDs and its stage path.
+
+Baseline, rescore and penalty earned points must be finite nonboolean numbers
+within `0..max_points`, with a positive finite nonboolean weight. Missing or
+invalid values enter the existing response-repair loop. Exhausted scoring writes
+an ungraded result with null scores and a `judge_fallback` reason; it cannot
+reuse a baseline or invent zero. Authentication exhaustion is terminal for the
+stage, retains all attempt usage and permits the batch to continue. Rubric draft
+generation similarly records an ungraded task, continues other tasks and reports
+a partial catalog with a nonzero exit status.
+
+Native prompts identify their JSON output contract as
+`native-rubric-output-contract/v2`. Unmet conditional criteria remain in response
+order and are excluded from score totals. DOM `citation_checks` record supplied
+state identity and exact quoted-text checks without changing accepted analyses,
+requests, scores or audit feedback. Diagnostic records bypass score normalization;
+the evaluation controller copies them directly into the stage record for reporting.
+Quote coverage is
+explicit when citations contain only free prose. DOM prompts contain photo
+examples despite textual evidence limits; taxonomy headers retain their source
+wording. Programmatic `action_definitions=None` is unsupported outside the CLI
+runners, which supply explicit definitions.
+
+Inventory and adjudication each have three validation attempts. Their returned
+IDs and completion status use the shared acceptance policy. Failed/refused
+attempts keep usage and error receipts; ungraded results have no evidence-loss
+rate and cannot enter pooled loss denominators. Audit schema
+`automated-evidence-audit/v7` and prompt
+`paired-capture-eligible-state-adjudication/v7` identify this contract. Judge repair
+calls, ungraded stages, citation diagnostics and unknown usage are reported
+separately.
 
 | Measurement | Definition | Artifacts |
 |---|---|---|

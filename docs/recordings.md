@@ -191,3 +191,13 @@ receipt, `paired_completion.json`, both verifier result/metrics/log folders and
 `evidence_audit.json` in the sibling evaluation tree. Completed result hashes are
 checked before reuse. Primary completion, auxiliary signals, fallback quality,
 audit coverage and every cost stream remain distinct.
+Each stage also records its normalized effective settings and returned-model
+diagnostics. Ungraded stages retain failure reasons and attempt usage for resume;
+native score fields remain null after scoring exhaustion. DOM citation diagnostics
+live in `citation_checks` and `dom_model_evidence_audit.citation_checks` in the
+native result. The controller copies them directly into the evaluation stage;
+normalization and audit inputs do not consume them. Audit receipts use
+`automated-evidence-audit/v7` and
+`paired-capture-eligible-state-adjudication/v7`; an ungraded audit supplies no loss
+rate. See the [effective settings contract](evaluation-protocol.md#effective-settings-contract)
+for the settings compared across resumes, arms and trials.

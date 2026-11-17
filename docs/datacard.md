@@ -33,7 +33,7 @@ the shared action driver.
 
 | Control | Configuration |
 | --- | --- |
-| Actor model and endpoint | `ACTOR_MODEL` is the sole actor-model configuration and must identify `gemini-3.1-pro-preview`; the same value is used across arms. A different returned model family stops the run. `GEMINI_BASE_URL` selects the endpoint. |
+| Actor model and endpoint | `ACTOR_MODEL` is the sole actor-model configuration and must identify `gemini-3.1-pro-preview`; the same value is used across arms. Returned IDs must be `gemini-3.1-pro-preview`, optionally followed by `-MM-DD` or `-YYYY-MM-DD`. `GEMINI_BASE_URL` selects the endpoint. |
 | Model-turn budget | 200 by default and at most 200; lower positive budgets must match across compared runs. |
 | Maximum actor output | Exactly 10,000 tokens, including reasoning. |
 | Task memory | At most 8,000 characters. |
@@ -50,6 +50,9 @@ Comparison checks shared model settings, task contracts, budgets, schema,
 source/capture controls, browser build/environment, profile freshness and grading
 controls. Browser images should be selected by immutable identity; recorded image
 IDs establish the build used. Matching settings do not freeze live-site content.
+The [effective settings contract](evaluation-protocol.md#effective-settings-contract)
+binds request behavior and browser source provenance while excluding credentials,
+deployment names, ports and file locations.
 
 ## Recording contract
 
@@ -79,6 +82,12 @@ DOM text, action records, final answer and technical status. A frozen task rubri
 is reused across arms and trials. `completion.json` records criterion verdicts,
 evidence policy, rubric/prompt hashes, configured and returned judge models and
 judge usage. The judge must be explicitly set to `gpt-6.1-sol`, with 10,000 maximum output tokens and `medium` reasoning. It never falls back to the actor model.
+Completion makes one request per grading attempt. Returned IDs use the shared
+`returned-model-acceptance/v2` matcher: the exact case-sensitive configured ID or
+that ID followed by a numeric, date or `-vN`/`-VN` version suffix. For example,
+`gpt-6.1-sol-2026-11-17` and `gpt-6.1-sol-v2` match; `gpt-6.1-sol-mini` does not.
+Missing IDs, mismatches and incomplete/truncated responses are ungraded; returned
+usage remains accounted for, and an explicit resume may retry the stage.
 
 The optional `actor_native` policy uses the actor's observation type and writes
 `completion_actor_native.json`. It is a modality policy rather than a replay of
@@ -117,8 +126,9 @@ the exact catalog SHA-256. Manual tasks without a catalog record `null`.
 
 Internal curation records date-sensitive task deadlines. Scheduling refuses a task
 after its inclusive UTC `valid_until` date unless `--allow-expired` is set. The
-schedule and run manifest record the check date and any override. Historical search
-windows retain their specified dates; rolling runtime values have no fixed expiry.
+schedule records the deadline and any override; the run manifest also records
+the check date. Historical search windows retain their specified dates; rolling
+runtime values have no preset expiry.
 
 ## Scope
 
@@ -142,6 +152,15 @@ Inventory uses `gemini-3.1-pro-preview`; evidence-loss adjudication and common
 completion use `gpt-6.1-sol`. Verifier and audit output limits remain unset;
 the 115,000-token verifier input guard remains active. Images use high detail.
 Task-only validity uses a recorded UTC date frozen from the run.
+Native verifier returned IDs are recorded for every call and compared with the
+same matcher as diagnostics. A native mismatch does not itself refuse a grade;
+completion, inventory and adjudication do refuse mismatches. Finite nonboolean
+earned points must lie between zero and the criterion's positive finite weight.
+Invalid numeric responses use the existing repair budget. Exhausted scoring or
+authentication produces an ungraded result with an explicit `judge_fallback`
+reason, null score fields and retained call/usage receipts; baseline scores never
+substitute for an unavailable rescore. Authentication refresh consumes the
+configured endpoint attempt budget and cannot loop indefinitely.
 
 Staged screenshot and DOM inputs always originate from one recording hash.
 Each verifier sees every state available in its own format, including states
@@ -149,6 +168,16 @@ flagged for navigation. Missing-format states remain explicit gaps with their
 original IDs; full action history and observed URLs are preserved. This declared
 input-contract adaptation leaves top-K, scoring, penalties and citation rules
 unchanged, and contiguous runs preserve original loader behavior.
+The native JSON output contract is `native-rubric-output-contract/v2`: examples
+use single JSON braces, criterion bounds are rendered, and unmet conditional
+criteria retain their response positions while contributing no points to totals.
+DOM `citation_checks` record state-ID and extractable exact-quote diagnostics,
+including quote coverage. Citations are not enforced. The diagnostic records
+bypass score normalization and do not alter requests, scores or audit feedback.
+DOM photo examples and taxonomy source headers retain their original text;
+photo examples cannot establish pixel facts absent from the DOM text.
+`action_definitions=None` is unsupported for programmatic calls outside the
+CLI runners, which supply explicit action definitions.
 
 Directional-loss decisions use the same state IDs for both formats, requiring a
 complete paired capture and no navigation during capture. Unverified URLs remain explicitly unavailable in both shared inputs.
@@ -160,9 +189,12 @@ full audit rather than being replaced with invented analyses.
 Outcome grading interprets dates from the task and recorded evidence. Unresolved
 years are disclosed in the reasoning rather than inferred from a collection year.
 
-Audit receipts use `automated-evidence-audit/v6` with prompt version
-`paired-capture-eligible-state-adjudication/v6`, identifying the shared-URL and
-eligible-state input contract.
+Audit receipts use `automated-evidence-audit/v7` with prompt version
+`paired-capture-eligible-state-adjudication/v7`, identifying the shared-URL,
+eligible-state and response-acceptance contracts. Inventory and adjudication each
+allow three validation attempts; refusal, malformed output and exhausted repair
+retain their attempt receipts and usage. An ungraded audit has no pooled loss
+rate. Resume may retry it without repeating actor execution.
 
 Screenshot loss and DOM loss are computed separately inside each actor run.
 Report all four values per task/trial side by side, retaining actor identity.

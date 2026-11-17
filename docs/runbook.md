@@ -17,11 +17,21 @@ preflight. Both native package checks cover their shared verifier dependencies.
 The checkout supplies the catalog, configuration and Compose files.
 
 Configure `.env` with the browser image, container identity, ports and model
-settings. To select available ports for an isolated installation:
+settings. The default image is `w8-core:domdiff-bench`; prepare it using the
+[browser image build](#browser-image-build) before starting the service.
+The example environment names the Compose project `w8-recorder` and the
+container `w8-core-browser-engine`. Compose derives its default network name
+from the project name; no named volumes are configured.
+To select available ports for an isolated installation:
 
 ```sh
 .venv/bin/python -m w8bench.task_recorder.browser_runtime configure
 ```
+
+Configuration prefers CDP 49335, noVNC 16191 and VNC 15911, selecting distinct
+free ports when a preferred port is occupied. A new isolated environment uses
+`w8-recorder-<checkout-id>` and `w8-core-browser-<checkout-id>` for its project
+and container, with a numeric suffix if that container name is occupied.
 
 Start and inspect the browser service:
 
@@ -32,7 +42,7 @@ docker compose --env-file .env ps
 ```
 
 Status checks the container, CDP, noVNC and bundled agent-browser and prints their
-URLs. Default ports are CDP 49345, noVNC 16291 and VNC 16011. The task launcher
+URLs. Default ports are CDP 49335, noVNC 16191 and VNC 15911. The task launcher
 recreates its own service with a fresh profile for each attempt and checks Compose
 ownership. Run one batch at a time and keep separate single-task commands off the
 same browser while a batch is active.
@@ -93,8 +103,8 @@ individual startup, recorder or grading errors.
 ## Resume
 
 Repeat the same command and run name. The saved schedule must match the requested
-catalog, task definitions, trial count, rubric hashes, model settings, recorder
-source and output paths. Select a distinct run name for a different configuration.
+catalog, task definitions, trial count, rubric hashes, effective settings, browser
+source provenance and output paths. Select a distinct run name for a different configuration.
 
 Resume retains completed actor attempts, including failures, and continues
 unstarted work in order. An orphaned started attempt is reconciled from its final
@@ -155,6 +165,14 @@ formats from that run outside its immutable recording tree, imports its frozen
 rubric, runs both verifiers, then audits their source evidence. Results bind task,
 driver, trial, recording/rubric/source hashes and a frozen validity date.
 Without `--execute`, the command inspects inputs without model calls or writes.
+Completed bound stages are reusable; ungraded stages may be retried explicitly
+with their failed-attempt usage retained. Completion has one request per grading
+attempt, while inventory and adjudication each allow three validation attempts.
+Returned completion/audit IDs must satisfy the shared case-sensitive
+exact-or-numeric/date/version matcher and responses must be complete. Native
+returned-ID mismatches are diagnostics. Invalid native earned points use the
+existing repair budget; exhaustion writes null scores and a `judge_fallback`
+reason. Ungraded audits have no pooled evidence-loss rate.
 
 Add `--judge-evidence-policy actor_native` to request a secondary grade in
 `completion_actor_native.json`. This policy uses the actor's observation format
@@ -175,6 +193,10 @@ Reports show technical outcomes, independent completion, grading coverage,
 unmatched arms, actor turns, action attempts, output-limit hits and token usage.
 Browser builds, profile freshness, runtime environments, capture policies and
 shared run controls must match.
+The [effective settings contract](evaluation-protocol.md#effective-settings-contract)
+compares request behavior, prompt/schema versions, normalized configuration
+content, rubric bindings and browser source provenance. Credentials, ports,
+container/Compose and image names/tags, and file locations are excluded.
 
 Partial recordings retain recoverable usage as lower bounds. Missing usage is
 unknown cost; exact all-attempt means and medians require complete coverage.
@@ -217,7 +239,7 @@ Run browser status on the server and use the printed noVNC port. Forward that
 port from the local computer:
 
 ```sh
-ssh -o ExitOnForwardFailure=yes -N -L 39084:127.0.0.1:16291 user@server
+ssh -o ExitOnForwardFailure=yes -N -L 39084:127.0.0.1:16191 user@server
 ```
 
 Open `http://127.0.0.1:39084/vnc.html?resize=scale&autoconnect=1&path=websockify`
@@ -247,9 +269,9 @@ mkdir -p "$bench_repo/build"
     rsync -aR --files-from=- out/Release/ "$bench_repo/build/"
 )
 test -x "$bench_repo/build/chrome"
-CHROMIUM_IMAGE_NAME=w8-core:paired-capture \
+CHROMIUM_IMAGE_NAME=w8-core:domdiff-bench \
   ./scripts/build-browser-image "$bench_chromium_src" "$bench_overlay"
-docker image inspect w8-core:paired-capture
+docker image inspect w8-core:domdiff-bench
 ```
 
 This path requires the compiled source workspace, `gn`, `rsync` and Docker
@@ -265,7 +287,7 @@ one browser build throughout the comparison.
 
 ```sh
 .venv/bin/python -m pytest -q tests
-W8_CAPTURE_TEST_CDP=http://127.0.0.1:49345 \
+W8_CAPTURE_TEST_CDP=http://127.0.0.1:49335 \
   .venv/bin/python -m pytest -q tests/turn_benchmark -k live_capture
 ```
 
@@ -273,3 +295,15 @@ The first command uses offline fixtures. The second checks scroll/focus
 preservation against a synthetic page without actor or judge calls. Use an idle
 isolated browser: the capture check creates a task tab, closes stale task tabs
 and writes the fixture page.
+
+| Division | Offline tests |
+| --- | --- |
+| Actors | [Action validation and request handling](../tests/task_recorder/test_actor_contracts.py); [actor-loop integration](../tests/turn_benchmark/test_modes.py). |
+| Browser and capture | [Capture and runtime contracts](../tests/task_recorder/test_capture_contracts.py), [recording validation and export](../tests/task_recorder/test_prepare_verifier_data.py), [trajectory export](../tests/task_recorder/test_trajectory_export.py). |
+| Scheduling | [Catalog, ownership, expiry and rubric binding](../tests/turn_benchmark/test_scheduling_contracts.py); [ledger and resume integration](../tests/turn_benchmark/test_modes.py). |
+| Evaluation | [Completion and native scoring flows](../tests/verifier/test_evaluation_contracts.py), [numeric, retry and citation contracts](../tests/verifier/test_native_safety.py), [rubric workflow](../tests/verifier/test_frozen_workflow.py), [DOM verification](../tests/dom_model/), [screenshot verification](../tests/screenshot_verifier/), and [audit and evaluation integration](../tests/verifier/). |
+| Metrics and reporting | [Usage coverage and receipt binding](../tests/verifier/test_metrics_contracts.py), [audit aggregation](../tests/verifier/test_aggregate_runs.py), [score normalization](../tests/verifier/test_result_normalization.py); [scheduled comparison integration](../tests/turn_benchmark/test_modes.py). |
+
+The shared integration module covers several divisions. Model responses, browser
+transports and process execution are mocked in the offline cases. The live
+capture case runs only when `W8_CAPTURE_TEST_CDP` is explicitly set.

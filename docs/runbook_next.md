@@ -92,8 +92,8 @@ status and correct schedule preview. **Model calls: 0.**
 Draft generation uses the existing screenshot verifier's rubric-generation and
 dependency-check prompts, with `gpt-5.2`. It receives the expanded catalog task and
 start URL, not an actor trajectory or result. The action-judge client is configured
-but is not normally called by these two preparation stages. The prompts, output
-settings and retry policies remain those of the verifier.
+but is not normally called by these two preparation stages. The native JSON output contract is `native-rubric-output-contract/v2`; output
+settings and response-repair budgets follow the verifier.
 
 First run the read-only preflight:
 
@@ -116,6 +116,11 @@ interrupted draft attempts retain their call/usage receipts before another
 attempt is made. A changed catalog/task binding is rejected. Do not use a new
 directory to conceal earlier costs. Frozen rubrics prevent drafting into the same
 version; choose a distinct version for a deliberate task/rubric revision.
+Authentication exhaustion marks that task ungraded and continues other tasks.
+The workflow reports `partial` and exits nonzero until every task has a completed
+draft. Resume preserves the failed attempt's calls and usage. Effective request
+settings must match on resume; credentials and configuration file locations do
+not define that behavioral contract.
 
 Prepare the offline review document:
 
@@ -172,16 +177,18 @@ hash. **Model calls: 0.**
 
 ## 4. Small model compatibility gate
 
-This **paid** command dispatches one synthetic actor request per arm and one
-request for each distinct judge model: `gpt-5.2`, `gemini-3.1-pro-preview`,
-`gemini-3.8-flash` and `gpt-6.1-sol`. It uses the existing clients and request formats,
-including a PNG, strict actor/completion schemas and Gemini JSON/high-media
-settings. It does not launch a browser or execute an action. No unsupported
-setting is silently removed and no alternative model is substituted.
+This **paid** command dispatches eight nominal logical requests: two actor
+requests, three native/rubric model transport probes, one completion request and
+one request through each actual inventory/adjudication transport. It uses
+`gpt-5.2`, `gemini-3.1-pro-preview`, `gemini-3.8-flash` and `gpt-6.1-sol`, with a
+PNG, strict actor/completion schemas and configured Gemini settings. The two
+audit probes use their actual system prompts with a synthetic marker response.
+These are transport compatibility diagnostics; the pilot exercises full native
+stage and audit payloads. No browser or action is launched.
 
 ```sh
 .venv/bin/python - <<'PY'
-import asyncio, base64, json, logging, os, re
+import asyncio, base64, json, logging, os
 from pathlib import Path
 from PIL import Image, ImageDraw
 from w8bench.task_recorder.capture import CaptureBundle
@@ -190,6 +197,8 @@ from w8bench.task_recorder.recorder_support import write_json
 from w8bench.verifier.instrumentation import instrument_client_calls, usage_dict
 from w8bench.verifier.completion import GRADE_SCHEMA
 from w8bench.verifier.clients.retry import GracefulRetryClient
+from w8bench.model_identity import match_model_id, response_acceptance
+from w8bench.verifier.audit_requests import _completion, SYSTEM_PROMPT, ADJUDICATION_SYSTEM_PROMPT
 load_env(Path('.env'))
 assert os.environ.get('ACTOR_MODEL') == 'gemini-3.1-pro-preview'
 root = Path('internal/compatibility')
@@ -204,6 +213,22 @@ url = 'data:image/png;base64,' + base64.b64encode((root / 'screenshot.png').read
 loop = asyncio.new_event_loop()
 receipts, clients = [], []
 status = 'failed'
+native_roles = {
+    'gpt-5.2': ['rubric_preparation.generation', 'rubric_preparation.dependency'],
+    'gemini-3.1-pro-preview': [f'{mode}.{stage}' for mode in ('dom_model', 'screenshot_verifier')
+        for stage in ('relevance', 'evidence_analysis', 'condition_disambiguation',
+                      'reality_check', 'whole_rubric_rescore', 'per_criterion_rescore',
+                      'side_effects', 'outcome', 'failure_analysis')],
+    'gemini-3.8-flash': [f'{mode}.{stage}' for mode in ('dom_model', 'screenshot_verifier')
+        for stage in ('action_only_scoring', 'task_validity', 'trajectory_validity')],
+}
+def record_matches(receipt, model, returned, roles):
+    ids = list(returned) or [None]
+    receipt['model_checks'] = [dict(stage_role=role, **match_model_id(model, identity))
+        for role in roles for identity in ids]
+    for check in receipt['model_checks']:
+        print(json.dumps(check))
+    assert all(check['matched'] for check in receipt['model_checks']), 'Missing or refused returned model ID'
 try:
     for arm in ('dom', 'screenshot'):
         client = ModelClient(os.environ['GEMINI_API_KEY'], os.environ['ACTOR_MODEL'],
@@ -228,6 +253,7 @@ try:
                 observation_mode=arm, viewport=(1365,768), model_turn=1, max_turns=200)
             assert decision['action']=='wait' and decision['seconds']==0
             assert 'COMPATIBILITY_OK' in decision['thought']
+            record_matches(receipt, client.model, [response.get('model')], [f'actor.{arm}'])
             receipt['status'] = 'passed'
         finally:
             receipt.update(response=client.last_response, input_report=client.last_input_report)
@@ -235,14 +261,14 @@ try:
         client = GracefulRetryClient.from_path('config', logger=logging.getLogger('compatibility'), eval_model=model, evidence_mode='screenshot_verifier')
         clients.append(client)
         calls = instrument_client_calls(client, receipt=True)
-        receipt = {'stage':'verifier', 'configured_model':model, 'call_metrics':calls}
+        receipt = {'stage':'native_transport', 'configured_model':model, 'stage_roles':native_roles[model], 'call_metrics':calls}
         receipts.append(receipt)
         try:
             result = loop.run_until_complete(client.create(messages=[{'role':'user','content':[
                 {'type':'text','text':'Read the visible marker. Return JSON {"marker":"COMPATIBILITY_OK"}.'},
                 {'type':'image_url','image_url':{'url':url,'detail':'high'}}]}], json_output=True))
             assert result.finish_reason=='stop' and json.loads(result.content)=={'marker':'COMPATIBILITY_OK'}
-            assert calls['returned_models'] and all(re.fullmatch(re.escape(model)+r'(?:-\d{4}-\d{2}-\d{2})?', m) for m in calls['returned_models'])
+            record_matches(receipt, model, calls['returned_models'], native_roles[model])
             receipt['status']='passed'
         finally:
             receipt['usage']=usage_dict(client)
@@ -250,22 +276,51 @@ try:
         os.environ.get('OPENAI_BASE_URL','https://api.openai.com/v1'))
     receipt={'stage':'completion','configured_model':'gpt-6.1-sol'}
     receipts.append(receipt)
-    response=client._post({'model':'gpt-6.1-sol','instructions':'Return the supplied compatibility criterion as success, reason marker visible, states [1].',
-        'input':[{'role':'user','content':[{'type':'input_text','text':'Criterion id: compatibility. State 1 contains COMPATIBILITY_OK.'},
-            {'type':'input_image','image_url':url,'detail':'high'}]}], 'max_output_tokens':10000,
-        'reasoning':{'effort':'medium'},'text':{'format':{'type':'json_schema','name':'completion_grade','strict':True,'schema':GRADE_SCHEMA}}})
-    receipt['response']=response
-    assert response.get('status')=='completed' and re.fullmatch(r'gpt-6\.1-sol(?:-\d{4}-\d{2}-\d{2})?', response.get('model',''))
-    value=json.loads(response_text(response))
-    assert set(value)=={'criteria'} and len(value['criteria'])==1
-    criterion=value['criteria'][0]
-    assert set(criterion)=={'id','verdict','reason','states'}
-    assert criterion['id']=='compatibility' and criterion['verdict']=='success'
-    assert isinstance(criterion['reason'],str) and criterion['states']==[1]
-    receipt['status']='passed'
+    response = None
+    try:
+        response=client._post({'model':'gpt-6.1-sol','instructions':'Return the supplied compatibility criterion as success, reason marker visible, states [1].',
+            'input':[{'role':'user','content':[{'type':'input_text','text':'Criterion id: compatibility. State 1 contains COMPATIBILITY_OK.'},
+                {'type':'input_image','image_url':url,'detail':'high'}]}], 'max_output_tokens':10000,
+            'reasoning':{'effort':'medium'},'text':{'format':{'type':'json_schema','name':'completion_grade','strict':True,'schema':GRADE_SCHEMA}}})
+        acceptance=response_acceptance('gpt-6.1-sol', response.get('model'), response, output_cap=10000)
+        receipt['acceptance']=acceptance
+        record_matches(receipt, 'gpt-6.1-sol', [response.get('model')], ['completion'])
+        assert response.get('status')=='completed'
+        assert acceptance['accepted'], acceptance['refusal_reason']
+        value=json.loads(response_text(response))
+        assert set(value)==set(GRADE_SCHEMA['required']) and isinstance(value['criteria'],list) and len(value['criteria'])==1
+        criterion=value['criteria'][0]
+        assert set(criterion)==set(GRADE_SCHEMA['properties']['criteria']['items']['required'])
+        assert criterion['id']=='compatibility' and criterion['verdict']=='success'
+        assert isinstance(criterion['reason'],str) and criterion['reason']
+        assert isinstance(criterion['states'],list) and all(type(index) is int for index in criterion['states'])
+        assert criterion['states']==[1]
+        receipt['status']='passed'
+    finally:
+        receipt.update(response=response, usage=response.get('usage') if response else None)
+    for stage, model, provider, system in (
+        ('inventory', 'gemini-3.1-pro-preview', 'google', SYSTEM_PROMPT),
+        ('adjudication', 'gpt-6.1-sol', 'openai', ADJUDICATION_SYSTEM_PROMPT),
+    ):
+        records=[]
+        receipt={'stage':stage, 'configured_model':model, 'provider':provider, 'call_records':records}
+        receipts.append(receipt)
+        try:
+            value=_completion(model, [{'role':'system','content':system},
+                {'role':'user','content':[{'type':'text','text':'Synthetic transport compatibility only. The supplied state contains COMPATIBILITY_OK. Return only JSON {"marker":"COMPATIBILITY_OK"}; no criterion audit is requested.'},
+                    {'type':'image_url','image_url':{'url':url,'detail':'high'}}]}], records=records, provider=provider)
+            record_matches(receipt, model, [record.get('response_model') for record in records], [stage])
+            assert value=={'marker':'COMPATIBILITY_OK'}
+            receipt.update(status='passed', response=value)
+        finally:
+            receipt['usage']=[record.get('usage') for record in records]
     status='passed'
+except BaseException as error:
+    if receipts and receipts[-1].get('status') != 'passed':
+        receipts[-1].update(status='failed', error_type=type(error).__name__, error=str(error))
+    raise
 finally:
-    write_json(root/'result.json', {'status':status,'nominal_logical_calls':6,'receipts':receipts})
+    write_json(root/'result.json', {'status':status,'nominal_logical_calls':8,'receipts':receipts})
     for client in clients:
         loop.run_until_complete(client.close())
     loop.close()
@@ -273,12 +328,16 @@ print('Compatibility gate:', status)
 PY
 ```
 
-**Gate:** all six checks pass with the requested returned model families, complete
+**Gate:** all eight checks pass with permitted returned IDs, complete
 responses, valid schema/JSON and readable image markers. Inspect
 `internal/compatibility/result.json` and the actor requests/responses. Normally
-**6 logical calls**; existing SDK/client retry policies can increase HTTP attempts.
-The verifier checks exercise the configured model transports; the pilot also
-exercises the inventory and adjudication prompts through their audit transports.
+**8 logical calls**; existing SDK/client retry policies can increase HTTP attempts.
+Each native transport probe lists all default native stage roles for its model,
+including both rubric preparation roles. Every role records and prints its
+configured ID, returned ID and the shared matcher's `exact`, `suffix` or `refused`
+form. Completion, inventory and adjudication have separate role receipts. Missing
+or refused IDs block real runs. This gate deliberately requires a matching native
+transport ID; production native mismatches remain diagnostic.
 This checks small request compatibility, not long-context limits, real browser
 control or the complete audit protocol. The pilot checks those integration paths.
 Stop on a model mismatch, unsupported parameter, incomplete response or malformed
@@ -340,7 +399,7 @@ The executable ledger has `50 × k` attempts, retaining startup failures and
 missing recordings. Task/arm/trial order alternates which arm runs first.
 Repeat the exact execution command to resume; completed actor attempts are not
 replaced, including failures. The command rejects changed catalog, rubric,
-settings, source bindings or task/trial identities. Do not change the trial count
+effective settings, browser source provenance or task/trial identities. Do not change the trial count
 under an existing run name. Use a separate collection name for a different plan.
 
 Both actors for a task/trial run before their judges. Existing error/retry
@@ -367,6 +426,15 @@ The first command is a read-only evaluation preflight. The second reuses complet
 bound stages and preserves prior failed/interrupted attempt receipts. Resume the
 batch command afterward to reconcile its ledger evaluation status. Do not modify
 saved evidence, requests, hashes or completion files to force a cache hit.
+The [effective settings contract](evaluation-protocol.md#effective-settings-contract)
+includes model/provider/routes/base URLs, reasoning and output/turn/memory caps,
+prompt/schema hashes and versions, task-specific rubric hashes, normalized
+configuration content hashes, browser pins and available actual source provenance.
+Credentials, ports, container/Compose names, image names/tags and file locations
+are excluded. Differences in effective settings refuse cached reuse and resume.
+Native scoring exhaustion retains usage with null scores and a `judge_fallback`
+reason; ungraded audits have no pooled loss rate. Completion has one request per
+grading attempt; inventory and adjudication each allow three validation attempts.
 
 **Gate:** all `50 × k` ledger attempts are accounted for and evaluation coverage is
 reported. The actor maximum is **10,000 × k calls** (25 tasks × two arms × k ×
