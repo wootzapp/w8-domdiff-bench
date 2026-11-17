@@ -120,25 +120,8 @@ CHROMIUM_RESET_PROFILE=1
     temporary.replace(path)
 
 
-def configure(env_path: Path, refresh_ports: bool) -> int:
-    existing = read_env(env_path)
-    if env_path.exists() and not refresh_ports:
-        print(f"Configuration already exists: {env_path}")
-        print("Nothing was overwritten. Use --refresh-ports only after stopping the service.")
-        print_runtime_urls(existing)
-        return 0
-
-    defaults = read_env(ROOT / ".env.example")
-    if not defaults.get("ACTOR_MODEL"):
-        raise RuntimeError(".env.example must configure ACTOR_MODEL")
-    suffix = runtime_identity()
-    used: set[int] = set()
-    cdp_port = choose_port(49345, used)
-    novnc_port = choose_port(16291, used)
-    vnc_port = choose_port(16011, used)
-    container_name = existing.get("CONTAINER_NAME")
-    if not container_name:
-        container_name = unique_container_name(f"w8-turns-browser-{suffix}")
+def _configuration_values(existing: dict, defaults: dict, suffix: str, container_name: str, ports: tuple[int, int, int]) -> dict[str, str]:
+    cdp_port, novnc_port, vnc_port = ports
     values = {
         "IMAGE": existing.get("IMAGE", "wootzapp/w8-core:latest"),
         "COMPOSE_PROJECT_NAME": existing.get(
@@ -162,6 +145,29 @@ def configure(env_path: Path, refresh_ports: bool) -> int:
     for key in ("EVIDENCE_AUDIT_MODEL", "EVIDENCE_ADJUDICATOR_MODEL",
                 "EVIDENCE_AUDIT_PROVIDER", "EVIDENCE_ADJUDICATOR_PROVIDER", "GEMINI_API_KEY"):
         values[key] = existing.get(key, defaults.get(key, ""))
+    return values
+
+
+def configure(env_path: Path, refresh_ports: bool) -> int:
+    existing = read_env(env_path)
+    if env_path.exists() and not refresh_ports:
+        print(f"Configuration already exists: {env_path}")
+        print("Nothing was overwritten. Use --refresh-ports only after stopping the service.")
+        print_runtime_urls(existing)
+        return 0
+
+    defaults = read_env(ROOT / ".env.example")
+    if not defaults.get("ACTOR_MODEL"):
+        raise RuntimeError(".env.example must configure ACTOR_MODEL")
+    suffix = runtime_identity()
+    used: set[int] = set()
+    cdp_port = choose_port(49345, used)
+    novnc_port = choose_port(16291, used)
+    vnc_port = choose_port(16011, used)
+    container_name = existing.get("CONTAINER_NAME")
+    if not container_name:
+        container_name = unique_container_name(f"w8-turns-browser-{suffix}")
+    values = _configuration_values(existing, defaults, suffix, container_name, (cdp_port, novnc_port, vnc_port))
     env_path.parent.mkdir(parents=True, exist_ok=True)
     write_env(env_path, values)
     print(f"Created conflict-free w8-core configuration: {env_path}")

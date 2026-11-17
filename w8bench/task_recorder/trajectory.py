@@ -23,6 +23,31 @@ def websurfer_action(record: dict[str, Any]) -> tuple[str, dict[str, Any], str]:
     return name, arguments, record["thought"]
 
 
+def _trajectory_action(run_dir: Path, mode: str, states: list, index: int, record: dict) -> dict[str, Any]:
+    if index >= len(states):
+        raise RunnerError("action has no captured after-state")
+    before, after = states[index - 1], states[index]
+    if before["state"] != index or after["state"] != index + 1:
+        raise RunnerError("state numbering is not contiguous")
+    for state in (before, after):
+        path = (run_dir / state["observation"]).resolve()
+        if not path.is_relative_to(run_dir) or not path.is_file():
+            raise RunnerError("state observation is missing or escapes its run")
+    name, arguments, thought = websurfer_action(record)
+    if mode == "screenshot" and (arguments.get("id") is not None or "target" in arguments):
+        raise RunnerError("screenshot action contains DOM target information")
+    row = {"schema_version": TRAJECTORY_SCHEMA_VERSION, "observation_mode": mode,
+        "action_number": index, "model_turn": record["model_turn"],
+        "source_step": before["directory"], "next_step": after["directory"],
+        "before_observation": before["observation"], "after_observation": after["observation"],
+        "before_artifacts": before["artifacts"], "after_artifacts": after["artifacts"],
+        "before_capture": before["capture"], "after_capture": after["capture"],
+        "action": name, "arguments": arguments, "thought": thought,
+        "execution_status": "success" if record["action_succeeded"] else "failure",
+        "execution_error": record.get("action_error")}
+    return row
+
+
 def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
     run_dir = run_dir.resolve()
     manifest = json.loads((run_dir / "manifest.json").read_text())
@@ -35,29 +60,9 @@ def generate_trajectory_artifacts(run_dir: Path) -> dict[str, Any]:
         errors.append({"error": "N action attempts require N+1 captured states", "actions": len(steps), "states": len(states)})
     for index, record in enumerate(steps, 1):
         try:
-            if index >= len(states):
-                raise RunnerError("action has no captured after-state")
-            before, after = states[index - 1], states[index]
-            if before["state"] != index or after["state"] != index + 1:
-                raise RunnerError("state numbering is not contiguous")
-            for state in (before, after):
-                path = (run_dir / state["observation"]).resolve()
-                if not path.is_relative_to(run_dir) or not path.is_file():
-                    raise RunnerError("state observation is missing or escapes its run")
-            name, arguments, thought = websurfer_action(record)
-            if mode == "screenshot" and (arguments.get("id") is not None or "target" in arguments):
-                raise RunnerError("screenshot action contains DOM target information")
-            row = {"schema_version": TRAJECTORY_SCHEMA_VERSION, "observation_mode": mode,
-                "action_number": index, "model_turn": record["model_turn"],
-                "source_step": before["directory"], "next_step": after["directory"],
-                "before_observation": before["observation"], "after_observation": after["observation"],
-                "before_artifacts": before["artifacts"], "after_artifacts": after["artifacts"],
-                "before_capture": before["capture"], "after_capture": after["capture"],
-                "action": name, "arguments": arguments, "thought": thought,
-                "execution_status": "success" if record["action_succeeded"] else "failure",
-                "execution_error": record.get("action_error")}
+            row = _trajectory_action(run_dir, mode, states, index, record)
             rows.append(row)
-            events.append({"source": "WebSurfer", "action": name, "arguments": arguments,
+            events.append({"source": "WebSurfer", "action": row["action"], "arguments": row["arguments"],
                 "model_turn": record["model_turn"], "execution_status": row["execution_status"]})
         except (KeyError, OSError, ValueError, RunnerError) as error:
             errors.append({"action_number": index, "error": str(error)})

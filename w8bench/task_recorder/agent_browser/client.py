@@ -1,9 +1,4 @@
-"""Thin adapter around the official agent-browser CLI.
-
-This module owns only browser observation and action execution through the
-official CLI. ChromiumRL capture, DOM diffing, screenshots, and run artifacts
-remain the recorder's responsibility.
-"""
+"""Browser observations and actions through agent-browser commands and CDP."""
 
 from __future__ import annotations
 
@@ -134,6 +129,10 @@ class AgentBrowserClient:
                 arguments,
                 f"timed out after {self.timeout:g} seconds",
             ) from error
+        return self._command_output(arguments, completed, json_output)
+
+    @staticmethod
+    def _command_output(arguments: list[str], completed: Any, json_output: bool) -> dict[str, Any] | list[dict[str, Any]] | str:
         stdout = completed.stdout.strip()
         stderr = completed.stderr.strip()
         if completed.returncode != 0:
@@ -202,36 +201,8 @@ class AgentBrowserClient:
             pass
         self.connected = False
 
-    async def snapshot(self) -> AgentBrowserObservation:
-        """Capture viewport-overlapping executable refs.
-
-        The CLI's -i flag does not restrict its full-page accessibility tree to
-        the viewport. Query each exact @ref's bounding box without scrolling,
-        then filter both the supplied text and executable namespace together.
-        Partially visible elements retain their complete accessible labels.
-        """
-        arguments = ["snapshot", "-i"]
-        payload = await self._invoke(arguments)
-        assert isinstance(payload, dict)
-        data = payload.get("data")
-        if not isinstance(data, dict):
-            raise AgentBrowserError(arguments, "response contains no data object")
-        snapshot = data.get("snapshot")
-        refs = data.get("refs")
-        if not isinstance(snapshot, str) or not isinstance(refs, dict):
-            raise AgentBrowserError(
-                arguments,
-                "response does not contain snapshot text and refs",
-            )
-        targets: dict[str, dict[str, str]] = {}
-        for raw_ref, raw_target in refs.items():
-            ref = self.action_ref(raw_ref)
-            if not ref or not isinstance(raw_target, dict):
-                continue
-            targets[ref] = {
-                "role": str(raw_target.get("role", "")),
-                "name": str(raw_target.get("name", "")),
-            }
+    async def _viewport_geometry(self, targets: dict) -> tuple[dict, dict | None]:
+        viewport = None
         # Batch read-only checks: no extra snapshots (which would replace
         # the ref map), no per-ref subprocesses, and no scroll-into-view.
         boxes: dict[str, dict[str, float]] = {}
@@ -261,6 +232,9 @@ class AgentBrowserClient:
                        for key in ("x", "y", "width", "height")):
                     raise AgentBrowserError(checks, f"invalid viewport geometry for @{ref}")
                 boxes[ref] = box
+        return boxes, viewport
+
+    def _visible_snapshot(self, snapshot: str, targets: dict, boxes: dict, viewport: dict | None) -> tuple[str, dict]:
         # Keep only ref-bearing lines. Non-ref structural/context lines can
         # contain full-page text even after offscreen target refs are gone.
         lines = []
@@ -290,6 +264,34 @@ class AgentBrowserClient:
         snapshot = "\n".join(lines) or "[No executable targets overlap the viewport.]"
         emitted_refs = {self.action_ref(ref) for ref in re.findall(r"\[ref=(@?e\d+)\]", snapshot)}
         targets = {ref: target for ref, target in targets.items() if ref in emitted_refs}
+        return snapshot, targets
+
+    async def snapshot(self) -> AgentBrowserObservation:
+        """Capture viewport-overlapping executable refs without scrolling."""
+        arguments = ["snapshot", "-i"]
+        payload = await self._invoke(arguments)
+        assert isinstance(payload, dict)
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            raise AgentBrowserError(arguments, "response contains no data object")
+        snapshot = data.get("snapshot")
+        refs = data.get("refs")
+        if not isinstance(snapshot, str) or not isinstance(refs, dict):
+            raise AgentBrowserError(
+                arguments,
+                "response does not contain snapshot text and refs",
+            )
+        targets: dict[str, dict[str, str]] = {}
+        for raw_ref, raw_target in refs.items():
+            ref = self.action_ref(raw_ref)
+            if not ref or not isinstance(raw_target, dict):
+                continue
+            targets[ref] = {
+                "role": str(raw_target.get("role", "")),
+                "name": str(raw_target.get("name", "")),
+            }
+        boxes, viewport = await self._viewport_geometry(targets)
+        snapshot, targets = self._visible_snapshot(snapshot, targets, boxes, viewport)
         return AgentBrowserObservation(
             text=snapshot.rstrip() + "\n",
             refs=frozenset(targets),
@@ -297,6 +299,7 @@ class AgentBrowserClient:
             origin=str(data.get("origin", "")),
             command=tuple(arguments),
         )
+
 
     async def active_page(self) -> AgentBrowserPage:
         """Return the official agent-browser session's one active tab."""
@@ -339,6 +342,84 @@ class AgentBrowserClient:
         ref = "" if value is None else str(value).strip()
         return ref[1:] if ref.startswith("@") else ref
 
+    @staticmethod
+    async def _dispatch_pointer(decision: dict, cdp: Any, viewport: tuple[int, int]) -> None:
+        action = decision["action"]
+        x = decision.get("x")
+        y = decision.get("y")
+        if x is None: x = viewport[0] / 2
+        if y is None: y = viewport[1] / 2
+        await cdp.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
+        if action == "click":
+            await cdp.call("Input.dispatchMouseEvent", {
+                "type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1})
+            await cdp.call("Input.dispatchMouseEvent", {
+                "type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
+        else:
+            await cdp.call("Input.dispatchMouseEvent", {
+                "type": "mouseWheel", "x": x, "y": y,
+                "deltaX": 0, "deltaY": decision["pixels"]})
+
+    @staticmethod
+    async def _dispatch_key(decision: dict, cdp: Any) -> None:
+        parts = str(decision["key"]).split("+")
+        aliases = {"CTRL": "Control", "CONTROL": "Control", "ALT": "Alt",
+            "SHIFT": "Shift", "META": "Meta", "CMD": "Meta", "COMMAND": "Meta"}
+        modifiers = 0
+        for part in parts[:-1]:
+            name = aliases.get(part.upper())
+            if name is None:
+                raise AgentBrowserBaseError(f"unsupported key modifier: {part}")
+            modifiers |= {"Alt": 1, "Control": 2, "Meta": 4, "Shift": 8}[name]
+        key = parts[-1]
+        key = {"ESC": "Escape", "SPACE": " ", "ARROWUP": "ArrowUp",
+            "ARROWDOWN": "ArrowDown", "ARROWLEFT": "ArrowLeft",
+            "ARROWRIGHT": "ArrowRight", "ENTER": "Enter", "TAB": "Tab",
+            "BACKSPACE": "Backspace", "DELETE": "Delete", "HOME": "Home",
+            "END": "End", "PAGEUP": "PageUp", "PAGEDOWN": "PageDown"}.get(key.upper(), key)
+        code = {"Enter": 13, "Tab": 9, "Backspace": 8, "Delete": 46,
+            "Escape": 27, " ": 32, "ArrowLeft": 37, "ArrowUp": 38,
+            "ArrowRight": 39, "ArrowDown": 40, "Home": 36, "End": 35,
+            "PageUp": 33, "PageDown": 34}.get(key)
+        if code is None and len(key) == 1 and key.isascii() and key.isalnum():
+            code = ord(key.upper())
+        if code is None:
+            raise AgentBrowserBaseError(f"unsupported key: {key}")
+        params = {"key": key, "windowsVirtualKeyCode": code, "modifiers": modifiers}
+        if not modifiers and (len(key) == 1 or key == "Enter"):
+            params["text"] = "\r" if key == "Enter" else key
+        await cdp.call("Input.dispatchKeyEvent", {"type": "keyDown", **params})
+        await cdp.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", **{k: v for k, v in params.items() if k != "text"}})
+
+    async def _execute_input(self, decision: dict, cdp: Any, viewport: tuple[int, int]) -> dict:
+        # Coordinate and focused-keyboard actions use browser input events only: no locators,
+        # accessibility tree, Runtime.evaluate, or DOM-based hit testing.
+        # Both modes share these primitives; only DOM refs use the CLI.
+        action = decision["action"]
+        if action == "navigate":
+            result = await cdp.call("Page.navigate", {"url": decision["url"]})
+            if result.get("errorText"):
+                raise AgentBrowserBaseError(result["errorText"])
+        elif action == "back":
+            history = await cdp.call("Page.getNavigationHistory")
+            index = int(history["currentIndex"]) - 1
+            if index < 0:
+                raise AgentBrowserBaseError("no previous navigation entry")
+            await cdp.call("Page.navigateToHistoryEntry", {"entryId": history["entries"][index]["id"]})
+        elif action in {"click", "scroll"}:
+            await self._dispatch_pointer(decision, cdp, viewport)
+        elif action == "type":
+            await cdp.call("Input.insertText", {"text": decision["text"]})
+        elif action == "press":
+            await self._dispatch_key(decision, cdp)
+        elif action == "wait":
+            await asyncio.sleep(decision["seconds"])
+        else:
+            raise AgentBrowserBaseError(f"action {action!r} is not executable")
+        # Event delivery is not confirmation of a page-level outcome.
+        return {"success": True, "status": "input_dispatched"}
+
     async def execute(self, decision: dict[str, Any], *, cdp: Any,
                       viewport: tuple[int, int] = (1365, 768)) -> dict[str, Any] | str:
         """Map one action to official CLI operations and report normalized input.
@@ -347,73 +428,7 @@ class AgentBrowserClient:
         the ref and then issues the wheel operation so nested panes can receive it.
         """
         if decision.get("id") is None:
-            # Coordinate and focused-keyboard actions use browser input events only: no locators,
-            # accessibility tree, Runtime.evaluate, or DOM-based hit testing.
-            # Both modes share these primitives; only DOM refs use the CLI.
-            action = decision["action"]
-            if action == "navigate":
-                result = await cdp.call("Page.navigate", {"url": decision["url"]})
-                if result.get("errorText"):
-                    raise AgentBrowserBaseError(result["errorText"])
-            elif action == "back":
-                history = await cdp.call("Page.getNavigationHistory")
-                index = int(history["currentIndex"]) - 1
-                if index < 0:
-                    raise AgentBrowserBaseError("no previous navigation entry")
-                await cdp.call("Page.navigateToHistoryEntry", {"entryId": history["entries"][index]["id"]})
-            elif action in {"click", "scroll"}:
-                x = decision.get("x")
-                y = decision.get("y")
-                if x is None: x = viewport[0] / 2
-                if y is None: y = viewport[1] / 2
-                await cdp.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
-                if action == "click":
-                    await cdp.call("Input.dispatchMouseEvent", {
-                        "type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1})
-                    await cdp.call("Input.dispatchMouseEvent", {
-                        "type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
-                else:
-                    await cdp.call("Input.dispatchMouseEvent", {
-                        "type": "mouseWheel", "x": x, "y": y,
-                        "deltaX": 0, "deltaY": decision["pixels"]})
-            elif action == "type":
-                await cdp.call("Input.insertText", {"text": decision["text"]})
-            elif action == "press":
-                parts = str(decision["key"]).split("+")
-                aliases = {"CTRL": "Control", "CONTROL": "Control", "ALT": "Alt",
-                    "SHIFT": "Shift", "META": "Meta", "CMD": "Meta", "COMMAND": "Meta"}
-                modifiers = 0
-                for part in parts[:-1]:
-                    name = aliases.get(part.upper())
-                    if name is None:
-                        raise AgentBrowserBaseError(f"unsupported key modifier: {part}")
-                    modifiers |= {"Alt": 1, "Control": 2, "Meta": 4, "Shift": 8}[name]
-                key = parts[-1]
-                key = {"ESC": "Escape", "SPACE": " ", "ARROWUP": "ArrowUp",
-                    "ARROWDOWN": "ArrowDown", "ARROWLEFT": "ArrowLeft",
-                    "ARROWRIGHT": "ArrowRight", "ENTER": "Enter", "TAB": "Tab",
-                    "BACKSPACE": "Backspace", "DELETE": "Delete", "HOME": "Home",
-                    "END": "End", "PAGEUP": "PageUp", "PAGEDOWN": "PageDown"}.get(key.upper(), key)
-                code = {"Enter": 13, "Tab": 9, "Backspace": 8, "Delete": 46,
-                    "Escape": 27, " ": 32, "ArrowLeft": 37, "ArrowUp": 38,
-                    "ArrowRight": 39, "ArrowDown": 40, "Home": 36, "End": 35,
-                    "PageUp": 33, "PageDown": 34}.get(key)
-                if code is None and len(key) == 1 and key.isascii() and key.isalnum():
-                    code = ord(key.upper())
-                if code is None:
-                    raise AgentBrowserBaseError(f"unsupported key: {key}")
-                params = {"key": key, "windowsVirtualKeyCode": code, "modifiers": modifiers}
-                if not modifiers and (len(key) == 1 or key == "Enter"):
-                    params["text"] = "\r" if key == "Enter" else key
-                await cdp.call("Input.dispatchKeyEvent", {"type": "keyDown", **params})
-                await cdp.call("Input.dispatchKeyEvent", {
-                    "type": "keyUp", **{k: v for k, v in params.items() if k != "text"}})
-            elif action == "wait":
-                await asyncio.sleep(decision["seconds"])
-            else:
-                raise AgentBrowserBaseError(f"action {action!r} is not executable")
-            # Event delivery is not confirmation of a page-level outcome.
-            return {"success": True, "status": "input_dispatched"}
+            return await self._execute_input(decision, cdp, viewport)
         action = str(decision["action"])
         ref = self.action_ref(decision.get("id"))
         selector = f"@{ref}" if ref else ""

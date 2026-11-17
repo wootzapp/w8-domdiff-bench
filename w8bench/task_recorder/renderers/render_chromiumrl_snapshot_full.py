@@ -116,34 +116,19 @@ def norm_text_key(text: str) -> str:
     return re.sub(r"\W+", "", text.lower())
 
 
-def attr_map(node: dict[str, Any]) -> dict[str, str]:
-    """Convert selectedAttributes records into a last-value-wins mapping."""
-    attrs: dict[str, str] = {}
-    raw = node.get("selectedAttributes", [])
+def node_values(node: dict[str, Any], field: str, *, fix_mojibake: bool) -> dict[str, str]:
+    """Read named capture records with last-value-wins keys and field-specific text handling."""
+    values: dict[str, str] = {}
+    raw = node.get(field, [])
     if isinstance(raw, list):
         for item in raw:
             if not isinstance(item, dict):
                 continue
             name = clean(item.get("name"), fix_mojibake=False)
-            value = clean(item.get("value"))
+            value = clean(item.get("value"), fix_mojibake=fix_mojibake)
             if name:
-                attrs[name] = value
-    return attrs
-
-
-def state_map(node: dict[str, Any]) -> dict[str, str]:
-    """Convert captured accessibility state records into a mapping."""
-    states: dict[str, str] = {}
-    raw = node.get("states", [])
-    if isinstance(raw, list):
-        for item in raw:
-            if not isinstance(item, dict):
-                continue
-            name = clean(item.get("name"), fix_mojibake=False)
-            value = clean(item.get("value"), fix_mojibake=False)
-            if name:
-                states[name] = value
-    return states
+                values[name] = value
+    return values
 
 
 def dedupe(items: Iterable[str]) -> list[str]:
@@ -215,6 +200,10 @@ class FullSnapshotRenderer:
             siblings.sort(key=self.source_order)
 
         self.action_map: dict[int, list[str]] = {}
+        self._index_actions(snapshot)
+        self.printed_subtree_keys: set[str] = set()
+
+    def _index_actions(self, snapshot: dict) -> None:
         for action in snapshot.get("actions", []) or []:
             if not isinstance(action, dict):
                 continue
@@ -223,7 +212,6 @@ class FullSnapshotRenderer:
             except Exception:
                 continue
             self.action_map[index] = dedupe(action.get("actionTypes", []))
-        self.printed_subtree_keys: set[str] = set()
 
     def source_order(self, node: dict[str, Any]) -> int:
         """Return numeric document order, falling back to zero for malformed data."""
@@ -264,7 +252,7 @@ class FullSnapshotRenderer:
             value = clean(node.get("subtreeText"))
             if value:
                 return value
-        attrs = attr_map(node)
+        attrs = node_values(node, "selectedAttributes", fix_mojibake=True)
         for key in ("aria-label", "title", "placeholder", "alt", "value", "name", "href", "src"):
             if attrs.get(key):
                 return attrs[key]
@@ -411,7 +399,7 @@ class FullSnapshotRenderer:
             return False
         if self.action_types(node):
             return False
-        if state_map(node):
+        if node_values(node, "states", fix_mojibake=False):
             return False
         if self.node_boundary(node):
             return False
@@ -419,7 +407,7 @@ class FullSnapshotRenderer:
             return False
         if self.has_explicit_text_fact(node):
             return False
-        attrs = attr_map(node)
+        attrs = node_values(node, "selectedAttributes", fix_mojibake=True)
         meaningful_attrs = {
             key: value
             for key, value in attrs.items()
@@ -475,16 +463,14 @@ class FullSnapshotRenderer:
 
         return True, ""
 
-    def render_node_line(self, node: dict[str, Any], depth: int) -> list[str]:
-        """Render one node's identity, geometry, text, attributes, states, and refs."""
-        indent = "  " * depth
+    def _node_facts(self, node: dict[str, Any]) -> tuple[list[str], dict, dict]:
         ref = clean(node.get("ref"), fix_mojibake=False)
         index = self.node_index(node)
         tag = clean(node.get("tag"), fix_mojibake=False) or "?"
         role = clean(node.get("role"), fix_mojibake=False)
         actions = self.action_types(node)
-        attrs = attr_map(node)
-        states = state_map(node)
+        attrs = node_values(node, "selectedAttributes", fix_mojibake=True)
+        states = node_values(node, "states", fix_mojibake=False)
         bits = [f"ref={ref}"]
         if index is not None:
             bits.append(f"index={index}")
@@ -515,8 +501,10 @@ class FullSnapshotRenderer:
         clipped = bounds_text(node.get("clippedBounds"))
         if clipped and clipped != bounds:
             bits.append(f"clipped={clipped}")
+        return bits, attrs, states
 
-        lines = [indent + "- " + " ".join(bits)]
+    def _node_text(self, node: dict[str, Any], indent: str) -> list[str]:
+        lines = []
         printed_values: list[str] = []
         if self.should_print_text_fields(node):
             for key, label in (
@@ -540,6 +528,14 @@ class FullSnapshotRenderer:
                     lines.append(
                         f"{indent}  subtree_text: [suppressed reason={suppressed_reason} chars={len(subtree_text)}]"
                     )
+        return lines
+
+    def render_node_line(self, node: dict[str, Any], depth: int) -> list[str]:
+        """Render one node's identity, geometry, text, attributes, states, and refs."""
+        indent = "  " * depth
+        bits, attrs, states = self._node_facts(node)
+        lines = [indent + "- " + " ".join(bits)]
+        lines.extend(self._node_text(node, indent))
         if attrs:
             attr_text = " ".join(f"{key}={json.dumps(value, ensure_ascii=False)}" for key, value in attrs.items())
             lines.append(f"{indent}  attrs: {attr_text}")
@@ -609,12 +605,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Render a ChromiumRL structured snapshot as full TXT")
     parser.add_argument("input", type=Path, help="Input structured snapshot JSON")
     parser.add_argument("-o", "--output", type=Path, help="Optional output TXT path")
-    parser.add_argument(
-        "--max-text-chars",
-        type=int,
-        default=1200,
-        help="Maximum text chars per field; use 0 for no clipping",
-    )
+    parser.add_argument("--max-text-chars", type=int, default=1200,
+        help="Maximum text chars per field; use 0 for no clipping")
     parser.add_argument(
         "--text-mode",
         choices=("deduped", "all", "none"),
@@ -624,11 +616,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "ancestor/container repeats; all prints raw subtreeText everywhere; none hides subtreeText."
         ),
     )
-    parser.add_argument(
-        "--include-suppressed-text-notes",
-        action="store_true",
-        help="Show one-line notes when subtreeText is suppressed in deduped mode",
-    )
+    parser.add_argument("--include-suppressed-text-notes", action="store_true",
+        help="Show one-line notes when subtreeText is suppressed in deduped mode")
     parser.add_argument(
         "--include-action-index",
         action="store_true",

@@ -15,6 +15,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -273,6 +274,43 @@ class ModelClient:
         self.last_input_report: dict[str, Any] = {}
         self.last_response: dict[str, Any] | None = None
 
+    @staticmethod
+    def _gemini_usage(usage: Any) -> dict[str, Any]:
+        normalized_usage = {}
+        if isinstance(usage, dict):
+            # Gemini candidate tokens exclude thoughts. Our output total
+            # includes them, with reasoning disclosed as a subset.
+            if usage.get("promptTokenCount") is not None:
+                normalized_usage["input_tokens"] = usage["promptTokenCount"]
+            if usage.get("candidatesTokenCount") is not None and usage.get("thoughtsTokenCount") is not None:
+                normalized_usage["output_tokens"] = usage["candidatesTokenCount"] + usage["thoughtsTokenCount"]
+            elif usage.get("candidatesTokenCount") is not None:
+                normalized_usage["output_tokens"] = usage["candidatesTokenCount"]
+            if usage.get("cachedContentTokenCount") is not None:
+                normalized_usage["input_tokens_details"] = {"cached_tokens": usage["cachedContentTokenCount"]}
+            if usage.get("thoughtsTokenCount") is not None:
+                normalized_usage["output_tokens_details"] = {"reasoning_tokens": usage["thoughtsTokenCount"]}
+            if usage.get("totalTokenCount") is not None:
+                normalized_usage["total_tokens"] = usage["totalTokenCount"]
+        return normalized_usage
+
+    @staticmethod
+    def _gemini_response(result: dict[str, Any]) -> dict[str, Any]:
+        candidates = result.get("candidates") or []
+        candidate = candidates[0] if len(candidates) == 1 else {}
+        finish_reason = candidate.get("finishReason")
+        parts = (candidate.get("content") or {}).get("parts") or []
+        usage = result.get("usageMetadata")
+        normalized_usage = ModelClient._gemini_usage(usage)
+        return {"provider": "google", "provider_response": result,
+            "id": result.get("responseId"), "model": result.get("modelVersion"),
+            "output_text": "".join(part["text"] for part in parts
+                if isinstance(part.get("text"), str) and not part.get("thought")),
+            "status": "completed" if finish_reason == "STOP" and not any("functionCall" in part for part in parts) else "incomplete",
+            "incomplete_details": ({"reason": "max_output_tokens"} if finish_reason == "MAX_TOKENS"
+                else {"reason": finish_reason or "missing_or_multiple_candidates"}) if finish_reason != "STOP" else None,
+            "reasoning": {"effort": "medium"}, "usage": normalized_usage}
+
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
         gemini = self.model.startswith("gemini-")
         native_payload = {key: value for key, value in payload.items() if key != "model"} if gemini else payload
@@ -293,51 +331,13 @@ class ModelClient:
         if not isinstance(result, dict):
             raise RunnerError("model response is not an object")
         if gemini:
-            candidates = result.get("candidates") or []
-            candidate = candidates[0] if len(candidates) == 1 else {}
-            finish_reason = candidate.get("finishReason")
-            parts = (candidate.get("content") or {}).get("parts") or []
-            usage = result.get("usageMetadata")
-            normalized_usage = {}
-            if isinstance(usage, dict):
-                # Gemini candidate tokens exclude thoughts. Our output total
-                # includes them, with reasoning disclosed as a subset.
-                if usage.get("promptTokenCount") is not None:
-                    normalized_usage["input_tokens"] = usage["promptTokenCount"]
-                if usage.get("candidatesTokenCount") is not None and usage.get("thoughtsTokenCount") is not None:
-                    normalized_usage["output_tokens"] = usage["candidatesTokenCount"] + usage["thoughtsTokenCount"]
-                elif usage.get("candidatesTokenCount") is not None:
-                    normalized_usage["output_tokens"] = usage["candidatesTokenCount"]
-                if usage.get("cachedContentTokenCount") is not None:
-                    normalized_usage["input_tokens_details"] = {"cached_tokens": usage["cachedContentTokenCount"]}
-                if usage.get("thoughtsTokenCount") is not None:
-                    normalized_usage["output_tokens_details"] = {"reasoning_tokens": usage["thoughtsTokenCount"]}
-                if usage.get("totalTokenCount") is not None:
-                    normalized_usage["total_tokens"] = usage["totalTokenCount"]
-            result = {"provider": "google", "provider_response": result,
-                "id": result.get("responseId"), "model": result.get("modelVersion"),
-                "output_text": "".join(part["text"] for part in parts
-                    if isinstance(part.get("text"), str) and not part.get("thought")),
-                "status": "completed" if finish_reason == "STOP" and not any("functionCall" in part for part in parts) else "incomplete",
-                "incomplete_details": ({"reason": "max_output_tokens"} if finish_reason == "MAX_TOKENS"
-                    else {"reason": finish_reason or "missing_or_multiple_candidates"}) if finish_reason != "STOP" else None,
-                "reasoning": {"effort": "medium"}, "usage": normalized_usage}
+            result = self._gemini_response(result)
         return result
 
-    async def decide(self, *, task: str, step: int, max_steps: int,
-                     bundle: CaptureBundle, task_memory: str,
-                     recent_actions: list[dict[str, Any]], turn_dir: Path,
-                     viewport: tuple[int, int], max_output_tokens: int = 10000,
-                     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        self.last_response = None
-        self.last_input_report = {}
-        configured_model = os.environ.get("ACTOR_MODEL", "").strip()
-        if configured_model != "gemini-3.1-pro-preview" or self.model != configured_model:
-            raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
-        if max_output_tokens != 10000:
-            raise RunnerError("actor output limit must be exactly 10000 tokens")
-        if not 1 <= max_steps <= 200:
-            raise RunnerError("actor turn budget must be positive and no greater than 200")
+    def _actor_request(
+        self, task, step, max_steps, bundle, task_memory, recent_actions,
+        turn_dir, viewport, max_output_tokens,
+    ):
         prompt = (f"task:\n{task}\n\nstep: {step} of {max_steps}\n"
             f"model_turn: {step}\n"
             f"turns_remaining_including_current: {max_steps - step + 1}\n"
@@ -373,6 +373,40 @@ class ModelClient:
                 "thinkingConfig": {"thinkingLevel": "MEDIUM"},
                 "mediaResolution": "MEDIA_RESOLUTION_HIGH",
                 "responseMimeType": "application/json", "responseJsonSchema": ACTION_SCHEMA}}
+        return payload, artifact, prompt
+
+    def _validated_action(self, response: dict[str, Any]) -> dict[str, Any]:
+        returned_model = response.get("model")
+        if not isinstance(returned_model, str) or not re.fullmatch(
+                r"gemini-3\.1-pro-preview(?:-\d{2}-\d{2}|-\d{4}-\d{2}-\d{2})?", returned_model):
+            raise ModelProtocolError(
+                f"actor model mismatch: configured {self.model!r}, returned {returned_model!r}; "
+                "expected Gemini 3.1 Pro Preview; no action executed")
+        if response.get("status") not in {None, "completed"}:
+            raise ModelProtocolError(f"model response status is {response.get('status')!r}; no action executed")
+        if any(isinstance(item, dict) and item.get("type") == "function_call"
+               for item in response.get("output", [])):
+            raise ModelProtocolError("expected a JSON action, received a tool call; no action executed")
+        return parse_decision(response_text(response))
+
+    async def decide(self, *, task: str, step: int, max_steps: int,
+                     bundle: CaptureBundle, task_memory: str,
+                     recent_actions: list[dict[str, Any]], turn_dir: Path,
+                     viewport: tuple[int, int], max_output_tokens: int = 10000,
+                     ) -> tuple[dict[str, Any], dict[str, Any]]:
+        self.last_response = None
+        self.last_input_report = {}
+        configured_model = os.environ.get("ACTOR_MODEL", "").strip()
+        if configured_model != "gemini-3.1-pro-preview" or self.model != configured_model:
+            raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
+        if max_output_tokens != 10000:
+            raise RunnerError("actor output limit must be exactly 10000 tokens")
+        if not 1 <= max_steps <= 200:
+            raise RunnerError("actor turn budget must be positive and no greater than 200")
+        payload, artifact, prompt = self._actor_request(
+            task, step, max_steps, bundle, task_memory, recent_actions,
+            turn_dir, viewport, max_output_tokens,
+        )
         # Persist the exact text and an immutable reference to the exact image
         # bytes sent, avoiding another base64 copy in every turn directory.
         stored = json.loads(json.dumps(payload))
@@ -385,27 +419,10 @@ class ModelClient:
         response = await asyncio.to_thread(self._post, payload)
         self.last_response = response
         write_json(turn_dir / "response.json", response)
-        returned_model = response.get("model")
-        if not isinstance(returned_model, str) or not re.fullmatch(
-                r"gemini-3\.1-pro-preview(?:-\d{2}-\d{2}|-\d{4}-\d{2}-\d{2})?", returned_model):
-            raise ModelProtocolError(
-                f"actor model mismatch: configured {self.model!r}, returned {returned_model!r}; "
-                "expected Gemini 3.1 Pro Preview; no action executed")
-        if response.get("status") not in {None, "completed"}:
-            raise ModelProtocolError(f"model response status is {response.get('status')!r}; no action executed")
-        if any(isinstance(item, dict) and item.get("type") == "function_call"
-               for item in response.get("output", [])):
-            raise ModelProtocolError("expected a JSON action, received a tool call; no action executed")
-        return parse_decision(response_text(response)), response
+        return self._validated_action(response), response
 
 
-def action_rejection_reason(decision: dict[str, Any], available_refs: frozenset[str],
-                            recent_actions: list[dict[str, Any]], *,
-                            observation_mode: str = "dom",
-                            viewport: tuple[int, int] = (1365, 768),
-                            model_turn: int | None = None, max_turns: int | None = None,
-                            action_context: dict[str, Any] | None = None) -> str:
-    action = decision.get("action")
+def _action_schema_error(decision: dict[str, Any], action: Any) -> str:
     if action not in ACTION_SCHEMA["properties"]["action"]["enum"]:
         return "unsupported action"
     if set(decision) - set(ACTION_SCHEMA["properties"]):
@@ -416,6 +433,11 @@ def action_rejection_reason(decision: dict[str, Any], available_refs: frozenset[
     memory = decision.get("memory")
     if memory is not None and (not isinstance(memory, str) or len(memory) > MAX_TASK_MEMORY_CHARS):
         return "memory must be null or bounded text"
+    return ""
+
+
+def _action_target_error(decision: dict[str, Any], action: str, available_refs: frozenset[str],
+                         observation_mode: str, viewport: tuple[int, int]) -> str:
     ref = decision.get("id")
     if ref is not None and (not isinstance(ref, str) or ref.startswith("@")):
         return "id must be a current e-ref without @"
@@ -437,6 +459,10 @@ def action_rejection_reason(decision: dict[str, Any], available_refs: frozenset[
             if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
                    for v in (x, y)) or not (0 <= x < viewport[0] and 0 <= y < viewport[1]):
                 return "coordinates must be finite and inside the viewport"
+    return ""
+
+
+def _action_value_error(decision: dict[str, Any], action: str) -> str:
     if action == "navigate" and (not isinstance(decision.get("url"), str) or
             not re.match(r"^https?://[^/\s]+", decision["url"])):
         return "navigate requires an HTTP(S) URL"
@@ -450,6 +476,11 @@ def action_rejection_reason(decision: dict[str, Any], available_refs: frozenset[
             return "scroll/wait requires a finite numeric amount"
         if (action == "wait" and not 0 <= value <= 10) or (action == "scroll" and value == 0):
             return "wait must be 0–10 seconds; scroll must be nonzero"
+    return ""
+
+
+def _termination_error(decision: dict[str, Any], action: str,
+                       model_turn: int | None, max_turns: int | None) -> str:
     if action == "terminate" and (decision.get("status") not in {"success", "failure"}
             or not isinstance(decision.get("final_answer"), str) or not decision["final_answer"].strip()):
         return "terminate requires status and a final answer"
@@ -468,39 +499,67 @@ def action_rejection_reason(decision: dict[str, Any], available_refs: frozenset[
                     f"{max_turns - model_turn} calls remain after this one. "
                     "Choose another permitted browser action and wait for its observation. "
                     "Use blocked or cannot_complete only for an actual task limitation, not an invented turn limit.")
-    completed = [item for item in recent_actions if isinstance(item.get("action"), dict)
-                 and isinstance(item.get("progress"), dict) and item.get("action_succeeded") is True]
-    if action == "terminate" and decision.get("status") == "success" and not completed:
-        return "successful termination requires at least one confirmed browser action, as in the baseline recorder"
+    return ""
 
-    def signature(value: dict[str, Any], context: dict[str, Any] | None = None) -> str:
-        command = {k: v for k, v in browser_decision(value).items() if v is not None}
-        context = context or {}
-        if command.get("action") == "scroll":
-            pixels = command.get("pixels", 0)
-            command["pixels"] = 1 if pixels > 0 else -1 if pixels < 0 else 0
-        if command.get("id") and context.get("control_signature"):
-            command.pop("id")
-            command["control_signature"] = context["control_signature"]
-            command["document_url"] = context.get("document_url", "")
-        return json.dumps(command, sort_keys=True, ensure_ascii=False)
 
-    candidate = signature(decision, action_context)
+def _action_signature(value: dict[str, Any], context: dict[str, Any] | None = None) -> str:
+    command = {k: v for k, v in browser_decision(value).items() if v is not None}
+    context = context or {}
+    if command.get("action") == "scroll":
+        pixels = command.get("pixels", 0)
+        command["pixels"] = 1 if pixels > 0 else -1 if pixels < 0 else 0
+    if command.get("id") and context.get("control_signature"):
+        command.pop("id")
+        command["control_signature"] = context["control_signature"]
+        command["document_url"] = context.get("document_url", "")
+    return json.dumps(command, sort_keys=True, ensure_ascii=False)
+
+
+def _stalled_action_error(decision: dict[str, Any], action: str,
+                          completed: list[dict[str, Any]],
+                          action_context: dict[str, Any] | None) -> str:
+    candidate = _action_signature(decision, action_context)
     if completed and action not in {"scroll", "wait", "terminate"}:
         last = completed[-1]
         if (last["progress"].get("made_progress") is False
-                and signature(last["action"], last.get("action_context")) == candidate):
+                and _action_signature(last["action"], last.get("action_context")) == candidate):
             return "exact consecutive duplicate activation made no observable progress"
     if len(completed) >= 3:
         cycle = completed[-3:]
-        first, second, third = [signature(item["action"], item.get("action_context")) for item in cycle]
+        first, second, third = [_action_signature(item["action"], item.get("action_context")) for item in cycle]
         if (all(item["progress"].get("made_progress") is False for item in cycle)
                 and first == third and second == candidate and first != second):
             return "action would repeat a two-action cycle without forward progress"
     if len(completed) >= 2 and all(item["progress"].get("made_progress") is False for item in completed[-2:]):
-        if candidate in {signature(item["action"], item.get("action_context")) for item in completed[-2:]}:
+        if candidate in {_action_signature(item["action"], item.get("action_context")) for item in completed[-2:]}:
             return "action would retry a recently stalled strategy without observable progress"
     return ""
+
+
+def action_rejection_reason(decision: dict[str, Any], available_refs: frozenset[str],
+                            recent_actions: list[dict[str, Any]], *,
+                            observation_mode: str = "dom",
+                            viewport: tuple[int, int] = (1365, 768),
+                            model_turn: int | None = None, max_turns: int | None = None,
+                            action_context: dict[str, Any] | None = None) -> str:
+    action = decision.get("action")
+    reason = _action_schema_error(decision, action)
+    if reason:
+        return reason
+    reason = _action_target_error(decision, action, available_refs, observation_mode, viewport)
+    if reason:
+        return reason
+    reason = _action_value_error(decision, action)
+    if reason:
+        return reason
+    reason = _termination_error(decision, action, model_turn, max_turns)
+    if reason:
+        return reason
+    completed = [item for item in recent_actions if isinstance(item.get("action"), dict)
+                 and isinstance(item.get("progress"), dict) and item.get("action_succeeded") is True]
+    if action == "terminate" and decision.get("status") == "success" and not completed:
+        return "successful termination requires at least one confirmed browser action, as in the baseline recorder"
+    return _stalled_action_error(decision, action, completed, action_context)
 
 
 def state_manifest_record(state_number: int, bundle: CaptureBundle, run_dir: Path) -> dict[str, Any]:
@@ -537,8 +596,16 @@ def finalize_recording_artifacts(run_dir: Path, manifest: dict[str, Any], final:
     return final, export
 
 
-async def run(args: argparse.Namespace) -> int:
-    mode = args.observation_mode
+@dataclass
+class ActorState:
+    """Mutable memory and control state carried across actor turns."""
+    memory: str = ""
+    recent: list[dict[str, Any]] = field(default_factory=list)
+    consecutive_rejections: int = 0
+    cancelled: bool = False
+
+
+def _validate_run_args(args: argparse.Namespace, mode: str) -> None:
     if mode not in {"dom", "screenshot"}:
         raise RunnerError("an explicit observation mode is required")
     if args.max_steps <= 0 or args.viewport_width <= 0 or args.viewport_height <= 0 or args.max_output_tokens <= 0:
@@ -557,14 +624,12 @@ async def run(args: argparse.Namespace) -> int:
         configured_model = os.environ.get("ACTOR_MODEL", "").strip()
         if configured_model != "gemini-3.1-pro-preview" or args.model != configured_model:
             raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
-    model = None if args.capture_only else ModelClient(args.api_key, args.model, args.api_base_url)
-    task_id = safe_task_id(args.task_id or default_task_id(Path(args.output_dir)))
-    run_dir = Path(args.output_dir).resolve() / task_id
-    viewport = (args.viewport_width, args.viewport_height)
+
+
+def _recording_task(args, task_id, mode):
     task = {"task_id": task_id, "source_task_id": args.source_task_id or task_id,
         "run_name": args.run_name, "task_name": args.task_name, "instruction": args.task or "capture-only",
         "start_url": args.start_url, "observation_mode": mode, "model": args.model}
-    # Catalog labels are run metadata; they never enter the actor's task text.
     source_catalog = Path(args.source_catalog).expanduser() if args.source_catalog else None
     if source_catalog is not None:
         if not source_catalog.is_file():
@@ -585,12 +650,10 @@ async def run(args: argparse.Namespace) -> int:
         if not args.allow_expired:
             raise RunnerError("expired catalog task; review it or explicitly use --allow-expired")
     task.update(expiry_checked_at=checked_at.isoformat(), expiry_override=expired and args.allow_expired)
-    run_dir.mkdir(parents=True, exist_ok=False)
-    write_json(run_dir / "task.json", task)
-    driver = AgentBrowserClient(args.agent_browser_command,
-        session=agent_browser_session_name(task_id, os.getpid()),
-        cdp_url=args.agent_browser_cdp_url, timeout=args.agent_browser_timeout)
-    profile = browser_profile_provenance_from_environment()
+    return task
+
+
+def _recording_manifest(args, task, profile, mode, viewport):
     manifest = {**task, "schema_version": "3.0", "created_at": utc_now(), "status": "running",
         "model_input_policy": f"{mode}_only", "states": [], "steps": [], "model_turns": 0,
         "browser_profile_provenance": profile,
@@ -615,175 +678,259 @@ async def run(args: argparse.Namespace) -> int:
         "max_text_chars": args.snapshot_max_text_chars, "in_viewport_only": True,
         "action_snapshot_policy": "viewport_bbox_overlap_v1"}
     manifest["renderer_versions"] = renderer_versions()
+    return manifest
+
+
+async def _initial_capture(args, cdp, driver, manifest, run_dir, mode):
+    manifest["browser_session"] = cdp.connection_report
+    if mode == "dom" and not args.capture_only:
+        await driver.connect()
+        manifest["action_driver_version"] = driver.version
+    if args.start_url:
+        result = await cdp.call("Page.navigate", {"url": args.start_url})
+        if result.get("errorText"):
+            raise RunnerError(result["errorText"])
+        await asyncio.sleep(args.settle_seconds)
+    await synchronize_recorder_target(cdp, driver if mode == "dom" else None)
+    current = await capture_bundle(cdp, run_dir / "steps" / "step_001",
+        max_nodes=args.snapshot_max_nodes, max_text_chars=args.snapshot_max_text_chars,
+        observation_mode=mode)
+    if mode == "dom" and not args.capture_only:
+        current = await attach_agent_browser_observation(current, driver, cdp)
+    manifest["states"].append(state_manifest_record(1, current, run_dir))
+    write_json(run_dir / "manifest.json", manifest)
+    return current
+
+
+def _finish_model_turn(
+    args, model, row, manifest, run_dir, turn_dir, turn, started,
+):
+    row["latency_seconds"] = round(time.monotonic() - started, 6)
+    row["model_input"] = model.last_input_report
+    row["usage"] = (model.last_response or {}).get("usage", {})
+    response = model.last_response or {}
+    row["configured_model"] = model.model
+    row["max_output_tokens"] = args.max_output_tokens
+    row["requested_reasoning_effort"] = "medium"
+    row["requested_temperature"] = None
+    row["returned_temperature"] = response.get("temperature")
+    row["response_id"] = response.get("id")
+    row["returned_model"] = response.get("model")
+    row["reasoning"] = response.get("reasoning")
+    row["response_status"] = response.get("status")
+    row["incomplete_details"] = response.get("incomplete_details")
+    row["output_limit_hit"] = (bool(
+        (response.get("incomplete_details") or {}).get("reason") == "max_output_tokens"
+        or (response.get("usage") or {}).get("output_tokens", 0) >= args.max_output_tokens)
+        if response else None)
+    if response.get("model"):
+        manifest["returned_actor_models"] = sorted(set(
+            manifest["returned_actor_models"] + [response["model"]]))
+    write_json(run_dir / "manifest.json", manifest)
+    if (turn_dir / "response.json").exists():
+        row["response"] = str((turn_dir / "response.json").relative_to(run_dir))
+    if model.last_input_report.get("api_call_started"):
+        write_json(turn_dir / "result.json", row)
+        append_json_line(run_dir / "decisions.jsonl", row)
+    else:
+        manifest["model_turns"] = turn - 1
+        write_json(run_dir / "manifest.json", manifest)
+
+
+async def _model_turn(
+    args, task, model, current, state, manifest, run_dir,
+    turn_dir, turn, mode, viewport,
+):
+    started = time.monotonic()
+    row = {"model_turn": turn, "state": len(manifest["states"]), "recorded_at": utc_now(),
+        "request": str((turn_dir / "request.json").relative_to(run_dir)),
+        "task_memory_before": state.memory}
+    decision = None
+    try:
+        decision, response = await model.decide(task=task['instruction'], step=turn, max_steps=args.max_steps, bundle=current, task_memory=state.memory, recent_actions=state.recent, turn_dir=turn_dir, viewport=viewport, max_output_tokens=args.max_output_tokens)
+        reason = action_rejection_reason(decision, current.agent_browser_refs, state.recent, observation_mode=mode, viewport=viewport, model_turn=turn, max_turns=args.max_steps, action_context=action_observation_context(decision, current) if mode == 'dom' else None)
+        row.update(decision=decision, rejection_reason=reason or None, accepted=not reason)
+    except BaseException as error:
+        row.update(accepted=False, error=type(error).__name__ + ': ' + str(error))
+        if model.last_response is None or isinstance(error, (asyncio.CancelledError, ModelProtocolError)):
+            raise
+    finally:
+        _finish_model_turn(args, model, row, manifest, run_dir, turn_dir, turn, started)
+    return decision, row
+
+
+def _rejected_turn(args, state, row, decision, turn):
+    print(f"[turn {turn}/{args.max_steps}] rejected: "
+          f"{row.get('rejection_reason') or row.get('error')}", flush=True)
+    state.recent.append({"model_turn": turn, "rejected_action": decision,
+        "reason": row.get("rejection_reason") or row.get("error")})
+    state.consecutive_rejections += 1
+    if state.consecutive_rejections >= MAX_CONSECUTIVE_REJECTIONS:
+        return {"status": "failure", "run_status": "invalid_action_limit",
+            "termination_reason": "cannot_complete",
+            "final_answer": f"Model produced {MAX_CONSECUTIVE_REJECTIONS} consecutive invalid proposals. "
+                + str(row.get("rejection_reason") or row.get("error"))}
+    return None
+
+
+async def _deliver_action(
+    decision, current, driver, cdp, viewport, manifest, run_dir, turn, mode,
+):
+    action = browser_decision(decision)
+    action = {k: v for k, v in action.items() if v is not None}
+    target = agent_browser_target_identity(action, current) if mode == "dom" else None
+    action_record = {"model_turn": turn, "action": action, "thought": decision["thought"],
+        "state": len(manifest["states"]), "started_at": utc_now()}
+    if target:
+        action_record["target"] = target
+    if mode == "dom":
+        action_record["action_context"] = action_observation_context(action, current)
+    action_started = time.monotonic()
+    action_error = None
+    action_cancelled = False
+    try:
+        result = await driver.execute(action, cdp=cdp, viewport=viewport)
+        if not isinstance(result, dict) or result.get("success") is not True:
+            raise RunnerError("action tool did not confirm delivery")
+        action_record["action_result"] = result
+    except BaseException as error:
+        action_cancelled = isinstance(error, asyncio.CancelledError)
+        action_error = type(error).__name__ + ": " + str(error)
+    action_record.update(action_error=action_error, action_succeeded=action_error is None,
+        duration_seconds=round(time.monotonic() - action_started, 6))
+    write_json(current.directory / "action.json", action_record)
+    manifest["steps"].append(action_record)
+    write_json(run_dir / "manifest.json", manifest)
+    if action_cancelled:
+        raise asyncio.CancelledError()
+    return action_record
+
+
+async def _observe_action(
+    args, current, action_record, candidate_memory, state, cdp, driver,
+    manifest, run_dir, mode,
+):
+    await asyncio.sleep(args.settle_seconds)
+    await synchronize_recorder_target(cdp, driver if mode == "dom" else None)
+    number = len(manifest["states"]) + 1
+    next_state, reconnects = await capture_after_action_bundle(cdp,
+        driver if mode == "dom" else None, run_dir / "steps" / f"step_{number:03d}",
+        max_nodes=args.snapshot_max_nodes, max_text_chars=args.snapshot_max_text_chars,
+        observation_mode=mode)
+    if mode == "dom":
+        next_state = await attach_agent_browser_observation(next_state, driver, cdp)
+    if action_record["action_succeeded"]:
+        state.memory = candidate_memory
+    action_record.update(next_state=number, progress=action_progress(current, next_state))
+    print(f"  action: {'error' if action_record['action_error'] else 'delivered'}; recorded state {number}", flush=True)
+    if reconnects:
+        action_record["capture_reconnects"] = reconnects
+    write_json(current.directory / "action.json", action_record)
+    manifest["states"].append(state_manifest_record(number, next_state, run_dir))
+    write_json(run_dir / "manifest.json", manifest)
+    state.recent.append({'model_turn': action_record['model_turn'], 'action': action_record['action'], 'action_succeeded': action_record['action_succeeded'], 'action_error': action_record['action_error'], 'progress': action_record['progress'], **({'action_context': action_record['action_context']} if mode == 'dom' else {})})
+    return next_state
+
+
+async def _accepted_turn(
+    args, decision, current, state, driver, cdp, viewport, manifest,
+    run_dir, turn, mode,
+):
+    state.consecutive_rejections = 0
+    action_label = decision["action"]
+    if decision.get("id"):
+        action_label += f" id={decision['id']}"
+    elif decision.get("x") is not None:
+        action_label += f" x={decision['x']} y={decision['y']}"
+    print(f"[turn {turn}/{args.max_steps}] {action_label}", flush=True)
+    candidate_memory = decision.get("memory")
+    candidate_memory = candidate_memory.strip() if isinstance(candidate_memory, str) and candidate_memory.strip() else state.memory
+    if decision['action'] == 'terminate':
+        state.memory = candidate_memory
+        return current, {"status": decision["status"],
+            "termination_reason": decision["termination_reason"],
+            "run_status": "turn_limit" if decision["termination_reason"] == "budget_exhausted" else "completed",
+            "final_answer": decision["final_answer"], "model_turn": turn, "task_memory": state.memory}
+    action_record = await _deliver_action(
+        decision, current, driver, cdp, viewport, manifest, run_dir, turn, mode,
+    )
+    next_state = await _observe_action(
+        args, current, action_record, candidate_memory, state, cdp, driver,
+        manifest, run_dir, mode,
+    )
+    return next_state, None
+
+
+async def _actor_turns(
+    args, task, model, current, state, driver, cdp, viewport,
+    manifest, run_dir, mode, final,
+):
+    for turn in range(1, args.max_steps + 1):
+        turn_dir = run_dir / "turns" / f"turn_{turn:06d}"
+        turn_dir.mkdir(parents=True)
+        manifest["model_turns"] = turn
+        write_json(run_dir / "manifest.json", manifest)
+        decision, row = await _model_turn(
+            args, task, model, current, state, manifest, run_dir,
+            turn_dir, turn, mode, viewport,
+        )
+        if not row["accepted"]:
+            rejected = _rejected_turn(args, state, row, decision, turn)
+            if rejected is not None:
+                return rejected
+            continue
+        current, completed = await _accepted_turn(
+            args, decision, current, state, driver, cdp, viewport, manifest,
+            run_dir, turn, mode,
+        )
+        if completed is not None:
+            return completed
+    return final
+
+
+def _print_run_summary(args, final, manifest, run_dir):
+    print(f"Run status: {final['run_status']}; actor status: {final['status']}; "
+          f"model turns: {manifest['model_turns']}/{args.max_steps}; action attempts: {len(manifest['steps'])}", flush=True)
+    if final.get("error"):
+        print(f"Error: {final['error']}", file=sys.stderr, flush=True)
+    if final.get("final_answer"):
+        print(f"Final answer: {final['final_answer']}", flush=True)
+    print(f"Recording: {run_dir}", flush=True)
+
+
+async def run(args: argparse.Namespace) -> int:
+    mode = args.observation_mode
+    _validate_run_args(args, mode)
+    model = None if args.capture_only else ModelClient(args.api_key, args.model, args.api_base_url)
+    task_id = safe_task_id(args.task_id or default_task_id(Path(args.output_dir)))
+    run_dir = Path(args.output_dir).resolve() / task_id
+    viewport = (args.viewport_width, args.viewport_height)
+    task = _recording_task(args, task_id, mode)
+    run_dir.mkdir(parents=True, exist_ok=False)
+    write_json(run_dir / "task.json", task)
+    driver = AgentBrowserClient(args.agent_browser_command,
+        session=agent_browser_session_name(task_id, os.getpid()),
+        cdp_url=args.agent_browser_cdp_url, timeout=args.agent_browser_timeout)
+    profile = browser_profile_provenance_from_environment()
+    manifest = _recording_manifest(args, task, profile, mode, viewport)
     write_json(run_dir / "manifest.json", manifest)
     print(f"Recorder: mode={mode}, model={args.model or '(capture only)'}, turn budget={args.max_steps}", flush=True)
     final = {"status": "failure", "run_status": "turn_limit", "termination_reason": "budget_exhausted", "final_answer": "Actor turn budget exhausted"}
-    memory, recent = "", []
-    consecutive_rejections = 0
-    cancelled = False
+    state = ActorState()
     try:
         async with CDPClient(args.cdp_url, keep_existing_tabs=args.keep_existing_tabs,
             browser_language=args.browser_lang, browser_accept_language=args.browser_accept_language,
             observation_mode=mode, viewport=viewport) as cdp:
-            manifest["browser_session"] = cdp.connection_report
-            if mode == "dom" and not args.capture_only:
-                await driver.connect()
-                manifest["action_driver_version"] = driver.version
-            if args.start_url:
-                result = await cdp.call("Page.navigate", {"url": args.start_url})
-                if result.get("errorText"):
-                    raise RunnerError(result["errorText"])
-                await asyncio.sleep(args.settle_seconds)
-            await synchronize_recorder_target(cdp, driver if mode == "dom" else None)
-            current = await capture_bundle(cdp, run_dir / "steps" / "step_001",
-                max_nodes=args.snapshot_max_nodes, max_text_chars=args.snapshot_max_text_chars,
-                observation_mode=mode)
-            if mode == "dom" and not args.capture_only:
-                current = await attach_agent_browser_observation(current, driver, cdp)
-            manifest["states"].append(state_manifest_record(1, current, run_dir))
-            write_json(run_dir / "manifest.json", manifest)
+            current = await _initial_capture(args, cdp, driver, manifest, run_dir, mode)
             if args.capture_only:
                 final = {"status": "captured", "run_status": "captured", "final_answer": ""}
             else:
-                for turn in range(1, args.max_steps + 1):
-                    turn_dir = run_dir / "turns" / f"turn_{turn:06d}"
-                    turn_dir.mkdir(parents=True)
-                    manifest["model_turns"] = turn
-                    write_json(run_dir / "manifest.json", manifest)
-                    started = time.monotonic()
-                    row = {"model_turn": turn, "state": len(manifest["states"]), "recorded_at": utc_now(),
-                        "request": str((turn_dir / "request.json").relative_to(run_dir)),
-                        "task_memory_before": memory}
-                    decision = None
-                    try:
-                        decision, response = await model.decide(task=task["instruction"], step=turn,
-                            max_steps=args.max_steps, bundle=current, task_memory=memory,
-                            recent_actions=recent, turn_dir=turn_dir, viewport=viewport,
-                            max_output_tokens=args.max_output_tokens)
-                        reason = action_rejection_reason(decision, current.agent_browser_refs, recent,
-                            observation_mode=mode, viewport=viewport, model_turn=turn, max_turns=args.max_steps,
-                            action_context=action_observation_context(decision, current) if mode == "dom" else None)
-                        row.update(decision=decision, rejection_reason=reason or None, accepted=not reason)
-                    except BaseException as error:
-                        # Parsing failure consumed a response and a turn; transport
-                        # failures end the run without silently retrying an action.
-                        row.update(accepted=False, error=type(error).__name__ + ": " + str(error))
-                        if model.last_response is None or isinstance(error, (asyncio.CancelledError, ModelProtocolError)):
-                            raise
-                    finally:
-                        row["latency_seconds"] = round(time.monotonic() - started, 6)
-                        row["model_input"] = model.last_input_report
-                        row["usage"] = (model.last_response or {}).get("usage", {})
-                        response = model.last_response or {}
-                        row["configured_model"] = model.model
-                        row["max_output_tokens"] = args.max_output_tokens
-                        row["requested_reasoning_effort"] = "medium"
-                        row["requested_temperature"] = None
-                        row["returned_temperature"] = response.get("temperature")
-                        row["response_id"] = response.get("id")
-                        row["returned_model"] = response.get("model")
-                        row["reasoning"] = response.get("reasoning")
-                        row["response_status"] = response.get("status")
-                        row["incomplete_details"] = response.get("incomplete_details")
-                        row["output_limit_hit"] = (bool(
-                            (response.get("incomplete_details") or {}).get("reason") == "max_output_tokens"
-                            or (response.get("usage") or {}).get("output_tokens", 0) >= args.max_output_tokens)
-                            if response else None)
-                        if response.get("model"):
-                            manifest["returned_actor_models"] = sorted(set(
-                                manifest["returned_actor_models"] + [response["model"]]))
-                        write_json(run_dir / "manifest.json", manifest)
-                        if (turn_dir / "response.json").exists():
-                            row["response"] = str((turn_dir / "response.json").relative_to(run_dir))
-                        if model.last_input_report.get("api_call_started"):
-                            write_json(turn_dir / "result.json", row)
-                            append_json_line(run_dir / "decisions.jsonl", row)
-                        else:
-                            manifest["model_turns"] = turn - 1
-                            write_json(run_dir / "manifest.json", manifest)
-                    if not row["accepted"]:
-                        print(f"[turn {turn}/{args.max_steps}] rejected: "
-                              f"{row.get('rejection_reason') or row.get('error')}", flush=True)
-                        recent.append({"model_turn": turn, "rejected_action": decision,
-                            "reason": row.get("rejection_reason") or row.get("error")})
-                        consecutive_rejections += 1
-                        if consecutive_rejections >= MAX_CONSECUTIVE_REJECTIONS:
-                            final = {"status": "failure", "run_status": "invalid_action_limit",
-                                "termination_reason": "cannot_complete",
-                                "final_answer": f"Model produced {MAX_CONSECUTIVE_REJECTIONS} consecutive invalid proposals. "
-                                    + str(row.get("rejection_reason") or row.get("error"))}
-                            break
-                        continue
-                    consecutive_rejections = 0
-                    action_label = decision["action"]
-                    if decision.get("id"):
-                        action_label += f" id={decision['id']}"
-                    elif decision.get("x") is not None:
-                        action_label += f" x={decision['x']} y={decision['y']}"
-                    print(f"[turn {turn}/{args.max_steps}] {action_label}", flush=True)
-                    candidate_memory = decision.get("memory")
-                    candidate_memory = candidate_memory.strip() if isinstance(candidate_memory, str) and candidate_memory.strip() else memory
-                    if decision["action"] == "terminate":
-                        memory = candidate_memory
-                        final = {"status": decision["status"],
-                            "termination_reason": decision["termination_reason"],
-                            "run_status": "turn_limit" if decision["termination_reason"] == "budget_exhausted" else "completed",
-                            "final_answer": decision["final_answer"], "model_turn": turn, "task_memory": memory}
-                        break
-                    action = browser_decision(decision)
-                    action = {k: v for k, v in action.items() if v is not None}
-                    target = agent_browser_target_identity(action, current) if mode == "dom" else None
-                    action_record = {"model_turn": turn, "action": action, "thought": decision["thought"],
-                        "state": len(manifest["states"]), "started_at": utc_now()}
-                    if target:
-                        action_record["target"] = target
-                    if mode == "dom":
-                        action_record["action_context"] = action_observation_context(action, current)
-                    action_started = time.monotonic()
-                    action_error = None
-                    action_cancelled = False
-                    try:
-                        result = await driver.execute(action, cdp=cdp, viewport=viewport)
-                        if not isinstance(result, dict) or result.get("success") is not True:
-                            raise RunnerError("action tool did not confirm delivery")
-                        action_record["action_result"] = result
-                    except BaseException as error:
-                        action_cancelled = isinstance(error, asyncio.CancelledError)
-                        action_error = type(error).__name__ + ": " + str(error)
-                    action_record.update(action_error=action_error, action_succeeded=action_error is None,
-                        duration_seconds=round(time.monotonic() - action_started, 6))
-                    write_json(current.directory / "action.json", action_record)
-                    # An attempted action remains counted even if the following
-                    # capture fails; missing after-states are explicit export errors.
-                    manifest["steps"].append(action_record)
-                    write_json(run_dir / "manifest.json", manifest)
-                    if action_cancelled:
-                        raise asyncio.CancelledError()
-                    await asyncio.sleep(args.settle_seconds)
-                    await synchronize_recorder_target(cdp, driver if mode == "dom" else None)
-                    number = len(manifest["states"]) + 1
-                    next_state, reconnects = await capture_after_action_bundle(cdp,
-                        driver if mode == "dom" else None, run_dir / "steps" / f"step_{number:03d}",
-                        max_nodes=args.snapshot_max_nodes, max_text_chars=args.snapshot_max_text_chars,
-                        observation_mode=mode)
-                    if mode == "dom":
-                        next_state = await attach_agent_browser_observation(next_state, driver, cdp)
-                    if action_record["action_succeeded"]:
-                        memory = candidate_memory
-                    action_record.update(next_state=number, progress=action_progress(current, next_state))
-                    print(f"  action: {'error' if action_error else 'delivered'}; recorded state {number}", flush=True)
-                    if reconnects:
-                        action_record["capture_reconnects"] = reconnects
-                    write_json(current.directory / "action.json", action_record)
-                    manifest["states"].append(state_manifest_record(number, next_state, run_dir))
-                    write_json(run_dir / "manifest.json", manifest)
-                    recent.append({"model_turn": turn, "action": action,
-                        "action_succeeded": action_record["action_succeeded"],
-                        "action_error": action_error, "progress": action_record["progress"],
-                        **({"action_context": action_record["action_context"]} if mode == "dom" else {})})
-                    current = next_state
+                final = await _actor_turns(
+                    args, task, model, current, state, driver, cdp, viewport,
+                    manifest, run_dir, mode, final,
+                )
     except asyncio.CancelledError:
-        cancelled = True
+        state.cancelled = True
         final = {"status": "failure", "run_status": "interrupted", "final_answer": "Run interrupted"}
     except Exception as error:
         final = {"status": "failure", "run_status": "error", "final_answer": "Run ended with an execution error",
@@ -792,14 +939,8 @@ async def run(args: argparse.Namespace) -> int:
         if mode == "dom":
             await driver.close()
         final, export = finalize_recording_artifacts(run_dir, manifest, final)
-    print(f"Run status: {final['run_status']}; actor status: {final['status']}; "
-          f"model turns: {manifest['model_turns']}/{args.max_steps}; action attempts: {len(manifest['steps'])}", flush=True)
-    if final.get("error"):
-        print(f"Error: {final['error']}", file=sys.stderr, flush=True)
-    if final.get("final_answer"):
-        print(f"Final answer: {final['final_answer']}", flush=True)
-    print(f"Recording: {run_dir}", flush=True)
-    if cancelled:
+    _print_run_summary(args, final, manifest, run_dir)
+    if state.cancelled:
         raise asyncio.CancelledError()
     return 0 if final["status"] in {"success", "captured"} and export["status"] == "complete" else 2
 

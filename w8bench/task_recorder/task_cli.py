@@ -154,25 +154,8 @@ def clear_active_run(pid: int, path: Path = ACTIVE_RUN_PATH) -> None:
         path.unlink(missing_ok=True)
 
 
-def restart_browser_service(env_file: Path) -> None:
-    """Recreate only this checkout's Compose service with a fresh profile."""
-    configured = subprocess.run(
-        ["docker", "compose", "--env-file", str(env_file), "config", "--format", "json"],
-        cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-    if configured.returncode:
-        raise RunnerError("could not resolve this checkout's browser configuration")
-    config = json.loads(configured.stdout)
-    project = str(config["name"])
-    name = str(config["services"]["w8-core"]["container_name"])
-    relocation_path = RUNTIME_ROOT / "browser-relocation.json"
-    relocation = {}
-    if relocation_path.is_file():
-        try:
-            relocation = json.loads(relocation_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as error:
-            raise RunnerError("browser checkout relocation receipt is invalid") from error
-        if not isinstance(relocation, dict):
-            raise RunnerError("browser checkout relocation receipt must be an object")
+def _require_browser_service_owner(project: str, name: str, relocation: dict[str, Any]) -> None:
+    """Check every existing Compose browser against its checkout ownership."""
     # Compose identifies services by project labels, not just container name.
     # Check both so a copied/global project setting cannot recreate another
     # checkout's service even when its configured container name differs.
@@ -205,6 +188,209 @@ def restart_browser_service(env_file: Path) -> None:
                 or labels.get("com.docker.compose.project") != project
                 or labels.get("com.docker.compose.service") != "w8-core"):
             raise RunnerError("browser configuration points to a container owned by another checkout")
+
+
+def _browser_profile_container(container_name: str) -> tuple[dict[str, Any], str, str]:
+    """Inspect the browser container identity and validate its checkout label."""
+    inspected = subprocess.run(
+        ["docker", "inspect", container_name],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if inspected.returncode != 0:
+        detail = inspected.stderr.strip() or inspected.stdout.strip()
+        raise RunnerError(f"could not inspect w8-core container provenance: {detail}")
+    try:
+        values = json.loads(inspected.stdout)
+        container = values[0]
+        container_id = str(container["Id"])
+        container_created_at = str(container["Created"])
+    except (json.JSONDecodeError, IndexError, KeyError, TypeError) as error:
+        raise RunnerError("docker inspect returned invalid container provenance") from error
+
+    ownership = (container.get("Config") or {}).get("Labels") or {}
+    if ownership.get("com.docker.compose.project.working_dir") != str(ROOT):
+        raise RunnerError("refusing to claim a browser profile owned by another checkout")
+
+    return container, container_id, container_created_at
+
+
+def _browser_image_metadata(image_id: str) -> tuple[list[str], dict[str, Any]]:
+    """Read labels and repository digests from the exact running image ID."""
+    image_result = subprocess.run(
+        ["docker", "image", "inspect", image_id],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+    )
+    if image_result.returncode:
+        raise ValueError(image_result.stderr.strip() or "image inspection failed")
+    image = json.loads(image_result.stdout)[0]
+    if image.get("Id") != image_id:
+        raise ValueError("image inspection returned a different image ID")
+    repo_digests = image.get("RepoDigests") or []
+    image_labels = (image.get("Config") or {}).get("Labels") or {}
+    if not isinstance(repo_digests, list) or any(not isinstance(part, str) for part in repo_digests):
+        raise ValueError("image inspection returned invalid repository digests")
+    if not isinstance(image_labels, dict):
+        raise ValueError("image inspection returned invalid build labels")
+    return repo_digests, image_labels
+
+
+def _browser_build(container: dict[str, Any]) -> dict[str, Any]:
+    """Describe the running image while retaining unavailable-metadata diagnostics."""
+    # Inspect by immutable image ID, not by a tag that may have moved since this
+    # container started. Older images remain usable with unknown source labels.
+    image_id = container.get("Image")
+    image_labels = (container.get("Config") or {}).get("Labels") or {}
+    repo_digests: list[str] = []
+    image_inspection_error = None
+    if image_id:
+        try:
+            repo_digests, image_labels = _browser_image_metadata(image_id)
+        except (OSError, ValueError, IndexError, TypeError, AttributeError) as error:
+            repo_digests = []
+            image_labels = (container.get("Config") or {}).get("Labels") or {}
+            image_inspection_error = str(error)
+    browser_build = {
+        "image_reference": (container.get("Config") or {}).get("Image"),
+        "image_id": image_id,
+        "repo_digests": repo_digests,
+        "image_source_revision": image_labels.get("org.opencontainers.image.revision"),
+        "image_version": image_labels.get("org.opencontainers.image.version"),
+        "overlay_revision": image_labels.get("org.wootzapp.browser.overlay.revision"),
+        "chromium_revision": image_labels.get("org.wootzapp.browser.chromium.revision"),
+        "protocol_sha256": image_labels.get("org.wootzapp.browser.protocol.sha256"),
+        "inspection_error": image_inspection_error,
+    }
+
+    return browser_build
+
+
+def _browser_profile_count(container_name: str, profile_task_count_path: str) -> int:
+    """Read and validate the current container-lifetime task count."""
+    counted = subprocess.run(
+        [
+            "docker", "exec", container_name, "sh", "-c",
+            'path="$1"; test -f "$path" && cat "$path" || printf 0',
+            "task-recorder-profile-counter", profile_task_count_path,
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if counted.returncode != 0:
+        detail = counted.stderr.strip() or counted.stdout.strip()
+        raise RunnerError(f"could not read browser profile task count: {detail}")
+    try:
+        tasks_previously_run = int(counted.stdout.strip() or "0")
+    except ValueError as error:
+        raise RunnerError("browser profile task count is not an integer") from error
+    if tasks_previously_run < 0:
+        raise RunnerError("browser profile task count must not be negative")
+
+    return tasks_previously_run
+
+
+def _advance_browser_profile_count(
+    container_name: str,
+    profile_task_count_path: str,
+    tasks_previously_run: int,
+) -> None:
+    """Publish the next profile task count through a temporary file."""
+    next_count = tasks_previously_run + 1
+    updated = subprocess.run(
+        [
+            "docker", "exec", container_name, "sh", "-c",
+            'set -eu; path="$1"; value="$2"; umask 077; '
+            'printf "%s\n" "$value" > "${path}.tmp"; mv "${path}.tmp" "$path"',
+            "task-recorder-profile-counter", profile_task_count_path, str(next_count),
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if updated.returncode != 0:
+        detail = updated.stderr.strip() or updated.stdout.strip()
+        raise RunnerError(f"could not update browser profile task count: {detail}")
+
+
+def _catalog_content(catalog_url: str, token: str) -> tuple[str, bytes, str, str]:
+    """Read and decode one local or remote catalog without repeated downloads."""
+    url = catalog_url.strip()
+    parsed = urlsplit(url)
+    if not parsed.scheme:
+        path = Path(url).expanduser().resolve(strict=True)
+        catalog_bytes = path.read_bytes()
+        payload = catalog_bytes.decode("utf-8")
+        url = str(path)
+    else:
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise RunnerError("task catalog must be a local file or an absolute HTTP(S) URL")
+        headers = {"User-Agent": "w8-paired-capture/1"}
+        if token.strip():
+            headers["Authorization"] = f"Bearer {token.strip()}"
+        request = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                catalog_bytes = response.read()
+                payload = catalog_bytes.decode("utf-8")
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, UnicodeDecodeError) as error:
+            raise RunnerError(f"could not fetch task catalog {url}: {error}") from error
+    return url, catalog_bytes, payload, parsed.scheme
+
+
+def _freeze_remote_catalog(catalog_hash: str, catalog_bytes: bytes) -> str:
+    """Bind a remote catalog snapshot to its downloaded bytes."""
+    # A content-addressed local snapshot forwards provenance without another
+    # HTTP request or a separate hash argument to the actor runner.
+    frozen = RUNTIME_ROOT / "catalogs" / f"{catalog_hash}.jsonl"
+    frozen.parent.mkdir(parents=True, exist_ok=True)
+    if frozen.exists() and frozen.read_bytes() != catalog_bytes:
+        raise RunnerError("frozen remote catalog bytes changed")
+    if not frozen.exists():
+        frozen.write_bytes(catalog_bytes)
+    return str(frozen.resolve())
+
+
+def _bind_task_validity(definition: dict[str, Any], catalog_hash: str) -> None:
+    """Read expiry metadata only for the matching curated catalog bytes."""
+    validity_path = ROOT / "internal" / "task_validity.json"
+    if validity_path.is_file():
+        validity = json.loads(validity_path.read_text(encoding="utf-8"))
+        curated_catalog = (ROOT / validity["catalog"]).resolve(strict=True)
+        if not curated_catalog.is_relative_to(ROOT.resolve()):
+            raise RunnerError("task validity catalog must remain inside this checkout")
+        if hashlib.sha256(curated_catalog.read_bytes()).hexdigest() == catalog_hash:
+            valid_until = validity["tasks"].get(definition["source_task_id"], {}).get("valid_until")
+            if valid_until is not None and (not isinstance(valid_until, str) or
+                    date.fromisoformat(valid_until).isoformat() != valid_until):
+                raise RunnerError("task validity valid_until must be an ISO UTC date or null")
+            definition["valid_until"] = valid_until
+
+
+def restart_browser_service(env_file: Path) -> None:
+    """Recreate only this checkout's Compose service with a fresh profile."""
+    configured = subprocess.run(
+        ["docker", "compose", "--env-file", str(env_file), "config", "--format", "json"],
+        cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+    if configured.returncode:
+        raise RunnerError("could not resolve this checkout's browser configuration")
+    config = json.loads(configured.stdout)
+    project = str(config["name"])
+    name = str(config["services"]["w8-core"]["container_name"])
+    relocation_path = RUNTIME_ROOT / "browser-relocation.json"
+    relocation = {}
+    if relocation_path.is_file():
+        try:
+            relocation = json.loads(relocation_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise RunnerError("browser checkout relocation receipt is invalid") from error
+        if not isinstance(relocation, dict):
+            raise RunnerError("browser checkout relocation receipt must be an object")
+    _require_browser_service_owner(project, name, relocation)
     completed = subprocess.run(
         ["docker", "compose", "--env-file", str(env_file), "up", "-d",
          "--force-recreate", "--wait", "w8-core"], cwd=ROOT,
@@ -247,109 +433,15 @@ def browser_container_cdp_url(container_name: str) -> str:
 
 
 def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
-    """Atomically claim one task slot for this container-lifetime profile."""
+    """Claim one task slot for this container-lifetime profile."""
     profile_task_count_path = os.environ.get(
         "BROWSER_PROFILE_TASK_COUNT_PATH",
         DEFAULT_PROFILE_TASK_COUNT_PATH,
     )
-    inspected = subprocess.run(
-        ["docker", "inspect", container_name],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
-    if inspected.returncode != 0:
-        detail = inspected.stderr.strip() or inspected.stdout.strip()
-        raise RunnerError(f"could not inspect w8-core container provenance: {detail}")
-    try:
-        values = json.loads(inspected.stdout)
-        container = values[0]
-        container_id = str(container["Id"])
-        container_created_at = str(container["Created"])
-    except (json.JSONDecodeError, IndexError, KeyError, TypeError) as error:
-        raise RunnerError("docker inspect returned invalid container provenance") from error
-
-    ownership = (container.get("Config") or {}).get("Labels") or {}
-    if ownership.get("com.docker.compose.project.working_dir") != str(ROOT):
-        raise RunnerError("refusing to claim a browser profile owned by another checkout")
-
-    # Inspect by immutable image ID, not by a tag that may have moved since this
-    # container started. Older images remain usable with unknown source labels.
-    image_id = container.get("Image")
-    image_labels = (container.get("Config") or {}).get("Labels") or {}
-    repo_digests: list[str] = []
-    image_inspection_error = None
-    if image_id:
-        try:
-            image_result = subprocess.run(
-                ["docker", "image", "inspect", image_id],
-                text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
-            )
-            if image_result.returncode:
-                raise ValueError(image_result.stderr.strip() or "image inspection failed")
-            image = json.loads(image_result.stdout)[0]
-            if image.get("Id") != image_id:
-                raise ValueError("image inspection returned a different image ID")
-            repo_digests = image.get("RepoDigests") or []
-            image_labels = (image.get("Config") or {}).get("Labels") or {}
-            if not isinstance(repo_digests, list) or any(not isinstance(part, str) for part in repo_digests):
-                raise ValueError("image inspection returned invalid repository digests")
-            if not isinstance(image_labels, dict):
-                raise ValueError("image inspection returned invalid build labels")
-        except (OSError, ValueError, IndexError, TypeError, AttributeError) as error:
-            repo_digests = []
-            image_labels = (container.get("Config") or {}).get("Labels") or {}
-            image_inspection_error = str(error)
-    browser_build = {
-        "image_reference": (container.get("Config") or {}).get("Image"),
-        "image_id": image_id,
-        "repo_digests": repo_digests,
-        "image_source_revision": image_labels.get("org.opencontainers.image.revision"),
-        "image_version": image_labels.get("org.opencontainers.image.version"),
-        "overlay_revision": image_labels.get("org.wootzapp.browser.overlay.revision"),
-        "chromium_revision": image_labels.get("org.wootzapp.browser.chromium.revision"),
-        "protocol_sha256": image_labels.get("org.wootzapp.browser.protocol.sha256"),
-        "inspection_error": image_inspection_error,
-    }
-
-    counted = subprocess.run(
-        [
-            "docker", "exec", container_name, "sh", "-c",
-            'path="$1"; test -f "$path" && cat "$path" || printf 0',
-            "task-recorder-profile-counter", profile_task_count_path,
-        ],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
-    if counted.returncode != 0:
-        detail = counted.stderr.strip() or counted.stdout.strip()
-        raise RunnerError(f"could not read browser profile task count: {detail}")
-    try:
-        tasks_previously_run = int(counted.stdout.strip() or "0")
-    except ValueError as error:
-        raise RunnerError("browser profile task count is not an integer") from error
-    if tasks_previously_run < 0:
-        raise RunnerError("browser profile task count must not be negative")
-
-    next_count = tasks_previously_run + 1
-    updated = subprocess.run(
-        [
-            "docker", "exec", container_name, "sh", "-c",
-            'set -eu; path="$1"; value="$2"; umask 077; '
-            'printf "%s\n" "$value" > "${path}.tmp"; mv "${path}.tmp" "$path"',
-            "task-recorder-profile-counter", profile_task_count_path, str(next_count),
-        ],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
-    if updated.returncode != 0:
-        detail = updated.stderr.strip() or updated.stdout.strip()
-        raise RunnerError(f"could not update browser profile task count: {detail}")
+    container, container_id, container_created_at = _browser_profile_container(container_name)
+    browser_build = _browser_build(container)
+    tasks_previously_run = _browser_profile_count(container_name, profile_task_count_path)
+    _advance_browser_profile_count(container_name, profile_task_count_path, tasks_previously_run)
     return {
         "container_id": container_id,
         "container_created_at": container_created_at,
@@ -474,44 +566,12 @@ def catalog_task_instruction(row: dict[str, Any]) -> str:
     return "\n\n".join(section for section in sections if section)
 
 
-def fetch_catalog_task(
-    catalog_url: str,
-    selector: str,
-    *,
-    token: str = "",
-) -> dict[str, Any]:
+def fetch_catalog_task(catalog_url: str, selector: str, *, token: str = "") -> dict[str, Any]:
     """Load one task from a frozen local JSONL catalog or an HTTP(S) source."""
-    url = catalog_url.strip()
-    parsed = urlsplit(url)
-    if not parsed.scheme:
-        path = Path(url).expanduser().resolve(strict=True)
-        catalog_bytes = path.read_bytes()
-        payload = catalog_bytes.decode("utf-8")
-        url = str(path)
-    else:
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-            raise RunnerError("task catalog must be a local file or an absolute HTTP(S) URL")
-        headers = {"User-Agent": "w8-paired-capture/1"}
-        if token.strip():
-            headers["Authorization"] = f"Bearer {token.strip()}"
-        request = urllib.request.Request(url, headers=headers)
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response:
-                catalog_bytes = response.read()
-                payload = catalog_bytes.decode("utf-8")
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, UnicodeDecodeError) as error:
-            raise RunnerError(f"could not fetch task catalog {url}: {error}") from error
+    url, catalog_bytes, payload, remote_scheme = _catalog_content(catalog_url, token)
     catalog_hash = hashlib.sha256(catalog_bytes).hexdigest()
-    if parsed.scheme:
-        # A content-addressed local snapshot forwards provenance without another
-        # HTTP request or a separate hash argument to the actor runner.
-        frozen = RUNTIME_ROOT / "catalogs" / f"{catalog_hash}.jsonl"
-        frozen.parent.mkdir(parents=True, exist_ok=True)
-        if frozen.exists() and frozen.read_bytes() != catalog_bytes:
-            raise RunnerError("frozen remote catalog bytes changed")
-        if not frozen.exists():
-            frozen.write_bytes(catalog_bytes)
-        url = str(frozen.resolve())
+    if remote_scheme:
+        url = _freeze_remote_catalog(catalog_hash, catalog_bytes)
     # Parsing and selection are separate pure functions so malformed catalogs
     # and alias collisions can be tested without making a network request.
     row = select_catalog_task(parse_task_catalog(payload, source=url), selector)
@@ -531,18 +591,7 @@ def fetch_catalog_task(
             "valid_until": None,
         }
     )
-    validity_path = ROOT / "internal" / "task_validity.json"
-    if validity_path.is_file():
-        validity = json.loads(validity_path.read_text(encoding="utf-8"))
-        curated_catalog = (ROOT / validity["catalog"]).resolve(strict=True)
-        if not curated_catalog.is_relative_to(ROOT.resolve()):
-            raise RunnerError("task validity catalog must remain inside this checkout")
-        if hashlib.sha256(curated_catalog.read_bytes()).hexdigest() == catalog_hash:
-            valid_until = validity["tasks"].get(definition["source_task_id"], {}).get("valid_until")
-            if valid_until is not None and (not isinstance(valid_until, str) or
-                    date.fromisoformat(valid_until).isoformat() != valid_until):
-                raise RunnerError("task validity valid_until must be an ISO UTC date or null")
-            definition["valid_until"] = valid_until
+    _bind_task_validity(definition, catalog_hash)
     return definition
 
 
@@ -651,13 +700,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def run_batch(args: argparse.Namespace) -> int:
-    """Schedule and resume paired actor attempts and their evaluation."""
-    if args.trials <= 0 or args.observation_mode or args.task or args.start_url or args.no_browser_start or args.catalog_url:
-        raise RunnerError("a batch requires positive --trials, catalog tasks, fresh profiles and both arms")
-    if args.judge_model != "gpt-6.1-sol" or not args.dry_run and args.rubric_dir is None:
-        raise RunnerError("every batch trial requires explicit --judge-model gpt-6.1-sol and execution requires --rubric-dir")
-    from w8bench.run_paths import run_directory, resolve_run_name
+def _batch_definitions(args: argparse.Namespace) -> tuple[Path, bytes, str, list[dict[str, Any]]]:
+    """Read and bind catalog tasks, then enforce their inclusive UTC expiry dates."""
     catalog_path = args.catalog_file or Path(os.environ.get("TASK_CATALOG_FILE", ""))
     if not catalog_path.is_file():
         raise RunnerError("a batch needs a frozen local --catalog-file")
@@ -676,10 +720,15 @@ def run_batch(args: argparse.Namespace) -> int:
             print(f"Warning: task {definition['source_task_id']} expired after {definition['valid_until']} UTC.", file=sys.stderr)
             if not args.allow_expired:
                 raise RunnerError("expired catalog task; review it or explicitly use --allow-expired")
-    planning_only = args.dry_run and (args.rubric_dir is None or any(
-        not (args.rubric_dir.resolve() / f"{safe_task_id(definition['source_task_id'])}.json").is_file()
-        for definition in definitions))
-    batch_dir = run_directory(args.output_dir, resolve_run_name(args.run_name)).resolve()
+    return catalog_path, catalog_bytes, catalog_hash, definitions
+
+
+def _freeze_batch_catalog(
+    batch_dir: Path,
+    definitions: list[dict[str, Any]],
+    catalog_bytes: bytes,
+) -> Path:
+    """Bind the batch directory and task definitions to one catalog byte sequence."""
     batch_dir.mkdir(parents=True, exist_ok=True)
     frozen_catalog = batch_dir / "catalog.jsonl"
     if frozen_catalog.exists() and frozen_catalog.read_bytes() != catalog_bytes:
@@ -688,8 +737,18 @@ def run_batch(args: argparse.Namespace) -> int:
         frozen_catalog.write_bytes(catalog_bytes)
     for definition in definitions:
         definition["source_catalog"] = str(frozen_catalog)
-    ledger_path = batch_dir / ("schedule_preview.jsonl" if planning_only else "ledger.jsonl")
-    model_name = args.model
+    return frozen_catalog
+
+
+def _batch_schedule(
+    args: argparse.Namespace,
+    definitions: list[dict[str, Any]],
+    catalog_hash: str,
+    batch_dir: Path,
+    planning_only: bool,
+    model_name: str,
+) -> list[dict[str, Any]]:
+    """Build the complete ordered task, arm and trial denominator."""
     schedule = []
     for trial in range(1, args.trials + 1):
         for index, definition in enumerate(definitions):
@@ -720,148 +779,198 @@ def run_batch(args: argparse.Namespace) -> int:
                     "judge_model": args.judge_model,
                     "completed": False, "technical_outcome": "not_started", "grade_outcome": "ungraded",
                     "grade_completed": False, "evaluation_outcome": "not_started"})
-    # The global batch lock prevents two schedules from alternating through one browser.
-    with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
-        if ledger_path.exists() and not planning_only:
-            ledger = [json.loads(line) for line in ledger_path.read_text().splitlines() if line.strip()]
-            if any(row.get("planning_only") for row in ledger):
-                raise RunnerError("a planning-only schedule cannot be resumed as an execution ledger")
-            if len(ledger) != len(schedule):
-                raise RunnerError("saved schedule differs from requested task/arm/trial set")
-            for saved, expected in zip(ledger, schedule):
-                if any(saved.get(key) != value for key, value in expected.items()
-                       if key not in {"completed", "technical_outcome", "grade_outcome", "grade_completed", "evaluation_outcome"}):
-                    raise RunnerError("saved schedule configuration differs; choose a new run name")
-        else:
-            ledger = schedule
-            write_json_lines(ledger_path, ledger)  # Commit the entire denominator before starting work.
-        marker = read_active_run()
-        if marker is not None:
-            if owned_process_group(marker) is not None:
-                raise RunnerError("a recorder is still running; finish or stop it before resuming the batch")
-            ACTIVE_RUN_PATH.unlink(missing_ok=True)
-        # A killed batch may leave its launcher or judge alive before/after the recorder marker.
-        # Refuse reconciliation while those processes can still mutate scheduled artifacts.
-        for entry in Path("/proc").iterdir():
-            if not entry.name.isdigit() or int(entry.name) == os.getpid():
-                continue
-            command = process_command(int(entry.name))
-            if ("w8bench.task_recorder.task_cli" in command and str(batch_dir) in command
-                    or "w8bench.verifier.run_comparison" in command
-                    and any(row["recording"] in command for row in ledger)):
-                raise RunnerError(f"a scheduled launcher or judge is still running: pid {entry.name}")
-        if args.dry_run:
-            print(f"{'Planning-only schedule' if planning_only else 'Schedule'}: {ledger_path}; {len(ledger)} rows; no tasks started" +
-                ("; execution requires frozen rubrics" if planning_only else ""))
-            return 0
-        for row in ledger:
-            if hashlib.sha256(frozen_catalog.read_bytes()).hexdigest() != row["catalog_sha256"]:
-                raise RunnerError("frozen batch catalog changed after scheduling")
-            directory = Path(row["recording"])
-            if not row["completed"]:
-                # A started attempt is terminal on resume; never silently buy another attempt.
-                if row["technical_outcome"] == "running" or row.get("started_at"):
-                    final_path = directory / "final.json"
-                    row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
-                        if final_path.is_file() else "interrupted")
-                    row.update(completed=True, ended_at=utc_now())
-                    if args.rubric_dir and final_path.is_file():
-                        row["grade_outcome"] = "pending"
-                else:
-                    row.update(technical_outcome="running", started_at=utc_now(), launcher_pid=os.getpid())
-                    write_json_lines(ledger_path, ledger)
-                    log_path = batch_dir / "logs" / f"attempt_{row['sequence']:06d}.log"
-                    log_path.parent.mkdir(parents=True, exist_ok=True)
-                    row["log"] = str(log_path)
-                    command = [sys.executable, "-m", "w8bench.task_recorder.task_cli", row["task_id"],
-                        "--catalog-file", str(catalog_path.resolve()), "--env-file", str(args.env_file.resolve()),
-                        "--observation-mode", row["arm"], "--output-dir", str(batch_dir),
-                        "--run-name", row["run_name"], "--model", model_name,
-                        "--max-turns", str(args.max_steps), "--max-output-tokens", str(args.max_output_tokens),
-                        "--viewport-width", str(args.viewport_width), "--viewport-height", str(args.viewport_height),
-                        "--previous-run-stop-timeout", str(args.previous_run_stop_timeout)]
-                    if args.allow_expired:
-                        command.append("--allow-expired")
-                    try:
-                        with log_path.open("a", encoding="utf-8") as log:
-                            result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
-                        row["exit_code"] = result.returncode
-                        final_path = directory / "final.json"
-                        row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
-                            if final_path.is_file() else "incomplete_recording" if directory.exists() else "startup_failure")
-                        if args.rubric_dir and final_path.is_file():
-                            row["grade_outcome"] = "pending"
-                    except KeyboardInterrupt:
-                        row.update(technical_outcome="interrupted", completed=True, ended_at=utc_now())
-                        write_json_lines(ledger_path, ledger)
-                        raise
-                    except Exception as error:
-                        row["technical_outcome"] = "startup_failure" if not directory.exists() else "incomplete_recording"
-                        row["error"] = f"{type(error).__name__}: {error}"
-                    row.update(completed=True, ended_at=utc_now(), actor_ended_at=utc_now())
-                write_json_lines(ledger_path, ledger)
-                print(f"{row['sequence']}/{len(ledger)} {row['task_id']} {row['arm']} trial {row['trial']}: "
-                    f"{row['technical_outcome']}; grade={row['grade_outcome']}", flush=True)
-            # Record both arms back to back before any grading latency.
-            if row["arm_order"] == 2:
-                for partner in ledger[row["sequence"]-2:row["sequence"]]:
-                    if partner["grade_completed"]:
-                        continue
-                    recording_path = Path(partner["recording"])
-                    if not (recording_path / "final.json").is_file():
-                        partner.update(grade_completed=True, grade_outcome="ungraded",
-                            evaluation_outcome="unavailable", evaluation_reason="recording_not_finalized")
-                        write_json_lines(ledger_path, ledger)
-                        continue
-                    if "log" not in partner:
-                        path = batch_dir / "logs" / f"attempt_{partner['sequence']:06d}.log"
-                        path.parent.mkdir(parents=True, exist_ok=True)
-                        partner["log"] = str(path)
-                    grade_path = recording_path / "completion.json"
-                    if partner["grade_outcome"] == "running":
-                        partner["evaluation_previous_interruption"] = True
-                    partner.update(grade_outcome="running", evaluation_outcome="running", judge_started_at=utc_now())
-                    write_json_lines(ledger_path, ledger)
-                    try:
-                        with Path(partner["log"]).open("a", encoding="utf-8") as log:
-                            grade = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
-                                "--run", str(recording_path), "--rubric", partner["rubric"],
-                                "--env-file", str(args.env_file.resolve()), "--judge-model", partner["judge_model"], "--execute"],
-                                cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
-                        partner["judge_exit_code"] = grade.returncode
-                        partner["grade_outcome"] = (json.loads(grade_path.read_text())["verdict"]
-                            if grade_path.is_file() else "grading_error")
-                        from .prepare_verifier_data import inspect_recording
-                        checked = inspect_recording(recording_path)
-                        evaluation_path = (recording_path.parent.parent / "evaluations" / partner["run_name"] /
-                            partner["arm"] / partner["task_id"] / checked["recording_sha256"] / "evaluation.json")
-                        partner["evaluation_path"] = str(evaluation_path)
-                        partner["evaluation_outcome"] = (json.loads(evaluation_path.read_text())["status"]
-                            if evaluation_path.is_file() else "unavailable")
-                    except KeyboardInterrupt:
-                        partner.update(grade_outcome="interrupted", evaluation_outcome="interrupted",
-                            grade_completed=False, judge_ended_at=utc_now())
-                        write_json_lines(ledger_path, ledger)
-                        raise
-                    except Exception as error:
-                        partner.update(grade_outcome="grading_error", evaluation_outcome="failed",
-                            judge_error=f"{type(error).__name__}: {error}")
-                    partner.update(grade_completed=True, judge_ended_at=utc_now())
-                    write_json_lines(ledger_path, ledger)
-        print(ledger_path)
-        return 0
+    return schedule
 
 
-def run_single_task(args: argparse.Namespace) -> int:
-    """Run one task with browser-profile and process-group ownership."""
-    if len(args.task_id) != 1 or not args.observation_mode:
-        raise RunnerError("one task needs --observation-mode; a batch needs --trials")
-    if args.rubric_dir or args.judge_model:
-        raise RunnerError("batch grading options require --trials")
-    task_id = safe_task_id(args.task_id[0].strip())
-    from w8bench.run_paths import run_directory, resolve_run_name
-    args.run_name = resolve_run_name(args.run_name)
-    args.output_dir = run_directory(args.output_dir, args.run_name)
+def _batch_ledger(
+    ledger_path: Path,
+    schedule: list[dict[str, Any]],
+    planning_only: bool,
+) -> list[dict[str, Any]]:
+    """Validate a resume schedule or publish its complete initial denominator."""
+    if ledger_path.exists() and not planning_only:
+        ledger = [json.loads(line) for line in ledger_path.read_text().splitlines() if line.strip()]
+        if any(row.get("planning_only") for row in ledger):
+            raise RunnerError("a planning-only schedule cannot be resumed as an execution ledger")
+        if len(ledger) != len(schedule):
+            raise RunnerError("saved schedule differs from requested task/arm/trial set")
+        for saved, expected in zip(ledger, schedule):
+            if any(saved.get(key) != value for key, value in expected.items()
+                   if key not in {"completed", "technical_outcome", "grade_outcome", "grade_completed", "evaluation_outcome"}):
+                raise RunnerError("saved schedule configuration differs; choose a new run name")
+    else:
+        ledger = schedule
+        write_json_lines(ledger_path, ledger)  # Commit the entire denominator before starting work.
+    return ledger
+
+
+def _guard_batch_processes(batch_dir: Path, ledger: list[dict[str, Any]]) -> None:
+    """Require exclusive ownership of all scheduled recording and grading paths."""
+    marker = read_active_run()
+    if marker is not None:
+        if owned_process_group(marker) is not None:
+            raise RunnerError("a recorder is still running; finish or stop it before resuming the batch")
+        ACTIVE_RUN_PATH.unlink(missing_ok=True)
+    # A killed batch may leave its launcher or judge alive before/after the recorder marker.
+    # Refuse reconciliation while those processes can still mutate scheduled artifacts.
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit() or int(entry.name) == os.getpid():
+            continue
+        command = process_command(int(entry.name))
+        if ("w8bench.task_recorder.task_cli" in command and str(batch_dir) in command
+                or "w8bench.verifier.run_comparison" in command
+                and any(row["recording"] in command for row in ledger)):
+            raise RunnerError(f"a scheduled launcher or judge is still running: pid {entry.name}")
+
+
+def _batch_actor_command(
+    args: argparse.Namespace,
+    row: dict[str, Any],
+    batch_dir: Path,
+    catalog_path: Path,
+    model_name: str,
+) -> list[str]:
+    """Describe one scheduled actor invocation with its exact execution settings."""
+    command = [sys.executable, "-m", "w8bench.task_recorder.task_cli", row["task_id"],
+        "--catalog-file", str(catalog_path.resolve()), "--env-file", str(args.env_file.resolve()),
+        "--observation-mode", row["arm"], "--output-dir", str(batch_dir),
+        "--run-name", row["run_name"], "--model", model_name,
+        "--max-turns", str(args.max_steps), "--max-output-tokens", str(args.max_output_tokens),
+        "--viewport-width", str(args.viewport_width), "--viewport-height", str(args.viewport_height),
+        "--previous-run-stop-timeout", str(args.previous_run_stop_timeout)]
+    if args.allow_expired:
+        command.append("--allow-expired")
+    return command
+
+
+def _execute_batch_actor(
+    args: argparse.Namespace,
+    row: dict[str, Any],
+    ledger: list[dict[str, Any]],
+    ledger_path: Path,
+    batch_dir: Path,
+    catalog_path: Path,
+    model_name: str,
+    directory: Path,
+) -> None:
+    """Execute one actor and record its terminal recording status."""
+    log_path = batch_dir / "logs" / f"attempt_{row['sequence']:06d}.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    row["log"] = str(log_path)
+    command = _batch_actor_command(args, row, batch_dir, catalog_path, model_name)
+    try:
+        with log_path.open("a", encoding="utf-8") as log:
+            result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+        row["exit_code"] = result.returncode
+        final_path = directory / "final.json"
+        row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
+            if final_path.is_file() else "incomplete_recording" if directory.exists() else "startup_failure")
+        if args.rubric_dir and final_path.is_file():
+            row["grade_outcome"] = "pending"
+    except KeyboardInterrupt:
+        row.update(technical_outcome="interrupted", completed=True, ended_at=utc_now())
+        write_json_lines(ledger_path, ledger)
+        raise
+    except Exception as error:
+        row["technical_outcome"] = "startup_failure" if not directory.exists() else "incomplete_recording"
+        row["error"] = f"{type(error).__name__}: {error}"
+    row.update(completed=True, ended_at=utc_now(), actor_ended_at=utc_now())
+
+
+def _run_batch_actor(
+    args: argparse.Namespace,
+    row: dict[str, Any],
+    ledger: list[dict[str, Any]],
+    ledger_path: Path,
+    batch_dir: Path,
+    catalog_path: Path,
+    model_name: str,
+    directory: Path,
+) -> None:
+    """Reconcile an existing attempt or start its one scheduled actor execution."""
+    # A started attempt is terminal on resume; never silently buy another attempt.
+    if row["technical_outcome"] == "running" or row.get("started_at"):
+        final_path = directory / "final.json"
+        row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
+            if final_path.is_file() else "interrupted")
+        row.update(completed=True, ended_at=utc_now())
+        if args.rubric_dir and final_path.is_file():
+            row["grade_outcome"] = "pending"
+    else:
+        row.update(technical_outcome="running", started_at=utc_now(), launcher_pid=os.getpid())
+        write_json_lines(ledger_path, ledger)
+        _execute_batch_actor(args, row, ledger, ledger_path, batch_dir, catalog_path, model_name, directory)
+    write_json_lines(ledger_path, ledger)
+    print(f"{row['sequence']}/{len(ledger)} {row['task_id']} {row['arm']} trial {row['trial']}: "
+        f"{row['technical_outcome']}; grade={row['grade_outcome']}", flush=True)
+
+
+def _execute_batch_judge(
+    args: argparse.Namespace,
+    partner: dict[str, Any],
+    recording_path: Path,
+    grade_path: Path,
+) -> None:
+    """Run grading and bind the resulting evaluation to the inspected recording."""
+    with Path(partner["log"]).open("a", encoding="utf-8") as log:
+        grade = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
+            "--run", str(recording_path), "--rubric", partner["rubric"],
+            "--env-file", str(args.env_file.resolve()), "--judge-model", partner["judge_model"], "--execute"],
+            cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+    partner["judge_exit_code"] = grade.returncode
+    partner["grade_outcome"] = (json.loads(grade_path.read_text())["verdict"]
+        if grade_path.is_file() else "grading_error")
+    from .prepare_verifier_data import inspect_recording
+    checked = inspect_recording(recording_path)
+    evaluation_path = (recording_path.parent.parent / "evaluations" / partner["run_name"] /
+        partner["arm"] / partner["task_id"] / checked["recording_sha256"] / "evaluation.json")
+    partner["evaluation_path"] = str(evaluation_path)
+    partner["evaluation_outcome"] = (json.loads(evaluation_path.read_text())["status"]
+        if evaluation_path.is_file() else "unavailable")
+
+
+def _grade_batch_pair(
+    args: argparse.Namespace,
+    row: dict[str, Any],
+    ledger: list[dict[str, Any]],
+    ledger_path: Path,
+    batch_dir: Path,
+) -> None:
+    """Grade the two recorded arms in their scheduled order."""
+    for partner in ledger[row["sequence"]-2:row["sequence"]]:
+        if partner["grade_completed"]:
+            continue
+        recording_path = Path(partner["recording"])
+        if not (recording_path / "final.json").is_file():
+            partner.update(grade_completed=True, grade_outcome="ungraded",
+                evaluation_outcome="unavailable", evaluation_reason="recording_not_finalized")
+            write_json_lines(ledger_path, ledger)
+            continue
+        if "log" not in partner:
+            path = batch_dir / "logs" / f"attempt_{partner['sequence']:06d}.log"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            partner["log"] = str(path)
+        grade_path = recording_path / "completion.json"
+        if partner["grade_outcome"] == "running":
+            partner["evaluation_previous_interruption"] = True
+        partner.update(grade_outcome="running", evaluation_outcome="running", judge_started_at=utc_now())
+        write_json_lines(ledger_path, ledger)
+        try:
+            _execute_batch_judge(args, partner, recording_path, grade_path)
+        except KeyboardInterrupt:
+            partner.update(grade_outcome="interrupted", evaluation_outcome="interrupted",
+                grade_completed=False, judge_ended_at=utc_now())
+            write_json_lines(ledger_path, ledger)
+            raise
+        except Exception as error:
+            partner.update(grade_outcome="grading_error", evaluation_outcome="failed",
+                judge_error=f"{type(error).__name__}: {error}")
+        partner.update(grade_completed=True, judge_ended_at=utc_now())
+        write_json_lines(ledger_path, ledger)
+
+
+def _single_task_definition(args: argparse.Namespace, task_id: str) -> dict[str, Any]:
+    """Resolve a manual or catalog task and enforce its inclusive UTC expiry date."""
     # Supplying either manual field selects manual mode and requires both. With
     # neither field, the positional task id is resolved through the catalog.
     manual_task = args.task is not None or args.start_url is not None
@@ -887,6 +996,15 @@ def run_single_task(args: argparse.Namespace) -> int:
         print(f"Warning: task {definition.get('source_task_id', task_id)} expired after {definition['valid_until']} UTC.", file=sys.stderr)
         if not args.allow_expired:
             raise RunnerError("expired catalog task; review it or explicitly use --allow-expired")
+    return definition
+
+
+def _prepare_single_run(
+    args: argparse.Namespace,
+    task_id: str,
+    definition: dict[str, Any],
+) -> tuple[list[str], str]:
+    """Validate the attempt path, build its command and print its task description."""
     task_name = str(definition.get("task_name") or task_id).strip()
     output_dir = (args.output_dir / args.observation_mode).resolve()
     run_id = safe_task_id(str(definition.get("source_task_id") or task_id))
@@ -912,9 +1030,57 @@ def run_single_task(args: argparse.Namespace) -> int:
     print(f"Task name: {task_name}")
     print(f"Start URL: {definition['start_url']}")
     print(f"Output: {output_dir / run_id}")
-    if args.dry_run:
-        print("Dry run complete; browser task was not started.")
-        return 0
+    return command, run_id
+
+
+def _single_runner_environment(
+    container_name: str,
+    profile_provenance: dict[str, Any],
+) -> dict[str, str]:
+    """Bind browser attachment and profile provenance into the child environment."""
+    runner_environment = os.environ.copy()
+    if not runner_environment.get("AGENT_BROWSER_CDP_URL"):
+        runner_environment["AGENT_BROWSER_CDP_URL"] = (
+            browser_container_cdp_url(container_name)
+        )
+    runner_environment["RUNNER_BROWSER_PROFILE_PROVENANCE"] = json.dumps(
+        profile_provenance, separators=(",", ":")
+    )
+    return runner_environment
+
+
+def _publish_single_runner(
+    process: subprocess.Popen[str],
+    command: list[str],
+    run_id: str,
+    task_id: str,
+) -> None:
+    """Validate the child start token and publish its process-group ownership."""
+    start_ticks = process_start_ticks(process.pid)
+    if start_ticks is None:
+        process.terminate()
+        raise RunnerError("runner process exited before ownership could be recorded")
+    write_active_run(
+        {
+            "schema_version": 1,
+            "pid": process.pid,
+            "pgid": process.pid,
+            "process_start_ticks": start_ticks,
+            "run_id": run_id,
+            "task_id": task_id,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "command": command,
+        }
+    )
+
+
+def _launch_single_run(
+    args: argparse.Namespace,
+    command: list[str],
+    run_id: str,
+    task_id: str,
+) -> subprocess.Popen[str] | None:
+    """Hand off the browser profile and start an isolated owned actor process."""
     process: subprocess.Popen[str] | None = None
     with task_transition_lock():
         takeover = stop_previous_run(timeout=args.previous_run_stop_timeout)
@@ -930,14 +1096,7 @@ def run_single_task(args: argparse.Namespace) -> int:
             "CONTAINER_NAME", "w8-turns-browser-engine"
         )
         profile_provenance = claim_browser_profile_provenance(container_name)
-        runner_environment = os.environ.copy()
-        if not runner_environment.get("AGENT_BROWSER_CDP_URL"):
-            runner_environment["AGENT_BROWSER_CDP_URL"] = (
-                browser_container_cdp_url(container_name)
-            )
-        runner_environment["RUNNER_BROWSER_PROFILE_PROVENANCE"] = json.dumps(
-            profile_provenance, separators=(",", ":")
-        )
+        runner_environment = _single_runner_environment(container_name, profile_provenance)
         process = subprocess.Popen(
             command,
             cwd=ROOT,
@@ -945,24 +1104,12 @@ def run_single_task(args: argparse.Namespace) -> int:
             env=runner_environment,
             start_new_session=True,
         )
-        start_ticks = process_start_ticks(process.pid)
-        if start_ticks is None:
-            process.terminate()
-            raise RunnerError("runner process exited before ownership could be recorded")
-        write_active_run(
-            {
-                "schema_version": 1,
-                "pid": process.pid,
-                "pgid": process.pid,
-                "process_start_ticks": start_ticks,
-                "run_id": run_id,
-                "task_id": task_id,
-                "started_at": datetime.now(timezone.utc).isoformat(),
-                "command": command,
-            }
-        )
+        _publish_single_runner(process, command, run_id, task_id)
+    return process
 
-    assert process is not None
+
+def _wait_single_run(process: subprocess.Popen[str], timeout: float) -> int:
+    """Wait for the actor, forward cancellation and clear its ownership record."""
     try:
         return process.wait()
     except KeyboardInterrupt:
@@ -971,7 +1118,7 @@ def run_single_task(args: argparse.Namespace) -> int:
         except ProcessLookupError:
             pass
         try:
-            return process.wait(timeout=args.previous_run_stop_timeout)
+            return process.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
             try:
                 os.killpg(process.pid, signal.SIGKILL)
@@ -980,6 +1127,63 @@ def run_single_task(args: argparse.Namespace) -> int:
             return process.wait()
     finally:
         clear_active_run(process.pid)
+
+
+def run_batch(args: argparse.Namespace) -> int:
+    """Schedule and resume paired actor attempts and their evaluation."""
+    if args.trials <= 0 or args.observation_mode or args.task or args.start_url or args.no_browser_start or args.catalog_url:
+        raise RunnerError("a batch requires positive --trials, catalog tasks, fresh profiles and both arms")
+    if args.judge_model != "gpt-6.1-sol" or not args.dry_run and args.rubric_dir is None:
+        raise RunnerError("every batch trial requires explicit --judge-model gpt-6.1-sol and execution requires --rubric-dir")
+    from w8bench.run_paths import run_directory, resolve_run_name
+    catalog_path, catalog_bytes, catalog_hash, definitions = _batch_definitions(args)
+    planning_only = args.dry_run and (args.rubric_dir is None or any(
+        not (args.rubric_dir.resolve() / f"{safe_task_id(definition['source_task_id'])}.json").is_file()
+        for definition in definitions))
+    batch_dir = run_directory(args.output_dir, resolve_run_name(args.run_name)).resolve()
+    frozen_catalog = _freeze_batch_catalog(batch_dir, definitions, catalog_bytes)
+    ledger_path = batch_dir / ("schedule_preview.jsonl" if planning_only else "ledger.jsonl")
+    model_name = args.model
+    schedule = _batch_schedule(args, definitions, catalog_hash, batch_dir, planning_only, model_name)
+    # The global batch lock prevents two schedules from alternating through one browser.
+    with task_transition_lock(RUNTIME_ROOT / "batch.lock"):
+        ledger = _batch_ledger(ledger_path, schedule, planning_only)
+        _guard_batch_processes(batch_dir, ledger)
+        if args.dry_run:
+            print(f"{'Planning-only schedule' if planning_only else 'Schedule'}: {ledger_path}; {len(ledger)} rows; no tasks started" +
+                ("; execution requires frozen rubrics" if planning_only else ""))
+            return 0
+        for row in ledger:
+            if hashlib.sha256(frozen_catalog.read_bytes()).hexdigest() != row["catalog_sha256"]:
+                raise RunnerError("frozen batch catalog changed after scheduling")
+            directory = Path(row["recording"])
+            if not row["completed"]:
+                _run_batch_actor(args, row, ledger, ledger_path, batch_dir, catalog_path, model_name, directory)
+            # Record both arms back to back before any grading latency.
+            if row["arm_order"] == 2:
+                _grade_batch_pair(args, row, ledger, ledger_path, batch_dir)
+        print(ledger_path)
+        return 0
+
+
+def run_single_task(args: argparse.Namespace) -> int:
+    """Run one task with browser-profile and process-group ownership."""
+    if len(args.task_id) != 1 or not args.observation_mode:
+        raise RunnerError("one task needs --observation-mode; a batch needs --trials")
+    if args.rubric_dir or args.judge_model:
+        raise RunnerError("batch grading options require --trials")
+    task_id = safe_task_id(args.task_id[0].strip())
+    from w8bench.run_paths import run_directory, resolve_run_name
+    args.run_name = resolve_run_name(args.run_name)
+    args.output_dir = run_directory(args.output_dir, args.run_name)
+    definition = _single_task_definition(args, task_id)
+    command, run_id = _prepare_single_run(args, task_id, definition)
+    if args.dry_run:
+        print("Dry run complete; browser task was not started.")
+        return 0
+    process = _launch_single_run(args, command, run_id, task_id)
+    assert process is not None
+    return _wait_single_run(process, args.previous_run_stop_timeout)
 
 
 def main(argv: list[str] | None = None) -> int:

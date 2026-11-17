@@ -43,22 +43,7 @@ def model_dom_from_envelope(payload: Any) -> dict[str, Any]:
     return model_dom
 
 
-def render_model_dom(model_dom: dict[str, Any]) -> str:
-    """Validate and join one structured browser-produced model projection."""
-    unknown = set(model_dom) - {"rendererName", "sections"}
-    if unknown:
-        raise ModelDOMRenderError(
-            f"unknown modelDOM fields: {', '.join(sorted(unknown))}"
-        )
-    name = model_dom.get("rendererName")
-    if name != RENDERER_NAME:
-        raise ModelDOMRenderError(
-            f"unexpected rendererName: {name!r}; expected {RENDERER_NAME!r}"
-        )
-    sections = model_dom.get("sections")
-    if not isinstance(sections, list) or not sections:
-        raise ModelDOMRenderError("modelDOM.sections must be a non-empty array")
-
+def _render_sections(sections: list) -> list[str]:
     order_index = {name: index for index, name in enumerate(SECTION_ORDER)}
     seen: set[str] = set()
     previous_index = -1
@@ -91,7 +76,25 @@ def render_model_dom(model_dom: dict[str, Any]) -> str:
                 f"sections[{index}].lines must be a non-empty string array"
             )
         rendered_sections.append("\n".join(lines))
+    return rendered_sections
 
+
+def render_model_dom(model_dom: dict[str, Any]) -> str:
+    """Validate and join one structured browser-produced model projection."""
+    unknown = set(model_dom) - {"rendererName", "sections"}
+    if unknown:
+        raise ModelDOMRenderError(
+            f"unknown modelDOM fields: {', '.join(sorted(unknown))}"
+        )
+    name = model_dom.get("rendererName")
+    if name != RENDERER_NAME:
+        raise ModelDOMRenderError(
+            f"unexpected rendererName: {name!r}; expected {RENDERER_NAME!r}"
+        )
+    sections = model_dom.get("sections")
+    if not isinstance(sections, list) or not sections:
+        raise ModelDOMRenderError("modelDOM.sections must be a non-empty array")
+    rendered_sections = _render_sections(sections)
     if sections[0].get("name") != "header":
         raise ModelDOMRenderError("the first modelDOM section must be header")
     return "\n\n".join(rendered_sections).rstrip() + "\n"

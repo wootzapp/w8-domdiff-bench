@@ -164,9 +164,7 @@ append_extra_args() {
   fi
 }
 
-start_chromium() {
-  prepare_profile || return 1
-
+build_chromium_args() {
   args=(
     "--remote-debugging-address=127.0.0.1"
     "--remote-debugging-port=${INTERNAL_PORT}"
@@ -182,17 +180,14 @@ start_chromium() {
     "--log-file=${RUNTIME_DIR}/chrome.log"
     "--window-size=${WINDOW_WIDTH},${WINDOW_HEIGHT}"
   )
-
   if [ "${CHROMIUM_NO_SANDBOX:-1}" = "1" ]; then
     args+=("--no-sandbox")
   fi
-
   if [ "${HEADLESS}" = "1" ]; then
     args+=("--headless=new" "--disable-gpu")
   else
     args+=("--ozone-platform=x11" "--disable-gpu" "--disable-accelerated-2d-canvas")
   fi
-
   case "${AUTHORING_MODE}" in
     off)
       ;;
@@ -204,9 +199,14 @@ start_chromium() {
       args+=("--host-resolver-rules=MAP * 0.0.0.0")
       ;;
   esac
-
   append_extra_args "${CHROMIUM_EXTRA_ARGS:-}"
   args+=("${START_URL}")
+}
+
+start_chromium() {
+  prepare_profile || return 1
+
+  build_chromium_args
 
   {
     echo "headless=${HEADLESS}"

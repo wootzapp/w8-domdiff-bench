@@ -259,13 +259,7 @@ async def capture_structured_snapshot(
     max_nodes: int,
     max_text_chars: int,
 ) -> dict[str, Any]:
-    """Capture one viewport-scoped structured snapshot through ChromiumRL.
-
-    A task record proves what was visible in that state, so do not expose
-    offscreen page content to the model or verifier. A non-empty document with
-    zero returned nodes is not a usable capture; retry the read-only capture
-    before allowing the caller to materialize a state directory.
-    """
+    """Capture viewport DOM, retrying empty snapshots of populated documents."""
     params: dict[str, Any] = {
         "inViewportOnly": True,
         "maxNodes": max_nodes,
@@ -353,19 +347,125 @@ async def capture_after_action_bundle(
     raise AssertionError("unreachable")
 
 
-async def capture_bundle(
-    cdp: CDPClient,
-    directory: Path,
-    *,
-    max_nodes: int,
-    max_text_chars: int,
-    observation_mode: str = "dom",
-) -> CaptureBundle:
-    """Capture paired recorder evidence; only the selected observation drives actors.
+@dataclass
+class _CaptureState:
+    snapshot: dict[str, Any] = field(default_factory=dict)
+    snapshot_path: Path | None = None
+    model_text: str = ""
+    screenshot_path: Path | None = None
+    dom_error: Exception | None = None
 
-    Passive failures never reconnect, retry an action, or enter actor feedback.
-    Such states remain usable by their actor but are incomplete for paired audits.
-    """
+
+async def _capture_frame(cdp: CDPClient, metadata: dict[str, Any], kind: str) -> dict[str, Any]:
+    try:
+        response = await cdp.call("Page.getFrameTree")
+        return response.get("frameTree", {}).get("frame", {})
+    except Exception as error:
+        metadata["metadata_errors"].append({"kind": kind, "error": f"{type(error).__name__}: {error}"})
+        return {}
+
+
+async def _capture_screenshot(cdp: CDPClient, directory: Path) -> Path:
+    result = await capture_call(cdp, "Page.captureScreenshot", {
+        "format": "png", "fromSurface": True, "captureBeyondViewport": False})
+    data = base64.b64decode(result["data"], validate=True)
+    import io
+    from PIL import Image
+    with Image.open(io.BytesIO(data)) as image:
+        if cdp.viewport is not None and image.size != cdp.viewport:
+            raise RunnerError("screenshot dimensions differ from the coordinate viewport")
+        image.verify()
+    path = directory / "screenshot.png"
+    path.write_bytes(data)
+    return path
+
+
+async def _capture_phase(cdp: CDPClient, directory: Path, phase: str, state: _CaptureState,
+    max_nodes: int, max_text_chars: int) -> None:
+    if phase == "structured_dom":
+        state.snapshot = await capture_structured_snapshot(cdp, max_nodes=max_nodes,
+            max_text_chars=max_text_chars)
+        state.snapshot_path = directory / "dom.json"
+        write_json(state.snapshot_path, {"result": {"snapshot": state.snapshot}})
+        render_full_stored_snapshot(state.snapshot_path)
+    elif phase == "dom_model_artifacts":
+        if state.dom_error is not None:
+            raise RunnerError("structured DOM capture unavailable")
+        model_dom = await model_dom_from_snapshot(cdp, state.snapshot)
+        model_path = directory / "dom_model.json"
+        write_json(model_path, {"result": {"modelDOM": model_dom}})
+        render_model_dom_stored_projection(model_path)
+        state.model_text = model_path.with_suffix(".txt").read_text(encoding="utf-8")
+    else:
+        state.screenshot_path = await _capture_screenshot(cdp, directory)
+
+
+def _invalidate_capture(directory: Path, phase: str, state: _CaptureState,
+    record: dict[str, Any], error: Exception) -> None:
+    names = {"structured_dom": ("dom.json", "dom_full.txt"),
+        "dom_model_artifacts": ("dom_model.json", "dom_model.txt"),
+        "screenshot": ("screenshot.png",)}[phase]
+    for name in names:
+        for path in (directory / name, directory / f".{name}.tmp"):
+            try:
+                path.unlink(missing_ok=True)
+            except OSError as cleanup_error:
+                record.setdefault("cleanup_errors", []).append(str(cleanup_error))
+    if phase == "structured_dom":
+        state.snapshot_path = None
+    elif phase == "dom_model_artifacts":
+        state.model_text = ""
+    else:
+        state.screenshot_path = None
+    if phase != "screenshot":
+        state.dom_error = error
+
+
+async def _record_capture_phase(cdp: CDPClient, directory: Path, phase: str,
+    state: _CaptureState, metadata: dict[str, Any], interval_started: float,
+    observation_mode: str, max_nodes: int, max_text_chars: int) -> None:
+    record = {"kind": phase, "started_at": utc_now()}
+    started = time.monotonic()
+    try:
+        await _capture_phase(cdp, directory, phase, state, max_nodes, max_text_chars)
+        record["status"] = "captured"
+    except Exception as error:
+        record.update(status="error", error=f"{type(error).__name__}: {error}")
+        metadata["paired_complete"] = False
+        _invalidate_capture(directory, phase, state, record, error)
+        if (phase == "screenshot") == (observation_mode == "screenshot"):
+            raise
+    finally:
+        record.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
+        metadata["captures"].append(record)
+        metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic() - interval_started)
+        write_json(directory / "capture.json", metadata)
+
+
+async def _finish_capture(cdp: CDPClient, directory: Path, state: _CaptureState,
+    metadata: dict[str, Any], interval_started: float, navigation_start: int,
+    observation_mode: str) -> CaptureBundle:
+    frame = await _capture_frame(cdp, metadata, "url_after")
+    metadata["url_after"] = str(frame.get("url", metadata["url_before"]))
+    metadata["loader_id_after"] = frame.get("loaderId", "")
+    metadata["navigation_during_capture"] = (metadata["url_before"] != metadata["url_after"]
+        or metadata["loader_id_before"] != metadata["loader_id_after"]
+        or len(cdp.navigation_events) != navigation_start)
+    metadata["navigation_events"] = cdp.navigation_events[navigation_start:]
+    metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic() - interval_started,
+        url_metadata_complete=not metadata["metadata_errors"],
+        document_language=str(state.snapshot.get("documentLanguage") or state.snapshot.get("language") or "")
+            if observation_mode == "dom" else None)
+    write_json(directory / "capture.json", metadata)
+    return CaptureBundle(snapshot=state.snapshot, snapshot_path=state.snapshot_path, model_text=state.model_text,
+        screenshot_path=state.screenshot_path, observation_mode=observation_mode,
+        document_url=metadata["url_after"], capture_metadata=metadata,
+        document_language=str(state.snapshot.get("documentLanguage") or state.snapshot.get("language") or ""))
+
+
+async def capture_bundle(cdp: CDPClient, directory: Path, *, max_nodes: int,
+    max_text_chars: int, observation_mode: str = "dom") -> CaptureBundle:
+    """Record paired evidence, with only the selected channel driving the actor."""
     if observation_mode not in {"dom", "screenshot"}:
         raise RunnerError("unknown observation mode")
     directory.mkdir(parents=True, exist_ok=False)
@@ -376,131 +476,31 @@ async def capture_bundle(
         "setup_errors": list(getattr(cdp, "capture_setup_errors", [])), "metadata_errors": []}
     interval_started = time.monotonic()
     navigation_start = len(cdp.navigation_events)
-    try:
-        before = await cdp.call("Page.getFrameTree")
-        frame_before = before.get("frameTree", {}).get("frame", {})
-    except Exception as error:
-        frame_before = {}
-        metadata["metadata_errors"].append({"kind": "url_before", "error": f"{type(error).__name__}: {error}"})
-    metadata["url_before"] = str(frame_before.get("url", cdp.target.get("url", "")))
-    metadata["loader_id_before"] = frame_before.get("loaderId", "")
-    snapshot, model_text, snapshot_path, screenshot_path = {}, "", None, None
-    dom_error = None
+    frame = await _capture_frame(cdp, metadata, "url_before")
+    metadata["url_before"] = str(frame.get("url", cdp.target.get("url", "")))
+    metadata["loader_id_before"] = frame.get("loaderId", "")
+    state = _CaptureState()
     for phase in metadata["capture_order"]:
-        record = {"kind": phase, "started_at": utc_now()}
-        started = time.monotonic()
-        try:
-            if phase == "structured_dom":
-                snapshot = await capture_structured_snapshot(cdp, max_nodes=max_nodes,
-                    max_text_chars=max_text_chars)
-                snapshot_path = directory / "dom.json"
-                write_json(snapshot_path, {"result": {"snapshot": snapshot}})
-                render_full_stored_snapshot(snapshot_path)
-            elif phase == "dom_model_artifacts":
-                if dom_error is not None:
-                    raise RunnerError("structured DOM capture unavailable")
-                model_dom = await model_dom_from_snapshot(cdp, snapshot)
-                model_path = directory / "dom_model.json"
-                write_json(model_path, {"result": {"modelDOM": model_dom}})
-                render_model_dom_stored_projection(model_path)
-                model_text = model_path.with_suffix(".txt").read_text(encoding="utf-8")
-            else:
-                result = await capture_call(cdp, "Page.captureScreenshot", {
-                    "format": "png", "fromSurface": True, "captureBeyondViewport": False})
-                data = base64.b64decode(result["data"], validate=True)
-                import io
-                from PIL import Image
-                with Image.open(io.BytesIO(data)) as image:
-                    if cdp.viewport is not None and image.size != cdp.viewport:
-                        raise RunnerError("screenshot dimensions differ from the coordinate viewport")
-                    image.verify()
-                screenshot_path = directory / "screenshot.png"
-                screenshot_path.write_bytes(data)
-            record["status"] = "captured"
-        except Exception as error:
-            record.update(status="error", error=f"{type(error).__name__}: {error}")
-            metadata["paired_complete"] = False
-            # Never expose a failed partial artifact as usable judge/audit evidence.
-            names = {"structured_dom": ("dom.json", "dom_full.txt"),
-                "dom_model_artifacts": ("dom_model.json", "dom_model.txt"),
-                "screenshot": ("screenshot.png",)}[phase]
-            for name in names:
-                for path in (directory / name, directory / f".{name}.tmp"):
-                    try:
-                        path.unlink(missing_ok=True)
-                    except OSError as cleanup_error:
-                        record.setdefault("cleanup_errors", []).append(str(cleanup_error))
-            if phase == "structured_dom":
-                snapshot_path = None
-            elif phase == "dom_model_artifacts":
-                model_text = ""
-            else:
-                screenshot_path = None
-            if phase != "screenshot":
-                dom_error = error
-            if (phase == "screenshot") == (observation_mode == "screenshot"):
-                raise
-        finally:
-            record.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
-            metadata["captures"].append(record)
-            metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic() - interval_started)
-            # Persist failures even when the active capture cannot produce a state.
-            write_json(directory / "capture.json", metadata)
-    try:
-        after = await cdp.call("Page.getFrameTree")
-        frame_after = after.get("frameTree", {}).get("frame", {})
-    except Exception as error:
-        frame_after = {}
-        metadata["metadata_errors"].append({"kind": "url_after", "error": f"{type(error).__name__}: {error}"})
-    metadata["url_after"] = str(frame_after.get("url", metadata["url_before"]))
-    metadata["loader_id_after"] = frame_after.get("loaderId", "")
-    metadata["navigation_during_capture"] = (metadata["url_before"] != metadata["url_after"]
-        or metadata["loader_id_before"] != metadata["loader_id_after"]
-        or len(cdp.navigation_events) != navigation_start)
-    metadata["navigation_events"] = cdp.navigation_events[navigation_start:]
-    metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic() - interval_started,
-        url_metadata_complete=not metadata["metadata_errors"],
-        document_language=str(snapshot.get("documentLanguage") or snapshot.get("language") or "")
-            if observation_mode == "dom" else None)
-    write_json(directory / "capture.json", metadata)
-    return CaptureBundle(snapshot=snapshot, snapshot_path=snapshot_path, model_text=model_text,
-        screenshot_path=screenshot_path, observation_mode=observation_mode,
-        document_url=metadata["url_after"], capture_metadata=metadata,
-        document_language=str(snapshot.get("documentLanguage") or snapshot.get("language") or ""))
+        await _record_capture_phase(cdp, directory, phase, state, metadata,
+            interval_started, observation_mode, max_nodes, max_text_chars)
+    return await _finish_capture(cdp, directory, state, metadata, interval_started,
+        navigation_start, observation_mode)
 
 
-async def attach_agent_browser_observation(
-    bundle: CaptureBundle,
-    agent_browser: AgentBrowserClient,
-    cdp: CDPClient,
-    *,
-    attempts: int = 3,
-) -> CaptureBundle:
-    """Store the exact agent-browser ref snapshot supplied to the model."""
-    if bundle.observation_mode != "dom":
-        raise RunnerError("accessibility observations are forbidden in screenshot mode")
-    refs_started_at, refs_started = utc_now(), time.monotonic()
+async def _snapshot_action_refs(agent_browser: AgentBrowserClient, attempts: int) -> Any:
     for attempt in range(1, max(1, attempts) + 1):
         try:
-            action_observation = await agent_browser.snapshot()
-            break
+            return await agent_browser.snapshot()
         except Exception:
             if attempt >= max(1, attempts):
                 raise
             await agent_browser.reconnect()
             await asyncio.sleep(0.75 * attempt)
-    else:
-        raise AssertionError("unreachable")
-    action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
-    write_text(action_path, action_observation.text)
-    bundle.agent_browser_action_text = action_observation.text
-    bundle.agent_browser_refs = action_observation.refs
-    bundle.agent_browser_targets = action_observation.targets
-    bundle.agent_browser_action_path = action_path
-    bundle.capture_metadata["capture_order"].append("executable_refs")
-    bundle.capture_metadata["captures"].append({"kind": "executable_refs", "status": "captured",
-        "started_at": refs_started_at, "ended_at": utc_now(),
-        "duration_seconds": time.monotonic() - refs_started})
+    raise AssertionError("unreachable")
+
+
+async def _finish_reference_capture(bundle: CaptureBundle, cdp: CDPClient,
+    refs_started: float) -> None:
     try:
         frame = (await cdp.call("Page.getFrameTree")).get("frameTree", {}).get("frame", {})
     except Exception as error:
@@ -520,7 +520,49 @@ async def attach_agent_browser_observation(
     bundle.capture_metadata["ended_at"] = utc_now()
     bundle.capture_metadata["duration_seconds"] += time.monotonic() - refs_started
     write_json(bundle.directory / "capture.json", bundle.capture_metadata)
+
+
+async def attach_agent_browser_observation(bundle: CaptureBundle,
+    agent_browser: AgentBrowserClient, cdp: CDPClient, *, attempts: int = 3) -> CaptureBundle:
+    """Store the exact agent-browser ref snapshot supplied to the model."""
+    if bundle.observation_mode != "dom":
+        raise RunnerError("accessibility observations are forbidden in screenshot mode")
+    refs_started_at, refs_started = utc_now(), time.monotonic()
+    action_observation = await _snapshot_action_refs(agent_browser, attempts)
+    action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
+    write_text(action_path, action_observation.text)
+    bundle.agent_browser_action_text = action_observation.text
+    bundle.agent_browser_refs = action_observation.refs
+    bundle.agent_browser_targets = action_observation.targets
+    bundle.agent_browser_action_path = action_path
+    bundle.capture_metadata["capture_order"].append("executable_refs")
+    bundle.capture_metadata["captures"].append({"kind": "executable_refs", "status": "captured",
+        "started_at": refs_started_at, "ended_at": utc_now(),
+        "duration_seconds": time.monotonic() - refs_started})
+    await _finish_reference_capture(bundle, cdp, refs_started)
     return bundle
+
+
+async def _synchronize_capture_tab(cdp: CDPClient) -> dict[str, Any]:
+    # Target metadata identifies tabs without reading page content.
+    try:
+        targets = (await cdp.call("Target.getTargets", attached=False)).get("targetInfos", [])
+    except RunnerError as error:
+        if not is_cdp_transport_error(error):
+            raise
+        target = cdp.target
+        return await cdp.reconnect_active_page(AgentBrowserPage(
+            str(target.get("targetId", "")), str(target.get("url", "")), ""))
+    children = [item for item in targets if item.get("type") == "page"
+        and item.get("openerId") == cdp.target.get("targetId")]
+    if len(children) > 1:
+        raise RunnerError("multiple popup tabs opened; target is ambiguous")
+    selected = children[0] if children else next((item for item in targets
+        if item.get("targetId") == cdp.target.get("targetId")), None)
+    if selected is None:
+        raise RunnerError("the task tab closed without a unique popup")
+    return await cdp.synchronize_target(AgentBrowserPage(
+        str(selected["targetId"]), str(selected.get("url", "")), ""))
 
 
 async def synchronize_recorder_target(
@@ -529,32 +571,9 @@ async def synchronize_recorder_target(
     *,
     attempts: int = 6,
 ) -> dict[str, Any]:
-    """Keep capture and action sessions on the same active page.
-
-    A popup target can appear before Target.getTargets exposes its final URL.
-    Give Chromium enough time to retire duplicate transient targets, but never
-    fall back to capturing the previously attached page or choose ambiguously.
-    """
+    """Synchronize capture with the active action tab, with bounded reconnects."""
     if agent_browser is None:
-        # Target metadata identifies tabs without reading page content.
-        try:
-            targets = (await cdp.call("Target.getTargets", attached=False)).get("targetInfos", [])
-        except RunnerError as error:
-            if not is_cdp_transport_error(error):
-                raise
-            target = cdp.target
-            return await cdp.reconnect_active_page(AgentBrowserPage(
-                str(target.get("targetId", "")), str(target.get("url", "")), ""))
-        children = [item for item in targets if item.get("type") == "page"
-            and item.get("openerId") == cdp.target.get("targetId")]
-        if len(children) > 1:
-            raise RunnerError("multiple popup tabs opened; target is ambiguous")
-        selected = children[0] if children else next((item for item in targets
-            if item.get("targetId") == cdp.target.get("targetId")), None)
-        if selected is None:
-            raise RunnerError("the task tab closed without a unique popup")
-        return await cdp.synchronize_target(AgentBrowserPage(
-            str(selected["targetId"]), str(selected.get("url", "")), ""))
+        return await _synchronize_capture_tab(cdp)
     last_error: BaseException | None = None
     for attempt in range(1, max(1, attempts) + 1):
         try:
@@ -652,7 +671,7 @@ class CDPClient:
         self._failure_target_cleanup_attempted = False
 
     async def _enable_attached_target(self) -> dict[str, Any]:
-        """Enable required domains and best-effort English locale overrides."""
+        """Enable capture domains, the coordinate viewport and configured locales."""
         await self.call("Page.enable")
         try:
             await self.call("ChromiumRL.enable")
@@ -664,19 +683,15 @@ class CDPClient:
         if self.viewport is not None:
             await self.call("Emulation.setDeviceMetricsOverride", {"width": self.viewport[0],
                 "height": self.viewport[1], "deviceScaleFactor": 1, "mobile": False})
+        return await self._configure_locales()
+
+    async def _configure_locales(self) -> dict[str, Any]:
         locale_setup: dict[str, Any] = {}
         for label, method, params in (
             ("network_enable", "Network.enable", {}),
-            (
-                "accept_language_header",
-                "Network.setExtraHTTPHeaders",
-                {"headers": {"Accept-Language": self.browser_accept_language}},
-            ),
-            (
-                "locale_override",
-                "Emulation.setLocaleOverride",
-                {"locale": self.browser_language},
-            ),
+            ("accept_language_header", "Network.setExtraHTTPHeaders",
+                {"headers": {"Accept-Language": self.browser_accept_language}}),
+            ("locale_override", "Emulation.setLocaleOverride", {"locale": self.browser_language}),
         ):
             if label == "accept_language_header" and not self.browser_accept_language:
                 locale_setup[label] = {"status": "skipped", "reason": "empty configuration"}
@@ -686,15 +701,9 @@ class CDPClient:
                 continue
             try:
                 await self.call(method, params)
-                locale_setup[label] = {
-                    "status": "ok",
-                    "value": next(iter(params.values()), None),
-                }
+                locale_setup[label] = {"status": "ok", "value": next(iter(params.values()), None)}
             except Exception as error:
-                locale_setup[label] = {
-                    "status": "error",
-                    "error": f"{type(error).__name__}: {error}",
-                }
+                locale_setup[label] = {"status": "error", "error": f"{type(error).__name__}: {error}"}
         return locale_setup
 
     async def __aenter__(self) -> "CDPClient":
@@ -774,157 +783,93 @@ class CDPClient:
         self.reader = asyncio.create_task(self._read_messages())
 
     async def connect(self) -> None:
-        """Create a clean task tab, close stale task tabs, and attach ChromiumRL."""
+        """Select the task page, attach capture and establish its locale policy."""
         await self._open_browser_transport()
-
         targets = (await self.call("Target.getTargets", attached=False)).get("targetInfos", [])
-        pages = [
-            item
-            for item in targets
-            if item.get("type") == "page"
-            and not str(item.get("url", "")).startswith("devtools://")
-        ]
-        pages.sort(
-            key=lambda item: (
-                0
-                if str(item.get("url", "")).startswith(("http://", "https://"))
-                else 1
-            )
-        )
-        cleanup: dict[str, Any] = {
-            "page_targets_found": len(pages),
-            "page_target_urls": [str(item.get("url", "")) for item in pages],
-            "keep_existing_tabs": self.keep_existing_tabs,
-            "fresh_target_created": False,
-            "closed_count": 0,
-            "closed_targets": [],
-            "close_errors": [],
-            "warnings": [],
-        }
-        if len(pages) > 10:
-            cleanup["warnings"].append(
-                f"found {len(pages)} live page targets; prior runs may have left browser state behind"
-            )
-
+        pages = self._page_targets(targets)
+        pages.sort(key=lambda item: 0 if str(item.get("url", "")).startswith(("http://", "https://")) else 1)
+        cleanup = self._tab_cleanup_report(pages)
         if self.keep_existing_tabs:
             if not pages:
                 raise RunnerError("browser exposes no page target")
             self.target = pages[0]
         else:
-            created = await self.call(
-                "Target.createTarget",
-                {"url": "about:blank"},
-                attached=False,
-            )
-            fresh_target_id = str(created.get("targetId", ""))
-            if not fresh_target_id:
-                raise RunnerError("Target.createTarget returned no targetId")
-            refreshed = (
-                await self.call("Target.getTargets", attached=False)
-            ).get("targetInfos", [])
-            self.target = next(
-                (
-                    item
-                    for item in refreshed
-                    if str(item.get("targetId", "")) == fresh_target_id
-                ),
-                {
-                    "targetId": fresh_target_id,
-                    "type": "page",
-                    "title": "",
-                    "url": "about:blank",
-                },
-            )
-            cleanup["fresh_target_created"] = True
-            cleanup["fresh_target_id"] = fresh_target_id
-            stale_pages = [
-                item
-                for item in refreshed
-                if item.get("type") == "page"
-                and str(item.get("targetId", "")) != fresh_target_id
-                and not str(item.get("url", "")).startswith("devtools://")
-            ]
-            closed_target_ids: set[str] = set()
-            cleanup_passes = 0
-            cleanup_timeout_seconds = 5.0
-            cleanup_deadline = time.monotonic() + cleanup_timeout_seconds
-            while stale_pages and time.monotonic() < cleanup_deadline:
-                cleanup_passes += 1
-                for page in stale_pages:
-                    target_id = str(page.get("targetId", ""))
-                    url = str(page.get("url", ""))
-                    try:
-                        result = await self.call(
-                            "Target.closeTarget",
-                            {"targetId": target_id},
-                            attached=False,
-                        )
-                        if result.get("success") is False:
-                            raise RunnerError(
-                                "Target.closeTarget returned success=false"
-                            )
-                        if target_id not in closed_target_ids:
-                            cleanup["closed_targets"].append(
-                                {"target_id": target_id, "url": url}
-                            )
-                            closed_target_ids.add(target_id)
-                    except Exception as error:
-                        cleanup["close_errors"].append(
-                            {
-                                "target_id": target_id,
-                                "url": url,
-                                "error": f"{type(error).__name__}: {error}",
-                            }
-                        )
-                await asyncio.sleep(0.25)
-                remaining_targets = (
-                    await self.call("Target.getTargets", attached=False)
-                ).get("targetInfos", [])
-                stale_pages = [
-                    item
-                    for item in remaining_targets
-                    if item.get("type") == "page"
-                    and str(item.get("targetId", "")) != fresh_target_id
-                    and not str(item.get("url", "")).startswith("devtools://")
-                ]
-            cleanup["cleanup_passes"] = cleanup_passes
-            cleanup["cleanup_timeout_seconds"] = cleanup_timeout_seconds
-            cleanup["closed_count"] = len(cleanup["closed_targets"])
-            cleanup["remaining_page_targets"] = [
-                {
-                    "target_id": str(item.get("targetId", "")),
-                    "url": str(item.get("url", "")),
-                }
-                for item in stale_pages
-            ]
-            if stale_pages:
-                remaining = ", ".join(
-                    str(item.get("targetId", "")) for item in stale_pages
-                )
-                raise RunnerError(
-                    "could not close all previous task page targets: " + remaining
-                )
-            await self.call(
-                "Target.activateTarget",
-                {"targetId": fresh_target_id},
-                attached=False,
-            )
-
+            await self._create_task_target(cleanup)
         cleanup["selected_target_id"] = self.target.get("targetId")
         cleanup["selected_target_url"] = str(self.target.get("url", ""))
-        attached = await self.call(
-            "Target.attachToTarget",
-            {"targetId": self.target["targetId"], "flatten": True},
-            attached=False,
-        )
+        attached = await self.call("Target.attachToTarget",
+            {"targetId": self.target["targetId"], "flatten": True}, attached=False)
         self.session_id = str(attached["sessionId"])
         locale_setup = await self._enable_attached_target()
-        self.connection_report = {
-            "browser_version": self.browser_version,
-            "tab_cleanup": cleanup,
-            "locale_setup": locale_setup,
-            "target_switches": [],
-        }
+        self.connection_report = {"browser_version": self.browser_version, "tab_cleanup": cleanup,
+            "locale_setup": locale_setup, "target_switches": []}
+
+    @staticmethod
+    def _page_targets(targets: list[dict[str, Any]], except_id: str | None = None) -> list[dict[str, Any]]:
+        return [item for item in targets if item.get("type") == "page"
+            and (except_id is None or str(item.get("targetId", "")) != except_id)
+            and not str(item.get("url", "")).startswith("devtools://")]
+
+    def _tab_cleanup_report(self, pages: list[dict[str, Any]]) -> dict[str, Any]:
+        cleanup = {"page_targets_found": len(pages),
+            "page_target_urls": [str(item.get("url", "")) for item in pages],
+            "keep_existing_tabs": self.keep_existing_tabs, "fresh_target_created": False,
+            "closed_count": 0, "closed_targets": [], "close_errors": [], "warnings": []}
+        if len(pages) > 10:
+            cleanup["warnings"].append(
+                f"found {len(pages)} live page targets; prior runs may have left browser state behind")
+        return cleanup
+
+    async def _create_task_target(self, cleanup: dict[str, Any]) -> None:
+        created = await self.call("Target.createTarget", {"url": "about:blank"}, attached=False)
+        fresh_target_id = str(created.get("targetId", ""))
+        if not fresh_target_id:
+            raise RunnerError("Target.createTarget returned no targetId")
+        refreshed = (await self.call("Target.getTargets", attached=False)).get("targetInfos", [])
+        self.target = next((item for item in refreshed if str(item.get("targetId", "")) == fresh_target_id),
+            {"targetId": fresh_target_id, "type": "page", "title": "", "url": "about:blank"})
+        cleanup["fresh_target_created"] = True
+        cleanup["fresh_target_id"] = fresh_target_id
+        await self._close_stale_targets(refreshed, fresh_target_id, cleanup)
+        await self.call("Target.activateTarget", {"targetId": fresh_target_id}, attached=False)
+
+    async def _close_stale_page(self, page: dict[str, Any], cleanup: dict[str, Any],
+        closed_target_ids: set[str]) -> None:
+        target_id = str(page.get("targetId", ""))
+        url = str(page.get("url", ""))
+        try:
+            result = await self.call("Target.closeTarget", {"targetId": target_id}, attached=False)
+            if result.get("success") is False:
+                raise RunnerError("Target.closeTarget returned success=false")
+            if target_id not in closed_target_ids:
+                cleanup["closed_targets"].append({"target_id": target_id, "url": url})
+                closed_target_ids.add(target_id)
+        except Exception as error:
+            cleanup["close_errors"].append({"target_id": target_id, "url": url,
+                "error": f"{type(error).__name__}: {error}"})
+
+    async def _close_stale_targets(self, refreshed: list[dict[str, Any]],
+        fresh_target_id: str, cleanup: dict[str, Any]) -> None:
+        stale_pages = self._page_targets(refreshed, fresh_target_id)
+        closed_target_ids: set[str] = set()
+        cleanup_passes = 0
+        cleanup_timeout_seconds = 5.0
+        cleanup_deadline = time.monotonic() + cleanup_timeout_seconds
+        while stale_pages and time.monotonic() < cleanup_deadline:
+            cleanup_passes += 1
+            for page in stale_pages:
+                await self._close_stale_page(page, cleanup, closed_target_ids)
+            await asyncio.sleep(0.25)
+            remaining = (await self.call("Target.getTargets", attached=False)).get("targetInfos", [])
+            stale_pages = self._page_targets(remaining, fresh_target_id)
+        cleanup["cleanup_passes"] = cleanup_passes
+        cleanup["cleanup_timeout_seconds"] = cleanup_timeout_seconds
+        cleanup["closed_count"] = len(cleanup["closed_targets"])
+        cleanup["remaining_page_targets"] = [{"target_id": str(item.get("targetId", "")),
+            "url": str(item.get("url", ""))} for item in stale_pages]
+        if stale_pages:
+            remaining_ids = ", ".join(str(item.get("targetId", "")) for item in stale_pages)
+            raise RunnerError("could not close all previous task page targets: " + remaining_ids)
 
     async def reconnect_active_page(
         self, active_page: AgentBrowserPage
@@ -946,102 +891,65 @@ class CDPClient:
         return report
 
     async def synchronize_target(self, active_page: AgentBrowserPage) -> dict[str, Any]:
-        """Attach ChromiumRL capture to agent-browser's active page target.
-
-        agent-browser follows a newly opened tab automatically, while a flattened
-        CDP session remains attached to the page it originally selected. Match
-        the official active-tab URL/title against live page targets and reattach
-        before capturing. Ambiguous matches fail loudly instead of recording
-        evidence from the wrong page.
-        """
-        targets = (await self.call("Target.getTargets", attached=False)).get(
-            "targetInfos", []
-        )
-        pages = [
-            item
-            for item in targets
-            if item.get("type") == "page"
-            and not str(item.get("url", "")).startswith("devtools://")
-        ]
-        active_key = comparable_page_url(active_page.url)
-        candidates = [
-            item
-            for item in pages
-            if comparable_page_url(str(item.get("url", ""))) == active_key
-        ]
-        if self.observation_mode == "screenshot":
-            candidates = [item for item in pages if item.get("targetId") == active_page.tab_id]
-        if len(candidates) > 1 and active_page.title:
-            title_matches = [
-                item
-                for item in candidates
-                if str(item.get("title", "")).strip() == active_page.title.strip()
-            ]
-            if title_matches:
-                candidates = title_matches
-        if not candidates and active_page.title:
-            # TargetInfo can transiently clear a page URL during a navigation.
-            # An exact title is safe only when it identifies one page target.
-            title_matches = [
-                item
-                for item in pages
-                if str(item.get("title", "")).strip() == active_page.title.strip()
-            ]
-            if len(title_matches) == 1:
-                candidates = title_matches
-        if not candidates:
-            raise RunnerError(
-                "agent-browser active tab has no matching CDP page target: "
-                f"tab={active_page.tab_id!r} url={active_page.url!r} "
-                f"title={active_page.title!r}"
-            )
-        if len(candidates) != 1:
-            raise RunnerError(
-                "agent-browser active tab matches multiple CDP page targets; "
-                "refusing to capture an ambiguous page: "
-                f"tab={active_page.tab_id!r} url={active_page.url!r} "
-                f"title={active_page.title!r} matches={len(candidates)}"
-            )
-
-        selected = candidates[0]
+        """Match the active task page and attach capture to its unique CDP target."""
+        targets = (await self.call("Target.getTargets", attached=False)).get("targetInfos", [])
+        selected = self._select_active_target(active_page, self._page_targets(targets))
         old_target_id = str(self.target.get("targetId", ""))
         new_target_id = str(selected.get("targetId", ""))
-        report: dict[str, Any] = {
-            "agent_browser_tab_id": active_page.tab_id,
-            "agent_browser_url": active_page.url,
-            "agent_browser_title": active_page.title,
-            "previous_target_id": old_target_id,
-            "previous_target_url": str(self.target.get("url", "")),
-            "selected_target_id": new_target_id,
-            "selected_target_url": str(selected.get("url", "")),
-            "switched": new_target_id != old_target_id,
-        }
-        if self.observation_mode == "screenshot":
-            report = {"previous_target_id": old_target_id, "selected_target_id": new_target_id,
-                      "switched": new_target_id != old_target_id}
+        report = self._target_switch_report(active_page, selected, old_target_id, new_target_id)
         if new_target_id == old_target_id:
             self.target = selected
             return report
-
         old_session_id = self.session_id
         if old_session_id:
             try:
-                await self.call(
-                    "Target.detachFromTarget",
-                    {"sessionId": old_session_id},
-                    attached=False,
-                )
+                await self.call("Target.detachFromTarget", {"sessionId": old_session_id}, attached=False)
             except Exception as error:
                 report["detach_error"] = f"{type(error).__name__}: {error}"
-        attached = await self.call(
-            "Target.attachToTarget",
-            {"targetId": new_target_id, "flatten": True},
-            attached=False,
-        )
+        attached = await self.call("Target.attachToTarget",
+            {"targetId": new_target_id, "flatten": True}, attached=False)
         self.session_id = str(attached["sessionId"])
         self.target = selected
         report["locale_setup"] = await self._enable_attached_target()
         self.connection_report.setdefault("target_switches", []).append(report)
+        return report
+
+    def _select_active_target(self, active_page: AgentBrowserPage,
+        pages: list[dict[str, Any]]) -> dict[str, Any]:
+        active_key = comparable_page_url(active_page.url)
+        candidates = [item for item in pages
+            if comparable_page_url(str(item.get("url", ""))) == active_key]
+        if self.observation_mode == "screenshot":
+            candidates = [item for item in pages if item.get("targetId") == active_page.tab_id]
+        if len(candidates) > 1 and active_page.title:
+            title_matches = [item for item in candidates
+                if str(item.get("title", "")).strip() == active_page.title.strip()]
+            if title_matches:
+                candidates = title_matches
+        if not candidates and active_page.title:
+            title_matches = [item for item in pages
+                if str(item.get("title", "")).strip() == active_page.title.strip()]
+            if len(title_matches) == 1:
+                candidates = title_matches
+        if not candidates:
+            raise RunnerError("agent-browser active tab has no matching CDP page target: "
+                f"tab={active_page.tab_id!r} url={active_page.url!r} title={active_page.title!r}")
+        if len(candidates) != 1:
+            raise RunnerError("agent-browser active tab matches multiple CDP page targets; "
+                "refusing to capture an ambiguous page: "
+                f"tab={active_page.tab_id!r} url={active_page.url!r} "
+                f"title={active_page.title!r} matches={len(candidates)}")
+        return candidates[0]
+
+    def _target_switch_report(self, active_page: AgentBrowserPage, selected: dict[str, Any],
+        old_target_id: str, new_target_id: str) -> dict[str, Any]:
+        report = {"agent_browser_tab_id": active_page.tab_id, "agent_browser_url": active_page.url,
+            "agent_browser_title": active_page.title, "previous_target_id": old_target_id,
+            "previous_target_url": str(self.target.get("url", "")), "selected_target_id": new_target_id,
+            "selected_target_url": str(selected.get("url", "")), "switched": new_target_id != old_target_id}
+        if self.observation_mode == "screenshot":
+            report = {"previous_target_id": old_target_id, "selected_target_id": new_target_id,
+                      "switched": new_target_id != old_target_id}
         return report
 
     async def close(self) -> None:
