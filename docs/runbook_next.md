@@ -25,7 +25,7 @@ from pathlib import Path
 from w8bench.task_recorder.runner import load_env, MAX_TASK_MEMORY_CHARS
 from w8bench.task_recorder.task_cli import parse_args, parse_task_catalog
 from w8bench.verifier.common import validate_endpoint_configs
-from w8bench.verifier.evidence_audit import resolve_audit_config
+from w8bench.verifier.audit_requests import resolve_audit_config
 from w8bench.verifier.package_manifests import require_local_packages
 load_env(Path('.env'))
 assert all(os.environ.get(k, '').strip() for k in ('OPENAI_API_KEY', 'GEMINI_API_KEY')), 'Missing credential'

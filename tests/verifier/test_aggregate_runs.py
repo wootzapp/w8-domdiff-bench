@@ -5,7 +5,7 @@ import pytest
 
 from w8bench.verifier import aggregate_runs as aggregate
 from copy import deepcopy
-from w8bench.verifier import evidence_audit as audit
+from w8bench.verifier import audit_requests as audit
 from w8bench.verifier.common import canonical_sha256
 from .test_automated_evidence_audit import _audit, _row
 

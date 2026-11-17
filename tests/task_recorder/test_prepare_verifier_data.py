@@ -168,7 +168,7 @@ def test_external_evidence_symlink_is_rejected(recording_factory, tmp_path):
 
 
 def test_shared_action_projection_withholds_actor_notes_and_dom_target_descriptions(recording_factory, tmp_path):
-    from w8bench.verifier.evidence_audit import verifier_action_history, shared_trajectory_payload
+    from w8bench.verifier.audit_evidence import verifier_action_history, shared_trajectory_payload
     source = recording_factory()
     manifest = json.loads((source / "manifest.json").read_text())
     step = manifest["steps"][0]
@@ -190,7 +190,7 @@ def test_shared_action_projection_withholds_actor_notes_and_dom_target_descripti
 
 
 def test_missing_url_metadata_warns_without_excluding_complete_paired_state(recording_factory, tmp_path):
-    from w8bench.verifier.evidence_audit import verifier_action_history, shared_trajectory_payload
+    from w8bench.verifier.audit_evidence import verifier_action_history, shared_trajectory_payload
     source = recording_factory()
     manifest = json.loads((source / "manifest.json").read_text())
     state = manifest["states"][0]

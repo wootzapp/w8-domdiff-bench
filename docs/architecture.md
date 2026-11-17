@@ -33,7 +33,7 @@ permitted differences are defined in the
 | Task validity | Classify task ambiguity and validity using each scorer’s prompt, date and logger. | [`validity.py`](../w8bench/verifier/validity.py) |
 | Verifier taxonomy | Parse failure categories and Template variables from each scorer’s policy resource. | [`error_taxonomy.py`](../w8bench/verifier/error_taxonomy.py) |
 | DOM state loading and packing | Parse chronological DOM states and pack complete evidence records within the configured budget. | [`dom_model/states.py`](../w8bench/verifier/dom_model/states.py) |
-| Evidence audit | Compare both formats within one run and distinguish source loss from judge interpretation errors. | [`evidence_audit.py`](../w8bench/verifier/evidence_audit.py) |
+| Evidence audit | Compare both formats within one run and distinguish source loss from judge interpretation errors. | [`evidence_audit.py`](../w8bench/verifier/evidence_audit.py), [`audit_evidence.py`](../w8bench/verifier/audit_evidence.py), [`audit_requests.py`](../w8bench/verifier/audit_requests.py), [`audit_validation.py`](../w8bench/verifier/audit_validation.py) |
 | Comparison | Validate matching controls and aggregate scheduled outcomes, turns, tokens and completion statistics. | [`compare_results.py`](../w8bench/verifier/compare_results.py), [`run_full_comparison.py`](../w8bench/verifier/run_full_comparison.py), [`run_metrics.py`](../w8bench/verifier/run_metrics.py), [`paired_metrics.py`](../w8bench/verifier/paired_metrics.py) |
 
 ## Execution flow

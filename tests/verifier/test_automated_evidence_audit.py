@@ -4,26 +4,10 @@ import json
 import pytest
 
 from w8bench.verifier.common import canonical_sha256
-from w8bench.verifier.evidence_audit import (
-    ADJUDICATION_SYSTEM_PROMPT,
-    SYSTEM_PROMPT,
-    SCHEMA_VERSION,
-    PROMPT_VERSION,
-    CITATION_KEYS,
-    AuditValidationError,
-    _resolve_source_name,
-    _request_validated_audit,
-    _validate_finding,
-    _validate_modality_decision,
-    _source_instructions,
-    calculate_metrics,
-    classification,
-    ordered_audit_screenshots,
-    run_evidence_audit,
-    validate_audit_response,
-    validate_adjudication_response,
-    verifier_action_history,
-)
+from w8bench.verifier.audit_requests import ADJUDICATION_SYSTEM_PROMPT, SYSTEM_PROMPT, AuditValidationError, _request_validated_audit, _source_instructions
+from w8bench.verifier.evidence_audit import SCHEMA_VERSION, PROMPT_VERSION, calculate_metrics, run_evidence_audit
+from w8bench.verifier.audit_validation import CITATION_KEYS, _resolve_source_name, _validate_finding, _validate_modality_decision, classification, validate_audit_response, validate_adjudication_response
+from w8bench.verifier.audit_evidence import ordered_audit_screenshots, verifier_action_history
 
 
 def _modality(coverage="COMPLETE", caught=True):
@@ -578,7 +562,7 @@ def _paired_capture_context(pair, *, dom_gaps=(), screenshot_gaps=(), navigation
 
 
 def test_audit_origin_binding_and_verified_url_context(pair_factory):
-    from w8bench.verifier.evidence_audit import shared_trajectory_payload
+    from w8bench.verifier.audit_evidence import shared_trajectory_payload
     pair = pair_factory()
     context = _paired_capture_context(pair)
     payload = shared_trajectory_payload(pair["screenshot"], pair["dom"])
@@ -588,7 +572,7 @@ def test_audit_origin_binding_and_verified_url_context(pair_factory):
     assert "unavailable (not verified)" in history
     assert "SECRET" not in history
     assert history == payload["verifier_action_history"]["dom_model"]
-    from w8bench.verifier.evidence_audit import pairwise_messages
+    from w8bench.verifier.audit_requests import pairwise_messages
     messages = json.dumps(pairwise_messages(screenshot_dir=pair["screenshot"], dom_dir=pair["dom"],
         criteria=[], screenshot_context=[], dom_context=[], shared_trajectory=payload))
     assert "actor_arm" not in messages and "source_files_sha256" not in messages
@@ -599,7 +583,7 @@ def test_audit_origin_binding_and_verified_url_context(pair_factory):
 
 
 def test_audit_gaps_do_not_drop_available_opposite_format_states(pair_factory):
-    from w8bench.verifier.evidence_audit import ordered_dom_states, shared_trajectory_payload
+    from w8bench.verifier.audit_evidence import ordered_dom_states, shared_trajectory_payload
     pair = pair_factory()
     _paired_capture_context(pair, dom_gaps=(2,))
     assert [path.name for path in ordered_audit_screenshots(pair["screenshot"])] == ["screenshot1.png", "screenshot2.png"]

@@ -518,7 +518,8 @@ def _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, ev
 
 
 def _evaluate_recording(args, run, recording):
-    from .evidence_audit import resolve_audit_config, run_evidence_audit
+    from .audit_requests import resolve_audit_config
+    from .evidence_audit import run_evidence_audit
     from .package_manifests import require_local_packages
     from .validate_inputs import validate_pair
     from .common import load_canonical_rubric, validate_generation_metrics, validate_endpoint_configs

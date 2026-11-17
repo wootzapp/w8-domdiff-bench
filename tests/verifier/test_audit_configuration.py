@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from w8bench.verifier import evidence_audit as audit
+from w8bench.verifier import audit_requests as audit
 from w8bench.verifier import run_comparison
 from .test_evidence_audit_cross_provider import _fake_google
 

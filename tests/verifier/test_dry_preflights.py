@@ -66,6 +66,7 @@ def test_recording_cli_dry_run_never_enters_paid_or_batch_paths(tmp_path, monkey
 
 from tests.turn_benchmark.test_modes import run_pair, no_network
 from w8bench.verifier import evidence_audit
+from w8bench.verifier.audit_requests import ADJUDICATION_SYSTEM_PROMPT
 from w8bench.verifier.common import canonical_sha256
 
 
@@ -101,7 +102,7 @@ def full_evaluation(run_pair, tmp_path, monkeypatch):
     def audit(**kwargs):
         calls["audit"].append(kwargs)
         def complete(model, messages):
-            final = messages[0]["content"] == evidence_audit.ADJUDICATION_SYSTEM_PROMPT
+            final = messages[0]["content"] == ADJUDICATION_SYSTEM_PROMPT
             kwargs["call_records"].append({"stage": "adjudication" if final else "inventory", "response_model": model,
                 "usage": {"prompt_tokens": 15, "completion_tokens": 5, "total_tokens": 20}})
             if final:

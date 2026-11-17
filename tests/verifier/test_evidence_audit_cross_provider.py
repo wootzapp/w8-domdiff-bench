@@ -6,7 +6,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from w8bench.verifier import evidence_audit as audit
+from w8bench.verifier import audit_requests as audit
+from w8bench.verifier.evidence_audit import run_evidence_audit
 from w8bench.verifier.common import canonical_sha256
 from .test_automated_evidence_audit import _source_decision, _finding
 
@@ -37,7 +38,7 @@ def _run(pair, complete):
                   {"earned_points": 7, "max_points": 7}, {"earned_points": 3, "max_points": 3}]}}
     ss, dom = pair["staged"] / "ss-result.json", pair["staged"] / "dom-result.json"
     ss.write_text(json.dumps(result)); dom.write_text(json.dumps(result))
-    return audit.run_evidence_audit(screenshot_dir=pair["screenshot"], dom_dir=pair["dom"],
+    return run_evidence_audit(screenshot_dir=pair["screenshot"], dom_dir=pair["dom"],
         rubric_file=pair["rubric"], screenshot_result=ss, dom_result=dom, complete=complete)
 
 
