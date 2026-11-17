@@ -162,14 +162,14 @@ def test_openai_wrapper_create_round_trip(monkeypatch):
 
 
 def test_client_wrapper_from_config_returns_chat_client(monkeypatch):
-    """Backwards-compat alias for callers that still use ``ClientWrapper.from_config``."""
-    from w8bench.verifier.clients import ChatCompletionClient, ClientWrapper
+    """Construct the configured completion client."""
+    from w8bench.verifier.clients import ChatCompletionClient, create_client_from_config
 
     cfg = {
         "CHAT_COMPLETION_PROVIDER": "openai",
         "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-4o", "api_key": "sk-test"},
     }
-    client = ClientWrapper.from_config(cfg, evidence_mode='dom_model')
+    client = create_client_from_config(cfg, evidence_mode='dom_model')
     assert isinstance(client, ChatCompletionClient)
     assert client.metadata["model"] == "gpt-4o"
     assert client.endpoint == "gpt-4o"

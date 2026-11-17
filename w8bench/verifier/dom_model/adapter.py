@@ -19,9 +19,11 @@ from ..models import (
 )
 
 
-def create_datapoint(task_data: dict[str, Any], trajectory: Trajectory) -> DataPoint:
+def _solver_events(trajectory: Trajectory):
     events: list[Any] = []
-    action_events = [event for event in trajectory.events if event.get("action") is not None]
+    action_events = [
+        event for event in trajectory.events if event.get("action") is not None
+    ]
     for ordinal, event in enumerate(action_events, start=1):
         arguments = event.get("arguments") or {}
         if not isinstance(arguments, dict):
@@ -29,7 +31,9 @@ def create_datapoint(task_data: dict[str, Any], trajectory: Trajectory) -> DataP
         action_name = str(arguments.get("action") or event.get("action") or "")
         if action_name in {"stop_and_answer_question", "stop_execution"}:
             action_name = "terminate"
-        action_args = {key: value for key, value in arguments.items() if key != "action"}
+        action_args = {
+            key: value for key, value in arguments.items() if key != "action"
+        }
         action_id = str(ordinal)
         events.append(ComputerObservation(url=str(event.get("url") or "")))
         events.append(
@@ -45,14 +49,22 @@ def create_datapoint(task_data: dict[str, Any], trajectory: Trajectory) -> DataP
             )
         )
         events.append(ComputerObservation(action_id=action_id, evidence_path=""))
+    return events
 
+
+def create_datapoint(task_data: dict[str, Any], trajectory: Trajectory) -> DataPoint:
+    events = _solver_events(trajectory)
     rubric = task_data.get("precomputed_rubric")
     metadata = {"precomputed_rubric": rubric} if rubric is not None else {}
     if task_data.get("evaluation_context") is not None:
         metadata["evaluation_context"] = task_data["evaluation_context"]
     task = Task(
-        task_id=str(task_data.get("id") or task_data.get("task_id") or trajectory.path.name),
-        instruction=str(task_data.get("question") or task_data.get("confirmed_task") or ""),
+        task_id=str(
+            task_data.get("id") or task_data.get("task_id") or trajectory.path.name
+        ),
+        instruction=str(
+            task_data.get("question") or task_data.get("confirmed_task") or ""
+        ),
         environment_config={
             "init_url": str(task_data.get("init_url") or task_data.get("website") or "")
         },
@@ -60,7 +72,9 @@ def create_datapoint(task_data: dict[str, Any], trajectory: Trajectory) -> DataP
     )
     solver_log = SolverLog(
         events=events,
-        status=SolverStatus.ABORTED if trajectory.answer.is_aborted else SolverStatus.COMPLETE,
+        status=SolverStatus.ABORTED
+        if trajectory.answer.is_aborted
+        else SolverStatus.COMPLETE,
         outcome=Outcome(answer=trajectory.answer.final_answer),
     )
     return DataPoint(
@@ -68,4 +82,3 @@ def create_datapoint(task_data: dict[str, Any], trajectory: Trajectory) -> DataP
         solver_log=solver_log,
         metadata=DataPointMetadata(run_id=trajectory.path.name),
     )
-

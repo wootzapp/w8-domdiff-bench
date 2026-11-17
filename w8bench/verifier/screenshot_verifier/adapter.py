@@ -23,22 +23,14 @@ from ..models import (
 
 
 def _screenshot_sort_key(s) -> int:
-    """Trailing numeric index from a screenshot filename.
-
-    Handles ``screenshot_1.png``, ``screenshot0.png``,
-    ``screenshot_post_3.png`` etc.
-    """
+    "Return the trailing screenshot index, or zero."
     stem = Path(s).stem if not isinstance(s, Path) else s.stem
     match = re.search(r"(\d+)$", stem)
     return int(match.group(1)) if match else 0
 
 
 def _normalize_screenshots(candidate_path: Path, sorted_screenshots: list) -> list:
-    """Ensure screenshots follow ``screenshot_{N}.png`` 1-based naming.
-
-    Creates symlinks when originals use a different convention and returns
-    the list of normalized filenames relative to ``candidate_path``.
-    """
+    "Create relative screenshot aliases when possible."
     normalized: list[str] = []
     for i, screenshot in enumerate(sorted_screenshots):
         canonical_name = f"screenshot_{i + 1}.png"
@@ -70,9 +62,7 @@ def _normalize_screenshots(candidate_path: Path, sorted_screenshots: list) -> li
 
 def normalize_all_screenshot_evidence(candidate: Trajectory) -> list[str]:
     """Return every declared screenshot in chronological, canonical order."""
-    sorted_screenshots = sorted(
-        candidate.answer.screenshots, key=_screenshot_sort_key
-    )
+    sorted_screenshots = sorted(candidate.answer.screenshots, key=_screenshot_sort_key)
     task_path = candidate.path / "task_data.json"
     if task_path.is_file():
         task = json.loads(task_path.read_text(encoding="utf-8"))
@@ -82,32 +72,25 @@ def normalize_all_screenshot_evidence(candidate: Trajectory) -> list[str]:
     return _normalize_screenshots(candidate.path, sorted_screenshots)
 
 
-def create_datapoint(task_data: Dict[str, Any], candidate: Trajectory) -> DataPoint:
-    """Convert *task_data* + *candidate* Trajectory into a :class:`DataPoint`.
-
-    Parameters
-    ----------
-    task_data : dict
-        Must contain ``"question"`` at minimum; ``"init_url"`` is
-        optional (defaults to empty string).
-    candidate : Trajectory
-        Loaded screenshot baseline trajectory with ``events`` and ``answer.screenshots``.
-    """
-    action_events = [evt for evt in candidate.events if evt.get("action")]
-
-    all_screenshot_evidence = normalize_all_screenshot_evidence(candidate)
+def _post_action_screenshots(task_data, all_screenshot_evidence, action_events):
     context = task_data.get("evaluation_context") or {}
     if not context and len(all_screenshot_evidence) != len(action_events) + 1:
         raise ValueError("Expected exactly N+1 screenshot states for N actions")
     # Step summaries retain one post-action state per real action.
     if context:
-        indexed_screenshots = {_screenshot_sort_key(path): path for path in all_screenshot_evidence}
-        normalized_screenshots = [indexed_screenshots.get(context["expected_state_ids"][index + 1], "") for index in range(len(action_events))]
+        indexed_screenshots = {
+            _screenshot_sort_key(path): path for path in all_screenshot_evidence
+        }
+        normalized_screenshots = [
+            indexed_screenshots.get(context["expected_state_ids"][index + 1], "")
+            for index in range(len(action_events))
+        ]
     else:
         normalized_screenshots = all_screenshot_evidence[1:]
+    return normalized_screenshots
 
-    # precomputed rubric (optional) — may live on task_data or on disk next
-    # to the trajectory.
+
+def _task_with_rubric(task_data, candidate):
     precomputed_rubric = task_data.get("precomputed_rubric")
     if precomputed_rubric is None:
         task_data_path = candidate.path / "task_data.json"
@@ -131,7 +114,10 @@ def create_datapoint(task_data: Dict[str, Any], candidate: Trajectory) -> DataPo
         environment_config={"init_url": task_data.get("init_url", "")},
         metadata=task_metadata,
     )
+    return task
 
+
+def _solver_events(action_events, normalized_screenshots):
     events: list = []
     for i, evt in enumerate(action_events):
         args = evt.get("arguments") or {}
@@ -157,11 +143,21 @@ def create_datapoint(task_data: Dict[str, Any], candidate: Trajectory) -> DataPo
             normalized_screenshots[i] if i < len(normalized_screenshots) else ""
         )
         events.append(
-            ComputerObservation(
-                screenshot_path=screenshot_path, action_id=action_id
-            )
+            ComputerObservation(screenshot_path=screenshot_path, action_id=action_id)
         )
+    return events
 
+
+def create_datapoint(task_data: Dict[str, Any], candidate: Trajectory) -> DataPoint:
+    """Build a screenshot datapoint from task data and trajectory evidence."""
+    action_events = [evt for evt in candidate.events if evt.get("action")]
+
+    all_screenshot_evidence = normalize_all_screenshot_evidence(candidate)
+    normalized_screenshots = _post_action_screenshots(
+        task_data, all_screenshot_evidence, action_events
+    )
+    task = _task_with_rubric(task_data, candidate)
+    events = _solver_events(action_events, normalized_screenshots)
     solver_log = SolverLog(
         events=events,
         status=SolverStatus.COMPLETE,

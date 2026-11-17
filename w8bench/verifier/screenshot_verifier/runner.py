@@ -7,7 +7,6 @@ import asyncio
 import json
 import logging
 import time
-from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 import os
 from pathlib import Path
@@ -47,14 +46,6 @@ def _read_task_data(task_dir: Path) -> dict[str, Any]:
     return normalized
 
 
-def _jsonable(value: Any) -> Any:
-    if is_dataclass(value):
-        return asdict(value)
-    if hasattr(value, "model_dump"):
-        return value.model_dump(mode="json")
-    return value
-
-
 def _bind_all_screenshot_evidence(
     agent_input: dict[str, Any], screenshots: list[str], action_count: int,
     evaluation_context: dict[str, Any] | None = None,
@@ -82,15 +73,17 @@ def _bind_all_screenshot_evidence(
     return bound
 
 
-def run(args: argparse.Namespace) -> dict[str, Any]:
-    started = time.time()
+def _task_inputs(args):
     task_dir = Path(args.input).resolve(strict=True)
     task_data = _read_task_data(task_dir)
     task_id = str(task_data.get("id") or task_dir.name)
     frozen = load_frozen_rubric(args.rubric_file, expected_task_id=task_id)
     task_data = require_matching_embedded_rubric(task_data, frozen)
     preflight = preflight_screenshot_task(task_dir)
+    return task_dir, task_data, task_id, frozen, preflight
 
+
+def _evaluation_agent(args, task_data):
     eval_config = Path(args.eval_config).resolve(strict=True)
     action_client = GracefulRetryClient.from_path(
         path=str(eval_config), logger=logger, eval_model=args.action_model, evidence_mode='screenshot_verifier'
@@ -112,6 +105,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             action_definitions=FARA_ACTION_DEFINITIONS,
         )
     )
+    return agent, action_client, judge_client
+
+
+def _evaluation_input(args, task_dir, task_data, preflight):
     trajectory = Trajectory.from_folder(task_dir)
     if trajectory is None:
         raise ValueError(f"Unable to load trajectory: {task_dir}")
@@ -125,7 +122,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         agent_input, normalize_all_screenshot_evidence(trajectory), preflight["actions"],
         evaluation_context=task_data.get("evaluation_context")
     )
-    raw = asyncio.run(agent._generate_reply(agent_input))
+    return agent_input
+
+
+def _evaluation_fields(args, task_id, agent, raw):
     if not isinstance(raw, dict) or raw.get("error"):
         raise RuntimeError(f"Rubric agent failed: {raw.get('error') if isinstance(raw, dict) else raw}")
     wrapped = agent._wrap_result(raw)
@@ -141,7 +141,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         score = int(process_pass and outcome_pass)
     else:
         score = int(outcome_pass)
-    result = {
+    return {
         "task_id": task_id,
         "verifier": "screenshot_verifier",
         "score": score,
@@ -150,7 +150,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "rubric_total_max_points": rubric_result.total_max_points,
         "rubric_total_earned_points": rubric_result.total_earned_points,
         "rubric_is_success": process_pass,
-        "outcome": _jsonable(outcome_result),
+        "outcome": outcome_result.model_dump(mode="json"),
+    }
+
+
+def _result_receipts(task_data, frozen, preflight, agent, action_client, judge_client, raw, started):
+    return {
         "preflight": preflight,
         **rubric_receipt(
             path=str(frozen.path),
@@ -170,12 +175,28 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "intermediate_mm_rubric_steps": raw.get("intermediate_mm_rubric_steps"),
         "duration_sec": round(time.time() - started, 3),
     }
-    output_dir = Path(args.output).resolve()
+
+
+def _write_result(result, output):
+    output_dir = Path(output).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "result.json"
     output_path.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
     result["result_path"] = os.path.relpath(output_path, Path(__file__).resolve().parents[3])
     return result
+
+
+def run(args: argparse.Namespace) -> dict[str, Any]:
+    started = time.time()
+    task_dir, task_data, task_id, frozen, preflight = _task_inputs(args)
+    agent, action_client, judge_client = _evaluation_agent(args, task_data)
+    agent_input = _evaluation_input(args, task_dir, task_data, preflight)
+    raw = asyncio.run(agent._generate_reply(agent_input))
+    result = _evaluation_fields(args, task_id, agent, raw)
+    result.update(_result_receipts(
+        task_data, frozen, preflight, agent, action_client, judge_client, raw, started
+    ))
+    return _write_result(result, args.output)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

@@ -35,7 +35,7 @@ class AssistantMessage(LLMMessage):
 
 @dataclass
 class ImageObj:
-    """Image wrapper for handling screenshots and images."""
+    """Screenshot image encoding and resizing."""
 
     image: Image.Image
 
@@ -79,20 +79,11 @@ class RequestUsage:
         )
 
 
-@dataclass
-class ModelResponse:
-    content: str
-    usage: RequestUsage = field(default_factory=RequestUsage)
 
 
 @dataclass
 class CreateResult:
-    """Result from a chat completion call.
-
-    ``content`` is the textual response. The provider's full message
-    object is preserved in ``message`` for callers that need tool calls
-    or other structured fields.
-    """
+    """Completion text, usage and the provider message."""
 
     content: Any
     usage: RequestUsage = field(default_factory=RequestUsage)
@@ -102,11 +93,6 @@ class CreateResult:
     tool_calls: Optional[List[Any]] = None
 
 
-@dataclass
-class FunctionCall:
-    id: str
-    name: str
-    arguments: Dict[str, Any]
 
 
 def message_to_openai_format(

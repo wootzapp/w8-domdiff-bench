@@ -77,7 +77,7 @@ def _retry_pool(kwargs, logger, use_responses_api, evidence_mode):
         evidence_mode=evidence_mode)
 
 
-def create_completion_client_from_env(
+def create_client_from_config(
     config: Dict, logger: Optional[logging.Logger] = None,
     use_responses_api: bool = False, *, evidence_mode="screenshot_verifier",
 ) -> ChatCompletionClient:
@@ -101,12 +101,6 @@ def create_completion_client_from_env(
     raise ValueError(f"Unknown provider {provider!r}")
 
 
-def create_client_from_config(
-    config: Dict, logger: Optional[logging.Logger] = None,
-    use_responses_api: bool = False, *, evidence_mode="screenshot_verifier",
-) -> ChatCompletionClient:
-    return create_completion_client_from_env(config, logger=logger,
-        use_responses_api=use_responses_api, evidence_mode=evidence_mode)
 
 
 def create_client_from_file(
@@ -115,5 +109,5 @@ def create_client_from_file(
 ) -> ChatCompletionClient:
     with open(path, "r") as stream:
         config = json.load(stream)
-    return create_completion_client_from_env(config, logger=logger,
+    return create_client_from_config(config, logger=logger,
         use_responses_api=use_responses_api, evidence_mode=evidence_mode)
