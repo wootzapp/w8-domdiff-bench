@@ -1,2 +1,0 @@
-"""DOM-model verifier tests."""
-

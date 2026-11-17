@@ -140,5 +140,11 @@ cost lower bounds; exact averages require complete coverage.
 .venv/bin/python -m pytest -q tests
 ```
 
+Tests are grouped in `tests/actors`, `tests/capture`, `tests/scheduling`,
+`tests/evaluation` and `tests/metrics`. Select one directory to run a division.
+Shared fixtures live in `tests/conftest.py`; division fixtures live beside their
+tests. Browser capture checks use the `live_browser` marker and require an
+explicit `W8_CAPTURE_TEST_CDP`; the default suite stays offline.
+
 The suite uses offline browser/model fixtures. The runbook includes a
 [browser capture check](docs/runbook.md#tests) for scroll and focus preservation.

@@ -288,7 +288,7 @@ one browser build throughout the comparison.
 ```sh
 .venv/bin/python -m pytest -q tests
 W8_CAPTURE_TEST_CDP=http://127.0.0.1:49335 \
-  .venv/bin/python -m pytest -q tests/turn_benchmark -k live_capture
+  .venv/bin/python -m pytest -q tests/capture -m live_browser
 ```
 
 The first command uses offline fixtures. The second checks scroll/focus
@@ -298,12 +298,14 @@ and writes the fixture page.
 
 | Division | Offline tests |
 | --- | --- |
-| Actors | [Action validation and request handling](../tests/task_recorder/test_actor_contracts.py); [actor-loop integration](../tests/turn_benchmark/test_modes.py). |
-| Browser and capture | [Capture and runtime contracts](../tests/task_recorder/test_capture_contracts.py), [recording validation and export](../tests/task_recorder/test_prepare_verifier_data.py), [trajectory export](../tests/task_recorder/test_trajectory_export.py). |
-| Scheduling | [Catalog, ownership, expiry and rubric binding](../tests/turn_benchmark/test_scheduling_contracts.py); [ledger and resume integration](../tests/turn_benchmark/test_modes.py). |
-| Evaluation | [Completion and native scoring flows](../tests/verifier/test_evaluation_contracts.py), [numeric, retry and citation contracts](../tests/verifier/test_native_safety.py), [rubric workflow](../tests/verifier/test_frozen_workflow.py), [DOM verification](../tests/dom_model/), [screenshot verification](../tests/screenshot_verifier/), and [audit and evaluation integration](../tests/verifier/). |
-| Metrics and reporting | [Usage coverage and receipt binding](../tests/verifier/test_metrics_contracts.py), [audit aggregation](../tests/verifier/test_aggregate_runs.py), [score normalization](../tests/verifier/test_result_normalization.py); [scheduled comparison integration](../tests/turn_benchmark/test_modes.py). |
+| Actors | [Actor tests](../tests/actors/): action policy, isolated requests, model responses, limits, memory and loop accounting. |
+| Browser and capture | [Capture tests](../tests/capture/): runtime, CDP, paired observations, renderers, input delivery, export and staging. |
+| Scheduling | [Scheduling tests](../tests/scheduling/): catalog validity and expiry, ownership, ledger, trials, arm order, interruption and settings checks on resume. |
+| Evaluation | [Evaluation tests](../tests/evaluation/): frozen rubric preparation, completion, both native verifiers, response acceptance, prompts and evidence-loss audit. |
+| Metrics and reporting | [Metrics tests](../tests/metrics/): usage coverage, tokens per turn, pass@k, costs, aggregation, reports and diagnostics. |
 
-The shared integration module covers several divisions. Model responses, browser
-transports and process execution are mocked in the offline cases. The live
-capture case runs only when `W8_CAPTURE_TEST_CDP` is explicitly set.
+Each division contains unit and integration cases. Fixtures used across divisions
+live in `tests/conftest.py`; fixtures used by one division live in its own
+`conftest.py`. Select a division directory to run its tests. Model responses,
+browser transports and process execution are mocked in offline cases. The
+`live_browser` capture case runs only when `W8_CAPTURE_TEST_CDP` is explicitly set.
