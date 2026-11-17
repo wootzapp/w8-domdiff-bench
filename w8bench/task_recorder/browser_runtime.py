@@ -123,9 +123,9 @@ CHROMIUM_RESET_PROFILE=1
 def _configuration_values(existing: dict, defaults: dict, suffix: str, container_name: str, ports: tuple[int, int, int]) -> dict[str, str]:
     cdp_port, novnc_port, vnc_port = ports
     values = {
-        "IMAGE": existing.get("IMAGE", "wootzapp/w8-core:latest"),
+        "IMAGE": existing.get("IMAGE", "w8-core:domdiff-bench"),
         "COMPOSE_PROJECT_NAME": existing.get(
-            "COMPOSE_PROJECT_NAME", f"w8-turns-{suffix}"
+            "COMPOSE_PROJECT_NAME", f"w8-recorder-{suffix}"
         ),
         "CONTAINER_NAME": container_name,
         "CDP_HOST_PORT": str(cdp_port),
@@ -161,12 +161,12 @@ def configure(env_path: Path, refresh_ports: bool) -> int:
         raise RuntimeError(".env.example must configure ACTOR_MODEL")
     suffix = runtime_identity()
     used: set[int] = set()
-    cdp_port = choose_port(49345, used)
-    novnc_port = choose_port(16291, used)
-    vnc_port = choose_port(16011, used)
+    cdp_port = choose_port(49335, used)
+    novnc_port = choose_port(16191, used)
+    vnc_port = choose_port(15911, used)
     container_name = existing.get("CONTAINER_NAME")
     if not container_name:
-        container_name = unique_container_name(f"w8-turns-browser-{suffix}")
+        container_name = unique_container_name(f"w8-core-browser-{suffix}")
     values = _configuration_values(existing, defaults, suffix, container_name, (cdp_port, novnc_port, vnc_port))
     env_path.parent.mkdir(parents=True, exist_ok=True)
     write_env(env_path, values)
@@ -218,7 +218,7 @@ def status(env_path: Path) -> int:
     values = read_env(env_path)
     if not values:
         raise RuntimeError(f"configuration not found: {env_path}")
-    container_name = values.get("CONTAINER_NAME", "w8-turns-browser-engine")
+    container_name = values.get("CONTAINER_NAME", "w8-core-browser-engine")
     cdp_port = required_port(values, "CDP_HOST_PORT")
     novnc_port = required_port(values, "NOVNC_HOST_PORT")
 

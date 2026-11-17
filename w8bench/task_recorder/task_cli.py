@@ -329,7 +329,7 @@ def _catalog_content(catalog_url: str, token: str) -> tuple[str, bytes, str, str
     else:
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise RunnerError("task catalog must be a local file or an absolute HTTP(S) URL")
-        headers = {"User-Agent": "w8-paired-capture/1"}
+        headers = {"User-Agent": "task-recorder-dom-diff/1"}
         if token.strip():
             headers["Authorization"] = f"Bearer {token.strip()}"
         request = urllib.request.Request(url, headers=headers)
@@ -1093,7 +1093,7 @@ def _launch_single_run(
         if not args.no_browser_start:
             restart_browser_service(args.env_file.resolve())
         container_name = os.environ.get(
-            "CONTAINER_NAME", "w8-turns-browser-engine"
+            "CONTAINER_NAME", "w8-core-browser-engine"
         )
         profile_provenance = claim_browser_profile_provenance(container_name)
         runner_environment = _single_runner_environment(container_name, profile_provenance)
