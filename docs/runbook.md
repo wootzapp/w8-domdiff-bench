@@ -12,6 +12,10 @@ Install the package into `.venv` as shown in [README](../README.md#setup).
 Commands run from the repository root; the script wrappers use `.venv/bin/python`.
 The runtime requires Linux or WSL 2 and Docker Engine with Compose.
 
+Source and wheel distributions carry the `manifests/` resources used by verifier
+preflight. Both native package checks cover their shared verifier dependencies.
+The checkout supplies the catalog, configuration and Compose files.
+
 Configure `.env` with the browser image, container identity, ports and model
 settings. To select available ports for an isolated installation:
 

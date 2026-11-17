@@ -1,4 +1,4 @@
-"""Tests for ``webtailbench.shared_data_adapter.create_datapoint``.
+"""Tests for ``w8bench.verifier.screenshot_verifier.adapter.create_datapoint``.
 
 Builds a minimal fara ``Trajectory`` on disk (action log + fake
 screenshots + FinalAnswer JSON) and verifies the DataPoint it produces

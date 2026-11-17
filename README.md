@@ -23,6 +23,11 @@ python3 -m venv .venv
 [ -f .env ] || cp .env.example .env
 ```
 
+Source and wheel distributions include the verifier integrity manifests in
+`manifests/`. Verifier preflight checks these against the native packages and
+their shared dependencies. Run benchmark commands from the repository root,
+which supplies the catalog, configuration and Compose files.
+
 Set the actor through `ACTOR_MODEL` in `.env`; it must be `gemini-3.1-pro-preview`.
 Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` and the audit models shown in
 `.env.example`. Completion uses an explicit `gpt-6.1-sol` judge.
