@@ -19,7 +19,7 @@ match for a comparison.
 | Difference | DOM arm | Screenshot arm |
 | --- | --- | --- |
 | Page observation | Formatted `dom_model.txt` and viewport-filtered interactive reference text. Numeric ChromiumRL IDs are masked in actor text. | The saved `screenshot.png`, sent once per call with `MEDIA_RESOLUTION_HIGH`; no extracted DOM, accessibility text, selectors or references. |
-| Targeting | Current agent-browser `e` references for reference-targeted actions. | CSS-pixel coordinates through raw CDP input events. |
+| Targeting | Current agent-browser `e` references for reference-targeted actions. | Integer coordinates from 0 to 1000, relative to screenshot width and height, converted once to CSS pixels for raw CDP input. |
 | Ref-click scrolling | The action CLI can scroll a referenced target into view while resolving and clicking it. Supplied references pass viewport bounding-box filtering. | Coordinate clicks operate at the selected viewport point without reference-based scroll-into-view. |
 | Progress source | DOM text, URL and interactive reference changes. | Screenshot change only. |
 | Document language | Supplied from snapshot metadata, or `unknown` when unavailable. | Not supplied as a page-observation field. |
@@ -43,7 +43,7 @@ the shared action driver.
 | Settling interval | One second by default. |
 | Browser locale | English (`en-US`, `en-US,en;q=0.9`). |
 | Browser state | Fresh profile per scheduled attempt, with build/environment provenance. |
-| Action contract | One strict JSON action per response; common schema and vocabulary. |
+| Action contract | One strict JSON action per response; shared vocabulary, with modality-specific coordinate fields. |
 | Intervention | No human intervention or automatic language redirects. |
 
 Comparison checks shared model settings, task contracts, budgets, schema,
@@ -72,7 +72,7 @@ observation to continue. Missing URL metadata is marked explicitly.
 The schedule is written before a batch starts and contains one row per
 `(task, arm, trial)`. It records task/configuration identity, trial count, arm
 order, intended recording path and technical/grading outcomes. Resume retains
-completed attempts, including failures, and reconciles orphaned started rows.
+completed final attempts and reconciles orphaned started rows. A technical failure receives one fresh attempt under the same task, arm and trial; both attempt records are retained.
 See the [recording guide](recordings.md) for the full artifact schema.
 
 ## Completion and metrics
@@ -93,17 +93,44 @@ The optional `actor_native` policy uses the actor's observation type and writes
 `completion_actor_native.json`. It is a modality policy rather than a replay of
 the exact actor prompt. Exact-final-answer controls provide an offline answer check. Task rubrics are generated once from instruction and start URL, reviewed, then frozen for every arm and trial.
 
-A model turn is one actual actor API call, including rejected proposals, parsing
-failures and termination. Action attempts and captured states are counted
-separately. Provider input/output usage is summed per run; cached-input and
-reasoning tokens are subsets, not extra totals. Unavailable provider usage stays
-marked missing. Actor and judge calls/tokens are accounted for separately.
+A model turn is one received actor response, including rejected proposals,
+parsing failures and termination. Failed transport attempts are counted separately;
+they do not consume a model turn. Timeouts, connection errors and temporary HTTP
+429/500/502/503/504 responses allow two further transport attempts, with 2 and 8
+second backoffs plus up to 0.5 seconds of jitter. Auth, quota, billing and other
+4xx errors are not retried. Transport receipts preserve status, duration, parser
+stage and reported usage; unavailable usage stays unknown.
+
+Action attempts and captured states are counted separately. Input/output tokens
+per turn use received actor responses as the denominator. Cached input and
+reasoning are subsets, not extra totals. Missing response usage uses the labelled
+known-usage denominator. Actor costs disclose response and failed-transport components separately; judge costs remain separate.
+
+Browser/renderer crashes, CDP stalls, capture failures, exhausted reference
+snapshots, recorder errors and exhausted transient actor transport retries are
+technical failures. Website blocks, actor failure, turn caps and provider auth,
+quota or billing errors are separate outcomes. One fresh technical rerun is
+allowed per scheduled task/arm/trial in both arms. Success, turns and tokens use
+the final attempt; prior technical-attempt costs are retained separately. A second
+technical failure remains a technical outcome, outside agent-failure counts.
 
 Technical outcome, actor-reported success and independent completion remain
 separate. Ungraded and uncertain outcomes are not confirmed failures. Aggregation
 uses the full schedule, reports unmatched arms and grading coverage, and provides
 all-attempt costs, definitive-grade success rates, successful-pair efficiency and
 pass@k bounds. See the [evaluation protocol](evaluation-protocol.md).
+
+## Browser recovery
+
+Target and renderer crash/detach events stop calls to a failed page. A timed-out
+read-only observation or CDP internal error triggers a target liveness probe of
+at most 3 seconds. A live target permits one session reattachment and one retry
+of that observation; a dead target ends the attempt. Actions are never replayed.
+Uncertain action delivery ends the attempt as a technical failure.
+
+The pinned browser has a known `InspectorChromiumRLAgent::UnregisterAgent`
+teardown assertion. The recorder preserves crash evidence and applies the same
+fresh-attempt policy in both arms; the Chromium overlay is unchanged.
 
 ## Task catalog and provenance
 
@@ -201,7 +228,8 @@ Report all four values per task/trial side by side, retaining actor identity.
 Never pair observations across actor runs. Shared absence and temporal
 inconsistency do not automatically establish directional loss.
 
-Actor tokens per model turn include rejected, failed and termination calls.
+Actor tokens per model turn include received responses for rejected proposals,
+parsing failures and termination. Failed transport attempts have a separate count.
 Report input/output averages separately; cached input and reasoning are subsets.
 Missing usage uses explicitly labelled known-usage denominators. Publish run
 mean/median/distributions by arm and category. Common success, auxiliary process

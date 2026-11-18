@@ -31,7 +31,8 @@ over `.env` values.
 `effective-settings/v1` records the behavior that must remain consistent on
 resume and across compared arms/trials: configured models and providers, routes
 and normalized base URLs, reasoning and temperature, output caps, turn and memory
-limits, browser/capture controls, prompt/schema hashes and versions, frozen rubric
+limits, actor transport and browser recovery policies, observation contracts,
+prompt/schema hashes and versions, frozen rubric
 hashes, normalized endpoint-configuration content hashes, browser protocol pins
 and available actual browser source revisions. Rubric hashes bind one task;
 different tasks naturally have different rubric hashes.
@@ -55,10 +56,19 @@ Both arms of a task/trial run back to back, alternating which arm starts by task
 and trial. Each attempt starts with a fresh browser profile. When batch grading
 is selected, both actor attempts finish before their judges start.
 
-An attempt remains in the schedule regardless of its outcome. Resume skips
-finished actor attempts, reconciles orphaned started rows and continues unstarted
-work. It does not replace failed trials. A changed task set, trial count or frozen
-configuration requires a distinct batch name.
+A row remains in the schedule regardless of its outcome. A technical failure
+permits one fresh attempt with the same task, arm and trial. Both attempts remain
+recorded. Resume reconciles interrupted work and continues a pending rerun; it
+skips completed final attempts. Website blocks, actor failures, turn caps and
+provider auth/quota/billing outcomes do not trigger this rerun. A changed task
+set, trial count or frozen configuration requires a distinct batch name.
+
+Success, turns and tokens use the final attempt. Prior technical-attempt costs
+remain separate. An exhausted technical row is reported separately from agent
+failure and definitive completion failure. Its primary grade is ungraded;
+`confirmed_success_rate_agent_eligible` excludes final technical outcomes while
+schedule-wide bounds preserve their uncertainty. Failed actor transport attempts are
+counted separately from model turns, which count received responses.
 
 ## Validation
 
@@ -182,12 +192,14 @@ separately.
 
 | Measurement | Definition | Artifacts |
 |---|---|---|
-| Model turns | Dispatched actor API calls, including rejected proposals, malformed/incomplete responses and termination. Failures before dispatch do not count. | `decisions.jsonl`, per-turn `result.json`, manifest/final `model_turns`. |
+| Model turns | Received actor responses, including rejected proposals, malformed/incomplete responses and termination. Failed transport attempts do not count as model turns. | `decisions.jsonl`, per-turn `result.json`, manifest/final `model_turns`. |
 | Action attempts | Accepted executable actions delivered to the browser, including execution errors. Rejections and termination execute no browser action. | Manifest `steps`, state `action.json`, trajectory. |
 | Captured states | Committed active observations. Normally N actions produce N+1 states; capture errors can leave an incomplete transition. | Manifest `states`, `trajectory_export`. |
 | Completion | Independent rubric verdict, separate from actor claims and technical status. | `completion.json`. |
+| Transport attempts | Each actor HTTP attempt, its duration, status and reported usage, separately from received responses. | Per-turn `transport_attempts.jsonl`; raw failed response and parser receipts. |
+| Technical attempt cost | Earlier technical attempts retained separately from final-attempt success/turn/token metrics. | Ledger `attempts`, `technical_attempts`, `cost_streams["technical_attempts:actor"]`. |
 | Actor usage | Returned input/output totals, plus cached-input and reasoning subsets. | Provider response and decision `usage`. |
-| Tokens per model turn | Input and output separately, with all dispatched actor calls counted. Missing usage uses labelled known-call denominators. | Per-run `tokens_per_turn`, arm/category distributions. |
+| Tokens per model turn | Input and output separately over received actor responses. Missing usage uses labelled known-response denominators; failed transports are separate. | Per-run `tokens_per_turn`, arm/category distributions. |
 | Judge usage | Primary/native completion, each verifier, audit inventory/adjudication and rubric preparation, separate from actor usage. | Completion/evaluation receipts and named usage streams. |
 | Timing | Decision-call latency, action delivery duration and recorder capture durations. | Decision `latency_seconds`, action `duration_seconds`, state `capture`. |
 

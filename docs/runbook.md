@@ -106,11 +106,13 @@ Repeat the same command and run name. The saved schedule must match the requeste
 catalog, task definitions, trial count, rubric hashes, effective settings, browser
 source provenance and output paths. Select a distinct run name for a different configuration.
 
-Resume retains completed actor attempts, including failures, and continues
-unstarted work in order. An orphaned started attempt is reconciled from its final
-recording or marked interrupted. Completed attempts are not retried under the
-same trial identity or copied into automatic `-2` directories. Use the standalone
-grader to retry grading without repeating actor execution.
+Resume retains completed final attempts and continues unstarted work in order.
+A technical failure permits one fresh browser attempt under the same task, arm
+and trial, with both attempts retained. An orphaned started attempt is reconciled
+from its final recording or interruption receipt; a pending rerun continues from
+its recorded attempt number. Actor failures, website blocks, turn caps and
+provider auth/quota/billing outcomes do not receive a technical rerun. Use the
+standalone grader to retry grading without repeating actor execution.
 
 Stale ownership markers are discarded without signalling unrelated processes.
 Resume refuses reconciliation while a verified recorder or scheduled
@@ -118,8 +120,7 @@ launcher/judge is active; finish or stop that process first.
 
 ## Record one task
 
-A single-task command selects one arm and writes a recording without a batch
-ledger:
+A single-task command selects one arm and keeps a local attempt ledger:
 
 ```sh
 ./scripts/run-task task_02 --observation-mode dom \
@@ -131,6 +132,8 @@ Use `--observation-mode screenshot` for the other arm. Manual tasks use both
 `--task` and `--start-url`. A single task can use a remote `--catalog-url`;
 batches require a frozen local catalog. `--dry-run` validates a single task
 without creating its recording.
+The `--no-browser-start` option applies to the initial attempt only; a permitted
+technical rerun always starts a fresh browser.
 
 | Actor setting | Default |
 |---|---:|
@@ -146,6 +149,25 @@ turn budgets may be lower than 200 but cannot exceed it. Budgets and viewport
 options must match across compared attempts. Model IDs, shared
 settings and output-limit hits are recorded. Both actors receive the current URL;
 the datacard defines the [arm differences](datacard.md#observation-modes).
+
+Screenshot click and point-scroll coordinates are integers from 0 to 1000,
+relative to the saved image dimensions. The executor converts them once to CSS
+pixels, clamps the image edges to the viewport, and records both coordinate
+forms. Images match the viewport dimensions at device pixel ratio 1. The
+[compatibility gate](runbook_next.md#4-small-model-compatibility-gate) includes
+fixture calibration before collection.
+
+A model turn counts a received response. Failed transport attempts have separate
+receipts, duration and usage coverage. Transient failures allow two further
+requests after 2 and 8 seconds plus up to 0.5 seconds of jitter. Auth, quota,
+billing and other non-retryable errors stop without those retries.
+
+Read-only observation failures use a 3-second target liveness probe and at most
+one session reattachment/retry. Uncertain action delivery is never replayed.
+Browser, renderer, CDP/capture, reference-snapshot and recorder failures allow one
+fresh attempt. The known browser `InspectorChromiumRLAgent::UnregisterAgent`
+teardown assertion follows this policy. The final attempt supplies success,
+turns and tokens; earlier technical-attempt costs stay separate.
 
 ## Evaluate a run
 

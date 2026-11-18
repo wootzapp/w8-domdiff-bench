@@ -15,7 +15,7 @@ execution order, technical outcomes, grading and available cost information.
 ```text
 recordings/<batch-name>/
   ledger.jsonl
-  logs/attempt_000001.log
+  logs/attempt_000001_01.log
   trial_0001/
     dom/<task-id>/
     screenshot/<task-id>/
@@ -24,23 +24,25 @@ recordings/<batch-name>/
 
 Trial count is an explicitly chosen positive integer with no default. Each
 `(task, arm, trial)` has a distinct recording path, retained for that attempt.
-A standalone one-arm task uses
-`recordings/<run-name>/<arm>/<task-id>/` and does not create a batch ledger.
+A standalone one-arm task uses `recordings/<run-name>/<arm>/<task-id>/` and a
+local ledger under `recordings/<run-name>/attempt_ledgers/<arm>/<task-id>.jsonl`.
+A technical rerun has its own recording directory; neither attempt is overwritten.
 
 `ledger.jsonl` contains one JSON object per scheduled attempt. `sequence`,
 `task_id`, `arm`, `trial`, `trials`, `arm_order`, `run_name` and `recording` identify
 its place in the schedule. Rows also freeze expanded task data, catalog hash,
 `configuration`, rubric path/file hash and judge model. Both arms of a task/trial
-are adjacent and execute before their judges.
+are adjacent and finish their final attempts before their judges.
 
 `technical_outcome` and `completed` track actor execution. `grade_outcome` and
 `grade_completed` track grading. Rows may also contain launcher PID, start/end
 timestamps, exit codes, log paths, judge timestamps and errors. An interruption
 during judging preserves the completed actor outcome.
 
-Resume retains finished actor attempts, including failures. It reconciles an
-orphaned started attempt with its final file or records it as interrupted, then
-continues unstarted work. A live owned recorder or grader blocks resume. Runtime
+Resume retains completed final attempts. A row's `attempts` list retains each
+attempt number, recording path and outcome; one technical failure permits a fresh
+attempt. Resume reconciles an orphaned attempt and continues a pending rerun
+before moving to unstarted work. A live owned recorder or grader blocks resume. Runtime
 ownership markers are checked for staleness before they are used. See the
 [runbook](runbook.md#resume) for commands.
 
@@ -55,10 +57,15 @@ in the ledger.
 | `task.json` | `task_id`, `source_task_id`, `run_name`, `task_name`, expanded `instruction`, `start_url`, `observation_mode`, configured `model`. | Written when the recorder initializes. Constraints and stopping conditions are included in instruction text. |
 | `manifest.json` | Task identity, schema/timestamps, `status`, `controls`, `states`, `steps`, turn/model metadata, provenance and `trajectory_export`. | Indexes the recording; finalization embeds the same `final` object as `final.json`. |
 | `final.json` | Actor `status`, technical `run_status`, final answer, action/turn counts, termination metadata or error when applicable. | Actor output and recorder outcome, separately from independent grading. Its `completion_grade` field remains an ungraded placeholder. |
-| `decisions.jsonl` | One row per dispatched actor request: turn/state, decision, acceptance/rejection/error, prior memory, usage, response metadata, latency and `model_input`. | Includes invalid proposals and termination. A pre-dispatch failure does not add a call. |
+| `decisions.jsonl` | One row per received actor response: turn/state, decision, acceptance/rejection/error, prior memory, usage, response metadata, latency and `model_input`. | Includes invalid proposals and termination. Transport failures have separate receipts and do not add a model turn. |
 | `turns/turn_NNNNNN/request.json` | Serialized text, instructions, schema and API settings; images use a relative saved-artifact path/hash. | The API request encodes those image bytes as base64; the file avoids storing duplicate base64 per turn. |
 | `turns/turn_NNNNNN/response.json` | Raw provider response, returned model, output items and usage. | Present when a response was received; no response is fabricated for a transport failure. |
-| `turns/turn_NNNNNN/result.json` | Decision-log row, including response status, incomplete details and output-limit flag. | Mirrors the dispatched call. A request directory can exist even when dispatch did not occur. |
+| `turns/turn_NNNNNN/result.json` | Decision-log row, including response status, incomplete details and output-limit flag. | Mirrors the received-response decision. A request directory can exist even when dispatch did not occur. |
+| `turns/turn_NNNNNN/transport_pending.json` | In-flight attempt identity and unknown usage; retained on interruption without inventing a model response. | Pending work is reported separately. |
+| `turns/turn_NNNNNN/transport_attempts.jsonl` | HTTP attempt number, status, duration, usage coverage, finish/parser metadata and sanitized failed response where available. | Failed transports do not add model turns; their usage is unknown unless reported. |
+| `cdp_calls.jsonl`, `agent_browser_calls.jsonl` | Per-call timing, status and method metadata. | CDP parameters and CLI arguments are excluded. |
+| `browser_events.jsonl`, `target_registry.json`, `observation_recovery.jsonl` | Crash/detach/dialog events, exact target/opener identities and liveness/reattachment outcomes. | Private identity metadata is not actor evidence; dialog text is excluded. |
+| `failure_health.json`, `interruption.json` | Available container health, bounded log tail and interruption status. | Missing diagnostics remain unavailable; credentials are redacted. |
 | `trajectory.jsonl` | Normalized action transitions, execution status/error, before/after observations, paired artifacts and capture metadata. | Exported during finalization; missing after-states make the export incomplete. |
 | `web_surfer.log` | JSONL WebSurfer-style action events, model turns, arguments and delivery status. | Derived action log, not additional actor input or model calls. |
 | `completion.json` | Primary `paired` grade, recording/rubric/prompt hashes, model IDs, criteria/verdict and judge usage. | Produced by independent grading. Missing, uncertain and ungraded are distinct from confirmed failure. |
@@ -94,7 +101,7 @@ capture metadata. The DOM arm also saves executable reference text.
 | `screenshot.png` | Viewport PNG. In the screenshot arm, these exact bytes are supplied to the actor at high detail. |
 | `capture.json` | Interval, phase timing, target identity and completeness metadata, also stored under the manifest state's `capture` field. |
 | `agent_browser_actions.txt` | DOM arm only: viewport-filtered interactive snapshot supplying executable `e` references. It is recorded agent-browser output, not code written by the actor. |
-| `action.json` | Action attempted **from this state**, its model turn, delivery status/error, timing and subsequent progress/state link; DOM target metadata where applicable. |
+| `action.json` | Action attempted **from this state**, model turn, delivery status/error, timing and subsequent progress/state link; DOM target metadata where applicable. Screenshot actions keep raw model coordinates and executed CSS coordinates. |
 
 ChromiumRL IDs and agent-browser references are separate namespaces. Screenshot
 states contain no reference snapshot; targeting comes from the saved image, while
@@ -140,8 +147,8 @@ missing transition.
 
 `action_succeeded` confirms browser input delivery. Page progress and task
 completion are assessed separately. Model turns can exceed action counts because
-rejections, parsing failures and termination consume requests without executing
-browser actions.
+received rejected proposals, parsing failures and termination consume model turns
+without executing browser actions. Failed transport attempts do not consume a turn.
 
 Each decision records `response_status`, `incomplete_details`, `output_limit_hit`,
 `returned_model`, `reasoning` and `usage`. Inspect response status and incomplete
@@ -163,6 +170,19 @@ catalog bytes. Manual tasks without a catalog record `null`; comparison checks
 the hash against the schedule and across arms and trials.
 Date-sensitive catalog tasks also record `valid_until`, `expiry_checked_at` and
 `expiry_override`; these scheduling controls are not actor instructions.
+
+Call timing files record CDP and agent-browser method, status, duration and error
+metadata. Browser events include target/renderer crashes, detach and dialog
+notifications. Failure receipts include available container memory, shared-memory
+use, process count and a bounded log tail; unavailable diagnostics are recorded
+as unavailable. Interruption receipts preserve partial attempt status. Credentials
+are excluded from these files.
+
+Read-only observation timeouts/internal errors permit a 3-second liveness probe
+and one reattachment/retry for a live target. Crash events stop further calls to
+the failed page. An action with uncertain delivery ends the attempt; no action is
+replayed. The schedule retains one fresh technical rerun and uses its final
+attempt for success, turns and tokens, with earlier technical costs separate.
 
 ## Integrity and export
 

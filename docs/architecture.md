@@ -58,13 +58,16 @@ flowchart TD
 
 The schedule contains one row per task, arm and trial. The two arms of each
 task/trial run back to back, with the starting arm alternating across tasks and
-trials. Grading follows both actor runs. Technical failures remain scheduled
-outcomes, and resume skips completed attempts rather than silently retrying them.
+trials. Grading follows both actor runs. One technical failure permits a fresh
+attempt for the same row. Both attempt records remain in the ledger; resume
+continues a pending rerun without repeating a completed final attempt.
 
 Each actor request contains the task, current URL, turn budget, viewport,
 bounded task memory, recent action outcomes and its selected page observation.
-The model returns one JSON action. Rejected proposals consume a model turn but
-do not execute browser input or create a new state. Normally, `N` action attempts
+Each received response consumes one model turn. Failed transport attempts have
+separate receipts and a bounded retry policy. Rejected proposals do not execute
+browser input or create a new state. Screenshot coordinates are integers from
+0 to 1000; the executor converts them once using the captured viewport size. Normally, `N` action attempts
 produce `N + 1` captured states: the initial state and one after each action.
 A state's `action.json` describes the action taken from that state.
 
@@ -95,6 +98,15 @@ verifies artifact and image hashes, and validates the action/state sequence.
 Capture metadata includes target/session identity, per-phase timings, URLs and
 navigation events. Capture is sequential; changing pages can produce differences
 within the recorded interval even when the URL stays the same.
+
+A crash or renderer detach ends calls to that page. Read-only timeout/internal
+errors use a short liveness probe and, for a live target, one reattachment and
+observation retry. An action with uncertain delivery is not replayed. Exact target
+IDs and a tab/opener registry bind observation to the selected page. Private
+identity values live in an isolated JavaScript world. The CLI's active target is
+verified through CDP inspector metadata without reading or writing page globals.
+Per-call
+timings, events and failure health snapshots remain in the run folder.
 
 ## DOM representation
 

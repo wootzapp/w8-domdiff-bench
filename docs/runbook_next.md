@@ -343,6 +343,111 @@ control or the complete audit protocol. The pilot checks those integration paths
 Stop on a model mismatch, unsupported parameter, incomplete response or malformed
 output and resolve the configuration rather than changing the benchmark silently.
 
+### Browser coordinate calibration
+
+With the browser running and no task active, run the local fixture check. It uses
+synthetic coordinates and makes **0 model calls**:
+
+```sh
+W8_CALIBRATION_CDP_URL="$(.venv/bin/python - <<'PY'
+import os
+from pathlib import Path
+from w8bench.task_recorder.runner import load_env
+load_env(Path('.env'))
+print('http://127.0.0.1:' + os.environ['CDP_HOST_PORT'])
+PY
+)" .venv/bin/python -m pytest -q -s tests/capture/test_evidence.py \
+  -k normalized_coordinate_calibration_in_w8
+```
+
+The fixture checks four corners, a small button and scrolled content through the
+real executor, plus image dimensions and device pixel ratio 1. Inspect
+`reports/implementation_fixes/calibration.json`; all six targets must be hit.
+The check opens a fresh page and closes prior task pages.
+
+After approval for paid compatibility checks, use the same fixture for **6
+screenshot-actor responses**. The fixture is served only on the local Docker
+bridge. It supplies no DOM or target boxes to the actor; target detection is used
+only to score the click afterwards. Run this before the pilot, with no task active:
+
+```sh
+.venv/bin/python - <<'PY'
+import asyncio, functools, http.server, json, os, subprocess, threading, time
+from pathlib import Path
+from w8bench.task_recorder.capture import CDPClient, CaptureBundle, _capture_screenshot
+from w8bench.task_recorder.agent_browser import AgentBrowserClient
+from w8bench.task_recorder.runner import ModelClient, load_env, action_rejection_reason
+from w8bench.task_recorder.recorder_support import write_json
+load_env(Path('.env'))
+root = Path('internal/coordinate_calibration')
+assert not root.exists(), 'Keep the prior receipt and select a distinct check directory'
+root.mkdir(parents=True)
+container = os.environ['CONTAINER_NAME']
+networks = json.loads(subprocess.check_output(['docker', 'inspect', '--format',
+    '{{json .NetworkSettings.Networks}}', container], text=True))
+gateway = next(iter(networks.values()))['Gateway']
+server = http.server.ThreadingHTTPServer((gateway, 0), functools.partial(
+    http.server.SimpleHTTPRequestHandler, directory=str(Path('tests/fixtures').resolve())))
+threading.Thread(target=server.serve_forever, daemon=True).start()
+url = f'http://{gateway}:{server.server_port}/coordinate_calibration.html'
+loop = asyncio.new_event_loop()
+cdp = CDPClient('http://127.0.0.1:' + os.environ['CDP_HOST_PORT'],
+    observation_mode='screenshot', viewport=(1365, 768))
+driver = AgentBrowserClient('unused', session='coordinate-calibration',
+    cdp_url=cdp.http_url, timeout=90)
+client = ModelClient(os.environ['GEMINI_API_KEY'], os.environ['ACTOR_MODEL'],
+    os.environ.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'))
+results = []
+targets = [('North west (NW)', 'north-west'), ('North east (NE)', 'north-east'),
+    ('South west (SW)', 'south-west'), ('South east (SE)', 'south-east'),
+    ('Small (+)', 'small'), ('Scrolled (S)', 'scrolled')]
+try:
+    loop.run_until_complete(cdp.connect())
+    loop.run_until_complete(cdp.call('Page.navigate', {'url': url}))
+    for index, (label, target) in enumerate(targets, 1):
+        if target == 'scrolled':
+            loop.run_until_complete(driver.execute({'action':'scroll', 'x':500,
+                'y':500, 'pixels':1000}, cdp=cdp, viewport=(1365,768)))
+        time.sleep(1)
+        directory = root / f'turn_{index:06d}'
+        directory.mkdir()
+        screenshot = loop.run_until_complete(_capture_screenshot(cdp, directory))
+        loop.run_until_complete(cdp.call('Runtime.evaluate', {'expression':'hitTargets = []'}))
+        bundle = CaptureBundle(observation_mode='screenshot', screenshot_path=screenshot,
+            document_url=url)
+        decision, response = loop.run_until_complete(client.decide(
+            task=f'Click the visible button labelled {label}. Return one click action.',
+            step=index, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
+            turn_dir=directory, viewport=(1365,768), max_output_tokens=10000))
+        rejection = action_rejection_reason(decision, frozenset(), [],
+            observation_mode='screenshot', viewport=(1365,768), model_turn=index, max_turns=200)
+        execution = None
+        if not rejection and decision['action'] == 'click':
+            execution = loop.run_until_complete(driver.execute(decision, cdp=cdp, viewport=(1365,768)))
+        actual = loop.run_until_complete(cdp.call('Runtime.evaluate',
+            {'expression':'hitTargets.at(-1) || null', 'returnByValue':True}))['result'].get('value')
+        results.append({'target':target, 'actual':actual, 'hit':actual == target,
+            'rejection':rejection, 'decision':decision, 'execution':execution,
+            'returned_model':response.get('model'), 'usage':response.get('usage')})
+        print(json.dumps(results[-1]))
+finally:
+    write_json(root / 'result.json', {'hits':sum(item['hit'] for item in results),
+        'targets':len(targets), 'results':results})
+    loop.run_until_complete(cdp.close_owned_target_on_failure())
+    loop.run_until_complete(cdp.close())
+    loop.close()
+    server.shutdown()
+    server.server_close()
+assert len(results) == len(targets) and all(item['hit'] for item in results)
+PY
+```
+
+**Gate:** six correct hits, normalized integer coordinates, permitted returned
+model ID and complete responses. Review `internal/coordinate_calibration/result.json`
+and saved requests, responses and transport receipts. The transport gate plus
+coordinate calibration makes **14 nominal model checks**; transient failures
+can add transport attempts. Stop before the pilot if calibration fails.
+
 ## 5. Three-task pilot with full evaluation
 
 The pilot uses `task_02` (medium), `task_19` (hard) and `task_25` (complex),
@@ -369,13 +474,15 @@ and a within-run audit with inventory/adjudication. These compare saved formats
 from the same actor run; they do not pair the DOM actor's evidence with the
 screenshot actor's evidence. Passive capture failure is recorded separately.
 
-**Gate:** six scheduled attempts have recorded technical/evaluation outcomes;
+**Gate:** six scheduled rows have recorded final technical/evaluation outcomes;
 inspect request isolation, capture hashes/timings, actor returned IDs, grading
 coverage, frozen rubric identity, judge receipts and the report. Genuine task
 failure is a result, not permission to rewrite a task. Resolve generic setup
 faults before authorizing the full collection. The pilot permits at most
-**1,200 actor calls** (six × 200). Judge calls depend on states, criteria,
-selected evidence and existing retries; do not budget them as one per task.
+**1,200 final-attempt actor responses** (six × 200), plus up to 1,200 responses
+from prior technical attempts. Up to three transport attempts per response gives
+a 7,200-attempt upper bound. Judge calls depend on states, criteria, selected
+evidence and existing retries; do not budget them as one per task.
 Aggregation itself uses **0 model calls**.
 
 ## 6. Full collection, resume and evaluation
@@ -395,15 +502,20 @@ Supply any positive `BENCH_TRIALS`; omit positional selectors to use all 25 task
   --output-dir recordings --run-name collection
 ```
 
-The executable ledger has `50 × k` attempts, retaining startup failures and
-missing recordings. Task/arm/trial order alternates which arm runs first.
-Repeat the exact execution command to resume; completed actor attempts are not
-replaced, including failures. The command rejects changed catalog, rubric,
+The executable ledger has `50 × k` task/arm/trial rows, retaining startup
+failures and missing recordings. A row can have two actor attempts when its first
+attempt is technical. Task/arm/trial order alternates which arm runs first.
+Repeat the exact execution command to resume; completed final attempts are
+retained and pending technical reruns continue from their recorded attempt. The command rejects changed catalog, rubric,
 effective settings, browser source provenance or task/trial identities. Do not change the trial count
 under an existing run name. Use a separate collection name for a different plan.
 
-Both actors for a task/trial run before their judges. Existing error/retry
-behavior is retained. API/recorder errors, turn limits, technical outcomes and
+Both actors for a task/trial finish their final attempts before their judges.
+A technical failure permits one fresh attempt; success, turns and tokens use the
+final attempt. Prior technical-attempt costs remain separate. Transient actor
+requests allow two further transport attempts, which do not consume model turns
+until a response arrives. Website blocks, actor failures, turn caps and provider
+auth/quota/billing errors do not trigger a technical rerun. Technical outcomes and
 completion grades remain separate. Inspect ledger and logs before repeating any
 command; do not treat missing usage as free work or erase failed-attempt receipts.
 
@@ -436,10 +548,12 @@ Native scoring exhaustion retains usage with null scores and a `judge_fallback`
 reason; ungraded audits have no pooled loss rate. Completion has one request per
 grading attempt; inventory and adjudication each allow three validation attempts.
 
-**Gate:** all `50 × k` ledger attempts are accounted for and evaluation coverage is
-reported. The actor maximum is **10,000 × k calls** (25 tasks × two arms × k ×
-200), often fewer. Full evaluation adds one primary completion request per
-recorded attempt, variable original-verifier calls, and variable inventory/
+**Gate:** all `50 × k` ledger rows and their attempt histories are accounted for,
+with evaluation coverage reported. Final attempts permit at most **10,000 × k
+actor responses** (25 tasks × two arms × k × 200). Prior technical attempts can
+add the same number; the transport-attempt upper bound is **60,000 × k**. Full
+evaluation adds one primary completion request per final recording, variable
+original-verifier calls, and variable inventory/
 adjudication requests; existing retries can add transport attempts. Rubrics stay
 fixed and are not regenerated during evaluation. Exact totals come from receipts,
 not from multiplying task counts by an assumed fixed judge-call count.
@@ -460,7 +574,9 @@ for every retained task. All-trial success reliability is reported separately.
 | Measurement or receipt | Location |
 | --- | --- |
 | Full denominator, ordering, technical/grade/evaluation outcomes, logs and recording paths | `recordings/collection/ledger.jsonl` |
-| Actor model turns, rejections, termination calls, input/output usage, cached/reasoning subsets and output-limit flags | Recording `decisions.jsonl`, `turns/turn_*/request.json`, `response.json`, `result.json` |
+| Actor response turns, rejected proposals, termination responses, input/output usage, cached/reasoning subsets and output-limit flags | Recording `decisions.jsonl`, `turns/turn_*/request.json`, `response.json`, `result.json` |
+| Actor transport attempts, durations, statuses, parser stage and usage coverage | Per-turn transport receipts and raw failed responses |
+| Earlier technical-attempt costs | `cost_streams["technical_attempts:actor"]` and retained ledger `attempts` |
 | Current paired artifacts, capture ordering/timing, navigation flags, hashes and passive failures | Recording `manifest.json`, `steps/step_*/capture.json` and state files |
 | Frozen task settings, actor returned model IDs, action counts and final technical status | Recording `task.json`, `manifest.json`, `final.json` |
 | Independent paired completion and its judge usage | Recording `completion.json` and evaluation `paired_completion.json` |

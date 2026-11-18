@@ -80,7 +80,8 @@ for acceptance, repair budgets and coverage.
 ```
 
 Use `--dry-run` to write and inspect the schedule without starting tasks. Repeat
-the same command to resume; completed attempts, including failures, are retained.
+the same command to resume; completed final attempts are retained. Technical failures receive at most one
+fresh attempt; both attempts remain recorded.
 Both actors of a task/trial run back to back, alternating which arm starts.
 
 For a subset, add positional IDs such as `task_02 task_19 task_25`.
@@ -99,10 +100,11 @@ recordings/benchmark/trial_0001/screenshot/<task>/
 
 | Artifact | Contents |
 |---|---|
-| `ledger.jsonl` | Task, arm, trial, order, configuration, output path, technical outcome and grading outcome. |
+| `ledger.jsonl` | Task, arm, trial, order, configuration, attempt history, final output path, technical outcome and grading outcome. |
 | `task.json`, `manifest.json`, `final.json` | Task definition, controls, browser provenance, captured states, actions and actor outcome. |
-| `decisions.jsonl` | One row per actor request, including rejected proposals, malformed responses and termination. |
+| `decisions.jsonl` | One row per received actor response, including rejected proposals, malformed responses and termination. Transport attempts are counted separately. |
 | `turns/turn_NNNNNN/` | Request, response and result, including usage, model ID, latency and output-limit status. Screenshot requests reference the saved image by path and SHA-256. |
+| `cdp_calls.jsonl`, `agent_browser_calls.jsonl`, `browser_events.jsonl`, `failure_health.json`, `interruption.json` | Call timings, target/crash/detach/dialog events and available container diagnostics. |
 | `steps/step_NNN/` | Screenshot, structured DOM, readable DOM projections, capture metadata and outgoing action record. DOM states also contain executable references. |
 | `trajectory.jsonl`, `web_surfer.log` | Ordered actions and execution outcomes; trajectories include capture-artifact references. |
 | `completion.json` | Primary independent completion grade using paired evidence from the run. |
