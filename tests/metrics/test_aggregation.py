@@ -744,3 +744,64 @@ def test_audit_aggregation_compares_effective_stage_contracts(tmp_path, change):
             aggregate_runs(roots, expected_tasks=2, resamples=10)
     else:
         assert aggregate_runs(roots, expected_tasks=2, resamples=10)[0]["k"] == 2
+
+@pytest.mark.usefixtures('no_network')
+def test_technical_rerun_cost_does_not_inflate_final_actor_turns(metric_recording_factory, monkeypatch):
+    from w8bench.verifier import run_full_comparison as full
+    first = metric_recording_factory(usage={'input_tokens': 100, 'output_tokens': 50})
+    final = metric_recording_factory(usage={'input_tokens': 20, 'output_tokens': 10})
+    final['task']['instruction'] = first['task']['instruction'] = 'Read heading.'
+    final['task']['start_url'] = first['task']['start_url'] = 'https://example.test'
+    first['manifest'].update(status='technical_failure', run_name='trial_0001')
+    first['final'].update(run_status='technical_failure', technical_failure_class='browser_crash')
+    for item in (first, final):
+        item['manifest']['controls']['max_output_tokens'] = 10000
+        item['task']['catalog_sha256'] = None
+    monkeypatch.setattr(full, 'inspect_recording', lambda path: first)
+    row = {'task_id': 'custom', 'task': final['task'], 'arm': 'dom', 'trial': 1,
+        'run_name': 'trial_0001', 'recording': final['source'], 'technical_outcome': 'completed',
+        'configuration': final['manifest']['controls'], 'attempts': [
+            {'attempt_number': 1, 'recording': first['source'], 'technical_outcome': 'technical_failure',
+             'technical_failure_class': 'browser_crash', 'completed': True},
+            {'attempt_number': 2, 'recording': final['source'], 'technical_outcome': 'completed', 'completed': True}]}
+    write_json(Path(first['source']) / 'final.json', first['final'])
+    write_json(Path(first['source']) / 'manifest.json', first['manifest'])
+    write_json(Path(first['source']) / 'task.json', first['task'])
+    receipt, _, _ = full._pair_attempt({'dom': row, 'screenshot': {
+        **row, 'arm': 'screenshot', 'recording': '/missing/ss', 'attempts': [], 'task': final['task']}},
+        {'dom': final, 'screenshot': None}, 'custom', 1)
+    assert receipt['dom']['model_turns'] == 1
+    assert receipt['dom']['token_usage']['input_tokens'] == 20
+    technical = receipt['dom']['cost_streams']['technical_attempts:actor']
+    assert technical['usage']['input_tokens'] == 100
+    assert technical['calls'] == 1
+    assert technical['cost']['estimated_usd'] is not None
+
+
+@pytest.mark.usefixtures('no_network')
+def test_terminal_technical_grade_is_not_an_actor_failure():
+    pair = _actor_trial_pair(1, 'failure')
+    pair['dom'].update(technical_failure=True, technical_failure_class='cdp_stall')
+    result = aggregate([pair])
+    assert result['modes']['dom']['technical_failures'] == 1
+    assert result['modes']['dom']['agent_failure_runs'] == 0
+    assert result['modes']['dom']['agent_eligible_runs'] == 0
+
+@pytest.mark.usefixtures('no_network')
+def test_partial_failed_transport_has_no_model_turn_but_unknown_cost(tmp_path):
+    from w8bench.verifier.run_full_comparison import _partial_summary
+    source = tmp_path / 'trial_0001' / 'dom' / 'custom'
+    write_json(source / 'manifest.json', {'turn_policy': 'actor-response-turn/v2',
+        'model_turns': 0, 'states': [], 'steps': [], 'controls': {'max_turns': 200}})
+    write_json(source / 'turns' / 'turn_000001' / 'request.json', {'api_call_started': True})
+    write_json_lines(source / 'turns' / 'turn_000001' / 'transport_attempts.jsonl', [
+        {'attempt': i, 'response_received': False, 'usage': None, 'status': 'transport_error'}
+        for i in (1, 2, 3)])
+    summary = _partial_summary({'recording': str(source), 'task': {'instruction': 'Read heading.'},
+        'configuration': {'model': 'gemini-3.1-pro-preview'}, 'run_name': 'trial_0001',
+        'technical_outcome': 'technical_failure'}, 'dom', 'custom')
+    assert summary['model_turns'] == 0
+    assert summary['turns_missing_usage'] == 0
+    assert summary['turns_complete'] is True
+    assert summary['cost_streams']['actor']['cost']['estimated_usd'] is None
+    assert summary['actor_transport_attempts'] == 3

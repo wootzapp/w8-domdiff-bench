@@ -468,7 +468,7 @@ def test_execution_targets_are_preserved_without_fabricating_coordinates(recordi
         if mode == "dom":
             assert action["ref"] == "e1" and "coordinate" not in action
         else:
-            assert action["coordinate"] == [10, 20] and "ref" not in action
+            assert action["coordinate"] == [14, 15] and "ref" not in action
         assert digest(source) == before
 
 @pytest.mark.usefixtures("no_network")
@@ -714,3 +714,74 @@ def test_fully_missing_passive_format_does_not_block_available_format_preflight(
     assert receipt["dom_model_states"] == (0 if missing_format == "dom_model" else 2)
     assert receipt["screenshots"] == (0 if missing_format == "screenshot" else 2)
     assert len(receipt["alignment"]["transitions"]) == 1
+
+
+@pytest.mark.skipif(not __import__('os').environ.get('W8_CALIBRATION_CDP_URL'),
+    reason="requires the local W8 browser and W8_CALIBRATION_CDP_URL")
+def test_normalized_coordinate_calibration_in_w8(tmp_path):
+    """Exercise real pointer input against known targets without model calls."""
+    import io
+    import os
+    from urllib.parse import quote
+    from PIL import Image
+    from w8bench.task_recorder import capture
+    from w8bench.task_recorder.agent_browser import AgentBrowserClient
+
+    async def calibrate():
+        viewport = (1365, 768)
+        html = (Path(__file__).resolve().parents[1] / 'fixtures' / 'coordinate_calibration.html').read_text()
+        receipts = []
+        async with capture.CDPClient(os.environ['W8_CALIBRATION_CDP_URL'], observation_mode='screenshot',
+                viewport=viewport) as cdp:
+            try:
+                await cdp.call('Page.navigate', {'url': 'data:text/html;charset=utf-8,' + quote(html)})
+                await asyncio.sleep(0.2)
+                metrics = await cdp.call('Runtime.evaluate', {'expression':
+                    '({width:innerWidth,height:innerHeight,dpr:devicePixelRatio})', 'returnByValue': True})
+                assert metrics['result']['value'] == {'width': 1365, 'height': 768, 'dpr': 1}
+                saved = await capture._capture_screenshot(cdp, tmp_path)
+                with Image.open(io.BytesIO(saved.read_bytes())) as image:
+                    assert image.size == viewport
+                driver = AgentBrowserClient('unused', session='coordinate-calibration',
+                    cdp_url=os.environ['W8_CALIBRATION_CDP_URL'], timeout=90)
+                points = [('north-west', 0, 0), ('north-east', 1000, 0),
+                    ('south-west', 0, 1000), ('south-east', 1000, 1000),
+                    ('small', round(825 * 1000 / viewport[0]), round(358 * 1000 / viewport[1]))]
+                for name, x, y in points:
+                    result = await driver.execute({'action': 'click', 'x': x, 'y': y}, cdp=cdp, viewport=viewport)
+                    hit = await cdp.call('Runtime.evaluate', {'expression': 'hitTargets.at(-1)', 'returnByValue': True})
+                    assert hit['result']['value'] == name
+                    receipts.append({'target': name, 'result': result, 'hit': hit['result']['value']})
+                wheel = await driver.execute({'action': 'scroll', 'x': 500, 'y': 500, 'pixels': 1000},
+                    cdp=cdp, viewport=viewport)
+                await asyncio.sleep(0.2)
+                position = await cdp.call('Runtime.evaluate', {'expression': 'scrollY', 'returnByValue': True})
+                scroll_y = position['result']['value']
+                assert 800 <= scroll_y <= 1200
+                result = await driver.execute({'action': 'click', 'x': round(660 * 1000 / viewport[0]),
+                    'y': round((1460 - scroll_y) * 1000 / viewport[1])}, cdp=cdp, viewport=viewport)
+                hit = await cdp.call('Runtime.evaluate', {'expression': 'hitTargets.at(-1)', 'returnByValue': True})
+                assert hit['result']['value'] == 'scrolled'
+                receipts.append({'target': 'scrolled', 'scroll_y': scroll_y, 'wheel': wheel,
+                    'result': result, 'hit': hit['result']['value']})
+                target = Path(__file__).resolve().parents[2] / 'reports' / 'implementation_fixes' / 'calibration.json'
+                write_json(target, {'viewport': list(viewport), 'device_pixel_ratio': 1,
+                    'screenshot_sha256': hashlib.sha256(saved.read_bytes()).hexdigest(),
+                    'hits': len(receipts), 'targets': len(points) + 1, 'receipts': receipts})
+            finally:
+                await cdp.close_owned_target_on_failure()
+        return receipts
+    assert len(asyncio.run(calibrate())) == 6
+
+
+def test_verifier_history_uses_executed_css_coordinates():
+    from w8bench.task_recorder.trajectory import websurfer_action
+    record = {"action": {"action": "click", "x": 500, "y": 500}, "thought": "Click the button",
+        "model_turn": 1, "state": 1, "action_succeeded": True,
+        "model_coordinates": {"x": 500, "y": 500, "units": "normalized_1000"},
+        "executed_coordinates": {"x": 682, "y": 384, "units": "css_pixels"}}
+    _, arguments, _ = websurfer_action(record)
+    assert (arguments['x'], arguments['y']) == (682, 384)
+    events = prepare._verifier_events({"steps": [record]})
+    assert events[0]['arguments']['coordinate'] == [682, 384]
+    assert record['action'] == {"action": "click", "x": 500, "y": 500}

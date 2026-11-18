@@ -7,6 +7,7 @@ import base64
 import hashlib
 import json
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -40,6 +41,9 @@ FULL_RENDERER = PACKAGE_ROOT / "renderers" / "render_chromiumrl_snapshot_full.py
 MODEL_DOM_TEXT_RENDERER = PACKAGE_ROOT / "renderers" / "render_chromiumrl_model_dom.py"
 MODEL_DOM_COMMAND = "ChromiumRL.getModelDOM"
 MODEL_DOM_RENDERER_NAME = "chromiumrl-model-dom"
+LIVENESS_PROBE_SECONDS = 3.0
+TARGET_IDENTITY_PROPERTY = "__w8_recorder_target_identity__"
+TARGET_IDENTITY_WORLD = "w8-recorder-identity"
 
 class CDPError(RunnerError):
     def __init__(self, method: str, error: Any):
@@ -243,13 +247,19 @@ async def capture_call(
     method: str,
     params: dict[str, Any],
 ) -> dict[str, Any]:
-    """Retry a read-only capture command only when its response times out."""
+    """Recover one read-only observation after checking its exact page target."""
     for attempt in range(1, 3):
         try:
             return await cdp.call(method, params)
-        except (asyncio.TimeoutError, TimeoutError) as error:
+        except (asyncio.TimeoutError, TimeoutError, CDPError) as error:
+            internal = isinstance(error, CDPError) and isinstance(error.error, dict) and error.error.get("code") == -32603
+            if isinstance(error, CDPError) and not internal:
+                raise
             if attempt == 2:
-                raise RunnerError(f"{method} timed out after 2 attempts") from error
+                failure = RunnerError(f"{method} failed after 2 read-only attempts: {type(error).__name__}: {error}")
+                failure.technical_failure_class = "cdp_stall"
+                raise failure from error
+            await cdp.recover_observation()
             await asyncio.sleep(0.5 * attempt)
 
 
@@ -358,9 +368,11 @@ class _CaptureState:
 
 async def _capture_frame(cdp: CDPClient, metadata: dict[str, Any], kind: str) -> dict[str, Any]:
     try:
-        response = await cdp.call("Page.getFrameTree")
+        response = await capture_call(cdp, "Page.getFrameTree", {})
         return response.get("frameTree", {}).get("frame", {})
     except Exception as error:
+        if getattr(error, "technical_failure_class", None):
+            raise
         metadata["metadata_errors"].append({"kind": kind, "error": f"{type(error).__name__}: {error}"})
         return {}
 
@@ -433,7 +445,9 @@ async def _record_capture_phase(cdp: CDPClient, directory: Path, phase: str,
         record.update(status="error", error=f"{type(error).__name__}: {error}")
         metadata["paired_complete"] = False
         _invalidate_capture(directory, phase, state, record, error)
-        if (phase == "screenshot") == (observation_mode == "screenshot"):
+        if getattr(error, "technical_failure_class", None) in {"browser_crash", "cdp_stall"} or (phase == "screenshot") == (observation_mode == "screenshot"):
+            if not getattr(error, "technical_failure_class", None):
+                error.technical_failure_class = "capture_failure"
             raise
     finally:
         record.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
@@ -487,23 +501,61 @@ async def capture_bundle(cdp: CDPClient, directory: Path, *, max_nodes: int,
         navigation_start, observation_mode)
 
 
-async def _snapshot_action_refs(agent_browser: AgentBrowserClient, attempts: int) -> Any:
+async def _snapshot_action_refs(agent_browser: AgentBrowserClient, attempts: int, cdp: CDPClient) -> Any:
+    recovered = False
     for attempt in range(1, max(1, attempts) + 1):
+        snapshot_task = None
+        crash_wait = None
         try:
-            return await agent_browser.snapshot()
-        except Exception:
-            if attempt >= max(1, attempts):
+            if cdp._page_failure is not None:
+                raise cdp._page_failure
+            snapshot_task = asyncio.create_task(agent_browser.snapshot())
+            crash_wait = asyncio.create_task(cdp.page_failure_event.wait())
+            done, _ = await asyncio.wait({snapshot_task, crash_wait}, return_when=asyncio.FIRST_COMPLETED)
+            if crash_wait in done:
+                raise cdp._page_failure or RunnerError("page target failed during reference capture")
+            return await snapshot_task
+        except Exception as error:
+            if cdp._page_failure is error or getattr(error, "technical_failure_class", None) == "browser_crash":
                 raise
+            if attempt >= max(1, attempts):
+                error.technical_failure_class = "snapshot_exhaustion"
+                raise
+            detail = str(error).lower()
+            if "timed out" in detail or "internal error" in detail or isinstance(error, TimeoutError):
+                if recovered:
+                    error.technical_failure_class = "snapshot_exhaustion"
+                    raise
+                await cdp.recover_observation()
+                recovered = True
             await agent_browser.reconnect()
+            await cdp.synchronize_target()
+            active_page = await agent_browser.active_page(cdp)
+            selected = cdp._select_active_target(active_page, [
+                {"targetId": key} for key in cdp.target_registry])
+            if selected["targetId"] != cdp.target.get("targetId"):
+                failure = RunnerError("reference session rebound to a different captured page")
+                failure.technical_failure_class = "snapshot_exhaustion"
+                raise failure
             await asyncio.sleep(0.75 * attempt)
+        finally:
+            for task in (snapshot_task, crash_wait):
+                if task is not None and not task.done():
+                    task.cancel()
+                    try:
+                        await task
+                    except (asyncio.CancelledError, Exception):
+                        pass
     raise AssertionError("unreachable")
 
 
 async def _finish_reference_capture(bundle: CaptureBundle, cdp: CDPClient,
     refs_started: float) -> None:
     try:
-        frame = (await cdp.call("Page.getFrameTree")).get("frameTree", {}).get("frame", {})
+        frame = (await capture_call(cdp, "Page.getFrameTree", {})).get("frameTree", {}).get("frame", {})
     except Exception as error:
+        if getattr(error, "technical_failure_class", None):
+            raise
         frame = {}
         bundle.capture_metadata["metadata_errors"].append(
             {"kind": "url_after_refs", "error": f"{type(error).__name__}: {error}"})
@@ -528,7 +580,7 @@ async def attach_agent_browser_observation(bundle: CaptureBundle,
     if bundle.observation_mode != "dom":
         raise RunnerError("accessibility observations are forbidden in screenshot mode")
     refs_started_at, refs_started = utc_now(), time.monotonic()
-    action_observation = await _snapshot_action_refs(agent_browser, attempts)
+    action_observation = await _snapshot_action_refs(agent_browser, attempts, cdp)
     action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
     write_text(action_path, action_observation.text)
     bundle.agent_browser_action_text = action_observation.text
@@ -575,22 +627,38 @@ async def synchronize_recorder_target(
     if agent_browser is None:
         return await _synchronize_capture_tab(cdp)
     last_error: BaseException | None = None
+    observation_recovered = False
     for attempt in range(1, max(1, attempts) + 1):
         try:
-            active_page = await agent_browser.active_page()
+            await cdp.synchronize_target()
+            active_page = await agent_browser.active_page(cdp)
             return await cdp.synchronize_target(active_page)
         except AgentBrowserBaseError as error:
             last_error = error
+            if cdp._page_failure is not None:
+                raise cdp._page_failure
+            if getattr(error, "technical_failure_class", None) == "cdp_stall":
+                if observation_recovered:
+                    raise
+                await cdp.recover_observation()
+                observation_recovered = True
             if attempt < attempts:
                 await agent_browser.reconnect()
                 await asyncio.sleep(0.5 * attempt)
         except RunnerError as error:
             last_error = error
+            if getattr(error, "technical_failure_class", None) in {"browser_crash", "cdp_stall"}:
+                raise
             transport_lost = is_cdp_transport_error(error)
             if transport_lost:
                 try:
-                    active_page = await agent_browser.active_page()
-                    report = await cdp.reconnect_active_page(active_page)
+                    # Restore the browser transport before the CLI identity
+                    # handshake; its target comes from CDP, never page globals.
+                    report = await cdp.reconnect_active_page(AgentBrowserPage("", "", "",
+                        target_id=str(cdp.target.get("targetId", ""))))
+                    await cdp.synchronize_target()
+                    active_page = await agent_browser.active_page(cdp)
+                    report.update(await cdp.synchronize_target(active_page))
                     report["synchronization_attempt"] = attempt
                     return report
                 except (AgentBrowserBaseError, RunnerError, OSError) as reconnect_error:
@@ -670,10 +738,30 @@ class CDPClient:
         self.target: dict[str, Any] = {}
         self.connection_report: dict[str, Any] = {}
         self._failure_target_cleanup_attempted = False
+        self.recording_dir: Path | None = None
+        self._page_failure: RunnerError | None = None
+        self._expected_detaches: set[str] = set()
+        self._session_detached = False
+        self.page_failure_event = asyncio.Event()
+        self._expected_target_closures: set[str] = set()
+        self.target_registry: dict[str, dict[str, Any]] = {}
+        self.session_targets: dict[str, str] = {}
+        self.identity_reads: dict[str, set[str]] = {}
 
     async def _enable_attached_target(self) -> dict[str, Any]:
         """Enable capture domains, the coordinate viewport and configured locales."""
         await self.call("Page.enable")
+        await self.call("Inspector.enable")
+        target_id = str(self.target.get("targetId", ""))
+        entry = self.target_registry.setdefault(target_id, {"target_id": target_id})
+        entry["identity_world"] = TARGET_IDENTITY_WORLD
+        marker = entry.setdefault("identity_marker", secrets.token_hex(16))
+        expression = f"Object.defineProperty(globalThis,{json.dumps(TARGET_IDENTITY_PROPERTY)},{{value:{json.dumps(marker)},configurable:true}});void 0"
+        frame = (await self.call("Page.getFrameTree"))["frameTree"]["frame"]["id"]
+        world = await self.call("Page.createIsolatedWorld", {"frameId": frame,
+            "worldName": TARGET_IDENTITY_WORLD, "grantUniveralAccess": False})
+        await self.call("Runtime.evaluate", {"expression": expression, "returnByValue": True,
+            "contextId": world["executionContextId"]})
         try:
             await self.call("ChromiumRL.enable")
         except Exception as error:
@@ -734,12 +822,14 @@ class CDPClient:
             return
         try:
             if self.session_id:
+                self._expected_detaches.add(self.session_id)
                 await self.call(
                     "Target.detachFromTarget",
                     {"sessionId": self.session_id},
                     attached=False,
                 )
                 self.session_id = ""
+            self._expected_target_closures.add(target_id)
             result = await self.call(
                 "Target.closeTarget", {"targetId": target_id}, attached=False
             )
@@ -787,6 +877,7 @@ class CDPClient:
     async def connect(self) -> None:
         """Select the task page, attach capture and establish its locale policy."""
         await self._open_browser_transport()
+        await self.call("Target.setDiscoverTargets", {"discover": True}, attached=False)
         targets = (await self.call("Target.getTargets", attached=False)).get("targetInfos", [])
         pages = self._page_targets(targets)
         pages.sort(key=lambda item: 0 if str(item.get("url", "")).startswith(("http://", "https://")) else 1)
@@ -892,10 +983,72 @@ class CDPClient:
         self.connection_report.setdefault("transport_reconnects", []).append(dict(report))
         return report
 
-    async def synchronize_target(self, active_page: AgentBrowserPage) -> dict[str, Any]:
-        """Match the active task page and attach capture to its unique CDP target."""
+    async def synchronize_target(self, active_page: AgentBrowserPage | None = None) -> dict[str, Any]:
+        """Bind the CLI's page identity to an exact browser target and record its opener."""
         targets = (await self.call("Target.getTargets", attached=False)).get("targetInfos", [])
-        selected = self._select_active_target(active_page, self._page_targets(targets))
+        pages = self._page_targets(targets)
+        present_ids = {str(page["targetId"]) for page in pages}
+        self.target_registry = {key: value for key, value in self.target_registry.items() if key in present_ids}
+        for page in pages:
+            target_id = str(page["targetId"])
+            self.target_registry.setdefault(target_id, {}).update(target_id=target_id,
+                opener_id=page.get("openerId"), type=page.get("type"))
+        if active_page is None:
+            # Keep target identity outside the page's main world. Recreate the
+            # isolated main-frame context after navigation without touching DOM,
+            # scroll, focus, or the page's JavaScript globals.
+            for page in pages:
+                target_id = str(page["targetId"])
+                entry = self.target_registry.setdefault(target_id, {})
+                entry.update(target_id=target_id, opener_id=page.get("openerId"), type=page.get("type"),
+                    identity_world=TARGET_IDENTITY_WORLD)
+                marker = entry.setdefault("identity_marker", secrets.token_hex(16))
+                temporary_session = target_id != str(self.target.get("targetId", ""))
+                session_id = self.session_id
+                deadline = time.monotonic() + LIVENESS_PROBE_SECONDS
+                try:
+                    if temporary_session:
+                        session_id = str((await asyncio.wait_for(self.call("Target.attachToTarget", {
+                            "targetId": target_id, "flatten": True}, attached=False),
+                            timeout=max(0.0, deadline - time.monotonic())))["sessionId"])
+                    expression = f"Object.defineProperty(globalThis,{json.dumps(TARGET_IDENTITY_PROPERTY)},{{value:{json.dumps(marker)},configurable:true}});void 0"
+                    try:
+                        frame = (await asyncio.wait_for(self.call("Page.getFrameTree", session_id=session_id),
+                            timeout=max(0.0, deadline - time.monotonic())))["frameTree"]["frame"]["id"]
+                        world = await asyncio.wait_for(self.call("Page.createIsolatedWorld", {"frameId": frame,
+                            "worldName": TARGET_IDENTITY_WORLD, "grantUniveralAccess": False}, session_id=session_id),
+                            timeout=max(0.0, deadline - time.monotonic()))
+                        await asyncio.wait_for(self.call("Runtime.evaluate", {"expression": expression,
+                            "contextId": world["executionContextId"], "returnByValue": True}, session_id=session_id),
+                            timeout=max(0.0, deadline - time.monotonic()))
+                        entry.pop("identity_error", None)
+                    finally:
+                        if temporary_session:
+                            self._expected_detaches.add(session_id)
+                            await asyncio.wait_for(self.call("Target.detachFromTarget", {"sessionId": session_id}, attached=False),
+                                timeout=max(0.0, deadline - time.monotonic()))
+                except (TimeoutError, CDPError, RunnerError) as error:
+                    entry["identity_error"] = type(error).__name__
+                    if self._page_failure is not None:
+                        raise self._page_failure
+                    if not temporary_session:
+                        await self.recover_observation()
+                    # An unrelated unresponsive background page cannot determine
+                    # the actor's target. Missing active identity still fails closed.
+            registry = list(self.target_registry.values())
+            self.connection_report["target_registry"] = registry
+            if self.recording_dir is not None:
+                write_json(self.recording_dir / "target_registry.json", {"recorded_at": utc_now(), "targets": registry})
+            return {"target_registry": registry}
+        selected = self._select_active_target(active_page, pages)
+        selected_id = str(selected["targetId"])
+        for key, entry in self.target_registry.items():
+            entry["active"] = key == selected_id
+        self.target_registry[selected_id]["tab_id"] = active_page.tab_id
+        self.connection_report["target_registry"] = list(self.target_registry.values())
+        if self.recording_dir is not None:
+            write_json(self.recording_dir / "target_registry.json", {
+                "recorded_at": utc_now(), "targets": self.connection_report["target_registry"]})
         old_target_id = str(self.target.get("targetId", ""))
         new_target_id = str(selected.get("targetId", ""))
         report = self._target_switch_report(active_page, selected, old_target_id, new_target_id)
@@ -905,12 +1058,14 @@ class CDPClient:
         old_session_id = self.session_id
         if old_session_id:
             try:
+                self._expected_detaches.add(old_session_id)
                 await self.call("Target.detachFromTarget", {"sessionId": old_session_id}, attached=False)
             except Exception as error:
                 report["detach_error"] = f"{type(error).__name__}: {error}"
         attached = await self.call("Target.attachToTarget",
             {"targetId": new_target_id, "flatten": True}, attached=False)
         self.session_id = str(attached["sessionId"])
+        self._session_detached = False
         self.target = selected
         report["locale_setup"] = await self._enable_attached_target()
         self.connection_report.setdefault("target_switches", []).append(report)
@@ -918,29 +1073,17 @@ class CDPClient:
 
     def _select_active_target(self, active_page: AgentBrowserPage,
         pages: list[dict[str, Any]]) -> dict[str, Any]:
-        active_key = comparable_page_url(active_page.url)
-        candidates = [item for item in pages
-            if comparable_page_url(str(item.get("url", ""))) == active_key]
-        if self.observation_mode == "screenshot":
-            candidates = [item for item in pages if item.get("targetId") == active_page.tab_id]
-        if len(candidates) > 1 and active_page.title:
-            title_matches = [item for item in candidates
-                if str(item.get("title", "")).strip() == active_page.title.strip()]
-            if title_matches:
-                candidates = title_matches
-        if not candidates and active_page.title:
-            title_matches = [item for item in pages
-                if str(item.get("title", "")).strip() == active_page.title.strip()]
-            if len(title_matches) == 1:
-                candidates = title_matches
-        if not candidates:
-            raise RunnerError("agent-browser active tab has no matching CDP page target: "
-                f"tab={active_page.tab_id!r} url={active_page.url!r} title={active_page.title!r}")
+        target_id = active_page.target_id or (active_page.tab_id if self.observation_mode == "screenshot" else "")
+        if not target_id and active_page.identity_marker:
+            matched = [key for key, value in self.target_registry.items()
+                if value.get("identity_marker") == active_page.identity_marker]
+            if len(matched) == 1:
+                target_id = matched[0]
+        candidates = [item for item in pages if str(item.get("targetId", "")) == target_id] if target_id else []
         if len(candidates) != 1:
-            raise RunnerError("agent-browser active tab matches multiple CDP page targets; "
-                "refusing to capture an ambiguous page: "
-                f"tab={active_page.tab_id!r} url={active_page.url!r} "
-                f"title={active_page.title!r} matches={len(candidates)}")
+            failure = RunnerError("active page has no unique exact CDP target ID; refusing ambiguous capture")
+            failure.technical_failure_class = "recorder_harness_error"
+            raise failure
         return candidates[0]
 
     def _target_switch_report(self, active_page: AgentBrowserPage, selected: dict[str, Any],
@@ -953,6 +1096,56 @@ class CDPClient:
             report = {"previous_target_id": old_target_id, "selected_target_id": new_target_id,
                       "switched": new_target_id != old_target_id}
         return report
+
+    async def recover_observation(self) -> dict[str, Any]:
+        """Probe the exact target on a fresh session, then recover read-only capture."""
+        if self._page_failure is not None:
+            raise self._page_failure
+        target_id = str(self.target.get("targetId", ""))
+        old_session = self.session_id
+        probe_session = ""
+        started = time.monotonic()
+        report = {"target_id": target_id, "started_at": utc_now(), "timeout_seconds": LIVENESS_PROBE_SECONDS}
+        try:
+            deadline = time.monotonic() + LIVENESS_PROBE_SECONDS
+            targets = (await asyncio.wait_for(self.call("Target.getTargets", attached=False),
+                timeout=max(0.0, deadline - time.monotonic()))).get("targetInfos", [])
+            if not target_id or not any(str(row.get("targetId", "")) == target_id for row in targets):
+                raise RunnerError("exact page target no longer exists")
+            probe_session = str((await asyncio.wait_for(self.call("Target.attachToTarget", {
+                "targetId": target_id, "flatten": True}, attached=False),
+                timeout=max(0.0, deadline - time.monotonic())))["sessionId"])
+            # Pure evaluation checks renderer responsiveness without reading DOM,
+            # replaying input, or changing the page. Each wait shares one deadline.
+            self.session_id = probe_session
+            self._session_detached = False
+            result = await asyncio.wait_for(self.call("Runtime.evaluate", {"expression": "1", "returnByValue": True,
+                "timeout": int(LIVENESS_PROBE_SECONDS * 1000)}), timeout=max(0.0, deadline - time.monotonic()))
+            if result.get("result", {}).get("value") != 1:
+                raise RunnerError("renderer did not answer the liveness probe")
+            report["alive"] = True
+            await asyncio.wait_for(self._enable_attached_target(), timeout=max(0.0, deadline - time.monotonic()))
+            if old_session:
+                self._expected_detaches.add(old_session)
+                await asyncio.wait_for(self.call("Target.detachFromTarget", {"sessionId": old_session}, attached=False),
+                    timeout=max(0.0, deadline - time.monotonic()))
+            report.update(alive=True, reattached=True, session_id=probe_session)
+            return report
+        except BaseException as error:
+            self.session_id = old_session
+            if isinstance(error, asyncio.CancelledError):
+                raise
+            failure = self._page_failure or RunnerError("read-only session reattachment failed" if report.get("alive") else "target liveness probe failed within 3 seconds")
+            failure.technical_failure_class = getattr(failure, "technical_failure_class", "cdp_stall")
+            self._page_failure = failure
+            self.page_failure_event.set()
+            report.update(alive=report.get("alive", False), error_type=type(error).__name__)
+            raise failure from error
+        finally:
+            report.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
+            self.connection_report.setdefault("observation_recovery", []).append(report)
+            if self.recording_dir is not None:
+                append_json_line(self.recording_dir / "observation_recovery.jsonl", report)
 
     async def close(self) -> None:
         """Cancel the reader and close both CDP transport resources idempotently."""
@@ -985,6 +1178,50 @@ class CDPClient:
                 payload = json.loads(message.data)
                 if not isinstance(payload, dict):
                     raise ValueError("CDP message must be a JSON object")
+                method = payload.get("method", "")
+                params = payload.get("params", {})
+                event_session = payload.get("sessionId") or params.get("sessionId")
+                if method == "Debugger.scriptParsed" and params.get("url") in self.identity_reads:
+                    target_id = self.session_targets.get(str(event_session), "")
+                    if target_id:
+                        self.identity_reads[params["url"]].add(target_id)
+                if method in {"Target.targetCreated", "Target.targetInfoChanged", "Target.targetDestroyed", "Target.targetCrashed",
+                    "Target.attachedToTarget", "Target.detachedFromTarget", "Inspector.targetCrashed", "Inspector.detached",
+                    "Page.frameDetached", "Page.javascriptDialogOpening", "Page.javascriptDialogClosed"}:
+                    info = params.get("targetInfo", {})
+                    target_id = str(params.get("targetId") or info.get("targetId") or self.session_targets.get(str(event_session)) or self.target.get("targetId", ""))
+                    if method == "Target.attachedToTarget" and event_session:
+                        self.session_targets[str(event_session)] = target_id
+                    event = {"method": method, "recorded_at": utc_now(), "target_id": target_id,
+                        "session_id": event_session, "type": params.get("type"), "reason": params.get("reason"),
+                        "status": params.get("status"), "error_code": params.get("errorCode")}
+                    if info:
+                        self.target_registry.setdefault(target_id, {}).update(target_id=target_id,
+                            type=info.get("type"), opener_id=info.get("openerId"), browser_context_id=info.get("browserContextId"))
+                    if method == "Target.targetDestroyed":
+                        self.target_registry.pop(target_id, None)
+                    if self.recording_dir is not None:
+                        append_json_line(self.recording_dir / "browser_events.jsonl", event)
+                    relevant = target_id == str(self.target.get("targetId", "")) and (not event_session or event_session == self.session_id)
+                    detached = method in {"Target.detachedFromTarget", "Inspector.detached"}
+                    event_failure = None
+                    crash_event = "Crashed" in method or (method == "Inspector.detached" and any(
+                        word in str(params.get("reason", "")).lower() for word in ("crash", "render process gone", "renderer process gone")))
+                    if relevant and (crash_event or method == "Target.targetDestroyed") and target_id not in self._expected_target_closures:
+                        self._page_failure = RunnerError("page target crashed" if crash_event else "page target destroyed")
+                        self._page_failure.technical_failure_class = "browser_crash" if crash_event else "cdp_stall"
+                        self.page_failure_event.set()
+                        event_failure = self._page_failure
+                    elif relevant and detached and event_session not in self._expected_detaches:
+                        self._session_detached = True
+                        event_failure = CDPError(method, {"code": -32603, "message": "capture session detached"})
+                    if event_failure is not None:
+                        for future in self.pending.values():
+                            if not future.done():
+                                future.set_exception(event_failure)
+                    self._expected_detaches.discard(str(event_session))
+                    if method == "Target.targetDestroyed":
+                        self._expected_target_closures.discard(target_id)
                 if payload.get("method") in {"Page.frameNavigated", "Page.navigatedWithinDocument"}:
                     self.navigation_events.append({"method": payload["method"],
                         "params": payload.get("params", {}), "session_id": payload.get("sessionId"),
@@ -997,49 +1234,65 @@ class CDPClient:
         except Exception as cause:
             error = RunnerError(f"CDP websocket closed: reader failed ({type(cause).__name__}: {cause})")
         finally:
-            self._transport_error = error
+            self._transport_error = self._page_failure or error
             for future in self.pending.values():
                 if not future.done():
-                    future.set_exception(error)
+                    future.set_exception(self._page_failure or error)
             self.pending.clear()
 
     async def call(
-        self,
-        method: str,
-        params: dict[str, Any] | None = None,
-        *,
-        attached: bool = True,
+        self, method: str, params: dict[str, Any] | None = None, *, attached: bool = True,
+        session_id: str | None = None,
     ) -> dict[str, Any]:
-        """Send one CDP command to the page session or browser connection."""
-        if self._transport_error is not None:
-            raise self._transport_error
-        if self.ws is None:
-            raise RunnerError("CDP websocket is not connected")
-        self.next_id += 1
-        message_id = self.next_id
-        request: dict[str, Any] = {"id": message_id, "method": method, "params": params or {}}
-        if attached and self.session_id:
-            request["sessionId"] = self.session_id
-        future: asyncio.Future[dict[str, Any]] = asyncio.get_running_loop().create_future()
-        self.pending[message_id] = future
+        """Send one protocol command and record its timing without request values."""
+        started = time.monotonic()
+        receipt = {"method": method, "started_at": utc_now(), "target_id": self.target.get("targetId"),
+            "session_id": (session_id or self.session_id) if attached else None, "status": "started"}
+        if session_id is not None:
+            receipt["target_id"] = self.session_targets.get(session_id, receipt["target_id"])
+        message_id = None
         try:
-            await self.ws.send_json(request)
-        except (aiohttp.ClientError, ConnectionError, RuntimeError) as error:
-            self.pending.pop(message_id, None)
-            if is_cdp_transport_error(error):
-                raise RunnerError(
-                    f"CDP websocket closed while sending {method}: {error}"
-                ) from error
-            raise
-        try:
+            if attached and self._page_failure is not None:
+                raise self._page_failure
+            if attached and self._session_detached and session_id is None:
+                raise CDPError(method, {"code": -32603, "message": "capture session detached"})
+            if self._transport_error is not None:
+                raise self._transport_error
+            if self.ws is None:
+                raise RunnerError("CDP websocket is not connected")
+            self.next_id += 1
+            message_id = self.next_id
+            request = {"id": message_id, "method": method, "params": params or {}}
+            if attached and (session_id or self.session_id):
+                request["sessionId"] = session_id or self.session_id
+            future = asyncio.get_running_loop().create_future()
+            self.pending[message_id] = future
+            try:
+                await self.ws.send_json(request)
+            except (aiohttp.ClientError, ConnectionError, RuntimeError) as error:
+                if is_cdp_transport_error(error):
+                    raise RunnerError(f"CDP websocket closed while sending {method}: {error}") from error
+                raise
             response = await asyncio.wait_for(future, timeout=self.timeout)
-        except BaseException:
-            self.pending.pop(message_id, None)
+            if "error" in response:
+                raise CDPError(method, response["error"])
+            receipt["status"] = "completed"
+            result = response.get("result", {})
+            if method == "Target.attachToTarget" and isinstance(result, dict) and result.get("sessionId"):
+                self.session_targets[str(result["sessionId"])] = str((params or {}).get("targetId", ""))
+            return result if isinstance(result, dict) else {}
+        except BaseException as error:
+            receipt.update(status="cancelled" if isinstance(error, asyncio.CancelledError) else "error",
+                error_type=type(error).__name__, technical_failure_class=getattr(error, "technical_failure_class", None))
+            if isinstance(error, CDPError) and isinstance(error.error, dict):
+                receipt["error_code"] = error.error.get("code")
             raise
-        if "error" in response:
-            raise CDPError(method, response["error"])
-        result = response.get("result", {})
-        return result if isinstance(result, dict) else {}
+        finally:
+            if message_id is not None:
+                self.pending.pop(message_id, None)
+            receipt.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
+            if self.recording_dir is not None:
+                append_json_line(self.recording_dir / "cdp_calls.jsonl", receipt)
 
 
 def rewrite_ws_url(value: str, http_url: str) -> str:
@@ -1048,21 +1301,3 @@ def rewrite_ws_url(value: str, http_url: str) -> str:
     target = urlsplit(http_url)
     scheme = "wss" if target.scheme == "https" else "ws"
     return urlunsplit((scheme, target.netloc, source.path, source.query, ""))
-
-
-def comparable_page_url(value: str) -> str:
-    """Normalize only URL spelling differences that cannot identify a tab."""
-    text = value.strip()
-    parsed = urlsplit(text)
-    if parsed.scheme not in {"http", "https"}:
-        return text
-    path = parsed.path or "/"
-    return urlunsplit(
-        (
-            parsed.scheme.lower(),
-            parsed.netloc.lower(),
-            path,
-            parsed.query,
-            parsed.fragment,
-        )
-    )

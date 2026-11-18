@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -20,10 +22,15 @@ def _validate_recording_pair(dom, screenshot):
     for key in ("source_task_id", "instruction", "start_url"):
         if dom["task"][key] != screenshot["task"][key]:
             raise ValueError(f"tasks differ for {key}")
+    from w8bench.task_recorder.runner import ACTION_SCHEMA, SCREENSHOT_ACTION_SCHEMA
+    for recording, schema in ((dom, ACTION_SCHEMA), (screenshot, SCREENSHOT_ACTION_SCHEMA)):
+        expected = hashlib.sha256(json.dumps(schema, sort_keys=True).encode()).hexdigest()
+        if recording["manifest"]["controls"].get("action_schema_sha256") != expected:
+            raise ValueError("recorded actor action schema does not match its observation contract")
     left, right = dom["manifest"]["controls"], screenshot["manifest"]["controls"]
     # Policies necessarily describe different observations. All other actor
     # controls must match; histories, final answers and state counts may differ.
-    if normalized_settings({k: v for k, v in left.items() if k != "prompt_sha256"}) != normalized_settings({k: v for k, v in right.items() if k != "prompt_sha256"}):
+    if normalized_settings({k: v for k, v in left.items() if k not in {"prompt_sha256", "action_schema_sha256"}}) != normalized_settings({k: v for k, v in right.items() if k not in {"prompt_sha256", "action_schema_sha256"}}):
         raise ValueError("actor model, budget, viewport, action schema or other shared controls differ")
     for key in ("dom_capture_parameters","renderer_versions"):
         if not dom["manifest"].get(key) or normalized_settings(dom["manifest"][key]) != normalized_settings(screenshot["manifest"].get(key)):
@@ -77,7 +84,8 @@ def compare(dom: dict[str, Any], screenshot: dict[str, Any]) -> tuple[dict[str, 
     _validate_browser_pair(dom, screenshot)
     both_success = all(g.get("verdict") == "success" for g in grades)
     receipt = {"schema_version": "2.0", "task_id": dom["task"]["source_task_id"],
-        "shared_controls": {k: v for k, v in left.items() if k != "prompt_sha256"},
+        "shared_controls": {k: v for k, v in left.items() if k not in {"prompt_sha256", "action_schema_sha256"}},
+        "observation_schema_sha256": {mode: item["manifest"]["controls"]["action_schema_sha256"] for mode, item in (("dom", dom), ("screenshot", screenshot))},
         "environment_notes": [], "category": dom["task"].get("category"),
         "difficulty": dom["task"].get("difficulty"), "catalog_sha256": dom["task"].get("catalog_sha256"), **summaries,
         "screenshot_minus_dom_turns": summaries["screenshot"]["model_turns"] - summaries["dom"]["model_turns"],

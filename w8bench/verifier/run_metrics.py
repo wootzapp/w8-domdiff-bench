@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from collections import Counter
 from pathlib import Path
 import re
@@ -395,7 +396,17 @@ def summarize(recording: dict[str, Any]) -> dict[str, Any]:
     source = Path(recording["source"])
     partial = recording.get("partial_recording", False)
     evaluation_path, evaluation, grade, secondary, stages = _load_receipts(recording, source, task, manifest, partial)
-    known_zero_calls = not decisions and (not partial or recording.get("actor_calls_known_zero") is True)
+    transport_receipts = []
+    for path in sorted((source / "turns").glob("*/transport_attempts.jsonl")):
+        transport_receipts.extend(json.loads(line) for line in path.read_text().splitlines() if line)
+    for pending in sorted((source / "turns").glob("*/transport_pending.json")):
+        item = read_object(pending)
+        if item.get("status") == "started":
+            transport_receipts.append({**item, "usage": None, "response_received": False, "model": task.get("model")})
+    failed_transport = [row for row in transport_receipts if row.get("response_received") is not True]
+    transport_unknown = sum(not all(_usage_values(row.get("usage"))[key] is not None
+        for key in ("input_tokens", "output_tokens")) for row in failed_transport)
+    known_zero_calls = not decisions and not transport_receipts and (not partial or recording.get("actor_calls_known_zero") is True)
     usage, known, models, missing, tpt = _actor_usage(decisions, source, partial and not known_zero_calls)
     if known_zero_calls:
         usage.update(input_tokens=0, output_tokens=0, total_tokens=0)
@@ -408,12 +419,20 @@ def summarize(recording: dict[str, Any]) -> dict[str, Any]:
         judge_usage[key] = sum(values) if values else 0 if not primary_streams or all(stream.get("calls") == 0 for stream in primary_streams) else None
     if grade is not None and grade.get("verdict") not in {"success", "failure", "uncertain", "ungraded"}:
         raise ValueError("invalid completion verdict")
-    cost_streams = {"actor": {"model": task.get("model"), "calls": len(decisions), "usage": usage,
-        "call_records": decisions, "usage_known_calls": known,
-        "unknown_attempts": int(partial and not known_zero_calls),
-        "usage_coverage": "partial" if partial and not known_zero_calls or missing else "complete"}, **streams}
+    cost_streams = {"actor": {"model": task.get("model"), "calls": len(decisions) + len(failed_transport), "usage": usage,
+        "call_records": [*decisions, *failed_transport], "usage_known_calls": known,
+        "unknown_attempts": max(int(partial and not known_zero_calls), transport_unknown),
+        "response_calls": len(decisions), "failed_transport_attempts": len(failed_transport),
+        "usage_coverage": "partial" if partial and not known_zero_calls or missing or transport_unknown else "complete"}, **streams}
     for stream in cost_streams.values():
         _price_stream(stream)
+    response_cost = {"model": task.get("model"), "calls": len(decisions), "call_records": decisions,
+        "usage_coverage": "partial" if missing else "complete"}
+    transport_cost = {"model": task.get("model"), "calls": len(failed_transport), "call_records": failed_transport,
+        "unknown_attempts": transport_unknown, "usage_coverage": "partial" if transport_unknown else "complete"}
+    _price_stream(response_cost)
+    _price_stream(transport_cost)
+    cost_streams["actor"]["cost_breakdown"] = {"responses": response_cost["cost"], "failed_transport": transport_cost["cost"]}
     cap = manifest.get("controls", {}).get("max_turns")
     return {"run": str(source), "recording_available": not partial, "partial_recording": partial,
         "turns_complete": not partial or known_zero_calls,
@@ -437,6 +456,10 @@ def summarize(recording: dict[str, Any]) -> dict[str, Any]:
         "evidence_audit_status": audit.get("status", "not_available"),
         "auxiliary_verifiers": {name: stages[name] for name in ("dom_model", "screenshot_verifier") if name in stages},
         **_actor_statistics(recording, manifest, decisions, partial, cap),
+        "actor_transport_attempts": len(transport_receipts) if transport_receipts or manifest.get("turn_policy") == "actor-response-turn/v2" else None,
+        "failed_transport_attempts": sum(item.get("status") != "started" for item in failed_transport),
+        "pending_transport_attempts": sum(item.get("status") == "started" for item in failed_transport), "failed_transport_attempts_missing_usage": transport_unknown,
+        "failed_transport_usage": [row.get("usage") for row in failed_transport],
         "token_usage": usage, "token_usage_known_calls": known, "tokens_per_turn": tpt,
         "turns_missing_usage": missing, "returned_actor_models": sorted(models),
         "completion": grade or {"method": "ungraded", "verdict": "ungraded"}}

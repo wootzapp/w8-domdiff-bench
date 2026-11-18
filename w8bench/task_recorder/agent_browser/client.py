@@ -8,8 +8,10 @@ import json
 import math
 import os
 import re
+import secrets
 import shlex
 import subprocess
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -39,6 +41,8 @@ class AgentBrowserError(AgentBrowserBaseError):
         super().__init__(f"agent-browser {' '.join(command)!r} failed: {error}")
         self.command = command
         self.error = error
+        if any(marker in error.lower() for marker in ("timed out", "internal error", "cdp websocket", "not attached to an active page", "connection closed")):
+            self.technical_failure_class = "cdp_stall"
 
 
 @dataclass(frozen=True)
@@ -46,6 +50,8 @@ class AgentBrowserPage:
     tab_id: str
     url: str
     title: str
+    target_id: str = ""
+    identity_marker: str = ""
 
 
 @dataclass(frozen=True)
@@ -96,6 +102,9 @@ class AgentBrowserClient:
         )
         self.connected = False
         self.version = ""
+        self.recording_dir: Path | None = None
+        self._subprocesses: set[subprocess.Popen] = set()
+        self._cancelled = False
 
     def _invoke_sync(
         self,
@@ -113,23 +122,38 @@ class AgentBrowserClient:
             command.append("--json")
         environment = dict(os.environ)
         environment["NO_COLOR"] = "1"
+        started = time.monotonic()
+        from ..recorder_support import append_json_line, utc_now
+        receipt = {"command": arguments[0] if arguments else "", "started_at": utc_now(), "status": "started"}
         try:
-            completed = subprocess.run(
-                command,
-                cwd=PROJECT_ROOT,
-                env=environment,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=self.timeout,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as error:
-            raise AgentBrowserError(
-                arguments,
-                f"timed out after {self.timeout:g} seconds",
-            ) from error
-        return self._command_output(arguments, completed, json_output)
+            if self._cancelled:
+                raise AgentBrowserError(arguments, "CLI call cancelled")
+            process = subprocess.Popen(command, cwd=PROJECT_ROOT, env=environment, text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self._subprocesses.add(process)
+            if self._cancelled:
+                process.kill()
+            try:
+                stdout, stderr = process.communicate(timeout=self.timeout)
+                completed = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+            except BaseException:
+                process.kill()
+                process.communicate()
+                raise
+            finally:
+                self._subprocesses.discard(process)
+            result = self._command_output(arguments, completed, json_output)
+            receipt.update(status="completed", exit_code=completed.returncode)
+            return result
+        except BaseException as error:
+            receipt.update(status="error", error_type=type(error).__name__)
+            if isinstance(error, subprocess.TimeoutExpired):
+                raise AgentBrowserError(arguments, f"timed out after {self.timeout:g} seconds") from error
+            raise
+        finally:
+            receipt.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
+            if self.recording_dir is not None:
+                append_json_line(self.recording_dir / "agent_browser_calls.jsonl", receipt)
 
     @staticmethod
     def _command_output(arguments: list[str], completed: Any, json_output: bool) -> dict[str, Any] | list[dict[str, Any]] | str:
@@ -168,12 +192,15 @@ class AgentBrowserClient:
         use_session: bool = True,
     ) -> dict[str, Any] | list[dict[str, Any]] | str:
         """Run the blocking CLI subprocess on a worker thread."""
-        return await asyncio.to_thread(
-            self._invoke_sync,
-            arguments,
-            json_output=json_output,
-            use_session=use_session,
-        )
+        try:
+            return await asyncio.to_thread(self._invoke_sync, arguments,
+                json_output=json_output, use_session=use_session)
+        except asyncio.CancelledError:
+            self._cancelled = True
+            for process in list(self._subprocesses):
+                if process.poll() is None:
+                    process.kill()
+            raise
 
     async def connect(self) -> None:
         """Check the official CLI version and attach the named session to CDP."""
@@ -301,7 +328,7 @@ class AgentBrowserClient:
         )
 
 
-    async def active_page(self) -> AgentBrowserPage:
+    async def active_page(self, cdp: Any) -> AgentBrowserPage:
         """Return the official agent-browser session's one active tab."""
         arguments = ["tab", "list"]
         payload = await self._invoke(arguments)
@@ -330,11 +357,55 @@ class AgentBrowserClient:
                 arguments,
                 "active tab is missing tabId or url",
             )
-        return AgentBrowserPage(
-            tab_id=tab_id,
-            url=url,
-            title=str(active.get("title", "")).strip(),
-        )
+        target_id = str(active.get("targetId", "")).strip()
+        marker = ""
+        if not target_id:
+            from ..capture import LIVENESS_PROBE_SECONDS
+            # The pinned CLI exposes neither targetId nor an isolated-world eval.
+            # A no-op inspector script identifies its executing session through
+            # CDP metadata. It reads/writes no page globals or DOM. The isolated
+            # identity value never enters the main world, even transiently.
+            source_url = "w8-recorder-binding:" + secrets.token_hex(32)
+            cdp.identity_reads[source_url] = set()
+            sessions = []
+            try:
+                for candidate in list(cdp.target_registry):
+                    session_id = str((await asyncio.wait_for(cdp.call("Target.attachToTarget", {
+                        "targetId": candidate, "flatten": True}, attached=False),
+                        timeout=LIVENESS_PROBE_SECONDS))["sessionId"])
+                    sessions.append(session_id)
+                    await asyncio.wait_for(cdp.call("Debugger.enable", {"maxScriptsCacheSize": 0},
+                        session_id=session_id), timeout=LIVENESS_PROBE_SECONDS)
+                    await asyncio.wait_for(cdp.call("Debugger.setSkipAllPauses", {"skip": True},
+                        session_id=session_id), timeout=LIVENESS_PROBE_SECONDS)
+                await self._invoke(["eval", "void 0\n//# sourceURL=" + source_url])
+                # Responses on this same CDP transport fence the preceding
+                # scriptParsed events, including when pages share URL/title.
+                for session_id in sessions:
+                    await asyncio.wait_for(cdp.call("Debugger.disable", session_id=session_id),
+                        timeout=LIVENESS_PROBE_SECONDS)
+                matches = cdp.identity_reads[source_url]
+                if len(matches) != 1:
+                    raise AgentBrowserError(arguments, "active page has no unique exact CDP target identity")
+                target_id = next(iter(matches))
+                marker = cdp.target_registry[target_id]["identity_marker"]
+            finally:
+                cdp.identity_reads.pop(source_url, None)
+                for session_id in sessions:
+                    cdp._expected_detaches.add(session_id)
+                    try:
+                        await asyncio.wait_for(cdp.call("Target.detachFromTarget", {
+                            "sessionId": session_id}, attached=False), timeout=LIVENESS_PROBE_SECONDS)
+                    except Exception:
+                        pass
+            # Reject a tab switch during the identity read, even if URLs match.
+            repeated = await self._invoke(arguments)
+            repeated_tabs = repeated.get("data", {}).get("tabs", []) if isinstance(repeated, dict) else []
+            active_ids = [str(row.get("tabId", "")) for row in repeated_tabs if row.get("active") is True]
+            if active_ids != [tab_id]:
+                raise AgentBrowserError(arguments, "active tab changed during exact target binding")
+        return AgentBrowserPage(tab_id=tab_id, url=url,
+            title=str(active.get("title", "")).strip(), target_id=target_id, identity_marker=marker)
 
     @staticmethod
     def action_ref(value: Any) -> str:
@@ -343,12 +414,21 @@ class AgentBrowserClient:
         return ref[1:] if ref.startswith("@") else ref
 
     @staticmethod
-    async def _dispatch_pointer(decision: dict, cdp: Any, viewport: tuple[int, int]) -> None:
+    async def _dispatch_pointer(decision: dict, cdp: Any, viewport: tuple[int, int]) -> dict:
         action = decision["action"]
-        x = decision.get("x")
-        y = decision.get("y")
-        if x is None: x = viewport[0] / 2
-        if y is None: y = viewport[1] / 2
+        raw_x, raw_y = decision.get("x"), decision.get("y")
+        if (raw_x is None) != (raw_y is None):
+            raise AgentBrowserBaseError("supply both x and y coordinates in 0 to 1000 units")
+        if raw_x is not None:
+            if any(type(value) is not int or not 0 <= value <= 1000 for value in (raw_x, raw_y)):
+                raise AgentBrowserBaseError("coordinates must be integers from 0 to 1000")
+            x = max(0, min(viewport[0] - 1, round(raw_x * viewport[0] / 1000)))
+            y = max(0, min(viewport[1] - 1, round(raw_y * viewport[1] / 1000)))
+        else:
+            x, y = viewport[0] / 2, viewport[1] / 2
+        coordinates = {"model_coordinates": {"x": raw_x, "y": raw_y, "units": "normalized_1000"},
+            "executed_coordinates": {"x": x, "y": y, "units": "css_pixels"}, "viewport": list(viewport)}
+        cdp.last_pointer_coordinates = coordinates
         await cdp.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
         if action == "click":
             await cdp.call("Input.dispatchMouseEvent", {
@@ -359,6 +439,7 @@ class AgentBrowserClient:
             await cdp.call("Input.dispatchMouseEvent", {
                 "type": "mouseWheel", "x": x, "y": y,
                 "deltaX": 0, "deltaY": decision["pixels"]})
+        return coordinates
 
     @staticmethod
     async def _dispatch_key(decision: dict, cdp: Any) -> None:
@@ -397,6 +478,7 @@ class AgentBrowserClient:
         # accessibility tree, Runtime.evaluate, or DOM-based hit testing.
         # Both modes share these primitives; only DOM refs use the CLI.
         action = decision["action"]
+        coordinates = {}
         if action == "navigate":
             result = await cdp.call("Page.navigate", {"url": decision["url"]})
             if result.get("errorText"):
@@ -408,7 +490,7 @@ class AgentBrowserClient:
                 raise AgentBrowserBaseError("no previous navigation entry")
             await cdp.call("Page.navigateToHistoryEntry", {"entryId": history["entries"][index]["id"]})
         elif action in {"click", "scroll"}:
-            await self._dispatch_pointer(decision, cdp, viewport)
+            coordinates = await self._dispatch_pointer(decision, cdp, viewport) or {}
         elif action == "type":
             await cdp.call("Input.insertText", {"text": decision["text"]})
         elif action == "press":
@@ -418,7 +500,7 @@ class AgentBrowserClient:
         else:
             raise AgentBrowserBaseError(f"action {action!r} is not executable")
         # Event delivery is not confirmation of a page-level outcome.
-        return {"success": True, "status": "input_dispatched"}
+        return {"success": True, "status": "input_dispatched", **coordinates}
 
     async def execute(self, decision: dict[str, Any], *, cdp: Any,
                       viewport: tuple[int, int] = (1365, 768)) -> dict[str, Any] | str:

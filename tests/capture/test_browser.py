@@ -144,6 +144,10 @@ async def test_cdp_connection_creates_a_fresh_page_and_establishes_capture_polic
         if method == "Target.closeTarget":
             pages[:] = [page for page in pages if page["targetId"] != params["targetId"]]
             return {"success": True}
+        if method == "Page.getFrameTree":
+            return {"frameTree": {"frame": {"id": "main-frame"}}}
+        if method == "Page.createIsolatedWorld":
+            return {"executionContextId": 42}
         if method == "Target.attachToTarget":
             return {"sessionId": "fixture-session"}
         if method == "ChromiumRL.enable" and not enabled:
@@ -171,6 +175,10 @@ async def test_dom_connection_refuses_unavailable_active_capture(monkeypatch):
         events.append(method)
         if method == "Target.getTargets":
             return {"targetInfos": [{"targetId": "one", "type": "page", "url": "https://example.test"}]}
+        if method == "Page.getFrameTree":
+            return {"frameTree": {"frame": {"id": "main-frame"}}}
+        if method == "Page.createIsolatedWorld":
+            return {"executionContextId": 42}
         if method == "Target.attachToTarget":
             return {"sessionId": "one"}
         if method == "ChromiumRL.enable":
@@ -232,13 +240,16 @@ async def test_reference_action_respects_cli_exit_and_json_delivery_contract(
     monkeypatch, returncode, stdout, stderr, success
 ):
     commands = []
+    class Process:
+        def __init__(self): self.returncode = returncode
+        def communicate(self, **kwargs): return stdout, stderr
     def command(argv, **kwargs):
         commands.append(argv)
-        return SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
+        return Process()
     async def inline(function, *args, **kwargs):
         return function(*args, **kwargs)
     from w8bench.task_recorder.agent_browser import client as adapter
-    monkeypatch.setattr(adapter.subprocess, "run", command)
+    monkeypatch.setattr(adapter.subprocess, "Popen", command)
     monkeypatch.setattr(adapter.asyncio, "to_thread", inline)
     driver = AgentBrowserClient("fixture-driver", session="one", cdp_url="http://localhost:9222", timeout=1)
     operation = driver.execute({"action": "click", "id": "e1"}, cdp=None)
@@ -497,7 +508,7 @@ async def test_malformed_reader_records_a_technical_failure_without_actor_calls(
         "--output-dir", str(tmp_path / "recordings"), "--api-key", "offline", "--settle-seconds", "0"])
     assert await runner.run(args) == 2
     final = json.loads((tmp_path / "recordings/failure/final.json").read_text())
-    assert final["run_status"] == "error" and final["model_turns"] == 0
+    assert final["run_status"] == "technical_failure" and final["model_turns"] == 0
     assert "CDP websocket closed" in final["error"]
     assert socket.closed and http.close.await_count == 1
 
@@ -654,6 +665,22 @@ def test_live_capture_preserves_scroll_and_focus(tmp_path):
                         cdp_url=args.agent_browser_cdp_url, timeout=args.agent_browser_timeout)
                     await driver.connect()
                     try:
+                        await capture.synchronize_recorder_target(cdp, driver)
+                        page = await driver.active_page(cdp)
+                        assert page.target_id == cdp.target["targetId"]
+                        main = await cdp.call("Runtime.evaluate", {"expression":
+                            "typeof globalThis.__w8_recorder_target_identity__", "returnByValue": True})
+                        assert main["result"]["value"] == "undefined"
+                        await cdp.call("Runtime.evaluate", {"expression":
+                            "globalThis.__w8_recorder_target_identity__='page-forgery'"})
+                        frame = (await cdp.call("Page.getFrameTree"))["frameTree"]["frame"]["id"]
+                        world = await cdp.call("Page.createIsolatedWorld", {"frameId": frame,
+                            "worldName": capture.TARGET_IDENTITY_WORLD, "grantUniveralAccess": False})
+                        private = await cdp.call("Runtime.evaluate", {"expression":
+                            "globalThis.__w8_recorder_target_identity__", "contextId": world["executionContextId"],
+                            "returnByValue": True})
+                        assert private["result"]["value"] == page.identity_marker
+                        assert (await driver.active_page(cdp)).target_id == page.target_id
                         bundle = await capture.attach_agent_browser_observation(bundle, driver, cdp)
                     finally:
                         await driver.close()
@@ -880,12 +907,13 @@ def test_action_session_connection_preserves_version_and_attachment(monkeypatch,
 @pytest.mark.parametrize("failures", [0, 1, 2])
 def test_capture_command_retries_only_read_timeouts(monkeypatch, failures):
     from types import SimpleNamespace
-    cdp = SimpleNamespace(call=AsyncMock(side_effect=[TimeoutError()] * failures + [{"captured": True}]))
+    cdp = SimpleNamespace(call=AsyncMock(side_effect=[TimeoutError()] * failures + [{"captured": True}]),
+        recover_observation=AsyncMock(return_value={"alive": True}))
     sleep = AsyncMock()
     monkeypatch.setattr(capture.asyncio, "sleep", sleep)
     pending = capture.capture_call(cdp, "Read.fixture", {"viewport": True})
     if failures == 2:
-        with pytest.raises(RunnerError, match="Read.fixture timed out after 2 attempts") as caught:
+        with pytest.raises(RunnerError, match="Read.fixture failed after 2 read-only attempts") as caught:
             asyncio.run(pending)
         assert isinstance(caught.value.__cause__, TimeoutError)
     else:
@@ -940,3 +968,280 @@ def test_cdp_requests_preserve_responses_and_transport_failures(outcome):
     assert cdp.pending == {}
     assert [row["params"]["url"] for row in cdp.navigation_events] == (
         ["https://example.test/next"] if outcome in {"success", "protocol_error"} else [])
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("crash_method, params", [
+    ("Inspector.targetCrashed", {}),
+    ("Target.targetCrashed", {"targetId": "page-one"}),
+    ("Inspector.detached", {"reason": "Render process gone."}),
+])
+async def test_renderer_crash_fails_pending_calls_and_blocks_further_capture(tmp_path, crash_method, params):
+    cdp = capture.CDPClient('http://localhost:9222')
+    cdp.target = {'targetId': 'page-one'}
+    cdp.session_id = 'session-one'
+    cdp.recording_dir = tmp_path
+    class Socket:
+        def __init__(self):
+            self.requests = []
+        async def send_json(self, request):
+            self.requests.append(request)
+        async def __aiter__(self):
+            yield SimpleNamespace(type=capture.aiohttp.WSMsgType.TEXT, data=json.dumps({
+                'method': crash_method, 'sessionId': 'session-one', 'params': params}))
+    cdp.ws = Socket()
+    pending = asyncio.create_task(cdp.call('Page.captureScreenshot'))
+    await asyncio.sleep(0)
+    await cdp._read_messages()
+    with pytest.raises(RunnerError) as error:
+        await pending
+    assert error.value.technical_failure_class == 'browser_crash'
+    count = len(cdp.ws.requests)
+    with pytest.raises(RunnerError):
+        await cdp.call('Page.getFrameTree')
+    assert len(cdp.ws.requests) == count
+    records = [json.loads(line) for line in (tmp_path / 'browser_events.jsonl').read_text().splitlines()]
+    assert records[0]['method'] == crash_method
+    assert records[0]['target_id'] == 'page-one'
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('first_error', [TimeoutError(), capture.CDPError('Page.captureScreenshot', {'code': -32603, 'message': 'Internal error'})])
+async def test_read_only_failure_probes_and_reattaches_once_without_replaying_action(first_error):
+    cdp = SimpleNamespace(call=AsyncMock(side_effect=[first_error, {'captured': True}]),
+        recover_observation=AsyncMock(return_value={'alive': True}))
+    assert await capture.capture_call(cdp, 'Page.captureScreenshot', {'format': 'png'}) == {'captured': True}
+    cdp.recover_observation.assert_awaited_once()
+    assert cdp.call.await_count == 2
+    assert all(row.args[0] == 'Page.captureScreenshot' for row in cdp.call.await_args_list)
+
+@pytest.mark.asyncio
+async def test_dead_target_ends_read_only_recovery_without_second_capture():
+    failure = RunnerError('target liveness probe failed')
+    failure.technical_failure_class = 'cdp_stall'
+    cdp = SimpleNamespace(call=AsyncMock(side_effect=TimeoutError()),
+        recover_observation=AsyncMock(side_effect=failure))
+    with pytest.raises(RunnerError, match='liveness'):
+        await capture.capture_call(cdp, 'Page.captureScreenshot', {})
+    assert cdp.call.await_count == 1
+
+@pytest.mark.asyncio
+async def test_target_identity_never_falls_back_to_matching_url_or_title():
+    from w8bench.task_recorder.agent_browser.client import AgentBrowserPage
+    cdp = capture.CDPClient('http://localhost:9222')
+    page = AgentBrowserPage('t2', 'https://same.test/', 'Same', target_id='exact-two')
+    pages = [{'targetId': 'exact-one', 'url': page.url, 'title': page.title},
+             {'targetId': 'exact-two', 'url': page.url, 'title': page.title}]
+    assert cdp._select_active_target(page, pages)['targetId'] == 'exact-two'
+    with pytest.raises(RunnerError, match='target'):
+        cdp._select_active_target(page, pages[:1])
+
+@pytest.mark.asyncio
+async def test_cdp_call_receipt_contains_timing_but_not_request_secret(tmp_path):
+    cdp = capture.CDPClient('http://localhost:9222')
+    cdp.recording_dir = tmp_path
+    cdp.session_id = 'session'
+    class Socket:
+        async def send_json(self, request):
+            cdp.pending[request['id']].set_result({'id': request['id'], 'result': {'ok': True}})
+    cdp.ws = Socket()
+    assert await cdp.call('Network.setExtraHTTPHeaders', {'headers': {'Authorization': 'secret'}}) == {'ok': True}
+    text = (tmp_path / 'cdp_calls.jsonl').read_text()
+    row = json.loads(text)
+    assert row['method'] == 'Network.setExtraHTTPHeaders'
+    assert row['duration_seconds'] >= 0
+    assert row['status'] == 'completed'
+    assert 'secret' not in text and 'Authorization' not in text
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("race,matches", [(False, {"exact-target"}), (True, {"exact-target"}),
+    (False, set()), (False, {"exact-target", "other-target"})])
+async def test_cli_page_identity_uses_inspector_metadata_and_detects_tab_race(monkeypatch, race, matches):
+    driver = AgentBrowserClient('unused', session='fixture', cdp_url='http://localhost:9222', timeout=90)
+    tab = {'tabId': 't2', 'url': 'https://same.test/', 'title': 'Same', 'active': True}
+    cdp = capture.CDPClient('http://localhost:9222')
+    cdp.target_registry = {'exact-target': {'identity_marker': 'isolated-identity'}}
+    command = AsyncMock(return_value={'sessionId': 'binding-session'})
+    monkeypatch.setattr(cdp, 'call', command)
+    calls = []
+    async def invoke(arguments):
+        calls.append(arguments)
+        if arguments[0] == 'eval':
+            assert arguments[1].startswith('void 0\n//# sourceURL=')
+            assert capture.TARGET_IDENTITY_PROPERTY not in arguments[1]
+            assert 'isolated-identity' not in arguments[1]
+            cdp.identity_reads[arguments[1].split('sourceURL=')[1]].update(matches)
+            return {'data': {'result': None}}
+        current = {**tab, 'tabId': 't3'} if race and len(calls) > 1 else tab
+        return {'data': {'tabs': [current]}}
+    monkeypatch.setattr(driver, '_invoke', invoke)
+    if race or len(matches) != 1:
+        with pytest.raises(AgentBrowserError, match='changed during exact target binding' if race else 'unique exact'):
+            await driver.active_page(cdp)
+    else:
+        page = await driver.active_page(cdp)
+        assert page.identity_marker == 'isolated-identity' and page.target_id == 'exact-target'
+    assert not cdp.identity_reads
+    assert any(call.args[0] == 'Debugger.disable' for call in command.await_args_list)
+    assert any(call.args[0] == 'Target.detachFromTarget' for call in command.await_args_list)
+
+@pytest.mark.asyncio
+async def test_identity_registry_refreshes_after_navigation_and_binds_popup_by_exact_id(tmp_path, monkeypatch):
+    from w8bench.task_recorder.agent_browser.client import AgentBrowserPage
+    cdp = capture.CDPClient('http://localhost:9222')
+    cdp.target = {'targetId': 'parent', 'url': 'https://same.test/'}
+    cdp.session_id = 'parent-session'
+    cdp.recording_dir = tmp_path
+    pages = [{**cdp.target, 'type': 'page'}, {'targetId': 'popup', 'type': 'page',
+        'openerId': 'parent', 'url': 'https://same.test/'}]
+    calls = []
+    async def command(method, params=None, **kwargs):
+        calls.append((method, params, kwargs))
+        if method == 'Target.getTargets': return {'targetInfos': pages}
+        if method == 'Page.getFrameTree': return {'frameTree': {'frame': {'id': 'main-frame'}}}
+        if method == 'Page.createIsolatedWorld': return {'executionContextId': 42}
+        if method == 'Target.attachToTarget': return {'sessionId': params['targetId']+'-session'}
+        return {}
+    monkeypatch.setattr(cdp, 'call', command)
+    await cdp.synchronize_target()
+    marker = cdp.target_registry['popup']['identity_marker']
+    assert cdp.target_registry['popup']['opener_id'] == 'parent'
+    first = len([x for x in calls if x[0] == 'Runtime.evaluate'])
+    await cdp.synchronize_target()
+    assert cdp.target_registry['popup']['identity_marker'] == marker
+    assert len([x for x in calls if x[0] == 'Runtime.evaluate']) == first * 2
+    report = await cdp.synchronize_target(AgentBrowserPage('t2', 'https://same.test/', 'Same', identity_marker=marker))
+    assert report['selected_target_id'] == 'popup'
+    assert cdp.target['targetId'] == 'popup'
+    worlds = [x for x in calls if x[0] == 'Page.createIsolatedWorld']
+    assert worlds and all(x[1]['worldName'] == capture.TARGET_IDENTITY_WORLD for x in worlds)
+    assert all(x[1]['grantUniveralAccess'] is False for x in worlds)
+    writes = [x for x in calls if x[0] == 'Runtime.evaluate']
+    assert writes and all(x[1]['contextId'] == 42 for x in writes)
+    assert not any(x[0] == 'Page.addScriptToEvaluateOnNewDocument' for x in calls)
+    assert (tmp_path / 'target_registry.json').is_file()
+    cdp.target_registry['parent']['identity_marker'] = marker
+    with pytest.raises(RunnerError, match='unique exact'):
+        cdp._select_active_target(AgentBrowserPage('t2', 'https://same.test/', 'Same', identity_marker=marker), pages)
+
+@pytest.mark.asyncio
+async def test_renderer_crash_interrupts_pending_cli_snapshot_without_retry(monkeypatch):
+    cdp = capture.CDPClient('http://localhost:9222')
+    started = asyncio.Event()
+    cancelled = asyncio.Event()
+    async def snapshot():
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.set()
+    driver = SimpleNamespace(snapshot=AsyncMock(side_effect=snapshot), reconnect=AsyncMock())
+    task = asyncio.create_task(capture._snapshot_action_refs(driver, 3, cdp))
+    await started.wait()
+    cdp._page_failure = RunnerError('renderer crashed')
+    cdp._page_failure.technical_failure_class = 'browser_crash'
+    cdp.page_failure_event.set()
+    with pytest.raises(RunnerError, match='renderer crashed'):
+        await task
+    assert cancelled.is_set()
+    assert driver.snapshot.await_count == 1 and driver.reconnect.await_count == 0
+
+@pytest.mark.asyncio
+async def test_liveness_probe_reattaches_only_existing_target_and_never_replays_input(monkeypatch):
+    cdp = capture.CDPClient('http://localhost:9222')
+    cdp.target = {'targetId': 'one'}
+    cdp.session_id = 'old'
+    calls = []
+    async def command(method, params=None, **kwargs):
+        calls.append((method, params, kwargs))
+        if method == 'Target.getTargets': return {'targetInfos': [{'targetId': 'one'}]}
+        if method == 'Target.attachToTarget': return {'sessionId': 'probe'}
+        if method == 'Runtime.evaluate': return {'result': {'value': 1}}
+        return {}
+    monkeypatch.setattr(cdp, 'call', command)
+    monkeypatch.setattr(cdp, '_enable_attached_target', AsyncMock())
+    result = await cdp.recover_observation()
+    assert result['alive'] and result['reattached']
+    assert cdp.session_id == 'probe'
+    assert [x[0] for x in calls] == ['Target.getTargets', 'Target.attachToTarget', 'Runtime.evaluate', 'Target.detachFromTarget']
+    assert calls[2][1]['expression'] == '1'
+    assert all(not x[0].startswith('Input.') and x[0] != 'Page.navigate' for x in calls)
+
+@pytest.mark.asyncio
+async def test_liveness_probe_dead_target_does_not_attach_or_continue(monkeypatch):
+    cdp = capture.CDPClient('http://localhost:9222')
+    cdp.target = {'targetId': 'gone'}
+    cdp.call = AsyncMock(return_value={'targetInfos': []})
+    with pytest.raises(RunnerError) as error:
+        await cdp.recover_observation()
+    assert error.value.technical_failure_class == 'cdp_stall'
+    assert cdp.call.await_count == 1
+    assert cdp.page_failure_event.is_set()
+
+@pytest.mark.asyncio
+async def test_cli_call_receipts_do_not_persist_arguments_or_credentials(tmp_path, monkeypatch):
+    driver = AgentBrowserClient('unused', session='fixture', cdp_url='http://localhost:9222', timeout=90)
+    driver.recording_dir = tmp_path
+    class Process:
+        returncode = 0
+        args = ['unused']
+        def __enter__(self): return self
+        def __exit__(self, *args): return False
+        def communicate(self, *args, **kwargs):return ('{"success":true,"data":{}}', '')
+        def poll(self): return self.returncode
+    monkeypatch.setattr(subprocess, 'Popen', lambda *a, **kw: Process())
+    driver._invoke_sync(['fill', '@e1', 'fake-credential'])
+    text = (tmp_path/'agent_browser_calls.jsonl').read_text()
+    row = json.loads(text)
+    assert row['command'] == 'fill' and row['duration_seconds'] >= 0
+    assert 'fake-credential' not in text and '@e1' not in text
+
+@pytest.mark.asyncio
+async def test_passive_capture_stops_immediately_after_confirmed_renderer_crash(tmp_path, monkeypatch):
+    cdp = capture.CDPClient('http://localhost:9222', observation_mode='screenshot')
+    cdp.target = {'targetId': 'one'}
+    cdp.call = AsyncMock(return_value={'frameTree': {'frame': {'url': 'https://example.test/'}}})
+    phases = []
+    async def phase(client, directory, name, state, max_nodes, max_text_chars):
+        phases.append(name)
+        failure = RunnerError('page target crashed')
+        failure.technical_failure_class = 'browser_crash'
+        raise failure
+    monkeypatch.setattr(capture, '_capture_phase', phase)
+    directory = tmp_path/'step_001'
+    with pytest.raises(RunnerError, match='crashed'):
+        await capture.capture_bundle(cdp, directory, max_nodes=7000, max_text_chars=200000, observation_mode='screenshot')
+    assert phases == ['structured_dom']
+    assert cdp.call.await_count == 1
+    assert json.loads((directory/'capture.json').read_text())['captures'][0]['status'] == 'error'
+
+@pytest.mark.asyncio
+async def test_liveness_probe_has_one_short_overall_deadline(monkeypatch):
+    cdp = capture.CDPClient('http://localhost:9222')
+    cdp.target = {'targetId': 'one'}
+    async def stalled(*args, **kwargs): await asyncio.Event().wait()
+    monkeypatch.setattr(cdp, 'call', stalled)
+    monkeypatch.setattr(capture, 'LIVENESS_PROBE_SECONDS', 0.01)
+    started = time.monotonic()
+    with pytest.raises(RunnerError, match='liveness probe'):
+        await cdp.recover_observation()
+    assert time.monotonic() - started < 0.2
+    assert cdp._page_failure.technical_failure_class == 'cdp_stall'
+
+@pytest.mark.asyncio
+async def test_unexpected_session_detach_is_recorded_without_false_crash(tmp_path):
+    cdp = capture.CDPClient('http://localhost:9222')
+    cdp.target = {'targetId': 'one'}
+    cdp.session_id = 'current'
+    cdp.recording_dir = tmp_path
+    class Socket:
+        async def __aiter__(self):
+            yield SimpleNamespace(type=capture.aiohttp.WSMsgType.TEXT, data=json.dumps({
+                'method': 'Target.detachedFromTarget', 'params': {'targetId': 'one', 'sessionId': 'current'}}))
+            yield SimpleNamespace(type=capture.aiohttp.WSMsgType.TEXT, data=json.dumps({
+                'method': 'Page.javascriptDialogOpening', 'sessionId': 'current',
+                'params': {'type': 'alert', 'message': 'credential-not-for-logs', 'defaultPrompt': 'also-secret'}}))
+    cdp.ws = Socket()
+    await cdp._read_messages()
+    assert cdp._session_detached and cdp._page_failure is None
+    text = (tmp_path/'browser_events.jsonl').read_text()
+    assert 'javascriptDialogOpening' in text
+    assert 'credential-not-for-logs' not in text and 'also-secret' not in text

@@ -341,10 +341,15 @@ def test_single_task_launcher_preserves_ownership_and_shutdown(tmp_path, monkeyp
     startup = ["handoff", *([] if no_browser_start else ["browser"]), "profile",
         *([] if no_browser_start else ["cdp_url"]), "launch"]
     if outcome == "missing_owner":
-        with pytest.raises(RunnerError, match="runner process exited before ownership could be recorded"):
-            task_cli.main(args)
-        assert events == [*startup, "terminate"]
+        assert task_cli.main(args) == 1
+        retry_startup = ["handoff", "browser", "profile",
+            *([] if no_browser_start else ["cdp_url"]), "launch"]
+        assert events == [*startup, "terminate", *retry_startup, "terminate"]
         assert markers == []
+        ledger = tmp_path / "recordings" / "collection" / "attempt_ledgers" / mode / "fixture.jsonl"
+        row = json.loads(ledger.read_text())
+        assert row["technical_outcome"] == "technical_failure"
+        assert len(row["attempts"]) == 2
     else:
         assert task_cli.main(args) == (-9 if outcome.startswith("interrupt") else 0)
         assert events[:len(startup) + 1] == [*startup, "publish"]
@@ -443,7 +448,7 @@ def test_batch_actor_failure_preserves_attempt_state(launcher_batch, monkeypatch
         assert command[2] == "w8bench.task_recorder.task_cli"
         assert "--allow-expired" in command
         rows = [json.loads(line) for line in ledger.read_text().splitlines()]
-        row = rows[len(launches)]
+        row = next(row for row in rows if row["arm"] == command[command.index("--observation-mode") + 1])
         launches.append(row["arm"])
         if partial:
             write_json(Path(row["recording"]) / "task.json", {"instruction": "Read heading."})
@@ -463,8 +468,8 @@ def test_batch_actor_failure_preserves_attempt_state(launcher_batch, monkeypatch
         assert rows[0]["technical_outcome"] == "interrupted"
         assert rows[1]["completed"] is False and rows[1]["technical_outcome"] == "not_started"
     else:
-        assert launches == ["dom", "screenshot"]
-        assert all(row["technical_outcome"] == ("incomplete_recording" if partial else "startup_failure") for row in rows)
+        assert launches == ["dom", "dom", "screenshot", "screenshot"]
+        assert all(row["technical_outcome"] == "technical_failure" and len(row["attempts"]) == 2 for row in rows)
         assert all(row["error"] == "OSError: actor executable unavailable" for row in rows)
         assert all(row["grade_completed"] and row["evaluation_reason"] == "recording_not_finalized" for row in rows)
 
@@ -672,3 +677,129 @@ def test_container_cdp_port_refuses_failed_container_inspection(monkeypatch):
     monkeypatch.setattr(task_cli.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=1, stdout="", stderr="container unavailable"))
     with pytest.raises(RunnerError, match="could not read w8-core container CDP port"):
         task_cli.browser_container_cdp_url("browser-fixture")
+
+@pytest.mark.usefixtures('no_network')
+@pytest.mark.parametrize('arm', ['dom', 'screenshot'])
+def test_technical_attempt_is_retained_and_rerun_once(tmp_path, monkeypatch, arm):
+    directory = tmp_path / 'trial_0001' / arm / 'custom'
+    row = {'sequence': 1, 'task_id': 'custom', 'arm': arm, 'trial': 1,
+        'run_name': 'trial_0001', 'recording': str(directory), 'completed': False,
+        'technical_outcome': 'not_started', 'grade_outcome': 'ungraded'}
+    ledger = [row]
+    args = SimpleNamespace(rubric_dir=None)
+    calls = []
+    def execute(args, row, ledger, ledger_path, batch_dir, catalog_path, model, current):
+        calls.append(current)
+        outcome = 'technical_failure' if len(calls) == 1 else 'completed'
+        row.update(technical_outcome=outcome, completed=True)
+        if outcome == 'technical_failure':
+            row['technical_failure_class'] = 'browser_crash'
+        write_json(current / 'final.json', {'run_status': outcome,
+            'technical_failure_class': 'browser_crash' if outcome == 'technical_failure' else None})
+    monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
+    task_cli._run_batch_actor(args, row, ledger, tmp_path / 'ledger.jsonl', tmp_path,
+        tmp_path / 'catalog.jsonl', 'gemini-3.1-pro-preview', directory)
+    assert len(calls) == 2
+    assert calls[0] != calls[1]
+    assert row['completed'] and row['technical_outcome'] == 'completed'
+    assert row['recording'] == str(calls[1])
+    assert [attempt['attempt_number'] for attempt in row['attempts']] == [1, 2]
+    assert row['attempts'][0]['technical_failure_class'] == 'browser_crash'
+    assert (calls[0] / 'final.json').is_file()
+
+
+@pytest.mark.usefixtures('no_network')
+def test_second_technical_attempt_does_not_trigger_a_third(tmp_path, monkeypatch):
+    directory = tmp_path / 'trial_0001' / 'dom' / 'custom'
+    row = {'sequence': 1, 'task_id': 'custom', 'arm': 'dom', 'trial': 1,
+        'run_name': 'trial_0001', 'recording': str(directory), 'completed': False,
+        'technical_outcome': 'not_started', 'grade_outcome': 'ungraded'}
+    calls = []
+    def execute(args, row, ledger, ledger_path, batch_dir, catalog_path, model, current):
+        calls.append(current)
+        row.update(technical_outcome='technical_failure', technical_failure_class='cdp_stall', completed=True)
+        write_json(current / 'final.json', {'run_status': 'technical_failure', 'technical_failure_class': 'cdp_stall'})
+    monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
+    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
+        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.1-pro-preview', directory)
+    assert len(calls) == 2
+    assert len(row['attempts']) == 2
+    assert row['technical_outcome'] == 'technical_failure'
+
+
+@pytest.mark.usefixtures('no_network')
+def test_resume_launches_pending_rerun_without_repeating_first_attempt(tmp_path, monkeypatch):
+    first = tmp_path / 'trial_0001' / 'dom' / 'custom'
+    second = tmp_path / 'technical_attempt_02' / 'trial_0001' / 'dom' / 'custom'
+    write_json(first / 'final.json', {'run_status': 'technical_failure', 'technical_failure_class': 'capture_failure'})
+    row = {'sequence': 1, 'task_id': 'custom', 'arm': 'dom', 'trial': 1,
+        'run_name': 'trial_0001', 'recording': str(second), 'completed': False,
+        'attempt_number': 2, 'technical_outcome': 'not_started', 'grade_outcome': 'ungraded',
+        'attempts': [{'attempt_number': 1, 'recording': str(first), 'completed': True,
+            'technical_outcome': 'technical_failure', 'technical_failure_class': 'capture_failure'},
+            {'attempt_number': 2, 'recording': str(second), 'completed': False}]}
+    calls = []
+    def execute(args, row, ledger, ledger_path, batch_dir, catalog_path, model, current):
+        calls.append(current)
+        row.update(technical_outcome='completed', completed=True)
+        write_json(current / 'final.json', {'run_status': 'completed'})
+    monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
+    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
+        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.1-pro-preview', second)
+    assert calls == [second]
+    assert len(row['attempts']) == 2
+    assert row['technical_outcome'] == 'completed'
+    assert row['attempts'][1]['completed'] is True
+
+@pytest.mark.usefixtures('no_network')
+@pytest.mark.parametrize('outcome,reason', [('completed', 'blocked'), ('completed', 'cannot_complete'),
+    ('turn_limit', 'budget_exhausted'), ('error', 'authentication_error'), ('error', 'insufficient_quota')])
+def test_nontechnical_outcome_never_buys_a_fresh_attempt(tmp_path, monkeypatch, outcome, reason):
+    directory = tmp_path / 'trial_0001' / 'dom' / 'custom'
+    row = {'sequence': 1, 'task_id': 'custom', 'arm': 'dom', 'trial': 1,
+        'run_name': 'trial_0001', 'recording': str(directory), 'completed': False,
+        'technical_outcome': 'not_started', 'grade_outcome': 'ungraded'}
+    calls = []
+    def execute(args, row, ledger, ledger_path, batch_dir, catalog_path, model, current):
+        calls.append(current)
+        row.update(technical_outcome=outcome, completed=True)
+        write_json(current / 'final.json', {'run_status': outcome, 'termination_reason': reason})
+    monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
+    task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
+        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.1-pro-preview', directory)
+    assert len(calls) == 1
+    assert len(row['attempts']) == 1
+
+
+@pytest.mark.usefixtures('no_network')
+def test_single_task_uses_fresh_recording_and_attempt_metadata_on_technical_rerun(tmp_path, monkeypatch):
+    catalog = tmp_path / 'catalog.jsonl'
+    catalog.write_text(json.dumps({'task_id': 'custom', 'instruction': 'Read heading.', 'start_url': 'https://example.test'}) + '\n')
+    monkeypatch.delenv('W8_EXPECTED_ACTOR_SETTINGS', raising=False)
+    calls = []
+    def launch(args, command, run_id, task_id):
+        directory = args.output_dir / args.observation_mode / run_id
+        number = int(os.environ['W8_ACTOR_ATTEMPT_NUMBER'])
+        calls.append((directory, number))
+        write_json(directory / 'final.json', {'run_status': 'technical_failure' if number == 1 else 'completed',
+            'technical_failure_class': 'browser_crash' if number == 1 else None})
+        return SimpleNamespace(pid=123)
+    monkeypatch.setattr(task_cli, '_launch_single_run', launch)
+    monkeypatch.setattr(task_cli, '_wait_single_run', lambda process, timeout: 0)
+    arguments = ['custom', '--observation-mode', 'dom', '--catalog-file', str(catalog),
+        '--output-dir', str(tmp_path / 'recordings'), '--run-name', 'manual',
+        '--env-file', str(tmp_path / 'absent.env'), '--model', 'gemini-3.1-pro-preview']
+    assert task_cli.main(arguments) == 0
+    assert len(calls) == 2
+    assert [number for _, number in calls] == [1, 2]
+    assert calls[0][0] != calls[1][0]
+    ledger = tmp_path / 'recordings' / 'manual' / 'attempt_ledgers' / 'dom' / 'custom.jsonl'
+    row = json.loads(ledger.read_text())
+    assert row['recording'] == str(calls[1][0].resolve())
+    assert len(row['attempts']) == 2
+    assert task_cli.main(arguments) == 0
+    assert len(calls) == 2
+    monkeypatch.setenv('STEP_SETTLE_SECONDS', '2')
+    with pytest.raises(RunnerError, match='effective settings differ'):
+        task_cli.main(arguments)
+    assert len(calls) == 2

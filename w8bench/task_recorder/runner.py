@@ -10,7 +10,9 @@ import json
 import math
 import os
 import re
+import random
 import signal
+import subprocess
 import sys
 import time
 import urllib.error
@@ -66,6 +68,12 @@ ACTION_SCHEMA = {
     }, "additionalProperties": False,
 }
 ACTION_SCHEMA["required"] = list(ACTION_SCHEMA["properties"])
+SCREENSHOT_ACTION_SCHEMA = {**ACTION_SCHEMA, "properties": {**ACTION_SCHEMA["properties"],
+    "x": {"type": ["integer", "null"], "minimum": 0, "maximum": 1000,
+        "description": "Horizontal coordinate from 0 to 1000 relative to the screenshot width; 0 is the left edge."},
+    "y": {"type": ["integer", "null"], "minimum": 0, "maximum": 1000,
+        "description": "Vertical coordinate from 0 to 1000 relative to the screenshot height; 0 is the top edge."}}}
+
 
 def browser_profile_provenance_from_environment() -> dict[str, Any]:
     """Load container-lifetime profile metadata claimed by task_cli."""
@@ -276,6 +284,7 @@ class ModelClient:
         self.api_key, self.model, self.base_url = api_key, model, base_url.rstrip("/")
         self.last_input_report: dict[str, Any] = {}
         self.last_response: dict[str, Any] | None = None
+        self.transport_cancelled = False
 
     @staticmethod
     def _gemini_usage(usage: Any) -> dict[str, Any]:
@@ -323,19 +332,89 @@ class ModelClient:
         headers["x-goog-api-key" if gemini else "Authorization"] = self.api_key if gemini else f"Bearer {self.api_key}"
         request = urllib.request.Request(endpoint,
             data=json.dumps(native_payload).encode(), method="POST", headers=headers)
-        try:
-            with urllib.request.urlopen(request, timeout=180) as response:
-                result = json.loads(response.read().decode())
-        except urllib.error.HTTPError as error:
-            # Never persist response bodies that may echo request credentials.
-            raise RunnerError(f"model endpoint returned HTTP {error.code}") from error
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
-            raise RunnerError(f"model request failed: {type(error).__name__}") from error
-        if not isinstance(result, dict):
-            raise RunnerError("model response is not an object")
-        if gemini:
-            result = self._gemini_response(result)
-        return result
+        actor = self.last_input_report.get("api_call_started") is True
+        attempts = 3 if actor else 1
+        for number in range(1, attempts + 1):
+            if actor and self.transport_cancelled:
+                raise RunnerError("actor transport cancelled")
+            started = time.monotonic()
+            receipt = {"attempt": number, "started_at": utc_now(), "status_code": None,
+                "usage": None, "finish_reason": None, "response_received": False, "parser_stage": "transport"}
+            if actor and getattr(self, "turn_dir", None) is not None:
+                write_json(self.turn_dir / "transport_pending.json", {"attempt": number, "status": "started",
+                    "started_at": receipt["started_at"], "usage": None, "response_received": False})
+            raw = ""
+            failure = None
+            retryable = False
+            result = None
+            try:
+                with urllib.request.urlopen(request, timeout=180) as response:
+                    receipt["status_code"] = getattr(response, "status", 200)
+                    raw = response.read().decode("utf-8", errors="backslashreplace")
+                receipt.update(response_received=True, parser_stage="provider_json")
+                if actor:
+                    self.last_input_report["model_response_received"] = True
+                result = json.loads(raw)
+                if not isinstance(result, dict):
+                    raise ValueError("model response is not an object")
+                usage = result.get("usageMetadata") if gemini else result.get("usage")
+                receipt["usage"] = (self._gemini_usage(usage) if gemini else usage) or None
+                receipt["finish_reason"] = ((result.get("candidates") or [{}])[0].get("finishReason")
+                    if gemini else result.get("status"))
+                result = self._gemini_response(result) if gemini else result
+                receipt.update(status="response_received", parser_stage="complete")
+            except urllib.error.HTTPError as error:
+                receipt["status_code"] = error.code
+                raw = error.read().decode("utf-8", errors="backslashreplace") if error.fp is not None else ""
+                lower = raw.lower()
+                permanent_quota = (any(word in lower for word in ("insufficient_quota", "credit_balance_exhausted",
+                    "insufficient credit", "exhausted credit", "billing", "daily quota", "per day"))
+                    or "quota" in lower and not any(word in lower for word in ("rate limit", "per minute", "per second")))
+                retryable = error.code in {429, 500, 502, 503, 504} and not permanent_quota
+                failure = RunnerError(f"model endpoint returned HTTP {error.code}")
+                if error.code in {401, 403} or permanent_quota:
+                    failure.provider_failure_kind = ("provider_auth" if error.code in {401, 403}
+                        else "provider_billing" if "billing" in lower else "provider_quota")
+                try:
+                    body = json.loads(raw)
+                    usage = body.get("usageMetadata") if gemini else body.get("usage")
+                    receipt["usage"] = (self._gemini_usage(usage) if gemini else usage) or None
+                except (ValueError, AttributeError):
+                    pass
+                receipt.update(status="http_error", error_type=type(error).__name__)
+            except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as error:
+                retryable = True
+                failure = RunnerError(f"model request failed: {type(error).__name__}")
+                receipt.update(status="transport_error", error_type=type(error).__name__)
+            except (ValueError, TypeError) as error:
+                failure = RunnerError(f"model response could not be parsed: {type(error).__name__}")
+                receipt.update(status="parse_error", error_type=type(error).__name__)
+            if failure is not None:
+                receipt["error"] = str(failure)
+                receipt["raw_response"] = raw
+            if "raw_response" in receipt:
+                receipt["raw_response"] = re.sub(r'(?i)(authorization\s*[:=]\s*)(?:(?:bearer|basic)\s+)?[^\s,;]+',
+                    r'\1[redacted]', receipt["raw_response"])
+            # Provider error bodies can echo credentials. Persist neither headers nor a credential-bearing body.
+            serialized = json.dumps(receipt, ensure_ascii=True).replace(self.api_key, "[redacted]")
+            serialized = re.sub(r'(?i)([\"\']?(?:api[_-]?key|authorization|access_token)[\"\']?\s*[:=]\s*[\"\'])([^\"\']+)',
+                r'\1[redacted]', serialized)
+            receipt = json.loads(serialized)
+            retry = bool(failure and retryable and number < attempts)
+            delay = ((2 if number == 1 else 8) + random.uniform(0, 0.5)) if retry else 0
+            receipt.update(duration_seconds=round(time.monotonic() - started, 6),
+                retryable=retryable, will_retry=retry, backoff_seconds=delay)
+            if actor and getattr(self, "turn_dir", None) is not None and not self.transport_cancelled:
+                append_json_line(self.turn_dir / "transport_attempts.jsonl", receipt)
+                write_json(self.turn_dir / "transport_pending.json", {"attempt": number, "status": "finished"})
+            if failure is None:
+                return result
+            if retry:
+                time.sleep(delay)
+                continue
+            if actor and retryable:
+                failure.technical_failure_class = "actor_transport_exhausted"
+            raise failure
 
     def _actor_request(
         self, task, step, max_steps, bundle, task_memory, recent_actions,
@@ -346,7 +425,7 @@ class ModelClient:
             f"turns_remaining_including_current: {max_steps - step + 1}\n"
             f"turns_remaining_after_this_call: {max_steps - step}\n"
             "human_intervention_available: false\n"
-            f"viewport_css_pixels: {viewport[0]} x {viewport[1]}\n\n"
+            f"{'viewport_css_pixels' if bundle.observation_mode == 'dom' else 'screenshot_pixels'}: {viewport[0]} x {viewport[1]}\n\n"
             f"task_memory_from_prior_steps:\n{task_memory or '(none)'}\n\n"
             f"current_document_url: {bundle.document_url}\n\n")
         content = []
@@ -360,6 +439,11 @@ class ModelClient:
                 f"current_chromiumrl_evidence:\n{chromiumrl_evidence_for_model(bundle.model_text)}")
             instructions = DOM_PROMPT
         else:
+            import io
+            from PIL import Image
+            with Image.open(io.BytesIO(observation_bytes)) as screenshot:
+                if screenshot.size != viewport:
+                    raise RunnerError("screenshot dimensions differ from the coordinate viewport")
             instructions = SCREENSHOT_PROMPT
             content.append({"inlineData": {"mimeType": "image/png", "data":
                 base64.b64encode(observation_bytes).decode()}})
@@ -375,7 +459,8 @@ class ModelClient:
             "generationConfig": {"maxOutputTokens": max_output_tokens,
                 "thinkingConfig": {"thinkingLevel": "MEDIUM"},
                 "mediaResolution": "MEDIA_RESOLUTION_HIGH",
-                "responseMimeType": "application/json", "responseJsonSchema": ACTION_SCHEMA}}
+                "responseMimeType": "application/json", "responseJsonSchema":
+                    SCREENSHOT_ACTION_SCHEMA if bundle.observation_mode == "screenshot" else ACTION_SCHEMA}}
         return payload, artifact, prompt
 
     def _validated_action(self, response: dict[str, Any]) -> dict[str, Any]:
@@ -418,11 +503,28 @@ class ModelClient:
         write_json(turn_dir / "request.json", stored)
         self.last_input_report = {"observation_mode": bundle.observation_mode,
             "observation": artifact, "request": "request.json", "text_chars": len(prompt)}
+        self.turn_dir = turn_dir
         self.last_input_report["api_call_started"] = True
-        response = await asyncio.to_thread(self._post, payload)
+        try:
+            response = await asyncio.to_thread(self._post, payload)
+        except BaseException as error:
+            if isinstance(error, asyncio.CancelledError):
+                self.transport_cancelled = True
+            write_json(turn_dir / "failure.json", {"parser_stage": "transport_or_provider_json",
+                "error_type": type(error).__name__, "error": str(error).replace(self.api_key, "[redacted]"),
+                "usage": None, "response_received": self.last_input_report.get("model_response_received", False)})
+            raise
+        response = json.loads(json.dumps(response).replace(self.api_key, "[redacted]"))
         self.last_response = response
         write_json(turn_dir / "response.json", response)
-        return self._validated_action(response), response
+        try:
+            return self._validated_action(response), response
+        except BaseException as error:
+            write_json(turn_dir / "failure.json", {"parser_stage": "actor_action", "error_type": type(error).__name__,
+                "error": str(error).replace(self.api_key, "[redacted]"), "raw_response": response,
+                "finish_reason": (response.get("provider_response", {}).get("candidates") or [{}])[0].get("finishReason"),
+                "usage": response.get("usage"), "incomplete_details": response.get("incomplete_details")})
+            raise
 
 
 def _action_schema_error(decision: dict[str, Any], action: Any) -> str:
@@ -459,9 +561,8 @@ def _action_target_error(decision: dict[str, Any], action: str, available_refs: 
         if x is not None:
             if action not in {"click", "scroll"}:
                 return "coordinates apply only to click or scroll"
-            if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
-                   for v in (x, y)) or not (0 <= x < viewport[0] and 0 <= y < viewport[1]):
-                return "coordinates must be finite and inside the viewport"
+            if any(type(v) is not int or not 0 <= v <= 1000 for v in (x, y)):
+                return "coordinates must be integers from 0 to 1000"
     return ""
 
 
@@ -584,12 +685,53 @@ def state_manifest_record(state_number: int, bundle: CaptureBundle, run_dir: Pat
 
 def finalize_recording_artifacts(run_dir: Path, manifest: dict[str, Any], final: dict[str, Any],
                                  *, manifest_status: str | None = None,
-                                 error: str | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
+                                 error: str | None = None, health_only: bool = False) -> tuple[dict[str, Any], dict[str, Any]]:
     final = {**final, "recorded_steps": len(manifest["steps"]),
         "model_turns": manifest["model_turns"], "completion_grade": "ungraded"}
-    manifest.update(status=manifest_status or final["run_status"], completed_at=utc_now(), final=final)
+    if not health_only:
+        manifest.update(status=manifest_status or final["run_status"], completed_at=utc_now(), final=final)
     if error:
         manifest["error"] = error
+    if final.get("run_status") == "interrupted" and not (run_dir / "interruption.json").exists():
+        write_json(run_dir / "interruption.json", {"recorded_at": utc_now(), "model_turns": manifest["model_turns"],
+            "recorded_steps": len(manifest["steps"]), "status": "interrupted"})
+    if (health_only or final.get("run_status") in {"technical_failure", "interrupted"}) and not (run_dir / "failure_health.json").exists():
+        health = {"recorded_at": utc_now(), "technical_failure_class": final.get("technical_failure_class"),
+            "container_id": manifest.get("browser_profile_provenance", {}).get("container_id"), "checks": {}}
+        container = health["container_id"]
+        if isinstance(container, str) and re.fullmatch(r"[0-9a-f]{12,64}", container):
+            commands = {
+                "resources": ["docker", "exec", container, "python3", "-c",
+                    "import os,json; from pathlib import Path; "
+                    "p=next((p for p in (Path('/sys/fs/cgroup/memory.current'),Path('/sys/fs/cgroup/memory/memory.usage_in_bytes')) if p.exists()),None); "
+                    "m=int(p.read_text()) if p is not None else None; s=os.statvfs('/dev/shm'); "
+                    "print(json.dumps({'memory_current_bytes':m,'shared_memory_total_bytes':s.f_blocks*s.f_frsize,"
+                    "'shared_memory_used_bytes':(s.f_blocks-s.f_bfree)*s.f_frsize,"
+                    "'process_count':sum(p.name.isdigit() for p in Path('/proc').iterdir())}))"],
+                "state": ["docker", "inspect", "--format", "{{json .State}}", container],
+                "log_tail": ["docker", "logs", "--timestamps", "--tail", "100", container]}
+            for name, command in commands.items():
+                try:
+                    result = subprocess.run(command, capture_output=True, text=True, errors="backslashreplace", timeout=3)
+                    text = result.stdout + result.stderr
+                    for key, value in os.environ.items():
+                        if value and len(value) > 5 and any(part in key.upper() for part in ("API_KEY", "ACCESS_TOKEN", "SECRET", "PASSWORD")):
+                            text = text.replace(value, "[redacted]")
+                    text = re.sub(r"(?i)((?:api[_-]?key|access_token|authorization|password)[=:\s]+)[^\s&]+", r"\1[redacted]", text)
+                    health["checks"][name] = {"status": "recorded" if result.returncode == 0 else "unavailable",
+                        "returncode": result.returncode, "output": text}
+                    if name == "resources" and result.returncode == 0:
+                        try:
+                            health["resources"] = json.loads(result.stdout)
+                        except ValueError:
+                            health["resources"] = None
+                except (OSError, subprocess.TimeoutExpired) as probe_error:
+                    health["checks"][name] = {"status": "unavailable", "error_type": type(probe_error).__name__}
+        else:
+            health["status"] = "container_identity_unavailable"
+        write_json(run_dir / "failure_health.json", health)
+    if health_only:
+        return final, {}
     # Commit the final manifest before exporting; the exporter reads its states.
     write_json(run_dir / "final.json", final)
     write_json(run_dir / "manifest.json", manifest)
@@ -679,11 +821,13 @@ def _recording_manifest(args, task, profile, mode, viewport):
             "max_consecutive_rejections": MAX_CONSECUTIVE_REJECTIONS,
             "recorder_code_sha256": hashlib.sha256(b"".join(
                 f.read_bytes() for f in sorted(Path(__file__).resolve().parents[1].rglob("*.py")))).hexdigest(),
-            "action_schema_sha256": hashlib.sha256(json.dumps(ACTION_SCHEMA, sort_keys=True).encode()).hexdigest(),
+            "action_schema_sha256": hashlib.sha256(json.dumps(ACTION_SCHEMA if mode == "dom" else SCREENSHOT_ACTION_SCHEMA, sort_keys=True).encode()).hexdigest(),
             "prompt_sha256": hashlib.sha256((DOM_PROMPT if mode == "dom" else SCREENSHOT_PROMPT).encode()).hexdigest(),
             "human_intervention": False, "automatic_redirects": False,
             "keep_existing_tabs": args.keep_existing_tabs},
-        "turn_definition": "one actor API call, including rejected proposals, parse failures and termination",
+        "attempt_number": int(os.environ.get("W8_ACTOR_ATTEMPT_NUMBER", "1")),
+        "turn_definition": "one received actor response, including rejected proposals, parse failures and termination; failed transport attempts are separate",
+        "turn_policy": "actor-response-turn/v2",
         "action_driver": "agent-browser refs + CDP.Input" if mode == "dom" else "CDP.Input"}
     manifest["dom_capture_parameters"] = {"max_nodes": args.snapshot_max_nodes,
         "max_text_chars": args.snapshot_max_text_chars, "in_viewport_only": True,
@@ -724,6 +868,15 @@ async def _initial_capture(args, cdp, driver, manifest, run_dir, mode):
 def _finish_model_turn(
     args, model, row, manifest, run_dir, turn_dir, turn, started,
 ):
+    transports = []
+    for receipt_path in sorted((run_dir / "turns").glob("*/transport_attempts.jsonl")):
+        transports.extend(json.loads(line) for line in receipt_path.read_text().splitlines() if line)
+    pending = [json.loads(path.read_text()) for path in (run_dir / "turns").glob("*/transport_pending.json")]
+    in_flight = sum(item.get("status") == "started" for item in pending)
+    manifest["actor_transport_attempts"] = len(transports) + in_flight
+    manifest["failed_actor_transport_attempts"] = sum(item.get("response_received") is not True for item in transports) + in_flight
+    if (turn_dir / "transport_attempts.jsonl").exists():
+        row["transport_attempts"] = str((turn_dir / "transport_attempts.jsonl").relative_to(run_dir))
     row["latency_seconds"] = round(time.monotonic() - started, 6)
     row["model_input"] = model.last_input_report
     row["usage"] = (model.last_response or {}).get("usage", {})
@@ -748,7 +901,7 @@ def _finish_model_turn(
     write_json(run_dir / "manifest.json", manifest)
     if (turn_dir / "response.json").exists():
         row["response"] = str((turn_dir / "response.json").relative_to(run_dir))
-    if model.last_input_report.get("api_call_started"):
+    if model.last_response is not None or model.last_input_report.get("model_response_received"):
         write_json(turn_dir / "result.json", row)
         append_json_line(run_dir / "decisions.jsonl", row)
     else:
@@ -799,22 +952,32 @@ async def _deliver_action(
     action = {k: v for k, v in action.items() if v is not None}
     target = agent_browser_target_identity(action, current) if mode == "dom" else None
     action_record = {"model_turn": turn, "action": action, "thought": decision["thought"],
-        "state": len(manifest["states"]), "started_at": utc_now()}
+        "state": len(manifest["states"]), "started_at": utc_now(),
+        "model_coordinates": {"x": decision.get("x"), "y": decision.get("y"), "units": "normalized_1000"} if mode == "screenshot" else None,
+        "executed_coordinates": None}
     if target:
         action_record["target"] = target
     if mode == "dom":
         action_record["action_context"] = action_observation_context(action, current)
     action_started = time.monotonic()
+    cdp.last_pointer_coordinates = None
     action_error = None
     action_cancelled = False
+    delivery_failure = None
     try:
         result = await driver.execute(action, cdp=cdp, viewport=viewport)
         if not isinstance(result, dict) or result.get("success") is not True:
             raise RunnerError("action tool did not confirm delivery")
         action_record["action_result"] = result
+        for key in ("model_coordinates", "executed_coordinates", "viewport"):
+            if key in result:
+                action_record[key] = result[key]
     except BaseException as error:
         action_cancelled = isinstance(error, asyncio.CancelledError)
         action_error = type(error).__name__ + ": " + str(error)
+        delivery_failure = error
+    if action.get("action") in {"click", "scroll"} and getattr(cdp, "last_pointer_coordinates", None):
+        action_record.update(cdp.last_pointer_coordinates)
     action_record.update(action_error=action_error, action_succeeded=action_error is None,
         duration_seconds=round(time.monotonic() - action_started, 6))
     write_json(current.directory / "action.json", action_record)
@@ -822,6 +985,11 @@ async def _deliver_action(
     write_json(run_dir / "manifest.json", manifest)
     if action_cancelled:
         raise asyncio.CancelledError()
+    if delivery_failure is not None and (isinstance(delivery_failure, (CDPError, TimeoutError))
+            or getattr(delivery_failure, "technical_failure_class", None)):
+        if not getattr(delivery_failure, "technical_failure_class", None):
+            delivery_failure.technical_failure_class = "cdp_stall"
+        raise delivery_failure
     return action_record
 
 
@@ -930,6 +1098,7 @@ async def run(args: argparse.Namespace) -> int:
     driver = AgentBrowserClient(args.agent_browser_command,
         session=agent_browser_session_name(task_id, os.getpid()),
         cdp_url=args.agent_browser_cdp_url, timeout=args.agent_browser_timeout)
+    driver.recording_dir = run_dir
     profile = browser_profile_provenance_from_environment()
     manifest = _recording_manifest(args, task, profile, mode, viewport)
     write_json(run_dir / "manifest.json", manifest)
@@ -940,20 +1109,35 @@ async def run(args: argparse.Namespace) -> int:
         async with CDPClient(args.cdp_url, keep_existing_tabs=args.keep_existing_tabs,
             browser_language=args.browser_lang, browser_accept_language=args.browser_accept_language,
             observation_mode=mode, viewport=viewport) as cdp:
-            current = await _initial_capture(args, cdp, driver, manifest, run_dir, mode)
-            if args.capture_only:
-                final = {"status": "captured", "run_status": "captured", "final_answer": ""}
-            else:
-                final = await _actor_turns(
-                    args, task, model, current, state, driver, cdp, viewport,
-                    manifest, run_dir, mode, final,
-                )
+            cdp.recording_dir = run_dir
+            try:
+                current = await _initial_capture(args, cdp, driver, manifest, run_dir, mode)
+                if args.capture_only:
+                    final = {"status": "captured", "run_status": "captured", "final_answer": ""}
+                else:
+                    final = await _actor_turns(
+                        args, task, model, current, state, driver, cdp, viewport,
+                        manifest, run_dir, mode, final,
+                    )
+            except BaseException as failure:
+                finalize_recording_artifacts(run_dir, manifest, {
+                    "status": "failure", "run_status": "interrupted" if isinstance(failure, asyncio.CancelledError) else "technical_failure",
+                    "technical_failure_class": getattr(failure, "technical_failure_class", None)}, health_only=True)
+                raise
+
     except asyncio.CancelledError:
         state.cancelled = True
         final = {"status": "failure", "run_status": "interrupted", "final_answer": "Run interrupted"}
     except Exception as error:
-        final = {"status": "failure", "run_status": "error", "final_answer": "Run ended with an execution error",
-            "error": type(error).__name__ + ": " + str(error)}
+        technical = getattr(error, "technical_failure_class", None)
+        provider = getattr(error, "provider_failure_kind", None)
+        if technical is None and provider is None and not isinstance(error, ModelProtocolError):
+            # Model-response format/validation failures retain their actor outcome; recorder exceptions are technical.
+            if not (isinstance(error, RunnerError) and str(error).startswith(("model ", "actor model"))):
+                technical = "recorder_harness_error"
+        final = {"status": "failure", "run_status": "technical_failure" if technical else "error",
+            "final_answer": "Run ended with an execution error", "technical_failure_class": technical,
+            "provider_failure_kind": provider, "error": type(error).__name__ + ": " + str(error)}
     finally:
         if mode == "dom":
             await driver.close()

@@ -41,7 +41,7 @@ def normalized_settings(value):
 
 
 def settings_hash(value):
-    return hashlib.sha256(json.dumps(normalized_settings(value), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(normalized_settings(value), sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8", errors="backslashreplace")).hexdigest()
 
 
 def settings_differences(recorded, current, prefix=""):
@@ -84,8 +84,8 @@ def actual_browser_source_version(manifest):
 
 
 def actor_settings(controls, *, browser_source=None):
-    from .task_recorder.runner import ACTION_SCHEMA, ACTOR_PROTOCOL, MAX_TASK_MEMORY_CHARS
-    from .task_recorder.prompts import DOM_PROMPT, SCREENSHOT_PROMPT
+    from .task_recorder.runner import ACTION_SCHEMA, SCREENSHOT_ACTION_SCHEMA, ACTOR_PROTOCOL, MAX_TASK_MEMORY_CHARS
+    from .task_recorder.prompts import DOM_PROMPT, SCREENSHOT_PROMPT, SCREENSHOT_PROMPT_VERSION
     defaults = {"model": "gemini-3.1-pro-preview", "provider": "google", "route": "models/{model}:generateContent",
         "base_url": "https://generativelanguage.googleapis.com/v1beta", "reasoning_effort": "medium",
         "max_output_tokens": 10000, "max_turns": 200, "memory_max_chars": MAX_TASK_MEMORY_CHARS,
@@ -98,6 +98,13 @@ def actor_settings(controls, *, browser_source=None):
     selected = {key: controls.get(key, value) for key, value in defaults.items()}
     selected.update(schema_version=SETTINGS_VERSION, actor_protocol=ACTOR_PROTOCOL,
         schema_sha256=settings_hash(ACTION_SCHEMA),
+        observation_contracts={"dom": {"schema_sha256": settings_hash(ACTION_SCHEMA)},
+            "screenshot": {"schema_sha256": settings_hash(SCREENSHOT_ACTION_SCHEMA),
+                "prompt_version": SCREENSHOT_PROMPT_VERSION, "coordinate_units": "normalized_1000"}},
+        transport_retry_policy={"attempts": 3, "backoff_seconds": [2, 8], "jitter_seconds": [0, 0.5],
+            "statuses": [429, 500, 502, 503, 504], "turn_policy": "actor-response-turn/v2"},
+        technical_retry_policy={"attempts": 2, "fresh_browser": True, "observation_recovery_attempts": 1,
+            "liveness_timeout_seconds": 3},
         prompt_sha256={"dom": hashlib.sha256(DOM_PROMPT.encode()).hexdigest(),
             "screenshot": hashlib.sha256(SCREENSHOT_PROMPT.encode()).hexdigest()},
         browser_source=browser_source or browser_source_version())

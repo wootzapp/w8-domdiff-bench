@@ -12,7 +12,7 @@ from w8bench.task_recorder.prepare_verifier_data import inspect_recording
 from w8bench.task_recorder.recorder_support import write_json
 from .compare_results import compare
 from .paired_metrics import aggregate, validate_settings_contracts, validate_recorded_settings
-from .run_metrics import summarize
+from .run_metrics import summarize, _price_stream
 from w8bench.usage import valid_token_component
 from w8bench.settings import normalized_settings, require_same_settings
 
@@ -31,6 +31,16 @@ def _read_ledger(path):
     paths = [str(Path(row["recording"]).resolve()) for row in ledger]
     if len(set(paths)) != len(paths):
         raise ValueError("a recording path is reused across scheduled attempts")
+    attempt_paths = []
+    for row in ledger:
+        attempts = row.get("attempts", [])
+        if len(attempts) > 2 or [item.get("attempt_number") for item in attempts] != list(range(1, len(attempts) + 1)):
+            raise ValueError("technical attempt ledger must contain at most two ordered attempts")
+        if attempts and str(Path(attempts[-1]["recording"]).resolve()) != str(Path(row["recording"]).resolve()):
+            raise ValueError("scheduled recording is not the final technical attempt")
+        attempt_paths.extend(str(Path(item["recording"]).resolve()) for item in attempts)
+    if len(attempt_paths) != len(set(attempt_paths)):
+        raise ValueError("a technical attempt recording is reused across scheduled rows")
     task_ids = {row["task_id"] for row in ledger}
     if set(identities) != {(task, trial, arm) for task in task_ids for trial in range(1,n+1) for arm in ("dom","screenshot")}:
         raise ValueError("ledger omits a scheduled task/arm/trial")
@@ -109,12 +119,15 @@ def _recorded_attempts(ledger):
     environments, capture_policies = set(), set()
     summaries = []
     for row in ledger:
-        configurations.add(json.dumps(normalized_settings(row["configuration"]), sort_keys=True))
+        configurations.add(json.dumps(normalized_settings({key: value for key, value in row["configuration"].items()
+            if key not in {"prompt_sha256", "action_schema_sha256"}}), sort_keys=True))
         source = Path(row["recording"])
         key = (row["run_name"], row["task_id"])
         if row["technical_outcome"] in {"not_started", "running"}:
             continue
         if not (source / "final.json").is_file():
+            continue
+        if row["technical_outcome"] == "technical_failure" and not (source / "manifest.json").is_file():
             continue
         recording = inspect_recording(source)
         mode, task, manifest = row["arm"], recording["task"], recording["manifest"]
@@ -171,7 +184,7 @@ def _partial_summary(row, arm, task_id):
     reported_turns = partial_manifest.get("model_turns")
     counter_clear = ("model_turns" not in partial_manifest or
                      valid_token_component(reported_turns) and reported_turns == 0)
-    no_calls = (row["technical_outcome"] in {"not_started", "startup_failure"}
+    no_calls = ((row["technical_outcome"] in {"not_started", "startup_failure"} or row.get("actor_calls_attempted") is False)
         and not decisions and not undecodable_decisions and not turn_evidence
         and counter_clear and not partial_manifest.get("steps"))
     summary = summarize({"source": str(source), "task": task,
@@ -181,7 +194,22 @@ def _partial_summary(row, arm, task_id):
         "partial_recording": True, "final": {"run_status": row["technical_outcome"]}})
     summary.update(recording_available=False, partial_recording=source.exists(),
         turns_complete=no_calls, cost_coverage="complete" if no_calls else "partial")
-    if not no_calls and not decisions:
+    response_turn_policy = partial_manifest.get("turn_policy") == "actor-response-turn/v2"
+    if response_turn_policy:
+        response_turns = {path.parent.name for path in (source / "turns").glob("*/response.json")}
+        for transport in (source / "turns").glob("*/transport_attempts.jsonl"):
+            for line in transport.read_text().splitlines():
+                try:
+                    receipt = json.loads(line)
+                except json.JSONDecodeError:
+                    undecodable_decisions = True
+                    continue
+                if receipt.get("response_received") is True:
+                    response_turns.add(transport.parent.name)
+        summary["turns_complete"] = (not decisions and not undecodable_decisions and valid_token_component(reported_turns)
+            and reported_turns == 0 and not response_turns
+            and not any(json.loads(path.read_text()).get("status") == "started" for path in (source / "turns").glob("*/transport_pending.json")))
+    if not no_calls and not decisions and not response_turn_policy:
         summary["turns_missing_usage"] = 1
     if no_calls:
         summary["token_usage"].update(input_tokens=0, output_tokens=0, total_tokens=0)
@@ -203,6 +231,47 @@ def _pair_attempt(rows, available, task_id, trial):
                 unmatched.append({"task_id": task_id, "trial": trial, "arm": arm,
                     "technical_outcome": rows[arm]["technical_outcome"]})
                 receipt[arm] = _partial_summary(rows[arm], arm, task_id)
+    for arm in ("dom", "screenshot"):
+        scheduled, summary = rows[arm], receipt[arm]
+        summary["attempt_number"] = scheduled.get("attempt_number", 1)
+        summary["attempts"] = scheduled.get("attempts", [])
+        summary["technical_failure"] = scheduled["technical_outcome"] == "technical_failure"
+        summary["technical_failure_class"] = scheduled.get("technical_failure_class")
+        if summary["technical_failure"]:
+            summary["technical_completion_diagnostic"] = summary["completion"]
+            summary["completion"] = {"method": "ungraded", "verdict": "ungraded", "reason": "technical_failure"}
+            summary["completion_grade_available"] = False
+        prior = []
+        for attempt in scheduled.get("attempts", []):
+            if attempt.get("technical_outcome") != "technical_failure" or Path(attempt["recording"]).resolve() == Path(scheduled["recording"]).resolve():
+                continue
+            attempt_path = Path(attempt["recording"])
+            previous = {**scheduled, **attempt}
+            if all((attempt_path / name).is_file() for name in ("final.json", "manifest.json", "task.json")):
+                recording = inspect_recording(attempt_path)
+                _validate_scheduled_recording(previous, arm, recording["task"], recording["manifest"])
+                item = summarize(recording)
+            else:
+                item = _partial_summary(previous, arm, task_id)
+            prior.append({"attempt_number": attempt["attempt_number"], "recording": str(attempt_path),
+                "technical_failure_class": attempt.get("technical_failure_class"),
+                "recording_sha256": item.get("recording_sha256"), "actor_model_turns": item["model_turns"],
+                "actor_cost": item["cost_streams"]["actor"]})
+        summary["technical_attempts"] = prior
+        members = [item["actor_cost"] for item in prior]
+        keys = ("input_tokens", "output_tokens", "total_tokens", "cached_input_tokens", "reasoning_tokens", "cache_write_input_tokens")
+        stream = {"model": scheduled["configuration"].get("model"),
+            "calls": sum(item["calls"] for item in members) if all(type(item.get("calls")) is int for item in members) else None,
+            "call_records": [call for item in members for call in item.get("call_records", [])],
+            "unknown_attempts": sum(item.get("unknown_attempts", 0) for item in members),
+            "usage": {key: sum(values) if (values := [(item.get("usage") or {})[key] for item in members
+                if valid_token_component((item.get("usage") or {}).get(key))]) else 0 if not members else None for key in keys},
+            "usage_coverage": "complete" if all(item.get("usage_coverage") == "complete" for item in members) else "partial",
+            "attempt_count": len(prior), "scope": "Prior technical attempts; excluded from final actor turns and tokens."}
+        _price_stream(stream)
+        summary["cost_streams"]["technical_attempts:actor"] = stream
+    if any(receipt[arm]["technical_failure"] for arm in ("dom", "screenshot")):
+        receipt.update(both_successful=False, successful_pair_turn_delta=None)
     receipt["category"] = rows["dom"]["task"].get("category")
     receipt["difficulty"] = rows["dom"]["task"].get("difficulty")
     receipt["catalog_sha256"] = rows["dom"].get("catalog_sha256")
@@ -224,7 +293,7 @@ def _paired_attempts(ledger, n, task_ids, records):
             unmatched.extend(missing)
             pairs.append(receipt)
     # Shared controls are checked across every recorded attempt, including unmatched ones.
-    shared = {json.dumps(normalized_settings({k:v for k,v in r["manifest"]["controls"].items() if k!="prompt_sha256"}),sort_keys=True)
+    shared = {json.dumps(normalized_settings({k:v for k,v in r["manifest"]["controls"].items() if k not in {"prompt_sha256", "action_schema_sha256"}}),sort_keys=True)
         for r in records.values()}
     if len(shared)>1:
         raise ValueError("shared actor controls differ across recorded attempts")
@@ -281,6 +350,11 @@ def main(argv: list[str] | None = None) -> int:
         scheduled_tasks=len(task_ids), unmatched_arms=unmatched,
         ledger=str(args.ledger.resolve()),
         technical_outcomes=dict(Counter(row["technical_outcome"] for row in ledger)),
+        actor_attempts=sum(sum(bool(item.get("started_at")) or item.get("completed") is True
+            for item in row["attempts"]) if row.get("attempts") else int(row["technical_outcome"] not in {"not_started", "running"}) for row in ledger),
+        technical_reruns=sum(len(row.get("attempts", [])) == 2 and
+            (bool(row["attempts"][1].get("started_at")) or row["attempts"][1].get("completed") is True) for row in ledger),
+        technical_failures=sum(row["technical_outcome"] == "technical_failure" for row in ledger),
         evaluation_outcomes=dict(Counter(row.get("evaluation_outcome", "not_available") for row in ledger)),
         full_evaluation_completed_attempts=sum(row.get("evaluation_outcome") == "complete" for row in ledger),
         full_evaluation_completion_rate=sum(row.get("evaluation_outcome") == "complete" for row in ledger) / len(ledger),

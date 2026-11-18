@@ -1,6 +1,7 @@
 """Shared metrics fixtures."""
 
 import json
+import hashlib
 import os
 from pathlib import Path
 
@@ -97,6 +98,9 @@ def settings_comparison_case(tmp_path, monkeypatch, metric_recording_factory, me
                             "browser_build": {"image_id": "immutable-image", "overlay_revision": "overlay-one", "protocol_sha256": "protocol-one"},
                             "browser_environment": {"LANG": "en_US.UTF-8", "CDP_PORT": "9222", "CHROMIUM_CDP_PORT": "9223"}})
         manifest["controls"].update(model="gemini-3.1-pro-preview", base_url=actor["base_url"], max_output_tokens=10000, reasoning_effort="medium")
+        from w8bench.task_recorder.runner import ACTION_SCHEMA, SCREENSHOT_ACTION_SCHEMA
+        manifest["controls"]["action_schema_sha256"] = hashlib.sha256(json.dumps(
+            ACTION_SCHEMA if arm == "dom" else SCREENSHOT_ACTION_SCHEMA, sort_keys=True).encode()).hexdigest()
         source = Path(recording["source"])
         _write_json(source / "final.json", recording["final"])
         root, evaluation = metric_evaluation_factory(recording)

@@ -37,7 +37,7 @@ class FinalAnswer:
     def save(self, path: os.PathLike):
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, 'w', encoding='utf-8') as f:
+        with open(path, 'w', encoding='utf-8', errors='backslashreplace') as f:
             json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
 
 

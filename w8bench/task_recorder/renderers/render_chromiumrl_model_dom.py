@@ -112,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = json.loads(args.input.read_text(encoding="utf-8"))
     rendered = render_model_dom(model_dom_from_envelope(payload))
     if args.output:
-        args.output.write_text(rendered, encoding="utf-8")
+        args.output.write_text(rendered, encoding="utf-8", errors="backslashreplace")
     else:
         try:
             sys.stdout.write(rendered)

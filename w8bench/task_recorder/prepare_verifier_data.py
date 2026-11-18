@@ -150,7 +150,7 @@ def _expected_actor_text(source: Path, task: dict, controls: dict, state: dict, 
     expected = (f"task:\n{task['instruction']}\n\nstep: {turn} of {budget}\n"
         f"model_turn: {turn}\nturns_remaining_including_current: {budget-turn+1}\n"
         f"turns_remaining_after_this_call: {budget-turn}\nhuman_intervention_available: false\n"
-        f"viewport_css_pixels: {controls['viewport'][0]} x {controls['viewport'][1]}\n\n"
+        f"{'viewport_css_pixels' if mode == 'dom' else 'screenshot_pixels'}: {controls['viewport'][0]} x {controls['viewport'][1]}\n\n"
         f"task_memory_from_prior_steps:\n{memory or '(none)'}\n\n"
         f"current_document_url: {state['capture']['url_after']}\n\n")
     if mode == "dom":
@@ -229,7 +229,7 @@ def _recording_coverage(states: list, steps: list) -> dict:
 def inspect_recording(source: Path) -> dict[str, Any]:
     """Validate actor isolation, provenance, counters, and evidence availability."""
     from .prompts import DOM_PROMPT, SCREENSHOT_PROMPT
-    from .runner import ACTION_SCHEMA, chromiumrl_evidence_for_model
+    from .runner import ACTION_SCHEMA, SCREENSHOT_ACTION_SCHEMA, chromiumrl_evidence_for_model
     source = source.resolve(strict=True)
     task, manifest, final = [read_object(source / name) for name in ("task.json", "manifest.json", "final.json")]
     mode = manifest.get("observation_mode")
@@ -255,7 +255,8 @@ def inspect_recording(source: Path) -> dict[str, Any]:
     recent = []
     memory = ""
     for row in decisions:
-        state, content = _inspect_actor_request(source, task, manifest, states, row, memory, DOM_PROMPT, SCREENSHOT_PROMPT, ACTION_SCHEMA)
+        state, content = _inspect_actor_request(source, task, manifest, states, row, memory, DOM_PROMPT, SCREENSHOT_PROMPT,
+            SCREENSHOT_ACTION_SCHEMA if mode == "screenshot" else ACTION_SCHEMA)
         expected = _expected_actor_text(source, task, manifest["controls"], state, row["model_turn"], memory, recent, chromiumrl_evidence_for_model)
         if content[0] != {"text": expected}:
             raise ValueError(f"{mode} actor text contains an unapproved observation source")

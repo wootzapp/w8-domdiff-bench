@@ -59,14 +59,14 @@ def write_json(path: Path, value: Any) -> None:
     """Atomically write indented UTF-8 JSON, creating parent directories."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", errors="backslashreplace")
     temporary.replace(path)
 
 
 def append_json_line(path: Path, value: Any) -> None:
     """Append one compact JSON object to an audit JSONL stream."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as stream:
+    with path.open("a", encoding="utf-8", errors="backslashreplace") as stream:
         stream.write(json.dumps(value, ensure_ascii=False) + "\n")
 
 
@@ -76,7 +76,7 @@ def write_json_lines(path: Path, rows: list[dict[str, Any]]) -> None:
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(
         "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows),
-        encoding="utf-8",
+        encoding="utf-8", errors="backslashreplace",
     )
     temporary.replace(path)
 
@@ -85,5 +85,5 @@ def write_text(path: Path, value: str) -> None:
     """Atomically replace a UTF-8 text artifact."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(value, encoding="utf-8")
+    temporary.write_text(value, encoding="utf-8", errors="backslashreplace")
     temporary.replace(path)

@@ -54,11 +54,11 @@ def test_wait_and_memory_limits_accept_their_inclusive_boundaries(seconds):
 
 @pytest.mark.parametrize(
     "x, y, accepted",
-    [(0, 0, True), (1364.9, 767.9, True), (1365, 0, False), (0, 768, False),
-     (-0.01, 0, False), (True, 0, False), (float("inf"), 0, False),
+    [(0, 0, True), (1000, 1000, True), (1001, 0, False), (0, 1001, False),
+     (-1, 0, False), (1.0, 0, False), (True, 0, False), (float("inf"), 0, False),
      (0, float("nan"), False), (0, None, False)],
 )
-def test_coordinate_bounds_use_css_pixels_and_exclude_the_upper_edge(x, y, accepted):
+def test_coordinate_bounds_use_normalized_integers_and_include_1000(x, y, accepted):
     decision = {"action": "click", "x": x, "y": y, "thought": "Inspect the control"}
     reason = runner.action_rejection_reason(
         decision, frozenset(), [], observation_mode="screenshot", viewport=(1365, 768)
@@ -94,6 +94,7 @@ async def test_failed_actor_responses_keep_the_request_without_inventing_usage(
         from io import BytesIO
         return BytesIO(b"invalid" if failure == "invalid_json" else b"[]")
 
+    monkeypatch.setattr(runner.time, "sleep", lambda _: None)
     monkeypatch.setattr(runner.urllib.request, "urlopen", respond)
     async def inline(function, *args, **kwargs):
         return function(*args, **kwargs)
@@ -253,8 +254,8 @@ def test_failed_runs_retain_attempt_counts(run_pair, tmp_path, monkeypatch, fail
         "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder", "--settle-seconds", "0"])
     assert asyncio.run(runner.run(args)) == 2
     recording = inspect_recording(root / "failed")
-    assert recording["final"]["run_status"] == "error"
-    assert recording["manifest"]["model_turns"] == 1
+    assert recording["final"]["run_status"] == "technical_failure"
+    assert recording["manifest"]["model_turns"] == (1 if failure == "after_capture" else 0)
     assert len(recording["manifest"]["steps"]) == (1 if failure == "after_capture" else 0)
     assert recording["manifest"]["trajectory_export"]["status"] == ("incomplete" if failure == "after_capture" else "complete")
 
@@ -569,3 +570,55 @@ def test_gemini_actor_missing_usage_remains_unknown(monkeypatch):
     monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: io.BytesIO(json.dumps(native).encode()))
     result = runner.ModelClient("fake-google-key", "gemini-3.1-pro-preview", "https://offline.test")._post({})
     assert result["usage"] == {}
+
+
+@pytest.mark.parametrize("action", ["click", "scroll"])
+@pytest.mark.parametrize("point, viewport, expected", [
+    ((0, 0), (1365, 768), (0, 0)),
+    ((1000, 1000), (1365, 768), (1364, 767)),
+    ((500, 500), (1365, 768), (682, 384)),
+    ((122, 321), (1365, 768), (167, 247)),
+    ((333, 777), (801, 601), (267, 467)),
+])
+def test_screenshot_executor_decodes_coordinates_once(action, point, viewport, expected):
+    cdp = FakeCDP(observation_mode="screenshot")
+    decision = {"action": action, "x": point[0], "y": point[1], "pixels": 300}
+    original = dict(decision)
+    metadata = asyncio.run(AgentBrowserClient._dispatch_pointer(decision, cdp, viewport))
+    assert decision == original
+    assert cdp.calls
+    assert all((params["x"], params["y"]) == expected for _, params in cdp.calls)
+    assert metadata == {"model_coordinates": {"x": point[0], "y": point[1], "units": "normalized_1000"},
+        "executed_coordinates": {"x": expected[0], "y": expected[1], "units": "css_pixels"},
+        "viewport": list(viewport)}
+
+
+def test_screenshot_coordinate_schema_does_not_change_dom_schema():
+    from w8bench.task_recorder.prompts import SCREENSHOT_PROMPT, SCREENSHOT_PROMPT_VERSION
+    assert "CSS pixel coordinates" not in SCREENSHOT_PROMPT
+    assert "0 to 1000" in SCREENSHOT_PROMPT
+    assert SCREENSHOT_PROMPT_VERSION
+    assert runner.ACTION_SCHEMA["properties"]["x"] == {"type": ["number", "null"]}
+    for field in ("x", "y"):
+        definition = runner.SCREENSHOT_ACTION_SCHEMA["properties"][field]
+        assert definition["type"] == ["integer", "null"]
+        assert definition["minimum"] == 0 and definition["maximum"] == 1000
+        assert "screenshot" in definition["description"]
+
+
+@pytest.mark.parametrize("value", [-1, 1001, 1.5, 1.0, True, float("inf"), "500"])
+def test_screenshot_coordinate_rejections_use_normalized_units(value):
+    reason = runner.action_rejection_reason({"action": "click", "x": value, "y": 500,
+        "thought": "Click the requested button"}, frozenset(), [], observation_mode="screenshot")
+    assert "integer" in reason and "0 to 1000" in reason
+    assert "DOM" not in reason and "ref" not in reason and "pixel" not in reason
+
+
+def test_screenshot_request_rejects_image_viewport_mismatch(tmp_path):
+    image = tmp_path / 'screenshot.png'
+    Image.new('RGB', (640, 480), 'white').save(image)
+    bundle = capture.CaptureBundle(observation_mode='screenshot', screenshot_path=image,
+        document_url='https://example.test/')
+    client = runner.ModelClient('offline-key', 'gemini-3.1-pro-preview', 'https://offline.test')
+    with pytest.raises(RunnerError, match='screenshot dimensions differ'):
+        client._actor_request('Click the button', 1, 200, bundle, '', [], tmp_path, (1365, 768), 10000)

@@ -654,7 +654,7 @@ def main(argv: list[str] | None = None) -> int:
         include_diff=args.include_diff,
     ).render()
     if args.output:
-        args.output.write_text(rendered, encoding="utf-8")
+        args.output.write_text(rendered, encoding="utf-8", errors="backslashreplace")
     else:
         try:
             sys.stdout.write(rendered)

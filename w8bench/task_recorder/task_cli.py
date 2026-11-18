@@ -139,7 +139,7 @@ def write_active_run(record: dict[str, Any], path: Path = ACTIVE_RUN_PATH) -> No
     temporary = path.with_suffix(".tmp")
     temporary.write_text(
         json.dumps(record, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
+        encoding="utf-8", errors="backslashreplace",
     )
     temporary.replace(path)
 
@@ -690,7 +690,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--no-browser-start",
         action="store_true",
-        help="require an already-running browser instead of starting the compose service",
+        help="require an already-running browser for the initial attempt; a technical rerun starts a fresh browser",
     )
     parser.add_argument(
         "--previous-run-stop-timeout",
@@ -767,6 +767,8 @@ def _batch_schedule(
                     "run_name": f"trial_{trial:04d}", "task": definition,
                     "catalog_sha256": catalog_hash,
                     "recording": str(batch_dir / f"trial_{trial:04d}" / mode / identity),
+                    "scheduled_recording": str(batch_dir / f"trial_{trial:04d}" / mode / identity),
+                    "attempt_number": 1, "attempts": [],
                     "configuration": {"model": model_name, "max_turns": args.max_steps,
                         "max_output_tokens": args.max_output_tokens,
                         "viewport": [args.viewport_width, args.viewport_height],
@@ -827,6 +829,7 @@ def _batch_ledger(
                 or normalized_settings(saved.get("task")) != normalized_settings(expected["task"])
                 or any(saved.get(key) != value for key, value in expected.items()
                     if key not in {"completed", "technical_outcome", "grade_outcome", "grade_completed", "evaluation_outcome",
+                        "recording", "attempt_number", "attempts",
                         "effective_settings", "configuration", "task", "rubric"})):
                 raise RunnerError("saved schedule configuration differs; choose a new run name")
         for saved, expected in zip(ledger, schedule):
@@ -864,9 +867,10 @@ def _batch_actor_command(
     model_name: str,
 ) -> list[str]:
     """Describe one scheduled actor invocation with its exact execution settings."""
+    attempt_root = batch_dir if row.get("attempt_number", 1) == 1 else batch_dir / "technical_attempt_02"
     command = [sys.executable, "-m", "w8bench.task_recorder.task_cli", row["task_id"],
         "--catalog-file", str(catalog_path.resolve()), "--env-file", str(args.env_file.resolve()),
-        "--observation-mode", row["arm"], "--output-dir", str(batch_dir),
+        "--observation-mode", row["arm"], "--output-dir", str(attempt_root),
         "--run-name", row["run_name"], "--model", model_name,
         "--max-turns", str(args.max_steps), "--max-output-tokens", str(args.max_output_tokens),
         "--viewport-width", str(args.viewport_width), "--viewport-height", str(args.viewport_height),
@@ -887,19 +891,22 @@ def _execute_batch_actor(
     directory: Path,
 ) -> None:
     """Execute one actor and record its terminal recording status."""
-    log_path = batch_dir / "logs" / f"attempt_{row['sequence']:06d}.log"
+    log_path = batch_dir / "logs" / f"attempt_{row['sequence']:06d}_{row.get('attempt_number', 1):02d}.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     row["log"] = str(log_path)
     command = _batch_actor_command(args, row, batch_dir, catalog_path, model_name)
     try:
         with log_path.open("a", encoding="utf-8") as log:
             environment = {**os.environ,
-                "W8_EXPECTED_ACTOR_SETTINGS": json.dumps(row["effective_settings"]["actor"], sort_keys=True)}
+                "W8_EXPECTED_ACTOR_SETTINGS": json.dumps(row["effective_settings"]["actor"], sort_keys=True),
+                "W8_ACTOR_ATTEMPT_NUMBER": str(row.get("attempt_number", 1))}
             result = subprocess.run(command, cwd=ROOT, env=environment, stdout=log, stderr=subprocess.STDOUT, check=False)
         row["exit_code"] = result.returncode
         final_path = directory / "final.json"
-        row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
-            if final_path.is_file() else "incomplete_recording" if directory.exists() else "startup_failure")
+        final = json.loads(final_path.read_text()) if final_path.is_file() else {}
+        row["technical_outcome"] = final.get("run_status", "incomplete_recording" if directory.exists() else "startup_failure")
+        row["technical_failure_class"] = final.get("technical_failure_class")
+        row["actor_calls_attempted"] = final.get("actor_calls_attempted")
         if args.rubric_dir and final_path.is_file():
             row["grade_outcome"] = "pending"
     except KeyboardInterrupt:
@@ -907,8 +914,10 @@ def _execute_batch_actor(
         write_json_lines(ledger_path, ledger)
         raise
     except Exception as error:
-        row["technical_outcome"] = "startup_failure" if not directory.exists() else "incomplete_recording"
+        row["technical_outcome"] = "technical_failure"
+        row["technical_failure_class"] = "recorder_harness_error"
         row["error"] = f"{type(error).__name__}: {error}"
+        row["actor_calls_attempted"] = None if directory.exists() else False
     row.update(completed=True, ended_at=utc_now(), actor_ended_at=utc_now())
 
 
@@ -922,19 +931,47 @@ def _run_batch_actor(
     model_name: str,
     directory: Path,
 ) -> None:
-    """Reconcile an existing attempt or start its one scheduled actor execution."""
-    # A started attempt is terminal on resume; never silently buy another attempt.
-    if row["technical_outcome"] == "running" or row.get("started_at"):
-        final_path = directory / "final.json"
-        row["technical_outcome"] = (json.loads(final_path.read_text())["run_status"]
-            if final_path.is_file() else "interrupted")
-        row.update(completed=True, ended_at=utc_now())
-        if args.rubric_dir and final_path.is_file():
-            row["grade_outcome"] = "pending"
-    else:
-        row.update(technical_outcome="running", started_at=utc_now(), launcher_pid=os.getpid())
+    """Retain attempts and rerun one technical failure with a fresh browser."""
+    attempts = row.setdefault("attempts", [])
+    number = row.get("attempt_number", 1)
+    while number <= 2:
+        directory = (Path(row.get("scheduled_recording", directory)) if number == 1
+            else batch_dir / "technical_attempt_02" / row["run_name"] / row["arm"] / row["task_id"])
+        row.update(recording=str(directory), attempt_number=number)
+        if len(attempts) < number:
+            attempts.append({"attempt_number": number, "recording": str(directory), "completed": False})
+        attempt = attempts[number - 1]
+        if attempt.get("completed"):
+            row.update({key: attempt[key] for key in ("technical_outcome", "technical_failure_class", "exit_code", "log") if key in attempt})
+            row["completed"] = True
+        elif attempt.get("started_at") or row["technical_outcome"] == "running" or row.get("started_at"):
+            final_path = directory / "final.json"
+            final = json.loads(final_path.read_text()) if final_path.is_file() else {}
+            row.update(technical_outcome=final.get("run_status", "interrupted"),
+                technical_failure_class=final.get("technical_failure_class"), completed=True, ended_at=utc_now())
+            if args.rubric_dir and final_path.is_file():
+                row["grade_outcome"] = "pending"
+        else:
+            row.update(technical_outcome="running", started_at=utc_now(), launcher_pid=os.getpid())
+            attempt["started_at"] = row["started_at"]
+            write_json_lines(ledger_path, ledger)
+            try:
+                _execute_batch_actor(args, row, ledger, ledger_path, batch_dir, catalog_path, model_name, directory)
+            except KeyboardInterrupt:
+                attempt.update(completed=True, technical_outcome="interrupted", ended_at=utc_now())
+                write_json_lines(ledger_path, ledger)
+                raise
+        attempt.update({key: row.get(key) for key in ("technical_outcome", "technical_failure_class", "exit_code", "log", "started_at", "ended_at", "actor_calls_attempted")})
+        attempt["completed"] = True
         write_json_lines(ledger_path, ledger)
-        _execute_batch_actor(args, row, ledger, ledger_path, batch_dir, catalog_path, model_name, directory)
+        if row["technical_outcome"] != "technical_failure" or number == 2:
+            break
+        # The completed first attempt is immutable. A pending second attempt is
+        # published before launching so resume never repeats the first actor.
+        number += 1
+        row.update(completed=False, technical_outcome="not_started", grade_outcome="ungraded")
+        for key in ("started_at", "ended_at", "actor_ended_at", "technical_failure_class", "error", "exit_code", "log", "actor_calls_attempted"):
+            row.pop(key, None)
     write_json_lines(ledger_path, ledger)
     print(f"{row['sequence']}/{len(ledger)} {row['task_id']} {row['arm']} trial {row['trial']}: "
         f"{row['technical_outcome']}; grade={row['grade_outcome']}", flush=True)
@@ -1193,7 +1230,7 @@ def run_batch(args: argparse.Namespace) -> int:
             if hashlib.sha256(frozen_catalog.read_bytes()).hexdigest() != row["catalog_sha256"]:
                 raise RunnerError("frozen batch catalog changed after scheduling")
             directory = Path(row["recording"])
-            if not row["completed"]:
+            if not row["completed"] or (row["technical_outcome"] == "technical_failure" and len(row.get("attempts", [])) < 2):
                 _run_batch_actor(args, row, ledger, ledger_path, batch_dir, frozen_catalog, model_name, directory)
             # Record both arms back to back before any grading latency.
             if row["arm_order"] == 2:
@@ -1213,13 +1250,103 @@ def run_single_task(args: argparse.Namespace) -> int:
     args.run_name = resolve_run_name(args.run_name)
     args.output_dir = run_directory(args.output_dir, args.run_name)
     definition = _single_task_definition(args, task_id)
-    command, run_id = _prepare_single_run(args, task_id, definition)
     if args.dry_run:
+        _prepare_single_run(args, task_id, definition)
         print("Dry run complete; browser task was not started.")
         return 0
-    process = _launch_single_run(args, command, run_id, task_id)
-    assert process is not None
-    return _wait_single_run(process, args.previous_run_stop_timeout)
+    # The batch owns its attempt ledger and starts exactly one child attempt.
+    # A direct invocation owns the same two-attempt policy locally.
+    batch_owned = bool(os.environ.get("W8_EXPECTED_ACTOR_SETTINGS"))
+    base = args.output_dir
+    ledger_path = base / "attempt_ledgers" / args.observation_mode / f"{task_id}.jsonl"
+    configuration = {"model": args.model, "max_turns": args.max_steps,
+        "max_output_tokens": args.max_output_tokens, "viewport": [args.viewport_width, args.viewport_height]}
+    from w8bench.settings import actor_settings, require_same_settings
+    from .runner import parse_args as recorder_args
+    actor_defaults = recorder_args(["--env-file", str(args.env_file.resolve())])
+    effective = actor_settings({**configuration, "settle_seconds": actor_defaults.settle_seconds,
+        "snapshot_max_nodes": actor_defaults.snapshot_max_nodes,
+        "snapshot_max_text_chars": actor_defaults.snapshot_max_text_chars,
+        "agent_browser_timeout": actor_defaults.agent_browser_timeout,
+        "browser_lang": actor_defaults.browser_lang,
+        "browser_accept_language": actor_defaults.browser_accept_language,
+        "base_url": actor_defaults.api_base_url})
+    if ledger_path.is_file() and not batch_owned:
+        records = [json.loads(line) for line in ledger_path.read_text().splitlines() if line.strip()]
+        if len(records) != 1 or records[0].get("task") != definition or records[0].get("configuration") != configuration:
+            raise RunnerError("saved task attempt configuration differs; choose a new run name")
+        row = records[0]
+        try:
+            require_same_settings(row.get("effective_settings"), effective, label="saved task attempt")
+        except ValueError as error:
+            raise RunnerError(str(error)) from error
+    else:
+        row = {"task_id": task_id, "arm": args.observation_mode, "trial": args.run_name,
+            "task": definition, "configuration": configuration, "effective_settings": effective,
+            "attempts": [], "completed": False}
+        records = [row]
+    attempts = row["attempts"]
+    number = int(os.environ.get("W8_ACTOR_ATTEMPT_NUMBER", "1")) if batch_owned else max(1, len(attempts))
+    result = 1
+    while number <= 2:
+        args.output_dir = base if number == 1 or batch_owned else base.parent / "technical_attempt_02" / base.name
+        run_id = safe_task_id(str(definition.get("source_task_id") or task_id))
+        directory = (args.output_dir / args.observation_mode / run_id).resolve()
+        if not batch_owned and len(attempts) < number:
+            attempts.append({"attempt_number": number, "recording": str(directory), "completed": False})
+        attempt = attempts[number - 1] if not batch_owned else {}
+        final_path = directory / "final.json"
+        if not batch_owned and (attempt.get("started_at") or attempt.get("completed")):
+            final = json.loads(final_path.read_text()) if final_path.is_file() else {}
+            outcome = final.get("run_status", "interrupted")
+            result = attempt.get("exit_code", 0 if outcome == "completed" else 1)
+        else:
+            command, run_id = _prepare_single_run(args, task_id, definition)
+            attempt.update(started_at=utc_now(), completed=False)
+            row.update(recording=str(directory), attempt_number=number, completed=False)
+            if not batch_owned:
+                write_json_lines(ledger_path, records)
+            previous_number = os.environ.get("W8_ACTOR_ATTEMPT_NUMBER")
+            os.environ["W8_ACTOR_ATTEMPT_NUMBER"] = str(number)
+            try:
+                try:
+                    if number == 2 and not batch_owned:
+                        args.no_browser_start = False
+                    process = _launch_single_run(args, command, run_id, task_id)
+                    assert process is not None
+                    result = _wait_single_run(process, args.previous_run_stop_timeout)
+                except (RunnerError, OSError) as error:
+                    from .recorder_support import write_json
+                    write_json(final_path, {"run_status": "technical_failure", "status": "failure",
+                        "technical_failure_class": "recorder_harness_error", "attempt_number": number,
+                        "actor_calls_attempted": False if not (directory / "manifest.json").is_file() else None,
+                        "error": f"{type(error).__name__}: {error}", "recorded_at": utc_now()})
+                    result = 1
+                except KeyboardInterrupt:
+                    from .recorder_support import write_json
+                    write_json(final_path, {"run_status": "interrupted", "status": "failure",
+                        "attempt_number": number, "recorded_at": utc_now(),
+                        "interruption": "launcher_keyboard_interrupt"})
+                    result = 130
+            finally:
+                if previous_number is None:
+                    os.environ.pop("W8_ACTOR_ATTEMPT_NUMBER", None)
+                else:
+                    os.environ["W8_ACTOR_ATTEMPT_NUMBER"] = previous_number
+            final = json.loads(final_path.read_text()) if final_path.is_file() else {}
+            outcome = final.get("run_status", "incomplete_recording" if directory.exists() else "startup_failure")
+        if batch_owned:
+            return result
+        attempt.update(completed=True, ended_at=utc_now(), technical_outcome=outcome,
+            technical_failure_class=final.get("technical_failure_class"), exit_code=result,
+            actor_calls_attempted=final.get("actor_calls_attempted"))
+        row.update(completed=True, recording=str(directory), attempt_number=number,
+            technical_outcome=outcome, technical_failure_class=final.get("technical_failure_class"))
+        write_json_lines(ledger_path, records)
+        if outcome != "technical_failure" or number == 2:
+            return result
+        number += 1
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:

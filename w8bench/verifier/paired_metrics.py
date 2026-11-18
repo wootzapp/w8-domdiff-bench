@@ -174,6 +174,13 @@ def _mode_metrics(rows, task_count):
     turns_complete = all(row.get("turns_complete", True) for row in rows)
     tokens_complete = all(row.get("cost_coverage", "complete") == "complete" and not row["turns_missing_usage"] for row in rows)
     return {
+        "technical_failures": sum(row.get("technical_failure", False) for row in rows),
+        "technical_failure_classes": dict(Counter(row.get("technical_failure_class") or "unknown"
+            for row in rows if row.get("technical_failure"))),
+        "agent_eligible_runs": sum(not row.get("technical_failure", False) for row in rows),
+        "agent_failure_runs": sum(not row.get("technical_failure", False) and row["completion"]["verdict"] == "failure" for row in rows),
+        "confirmed_success_rate_agent_eligible": verdicts["success"] / eligible
+            if (eligible := sum(not row.get("technical_failure", False) for row in rows)) else None,
         "attempted_tasks": task_count, "attempted_runs": len(rows), "completion_counts": dict(verdicts),
         "confirmed_success_rate_all_attempts": verdicts["success"] / len(rows),
         "success_rate_definitively_graded": verdicts["success"] / definitive if definitive else None,
@@ -186,6 +193,12 @@ def _mode_metrics(rows, task_count):
         "median_turns_all_attempts": statistics.median(row["model_turns"] for row in rows) if turns_complete else None,
         "mean_turns_successful_tasks": statistics.mean(row["model_turns"] for row in successes) if successes else None,
         "actor_turns": sum(row["model_turns"] for row in rows),
+        "actor_transport_attempts": sum(row["actor_transport_attempts"] for row in rows)
+            if all(type(row.get("actor_transport_attempts")) is int for row in rows) else None,
+        "actor_transport_attempts_known_lower_bound": sum(row.get("actor_transport_attempts") or 0 for row in rows),
+        "runs_missing_transport_counts": sum(row.get("actor_transport_attempts") is None for row in rows),
+        "failed_transport_attempts": sum(row.get("failed_transport_attempts", 0) for row in rows),
+        "pending_transport_attempts": sum(row.get("pending_transport_attempts", 0) for row in rows),
         "output_limit_hits": sum(row.get("output_limit_hits",0) for row in rows),
         "token_usage_known_calls": {key: sum(row.get("token_usage_known_calls", {}).get(key, 0) for row in rows) for key in ("input_tokens", "output_tokens", "cached_input_tokens", "reasoning_tokens", "cache_write_input_tokens")},
         "action_attempts": sum(row["action_attempts"] for row in rows),
@@ -385,6 +398,13 @@ def _group_metrics(target, mode, selected):
     metrics.setdefault("token_usage_known_calls", {key: sum(row.get("token_usage_known_calls", {}).get(key, 0) for row in rows)
         for key in ("input_tokens", "output_tokens", "cached_input_tokens", "reasoning_tokens", "cache_write_input_tokens")})
     metrics.update(attempted_runs=len(rows), completion_counts=dict(verdicts),
+        technical_failures=sum(row.get("technical_failure", False) for row in rows),
+        technical_failure_classes=dict(Counter(row.get("technical_failure_class") or "unknown"
+            for row in rows if row.get("technical_failure"))),
+        agent_eligible_runs=sum(not row.get("technical_failure", False) for row in rows),
+        agent_failure_runs=sum(not row.get("technical_failure", False) and row["completion"]["verdict"] == "failure" for row in rows),
+        confirmed_success_rate_agent_eligible=verdicts["success"] / eligible
+            if (eligible := sum(not row.get("technical_failure", False) for row in rows)) else None,
         confirmed_success_rate_all_attempts=verdicts["success"] / len(rows),
         success_rate_definitively_graded=verdicts["success"] / definitive if definitive else None,
         definitively_graded_runs=definitive, auxiliary_verifiers=auxiliary,
@@ -400,6 +420,16 @@ def _group_metrics(target, mode, selected):
         audit_status_counts=dict(Counter(row.get("evidence_audit_status", "not_available") for row in rows)),
         **_coverage_rates(rows))
     _cost_estimates(metrics, rows)
+    technical_streams = [row.get("cost_streams", {}).get("technical_attempts:actor") for row in rows]
+    technical_streams = [stream for stream in technical_streams if stream is not None]
+    if technical_streams:
+        metrics["cost_streams"].setdefault("technical_attempts:actor", {}).update(
+            attempt_count=sum(stream.get("attempt_count", 0) for stream in technical_streams),
+            calls=sum(stream.get("calls", 0) for stream in technical_streams) if all(type(stream.get("calls")) is int for stream in technical_streams) else None,
+            usage={key: sum(values) if (values := [(stream.get("usage") or {})[key] for stream in technical_streams
+                if (stream.get("usage") or {}).get(key) is not None]) else None
+                for key in ("input_tokens", "output_tokens", "total_tokens")},
+            usage_coverage=dict(Counter(stream.get("usage_coverage", "unknown") for stream in technical_streams)))
 
 
 def _paired_outcomes(result, pairs):
@@ -413,6 +443,8 @@ def _paired_outcomes(result, pairs):
         for pair in common) if common and all(pair[mode].get("cost_coverage") == "complete" for pair in common for mode in ("dom", "screenshot")) else None
     result["denominator_notes"] = [
         "Every scheduled ledger row, including startup failure or missing recording, is in the denominator.",
+        "Technical failures are ungraded and never agent failures; agent-eligible success excludes them while the scheduled lower bound retains all rows.",
+        "Actor efficiency uses the final attempt only; prior technical-attempt usage and costs are reported separately.",
         "Missing/incomplete recordings retain known usage as lower bounds; exact cost means are null when coverage is incomplete.",
         "Input/output TPT each use their own known-usage call denominator; all call types qualify, including rejected, failed and termination calls.",
         "Unknown usage is null, never an observed zero; reasoning and cached reads/writes are reported as subsets with their own coverage.",
@@ -431,6 +463,12 @@ def _paired_outcomes(result, pairs):
 
 def aggregate(pairs: list[dict[str, Any]], *, pass_k: list[int] | None = None) -> dict[str, Any]:
     """Aggregate any number of matched trials, retaining task/criterion identity."""
+    pairs = [{**pair, "both_successful": pair["both_successful"] and not any(pair[mode].get("technical_failure") for mode in ("dom", "screenshot")),
+        "successful_pair_turn_delta": None if any(pair[mode].get("technical_failure") for mode in ("dom", "screenshot")) else pair.get("successful_pair_turn_delta"),
+        **{mode: {**pair[mode],
+        "technical_completion_diagnostic": pair[mode]["completion"],
+        "completion": {"method": "ungraded", "verdict": "ungraded", "reason": "technical_failure"}}
+        for mode in ("dom", "screenshot") if pair[mode].get("technical_failure")}} for pair in pairs]
     by_task, identities, catalog_hashes, trial_counts, ks = _index_pairs(pairs, pass_k)
     result = {"paired_tasks": len(by_task), "paired_attempts": len(pairs),
         "trial_ids": sorted({str(identity[0]) for identity in identities}),

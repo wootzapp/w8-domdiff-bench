@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Coordinate calibration</title>
+<style>
+html { scrollbar-width: none; }
+::-webkit-scrollbar { display: none; }
+body { margin: 0; min-height: 2200px; font: 16px sans-serif; background: white; }
+button { position: fixed; width: 48px; height: 48px; border: 0; padding: 0; border-radius: 0; background: #1355c5; color: white; }
+#north-west { top: 0; left: 0; }
+#north-east { top: 0; right: 0; }
+#south-west { bottom: 0; left: 0; }
+#south-east { bottom: 0; right: 0; }
+#small { left: 817px; top: 350px; width: 16px; height: 16px; background: #ae1631; }
+#scrolled { position: absolute; left: 650px; top: 1450px; width: 20px; height: 20px; background: #157333; }
+h1 { position: absolute; left: 100px; top: 70px; }
+#small-label { position: absolute; left: 840px; top: 346px; }
+#scrolled-label { position: absolute; left: 680px; top: 1450px; }
+output { position: fixed; left: 60px; bottom: 12px; }
+</style>
+<h1>Coordinate calibration</h1>
+<button id="north-west" aria-label="North west">NW</button>
+<button id="north-east" aria-label="North east">NE</button>
+<button id="south-west" aria-label="South west">SW</button>
+<button id="south-east" aria-label="South east">SE</button>
+<button id="small" aria-label="Small">+</button><span id="small-label">Small</span>
+<button id="scrolled" aria-label="Scrolled">S</button><span id="scrolled-label">Scrolled</span>
+<output id="hits">Hits: none</output>
+<script>
+window.hitTargets = [];
+addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (button) {
+    hitTargets.push(button.id);
+    document.getElementById('hits').textContent = 'Hits: ' + hitTargets.join(', ');
+  }
+});
+</script>
+</html>

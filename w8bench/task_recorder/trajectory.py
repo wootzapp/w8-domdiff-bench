@@ -18,6 +18,11 @@ def websurfer_action(record: dict[str, Any]) -> tuple[str, dict[str, Any], str]:
     if name is None:
         raise RunnerError("unsupported recorded action")
     arguments = {**action, "action": name, "thoughts": record["thought"]}
+    coordinates = record.get("executed_coordinates") or (record.get("action_result") or {}).get("executed_coordinates")
+    if coordinates is not None:
+        if coordinates.get("units") != "css_pixels":
+            raise RunnerError("recorded execution coordinates must use CSS pixels")
+        arguments.update(x=coordinates["x"], y=coordinates["y"])
     if "target" in record:
         arguments["target"] = record["target"]
     return name, arguments, record["thought"]

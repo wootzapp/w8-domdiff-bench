@@ -69,7 +69,7 @@ def task_init_url(task: dict[str, Any]) -> str:
 
 
 def canonical_json_bytes(value: object) -> bytes:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8", errors="backslashreplace")
 
 
 def canonical_sha256(value: object) -> str:
@@ -280,7 +280,7 @@ def require_openai_key() -> None:
 def write_json(path: str | Path, value: object) -> Path:
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8")
+    destination.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8", errors="backslashreplace")
     return destination
 
 

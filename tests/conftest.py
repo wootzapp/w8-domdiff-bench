@@ -238,6 +238,8 @@ class FakeCDP:
 
     def __init__(self, *args, observation_mode="dom", **kwargs):
         self.observation_mode = observation_mode
+        self._page_failure = None
+        self.page_failure_event = asyncio.Event()
         self.calls = []
         self.viewport = (1365, 768)
         self.navigation_events = []

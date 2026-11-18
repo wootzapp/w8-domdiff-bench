@@ -77,9 +77,12 @@ Judge progress from current DOM text, page position and the supplied made_progre
 url_changed, dom_changed and agent_browser_observation_changed fields.
 """
 
+SCREENSHOT_PROMPT_VERSION = "screenshot-normalized-coordinates/v1"
+
 SCREENSHOT_PROMPT = SYSTEM_PROMPT + """
 Your only page observation is the attached screenshot. Locate controls visually.
-For click, set x and y to CSS pixel coordinates inside the supplied viewport.
+For click, set x and y to integers from 0 to 1000, relative to the screenshot's
+width (x) and height (y), with 0,0 at the top-left.
 For scroll, optional x and y select the scroll pane under that point; leave both
 null to scroll at the viewport centre. Always leave id null. You have no DOM,
 accessibility tree, extracted page text, selectors, or element references.
