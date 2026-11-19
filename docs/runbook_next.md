@@ -2,7 +2,7 @@
 
 Run commands from the repository root using `.venv`. The catalog contains 25
 public, read-only tasks. Each task has independent DOM and screenshot actors;
-choose any positive trial count per arm. Actor requests use `gemini-3.1-pro-preview`, a
+choose any positive trial count per arm. Actor requests use `gemini-3.8-flash`, a
 10,000-token output limit, medium reasoning, 8,000 memory characters and at most
 200 model turns. Read the [datacard](datacard.md) for the permitted arm differences
 and the [evaluation protocol](evaluation-protocol.md) for metrics and denominators.
@@ -20,7 +20,7 @@ precedence over `.env`.
 
 ```sh
 .venv/bin/python - <<'PY'
-import json, os
+import hashlib, json, os
 from pathlib import Path
 from w8bench.task_recorder.runner import load_env, MAX_TASK_MEMORY_CHARS
 from w8bench.task_recorder.task_cli import parse_args, parse_task_catalog
@@ -29,7 +29,9 @@ from w8bench.verifier.audit_requests import resolve_audit_config
 from w8bench.verifier.package_manifests import require_local_packages
 load_env(Path('.env'))
 assert all(os.environ.get(k, '').strip() for k in ('OPENAI_API_KEY', 'GEMINI_API_KEY')), 'Missing credential'
-assert os.environ.get('ACTOR_MODEL') == 'gemini-3.1-pro-preview', 'Unexpected actor model'
+assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash', 'Unexpected actor model'
+media = os.environ.get('ACTOR_MEDIA_RESOLUTION', 'HIGH').strip().upper()
+assert media in {'HIGH', 'ULTRA_HIGH'}, 'Unsupported actor media resolution'
 audit = resolve_audit_config()
 assert audit['inventory'] == {'model': 'gemini-3.1-pro-preview', 'provider': 'google'}
 assert audit['adjudication'] == {'model': 'gpt-6.1-sol', 'provider': 'openai'}
@@ -43,12 +45,18 @@ assert Path('internal/task_validity.json').is_file(), 'Missing task-validity met
 validate_endpoint_configs('config')
 require_local_packages()
 print(json.dumps({'status': 'offline_preflight_passed', 'tasks': len(rows),
+    'catalog_sha256': hashlib.sha256(catalog.read_bytes()).hexdigest(),
     'actor': os.environ['ACTOR_MODEL'], 'completion': 'gpt-6.1-sol',
-    'rubric_model': 'gpt-5.2', 'verifier_models': ['gemini-3.1-pro-preview', 'gemini-3.8-flash'], 'audit': audit,
+    'rubric_model': 'gpt-5.2', 'verifier_models': ['gemini-3.1-pro-preview'], 'audit': audit,
     'max_output_tokens': settings.max_output_tokens, 'max_turns': settings.max_steps,
+    'media_resolution': media,
     'memory_characters': MAX_TASK_MEMORY_CHARS}, indent=2))
 PY
 ```
+
+A requested output name already on disk selects the next available numeric
+suffix. Read the printed schedule path and use its actual run name for later
+commands.
 
 This checks configured identities and credential presence, not provider access,
 credit balance or model compatibility. It does not print keys or contact a provider.
@@ -75,7 +83,9 @@ rows, alternating arm order, intended output paths and controls. It is not the
 executable attempt ledger. Rubric-free planning cannot start an actor or judge.
 Execution requires approved frozen rubrics and creates `ledger.jsonl` separately.
 When all frozen rubrics exist, `--dry-run` creates or validates the ordinary
-`ledger.jsonl`, and removing `--dry-run` resumes that same schedule.
+`ledger.jsonl`. To execute that schedule, remove `--dry-run` and add `--resume`,
+using the run name printed by the planning command. A planning-only preview
+cannot be resumed as execution; use a new run after rubric approval.
 
 Task validity is checked against `internal/task_validity.json` using the UTC date.
 Expired tasks stop planning/execution unless the operator explicitly supplies
@@ -177,8 +187,8 @@ hash. **Model calls: 0.**
 
 ## 4. Small model compatibility gate
 
-This **paid** command dispatches eight nominal logical requests: two actor
-requests, three native/rubric model transport probes, one completion request and
+This **paid** command dispatches seven nominal logical requests: two actor
+requests, two native/rubric model transport probes, one completion request and
 one request through each actual inventory/adjudication transport. It uses
 `gpt-5.2`, `gemini-3.1-pro-preview`, `gemini-3.8-flash` and `gpt-6.1-sol`, with a
 PNG, strict actor/completion schemas and configured Gemini settings. The two
@@ -200,10 +210,15 @@ from w8bench.verifier.clients.retry import GracefulRetryClient
 from w8bench.model_identity import match_model_id, response_acceptance
 from w8bench.verifier.audit_requests import _completion, SYSTEM_PROMPT, ADJUDICATION_SYSTEM_PROMPT
 load_env(Path('.env'))
-assert os.environ.get('ACTOR_MODEL') == 'gemini-3.1-pro-preview'
-root = Path('internal/compatibility')
-assert not root.exists(), 'Keep the prior receipt; choose a distinct check directory for a repeat'
+assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash'
+base = Path('internal/compatibility')
+sequence = 1
+root = base / f'check_{sequence:04d}'
+while root.exists():
+    sequence += 1
+    root = base / f'check_{sequence:04d}'
 root.mkdir(parents=True)
+print('Compatibility receipts:', root)
 image = Image.new('RGB', (1365, 768), 'white')
 ImageDraw.Draw(image).text((40, 40), 'COMPATIBILITY_OK', fill='black')
 image.save(root / 'screenshot.png')
@@ -218,9 +233,8 @@ native_roles = {
     'gemini-3.1-pro-preview': [f'{mode}.{stage}' for mode in ('dom_model', 'screenshot_verifier')
         for stage in ('relevance', 'evidence_analysis', 'condition_disambiguation',
                       'reality_check', 'whole_rubric_rescore', 'per_criterion_rescore',
-                      'side_effects', 'outcome', 'failure_analysis')],
-    'gemini-3.8-flash': [f'{mode}.{stage}' for mode in ('dom_model', 'screenshot_verifier')
-        for stage in ('action_only_scoring', 'task_validity', 'trajectory_validity')],
+                      'side_effects', 'outcome', 'failure_analysis',
+                      'action_only_scoring', 'task_validity', 'trajectory_validity')],
 }
 def record_matches(receipt, model, returned, roles):
     ids = list(returned) or [None]
@@ -250,14 +264,14 @@ try:
                 step=1, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
                 turn_dir=turn, viewport=(1365,768), max_output_tokens=10000))
             assert not action_rejection_reason(decision, bundle.agent_browser_refs, [],
-                observation_mode=arm, viewport=(1365,768), model_turn=1, max_turns=200)
+                observation_mode=arm, model_turn=1, max_turns=200)
             assert decision['action']=='wait' and decision['seconds']==0
             assert 'COMPATIBILITY_OK' in decision['thought']
             record_matches(receipt, client.model, [response.get('model')], [f'actor.{arm}'])
             receipt['status'] = 'passed'
         finally:
             receipt.update(response=client.last_response, input_report=client.last_input_report)
-    for model in ('gpt-5.2', 'gemini-3.1-pro-preview', 'gemini-3.8-flash'):
+    for model in ('gpt-5.2', 'gemini-3.1-pro-preview'):
         client = GracefulRetryClient.from_path('config', logger=logging.getLogger('compatibility'), eval_model=model, evidence_mode='screenshot_verifier')
         clients.append(client)
         calls = instrument_client_calls(client, receipt=True)
@@ -320,7 +334,7 @@ except BaseException as error:
         receipts[-1].update(status='failed', error_type=type(error).__name__, error=str(error))
     raise
 finally:
-    write_json(root/'result.json', {'status':status,'nominal_logical_calls':8,'receipts':receipts})
+    write_json(root/'result.json', {'status':status,'nominal_logical_calls':7,'receipts':receipts})
     for client in clients:
         loop.run_until_complete(client.close())
     loop.close()
@@ -328,10 +342,10 @@ print('Compatibility gate:', status)
 PY
 ```
 
-**Gate:** all eight checks pass with permitted returned IDs, complete
+**Gate:** all seven checks pass with permitted returned IDs, complete
 responses, valid schema/JSON and readable image markers. Inspect
-`internal/compatibility/result.json` and the actor requests/responses. Normally
-**8 logical calls**; existing SDK/client retry policies can increase HTTP attempts.
+`internal/compatibility/check_NNNN/result.json` and the actor requests/responses. Normally
+**7 logical calls**; existing SDK/client retry policies can increase HTTP attempts.
 Each native transport probe lists all default native stage roles for its model,
 including both rubric preparation roles. Every role records and prints its
 configured ID, returned ID and the shared matcher's `exact`, `suffix` or `refused`
@@ -362,7 +376,7 @@ PY
 
 The fixture checks four corners, a small button and scrolled content through the
 real executor, plus image dimensions and device pixel ratio 1. Inspect
-`reports/implementation_fixes/calibration.json`; all six targets must be hit.
+`reports/browser_calibration/run_N/calibration.json`; all six targets must be hit.
 The check opens a fresh page and closes prior task pages.
 
 After approval for paid compatibility checks, use the same fixture for **6
@@ -379,9 +393,14 @@ from w8bench.task_recorder.agent_browser import AgentBrowserClient
 from w8bench.task_recorder.runner import ModelClient, load_env, action_rejection_reason
 from w8bench.task_recorder.recorder_support import write_json
 load_env(Path('.env'))
-root = Path('internal/coordinate_calibration')
-assert not root.exists(), 'Keep the prior receipt and select a distinct check directory'
+base = Path('internal/coordinate_calibration')
+sequence = 1
+root = base / f'check_{sequence:04d}'
+while root.exists():
+    sequence += 1
+    root = base / f'check_{sequence:04d}'
 root.mkdir(parents=True)
+print('Coordinate receipts:', root)
 container = os.environ['CONTAINER_NAME']
 networks = json.loads(subprocess.check_output(['docker', 'inspect', '--format',
     '{{json .NetworkSettings.Networks}}', container], text=True))
@@ -411,7 +430,8 @@ try:
         time.sleep(1)
         directory = root / f'turn_{index:06d}'
         directory.mkdir()
-        screenshot = loop.run_until_complete(_capture_screenshot(cdp, directory))
+        screenshot = directory / 'screenshot.png'
+        screenshot.write_bytes(loop.run_until_complete(_capture_screenshot(cdp)))
         loop.run_until_complete(cdp.call('Runtime.evaluate', {'expression':'hitTargets = []'}))
         bundle = CaptureBundle(observation_mode='screenshot', screenshot_path=screenshot,
             document_url=url)
@@ -420,7 +440,7 @@ try:
             step=index, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
             turn_dir=directory, viewport=(1365,768), max_output_tokens=10000))
         rejection = action_rejection_reason(decision, frozenset(), [],
-            observation_mode='screenshot', viewport=(1365,768), model_turn=index, max_turns=200)
+            observation_mode='screenshot', model_turn=index, max_turns=200)
         execution = None
         if not rejection and decision['action'] == 'click':
             execution = loop.run_until_complete(driver.execute(decision, cdp=cdp, viewport=(1365,768)))
@@ -443,10 +463,113 @@ PY
 ```
 
 **Gate:** six correct hits, normalized integer coordinates, permitted returned
-model ID and complete responses. Review `internal/coordinate_calibration/result.json`
+model ID and complete responses. Review `internal/coordinate_calibration/check_NNNN/result.json`
 and saved requests, responses and transport receipts. The transport gate plus
-coordinate calibration makes **14 nominal model checks**; transient failures
-can add transport attempts. Stop before the pilot if calibration fails.
+coordinate calibration makes **13 nominal model checks**; transient failures
+can add transport attempts. Complete the text calibration below before the pilot.
+
+### Screenshot text calibration
+
+With no task active, the following **paid** diagnostic reads four high-contrast
+strings at 8, 10, 12 and 14 CSS pixels. It sends the same saved PNG once at
+`HIGH` and once at `ULTRA_HIGH`, for **2 nominal actor responses**. The model
+receives only the image and the reading instruction; expected strings are used
+only to score its response. No returned browser action is executed.
+
+```sh
+.venv/bin/python - <<'PY'
+import asyncio, functools, http.server, json, os, subprocess, threading
+from pathlib import Path
+from w8bench.task_recorder.capture import CDPClient, CaptureBundle, _capture_screenshot
+from w8bench.task_recorder.runner import ModelClient, load_env
+from w8bench.task_recorder.recorder_support import write_json
+load_env(Path('.env'))
+base = Path('internal/screenshot_text_calibration')
+sequence = 1
+root = base / f'check_{sequence:04d}'
+while root.exists():
+    sequence += 1
+    root = base / f'check_{sequence:04d}'
+root.mkdir(parents=True)
+print('Text calibration receipts:', root)
+networks = json.loads(subprocess.check_output(['docker', 'inspect', '--format',
+    '{{json .NetworkSettings.Networks}}', os.environ['CONTAINER_NAME']], text=True))
+gateway = next(iter(networks.values()))['Gateway']
+server = http.server.ThreadingHTTPServer((gateway, 0), functools.partial(
+    http.server.SimpleHTTPRequestHandler, directory=str(Path('tests/fixtures').resolve())))
+threading.Thread(target=server.serve_forever, daemon=True).start()
+url = f'http://{gateway}:{server.server_port}/screenshot_text_calibration.html'
+expected = {'8':'J7M4Q2R9', '10':'V3K8T5N6', '12':'P9D2W7X4', '14':'F6C1Y8H3'}
+loop = asyncio.new_event_loop()
+cdp = CDPClient('http://127.0.0.1:' + os.environ['CDP_HOST_PORT'],
+    observation_mode='screenshot', viewport=(1365,768))
+client = ModelClient(os.environ['GEMINI_API_KEY'], os.environ['ACTOR_MODEL'],
+    os.environ.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'))
+results = []
+try:
+    loop.run_until_complete(cdp.connect())
+    loop.run_until_complete(cdp.call('Page.navigate', {'url':url}))
+    loop.run_until_complete(asyncio.sleep(1))
+    screenshot = root / 'screenshot.png'
+    screenshot.write_bytes(loop.run_until_complete(_capture_screenshot(cdp)))
+    for resolution in ('HIGH', 'ULTRA_HIGH'):
+        client.media_resolution = resolution
+        directory = root / resolution.lower()
+        directory.mkdir()
+        bundle = CaptureBundle(observation_mode='screenshot', screenshot_path=screenshot,
+            document_url=url)
+        decision, response = loop.run_until_complete(client.decide(
+            task='Read the exact string beside each 8 px, 10 px, 12 px and 14 px label. '
+                 'Return a wait action with seconds 0. Put a JSON object mapping '
+                 'the keys "8", "10", "12", "14" to the four strings in memory.',
+            step=1, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
+            turn_dir=directory, viewport=(1365,768), max_output_tokens=10000))
+        assert decision['action'] == 'wait' and decision['seconds'] == 0
+        sent = json.loads((directory/'request.json').read_text())
+        part = sent['contents'][0]['parts'][1]
+        effective_media = part.get('mediaResolution', {}).get('level', sent['generationConfig'].get('mediaResolution'))
+        assert effective_media == 'MEDIA_RESOLUTION_'+resolution
+        readings = json.loads(decision['memory'])
+        assert set(readings) == set(expected) and all(isinstance(v,str) for v in readings.values())
+        rows = []
+        for size, value in expected.items():
+            actual = readings[size]
+            previous = list(range(len(actual)+1))
+            for i, left in enumerate(value, 1):
+                current = [i]
+                for j, right in enumerate(actual, 1):
+                    current.append(min(current[-1]+1, previous[j]+1,
+                        previous[j-1] + (left != right)))
+                previous = current
+            rows.append({'font_css_pixels':int(size), 'expected':value, 'actual':actual,
+                'exact':actual == value, 'character_accuracy':max(0,1-previous[-1]/len(value))})
+        results.append({'media_resolution':resolution, 'rows':rows,
+            'exact_rows':sum(row['exact'] for row in rows),
+            'mean_character_accuracy':sum(row['character_accuracy'] for row in rows)/len(rows),
+            'returned_model':response.get('model'), 'usage':response.get('usage')})
+        print(json.dumps(results[-1]))
+finally:
+    write_json(root/'result.json', {'nominal_actor_responses':2, 'results':results})
+    loop.run_until_complete(cdp.close_owned_target_on_failure())
+    loop.run_until_complete(cdp.close())
+    loop.close()
+    server.shutdown()
+    server.server_close()
+assert len(results) == 2
+PY
+```
+
+**Gate:** complete responses, the configured returned model, correct resolution
+in each saved request, and reviewed per-size exact-match and character accuracy.
+Inspect `internal/screenshot_text_calibration/check_NNNN/result.json` and both
+requests/responses. This measures fixture OCR, not general page legibility. A
+higher media budget is a recorded actor setting; use one approved setting across
+compared arms and trials. The seven transport checks, six coordinate checks and
+two text checks make **15 nominal model checks**, plus any transport retries.
+Actor generation uses local input estimation. Cached model metadata sets the
+limit; estimates above 50% trigger free `countTokens` requests with transport
+retries and a recorded local-estimate fallback. Preflight requests do not consume
+actor model turns.
 
 ## 5. Three-task pilot with full evaluation
 
@@ -458,14 +581,20 @@ both arms, one trial each. It is separate from the full collection.
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name pilot --dry-run
+```
 
+Set `BENCH_PILOT_RUN` to the run name printed above, such as `pilot` or
+`pilot_2`, before executing its ledger:
+
+```sh
+: "${BENCH_PILOT_RUN:?Set the printed pilot run name}"
 ./scripts/run-task task_02 task_19 task_25 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
-  --output-dir recordings --run-name pilot
+  --output-dir recordings --run-name "$BENCH_PILOT_RUN" --resume
 
-./scripts/run-comparison --ledger recordings/pilot/ledger.jsonl \
-  --output reports/pilot
+./scripts/run-comparison --ledger "recordings/$BENCH_PILOT_RUN/ledger.jsonl" \
+  --output "reports/$BENCH_PILOT_RUN"
 ```
 
 Each actor attempt receives a fresh browser profile. Both arms finish before
@@ -495,20 +624,28 @@ Supply any positive `BENCH_TRIALS`; omit positional selectors to use all 25 task
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name collection --dry-run
+```
 
+Set `BENCH_COLLECTION_RUN` to the printed run name, then execute that ledger:
+
+```sh
+: "${BENCH_COLLECTION_RUN:?Set the printed collection run name}"
 ./scripts/run-task --trials "$BENCH_TRIALS" \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
-  --output-dir recordings --run-name collection
+  --output-dir recordings --run-name "$BENCH_COLLECTION_RUN" --resume
 ```
 
 The executable ledger has `50 × k` task/arm/trial rows, retaining startup
 failures and missing recordings. A row can have two actor attempts when its first
 attempt is technical. Task/arm/trial order alternates which arm runs first.
-Repeat the exact execution command to resume; completed final attempts are
+Execution uses `--resume` and the existing ledger's printed run name; completed final attempts are
 retained and pending technical reruns continue from their recorded attempt. The command rejects changed catalog, rubric,
 effective settings, browser source provenance or task/trial identities. Do not change the trial count
 under an existing run name. Use a separate collection name for a different plan.
+
+Without `--resume`, a command creates a new run; `--resume` requires an existing
+execution-capable ledger.
 
 Both actors for a task/trial finish their final attempts before their judges.
 A technical failure permits one fresh attempt; success, turns and tokens use the
@@ -560,11 +697,12 @@ not from multiplying task counts by an assumed fixed judge-call count.
 
 ## 7. Aggregate and inspect the metrics
 
-Use a new report directory; aggregation is local and makes no model calls:
+Aggregation is local and makes no model calls. Use the selected collection name:
 
 ```sh
-./scripts/run-comparison --ledger recordings/collection/ledger.jsonl \
-  --output reports/collection
+: "${BENCH_COLLECTION_RUN:?Set the printed collection run name}"
+./scripts/run-comparison --ledger "recordings/$BENCH_COLLECTION_RUN/ledger.jsonl" \
+  --output "reports/$BENCH_COLLECTION_RUN"
 ```
 
 By default the report calculates supported pass@k values from the actual trial
@@ -573,7 +711,7 @@ for every retained task. All-trial success reliability is reported separately.
 
 | Measurement or receipt | Location |
 | --- | --- |
-| Full denominator, ordering, technical/grade/evaluation outcomes, logs and recording paths | `recordings/collection/ledger.jsonl` |
+| Full denominator, ordering, technical/grade/evaluation outcomes, logs and recording paths | `recordings/<collection-run>/ledger.jsonl` |
 | Actor response turns, rejected proposals, termination responses, input/output usage, cached/reasoning subsets and output-limit flags | Recording `decisions.jsonl`, `turns/turn_*/request.json`, `response.json`, `result.json` |
 | Actor transport attempts, durations, statuses, parser stage and usage coverage | Per-turn transport receipts and raw failed responses |
 | Earlier technical-attempt costs | `cost_streams["technical_attempts:actor"]` and retained ledger `attempts` |
@@ -584,11 +722,14 @@ for every retained task. All-trial success reliability is reported separately.
 | Two within-run loss directions per actor run, four loss values across arms per task/trial, recovery and coverage | Evaluation `evidence_audit.json`, linked from `evaluation.json` |
 | Rubric-generation costs including prior attempts | `internal/rubrics/drafts/task_XX.metrics.json`; workflow `generation.json` |
 | Approval binding and immutable shared rubrics | `internal/rubrics/review.json`, `freeze.json`, `data/rubrics/task_XX.json` |
-| Cross-arm task/trial pairs and per-task criteria/pass@k | `reports/collection/pairs.json`, `per_task.json` |
-| Aggregate turns/tokens, token-per-turn distributions, completion, pass@k, auxiliary scores, audit directions, cost streams and coverage by arm/difficulty | `reports/collection/summary.json` and `report.md` |
+| Cross-arm task/trial pairs and per-task criteria/pass@k | `reports/<collection-run>/pairs.json`, `per_task.json` |
+| Aggregate turns/tokens, token-per-turn distributions, completion, pass@k, auxiliary scores, audit directions, cost streams and coverage by arm/difficulty | `reports/<collection-run>/summary.json` and `report.md` |
 
 The report retains every scheduled attempt, identifies unmatched arms and keeps
-uncertain/ungraded outcomes distinct from definitive failures. Report all-attempt
+uncertain/ungraded outcomes distinct from definitive failures. Comparison and
+aggregation require fresh launcher provenance. Use `--allow-nonfresh` only for
+an explicit comparison of raw/reused sessions; the report records the override
+without changing their provenance. Report all-attempt
 and successful-pair costs together. Input/output token-per-turn metrics have
 separate known-call denominators; unknown input/output usage makes exact totals
 or means unavailable rather than zero. Cached input and reasoning tokens are

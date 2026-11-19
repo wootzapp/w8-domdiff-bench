@@ -18,31 +18,36 @@ match for a comparison.
 
 | Difference | DOM arm | Screenshot arm |
 | --- | --- | --- |
-| Page observation | Formatted `dom_model.txt` and viewport-filtered interactive reference text. Numeric ChromiumRL IDs are masked in actor text. | The saved `screenshot.png`, sent once per call with `MEDIA_RESOLUTION_HIGH`; no extracted DOM, accessibility text, selectors or references. |
+| Page observation | Formatted `dom_model.txt` and viewport-filtered interactive reference text. Numeric ChromiumRL IDs are masked in actor text. | The saved `screenshot.png`, sent once per call at the configured per-image media resolution; no extracted DOM, accessibility text, selectors or references. |
 | Targeting | Current agent-browser `e` references for reference-targeted actions. | Integer coordinates from 0 to 1000, relative to screenshot width and height, converted once to CSS pixels for raw CDP input. |
 | Ref-click scrolling | The action CLI can scroll a referenced target into view while resolving and clicking it. Supplied references pass viewport bounding-box filtering. | Coordinate clicks operate at the selected viewport point without reference-based scroll-into-view. |
-| Progress source | DOM text, URL and interactive reference changes. | Screenshot change only. |
-| Document language | Supplied from snapshot metadata, or `unknown` when unavailable. | Not supplied as a page-observation field. |
+| Observation-change source | DOM text and interactive reference changes. | Decoded screenshot pixels. |
+| Content extent | Intersecting nodes and accessible labels can include text outside the painted viewport or from hidden/collapsed descendants. | Painted viewport pixels, including visual content without a text equivalent. |
+| Page structures | Frame and shadow-tree coverage follows the DOM and reference exporters. Canvas/image/CSS-generated content may have only labels or no text representation. | Rendered frame, shadow-tree, canvas, image and CSS content appears where it is painted. |
 
 Both actors receive the current URL as plain text, the task instruction, turn
 budget, viewport dimensions, actor-maintained memory and recent action/rejection
-outcomes. Navigation, keyboard input and non-reference browser primitives use
-the shared action driver.
+outcomes. Both receive the same URL-change field. Observation-change fields are
+modality-specific diagnostics, not proof of task progress. Recent outcomes omit
+private target descriptions and raw tool diagnostics; document-language metadata
+is not actor input. Navigation, keyboard input and non-reference browser
+primitives use the shared action driver.
 
 ## Shared controls
 
 | Control | Configuration |
 | --- | --- |
-| Actor model and endpoint | `ACTOR_MODEL` is the sole actor-model configuration and must identify `gemini-3.1-pro-preview`; the same value is used across arms. Returned IDs must be `gemini-3.1-pro-preview`, optionally followed by `-MM-DD` or `-YYYY-MM-DD`. `GEMINI_BASE_URL` selects the endpoint. |
+| Actor model and endpoint | `ACTOR_MODEL` is the sole actor-model configuration and must identify `gemini-3.8-flash`; the same value is used across arms. Returned IDs must match the configured model under the returned-model acceptance contract. `GEMINI_BASE_URL` selects the endpoint. |
 | Model-turn budget | 200 by default and at most 200; lower positive budgets must match across compared runs. |
 | Maximum actor output | Exactly 10,000 tokens, including reasoning. |
 | Task memory | At most 8,000 characters. |
 | Reasoning effort | Explicitly `medium`. |
+| Actor image resolution | `ACTOR_MEDIA_RESOLUTION=HIGH` by default; `ULTRA_HIGH` selects the larger per-image budget. The configured value is shared and recorded in both arms; only screenshot requests contain images. |
 | Temperature | Unset in both arms. |
 | Viewport | 1365 × 768 CSS pixels by default. |
 | Settling interval | One second by default. |
 | Browser locale | English (`en-US`, `en-US,en;q=0.9`). |
-| Browser state | Fresh profile per scheduled attempt, with build/environment provenance. |
+| Browser state | A launcher-recreated profile with reset enabled and no previous tasks, with build/environment provenance. |
 | Action contract | One strict JSON action per response; shared vocabulary, with modality-specific coordinate fields. |
 | Intervention | No human intervention or automatic language redirects. |
 
@@ -60,19 +65,48 @@ A complete state contains `dom.json`, `dom_full.txt`, `dom_model.json`,
 `dom_model.txt` and `screenshot.png`. DOM actor states also contain the filtered
 `agent_browser_actions.txt` reference snapshot. `dom_full.txt` renders the
 captured viewport-scoped DOM; it is not an unbounded whole-page dump. Snapshot
-limits default to 7,000 nodes and 200,000 text characters.
+limits default to 7,000 nodes and 200,000 requested text characters. The text
+threshold can mark aggregate overflow without making every projection a strict
+200,000-character slice.
 
 States record artifact paths/hashes, target and session identity, capture order,
-phase start/end times, interval URLs and navigation status. The screenshot sent
+phase start/end times, interval URLs, navigation status and available
+content/paint-instability metadata. `content_change_monitor` covers the main
+document, known frame contexts and discovered open shadow roots; closed roots
+and unreported frames remain unobserved. `content_changed_during_capture` and
+`paint_changed_during_capture` are true when activity is observed and otherwise
+unknown. Partial coverage never certifies an unchanged page. The screenshot sent
 to the actor is the saved file. Passive evidence and capture errors do not enter
 actor prompts, memory, progress, stall checks or rejection feedback. A passive
 failure marks paired evidence incomplete while allowing a usable active
-observation to continue. Missing URL metadata is marked explicitly.
+observation to continue. Missing URL metadata is marked explicitly. Capture
+orders raw structured DOM, screenshot and DOM-arm references before producing
+stored text projections. Content/paint changes flag the interval; they do not
+automatically recapture it. Bulk artifact writes follow raw capture, while
+per-call operational traces remain durable during capture for crash diagnosis.
+
+Actor input preflight estimates tokens locally as UTF-8 bytes of the request's
+text and structural fields, excluding base64 image data, plus 1,100 image tokens
+at HIGH or 2,205 at ULTRA_HIGH. One byte per text token is a conservative size
+estimate, not measured usage. Requests estimated at 50% or less of the model
+input limit skip `countTokens`. Larger estimates use the exact request tokenizer;
+transient failures allow the same three attempts and 2/8-second backoffs with
+jitter as actor transport. If token counting remains unavailable, the local
+estimate determines dispatch and `local_fallback` records the uncertainty.
+Confirmed or estimated input above 95% ends as `actor_input_limit`; evidence is
+never truncated. Model metadata is cached, with the configured 1,048,576-token
+limit as fallback. The 50% trigger is 524,288 and the 95% threshold is 996,147.
+Metadata/count requests do not consume model turns or generation tokens.
 
 The schedule is written before a batch starts and contains one row per
 `(task, arm, trial)`. It records task/configuration identity, trial count, arm
 order, intended recording path and technical/grading outcomes. Resume retains
-completed final attempts and reconciles orphaned started rows. A technical failure receives one fresh attempt under the same task, arm and trial; both attempt records are retained.
+completed final attempts and reconciles orphaned started rows. A technical
+failure receives one fresh attempt under the same task, arm and trial; both
+attempt records are retained. Freshness claims require launcher recreation,
+profile reset and a zero prior-task count. Raw/reused browser sessions remain
+nonfresh; pooled comparisons refuse them unless `--allow-nonfresh` is explicitly
+selected and recorded.
 See the [recording guide](recordings.md) for the full artifact schema.
 
 ## Completion and metrics
@@ -85,7 +119,7 @@ judge usage. The judge must be explicitly set to `gpt-6.1-sol`, with 10,000 maxi
 Completion makes one request per grading attempt. Returned IDs use the shared
 `returned-model-acceptance/v2` matcher: the exact case-sensitive configured ID or
 that ID followed by a numeric, date or `-vN`/`-VN` version suffix. For example,
-`gpt-6.1-sol-2026-11-17` and `gpt-6.1-sol-v2` match; `gpt-6.1-sol-mini` does not.
+`gpt-6.1-sol-v2` matches; `gpt-6.1-sol-mini` does not.
 Missing IDs, mismatches and incomplete/truncated responses are ungraded; returned
 usage remains accounted for, and an explicit resume may retry the stage.
 
@@ -100,6 +134,14 @@ they do not consume a model turn. Timeouts, connection errors and temporary HTTP
 second backoffs plus up to 0.5 seconds of jitter. Auth, quota, billing and other
 4xx errors are not retried. Transport receipts preserve status, duration, parser
 stage and reported usage; unavailable usage stays unknown.
+
+Duplicate activation, two-action-cycle and recent-stall matches are advisory-only
+and symmetric in both arms. They never reject a proposal, stop a run or reach the
+actor through history, memory or rejection feedback. Action validation still
+checks schema, target, values and termination requirements; the shared invalid-
+proposal limit remains. Run reports expose `stall_advisory_matches` and reason
+counts; arm/category summaries sum them and list the per-run counts. Each matched
+proposal counts once, using the first matching advisory rule.
 
 Action attempts and captured states are counted separately. Input/output tokens
 per turn use received actor responses as the denominator. Cached input and
@@ -161,7 +203,20 @@ runtime values have no preset expiry.
 
 Tasks target public-web research and extraction. Viewport limits, accessible
 labels, rendering, dynamic content and live-site changes affect the available
-evidence. Captures are sequential, so navigation flags and timestamps describe
+evidence. Text from hidden or collapsed descendants, full accessible labels,
+`aria-label`/`aria-labelledby` and image alt text are inherent DOM-format
+properties; their text need not be painted in the viewport. A label may be
+sourced inside, near or outside the viewport while describing an intersecting
+control. Viewport bounding boxes do not prove absence of clipping or occlusion.
+Screenshot pixels retain visible canvas, image, CSS, frame and shadow content
+that can be absent from the DOM projection. These are inherent properties of
+the recorded formats.
+
+A known open issue affects some scrolled rich inline text: the DOM projection
+can omit visible lines. Preserve the saved formats and report this omission;
+do not infer that all viewport text is represented. The within-run audit
+uses paired source evidence to distinguish coverage from actor behaviour.
+Captures are sequential, so navigation flags and timestamps describe
 the interval rather than prove simultaneous content. Benchmark results include
 targeting and action behavior as well as page interpretation.
 
@@ -174,7 +229,7 @@ Every actor trial receives common completion grading, both auxiliary verifiers
 and the audit. Rubric generation and dependency checking use `gpt-5.2`.
 Both verifiers use `gemini-3.1-pro-preview` for relevance, evidence analysis,
 disambiguation, reality checks, rescoring, side effects, outcome and failure
-analysis. Action-only scoring and both validity stages use `gemini-3.8-flash`.
+analysis, action-only scoring and both validity stages.
 Inventory uses `gemini-3.1-pro-preview`; evidence-loss adjudication and common
 completion use `gpt-6.1-sol`. Verifier and audit output limits remain unset;
 the 115,000-token verifier input guard remains active. Images use high detail.

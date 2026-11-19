@@ -9,6 +9,10 @@ data.
 The batch ledger accounts for every scheduled attempt, including attempts that
 create no recording directory. Use it with the recording manifest to follow
 execution order, technical outcomes, grading and available cost information.
+New output directories use numeric collision suffixes. `--resume` continues an
+existing executable ledger and never chooses a different run implicitly.
+Comparison output records its `browser_profile_policy`, including any explicit
+nonfresh override; other browser build and environment checks still apply.
 
 ## Locate an attempt
 
@@ -58,9 +62,10 @@ in the ledger.
 | `manifest.json` | Task identity, schema/timestamps, `status`, `controls`, `states`, `steps`, turn/model metadata, provenance and `trajectory_export`. | Indexes the recording; finalization embeds the same `final` object as `final.json`. |
 | `final.json` | Actor `status`, technical `run_status`, final answer, action/turn counts, termination metadata or error when applicable. | Actor output and recorder outcome, separately from independent grading. Its `completion_grade` field remains an ungraded placeholder. |
 | `decisions.jsonl` | One row per received actor response: turn/state, decision, acceptance/rejection/error, prior memory, usage, response metadata, latency and `model_input`. | Includes invalid proposals and termination. Transport failures have separate receipts and do not add a model turn. |
-| `turns/turn_NNNNNN/request.json` | Serialized text, instructions, schema and API settings; images use a relative saved-artifact path/hash. | The API request encodes those image bytes as base64; the file avoids storing duplicate base64 per turn. |
+| `turns/turn_NNNNNN/request.json` | Serialized text, instructions, schema and API settings, including per-image media resolution; images use a relative saved-artifact path/hash. | The API request encodes those image bytes as base64; the file avoids storing duplicate base64 per turn. |
 | `turns/turn_NNNNNN/response.json` | Raw provider response, returned model, output items and usage. | Present when a response was received; no response is fabricated for a transport failure. |
 | `turns/turn_NNNNNN/result.json` | Decision-log row, including response status, incomplete details and output-limit flag. | Mirrors the received-response decision. A request directory can exist even when dispatch did not occur. |
+| `turns/turn_NNNNNN/input_preflight.json` | Local text/image estimate, model input limit, optional countTokens attempts, dispatch decision and status. | Estimates at or below 50% skip counting. Unavailable counting uses the recorded estimate; confirmed or estimated overflow above 95% prevents generation. |
 | `turns/turn_NNNNNN/transport_pending.json` | In-flight attempt identity and unknown usage; retained on interruption without inventing a model response. | Pending work is reported separately. |
 | `turns/turn_NNNNNN/transport_attempts.jsonl` | HTTP attempt number, status, duration, usage coverage, finish/parser metadata and sanitized failed response where available. | Failed transports do not add model turns; their usage is unknown unless reported. |
 | `cdp_calls.jsonl`, `agent_browser_calls.jsonl` | Per-call timing, status and method metadata. | CDP parameters and CLI arguments are excluded. |
@@ -70,7 +75,7 @@ in the ledger.
 | `web_surfer.log` | JSONL WebSurfer-style action events, model turns, arguments and delivery status. | Derived action log, not additional actor input or model calls. |
 | `completion.json` | Primary `paired` grade, recording/rubric/prompt hashes, model IDs, criteria/verdict and judge usage. | Produced by independent grading. Missing, uncertain and ungraded are distinct from confirmed failure. |
 | `completion_actor_native.json` | Optional secondary grade using `actor_native` evidence. | Does not overwrite the primary grade. Both saved grades contribute to separate judge cost accounting. |
-| `capture_failures.jsonl` | Attempt, directory, timestamp, active error and discarded capture metadata. | Written before discarding a failed after-action capture for retry; preserves errors from that interval. |
+| `capture_failures.jsonl` | Attempt, directory, timestamp, active error and partial capture metadata. | Failed after-action capture directories are retained under the next free `step_NNN_capture_attempt_XX` name before an existing transport retry. |
 | `steps/step_NNN/` | One committed captured state. | `step_001` is the initial state; subsequent states follow executable action attempts. |
 
 `manifest.controls` records requested model/endpoint, turn and output budgets,
@@ -118,15 +123,24 @@ hash do not make it actor input.
 `capture` records `target_id`, `session_id`, `capture_order`, interval
 `started_at`/`ended_at`/`duration_seconds`, and a `captures` list. Each phase has
 `kind`, start/end time, duration and status, plus an error when it failed.
-The order is `structured_dom`, `dom_model_artifacts`, `screenshot`, followed by
-`executable_refs` in the DOM arm.
+The order is `structured_dom`, `screenshot`, DOM-arm `executable_refs`, then
+`dom_model_artifacts` and the stored text projections.
 
 The interval also records `url_before`, `url_after`, loader IDs,
 `navigation_events` and `navigation_during_capture`. `metadata_errors`,
-`setup_errors` and `url_metadata_complete` disclose metadata gaps.
-`document_language` is supplied as actor context only in the DOM arm.
+`setup_errors` and `url_metadata_complete` disclose metadata gaps. Available
+`content_changed_during_capture` and `paint_changed_during_capture` record
+observed activity without automatic recapture. Global flags are true on observed
+activity and otherwise unknown. `content_change_monitor` identifies observed
+main/known-frame contexts and discovered open shadow roots. Closed roots and
+unreported remote frames are not covered; partial coverage does not prove
+stability.
+`document_language`, when available, is private capture metadata and is not
+supplied to either actor.
 
-Captures are sequential. Navigation flags identify observed navigation or URL
+Raw structured DOM, screenshot and DOM-arm references are captured before
+stored DOM projections and bulk artifact writes. Per-call operational trace
+writes remain durable during raw capture for crash receipts. Captures are sequential. Navigation flags identify observed navigation or URL
 changes; they do not detect every DOM mutation or animation. Timing and flags
 therefore matter when interpreting the two evidence formats for a state.
 
@@ -146,7 +160,9 @@ after-state capture fails; `trajectory_export.status` and `errors` disclose the
 missing transition.
 
 `action_succeeded` confirms browser input delivery. Page progress and task
-completion are assessed separately. Model turns can exceed action counts because
+completion are assessed separately. Actor-facing history includes standardized
+execution outcomes and observation-change diagnostics, with no private target
+descriptions or raw backend advice. Model turns can exceed action counts because
 received rejected proposals, parsing failures and termination consume model turns
 without executing browser actions. Failed transport attempts do not consume a turn.
 

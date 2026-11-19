@@ -28,10 +28,11 @@ Source and wheel distributions include the verifier integrity manifests in
 their shared dependencies. Run benchmark commands from the repository root,
 which supplies the catalog, configuration and Compose files.
 
-Set the actor through `ACTOR_MODEL` in `.env`; it must be `gemini-3.1-pro-preview`.
+Set the actor through `ACTOR_MODEL` in `.env`; it must be `gemini-3.8-flash`.
 Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` and the audit models shown in
 `.env.example`. Completion uses an explicit `gpt-6.1-sol` judge.
-`GEMINI_BASE_URL` selects the actor endpoint; `OPENAI_BASE_URL` selects the
+`ACTOR_MEDIA_RESOLUTION` accepts `HIGH` (default) or `ULTRA_HIGH` for screenshot
+input. `GEMINI_BASE_URL` selects the actor endpoint; `OPENAI_BASE_URL` selects the
 OpenAI endpoint.
 Build the browser image as `w8-core:domdiff-bench`, the default `IMAGE` value,
 using the [image build instructions](docs/runbook.md#browser-image-build).
@@ -45,10 +46,10 @@ before recording.
 
 | Component | Model |
 | --- | --- |
-| Browser actor, both arms | `gemini-3.1-pro-preview` |
+| Browser actor, both arms | `gemini-3.8-flash` |
 | Rubric generation and dependency check | `gpt-5.2` |
-| Screenshot verifier | `gemini-3.1-pro-preview`; action-only scoring and validity: `gemini-3.8-flash` |
-| DOM verifier | `gemini-3.1-pro-preview`; action-only scoring and validity: `gemini-3.8-flash` |
+| Screenshot verifier | `gemini-3.1-pro-preview` |
+| DOM verifier | `gemini-3.1-pro-preview` |
 | Evidence inventory | `gemini-3.1-pro-preview` |
 | Evidence-loss adjudication | `gpt-6.1-sol` |
 | Common completion judge | `gpt-6.1-sol` |
@@ -79,15 +80,18 @@ for acceptance, repair budgets and coverage.
   --judge-model gpt-6.1-sol
 ```
 
-Use `--dry-run` to write and inspect the schedule without starting tasks. Repeat
-the same command to resume; completed final attempts are retained. Technical failures receive at most one
+Use `--dry-run` to write and inspect the schedule without starting tasks. A new
+command reserves its output directory; name collisions choose the next numeric
+suffix without overwriting prior runs. Add `--resume` and the printed run name
+to continue an existing ledger; completed final attempts are retained. Technical failures receive at most one
 fresh attempt; both attempts remain recorded.
 Both actors of a task/trial run back to back, alternating which arm starts.
 
 For a subset, add positional IDs such as `task_02 task_19 task_25`.
 The launcher accepts any frozen local catalog and task IDs. The schedule binds
 the selected definitions, rubric hashes, effective settings, browser source
-provenance and output paths. Use a distinct run name for a different task set or configuration.
+provenance and output paths. Use a separate run name for a different task set or
+configuration.
 
 ## Outputs
 

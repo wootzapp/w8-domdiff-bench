@@ -63,7 +63,11 @@ attempt for the same row. Both attempt records remain in the ledger; resume
 continues a pending rerun without repeating a completed final attempt.
 
 Each actor request contains the task, current URL, turn budget, viewport,
-bounded task memory, recent action outcomes and its selected page observation.
+bounded task memory, standardized recent action outcomes and its selected page
+observation. Private target descriptions and raw tool diagnostics are retained
+with the recording rather than included in actor history. Shared URL changes
+and modality-specific observation changes remain diagnostic; approximate stall
+matches are advisory and do not reject otherwise valid actions.
 Each received response consumes one model turn. Failed transport attempts have
 separate receipts and a bounded retry policy. Rejected proposals do not execute
 browser input or create a new state. Screenshot coordinates are integers from
@@ -76,10 +80,10 @@ A state's `action.json` describes the action taken from that state.
 After browser input, the recorder waits for the configured settling interval,
 synchronizes the target, and captures in this order:
 
-1. Structured DOM and its readable projection.
-2. Browser-produced model DOM and its text projection.
-3. The viewport screenshot.
-4. Executable references when required by the actor.
+1. Raw structured DOM.
+2. The viewport screenshot.
+3. Executable references when required by the actor.
+4. DOM model artifacts and stored text projections from the captured DOM.
 5. The committed state record, artifact hashes and capture metadata.
 
 Every complete state contains `dom.json`, `dom_full.txt`, `dom_model.json`,
@@ -97,7 +101,13 @@ fails, the usable actor observation can continue while the state records
 verifies artifact and image hashes, and validates the action/state sequence.
 Capture metadata includes target/session identity, per-phase timings, URLs and
 navigation events. Capture is sequential; changing pages can produce differences
-within the recorded interval even when the URL stays the same.
+within the recorded interval even when the URL stays the same. Available
+content/paint-instability metadata covers observed main/known-frame contexts,
+discovered open shadow roots and reported paint events, without automatic
+recapture. Closed roots and unreported frames remain unknown. Global flags are
+true on observed activity and otherwise unknown; partial coverage does not
+certify stability. Bulk evidence writes follow raw capture, while per-call
+operational traces remain durable throughout it.
 
 A crash or renderer detach ends calls to that page. Read-only timeout/internal
 errors use a short liveness probe and, for a live target, one reattachment and
@@ -107,6 +117,15 @@ identity values live in an isolated JavaScript world. The CLI's active target is
 verified through CDP inspector metadata without reading or writing page globals.
 Per-call
 timings, events and failure health snapshots remain in the run folder.
+
+Actor requests use the same `gemini-3.8-flash` model and medium thinking level.
+The screenshot's per-image media resolution is selected by
+`ACTOR_MEDIA_RESOLUTION` (`HIGH` or `ULTRA_HIGH`); DOM requests contain no image.
+Local input estimation triggers `countTokens` above 50% of the model input
+limit; transient counting failures retry before using the recorded local estimate.
+Confirmed or estimated overflow is refused above 95% of the model metadata input
+limit, without truncation or generation. The outcome is technical and the
+preflight receipt remains in the recording.
 
 ## DOM representation
 

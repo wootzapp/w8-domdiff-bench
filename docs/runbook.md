@@ -52,7 +52,7 @@ are rejected. Set `GEMINI_API_KEY` and `OPENAI_API_KEY`; keep
 `ACTOR_MODEL` consistent with `.env.example`. Pin the browser image by digest
 for comparisons with a consistent build.
 
-The actor configuration must name `gemini-3.1-pro-preview`. Completion requires an
+The actor configuration must name `gemini-3.8-flash`. Completion requires an
 explicit `--judge-model gpt-6.1-sol`. Configure
 `EVIDENCE_AUDIT_MODEL=gemini-3.1-pro-preview` and
 `EVIDENCE_ADJUDICATOR_MODEL=gpt-6.1-sol` for full evaluation.
@@ -65,6 +65,7 @@ explicit `--judge-model gpt-6.1-sol`. Configure
 | `CHROMIUM_HEADLESS` | Browser display mode. |
 | `CHROMIUM_RESET_PROFILE` | `1` clears the Chromium profile at startup; `0` preserves it. Browser history, cookies and site storage belong to this profile. Host-side recordings are separate. |
 | `ACTOR_MODEL`, `GEMINI_API_KEY`, `GEMINI_BASE_URL` | Actor model, Google credentials and endpoint. The key also serves the verifier and inventory stages. |
+| `ACTOR_MEDIA_RESOLUTION` | Screenshot per-image resolution: `HIGH` by default or `ULTRA_HIGH`; recorded in the shared actor settings. |
 | `OPENAI_API_KEY`, `OPENAI_BASE_URL` | OpenAI credentials and endpoint for rubric preparation, completion and evidence-loss adjudication. |
 | `EVIDENCE_AUDIT_MODEL`, `EVIDENCE_ADJUDICATOR_MODEL` | Explicit inventory and adjudication models. |
 | `TASK_CATALOG_FILE` | Default local task catalog. |
@@ -94,7 +95,9 @@ output paths. Add positional catalog IDs such as `task_02 task_19 task_25` to
 select a subset; omit them to select all tasks. `TASK_CATALOG_FILE` defaults to
 `data/tasks.jsonl`, whose task IDs run from `task_01` through `task_25`.
 
-Remove `--dry-run` to record. Both actors of a task/trial run back to back, with
+With an executable ledger present, remove `--dry-run`, add `--resume`, and use
+the printed run name to record. A planning-only preview cannot be executed with
+`--resume`; start a new named run after frozen rubrics are available. Both actors of a task/trial run back to back, with
 alternating first-arm order. Every batch requires `--rubric-dir` and an explicit
 judge and performs full evaluation after both actors finish. Logs and technical
 outcomes are recorded for every scheduled attempt, and the batch continues after
@@ -102,9 +105,15 @@ individual startup, recorder or grading errors.
 
 ## Resume
 
-Repeat the same command and run name. The saved schedule must match the requested
+Add `--resume` to the execution command and use the existing ledger's run name.
+Without `--resume`, a command creates a new run and reserves the next free
+numeric name when the requested directory already exists. Use purpose and
+sequence names such as `pilot_2`; date/time-stamped output names are rejected. The saved schedule
+must match the requested
 catalog, task definitions, trial count, rubric hashes, effective settings, browser
-source provenance and output paths. Select a distinct run name for a different configuration.
+source provenance and output paths. Select a separate run name for a different
+configuration. A missing ledger is an error with `--resume`; it does not silently
+create another run.
 
 Resume retains completed final attempts and continues unstarted work in order.
 A technical failure permits one fresh browser attempt under the same task, arm
@@ -130,10 +139,12 @@ A single-task command selects one arm and keeps a local attempt ledger:
 
 Use `--observation-mode screenshot` for the other arm. Manual tasks use both
 `--task` and `--start-url`. A single task can use a remote `--catalog-url`;
-batches require a frozen local catalog. `--dry-run` validates a single task
-without creating its recording.
+batches require a frozen local catalog. A single-task `--dry-run` previews the
+next free run name without reserving directories, creating a recording or
+starting an attempt ledger.
 The `--no-browser-start` option applies to the initial attempt only; a permitted
-technical rerun always starts a fresh browser.
+technical rerun always starts a fresh browser. Reusing a browser is recorded as
+nonfresh. A zero task counter alone does not establish freshness.
 
 | Actor setting | Default |
 |---|---:|
@@ -144,7 +155,15 @@ technical rerun always starts a fresh browser.
 | Viewport | 1365 × 768 CSS pixels |
 | Settle wait | 1 second |
 
-Actor requests leave temperature unset. The output limit is exactly 10,000;
+Actor requests leave temperature unset. `ACTOR_MEDIA_RESOLUTION` controls
+per-image `HIGH` or `ULTRA_HIGH` processing, without changing viewport pixels.
+Each actor generation request uses a local size estimate. Estimates above 50%
+of the model input limit trigger `countTokens`, with transient transport retries.
+An unavailable tokenizer falls back to the recorded local estimate. Confirmed or
+estimated overflow above 95% ends technically without
+truncation or generation; the receipt remains available.
+
+The output limit is exactly 10,000;
 turn budgets may be lower than 200 but cannot exceed it. Budgets and viewport
 options must match across compared attempts. Model IDs, shared
 settings and output-limit hits are recorded. Both actors receive the current URL;
@@ -214,7 +233,9 @@ The ledger supplies the denominator, including attempts without recordings.
 Reports show technical outcomes, independent completion, grading coverage,
 unmatched arms, actor turns, action attempts, output-limit hits and token usage.
 Browser builds, profile freshness, runtime environments, capture policies and
-shared run controls must match.
+shared run controls must match. Comparisons require fresh launcher provenance
+by default. `--allow-nonfresh` explicitly includes reused/raw sessions and records
+that policy in the report; it does not label them fresh.
 The [effective settings contract](evaluation-protocol.md#effective-settings-contract)
 compares request behavior, prompt/schema versions, normalized configuration
 content, rubric bindings and browser source provenance. Credentials, ports,

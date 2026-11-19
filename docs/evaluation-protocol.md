@@ -31,7 +31,8 @@ over `.env` values.
 `effective-settings/v1` records the behavior that must remain consistent on
 resume and across compared arms/trials: configured models and providers, routes
 and normalized base URLs, reasoning and temperature, output caps, turn and memory
-limits, actor transport and browser recovery policies, observation contracts,
+limits, actor transport and browser recovery policies, per-image media resolution,
+actor input preflight and observation contracts,
 prompt/schema hashes and versions, frozen rubric
 hashes, normalized endpoint-configuration content hashes, browser protocol pins
 and available actual browser source revisions. Rubric hashes bind one task;
@@ -53,7 +54,8 @@ per `(task, arm, trial)`. Rows bind task/configuration identity, catalog and rub
 file hashes, intended recording paths and execution order.
 
 Both arms of a task/trial run back to back, alternating which arm starts by task
-and trial. Each attempt starts with a fresh browser profile. When batch grading
+and trial. Each scheduled attempt requires launcher recreation, profile reset
+and no prior task use to establish a fresh browser profile. When batch grading
 is selected, both actor attempts finish before their judges start.
 
 A row remains in the schedule regardless of its outcome. A technical failure
@@ -61,7 +63,10 @@ permits one fresh attempt with the same task, arm and trial. Both attempts remai
 recorded. Resume reconciles interrupted work and continues a pending rerun; it
 skips completed final attempts. Website blocks, actor failures, turn caps and
 provider auth/quota/billing outcomes do not trigger this rerun. A changed task
-set, trial count or frozen configuration requires a distinct batch name.
+set, trial count or frozen configuration requires a separate batch name.
+New-run collisions reserve the next free numeric suffix. `--resume` is explicit
+and requires an existing executable ledger; a planning-only preview is not an
+execution ledger.
 
 Success, turns and tokens use the final attempt. Prior technical-attempt costs
 remain separate. An exhausted technical row is reported separately from agent
@@ -125,7 +130,7 @@ checked again before saving the grade. A failed, malformed or incomplete judge
 response yields an ungraded result with `judge_error` and any returned usage.
 The shared `returned-model-acceptance/v2` policy accepts the exact case-sensitive
 configured ID or that ID with a numeric/date/version suffix, such as
-`gpt-6.1-sol-2026-11-17` or `gpt-6.1-sol-v2`. A different family such as
+`gpt-6.1-sol-v2`. A different family such as
 `gpt-6.1-sol-mini`, an absent ID, incomplete status or truncation is refused.
 Refused attempts retain their usage and reason. An explicit evaluation resume may
 retry the ungraded stage under the same effective settings.
@@ -203,7 +208,7 @@ separately.
 | Judge usage | Primary/native completion, each verifier, audit inventory/adjudication and rubric preparation, separate from actor usage. | Completion/evaluation receipts and named usage streams. |
 | Timing | Decision-call latency, action delivery duration and recorder capture durations. | Decision `latency_seconds`, action `duration_seconds`, state `capture`. |
 
-Actors use configured `gemini-3.1-pro-preview`, exactly 10,000 maximum output tokens, medium reasoning and
+Actors use configured `gemini-3.8-flash`, exactly 10,000 maximum output tokens, medium reasoning and
 8,000 memory characters, identically configured in both arms. Cached input is a
 subset of input tokens; reasoning is a subset of output tokens. Neither is added
 again to input-plus-output totals. Local file token estimates are not provider
@@ -254,6 +259,12 @@ Saved judge costs include primary and optional secondary grades.
 receipts. A judge process without a saved result does not establish a zero-cost
 request. Regrading writes the selected grade file again; saved files alone are
 not an append-only history of every manual grading invocation.
+
+Normal comparisons require fresh browser provenance. `compare-results`,
+`compare-runs` and `aggregate-runs` can accept nonfresh recordings only with
+`--allow-nonfresh`; the report records that policy. A raw runner or reused
+browser profile must not be described as a fresh run solely because a task
+counter is zero.
 
 ## Repeated-trial results
 
