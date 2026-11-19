@@ -126,21 +126,25 @@ def _inspect_actor_request(source: Path, task: dict, manifest: dict, states: lis
             or len(request["contents"]) != 1 or set(request["contents"][0]) != {"role", "parts"}
             or request["contents"][0].get("role") != "user"):
         raise ValueError("actor request settings or instructions differ from its frozen policy")
-    _inspect_request_observation(source, mode, state, directory, content)
+    _inspect_request_observation(source, mode, state, directory, content, controls.get("media_resolution", "HIGH"))
     return state, content
 
 
-def _inspect_request_observation(source: Path, mode: str, state: dict, directory: Path, content: list) -> None:
+def _inspect_request_observation(source: Path, mode: str, state: dict, directory: Path, content: list, media_resolution: str) -> None:
     if mode == "dom":
         if len(content) != 1 or set(content[0]) != {"text"}:
             raise ValueError("DOM actor request contains an image or extra observation")
     else:
-        if len(content) != 2 or set(content[0]) != {"text"} or set(content[1]) != {"inlineData"}:
-            raise ValueError("screenshot actor request lacks its image")
+        image_keys = {"inlineData", "mediaResolution"} if media_resolution == "ULTRA_HIGH" else {"inlineData"}
+        if len(content) != 2 or set(content[0]) != {"text"} or set(content[1]) != image_keys:
+            raise ValueError("screenshot actor request lacks its image or has an unexpected media policy")
         artifact = content[1]["inlineData"]["artifact"]
         image = (directory / artifact["path"]).resolve(strict=True)
+        expected_image = {"inlineData": {"mimeType": "image/png", "artifact": artifact}}
+        if media_resolution == "ULTRA_HIGH":
+            expected_image["mediaResolution"] = {"level": "MEDIA_RESOLUTION_ULTRA_HIGH"}
         if (image != source / state["observation"] or artifact["sha256"] != state["observation_sha256"]
-                or content[1] != {"inlineData": {"mimeType": "image/png", "artifact": artifact}}):
+                or content[1] != expected_image):
             raise ValueError("model request references a different screenshot")
 
 
@@ -156,11 +160,10 @@ def _expected_actor_text(source: Path, task: dict, controls: dict, state: dict, 
     if mode == "dom":
         refs = state["artifacts"]["agent_browser_actions.txt"]["path"]
         dom = state["artifacts"]["dom_model.txt"]["path"]
-        expected += (f"current_document_language: {state['capture']['document_language'] or 'unknown'}\n"
-            f"current_agent_browser_snapshot:\n{(source / refs).read_text(encoding='utf-8')}\n\n"
+        expected += (f"current_agent_browser_snapshot:\n{(source / refs).read_text(encoding='utf-8')}\n\n"
             f"current_chromiumrl_evidence:\n{evidence_for_model((source / dom).read_text(encoding='utf-8'))}")
     expected += (f"\n\nrecent_action_outcomes:\n{json.dumps(recent[-6:], ensure_ascii=False)}\n\n"
-        "Use the recorded progress signals. If an action made no observable progress, "
+        "Use the recorded observation-change signals. If an action made no observable change, "
         "change strategy instead of assuming it worked. Return one JSON action and "
         "wait for the harness to execute it and supply the next observation.")
     return expected
@@ -171,24 +174,29 @@ def _record_actor_history(source: Path, mode: str, states: list, steps_by_turn: 
     state = states[row["state"] - 1]
     if not row.get("accepted"):
         recent.append({"model_turn": turn, "rejected_action": row.get("decision"),
-            "reason": row.get("rejection_reason") or row.get("error")})
+            "reason": row.get("rejection_reason") or row.get("error"), "delivery_status": "not_executed"})
     else:
         step = steps_by_turn.get(turn)
         if step and "progress" in step:
-            if mode == "screenshot":
-                if set(step["progress"]) != {"made_progress", "screenshot_changed"}:
-                    raise ValueError("screenshot progress contains passive observation data")
-                after = states[step["next_state"]-1]
-                changed = (source / state["observation"]).read_bytes() != (source / after["observation"]).read_bytes()
-                if step["progress"] != {"made_progress": changed, "screenshot_changed": changed}:
-                    raise ValueError("screenshot progress differs from screenshot change")
+            from .capture import CaptureBundle, action_progress
+            after = states[step["next_state"]-1]
+            evidence = []
+            for captured in (state, after):
+                files = captured["artifacts"]
+                evidence.append(CaptureBundle(observation_mode=mode,
+                    document_url=captured["capture"]["url_after"],
+                    screenshot_path=(source / captured["observation"]) if mode == "screenshot" else None,
+                    model_text=(source / files["dom_model.txt"]["path"]).read_text(encoding="utf-8") if mode == "dom" else "",
+                    agent_browser_action_text=(source / files["agent_browser_actions.txt"]["path"]).read_text(encoding="utf-8") if mode == "dom" else ""))
+            if step["progress"] != action_progress(*evidence):
+                raise ValueError("actor observation-change signals contain passive evidence or differ from saved observations")
             if step["action_succeeded"]:
                 candidate = (row.get("decision") or {}).get("memory")
                 memory = candidate.strip() if isinstance(candidate, str) and candidate.strip() else memory
             recent.append({"model_turn": turn, "action": step["action"],
-                "action_succeeded": step["action_succeeded"], "action_error": step.get("action_error"),
-                "progress": step["progress"],
-                **({"action_context": step["action_context"]} if mode == "dom" else {})})
+                "action_succeeded": step["action_succeeded"],
+                "delivery_status": "delivered" if step["action_succeeded"] else "failed",
+                "progress": step["progress"]})
     return memory
 
 

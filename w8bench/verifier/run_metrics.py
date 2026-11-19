@@ -5,7 +5,6 @@ import hashlib
 import json
 from collections import Counter
 from pathlib import Path
-import re
 from typing import Any
 
 from w8bench.task_recorder.prepare_verifier_data import read_object
@@ -13,7 +12,7 @@ from w8bench.model_identity import match_model_id
 from w8bench.usage import known_token_component, valid_token_component
 from w8bench.settings import actual_browser_source_version
 
-# USD per million tokens; estimates use Standard pricing checked on this date.
+# USD per million tokens; estimates use published Standard model tariffs.
 # Columns: input, output, cached input, 30-minute cache write, long-context threshold.
 TOKEN_PRICES = {
     "gpt-6.1-sol": (2.0, 10.0, 0.1, 2.5, 272000),
@@ -287,8 +286,7 @@ def _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary):
 def _price_call(call, stream, assumptions, price_sources):
     model = (call.get("returned_model") or call.get("response_model") or call.get("returned_judge_model")
         or call.get("configured_model") or call.get("requested_model") or call.get("model") or stream.get("model"))
-    selected = next((key for key in TOKEN_PRICES if isinstance(model, str)
-        and re.fullmatch(re.escape(key) + r"(?:-\d{4}-\d{2}-\d{2})?", model)), None)
+    selected = next((key for key in TOKEN_PRICES if match_model_id(key, model)["matched"]), None)
     raw = call.get("usage") if isinstance(call.get("usage"), dict) else call
     input_tokens = raw.get("input_tokens", raw.get("prompt_tokens"))
     output_tokens = raw.get("output_tokens", raw.get("completion_tokens"))
@@ -347,6 +345,8 @@ def _price_stream(stream):
 
 def _actor_statistics(recording, manifest, decisions, partial, cap):
     return {"run_status": recording["final"]["run_status"], "actor_reported_status": recording["final"].get("status"),
+        "stall_advisory_matches": sum(bool(row.get("stall_advisory")) for row in decisions),
+        "stall_advisory_match_counts": dict(Counter(row["stall_advisory"] for row in decisions if row.get("stall_advisory"))),
         "model_turns": len(decisions), "rejected_turns": sum(not row.get("accepted") for row in decisions),
         "parse_error_turns": sum(bool(row.get("error")) and bool(row.get("response")) for row in decisions),
         "model_error_turns": sum(bool(row.get("error")) and not row.get("response") for row in decisions),

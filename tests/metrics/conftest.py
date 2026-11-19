@@ -29,11 +29,11 @@ def metric_recording_factory(tmp_path):
                 "source_task_id": task_id,
                 "observation_mode": arm,
                 "run_name": trial,
-                "model": "gemini-3.1-pro-preview",
+                "model": "gemini-3.8-flash",
             },
             "manifest": {"controls": {"max_turns": 200}, "states": [], "steps": []},
             "decisions": [
-                {"accepted": False, "returned_model": "gemini-3.1-pro-preview", "usage": usage,
+                {"accepted": False, "returned_model": "gemini-3.8-flash", "usage": usage,
                  "latency_seconds": 0.1, "output_limit_hit": False}
             ],
             "final": {"run_status": "completed", "status": "failure"},
@@ -77,7 +77,7 @@ def settings_comparison_case(tmp_path, monkeypatch, metric_recording_factory, me
     from types import SimpleNamespace
     from w8bench.verifier import run_full_comparison
 
-    actor = {"schema_version": "effective-settings/v1", "model": "gemini-3.1-pro-preview",
+    actor = {"schema_version": "effective-settings/v1", "model": "gemini-3.8-flash",
              "base_url": "https://actor.example:443/v1", "max_turns": 200, "max_output_tokens": 10000,
              "reasoning_effort": "medium", "memory_max_chars": 8000,
              "browser_source": {"overlay_revision": "overlay-one", "protocol_sha256": "protocol-one"}}
@@ -95,9 +95,10 @@ def settings_comparison_case(tmp_path, monkeypatch, metric_recording_factory, me
         manifest.update(run_name="trial_0001", status="completed", effective_settings=deepcopy(actor),
                         dom_capture_parameters={"max_nodes": 7000}, renderer_versions={"model": {"sha256": "renderer"}},
                         browser_profile_provenance={"profile_fresh_at_run_start": True,
+                            "freshly_recreated_by_launcher": True, "launch_mode": "fresh", "tasks_previously_run_in_container": 0,
                             "browser_build": {"image_id": "immutable-image", "overlay_revision": "overlay-one", "protocol_sha256": "protocol-one"},
-                            "browser_environment": {"LANG": "en_US.UTF-8", "CDP_PORT": "9222", "CHROMIUM_CDP_PORT": "9223"}})
-        manifest["controls"].update(model="gemini-3.1-pro-preview", base_url=actor["base_url"], max_output_tokens=10000, reasoning_effort="medium")
+                            "browser_environment": {"CHROMIUM_RESET_PROFILE": "1", "LANG": "en_US.UTF-8", "CDP_PORT": "9222", "CHROMIUM_CDP_PORT": "9223"}})
+        manifest["controls"].update(model="gemini-3.8-flash", base_url=actor["base_url"], max_output_tokens=10000, reasoning_effort="medium")
         from w8bench.task_recorder.runner import ACTION_SCHEMA, SCREENSHOT_ACTION_SCHEMA
         manifest["controls"]["action_schema_sha256"] = hashlib.sha256(json.dumps(
             ACTION_SCHEMA if arm == "dom" else SCREENSHOT_ACTION_SCHEMA, sort_keys=True).encode()).hexdigest()

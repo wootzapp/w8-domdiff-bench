@@ -111,7 +111,7 @@ def _accounting(raw):
     calls_action = raw.get("call_metrics", {}).get("action_judge", {})
     combined_usage = sum_usage(usage_judge, usage_action)
     combined_calls = sum_call_metrics(calls_judge, calls_action)
-    return usage_judge, usage_action, calls_judge, calls_action, combined_usage, combined_calls
+    return calls_judge, calls_action, combined_usage, combined_calls
 
 
 def _evidence_metadata(value):
@@ -179,10 +179,9 @@ def _ungraded_metrics(raw):
             "judge_fallback": raw.get("judge_fallback"), "duration_seconds": raw.get("duration_sec", 0)}
 
 
-def _llm_calls(calls_judge, calls_action, combined_calls):
+def _llm_calls(combined_calls):
     return {
-        CANONICAL_JUDGE_MODEL: int(calls_judge.get("logical_calls", 0)),
-        CANONICAL_ACTION_MODEL: int(calls_action.get("logical_calls", 0)),
+        CANONICAL_JUDGE_MODEL: combined_calls["logical_calls"],
         "total": combined_calls["logical_calls"],
         "api_attempts": combined_calls["api_attempts"],
         "retries": combined_calls["retries"],
@@ -206,7 +205,7 @@ def _normalize(
     else:
         intermediate, criteria, penalties, frozen_denominator, result_denominator = _scoring_rows(raw, frozen, mode)
         result = _result_metrics(raw, intermediate, criteria, penalties, frozen_denominator, result_denominator)
-    usage_judge, usage_action, calls_judge, calls_action, combined_usage, combined_calls = _accounting(raw)
+    calls_judge, calls_action, combined_usage, combined_calls = _accounting(raw)
     return {
         **_metadata(raw, task, mode, frozen, input_task, generation_metrics),
         "provider_call_metrics": {"judge": calls_judge, "action_judge": calls_action},
@@ -214,10 +213,9 @@ def _normalize(
         "result": result,
         "criteria": criteria,
         **({"penalty_criteria": penalties} if penalties else {}),
-        "llm_calls": _llm_calls(calls_judge, calls_action, combined_calls),
+        "llm_calls": _llm_calls(combined_calls),
         "token_usage": {
-            CANONICAL_JUDGE_MODEL: usage_judge,
-            CANONICAL_ACTION_MODEL: usage_action,
+            CANONICAL_JUDGE_MODEL: combined_usage,
             "combined": combined_usage,
         },
         "score_artifact": os.path.relpath(source, Path(__file__).resolve().parents[2]),

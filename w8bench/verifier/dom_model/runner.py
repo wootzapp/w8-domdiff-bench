@@ -316,8 +316,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--redo-eval", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
-    if args.judge_model != "gemini-3.1-pro-preview" or args.action_model != "gemini-3.8-flash":
-        parser.error("verifier models are pinned to judge gemini-3.1-pro-preview and action/validity gemini-3.8-flash")
+    if args.judge_model != "gemini-3.1-pro-preview" or args.action_model != "gemini-3.1-pro-preview":
+        parser.error("verifier models are pinned to judge gemini-3.1-pro-preview and action/validity gemini-3.1-pro-preview")
     return args
 
 

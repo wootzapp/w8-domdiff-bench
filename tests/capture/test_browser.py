@@ -501,7 +501,7 @@ async def test_malformed_reader_records_a_technical_failure_without_actor_calls(
     cdp, socket, http = interrupted_cdp_transport()
     monkeypatch.setattr(cdp, "connect", AsyncMock())
     monkeypatch.setattr(runner, "CDPClient", lambda *args, **kwargs: cdp)
-    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     monkeypatch.setattr(runner.ModelClient, "_post", lambda *args: pytest.fail("capture failure dispatched an actor request"))
     args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"), "--observation-mode", "screenshot",
         "--task", "Read the heading.", "--start-url", "https://example.test/", "--task-id", "failure",
@@ -634,11 +634,11 @@ def test_passive_capture_failure_never_enters_actor_or_progress(run_pair, tmp_pa
         observation_mode="screenshot"))
     assert before.capture_metadata["paired_complete"] is False
     assert "PASSIVE_DOM_ERROR_SECRET" in json.dumps(before.capture_metadata)
-    assert set(capture.action_progress(before, after)) == {"made_progress", "screenshot_changed"}
+    assert set(capture.action_progress(before, after)) == {"url_changed", "observation_changed", "task_progress", "screenshot_changed"}
     seen = []
     monkeypatch.setattr(runner.ModelClient, "_post", lambda self,payload: seen.append(payload) or
-        {"model": "gemini-3.1-pro-preview", "output_text": '{"action":"wait","seconds":0,"thought":"observe"}'})
-    asyncio.run(runner.ModelClient("unused", "gemini-3.1-pro-preview", "unused").decide(task="Inspect page", step=1,
+        {"model": "gemini-3.8-flash", "output_text": '{"action":"wait","seconds":0,"thought":"observe"}'})
+    asyncio.run(runner.ModelClient("unused", "gemini-3.8-flash", "unused").decide(task="Inspect page", step=1,
         max_steps=5, bundle=before, task_memory="", recent_actions=[], turn_dir=tmp_path,
         viewport=(1365,768)))
     assert "PASSIVE_DOM_ERROR_SECRET" not in json.dumps(seen)
@@ -681,7 +681,8 @@ def test_live_capture_preserves_scroll_and_focus(tmp_path):
                             "returnByValue": True})
                         assert private["result"]["value"] == page.identity_marker
                         assert (await driver.active_page(cdp)).target_id == page.target_id
-                        bundle = await capture.attach_agent_browser_observation(bundle, driver, cdp)
+                        bundle = await capture.capture_bundle(cdp, tmp_path/mode/"joint"/"step_001", max_nodes=7000,
+                            max_text_chars=200000, observation_mode=mode, agent_browser=driver)
                     finally:
                         await driver.close()
                 assert bundle.capture_metadata["paired_complete"]
@@ -747,11 +748,11 @@ def test_passive_screenshot_failure_does_not_change_dom_actor_or_progress(run_pa
     assert before.snapshot_path.is_file() and (before.directory / "dom_model.txt").is_file()
     assert before.screenshot_path is None
     assert "PASSIVE_SCREENSHOT_ERROR_SECRET" in json.dumps(before.capture_metadata)
-    assert capture.action_progress(before, after)["made_progress"] is False
+    assert capture.action_progress(before, after)["observation_changed"] is False
     seen = []
     monkeypatch.setattr(runner.ModelClient, "_post", lambda self, payload: seen.append(payload) or
-        {"model": "gemini-3.1-pro-preview", "output_text": '{"action":"wait","seconds":0,"thought":"observe"}'})
-    asyncio.run(runner.ModelClient("unused", "gemini-3.1-pro-preview", "unused").decide(task="Inspect page", step=1,
+        {"model": "gemini-3.8-flash", "output_text": '{"action":"wait","seconds":0,"thought":"observe"}'})
+    asyncio.run(runner.ModelClient("unused", "gemini-3.8-flash", "unused").decide(task="Inspect page", step=1,
         max_steps=5, bundle=before, task_memory="", recent_actions=[], turn_dir=tmp_path,
         viewport=(1365, 768)))
     assert "PASSIVE_SCREENSHOT_ERROR_SECRET" not in json.dumps(seen)
@@ -784,7 +785,7 @@ def test_capture_records_navigation_inside_interval(tmp_path, monkeypatch, navig
     assert metadata["url_after"] == ("https://example.test/changed" if navigation_kind == "different_url"
         else "https://example.test")
     assert len(metadata["navigation_events"]) == 1
-    assert metadata["capture_order"] == ["structured_dom", "dom_model_artifacts", "screenshot"]
+    assert metadata["capture_order"] == ["structured_dom", "screenshot", "dom_model_artifacts"]
     assert all(item["started_at"] <= item["ended_at"] and item["duration_seconds"] >= 0
         for item in metadata["captures"])
 
@@ -864,11 +865,11 @@ def test_runtime_port_refresh_preserves_audit_settings_and_fake_credentials(tmp_
     monkeypatch.setattr(browser_runtime, "ROOT", tmp_path)
     monkeypatch.setattr(browser_runtime, "choose_port", lambda preferred, used: preferred)
     monkeypatch.setattr(browser_runtime, "unique_container_name", lambda base: base)
-    (tmp_path / ".env.example").write_text("ACTOR_MODEL=gemini-3.1-pro-preview\n"
+    (tmp_path / ".env.example").write_text("ACTOR_MODEL=gemini-3.8-flash\n"
         "EVIDENCE_AUDIT_MODEL=template-inventory\nEVIDENCE_ADJUDICATOR_MODEL=template-adjudicator\n"
         "TASK_CATALOG_FILE=tasks.jsonl\n")
     path = tmp_path / "existing.env"
-    expected = {"ACTOR_MODEL": "gemini-3.1-pro-preview", "OPENAI_API_KEY": "fake-openai-test-value",
+    expected = {"ACTOR_MODEL": "gemini-3.8-flash", "OPENAI_API_KEY": "fake-openai-test-value",
         "GEMINI_API_KEY": "fake-google-test-value", "EVIDENCE_AUDIT_MODEL": "configured-inventory",
         "EVIDENCE_ADJUDICATOR_MODEL": "configured-adjudicator", "EVIDENCE_AUDIT_PROVIDER": "openai",
         "EVIDENCE_ADJUDICATOR_PROVIDER": "google", "CONTAINER_NAME": "owned-browser",
@@ -1200,7 +1201,7 @@ async def test_passive_capture_stops_immediately_after_confirmed_renderer_crash(
     cdp.target = {'targetId': 'one'}
     cdp.call = AsyncMock(return_value={'frameTree': {'frame': {'url': 'https://example.test/'}}})
     phases = []
-    async def phase(client, directory, name, state, max_nodes, max_text_chars):
+    async def phase(client, directory, name, state, max_nodes, max_text_chars, agent_browser=None):
         phases.append(name)
         failure = RunnerError('page target crashed')
         failure.technical_failure_class = 'browser_crash'
@@ -1210,7 +1211,7 @@ async def test_passive_capture_stops_immediately_after_confirmed_renderer_crash(
     with pytest.raises(RunnerError, match='crashed'):
         await capture.capture_bundle(cdp, directory, max_nodes=7000, max_text_chars=200000, observation_mode='screenshot')
     assert phases == ['structured_dom']
-    assert cdp.call.await_count == 1
+    assert cdp.call.await_count == 2  # Frame identity and paint monitor are established before raw capture.
     assert json.loads((directory/'capture.json').read_text())['captures'][0]['status'] == 'error'
 
 @pytest.mark.asyncio
@@ -1245,3 +1246,308 @@ async def test_unexpected_session_detach_is_recorded_without_false_crash(tmp_pat
     text = (tmp_path/'browser_events.jsonl').read_text()
     assert 'javascriptDialogOpening' in text
     assert 'credential-not-for-logs' not in text and 'also-secret' not in text
+
+@pytest.mark.parametrize('attributes', ['ref=e1 selected', 'selected ref=e1', 'disabled ref=e1 selected=true', 'ref=@e1 selected'])
+def test_fairness_reference_bracket_attributes_preserve_one_ref(attributes):
+    driver = AgentBrowserClient('unused', session='fixture', cdp_url='http://localhost:9222', timeout=1)
+    text = f'- combobox "Choice" [{attributes}]'
+    emitted, targets = driver._visible_snapshot(text, {'e1': {'role': 'combobox', 'name': 'Choice'}},
+        {'e1': {'x': 20, 'y': 20, 'width': 100, 'height': 30}}, {'width': 1365, 'height': 768})
+    assert emitted == text and set(targets) == {'e1'}
+
+@pytest.mark.parametrize('attributes', ['ref=e1 ref=e2', 'ref=e1 ref=e1', 'selected', 'ref=e1junk'])
+def test_fairness_reference_brackets_reject_missing_or_ambiguous_refs(attributes):
+    driver = AgentBrowserClient('unused', session='fixture', cdp_url='http://localhost:9222', timeout=1)
+    emitted, targets = driver._visible_snapshot(f'- button "Choice" [{attributes}]',
+        {'e1': {'role': 'button', 'name': 'Choice'}, 'e2': {'role': 'button', 'name': 'Choice'}},
+        {ref: {'x': 20, 'y': 20, 'width': 100, 'height': 30} for ref in ('e1', 'e2')}, {'width': 1365, 'height': 768})
+    assert not targets and 'ref=' not in emitted
+
+@pytest.mark.parametrize('mode', ['dom', 'screenshot'])
+def test_fairness_url_changes_are_shared_observation_changes(tmp_path, mode):
+    left, right = tmp_path/'left.png', tmp_path/'right.png'
+    Image.new('RGB', (4,4), 'white').save(left);Image.new('RGB', (4,4), 'white').save(right)
+    before = capture.CaptureBundle(observation_mode=mode, document_url='https://one.test/', screenshot_path=left)
+    after = capture.CaptureBundle(observation_mode=mode, document_url='https://two.test/', screenshot_path=right)
+    result = capture.action_progress(before,after)
+    assert result['url_changed'] is True and result['observation_changed'] is True
+    assert result['task_progress'] is None and 'made_progress' not in result
+
+
+def test_fairness_screenshot_progress_compares_decoded_pixels(tmp_path):
+    left, right = tmp_path/'left.png',tmp_path/'right.png'
+    image = Image.new('RGB',(4,4),'white');image.save(left,compress_level=0);image.save(right,compress_level=9)
+    assert left.read_bytes() != right.read_bytes()
+    result = capture.action_progress(capture.CaptureBundle(observation_mode='screenshot', screenshot_path=left),
+        capture.CaptureBundle(observation_mode='screenshot',screenshot_path=right))
+    assert result['screenshot_changed'] is False and result['observation_changed'] is False
+    assert result['task_progress'] is None
+
+
+def test_fairness_dom_progress_ignores_ref_only_renumbering():
+    before = capture.CaptureBundle(model_text='Content is unchanged',agent_browser_action_text='- button "Save" [ref=e1 selected]')
+    after = capture.CaptureBundle(model_text='Content is unchanged',agent_browser_action_text='- button "Save" [ref=e67 selected]')
+    result = capture.action_progress(before,after)
+    assert result['agent_browser_observation_changed'] is False and result['observation_changed'] is False
+    assert result['task_progress'] is None
+
+@pytest.mark.asyncio
+async def test_fairness_identity_binding_ignores_unrelated_target_failure(tmp_path,monkeypatch):
+    driver = AgentBrowserClient('unused', session='fixture', cdp_url='http://localhost:9222',timeout=90)
+    cdp = capture.CDPClient('http://localhost:9222');cdp.recording_dir=tmp_path
+    cdp.target_registry={'active':{'identity_marker':'private'},'background':{'identity_marker':'other'}}
+    commands=[]
+    async def command(method,params=None,**kwargs):
+        commands.append((method,params,kwargs))
+        if method=='Target.attachToTarget':return {'sessionId':params['targetId']+'-session'}
+        if method=='Debugger.enable' and kwargs.get('session_id')=='background-session':
+            raise capture.CDPError(method,{'code':-32603,'message':'background cannot answer'})
+        return {}
+    async def invoke(arguments):
+        if arguments[0]=='eval':cdp.identity_reads[arguments[1].split('sourceURL=')[1]].add('active');return {'data':{'result':None}}
+        return {'data':{'tabs':[{'tabId':'t1','url':'https://same.test/','active':True}]}}
+    monkeypatch.setattr(cdp,'call',command);monkeypatch.setattr(driver,'_invoke',invoke)
+    page=await driver.active_page(cdp)
+    assert page.target_id=='active'
+    detached={params['sessionId'] for method,params,kwargs in commands if method=='Target.detachFromTarget'}
+    assert detached=={'active-session','background-session'}
+    assert not cdp.identity_reads
+    receipts=(tmp_path/'target_identity.jsonl').read_text()
+    assert 'background' in receipts and 'error' in receipts
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('mode',['dom','screenshot'])
+@pytest.mark.parametrize('children',[0,1,2])
+async def test_fairness_exact_popup_policy_is_shared(monkeypatch,mode,children):
+    cdp=capture.CDPClient('http://localhost:9222',observation_mode=mode);cdp.target={'targetId':'parent'}
+    pages=[{'targetId':'parent','type':'page','url':'https://same.test/'}]+[
+        {'targetId':f'popup-{i}','type':'page','openerId':'parent','url':'https://same.test/'} for i in range(children)]
+    async def command(method,params=None,**kwargs):
+        if method=='Target.getTargets':return {'targetInfos':pages}
+        if method=='Target.attachToTarget':return {'sessionId':'capture-session'}
+        return {}
+    monkeypatch.setattr(cdp,'call',command);monkeypatch.setattr(cdp,'_enable_attached_target',AsyncMock())
+    if children>1:
+        with pytest.raises(RunnerError,match='ambiguous'):await capture._synchronize_capture_tab(cdp)
+    else:
+        result=await capture._synchronize_capture_tab(cdp)
+        assert result['selected_target_id']==('popup-0' if children else 'parent')
+
+@pytest.mark.asyncio
+async def test_fairness_raw_observations_precede_projection_and_writing(tmp_path,monkeypatch):
+    events=[];original=FakeCDP.call
+    original_json=capture.write_json
+    original_bytes=Path.write_bytes
+    writes=[]
+    def write_json(path,value):
+        if path.parent==tmp_path/'state':
+            assert 'executable_refs' in events, f'{path.name} written before raw observations ended'
+            writes.append(path.name)
+        return original_json(path,value)
+    def write_bytes(path,value):
+        if path.parent==tmp_path/'state':
+            assert 'executable_refs' in events, f'{path.name} written before raw observations ended'
+            writes.append(path.name)
+        return original_bytes(path,value)
+    monkeypatch.setattr(capture,'write_json',write_json)
+    monkeypatch.setattr(Path,'write_bytes',write_bytes)
+    async def command(self,method,params=None,**kwargs):
+        if method in {'ChromiumRL.captureStructuredSnapshot','Page.captureScreenshot','ChromiumRL.getModelDOM'}:
+            events.append(method)
+        return await original(self,method,params,**kwargs)
+    monkeypatch.setattr(FakeCDP,'call',command)
+    from w8bench.task_recorder.agent_browser import AgentBrowserObservation
+    observation=AgentBrowserObservation(text='- button "Save" [ref=e1]\n',refs=frozenset({'e1'}),
+        origin='fixture',command=('snapshot','-i'),targets={'e1':{'role':'button','name':'Save'}})
+    async def snapshot():
+        assert not list((tmp_path/'state').iterdir())
+        events.append('executable_refs');return observation
+    driver=SimpleNamespace(snapshot=snapshot)
+    bundle=await capture.capture_bundle(FakeCDP(),tmp_path/'state',max_nodes=7000,max_text_chars=200000,
+        observation_mode='dom',agent_browser=driver)
+    assert events[:4]==['ChromiumRL.captureStructuredSnapshot','Page.captureScreenshot','executable_refs','ChromiumRL.getModelDOM']
+    assert bundle.agent_browser_refs==frozenset({'e1'}) and bundle.agent_browser_action_path.is_file()
+    assert bundle.snapshot_path.is_file() and bundle.screenshot_path.is_file()
+    assert bundle.capture_metadata['raw_capture_ended_at']<=bundle.capture_metadata['ended_at']
+    assert {'dom.json','dom_model.json','screenshot.png','capture.json'}<=set(writes)
+
+@pytest.mark.asyncio
+async def test_fairness_capture_change_counters_are_private_and_do_not_recapture(tmp_path,monkeypatch):
+    cdp=FakeCDP();cdp.paint_events=[]
+    original=FakeCDP.call;reads=0;raw_calls=[]
+    async def command(self,method,params=None,**kwargs):
+        nonlocal reads
+        if method=='Page.getFrameTree':return {'frameTree':{'frame':{'id':'main','url':'https://example.test/','loaderId':'stable'}}}
+        if method=='Page.createIsolatedWorld':return {'executionContextId':37}
+        if method=='Runtime.evaluate':
+            assert params['contextId']==37
+            assert '__w8CaptureChanges' in params['expression']
+            reads+=1;return {'result':{'value':{'count':0 if reads==1 else 2,'openShadowRoots':0}}}
+        if method in {'ChromiumRL.captureStructuredSnapshot','Page.captureScreenshot'}:
+            raw_calls.append(method)
+        if method=='Page.captureScreenshot':self.paint_events.append({'target_id':'one','method':'LayerTree.layerPainted'})
+        return await original(self,method,params,**kwargs)
+    monkeypatch.setattr(FakeCDP,'call',command)
+    bundle=await capture.capture_bundle(cdp,tmp_path/'state',max_nodes=7000,max_text_chars=200000)
+    metadata=bundle.capture_metadata
+    assert metadata['content_changed_during_capture'] is True
+    assert metadata['paint_changed_during_capture'] is True
+    assert metadata['content_change_monitor']['mutations_during_capture']==2
+    assert metadata['content_change_monitor']['subframes_observed'] is False
+    assert raw_calls==['ChromiumRL.captureStructuredSnapshot','Page.captureScreenshot']
+    assert '__w8CaptureChanges' not in bundle.model_text
+    assert bundle.agent_browser_action_text==''
+
+@pytest.mark.asyncio
+async def test_fairness_capture_monitor_failure_is_unknown_and_passive(tmp_path,monkeypatch):
+    original=FakeCDP.call
+    async def command(self,method,params=None,**kwargs):
+        if method=='LayerTree.enable':raise RunnerError('paint monitor unavailable')
+        return await original(self,method,params,**kwargs)
+    monkeypatch.setattr(FakeCDP,'call',command)
+    bundle=await capture.capture_bundle(FakeCDP(observation_mode='screenshot'),tmp_path/'state',
+        max_nodes=7000,max_text_chars=200000,observation_mode='screenshot')
+    assert bundle.capture_metadata['paint_changed_during_capture'] is None
+    assert bundle.capture_metadata['content_changed_during_capture'] is None
+    assert bundle.screenshot_path.is_file() and bundle.capture_metadata['paired_complete']
+
+@pytest.mark.asyncio
+async def test_fairness_reference_cli_aligns_to_the_shared_exact_target(tmp_path,monkeypatch):
+    from w8bench.task_recorder.agent_browser import AgentBrowserPage
+    cdp=capture.CDPClient('http://localhost:9222',observation_mode='dom');cdp.target={'targetId':'parent'}
+    cdp.target_registry={'popup':{'target_id':'popup'}};cdp.recording_dir=tmp_path
+    async def shared(client):
+        client.target={'targetId':'popup'};return {'selected_target_id':'popup','switched':True}
+    common=AsyncMock(side_effect=shared)
+    monkeypatch.setattr(capture,'_synchronize_capture_tab',common)
+    monkeypatch.setattr(cdp,'synchronize_target',AsyncMock(return_value={}))
+    driver=SimpleNamespace(active_page=AsyncMock(return_value=AgentBrowserPage('t2','https://same.test/','',target_id='popup')))
+    result=await capture.synchronize_recorder_target(cdp,driver)
+    assert result['selected_target_id']=='popup' and result['switched'] is True
+    assert driver.active_page.await_args.kwargs=={'target_id':'popup'}
+    assert cdp.target_registry['popup']['tab_id']=='t2'
+    assert json.loads((tmp_path/'target_registry.json').read_text())['targets'][0]['tab_id']=='t2'
+    assert common.await_count==1
+
+@pytest.mark.asyncio
+async def test_fairness_passive_model_projection_failure_keeps_screenshot(tmp_path,monkeypatch):
+    cdp=FakeCDP(observation_mode='screenshot');original=FakeCDP.call;calls=[]
+    async def command(self,method,params=None,**kwargs):
+        if method=='ChromiumRL.getModelDOM':raise RunnerError('passive projection unavailable')
+        if method=='Page.captureScreenshot':calls.append('screenshot')
+        return await original(self,method,params,**kwargs)
+    monkeypatch.setattr(FakeCDP,'call',command)
+    bundle=await capture.capture_bundle(cdp,tmp_path/'state',max_nodes=7000,max_text_chars=200000,observation_mode='screenshot')
+    assert bundle.screenshot_path.is_file() and bundle.snapshot_path is None
+    assert not bundle.model_text and not bundle.agent_browser_action_text
+    assert bundle.capture_metadata['paired_complete'] is False and calls==['screenshot']
+    assert bundle.capture_metadata['capture_order']==['structured_dom','screenshot','dom_model_artifacts']
+
+@pytest.mark.asyncio
+async def test_fairness_capture_retry_preserves_prior_raw_files_in_next_free_attempt(tmp_path,monkeypatch):
+    parent=tmp_path/'run/steps';parent.mkdir(parents=True)
+    (parent/'step_001_capture_attempt_01').mkdir()
+    (parent/'step_001_capture_attempt_01/keep.txt').write_text('existing diagnostic')
+    (parent/'step_001_capture_attempt_02').symlink_to('missing-diagnostic')
+    calls=0
+    async def bundle(client,directory,**kwargs):
+        nonlocal calls
+        calls+=1;directory.mkdir()
+        (directory/'raw.txt').write_text('first capture' if calls==1 else 'second capture')
+        write_json(directory/'capture.json',{'capture_attempt':calls})
+        if calls==1:raise RunnerError('CDP websocket closed')
+        return capture.CaptureBundle(snapshot_path=directory/'raw.txt')
+    monkeypatch.setattr(capture,'capture_bundle',bundle)
+    monkeypatch.setattr(capture,'synchronize_recorder_target',AsyncMock(return_value={}))
+    monkeypatch.setattr(capture.asyncio,'sleep',AsyncMock())
+    result,reconnects=await capture.capture_after_action_bundle(FakeCDP(),None,parent/'step_001',
+        max_nodes=7000,max_text_chars=200000,attempts=2)
+    assert result.snapshot_path.read_text()=='second capture'
+    assert (parent/'step_001_capture_attempt_03/raw.txt').read_text()=='first capture'
+    assert (parent/'step_001_capture_attempt_02').is_symlink()
+    assert (parent/'step_001_capture_attempt_01/keep.txt').read_text()=='existing diagnostic'
+    receipt=json.loads((parent.parent/'capture_failures.jsonl').read_text())
+    assert receipt['preserved_capture']=='steps/step_001_capture_attempt_03'
+    assert calls==2 and len(reconnects)==1
+
+@pytest.mark.asyncio
+async def test_fairness_raw_capture_failure_preserves_acquired_evidence_without_later_calls(tmp_path,monkeypatch):
+    cdp=FakeCDP(observation_mode='screenshot');original=FakeCDP.call;observations=[]
+    async def command(self,method,params=None,**kwargs):
+        if method in {'ChromiumRL.captureStructuredSnapshot','Page.captureScreenshot','ChromiumRL.getModelDOM'}:
+            observations.append(method)
+        if method=='Page.captureScreenshot':raise RunnerError('screenshot observation unavailable')
+        return await original(self,method,params,**kwargs)
+    monkeypatch.setattr(FakeCDP,'call',command)
+    with pytest.raises(RunnerError,match='unavailable'):
+        await capture.capture_bundle(cdp,tmp_path/'state',max_nodes=7000,max_text_chars=200000,observation_mode='screenshot')
+    assert (tmp_path/'state/dom.json').is_file()
+    assert observations==['ChromiumRL.captureStructuredSnapshot','Page.captureScreenshot']
+    assert not (tmp_path/'state/dom_model.json').exists()
+    metadata=json.loads((tmp_path/'state/capture.json').read_text())
+    assert set(metadata['preserved_raw_artifacts'])=={'dom.json'}
+
+@pytest.mark.asyncio
+async def test_fairness_capture_observes_known_frames_and_open_shadow_roots_with_partial_coverage(tmp_path,monkeypatch):
+    original=FakeCDP.call;reads={}
+    frame={'frame':{'id':'main','url':'https://example.test/','loaderId':'main-loader'},'childFrames':[
+        {'frame':{'id':'child','loaderId':'child-loader'}},{'frame':{'id':'remote','loaderId':'remote-loader'}}]}
+    async def command(self,method,params=None,**kwargs):
+        if method=='Page.getFrameTree':return {'frameTree':frame}
+        if method=='Page.createIsolatedWorld':
+            if params['frameId']=='remote':raise RunnerError('unavailable remote context')
+            return {'executionContextId':1 if params['frameId']=='main' else 2}
+        if method=='Runtime.evaluate':
+            assert "element.shadowRoot" in params['expression'] and "observer.observe(root" in params['expression']
+            context=params['contextId'];reads[context]=reads.get(context,0)+1
+            return {'result':{'value':{'count':3 if context==2 and reads[context]>1 else 0,'openShadowRoots':1 if context==2 else 0}}}
+        return await original(self,method,params,**kwargs)
+    monkeypatch.setattr(FakeCDP,'call',command)
+    bundle=await capture.capture_bundle(FakeCDP(),tmp_path/'state',max_nodes=7000,max_text_chars=200000)
+    monitor=bundle.capture_metadata['content_change_monitor']
+    assert {row['frame_id']:row['status'] for row in monitor['frames']}=={'main':'observed','child':'observed','remote':'unavailable'}
+    assert monitor['mutations_during_capture']==3 and monitor['observed_frame_count']==2
+    assert monitor['scope']=='known_frames_and_open_shadow_roots' and monitor['closed_shadow_roots_observed'] is False
+    assert monitor['coverage_complete'] is False and monitor['status']=='partial'
+    assert bundle.capture_metadata['content_changed_during_capture'] is True
+    assert reads=={1:2,2:2}
+
+@pytest.mark.asyncio
+async def test_fairness_quiet_partial_monitors_never_claim_no_global_change(tmp_path,monkeypatch):
+    original=FakeCDP.call
+    async def command(self,method,params=None,**kwargs):
+        if method=='Page.getFrameTree':return {'frameTree':{'frame':{'id':'main','url':'https://example.test/','loaderId':'stable'}}}
+        if method=='Page.createIsolatedWorld':return {'executionContextId':10}
+        if method=='Runtime.evaluate':return {'result':{'value':{'count':0,'openShadowRoots':1}}}
+        return await original(self,method,params,**kwargs)
+    monkeypatch.setattr(FakeCDP,'call',command)
+    bundle=await capture.capture_bundle(FakeCDP(),tmp_path/'state',max_nodes=7000,max_text_chars=200000)
+    metadata=bundle.capture_metadata
+    assert metadata['content_change_monitor']['observed_content_changed'] is False
+    assert metadata['content_change_monitor']['coverage_complete'] is False
+    assert metadata['content_changed_during_capture'] is None
+    assert metadata['paint_changed_during_capture'] is None
+    assert metadata['paint_change_monitor']['reported_paint_changed'] is False
+
+@pytest.mark.asyncio
+async def test_fairness_known_target_is_selected_before_querying_unrelated_cli_tab(monkeypatch):
+    driver=AgentBrowserClient('unused',session='fixture',cdp_url='http://localhost:9222',timeout=90)
+    cdp=capture.CDPClient('http://localhost:9222')
+    cdp.target_registry={'desired':{'identity_marker':'private','tab_id':'t1'},'background':{'identity_marker':'other','tab_id':'t2'}}
+    selected='t2';commands=[]
+    async def command(method,params=None,**kwargs):
+        if method=='Target.attachToTarget':return {'sessionId':params['targetId']+'-session'}
+        return {}
+    async def invoke(arguments):
+        nonlocal selected
+        commands.append(arguments)
+        if arguments[0]=='tab' and arguments[1]!='list':selected=arguments[1];return {'data':{}}
+        if arguments[0]=='eval':
+            assert selected=='t1','unrelated background tab must not be queried before selecting the known exact target'
+            cdp.identity_reads[arguments[1].split('sourceURL=')[1]].add('desired')
+            return {'data':{'result':None}}
+        return {'data':{'tabs':[{'tabId':tab,'url':'https://same.test/','active':tab==selected} for tab in ('t1','t2')]}}
+    monkeypatch.setattr(cdp,'call',command);monkeypatch.setattr(driver,'_invoke',invoke)
+    page=await driver.active_page(cdp,target_id='desired')
+    assert page.target_id=='desired' and page.tab_id=='t1'
+    assert commands[1]==['tab','t1']

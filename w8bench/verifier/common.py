@@ -13,7 +13,7 @@ from typing import Any, Iterable
 
 CANONICAL_RUBRIC_MODEL = "gpt-5.2"
 CANONICAL_JUDGE_MODEL = "gemini-3.1-pro-preview"
-CANONICAL_ACTION_MODEL = "gemini-3.8-flash"
+CANONICAL_ACTION_MODEL = "gemini-3.1-pro-preview"
 CANONICAL_SETTINGS = {
     "rubric_threshold": 0.8,
     "max_evidence_items_per_criterion": 5,

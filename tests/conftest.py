@@ -6,6 +6,7 @@ import base64
 import hashlib
 import io
 import json
+import os
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
@@ -27,6 +28,8 @@ from w8bench.verifier.evidence_audit import SCHEMA_VERSION, PROMPT_VERSION, calc
 
 @pytest.fixture(autouse=True)
 def offline_model_access(monkeypatch):
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
+    monkeypatch.setenv("ACTOR_MEDIA_RESOLUTION", "HIGH")
     monkeypatch.setenv("OPENAI_API_KEY", "offline-test-key")
     monkeypatch.setenv("GEMINI_API_KEY", "offline-test-key")
     monkeypatch.setenv("TIKTOKEN_CACHE_DIR", str(Path(__file__).resolve().parents[1] / ".runtime" / "tiktoken_cache"))
@@ -184,7 +187,7 @@ def pair_factory(tmp_path):
         )
         _write_json(
             config / "action_judge.json",
-            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.8-flash", "reasoning_effort": "medium"}},
+            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.1-pro-preview", "reasoning_effort": "medium"}},
         )
         _write_json(
             config / "judge.json",
@@ -215,7 +218,7 @@ def dom_pair_factory(pair_factory):
 
 @pytest.fixture
 def no_network(monkeypatch):
-    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     def forbidden(*args, **kwargs):
         raise AssertionError("offline tests must never access the network")
     monkeypatch.setattr("urllib.request.urlopen", forbidden)
@@ -271,8 +274,8 @@ class FakeCDP:
 def run_pair(tmp_path, monkeypatch, no_network):
     monkeypatch.setenv("RUNNER_BROWSER_PROFILE_PROVENANCE", json.dumps({
         "container_id":"offline-browser", "container_created_at":"fixture", "profile_fresh_at_run_start":True,
-        "tasks_previously_run_in_container":0, "browser_build":{"image_id":"offline-image"},
-        "browser_environment":{"LANG":"en_US.UTF-8"}}))
+        "tasks_previously_run_in_container":0, "freshly_recreated_by_launcher":True, "launch_mode":"fresh", "launcher_pid":os.getppid(), "browser_build":{"image_id":"offline-image"},
+        "browser_environment":{"LANG":"en_US.UTF-8", "CHROMIUM_RESET_PROFILE":"1"}}))
     monkeypatch.setattr(runner, "CDPClient", FakeCDP)
     monkeypatch.setattr(runner, "synchronize_recorder_target", AsyncMock(return_value={}))
     connect = AsyncMock()
@@ -298,7 +301,7 @@ def run_pair(tmp_path, monkeypatch, no_network):
         def post(self, payload, queue=sequence, selected=mode):
             payloads[selected].append(payload)
             item = queue.pop(0)
-            return {"id": f"response-{len(payloads[selected])}", "model": "gemini-3.1-pro-preview",
+            return {"id": f"response-{len(payloads[selected])}", "model": "gemini-3.8-flash",
                 "output_text": item if isinstance(item, str) else json.dumps(item),
                 "usage": {"input_tokens": 20, "output_tokens": 10,
                     "input_tokens_details": {"cached_tokens": 5}, "output_tokens_details": {"reasoning_tokens": 3}}}
@@ -307,7 +310,7 @@ def run_pair(tmp_path, monkeypatch, no_network):
         args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"),
             "--observation-mode", mode, "--task", "Report done.", "--task-id", "task_01",
             "--source-task-id", "task_01", "--start-url", "https://example.test",
-            "--output-dir", str(root), "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder",
+            "--output-dir", str(root), "--model", "gemini-3.8-flash", "--api-key", "offline-placeholder",
             "--max-turns", "6", "--settle-seconds", "0"])
         assert asyncio.run(runner.run(args)) == 0
         paths[mode] = root / "task_01"
@@ -466,3 +469,11 @@ def _paired_capture_context(pair, *, dom_gaps=(), screenshot_gaps=(), navigation
     answer["screenshots"] = [f"screenshot{index}.png" for index in (1, 2) if index not in screenshot_gaps]
     answer_path.write_text(json.dumps(answer))
     return context
+
+
+def actor_preflight_response(request):
+    if request.full_url.endswith(':countTokens'):
+        return io.BytesIO(json.dumps({'totalTokens': 20}).encode())
+    if request.get_method() == 'GET' and '/models/' in request.full_url:
+        return io.BytesIO(json.dumps({'name': 'models/gemini-3.8-flash', 'inputTokenLimit': 1048576}).encode())
+    return None

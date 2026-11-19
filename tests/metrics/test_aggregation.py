@@ -77,6 +77,11 @@ def runs(tmp_path, *, k, flagged=None):
             path = root / task_id / "evidence_audit.json"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(value))
+            write_json(tmp_path.parent / "recordings" / root.name / task_id / "manifest.json", {
+                "browser_profile_provenance": {"profile_fresh_at_run_start": True,
+                    "freshly_recreated_by_launcher": True, "launch_mode": "fresh",
+                    "tasks_previously_run_in_container": 0,
+                    "browser_environment": {"CHROMIUM_RESET_PROFILE": "1"}}})
     return roots
 
 def _actor_trial_pair(trial, verdict):
@@ -262,7 +267,7 @@ def test_batch_partial_recording_is_not_zero_cost_startup_failure(tmp_path, monk
     monkeypatch.setattr(task_cli.subprocess, "run", run)
     assert task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
         "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
-        "--run-name", "partial", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]) == 0
+        "--run-name", "partial", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]) == 0
     ledger = output / "partial" / "ledger.jsonl"
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
     assert all(row["completed"] and row["technical_outcome"] == "incomplete_recording" for row in rows)
@@ -427,9 +432,10 @@ def test_recording_provenance_and_returned_models_are_checked(tmp_path):
         audit_aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
     for index, root in enumerate(roots[:2], 1):
         recording = tmp_path / "recordings" / root.name / "task_01"
-        recording.mkdir(parents=True)
-        (recording / "manifest.json").write_text(json.dumps(
-            {"task_id": "task_01", "started_at": f"2026-01-0{index}T00:00:00Z"}))
+        recording.mkdir(parents=True, exist_ok=True)
+        existing = json.loads((recording / "manifest.json").read_text())
+        write_json(recording / "manifest.json", {**existing,
+            "task_id": "task_01", "started_at": f"2026-01-0{index}T00:00:00Z"})
     audit_aggregate.aggregate_runs(roots, expected_tasks=2, resamples=100)
     value["calls"][0]["response_model"] = "different-returned-model"
     path.write_text(json.dumps(value))
@@ -485,7 +491,10 @@ def test_outputs_and_figures_are_written_without_model_calls(tmp_path):
             state = recordings / root.name / alias / "steps/step_001"
             state.mkdir(parents=True)
             (state.parent.parent / "task.json").write_text("{}")
-            (state.parent.parent / "manifest.json").write_text('{"status": "success"}')
+            write_json(state.parent.parent / "manifest.json", {"status": "success", "browser_profile_provenance": {
+                "profile_fresh_at_run_start": True, "freshly_recreated_by_launcher": True,
+                "launch_mode": "fresh", "tasks_previously_run_in_container": 0,
+                "browser_environment": {"CHROMIUM_RESET_PROFILE": "1"}}})
             for name in ("screenshot.png", "dom_model.txt", "dom_full.txt", "dom.json"):
                 (state / name).write_bytes(b"x" * index)
     readme = tmp_path / "README.md"
@@ -534,7 +543,7 @@ def test_generic_task_names_and_current_trial_arm_receipts(tmp_path):
                 "task_id": alias, "rubric_sha256": value["frozen_rubric_sha256"], "recording_sha256": recording,
                 "coverage": {"states": [{"state": 1}]}, "stages": {"audit": {"status": "complete",
                     "result_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}}}))
-    summary, _ = audit_aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100)
+    summary, _ = audit_aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100, allow_nonfresh=True)
     assert summary["k"] == 2 and summary["actor_arm"] == "dom"
     assert summary["run_names"] == ["trial_0001", "trial_0002"]
     assert summary["coverage"]["compared_tasks"] == ["catalog_x", "news-medium-a"]
@@ -543,7 +552,7 @@ def test_generic_task_names_and_current_trial_arm_receipts(tmp_path):
     value = json.loads(path.read_text())
     value["stages"]["audit"] = {"status": "not_eligible", "reason": "no_eligible_paired_states"}
     path.write_text(json.dumps(value)); (path.parent / "evidence_audit.json").unlink()
-    summary, _ = audit_aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100)
+    summary, _ = audit_aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100, allow_nonfresh=True)
     assert summary["tasks_per_run"] == 1
     assert summary["coverage"]["unscored_tasks"]["trial_0002"] == {"news-medium-a": "no_eligible_paired_states"}
     # Different actor policies may not be pooled into the same within-run audit mean.
@@ -556,7 +565,7 @@ def test_generic_task_names_and_current_trial_arm_receipts(tmp_path):
             audit_path.write_text(json.dumps(value))
             evaluation = json.loads(path.read_text()); evaluation["stages"]["audit"]["result_sha256"] = hashlib.sha256(audit_path.read_bytes()).hexdigest(); path.write_text(json.dumps(evaluation))
     with pytest.raises(ValueError, match="different actor arms"):
-        audit_aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100)
+        audit_aggregate.aggregate_runs(selected, expected_tasks=2, resamples=100, allow_nonfresh=True)
 
 @pytest.mark.parametrize("verdicts,bounds", [
     (("success",), [(1, 1)]),
@@ -805,3 +814,17 @@ def test_partial_failed_transport_has_no_model_turn_but_unknown_cost(tmp_path):
     assert summary['turns_complete'] is True
     assert summary['cost_streams']['actor']['cost']['estimated_usd'] is None
     assert summary['actor_transport_attempts'] == 3
+
+
+def test_audit_aggregation_requires_explicit_nonfresh_override(tmp_path):
+    roots = runs(tmp_path, k=1)
+    source = tmp_path / "recordings" / roots[0].name / "task_01" / "manifest.json"
+    manifest = json.loads(source.read_text())
+    manifest["browser_profile_provenance"].update(profile_fresh_at_run_start=False,
+        freshly_recreated_by_launcher=False, launch_mode="raw")
+    write_json(source, manifest)
+    with pytest.raises(ValueError, match="freshness"):
+        audit_aggregate.aggregate_runs(roots, expected_tasks=2, resamples=10)
+    summary, _ = audit_aggregate.aggregate_runs(roots, expected_tasks=2, resamples=10, allow_nonfresh=True)
+    assert summary["browser_profile_policy"] == {"allow_nonfresh": True,
+        "override_used": True, "nonfresh_recordings": 1}

@@ -1,4 +1,4 @@
-"""Original recorder decision policy, adapted only for the available observations."""
+"""Browser decision policy and modality-specific observation instructions."""
 
 SYSTEM_PROMPT = """You control one desktop browser through the recorder harness.
 
@@ -41,13 +41,16 @@ must include every requested result established across the run, not only evidenc
 from the current page.
 
 The step and turns_remaining fields supplied by the harness are authoritative.
-Each actual model API call consumes one turn; imagined actions consume no turns.
+Each received actor response consumes one model turn. Failed transport attempts
+are recorded separately and consume no model turn. Imagined actions consume no turns.
 Use termination_reason completed only with status success. For failure, use
 blocked for an observed access or environment blocker, cannot_complete for another
 actual task limitation, or budget_exhausted only when turns_remaining_after_this_call
 is zero. Do not claim time or turn exhaustion while the supplied budget remains.
 Use null termination_reason for every action other than terminate. Rejected
 proposals did not execute; use their feedback to choose a valid action.
+The supplied URL and observation-change signals describe what changed, not
+whether the task advanced or succeeded. Assess task progress from the evidence.
 
 Keep browser-visible interaction in English. If a website renders another
 language, use its visible language or locale control to switch to English. Do not
@@ -64,6 +67,8 @@ ordering from the current page and include the exact visible item text that
 establishes the requested position.
 """
 
+DOM_PROMPT_VERSION = "dom-observation/v2"
+
 DOM_PROMPT = SYSTEM_PROMPT + """
 Your only page observations are current_chromiumrl_evidence and the current
 viewport-filtered interactive reference snapshot. Partially visible targets may
@@ -73,11 +78,12 @@ or reuse a ref absent from the current snapshot. ChromiumRL numeric ids are
 reading evidence, not executable action ids. Off-screen text alone is insufficient:
 scroll or navigate until the requested fact appears in visible DOM evidence.
 For scroll, id may be a current scroll-region ref or null for the page.
-Judge progress from current DOM text, page position and the supplied made_progress,
-url_changed, dom_changed and agent_browser_observation_changed fields.
+Assess observed changes from current DOM text, page position and the supplied
+url_changed, observation_changed, dom_changed and agent_browser_observation_changed
+fields.
 """
 
-SCREENSHOT_PROMPT_VERSION = "screenshot-normalized-coordinates/v1"
+SCREENSHOT_PROMPT_VERSION = "screenshot-normalized-coordinates/v2"
 
 SCREENSHOT_PROMPT = SYSTEM_PROMPT + """
 Your only page observation is the attached screenshot. Locate controls visually.
@@ -86,6 +92,6 @@ width (x) and height (y), with 0,0 at the top-left.
 For scroll, optional x and y select the scroll pane under that point; leave both
 null to scroll at the viewport centre. Always leave id null. You have no DOM,
 accessibility tree, extracted page text, selectors, or element references.
-Judge progress from the screenshots and supplied made_progress and
-screenshot_changed fields. A changed image alone does not establish task success.
+Assess observed changes from the screenshots and supplied url_changed,
+observation_changed and screenshot_changed fields.
 """

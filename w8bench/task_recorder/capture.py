@@ -8,7 +8,6 @@ import hashlib
 import json
 import re
 import secrets
-import shutil
 import subprocess
 import sys
 import time
@@ -91,21 +90,23 @@ def action_observation_context(
     }
 
 
-def action_progress(before: CaptureBundle, after: CaptureBundle) -> dict[str, bool]:
-    """Report changes using only the selected observation channel."""
+def action_progress(before: CaptureBundle, after: CaptureBundle) -> dict[str, Any]:
+    """Report observation changes without inferring task completion or progress."""
     if before.observation_mode != after.observation_mode:
         raise RunnerError("cannot compare progress across observation modes")
+    result = {"url_changed": before.document_url != after.document_url}
     if before.observation_mode == "screenshot":
-        changed = before.screenshot_path.read_bytes() != after.screenshot_path.read_bytes()
-        return {"screenshot_changed": changed, "made_progress": changed}
-    result = {
-        "url_changed": before.document_url != after.document_url,
-        "dom_changed": before.model_text != after.model_text,
-        "agent_browser_observation_changed": (
-            before.agent_browser_action_text != after.agent_browser_action_text
-        ),
-    }
-    return {**result, "made_progress": any(result.values())}
+        from PIL import Image
+        with Image.open(before.screenshot_path) as left, Image.open(after.screenshot_path) as right:
+            result["screenshot_changed"] = (left.size != right.size
+                or left.convert("RGBA").tobytes() != right.convert("RGBA").tobytes())
+    else:
+        from .runner import chromiumrl_evidence_for_model
+        result.update(dom_changed=chromiumrl_evidence_for_model(before.model_text) != chromiumrl_evidence_for_model(after.model_text),
+            agent_browser_observation_changed=(
+                re.sub(r"\bref=@?e\d+(?=[,\]\s]|$)", "ref=<element>", before.agent_browser_action_text)
+                != re.sub(r"\bref=@?e\d+(?=[,\]\s]|$)", "ref=<element>", after.agent_browser_action_text)))
+    return {**result, "observation_changed": any(result.values()), "task_progress": None}
 
 
 def normalized_observation_text(value: Any) -> str:
@@ -341,17 +342,26 @@ async def capture_after_action_bundle(
     for attempt in range(1, max(1, attempts) + 1):
         try:
             bundle = await capture_bundle(cdp, directory, max_nodes=max_nodes,
-                max_text_chars=max_text_chars, observation_mode=observation_mode)
+                max_text_chars=max_text_chars, observation_mode=observation_mode,
+                agent_browser=agent_browser)
             return bundle, reconnects
         except RunnerError as error:
             if not is_cdp_transport_error(error) or attempt >= attempts:
                 raise
             failed_metadata = directory / "capture.json"
+            failed_capture = json.loads(failed_metadata.read_text()) if failed_metadata.is_file() else None
+            number = 1
+            preserved = directory.with_name(f"{directory.name}_capture_attempt_{number:02d}")
+            while preserved.exists() or preserved.is_symlink():
+                number += 1
+                preserved = directory.with_name(f"{directory.name}_capture_attempt_{number:02d}")
+            if directory.exists():
+                directory.rename(preserved)
             append_json_line(directory.parent.parent / "capture_failures.jsonl", {
                 "directory": str(directory.relative_to(directory.parent.parent)), "attempt": attempt,
+                "preserved_capture": str(preserved.relative_to(directory.parent.parent)),
                 "recorded_at": utc_now(), "error": f"{type(error).__name__}: {error}",
-                "capture": json.loads(failed_metadata.read_text()) if failed_metadata.is_file() else None})
-            shutil.rmtree(directory, ignore_errors=True)
+                "capture": failed_capture})
             reconnects.append(await synchronize_recorder_target(cdp, agent_browser))
             await asyncio.sleep(0.75 * attempt)
     raise AssertionError("unreachable")
@@ -364,20 +374,128 @@ class _CaptureState:
     model_text: str = ""
     screenshot_path: Path | None = None
     dom_error: Exception | None = None
+    screenshot_bytes: bytes | None = None
+    action_observation: Any = None
 
 
 async def _capture_frame(cdp: CDPClient, metadata: dict[str, Any], kind: str) -> dict[str, Any]:
     try:
         response = await capture_call(cdp, "Page.getFrameTree", {})
-        return response.get("frameTree", {}).get("frame", {})
+        frame = response.get("frameTree", {}).get("frame", {})
     except Exception as error:
         if getattr(error, "technical_failure_class", None):
             raise
         metadata["metadata_errors"].append({"kind": kind, "error": f"{type(error).__name__}: {error}"})
         return {}
+    frames = []
+    pending = [response.get("frameTree", {})]
+    while pending:
+        tree = pending.pop()
+        if tree.get("frame", {}).get("id"):
+            frames.append(tree["frame"])
+        pending.extend(tree.get("childFrames", []))
+    # Only counters leave the isolated world. Open shadow roots receive their
+    # own observers; closed roots and unreported remote frames remain unknown.
+    expression = ("(()=>{const key='__w8CaptureChanges';let state=globalThis[key];const initial=!state;"
+        "if(initial){state={count:0,roots:new WeakSet(),observers:[],openShadowRoots:0};"
+        "Object.defineProperty(globalThis,key,{value:state});}"
+        "const pending=[document];while(pending.length){const root=pending.pop();"
+        "if(!state.roots.has(root)){state.roots.add(root);"
+        "if(root!==document){state.openShadowRoots++;if(!initial)state.count++;}"
+        "const observer=new MutationObserver(records=>{state.count+=records.length});"
+        "observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true});"
+        "state.observers.push(observer);}"
+        "for(const element of root.querySelectorAll('*')){if(element.shadowRoot)pending.push(element.shadowRoot);}}"
+        "for(const observer of state.observers)state.count+=observer.takeRecords().length;"
+        "return{count:state.count,openShadowRoots:state.openShadowRoots};})()")
+    if kind == "url_before":
+        metadata["paint_event_start"] = len(getattr(cdp, "paint_events", []))
+        monitor = {"scope": "known_frames_and_open_shadow_roots", "frames": [],
+            "subframes_observed": False, "closed_shadow_roots_observed": False,
+            "coverage_complete": False, "status": "unavailable",
+            "unobserved_reasons": ["closed_shadow_roots_not_observed", "unreported_remote_frames_not_observed"]}
+        metadata["content_change_monitor"] = monitor
+        try:
+            await capture_call(cdp, "LayerTree.enable", {})
+            metadata["paint_monitor_available"] = True
+            metadata["paint_change_monitor"] = {"source": "LayerTree.layerPainted",
+                "coverage": "reported_events_only", "coverage_complete": False, "status": "observing"}
+        except Exception as error:
+            if getattr(error, "technical_failure_class", None):
+                raise
+            metadata["paint_monitor_available"] = False
+            metadata["paint_change_monitor"] = {"source": "LayerTree.layerPainted",
+                "coverage": "reported_events_only", "coverage_complete": False, "status": "unavailable"}
+            metadata.setdefault("monitor_errors", []).append({"kind": "paint", "error_type": type(error).__name__})
+        for entry in frames:
+            receipt = {"frame_id": entry["id"], "status": "unavailable", "loader_id_before": entry.get("loaderId")}
+            monitor["frames"].append(receipt)
+            try:
+                world = await capture_call(cdp, "Page.createIsolatedWorld", {"frameId": entry["id"],
+                    "worldName": TARGET_IDENTITY_WORLD, "grantUniveralAccess": False})
+                context_id = world["executionContextId"]
+                counter = await capture_call(cdp, "Runtime.evaluate", {"contextId": context_id,
+                    "returnByValue": True, "expression": expression})
+                value = counter.get("result", {}).get("value")
+                if not isinstance(value, dict) or type(value.get("count")) is not int or type(value.get("openShadowRoots")) is not int:
+                    raise RunnerError("capture mutation counter unavailable")
+                receipt.update(status="observing", execution_context_id=context_id,
+                    mutations_before=value["count"], open_shadow_roots_before=value["openShadowRoots"])
+            except Exception as error:
+                if getattr(error, "technical_failure_class", None):
+                    raise
+                receipt["error_type"] = type(error).__name__
+        if any(receipt["status"] == "observing" for receipt in monitor["frames"]):
+            monitor["status"] = "observing"
+    elif kind == "url_after":
+        monitor = metadata.get("content_change_monitor", {})
+        for receipt in monitor.get("frames", []):
+            if receipt.get("status") != "observing":
+                continue
+            try:
+                counter = await capture_call(cdp, "Runtime.evaluate", {"contextId": receipt["execution_context_id"],
+                    "returnByValue": True, "expression": expression})
+                value = counter.get("result", {}).get("value")
+                if (not isinstance(value, dict) or type(value.get("count")) is not int
+                        or type(value.get("openShadowRoots")) is not int or value["count"] < receipt["mutations_before"]):
+                    raise RunnerError("capture mutation counter unavailable or reset")
+                receipt.update(status="observed", mutations_after=value["count"],
+                    mutations_during_capture=value["count"]-receipt["mutations_before"],
+                    open_shadow_roots_after=value["openShadowRoots"])
+            except Exception as error:
+                if getattr(error, "technical_failure_class", None):
+                    raise
+                receipt.update(status="unavailable", error_type=type(error).__name__)
+        before_ids = {receipt["frame_id"] for receipt in monitor.get("frames", [])}
+        after_by_id = {entry["id"]: entry for entry in frames}
+        monitor["frames_added_during_capture"] = sorted(set(after_by_id)-before_ids)
+        monitor["frames_removed_during_capture"] = sorted(before_ids-set(after_by_id))
+        monitor["frame_navigations_during_capture"] = [receipt["frame_id"] for receipt in monitor.get("frames", [])
+            if receipt["frame_id"] in after_by_id and receipt.get("loader_id_before") != after_by_id[receipt["frame_id"]].get("loaderId")]
+        observed = [receipt for receipt in monitor.get("frames", []) if receipt.get("status") == "observed"]
+        monitor["status"] = "observed" if len(observed) == len(before_ids) and before_ids else "partial" if observed else "unavailable"
+        monitor["observed_frame_count"] = len(observed)
+        monitor["mutations_during_capture"] = sum(receipt["mutations_during_capture"] for receipt in observed)
+        monitor["subframes_observed"] = bool(observed) and all(receipt.get("status") == "observed"
+            for receipt in monitor.get("frames", []) if receipt["frame_id"] != frame.get("id")) and len(before_ids)>1
+        observed_change = bool(monitor["mutations_during_capture"] or monitor["frames_added_during_capture"]
+            or monitor["frames_removed_during_capture"] or monitor["frame_navigations_during_capture"]
+            or any(receipt["open_shadow_roots_after"] != receipt["open_shadow_roots_before"] for receipt in observed))
+        monitor["observed_content_changed"] = observed_change if observed or before_ids else None
+        # A quiet observed subset does not establish that unobserved content
+        # stayed unchanged. Keep overall absence of change unknown.
+        metadata["content_changed_during_capture"] = True if observed_change else None
+        events = [event for event in getattr(cdp, "paint_events", [])[metadata.get("paint_event_start", 0):]
+            if event.get("target_id") == metadata["target_id"]]
+        metadata["paint_events_during_capture"] = events
+        metadata["paint_changed_during_capture"] = True if events else None
+        metadata.setdefault("paint_change_monitor", {"source": "LayerTree.layerPainted",
+            "coverage": "reported_events_only", "coverage_complete": False, "status": "unavailable"})["reported_paint_changed"] = (bool(events)
+            if metadata.get("paint_monitor_available") else None)
+    return frame
 
 
-async def _capture_screenshot(cdp: CDPClient, directory: Path) -> Path:
+async def _capture_screenshot(cdp: CDPClient) -> bytes:
     result = await capture_call(cdp, "Page.captureScreenshot", {
         "format": "png", "fromSurface": True, "captureBeyondViewport": False})
     data = base64.b64decode(result["data"], validate=True)
@@ -387,59 +505,65 @@ async def _capture_screenshot(cdp: CDPClient, directory: Path) -> Path:
         if cdp.viewport is not None and image.size != cdp.viewport:
             raise RunnerError("screenshot dimensions differ from the coordinate viewport")
         image.verify()
-    path = directory / "screenshot.png"
-    path.write_bytes(data)
-    return path
+    return data
 
 
 async def _capture_phase(cdp: CDPClient, directory: Path, phase: str, state: _CaptureState,
-    max_nodes: int, max_text_chars: int) -> None:
+    max_nodes: int, max_text_chars: int, agent_browser: AgentBrowserClient | None = None) -> None:
     if phase == "structured_dom":
         state.snapshot = await capture_structured_snapshot(cdp, max_nodes=max_nodes,
             max_text_chars=max_text_chars)
-        state.snapshot_path = directory / "dom.json"
-        write_json(state.snapshot_path, {"result": {"snapshot": state.snapshot}})
-        render_full_stored_snapshot(state.snapshot_path)
+    elif phase == "screenshot":
+        state.screenshot_bytes = await _capture_screenshot(cdp)
+    elif phase == "executable_refs":
+        state.action_observation = await _snapshot_action_refs(agent_browser, 3, cdp)
     elif phase == "dom_model_artifacts":
         if state.dom_error is not None:
             raise RunnerError("structured DOM capture unavailable")
+        state.snapshot_path = directory / "dom.json"
+        write_json(state.snapshot_path, {"result": {"snapshot": state.snapshot}})
+        render_full_stored_snapshot(state.snapshot_path)
         model_dom = await model_dom_from_snapshot(cdp, state.snapshot)
         model_path = directory / "dom_model.json"
         write_json(model_path, {"result": {"modelDOM": model_dom}})
         render_model_dom_stored_projection(model_path)
         state.model_text = model_path.with_suffix(".txt").read_text(encoding="utf-8")
-    else:
-        state.screenshot_path = await _capture_screenshot(cdp, directory)
 
 
 def _invalidate_capture(directory: Path, phase: str, state: _CaptureState,
     record: dict[str, Any], error: Exception) -> None:
     names = {"structured_dom": ("dom.json", "dom_full.txt"),
         "dom_model_artifacts": ("dom_model.json", "dom_model.txt"),
-        "screenshot": ("screenshot.png",)}[phase]
+        "screenshot": ("screenshot.png",), "executable_refs": ("agent_browser_actions.txt",)}[phase]
     for name in names:
         for path in (directory / name, directory / f".{name}.tmp"):
             try:
                 path.unlink(missing_ok=True)
             except OSError as cleanup_error:
                 record.setdefault("cleanup_errors", []).append(str(cleanup_error))
-    if phase == "structured_dom":
+    if phase in {"structured_dom", "dom_model_artifacts"}:
         state.snapshot_path = None
-    elif phase == "dom_model_artifacts":
         state.model_text = ""
-    else:
+        for name in ("dom.json", "dom_full.txt", "dom_model.json", "dom_model.txt"):
+            (directory / name).unlink(missing_ok=True)
+            (directory / ("."+name+".tmp")).unlink(missing_ok=True)
+    elif phase == "screenshot":
         state.screenshot_path = None
-    if phase != "screenshot":
+        state.screenshot_bytes = None
+    else:
+        state.action_observation = None
+    if phase in {"structured_dom", "dom_model_artifacts"}:
         state.dom_error = error
 
 
 async def _record_capture_phase(cdp: CDPClient, directory: Path, phase: str,
     state: _CaptureState, metadata: dict[str, Any], interval_started: float,
-    observation_mode: str, max_nodes: int, max_text_chars: int) -> None:
+    observation_mode: str, max_nodes: int, max_text_chars: int,
+    agent_browser: AgentBrowserClient | None = None) -> None:
     record = {"kind": phase, "started_at": utc_now()}
     started = time.monotonic()
     try:
-        await _capture_phase(cdp, directory, phase, state, max_nodes, max_text_chars)
+        await _capture_phase(cdp, directory, phase, state, max_nodes, max_text_chars, agent_browser)
         record["status"] = "captured"
     except Exception as error:
         record.update(status="error", error=f"{type(error).__name__}: {error}")
@@ -453,12 +577,11 @@ async def _record_capture_phase(cdp: CDPClient, directory: Path, phase: str,
         record.update(ended_at=utc_now(), duration_seconds=time.monotonic() - started)
         metadata["captures"].append(record)
         metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic() - interval_started)
-        write_json(directory / "capture.json", metadata)
 
 
 async def _finish_capture(cdp: CDPClient, directory: Path, state: _CaptureState,
     metadata: dict[str, Any], interval_started: float, navigation_start: int,
-    observation_mode: str) -> CaptureBundle:
+    observation_mode: str, max_nodes: int, max_text_chars: int) -> CaptureBundle:
     frame = await _capture_frame(cdp, metadata, "url_after")
     metadata["url_after"] = str(frame.get("url", metadata["url_before"]))
     metadata["loader_id_after"] = frame.get("loaderId", "")
@@ -466,39 +589,72 @@ async def _finish_capture(cdp: CDPClient, directory: Path, state: _CaptureState,
         or metadata["loader_id_before"] != metadata["loader_id_after"]
         or len(cdp.navigation_events) != navigation_start)
     metadata["navigation_events"] = cdp.navigation_events[navigation_start:]
+    metadata.update(raw_capture_ended_at=utc_now(), raw_capture_duration_seconds=time.monotonic()-interval_started)
+    if state.screenshot_bytes is not None:
+        state.screenshot_path = directory / "screenshot.png"
+    action_path = None
+    if state.action_observation is not None:
+        action_path = directory / "agent_browser_actions.txt"
+    metadata["capture_order"].append("dom_model_artifacts")
+    await _record_capture_phase(cdp, directory, "dom_model_artifacts", state, metadata,
+        interval_started, observation_mode, max_nodes, max_text_chars)
     metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic() - interval_started,
         url_metadata_complete=not metadata["metadata_errors"],
         document_language=str(state.snapshot.get("documentLanguage") or state.snapshot.get("language") or "")
             if observation_mode == "dom" else None)
-    write_json(directory / "capture.json", metadata)
+    observation = state.action_observation
     return CaptureBundle(snapshot=state.snapshot, snapshot_path=state.snapshot_path, model_text=state.model_text,
         screenshot_path=state.screenshot_path, observation_mode=observation_mode,
         document_url=metadata["url_after"], capture_metadata=metadata,
-        document_language=str(state.snapshot.get("documentLanguage") or state.snapshot.get("language") or ""))
+        document_language=str(state.snapshot.get("documentLanguage") or state.snapshot.get("language") or ""),
+        agent_browser_action_text=observation.text if observation is not None else "",
+        agent_browser_refs=observation.refs if observation is not None else frozenset(),
+        agent_browser_targets=observation.targets if observation is not None else {},
+        agent_browser_action_path=action_path)
 
 
 async def capture_bundle(cdp: CDPClient, directory: Path, *, max_nodes: int,
-    max_text_chars: int, observation_mode: str = "dom") -> CaptureBundle:
-    """Record paired evidence, with only the selected channel driving the actor."""
+    max_text_chars: int, observation_mode: str = "dom",
+    agent_browser: AgentBrowserClient | None = None) -> CaptureBundle:
+    """Acquire paired raw observations before projecting or writing artifacts."""
     if observation_mode not in {"dom", "screenshot"}:
         raise RunnerError("unknown observation mode")
+    if observation_mode == "screenshot" and agent_browser is not None:
+        raise RunnerError("accessibility observations are forbidden in screenshot mode")
     directory.mkdir(parents=True, exist_ok=False)
     metadata = {"started_at": utc_now(), "target_id": str(cdp.target.get("targetId", "")),
         "session_id": getattr(cdp, "session_id", ""), "captures": [],
-        "capture_order": ["structured_dom", "dom_model_artifacts", "screenshot"],
+        "capture_order": ["structured_dom", "screenshot"] + (["executable_refs"] if agent_browser is not None else []),
         "paired_complete": True, "navigation_during_capture": False,
+        "content_changed_during_capture": None, "paint_changed_during_capture": None,
         "setup_errors": list(getattr(cdp, "capture_setup_errors", [])), "metadata_errors": []}
     interval_started = time.monotonic()
     navigation_start = len(cdp.navigation_events)
-    frame = await _capture_frame(cdp, metadata, "url_before")
-    metadata["url_before"] = str(frame.get("url", cdp.target.get("url", "")))
-    metadata["loader_id_before"] = frame.get("loaderId", "")
     state = _CaptureState()
-    for phase in metadata["capture_order"]:
-        await _record_capture_phase(cdp, directory, phase, state, metadata,
-            interval_started, observation_mode, max_nodes, max_text_chars)
-    return await _finish_capture(cdp, directory, state, metadata, interval_started,
-        navigation_start, observation_mode)
+    try:
+        frame = await _capture_frame(cdp, metadata, "url_before")
+        metadata["url_before"] = str(frame.get("url", cdp.target.get("url", "")))
+        metadata["loader_id_before"] = frame.get("loaderId", "")
+        for phase in metadata["capture_order"]:
+            await _record_capture_phase(cdp, directory, phase, state, metadata,
+                interval_started, observation_mode, max_nodes, max_text_chars, agent_browser)
+        return await _finish_capture(cdp, directory, state, metadata, interval_started,
+            navigation_start, observation_mode, max_nodes, max_text_chars)
+    finally:
+        # Persist any acquired raw evidence even when a later raw observation
+        # fails. Do not issue projection or browser calls after that failure.
+        if state.screenshot_bytes is not None:
+            (directory / "screenshot.png").write_bytes(state.screenshot_bytes)
+        if state.action_observation is not None:
+            write_text(directory / "agent_browser_actions.txt", state.action_observation.text)
+        if state.snapshot and state.dom_error is None and not (directory / "dom.json").exists():
+            write_json(directory / "dom.json", {"result": {"snapshot": state.snapshot}})
+        if "raw_capture_ended_at" not in metadata:
+            metadata.update(raw_capture_ended_at=utc_now(), raw_capture_duration_seconds=time.monotonic()-interval_started)
+            metadata["preserved_raw_artifacts"] = {name: hashlib.sha256((directory/name).read_bytes()).hexdigest()
+                for name in ("dom.json", "screenshot.png", "agent_browser_actions.txt") if (directory/name).is_file()}
+        metadata.update(ended_at=utc_now(), duration_seconds=time.monotonic()-interval_started)
+        write_json(directory / "capture.json", metadata)
 
 
 async def _snapshot_action_refs(agent_browser: AgentBrowserClient, attempts: int, cdp: CDPClient) -> Any:
@@ -549,52 +705,6 @@ async def _snapshot_action_refs(agent_browser: AgentBrowserClient, attempts: int
     raise AssertionError("unreachable")
 
 
-async def _finish_reference_capture(bundle: CaptureBundle, cdp: CDPClient,
-    refs_started: float) -> None:
-    try:
-        frame = (await capture_call(cdp, "Page.getFrameTree", {})).get("frameTree", {}).get("frame", {})
-    except Exception as error:
-        if getattr(error, "technical_failure_class", None):
-            raise
-        frame = {}
-        bundle.capture_metadata["metadata_errors"].append(
-            {"kind": "url_after_refs", "error": f"{type(error).__name__}: {error}"})
-        bundle.capture_metadata["url_metadata_complete"] = False
-    bundle.capture_metadata["url_after"] = str(frame.get("url", bundle.capture_metadata["url_after"]))
-    bundle.capture_metadata["loader_id_after"] = frame.get("loaderId", bundle.capture_metadata["loader_id_after"])
-    bundle.capture_metadata["navigation_events"] = [event for event in cdp.navigation_events
-        if event["recorded_at"] >= bundle.capture_metadata["started_at"]]
-    bundle.capture_metadata["navigation_during_capture"] = bool(
-        bundle.capture_metadata["navigation_events"]
-        or bundle.capture_metadata["url_before"] != bundle.capture_metadata["url_after"]
-        or bundle.capture_metadata["loader_id_before"] != bundle.capture_metadata["loader_id_after"])
-    bundle.document_url = bundle.capture_metadata["url_after"]
-    bundle.capture_metadata["ended_at"] = utc_now()
-    bundle.capture_metadata["duration_seconds"] += time.monotonic() - refs_started
-    write_json(bundle.directory / "capture.json", bundle.capture_metadata)
-
-
-async def attach_agent_browser_observation(bundle: CaptureBundle,
-    agent_browser: AgentBrowserClient, cdp: CDPClient, *, attempts: int = 3) -> CaptureBundle:
-    """Store the exact agent-browser ref snapshot supplied to the model."""
-    if bundle.observation_mode != "dom":
-        raise RunnerError("accessibility observations are forbidden in screenshot mode")
-    refs_started_at, refs_started = utc_now(), time.monotonic()
-    action_observation = await _snapshot_action_refs(agent_browser, attempts, cdp)
-    action_path = bundle.snapshot_path.with_name("agent_browser_actions.txt")
-    write_text(action_path, action_observation.text)
-    bundle.agent_browser_action_text = action_observation.text
-    bundle.agent_browser_refs = action_observation.refs
-    bundle.agent_browser_targets = action_observation.targets
-    bundle.agent_browser_action_path = action_path
-    bundle.capture_metadata["capture_order"].append("executable_refs")
-    bundle.capture_metadata["captures"].append({"kind": "executable_refs", "status": "captured",
-        "started_at": refs_started_at, "ended_at": utc_now(),
-        "duration_seconds": time.monotonic() - refs_started})
-    await _finish_reference_capture(bundle, cdp, refs_started)
-    return bundle
-
-
 async def _synchronize_capture_tab(cdp: CDPClient) -> dict[str, Any]:
     # Target metadata identifies tabs without reading page content.
     try:
@@ -604,7 +714,7 @@ async def _synchronize_capture_tab(cdp: CDPClient) -> dict[str, Any]:
             raise
         target = cdp.target
         return await cdp.reconnect_active_page(AgentBrowserPage(
-            str(target.get("targetId", "")), str(target.get("url", "")), ""))
+            "", "", "", target_id=str(target.get("targetId", ""))))
     children = [item for item in targets if item.get("type") == "page"
         and item.get("openerId") == cdp.target.get("targetId")]
     if len(children) > 1:
@@ -614,7 +724,7 @@ async def _synchronize_capture_tab(cdp: CDPClient) -> dict[str, Any]:
     if selected is None:
         raise RunnerError("the task tab closed without a unique popup")
     return await cdp.synchronize_target(AgentBrowserPage(
-        str(selected["targetId"]), str(selected.get("url", "")), ""))
+        "", "", "", target_id=str(selected["targetId"])))
 
 
 async def synchronize_recorder_target(
@@ -623,53 +733,42 @@ async def synchronize_recorder_target(
     *,
     attempts: int = 6,
 ) -> dict[str, Any]:
-    """Synchronize capture with the active action tab, with bounded reconnects."""
-    if agent_browser is None:
-        return await _synchronize_capture_tab(cdp)
+    """Apply one exact-target popup policy, then align the reference CLI if used."""
     last_error: BaseException | None = None
     observation_recovered = False
     for attempt in range(1, max(1, attempts) + 1):
         try:
-            await cdp.synchronize_target()
-            active_page = await agent_browser.active_page(cdp)
-            return await cdp.synchronize_target(active_page)
-        except AgentBrowserBaseError as error:
+            report = await _synchronize_capture_tab(cdp)
+            if agent_browser is not None:
+                await cdp.synchronize_target()
+                active_page = await agent_browser.active_page(cdp, target_id=str(cdp.target["targetId"]))
+                selected = cdp._select_active_target(active_page, [{"targetId": cdp.target["targetId"]}])
+                cdp.target_registry[selected["targetId"]]["tab_id"] = active_page.tab_id
+                cdp.connection_report["target_registry"] = list(cdp.target_registry.values())
+                if cdp.recording_dir is not None:
+                    write_json(cdp.recording_dir / "target_registry.json", {"recorded_at": utc_now(),
+                        "targets": cdp.connection_report["target_registry"]})
+                report["agent_browser_tab_id"] = active_page.tab_id
+            return report
+        except (AgentBrowserBaseError, RunnerError) as error:
             last_error = error
             if cdp._page_failure is not None:
                 raise cdp._page_failure
+            if "ambiguous" in str(error) or "without a unique popup" in str(error):
+                raise
+            if getattr(error, "technical_failure_class", None) == "browser_crash":
+                raise
             if getattr(error, "technical_failure_class", None) == "cdp_stall":
                 if observation_recovered:
                     raise
                 await cdp.recover_observation()
                 observation_recovered = True
             if attempt < attempts:
-                await agent_browser.reconnect()
-                await asyncio.sleep(0.5 * attempt)
-        except RunnerError as error:
-            last_error = error
-            if getattr(error, "technical_failure_class", None) in {"browser_crash", "cdp_stall"}:
-                raise
-            transport_lost = is_cdp_transport_error(error)
-            if transport_lost:
-                try:
-                    # Restore the browser transport before the CLI identity
-                    # handshake; its target comes from CDP, never page globals.
-                    report = await cdp.reconnect_active_page(AgentBrowserPage("", "", "",
-                        target_id=str(cdp.target.get("targetId", ""))))
-                    await cdp.synchronize_target()
-                    active_page = await agent_browser.active_page(cdp)
-                    report.update(await cdp.synchronize_target(active_page))
-                    report["synchronization_attempt"] = attempt
-                    return report
-                except (AgentBrowserBaseError, RunnerError, OSError) as reconnect_error:
-                    last_error = reconnect_error
-            if attempt < attempts:
+                if agent_browser is not None and isinstance(error, AgentBrowserBaseError):
+                    await agent_browser.reconnect()
                 await asyncio.sleep(0.5 * attempt)
     assert last_error is not None
-    raise RunnerError(
-        f"could not synchronize recorder to agent-browser active tab after "
-        f"{max(1, attempts)} attempts: {last_error}"
-    ) from last_error
+    raise RunnerError(f"could not synchronize exact task target after {max(1, attempts)} attempts: {last_error}") from last_error
 
 
 @dataclass
@@ -747,6 +846,7 @@ class CDPClient:
         self.target_registry: dict[str, dict[str, Any]] = {}
         self.session_targets: dict[str, str] = {}
         self.identity_reads: dict[str, set[str]] = {}
+        self.paint_events: list[dict[str, Any]] = []
 
     async def _enable_attached_target(self) -> dict[str, Any]:
         """Enable capture domains, the coordinate viewport and configured locales."""
@@ -1026,11 +1126,13 @@ class CDPClient:
                         if temporary_session:
                             self._expected_detaches.add(session_id)
                             await asyncio.wait_for(self.call("Target.detachFromTarget", {"sessionId": session_id}, attached=False),
-                                timeout=max(0.0, deadline - time.monotonic()))
-                except (TimeoutError, CDPError, RunnerError) as error:
+                                timeout=LIVENESS_PROBE_SECONDS)
+                except Exception as error:
                     entry["identity_error"] = type(error).__name__
                     if self._page_failure is not None:
                         raise self._page_failure
+                    if self._transport_error is not None:
+                        raise self._transport_error
                     if not temporary_session:
                         await self.recover_observation()
                     # An unrelated unresponsive background page cannot determine
@@ -1073,7 +1175,7 @@ class CDPClient:
 
     def _select_active_target(self, active_page: AgentBrowserPage,
         pages: list[dict[str, Any]]) -> dict[str, Any]:
-        target_id = active_page.target_id or (active_page.tab_id if self.observation_mode == "screenshot" else "")
+        target_id = active_page.target_id
         if not target_id and active_page.identity_marker:
             matched = [key for key, value in self.target_registry.items()
                 if value.get("identity_marker") == active_page.identity_marker]
@@ -1181,6 +1283,9 @@ class CDPClient:
                 method = payload.get("method", "")
                 params = payload.get("params", {})
                 event_session = payload.get("sessionId") or params.get("sessionId")
+                if method == "LayerTree.layerPainted":
+                    self.paint_events.append({"method": method, "recorded_at": utc_now(),
+                        "target_id": self.session_targets.get(str(event_session), str(self.target.get("targetId", "")))})
                 if method == "Debugger.scriptParsed" and params.get("url") in self.identity_reads:
                     target_id = self.session_targets.get(str(event_session), "")
                     if target_id:

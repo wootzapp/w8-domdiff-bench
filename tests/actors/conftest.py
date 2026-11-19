@@ -22,7 +22,7 @@ def actor_observation(tmp_path):
 
 @pytest.fixture
 def actor_request_args(actor_observation, tmp_path, monkeypatch):
-    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     return {
         "task": "Inspect the example page.",
         "step": 1,

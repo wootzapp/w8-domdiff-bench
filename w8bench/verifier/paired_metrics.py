@@ -193,6 +193,7 @@ def _mode_metrics(rows, task_count):
         "median_turns_all_attempts": statistics.median(row["model_turns"] for row in rows) if turns_complete else None,
         "mean_turns_successful_tasks": statistics.mean(row["model_turns"] for row in successes) if successes else None,
         "actor_turns": sum(row["model_turns"] for row in rows),
+        "stall_advisory_matches": sum(row.get("stall_advisory_matches", 0) for row in rows),
         "actor_transport_attempts": sum(row["actor_transport_attempts"] for row in rows)
             if all(type(row.get("actor_transport_attempts")) is int for row in rows) else None,
         "actor_transport_attempts_known_lower_bound": sum(row.get("actor_transport_attempts") or 0 for row in rows),
@@ -398,6 +399,9 @@ def _group_metrics(target, mode, selected):
     metrics.setdefault("token_usage_known_calls", {key: sum(row.get("token_usage_known_calls", {}).get(key, 0) for row in rows)
         for key in ("input_tokens", "output_tokens", "cached_input_tokens", "reasoning_tokens", "cache_write_input_tokens")})
     metrics.update(attempted_runs=len(rows), completion_counts=dict(verdicts),
+        stall_advisory_matches=sum(row.get("stall_advisory_matches", 0) for row in rows),
+        stall_advisory_matches_per_run=[{"run": row.get("run"), "matches": row.get("stall_advisory_matches", 0)} for row in rows],
+        stall_advisory_match_counts=dict(sum((Counter(row.get("stall_advisory_match_counts", {})) for row in rows), Counter())),
         technical_failures=sum(row.get("technical_failure", False) for row in rows),
         technical_failure_classes=dict(Counter(row.get("technical_failure_class") or "unknown"
             for row in rows if row.get("technical_failure"))),
@@ -469,8 +473,12 @@ def aggregate(pairs: list[dict[str, Any]], *, pass_k: list[int] | None = None) -
         "technical_completion_diagnostic": pair[mode]["completion"],
         "completion": {"method": "ungraded", "verdict": "ungraded", "reason": "technical_failure"}}
         for mode in ("dom", "screenshot") if pair[mode].get("technical_failure")}} for pair in pairs]
+    profile_policies = {pair.get("browser_profile_policy", {}).get("allow_nonfresh", False) for pair in pairs}
+    if len(profile_policies) > 1:
+        raise ValueError("browser profile comparison policies differ")
     by_task, identities, catalog_hashes, trial_counts, ks = _index_pairs(pairs, pass_k)
-    result = {"paired_tasks": len(by_task), "paired_attempts": len(pairs),
+    result = {"browser_profile_policy": {"allow_nonfresh": next(iter(profile_policies), False),
+        "override_used": any(pair.get("browser_profile_policy", {}).get("override_used") for pair in pairs)},"paired_tasks": len(by_task), "paired_attempts": len(pairs),
         "trial_ids": sorted({str(identity[0]) for identity in identities}),
         "trials_per_task": trial_counts, "balanced_trial_counts": len(set(trial_counts.values())) == 1,
         "evaluated_k": ks, "catalog_sha256": next(iter(catalog_hashes)), "modes": {}, "per_task": {}}

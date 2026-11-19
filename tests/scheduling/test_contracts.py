@@ -25,7 +25,7 @@ def evaluation_args(paths, rubric, config):
         "--eval-config", str(config), "--execute"]
 
 def test_each_actor_reads_the_frozen_catalog_when_the_original_changes(tmp_path, monkeypatch):
-    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     monkeypatch.setattr(task_cli, "RUNTIME_ROOT", tmp_path / "runtime")
     monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
     original_iterdir = Path.iterdir
@@ -97,7 +97,7 @@ def test_resume_checks_effective_policy_even_when_every_actor_is_completed(
     before = batch.ledger.read_bytes()
     monkeypatch.setenv(key, value)
     with pytest.raises(RunnerError, match="effective settings differ") as caught:
-        task_cli.main(batch.arguments)
+        task_cli.main((batch.arguments) + ["--resume"])
     assert field in str(caught.value)
     assert batch.ledger.read_bytes() == before
 
@@ -109,7 +109,7 @@ def test_resume_refuses_changed_endpoint_request_settings(effective_settings_bat
     value["CHAT_COMPLETION_KWARGS_JSON"]["reasoning_effort"] = "low"
     endpoint.write_text(json.dumps(value))
     with pytest.raises(RunnerError, match="effective settings differ") as caught:
-        task_cli.main(batch.arguments)
+        task_cli.main((batch.arguments) + ["--resume"])
     assert "endpoints" in str(caught.value)
 
 def test_resume_ignores_deployment_and_credential_changes(effective_settings_batch, monkeypatch):
@@ -119,7 +119,7 @@ def test_resume_ignores_deployment_and_credential_changes(effective_settings_bat
         "COMPOSE_PROJECT_NAME": "another-project", "CDP_HOST_PORT": "49101", "NOVNC_HOST_PORT": "49102",
         "VNC_HOST_PORT": "49103", "OPENAI_API_KEY": "another-offline-key", "GEMINI_API_KEY": "another-offline-key"}.items():
         monkeypatch.setenv(key, value)
-    assert task_cli.main(batch.arguments) == 0
+    assert task_cli.main((batch.arguments) + ["--resume"]) == 0
 
 def test_resume_accepts_identical_rubric_and_catalog_at_new_locations(effective_settings_batch, tmp_path):
     batch = effective_settings_batch
@@ -131,7 +131,7 @@ def test_resume_accepts_identical_rubric_and_catalog_at_new_locations(effective_
     arguments = list(batch.arguments)
     arguments[arguments.index("--catalog-file") + 1] = str(catalog)
     arguments[arguments.index("--rubric-dir") + 1] = str(rubrics)
-    assert task_cli.main(arguments) == 0
+    assert task_cli.main((arguments) + ["--resume"]) == 0
     rows = [json.loads(line) for line in batch.ledger.read_text().splitlines()]
     assert all(row["rubric"] == str(rubrics / "custom.json") for row in rows)
 
@@ -143,7 +143,7 @@ def test_resume_keeps_catalog_and_rubric_content_binding(effective_settings_batc
     value["criteria"][0]["description"] = "Report a different result."
     rubric.write_text(json.dumps(value))
     with pytest.raises(RunnerError, match="effective settings differ") as caught:
-        task_cli.main(batch.arguments)
+        task_cli.main((batch.arguments) + ["--resume"])
     assert "rubric_sha256" in str(caught.value)
 
 def test_resume_ignores_recorder_source_hash_when_policy_is_unchanged(effective_settings_batch, tmp_path, monkeypatch):
@@ -154,7 +154,7 @@ def test_resume_ignores_recorder_source_hash_when_policy_is_unchanged(effective_
     source.write_text('"""Module documentation."""\n')
     assert task_cli.main(batch.arguments) == 0
     source.write_text('"""Another module description."""\n')
-    assert task_cli.main(batch.arguments) == 0
+    assert task_cli.main((batch.arguments) + ["--resume"]) == 0
 
 def test_actor_child_receives_the_scheduled_effective_contract(effective_settings_batch, monkeypatch):
     batch = effective_settings_batch
@@ -193,7 +193,7 @@ def test_every_recorded_effective_field_is_checked_before_completed_resume(effec
         write_json_lines(batch.ledger, rows)
         before = batch.ledger.read_bytes()
         with pytest.raises(RunnerError, match="effective settings differ"):
-            task_cli.main(batch.arguments)
+            task_cli.main((batch.arguments) + ["--resume"])
         assert batch.ledger.read_bytes() == before
         checked.append(path)
     assert checked and any(path[0] == "actor" for path in checked) and any(path[0] == "stages" for path in checked)
@@ -208,14 +208,14 @@ def test_resume_accepts_same_endpoint_config_in_another_directory(effective_sett
         value["CHAT_COMPLETION_KWARGS_JSON"]["api_key"] = "another-offline-key"
         endpoint.write_text(json.dumps(value))
     monkeypatch.setattr(settings, "ROOT", destination)
-    assert task_cli.main(batch.arguments) == 0
+    assert task_cli.main((batch.arguments) + ["--resume"]) == 0
 
 def test_resume_ignores_model_endpoint_port_changes(effective_settings_batch, monkeypatch):
     batch = effective_settings_batch
     monkeypatch.setenv("GEMINI_BASE_URL", "https://actor.example.test:49101/v1beta")
     assert task_cli.main(batch.arguments) == 0
     monkeypatch.setenv("GEMINI_BASE_URL", "https://actor.example.test:49102/v1beta")
-    assert task_cli.main(batch.arguments) == 0
+    assert task_cli.main((batch.arguments) + ["--resume"]) == 0
 
 @pytest.mark.usefixtures('no_network')
 def test_local_catalog_keeps_the_launcher_generic(tmp_path, capsys):
@@ -258,13 +258,13 @@ def test_compact_catalog_runs_in_both_arms_and_records_hash(run_pair, tmp_path, 
         {"action": "terminate", "status": "success", "termination_reason": "completed",
          "final_answer": "done", "thought": "Observed heading."}]
     monkeypatch.setattr(runner.ModelClient, "_post", lambda self, payload: {
-        "model": "gemini-3.1-pro-preview", "output_text": json.dumps(proposals.pop(0)),
+        "model": "gemini-3.8-flash", "output_text": json.dumps(proposals.pop(0)),
         "usage": {"input_tokens": 1, "output_tokens": 1}})
     output = tmp_path / "catalog-runs" / mode
     args = runner.parse_args(["--env-file", str(tmp_path / "absent.env"), "--observation-mode", mode,
         "--task", definition["instruction"], "--start-url", row["start_url"], "--task-id", "task_02",
         "--source-task-id", "task_02", "--source-catalog", str(catalog), "--output-dir", str(output),
-        "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder", "--max-turns", "2", "--settle-seconds", "0"])
+        "--model", "gemini-3.8-flash", "--api-key", "offline-placeholder", "--max-turns", "2", "--settle-seconds", "0"])
     assert asyncio.run(runner.run(args)) == 0
     recording = inspect_recording(output / "task_02")
     for item in (recording["task"], recording["manifest"]):
@@ -324,14 +324,14 @@ def test_runner_expiry_refusal_override_and_inclusive_utc_date(run_pair, curated
         calls.append(payload)
         decision = ({"action": "wait", "seconds": 0, "thought": "Observe the current page."} if len(calls) % 2 else
             {"action": "terminate", "status": "success", "termination_reason": "completed", "final_answer": "done", "thought": "Observed heading."})
-        return {"model": "gemini-3.1-pro-preview", "output_text": json.dumps(decision),
+        return {"model": "gemini-3.8-flash", "output_text": json.dumps(decision),
             "usage": {"input_tokens": 1, "output_tokens": 1}}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
     output = tmp_path / "expired-run"
     args = ["--env-file", str(tmp_path / "absent.env"), "--observation-mode", mode,
         "--task", definition["instruction"], "--start-url", row["start_url"], "--task-id", row["task_id"],
         "--source-task-id", row["task_id"], "--source-catalog", str(catalog), "--output-dir", str(output),
-        "--model", "gemini-3.1-pro-preview", "--api-key", "offline-placeholder", "--settle-seconds", "0"]
+        "--model", "gemini-3.8-flash", "--api-key", "offline-placeholder", "--settle-seconds", "0"]
     with pytest.raises(RunnerError, match="expired catalog task"):
         asyncio.run(runner.run(runner.parse_args(args)))
     assert calls == [] and not output.exists()
@@ -364,16 +364,16 @@ def test_pre_rubric_planning_is_separate_and_cannot_resume_as_execution(tmp_path
     assert len(rows) == 4 and all(row["planning_only"] and row["rubric"] is None for row in rows)
     assert not (root / "ledger.jsonl").exists()
     with pytest.raises(RunnerError, match="execution requires --rubric-dir"):
-        task_cli.main(args)
+        task_cli.main((args) + ["--resume"])
     rubrics = tmp_path / "rubrics"
     write_json(rubrics / "custom.json", {"task_id": "custom", "criteria": [{"id": "heading", "description": "Read heading."}]})
     # A renamed preview must not become an executable resume ledger.
     write_json_lines(root / "ledger.jsonl", rows)
     with pytest.raises(RunnerError, match="planning-only"):
-        task_cli.main(args + ["--rubric-dir", str(rubrics)])
+        task_cli.main((args + ["--rubric-dir", str(rubrics)]) + ["--resume"])
     (root / "ledger.jsonl").unlink()
     monkeypatch.setattr(task_cli.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=1))
-    assert task_cli.main(args + ["--rubric-dir", str(rubrics)]) == 0
+    assert task_cli.main((args + ["--rubric-dir", str(rubrics)]) + ["--resume"]) == 0
     executed = [json.loads(line) for line in (root / "ledger.jsonl").read_text().splitlines()]
     assert all(not row["planning_only"] and row["completed"] for row in executed)
     assert (root / "schedule_preview.jsonl").is_file()
@@ -411,7 +411,7 @@ def test_batch_resume_rejects_byte_changes_to_frozen_catalog(tmp_path, monkeypat
     assert frozen.read_bytes() == original
     frozen.write_bytes(original.replace(b"\r\n", b"\n"))
     with pytest.raises(RunnerError, match="saved batch catalog differs"):
-        task_cli.main(arguments)
+        task_cli.main((arguments) + ["--resume"])
 
 @pytest.mark.usefixtures('no_network')
 def test_remote_catalog_hash_uses_one_download_and_forwards_frozen_bytes(tmp_path, monkeypatch):
@@ -549,7 +549,7 @@ def test_manual_definition_preserves_the_web_url_and_trims_outer_space(scheme):
     }
 
 def test_catalog_alias_dry_run_resolves_expanded_contract_without_launch(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     catalog = tmp_path / "catalog.jsonl"
     row = {
         "task_id": "research_07",
@@ -586,7 +586,7 @@ def test_launcher_expiry_is_inclusive_and_checked_in_utc(tmp_path, monkeypatch, 
     monkeypatch.setattr(task_cli, "ROOT", tmp_path)
     monkeypatch.setattr(task_cli, "RUNTIME_ROOT", tmp_path / "runtime")
     monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
-    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     monkeypatch.setattr(task_cli.subprocess, "run", lambda *args, **kwargs: pytest.fail("expiry dry-run started a process"))
     catalog = tmp_path / "tasks.jsonl"
     catalog.write_text(json.dumps({"task_id": "dated", "instruction": "Read title.", "start_url": "https://example.test"}) + "\n")
@@ -606,7 +606,7 @@ def test_launcher_expiry_is_inclusive_and_checked_in_utc(tmp_path, monkeypatch, 
         assert task_cli.main(args) == 0
 
 def test_schedule_binds_one_frozen_task_rubric_across_arms_and_trials(tmp_path, monkeypatch):
-    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     monkeypatch.setattr(task_cli, "RUNTIME_ROOT", tmp_path / "runtime")
     monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
     monkeypatch.setattr(task_cli.subprocess, "run", lambda *args, **kwargs: pytest.fail("schedule started a process"))
@@ -636,7 +636,7 @@ def test_schedule_binds_one_frozen_task_rubric_across_arms_and_trials(tmp_path, 
         assert {row["rubric"] for row in selected} == {str(rubric_dir / f"{name}.json")}
     (rubric_dir / "alpha.json").write_text(json.dumps({**tasks[0], "criteria": [{"id": "title", "description": "A different requirement."}]}))
     with pytest.raises(RunnerError, match="saved schedule configuration differs"):
-        task_cli.main(args)
+        task_cli.main(args + ["--resume"])
     assert ledger.read_bytes() == original
 
 def test_settings_diff_lists_nested_fields_and_refuses_drift():
@@ -673,7 +673,7 @@ def test_effective_config_hash_depends_on_content_not_location_or_credentials(tm
     ("max_turns", 100), ("memory_max_chars", 7000), ("base_url", "https://other.test/v1")])
 def test_actor_settings_guard_protects_effective_request_controls(field, value):
     from w8bench.settings import actor_settings, require_same_settings
-    controls = {"model": "gemini-3.1-pro-preview", "reasoning_effort": "medium", "max_output_tokens": 10000,
+    controls = {"model": "gemini-3.8-flash", "reasoning_effort": "medium", "max_output_tokens": 10000,
         "max_turns": 200, "memory_max_chars": 8000, "base_url": "https://example.test/v1"}
     changed = {**controls, field: value}
     with pytest.raises(ValueError, match=field):
@@ -681,7 +681,7 @@ def test_actor_settings_guard_protects_effective_request_controls(field, value):
 
 def test_actor_settings_include_both_observation_policies_and_exclude_resource_names():
     from w8bench.settings import actor_settings
-    controls = {"model": "gemini-3.1-pro-preview", "max_turns": 200, "image": "first:tag",
+    controls = {"model": "gemini-3.8-flash", "max_turns": 200, "image": "first:tag",
         "container_name": "first", "port": 9999}
     settings = actor_settings(controls)
     assert set(settings["prompt_sha256"]) == {"dom", "screenshot"}
@@ -692,7 +692,7 @@ def test_judge_settings_bind_rubric_prompts_schema_and_each_stage(monkeypatch):
     from w8bench.settings import evaluation_settings
     monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
     monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
-    recording = {"manifest": {"controls": {"model": "gemini-3.1-pro-preview"}}, "task": {}}
+    recording = {"manifest": {"controls": {"model": "gemini-3.8-flash"}}, "task": {}}
     settings = evaluation_settings(recording, eval_config="config", rubric_hash="one", judge_model="gpt-6.1-sol")
     assert settings["rubric_sha256"] == "one"
     assert set(settings["stages"]) == {"completion", "screenshot_verifier", "dom_model", "inventory", "adjudication", "rubric_preparation"}

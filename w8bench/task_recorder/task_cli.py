@@ -433,7 +433,7 @@ def browser_container_cdp_url(container_name: str) -> str:
     return f"http://127.0.0.1:{port}"
 
 
-def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
+def claim_browser_profile_provenance(container_name: str, *, freshly_recreated: bool = False) -> dict[str, Any]:
     """Claim one task slot for this container-lifetime profile."""
     profile_task_count_path = os.environ.get(
         "BROWSER_PROFILE_TASK_COUNT_PATH",
@@ -446,7 +446,11 @@ def claim_browser_profile_provenance(container_name: str) -> dict[str, Any]:
     return {
         "container_id": container_id,
         "container_created_at": container_created_at,
-        "profile_fresh_at_run_start": tasks_previously_run == 0,
+        "profile_fresh_at_run_start": (freshly_recreated and tasks_previously_run == 0
+            and "CHROMIUM_RESET_PROFILE=1" in ((container.get("Config") or {}).get("Env") or [])),
+        "freshly_recreated_by_launcher": freshly_recreated,
+        "launcher_pid": os.getpid(),
+        "launch_mode": "fresh" if freshly_recreated else "reuse",
         "tasks_previously_run_in_container": tasks_previously_run,
         "browser_build": browser_build,
         "browser_environment": dict(item.split("=",1) for item in (container.get("Config") or {}).get("Env",[])
@@ -642,8 +646,8 @@ def build_runner_command(
         str(max_steps),
     ]
     configured_model = os.environ.get("ACTOR_MODEL", "").strip()
-    if configured_model != "gemini-3.1-pro-preview" or model and model != configured_model:
-        raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
+    if configured_model != "gemini-3.8-flash" or model and model != configured_model:
+        raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.8-flash configuration")
     command.extend(["--model", configured_model])
     if definition.get("source_catalog"):
         command.extend(["--source-catalog", str(definition["source_catalog"])])
@@ -682,6 +686,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="explicitly allow a catalog task past its inclusive UTC valid_until date")
     parser.add_argument("--max-turns", "--max-steps", dest="max_steps", type=int, default=200,
         help="positive actor turn budget, at most 200")
+    parser.add_argument("--resume", action="store_true",
+        help="continue an existing run ledger; otherwise reserve the next free run sequence")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -1167,7 +1173,7 @@ def _launch_single_run(
         container_name = os.environ.get(
             "CONTAINER_NAME", "w8-core-browser-engine"
         )
-        profile_provenance = claim_browser_profile_provenance(container_name)
+        profile_provenance = claim_browser_profile_provenance(container_name, freshly_recreated=not args.no_browser_start)
         runner_environment = _single_runner_environment(container_name, profile_provenance)
         process = subprocess.Popen(
             command,
@@ -1212,7 +1218,10 @@ def run_batch(args: argparse.Namespace) -> int:
     planning_only = args.dry_run and (args.rubric_dir is None or any(
         not (args.rubric_dir.resolve() / f"{safe_task_id(definition['source_task_id'])}.json").is_file()
         for definition in definitions))
-    batch_dir = run_directory(args.output_dir, resolve_run_name(args.run_name)).resolve()
+    batch_dir = run_directory(args.output_dir, resolve_run_name(args.run_name), fresh=not args.resume).resolve()
+    args.run_name = batch_dir.name
+    if args.resume and not any((batch_dir / name).is_file() for name in ("ledger.jsonl", "schedule_preview.jsonl")):
+        raise RunnerError("--resume requires an existing run ledger")
     frozen_catalog = _freeze_batch_catalog(batch_dir, definitions, catalog_bytes)
     ledger_path = batch_dir / ("schedule_preview.jsonl" if planning_only else "ledger.jsonl")
     model_name = args.model
@@ -1247,18 +1256,21 @@ def run_single_task(args: argparse.Namespace) -> int:
         raise RunnerError("batch grading options require --trials")
     task_id = safe_task_id(args.task_id[0].strip())
     from w8bench.run_paths import run_directory, resolve_run_name
+    batch_owned = bool(os.environ.get("W8_EXPECTED_ACTOR_SETTINGS"))
     args.run_name = resolve_run_name(args.run_name)
-    args.output_dir = run_directory(args.output_dir, args.run_name)
     definition = _single_task_definition(args, task_id)
+    args.output_dir = run_directory(args.output_dir, args.run_name, fresh=not args.resume and not batch_owned, reserve=not args.dry_run)
+    args.run_name = args.output_dir.name
     if args.dry_run:
         _prepare_single_run(args, task_id, definition)
         print("Dry run complete; browser task was not started.")
         return 0
     # The batch owns its attempt ledger and starts exactly one child attempt.
     # A direct invocation owns the same two-attempt policy locally.
-    batch_owned = bool(os.environ.get("W8_EXPECTED_ACTOR_SETTINGS"))
     base = args.output_dir
     ledger_path = base / "attempt_ledgers" / args.observation_mode / f"{task_id}.jsonl"
+    if args.resume and not batch_owned and not ledger_path.is_file():
+        raise RunnerError("--resume requires an existing task attempt ledger")
     configuration = {"model": args.model, "max_turns": args.max_steps,
         "max_output_tokens": args.max_output_tokens, "viewport": [args.viewport_width, args.viewport_height]}
     from w8bench.settings import actor_settings, require_same_settings
@@ -1354,8 +1366,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     load_env(args.env_file)
     configured_model = os.environ.get("ACTOR_MODEL", "").strip()
-    if configured_model != "gemini-3.1-pro-preview" or args.model and args.model != configured_model:
-        raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
+    if configured_model != "gemini-3.8-flash" or args.model and args.model != configured_model:
+        raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.8-flash configuration")
     args.model = configured_model
     if args.rubric_dir and not args.judge_model:
         raise RunnerError("completion grading requires explicit --judge-model gpt-6.1-sol; actor fallback is forbidden")

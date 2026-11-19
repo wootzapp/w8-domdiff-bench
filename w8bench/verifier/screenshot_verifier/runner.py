@@ -218,7 +218,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--eval-config", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--judge-model", default="gemini-3.1-pro-preview")
-    parser.add_argument("--action-model", default="gemini-3.8-flash",
+    parser.add_argument("--action-model", default="gemini-3.1-pro-preview",
                         help="Action/validity judge model")
     parser.add_argument("--rubric-threshold", type=float, default=0.8)
     parser.add_argument("--max-images-per-criterion", type=int, default=5)
@@ -226,8 +226,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--success", choices=("outcome", "process", "both"), default="outcome")
     parser.add_argument("--redo-eval", action="store_true")
     args = parser.parse_args(argv)
-    if args.judge_model != "gemini-3.1-pro-preview" or args.action_model != "gemini-3.8-flash":
-        parser.error("verifier models are pinned to judge gemini-3.1-pro-preview and action/validity gemini-3.8-flash")
+    if args.judge_model != "gemini-3.1-pro-preview" or args.action_model != "gemini-3.1-pro-preview":
+        parser.error("verifier models are pinned to judge gemini-3.1-pro-preview and action/validity gemini-3.1-pro-preview")
     return args
 
 

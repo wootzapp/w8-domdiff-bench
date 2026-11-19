@@ -61,7 +61,7 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
     output = tmp_path / "recordings"
     arguments = ["--trials", str(trials), "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
         "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
-        "--run-name", "batch", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]
+        "--run-name", "batch", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]
     ledger = output / "batch" / "ledger.jsonl"
     calls = []
     def run(command, **kwargs):
@@ -81,7 +81,7 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
     assert task_cli.main(arguments + ["--dry-run"]) == 0
     assert calls == []
     assert not (runtime / "active-run.json").exists()
-    assert task_cli.main(arguments) == 0
+    assert task_cli.main((arguments) + ["--resume"]) == 0
     assert len(calls) == 4 * trials
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
     for index in range(0, len(rows), 2):
@@ -92,7 +92,7 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
         expected = "dom" if (index // 2 % 2 + first["trial"] - 1) % 2 == 0 else "screenshot"
         assert first["arm"] == expected
     assert all(row["completed"] and row["technical_outcome"] == "startup_failure" for row in rows)
-    assert task_cli.main(arguments) == 0
+    assert task_cli.main((arguments) + ["--resume"]) == 0
     assert len(calls) == 4 * trials  # Finished failures are outcomes, not implicit retries.
     report = tmp_path / "empty-recordings-report"
     assert compare_main(["--ledger", str(ledger), "--output", str(report)]) == 0
@@ -104,7 +104,7 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
         assert summary["modes"][mode]["attempted_runs"] == 2 * trials
         assert summary["modes"][mode]["completion_counts"] == {"ungraded": 2 * trials}
     with pytest.raises(RunnerError, match="configuration differs"):
-        task_cli.main(arguments + ["--max-turns", "17"])
+        task_cli.main((arguments + ["--max-turns", "17"]) + ["--resume"])
 
 @pytest.mark.usefixtures('no_network')
 @pytest.mark.parametrize("trials", [0, -1])
@@ -130,7 +130,7 @@ def test_batch_resume_retains_dead_started_attempt_and_runs_pending_rows(tmp_pat
     output = tmp_path / "recordings"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
         "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
-        "--run-name", "resumed", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]
+        "--run-name", "resumed", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]
     assert task_cli.main(arguments + ["--dry-run"]) == 0
     ledger = output / "resumed" / "ledger.jsonl"
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
@@ -142,7 +142,7 @@ def test_batch_resume_retains_dead_started_attempt_and_runs_pending_rows(tmp_pat
         calls.append(command)
         return SimpleNamespace(returncode=1)
     monkeypatch.setattr(task_cli.subprocess, "run", run)
-    assert task_cli.main(arguments) == 0
+    assert task_cli.main((arguments) + ["--resume"]) == 0
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
     assert len(calls) == 1
     assert rows[0]["completed"] and rows[0]["technical_outcome"] == "interrupted"
@@ -195,7 +195,7 @@ def test_batch_grading_error_does_not_abort_or_replace_actor_outcome(tmp_path, m
     monkeypatch.setattr(task_cli.subprocess, "run", run)
     assert task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog),
         "--rubric-dir", str(rubrics), "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
-        "--run-name", "judging", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]) == 0
+        "--run-name", "judging", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]) == 0
     rows = [json.loads(line) for line in (output / "judging" / "ledger.jsonl").read_text().splitlines()]
     assert actors == ["dom", "screenshot"]
     assert len(judges) == 2
@@ -231,7 +231,7 @@ def test_batch_keyboard_interrupt_during_judge_preserves_actor_outcome(tmp_path,
     with pytest.raises(KeyboardInterrupt):
         task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
             "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "interrupted_judge",
-            "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"])
+            "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"])
     assert events == ["actor", "actor", "judge"]
     rows = [json.loads(line) for line in (output / "interrupted_judge" / "ledger.jsonl").read_text().splitlines()]
     assert all(row["technical_outcome"] == "completed" for row in rows)
@@ -254,7 +254,7 @@ def test_batch_resume_refuses_live_owned_recorder(tmp_path, monkeypatch):
     output = tmp_path / "recordings"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
         "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
-        "--run-name", "live", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.1-pro-preview"]
+        "--run-name", "live", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]
     assert task_cli.main(arguments + ["--dry-run"]) == 0
     ledger = output / "live" / "ledger.jsonl"
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
@@ -267,11 +267,11 @@ def test_batch_resume_refuses_live_owned_recorder(tmp_path, monkeypatch):
         raise AssertionError("resume must not launch while the owned recorder is live")
     monkeypatch.setattr(task_cli.subprocess, "run", forbidden)
     with pytest.raises(RunnerError, match="live|active|running"):
-        task_cli.main(arguments)
+        task_cli.main((arguments) + ["--resume"])
     assert ledger.read_bytes() == original
 
 @pytest.mark.usefixtures('no_network')
-@pytest.mark.parametrize("judge", [None, "gemini-3.1-pro-preview", "gpt-5.6"])
+@pytest.mark.parametrize("judge", [None, "gemini-3.8-flash", "gpt-5.6"])
 def test_batch_completion_judge_is_explicit_and_cannot_fall_back_to_actor(tmp_path, monkeypatch, judge):
     arguments = ["--trials", "1", "--rubric-dir", str(tmp_path/"rubrics"),
         "--output-dir", str(tmp_path/"out"), "--env-file", str(tmp_path/"absent.env"), "--dry-run"]
@@ -305,7 +305,7 @@ def test_single_task_launcher_preserves_ownership_and_shutdown(tmp_path, monkeyp
     monkeypatch.setattr(task_cli, "task_transition_lock", lambda: nullcontext())
     monkeypatch.setattr(task_cli, "stop_previous_run", lambda **kwargs: events.append("handoff") or ({"status": "stopped", "run_id": "prior", "pid": 27182} if no_browser_start else {"status": "none"}))
     monkeypatch.setattr(task_cli, "restart_browser_service", lambda path: events.append("browser"))
-    monkeypatch.setattr(task_cli, "claim_browser_profile_provenance", lambda name: events.append("profile") or {"fixture": True})
+    monkeypatch.setattr(task_cli, "claim_browser_profile_provenance", lambda name, **kwargs: events.append("profile") or {"fixture": True})
     monkeypatch.setattr(task_cli, "browser_container_cdp_url", lambda name: events.append("cdp_url") or "http://127.0.0.1:9222")
     monkeypatch.setattr(task_cli, "process_start_ticks", lambda pid: None if outcome == "missing_owner" else 42)
     monkeypatch.setattr(task_cli, "write_active_run", lambda record: markers.append(record) or events.append("publish"))
@@ -363,7 +363,7 @@ def test_single_task_launcher_preserves_ownership_and_shutdown(tmp_path, monkeyp
     parsed = runner.parse_args(command[3:])
     assert parsed.observation_mode == mode and parsed.task == "Read the heading."
     assert parsed.task_id == parsed.source_task_id == "fixture" and parsed.run_name == "collection"
-    assert parsed.max_steps == 200 and parsed.max_output_tokens == 10000 and parsed.model == "gemini-3.1-pro-preview"
+    assert parsed.max_steps == 200 and parsed.max_output_tokens == 10000 and parsed.model == "gemini-3.8-flash"
     assert kwargs["start_new_session"] is True
     assert json.loads(kwargs["env"]["RUNNER_BROWSER_PROFILE_PROVENANCE"]) == {"fixture": True}
     assert kwargs["env"]["AGENT_BROWSER_CDP_URL"] == ("http://browser.fixture:9222" if no_browser_start else "http://127.0.0.1:9222")
@@ -376,10 +376,10 @@ def test_single_launcher_preserves_existing_attempt(tmp_path, monkeypatch):
     write_json(directory / "final.json", {"run_status": "completed"})
     original = (directory / "final.json").read_bytes()
     monkeypatch.setattr(task_cli.subprocess, "Popen", lambda *args, **kwargs: pytest.fail("existing attempt launched a process"))
-    with pytest.raises(RunnerError, match="attempt directory already exists"):
+    with pytest.raises(RunnerError, match="--resume requires an existing task attempt ledger"):
         task_cli.main(["fixture", "--task", "Read heading.", "--start-url", "https://example.test",
             "--observation-mode", "dom", "--output-dir", str(tmp_path / "recordings"),
-            "--run-name", "collection", "--env-file", str(tmp_path / "absent.env")])
+            "--run-name", "collection", "--resume", "--env-file", str(tmp_path / "absent.env")])
     assert (directory / "final.json").read_bytes() == original
 
 @pytest.mark.usefixtures('no_network')
@@ -417,7 +417,7 @@ def test_batch_resume_requires_complete_schedule(launcher_batch):
     write_json_lines(ledger, rows[:1])
     original = ledger.read_bytes()
     with pytest.raises(RunnerError, match="saved schedule differs from requested task/arm/trial set"):
-        task_cli.main(args)
+        task_cli.main((args) + ["--resume"])
     assert ledger.read_bytes() == original
 
 @pytest.mark.usefixtures('no_network')
@@ -434,7 +434,7 @@ def test_batch_resume_refuses_live_scheduled_process(launcher_batch, monkeypatch
         if path == Path("/proc") else original_iterdir(path))
     monkeypatch.setattr(task_cli, "process_command", lambda pid: command)
     with pytest.raises(RunnerError, match="scheduled launcher or judge is still running: pid 654321"):
-        task_cli.main(args)
+        task_cli.main((args) + ["--resume"])
     assert ledger.read_bytes() == original
 
 @pytest.mark.usefixtures('no_network')
@@ -498,7 +498,7 @@ def test_batch_resume_uses_final_recording_and_tracks_judge_interruption(launche
         write_json(evaluation, {"status": "complete"})
         return SimpleNamespace(returncode=0)
     monkeypatch.setattr(task_cli.subprocess, "run", judge)
-    assert task_cli.main(args) == 0
+    assert task_cli.main((args) + ["--resume"]) == 0
     resumed = [json.loads(line) for line in ledger.read_text().splitlines()]
     assert len(judges) == 1
     assert resumed[0]["technical_outcome"] == "completed" and resumed[0]["completed"] is True
@@ -619,7 +619,9 @@ def test_profile_claim_tracks_container_lifetime_and_exact_image(tmp_path, monke
     assert result["container_id"] == "container-one"
     assert result["container_created_at"] == "2026-11-17T00:00:00Z"
     assert result["tasks_previously_run_in_container"] == prior_tasks
-    assert result["profile_fresh_at_run_start"] is (prior_tasks == 0)
+    assert result["profile_fresh_at_run_start"] is False
+    assert result["freshly_recreated_by_launcher"] is False
+    assert result["launch_mode"] == "reuse"
     assert result["browser_build"]["image_id"] == image_id
     assert result["browser_build"]["image_reference"] == "browser:mutable-tag"
     assert result["browser_build"]["repo_digests"] == (["browser@" + image_id] if image_metadata_available else [])
@@ -698,7 +700,7 @@ def test_technical_attempt_is_retained_and_rerun_once(tmp_path, monkeypatch, arm
             'technical_failure_class': 'browser_crash' if outcome == 'technical_failure' else None})
     monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
     task_cli._run_batch_actor(args, row, ledger, tmp_path / 'ledger.jsonl', tmp_path,
-        tmp_path / 'catalog.jsonl', 'gemini-3.1-pro-preview', directory)
+        tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', directory)
     assert len(calls) == 2
     assert calls[0] != calls[1]
     assert row['completed'] and row['technical_outcome'] == 'completed'
@@ -721,7 +723,7 @@ def test_second_technical_attempt_does_not_trigger_a_third(tmp_path, monkeypatch
         write_json(current / 'final.json', {'run_status': 'technical_failure', 'technical_failure_class': 'cdp_stall'})
     monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
     task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
-        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.1-pro-preview', directory)
+        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', directory)
     assert len(calls) == 2
     assert len(row['attempts']) == 2
     assert row['technical_outcome'] == 'technical_failure'
@@ -745,7 +747,7 @@ def test_resume_launches_pending_rerun_without_repeating_first_attempt(tmp_path,
         write_json(current / 'final.json', {'run_status': 'completed'})
     monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
     task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
-        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.1-pro-preview', second)
+        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', second)
     assert calls == [second]
     assert len(row['attempts']) == 2
     assert row['technical_outcome'] == 'completed'
@@ -766,7 +768,7 @@ def test_nontechnical_outcome_never_buys_a_fresh_attempt(tmp_path, monkeypatch, 
         write_json(current / 'final.json', {'run_status': outcome, 'termination_reason': reason})
     monkeypatch.setattr(task_cli, '_execute_batch_actor', execute)
     task_cli._run_batch_actor(SimpleNamespace(rubric_dir=None), row, [row], tmp_path / 'ledger.jsonl',
-        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.1-pro-preview', directory)
+        tmp_path, tmp_path / 'catalog.jsonl', 'gemini-3.8-flash', directory)
     assert len(calls) == 1
     assert len(row['attempts']) == 1
 
@@ -788,7 +790,7 @@ def test_single_task_uses_fresh_recording_and_attempt_metadata_on_technical_reru
     monkeypatch.setattr(task_cli, '_wait_single_run', lambda process, timeout: 0)
     arguments = ['custom', '--observation-mode', 'dom', '--catalog-file', str(catalog),
         '--output-dir', str(tmp_path / 'recordings'), '--run-name', 'manual',
-        '--env-file', str(tmp_path / 'absent.env'), '--model', 'gemini-3.1-pro-preview']
+        '--env-file', str(tmp_path / 'absent.env'), '--model', 'gemini-3.8-flash']
     assert task_cli.main(arguments) == 0
     assert len(calls) == 2
     assert [number for _, number in calls] == [1, 2]
@@ -797,9 +799,22 @@ def test_single_task_uses_fresh_recording_and_attempt_metadata_on_technical_reru
     row = json.loads(ledger.read_text())
     assert row['recording'] == str(calls[1][0].resolve())
     assert len(row['attempts']) == 2
-    assert task_cli.main(arguments) == 0
+    assert task_cli.main((arguments) + ["--resume"]) == 0
     assert len(calls) == 2
     monkeypatch.setenv('STEP_SETTLE_SECONDS', '2')
     with pytest.raises(RunnerError, match='effective settings differ'):
-        task_cli.main(arguments)
+        task_cli.main((arguments) + ["--resume"])
     assert len(calls) == 2
+
+
+@pytest.mark.usefixtures('no_network')
+def test_new_batch_collision_preserves_original_ledger_and_resume_is_explicit(launcher_batch):
+    args, ledger, *_ = launcher_batch
+    assert task_cli.main(args + ["--dry-run"]) == 0
+    original = ledger.read_bytes()
+    assert task_cli.main(args + ["--dry-run"]) == 0
+    second = ledger.parent.with_name("collection_2") / "ledger.jsonl"
+    assert second.is_file() and ledger.read_bytes() == original
+    assert task_cli.main(args + ["--dry-run", "--resume"]) == 0
+    assert ledger.read_bytes() == original
+    assert not ledger.parent.with_name("collection_3").exists()

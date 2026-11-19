@@ -521,9 +521,9 @@ def test_action_judge_model_matches_both_packages_and_endpoint_config():
     from w8bench.verifier.common import CANONICAL_ACTION_MODEL, validate_endpoint_configs
 
     root = Path(__file__).resolve().parents[2]
-    assert CANONICAL_ACTION_MODEL == dom_model == "gemini-3.8-flash"
+    assert CANONICAL_ACTION_MODEL == dom_model == "gemini-3.1-pro-preview"
     validate_endpoint_configs(root / "config")
-    endpoint = json.loads((root / "config/google_gemini3_8_flash.json").read_text())
+    endpoint = json.loads((root / "config/google_gemini3_1_pro_preview.json").read_text())
     assert endpoint["CHAT_COMPLETION_KWARGS_JSON"]["model"] == CANONICAL_ACTION_MODEL
 
 
@@ -534,8 +534,10 @@ def test_standalone_verifier_models_are_pinned(package):
                  "--eval-config", "config", "--output", "result.json"]
     if package == "dom_model":
         arguments += ["--generation-metrics", "metrics.json"]
-    assert module.parse_args(arguments).action_model == "gemini-3.8-flash"
+    assert module.parse_args(arguments).action_model == "gemini-3.1-pro-preview"
     assert module.parse_args(arguments).judge_model == "gemini-3.1-pro-preview"
+    with pytest.raises(SystemExit):
+        module.parse_args(arguments + ["--action-model", "gemini-3.8-flash"])
     with pytest.raises(SystemExit):
         module.parse_args(arguments + ["--action-model", "custom-model"])
     with pytest.raises(SystemExit):

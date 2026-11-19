@@ -6,6 +6,7 @@ import argparse
 import hashlib
 from collections import Counter
 import json
+import re
 from pathlib import Path
 
 from w8bench.task_recorder.prepare_verifier_data import inspect_recording
@@ -101,18 +102,24 @@ def _scheduled_grade(row, summary):
     return grade
 
 
-def _browser_identity(manifest):
+def _browser_identity(manifest, *, allow_nonfresh=False):
     profile = manifest.get("browser_profile_provenance") or {}
-    if profile.get("profile_fresh_at_run_start") is not True:
-        raise ValueError("browser profile freshness is unverified")
+    fresh = (profile.get("profile_fresh_at_run_start") is True
+        and profile.get("freshly_recreated_by_launcher") is True
+        and profile.get("launch_mode") == "fresh"
+        and type(profile.get("tasks_previously_run_in_container")) is int
+            and profile["tasks_previously_run_in_container"] == 0
+        and (profile.get("browser_environment") or {}).get("CHROMIUM_RESET_PROFILE") == "1")
     build = (profile.get("browser_build") or {}).get("image_id")
     environment = profile.get("browser_environment")
     if not build or not isinstance(environment,dict) or not environment:
         raise ValueError("browser build or runtime environment is unverified")
+    if not fresh and not allow_nonfresh:
+        raise ValueError("browser profile freshness is unverified; explicitly allow nonfresh runs to compare them")
     return build, environment
 
 
-def _recorded_attempts(ledger):
+def _recorded_attempts(ledger, *, allow_nonfresh=False):
     indexed = [{}, {}]
     records = {}
     protocols, builds, models, grading_policies, configurations = {}, set(), set(), set(), set()
@@ -140,7 +147,7 @@ def _recorded_attempts(ledger):
         grade = _scheduled_grade(row, summary)
         if grade.get("evidence_policy") is not None:
             grading_policies.add(grade["evidence_policy"])
-        build, environment = _browser_identity(manifest)
+        build, environment = _browser_identity(manifest, allow_nonfresh=allow_nonfresh)
         builds.add(build)
         environments.add(json.dumps(normalized_settings(environment),sort_keys=True))
         capture_policies.add(json.dumps(normalized_settings({key: manifest.get(key) for key in
@@ -216,10 +223,10 @@ def _partial_summary(row, arm, task_id):
     return summary
 
 
-def _pair_attempt(rows, available, task_id, trial):
+def _pair_attempt(rows, available, task_id, trial, *, allow_nonfresh=False):
     reports, unmatched = [], []
     if all(available.values()):
-        receipt, markdown = compare(available["dom"], available["screenshot"])
+        receipt, markdown = compare(available["dom"], available["screenshot"], allow_nonfresh=allow_nonfresh)
         reports.append(f"Trial: {trial}\n\n{markdown}")
     else:
         receipt = {"task_id": task_id, "shared_controls": {}, "both_successful": False,
@@ -231,6 +238,21 @@ def _pair_attempt(rows, available, task_id, trial):
                 unmatched.append({"task_id": task_id, "trial": trial, "arm": arm,
                     "technical_outcome": rows[arm]["technical_outcome"]})
                 receipt[arm] = _partial_summary(rows[arm], arm, task_id)
+    if "browser_profile_policy" not in receipt:
+        nonfresh = []
+        for arm, recording in available.items():
+            if recording is None:
+                continue
+            profile = recording["manifest"].get("browser_profile_provenance") or {}
+            if not (profile.get("profile_fresh_at_run_start") is True
+                    and profile.get("freshly_recreated_by_launcher") is True
+                    and profile.get("launch_mode") == "fresh"
+                    and type(profile.get("tasks_previously_run_in_container")) is int
+            and profile["tasks_previously_run_in_container"] == 0
+                    and (profile.get("browser_environment") or {}).get("CHROMIUM_RESET_PROFILE") == "1"):
+                nonfresh.append(arm)
+        receipt["browser_profile_policy"] = {"allow_nonfresh": allow_nonfresh,
+            "nonfresh_arms": nonfresh, "override_used": bool(nonfresh)}
     for arm in ("dom", "screenshot"):
         scheduled, summary = rows[arm], receipt[arm]
         summary["attempt_number"] = scheduled.get("attempt_number", 1)
@@ -282,13 +304,13 @@ def _pair_attempt(rows, available, task_id, trial):
     return receipt, reports, unmatched
 
 
-def _paired_attempts(ledger, n, task_ids, records):
+def _paired_attempts(ledger, n, task_ids, records, *, allow_nonfresh=False):
     pairs, reports, unmatched = [], [], []
     for task_id in sorted(task_ids):
         for trial in range(1,n+1):
             rows = {row["arm"]: row for row in ledger if row["task_id"]==task_id and row["trial"]==trial}
             available = {arm: records.get((task_id,trial,arm)) for arm in ("dom","screenshot")}
-            receipt, report, missing = _pair_attempt(rows, available, task_id, trial)
+            receipt, report, missing = _pair_attempt(rows, available, task_id, trial, allow_nonfresh=allow_nonfresh)
             reports.extend(report)
             unmatched.extend(missing)
             pairs.append(receipt)
@@ -305,10 +327,10 @@ def _paired_attempts(ledger, n, task_ids, records):
 def _report_markdown(summary, pairs, reports):
     lines = ["# DOM versus screenshot actor turns", "",
         f"Scheduled tasks: {summary['scheduled_tasks']}; recorded pairs: {summary['paired_attempts']}; scheduled pairs: {len(pairs)}. No model calls were performed.", "",
-        "| Mode | Confirmed successes / attempts | Definitively graded | Mean actor turns (all attempts) | Rejected turns |",
-        "|---|---:|---:|---:|---:|"]
+        "| Mode | Confirmed successes / attempts | Definitively graded | Mean actor turns (all attempts) | Rejected turns | Stall advisories |",
+        "|---|---:|---:|---:|---:|---:|"]
     for mode, row in summary["modes"].items():
-        lines.append(f"| {mode} | {row['completion_counts'].get('success', 0)} / {row['attempted_runs']} | {row['definitively_graded_tasks']} | {row['mean_turns_all_attempts']} | {row['rejected_turns']} |")
+        lines.append(f"| {mode} | {row['completion_counts'].get('success', 0)} / {row['attempted_runs']} | {row['definitively_graded_tasks']} | {row['mean_turns_all_attempts']} | {row['rejected_turns']} | {row['stall_advisory_matches']} |")
     lines += ["", "| Mode | k | pass@k confirmed lower | Possible upper |", "|---|---:|---:|---:|"]
     for mode in ("dom", "screenshot"):
         for k, estimate in summary["modes"][mode]["pass_at_k"].items():
@@ -322,9 +344,19 @@ def _report_markdown(summary, pairs, reports):
 def _write_reports(output, indexed, summary, pairs, reports):
     # Prevent reports from being mixed into immutable source recordings.
     output = output.resolve()
+    from w8bench.run_paths import TEMPORAL_NAME_PATTERN
+    if any(not re.fullmatch(r"[0-9a-fA-F]{64}(?:_\d+)?(?:\.[A-Za-z0-9]+)?", part) and TEMPORAL_NAME_PATTERN.search(part) for part in output.parts):
+        raise ValueError("Report names must use labels and sequence numbers without dates or times")
     if any(output.is_relative_to(Path(r["source"])) for catalog in indexed for r in catalog.values()):
         raise ValueError("reports must be outside recording folders")
-    output.mkdir(parents=True, exist_ok=False)
+    base, number = output, 1
+    while True:
+        try:
+            output.mkdir(parents=True, exist_ok=False)
+            break
+        except FileExistsError:
+            number += 1
+            output = base.with_name(f"{base.name}_{number}")
     write_json(output / "summary.json", summary)
     write_json(output / "pairs.json", pairs)
     write_json(output / "per_task.json", summary["per_task"])
@@ -339,12 +371,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--ledger", type=Path, required=True, help="batch schedule and attempt outcomes")
     parser.add_argument("--pass-k", type=int, nargs="+", help="k values; default is all scheduled trial counts")
     parser.add_argument("--output", type=Path, required=True, help="new report directory")
+    parser.add_argument("--allow-nonfresh", action="store_true",
+        help="explicitly include reused or unverified browser profiles and record the override")
     args = parser.parse_args(argv)
     ledger, n, task_ids = _read_ledger(args.ledger)
-    indexed, records = _recorded_attempts(ledger)
-    pairs, reports, unmatched = _paired_attempts(ledger, n, task_ids, records)
+    indexed, records = _recorded_attempts(ledger, allow_nonfresh=args.allow_nonfresh)
+    pairs, reports, unmatched = _paired_attempts(ledger, n, task_ids, records, allow_nonfresh=args.allow_nonfresh)
     summary = aggregate(pairs, pass_k=args.pass_k)
-    summary.update(scheduled_attempts=len(ledger), scheduled_pairs=len(pairs),
+    summary.update(browser_profile_policy={"allow_nonfresh": args.allow_nonfresh,
+        "override_used": any(pair.get("browser_profile_policy", {}).get("override_used") for pair in pairs)},
+        scheduled_attempts=len(ledger), scheduled_pairs=len(pairs),
         paired_tasks=len({pair["task_id"] for pair in pairs if pair["recordings_paired"]}),
         paired_attempts=sum(pair["recordings_paired"] for pair in pairs),
         scheduled_tasks=len(task_ids), unmatched_arms=unmatched,

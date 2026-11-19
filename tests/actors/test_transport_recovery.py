@@ -5,25 +5,28 @@ from io import BytesIO
 
 import pytest
 
+from tests.conftest import actor_preflight_response
 from w8bench.task_recorder import runner
 from w8bench.task_recorder.recorder_support import RunnerError, write_json, append_json_line, write_json_lines
 
 
 @pytest.mark.parametrize('code', [429, 500, 502, 503, 504])
 def test_actor_retries_transient_http_only(monkeypatch, tmp_path, code):
-    client = runner.ModelClient('credential-for-redaction', 'gemini-3.1-pro-preview', 'https://offline.test')
+    client = runner.ModelClient('credential-for-redaction', 'gemini-3.8-flash', 'https://offline.test')
     client.last_input_report = {'api_call_started': True}
     client.turn_dir = tmp_path
     calls = []
     sleeps = []
     monkeypatch.setattr(runner.time, 'sleep', sleeps.append)
     def request(*args, **kwargs):
+        preflight = actor_preflight_response(args[0])
+        if preflight is not None: return preflight
         calls.append(kwargs['timeout'])
         if len(calls) < 3:
             raise urllib.error.HTTPError('https://offline.test', code, 'temporary', {}, BytesIO(b'{"error":{"message":"temporary rate limit"}}'))
-        return BytesIO(b'{"modelVersion":"gemini-3.1-pro-preview","candidates":[{"finishReason":"STOP","content":{"parts":[{"text":"{}"}]}}]}')
+        return BytesIO(b'{"modelVersion":"gemini-3.8-flash","candidates":[{"finishReason":"STOP","content":{"parts":[{"text":"{}"}]}}]}')
     monkeypatch.setattr(runner.urllib.request, 'urlopen', request)
-    assert client._post({'contents': []})['model'] == 'gemini-3.1-pro-preview'
+    assert client._post({'contents': []})['model'] == 'gemini-3.8-flash'
     assert calls == [180, 180, 180]
     rows = [json.loads(x) for x in (tmp_path / 'transport_attempts.jsonl').read_text().splitlines()]
     assert len(rows) == 3 and rows[0]['usage'] is None
@@ -33,11 +36,13 @@ def test_actor_retries_transient_http_only(monkeypatch, tmp_path, code):
 
 @pytest.mark.parametrize('code,body', [(401,'auth'), (403,'forbidden'), (400,'bad request'), (429,'insufficient_quota'), (429,'credit_balance_exhausted'), (503,'billing disabled')])
 def test_actor_does_not_retry_permanent_provider_errors(monkeypatch, tmp_path, code, body):
-    client = runner.ModelClient('credential-for-redaction', 'gemini-3.1-pro-preview', 'https://offline.test')
+    client = runner.ModelClient('credential-for-redaction', 'gemini-3.8-flash', 'https://offline.test')
     client.last_input_report = {'api_call_started': True}
     client.turn_dir = tmp_path
     calls = []
     def request(*args, **kwargs):
+        preflight = actor_preflight_response(args[0])
+        if preflight is not None: return preflight
         calls.append(1)
         raise urllib.error.HTTPError('https://offline.test',code,'failed',{},BytesIO(json.dumps({'error':{'message':body+' credential-for-redaction'}}).encode()))
     monkeypatch.setattr(runner.urllib.request, 'urlopen', request)
@@ -47,11 +52,14 @@ def test_actor_does_not_retry_permanent_provider_errors(monkeypatch, tmp_path, c
 
 
 def test_actor_exhausted_transport_has_unknown_usage(monkeypatch, tmp_path):
-    client = runner.ModelClient('offline', 'gemini-3.1-pro-preview', 'https://offline.test')
+    client = runner.ModelClient('offline', 'gemini-3.8-flash', 'https://offline.test')
     client.last_input_report = {'api_call_started': True}
     client.turn_dir = tmp_path
     monkeypatch.setattr(runner.time,'sleep',lambda _:None)
-    def request(*args, **kwargs):raise TimeoutError('timed out')
+    def request(*args, **kwargs):
+        preflight = actor_preflight_response(args[0])
+        if preflight is not None: return preflight
+        raise TimeoutError('timed out')
     monkeypatch.setattr(runner.urllib.request,'urlopen',request)
     with pytest.raises(RunnerError) as error:client._post({'contents':[]})
     assert error.value.technical_failure_class == 'actor_transport_exhausted'
@@ -87,9 +95,12 @@ def test_failure_health_and_interruption_receipts_are_redacted(monkeypatch, tmp_
 @pytest.mark.asyncio
 async def test_no_response_is_not_a_model_turn(actor_request_args, monkeypatch):
     from types import SimpleNamespace
-    client=runner.ModelClient('offline','gemini-3.1-pro-preview','https://offline.test')
+    client=runner.ModelClient('offline','gemini-3.8-flash','https://offline.test')
     monkeypatch.setattr(runner.time,'sleep',lambda _:None)
-    def request(*a,**k):raise TimeoutError('offline')
+    def request(*a,**k):
+        preflight = actor_preflight_response(a[0])
+        if preflight is not None: return preflight
+        raise TimeoutError('offline')
     monkeypatch.setattr(runner.urllib.request,'urlopen',request)
     async def inline(function,*args,**kwargs):return function(*args,**kwargs)
     monkeypatch.setattr(runner.asyncio,'to_thread',inline)
@@ -166,9 +177,13 @@ def test_failure_health_is_recorded_before_browser_cleanup(run_pair, tmp_path, m
 
 @pytest.mark.asyncio
 async def test_cancelled_transport_retains_pending_attempt_without_retry(actor_request_args, monkeypatch):
-    client=runner.ModelClient('offline','gemini-3.1-pro-preview','https://offline.test')
+    client=runner.ModelClient('offline','gemini-3.8-flash','https://offline.test')
     calls=[]
-    def request(*a,**k):calls.append(1);raise runner.asyncio.CancelledError()
+    def request(*a,**k):
+        preflight = actor_preflight_response(a[0])
+        if preflight is not None: return preflight
+        calls.append(1)
+        raise runner.asyncio.CancelledError()
     async def inline(function,*a,**k):return function(*a,**k)
     monkeypatch.setattr(runner.urllib.request,'urlopen',request)
     monkeypatch.setattr(runner.asyncio,'to_thread',inline)

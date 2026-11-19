@@ -697,7 +697,7 @@ def test_controlled_commands_bind_only_selected_inputs_and_frozen_rubric(pair_fa
         generation_metrics=pair["metrics"], eval_config=pair["config"], run_root=tmp_path / "evaluation")
     controls = validate_command_parity(selected)
     assert controls["judge_model"] == "gemini-3.1-pro-preview"
-    assert controls["action_judge_model"] == "gemini-3.8-flash"
+    assert controls["action_judge_model"] == "gemini-3.1-pro-preview"
     for name, command in selected.items():
         expected = pair["screenshot"] if name == "screenshot_verifier" else pair["dom"]
         assert Path(command[command.index("--input") + 1]) == expected
@@ -739,8 +739,8 @@ def test_normalized_coordinate_calibration_in_w8(tmp_path):
                 metrics = await cdp.call('Runtime.evaluate', {'expression':
                     '({width:innerWidth,height:innerHeight,dpr:devicePixelRatio})', 'returnByValue': True})
                 assert metrics['result']['value'] == {'width': 1365, 'height': 768, 'dpr': 1}
-                saved = await capture._capture_screenshot(cdp, tmp_path)
-                with Image.open(io.BytesIO(saved.read_bytes())) as image:
+                saved = await capture._capture_screenshot(cdp)
+                with Image.open(io.BytesIO(saved)) as image:
                     assert image.size == viewport
                 driver = AgentBrowserClient('unused', session='coordinate-calibration',
                     cdp_url=os.environ['W8_CALIBRATION_CDP_URL'], timeout=90)
@@ -764,9 +764,11 @@ def test_normalized_coordinate_calibration_in_w8(tmp_path):
                 assert hit['result']['value'] == 'scrolled'
                 receipts.append({'target': 'scrolled', 'scroll_y': scroll_y, 'wheel': wheel,
                     'result': result, 'hit': hit['result']['value']})
-                target = Path(__file__).resolve().parents[2] / 'reports' / 'implementation_fixes' / 'calibration.json'
+                from w8bench.run_paths import run_directory
+                target = run_directory(Path(__file__).resolve().parents[2] / 'reports' / 'browser_calibration',
+                    'run_1', fresh=True) / 'calibration.json'
                 write_json(target, {'viewport': list(viewport), 'device_pixel_ratio': 1,
-                    'screenshot_sha256': hashlib.sha256(saved.read_bytes()).hexdigest(),
+                    'screenshot_sha256': hashlib.sha256(saved).hexdigest(),
                     'hits': len(receipts), 'targets': len(points) + 1, 'receipts': receipts})
             finally:
                 await cdp.close_owned_target_on_failure()

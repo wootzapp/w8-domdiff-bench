@@ -52,7 +52,7 @@ def effective_settings_batch(tmp_path, monkeypatch):
     from w8bench.task_recorder import task_cli
     from w8bench.task_recorder.recorder_support import write_json
 
-    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.1-pro-preview")
+    monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
     monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
     monkeypatch.setenv("EVIDENCE_AUDIT_PROVIDER", "google")

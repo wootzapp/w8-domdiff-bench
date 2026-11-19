@@ -265,6 +265,7 @@ class AgentBrowserClient:
         # Keep only ref-bearing lines. Non-ref structural/context lines can
         # contain full-page text even after offscreen target refs are gone.
         lines = []
+        emitted_refs = set()
         # Child-frame boxes are frame-local, not top-level viewport
         # coordinates. Snapshot indentation identifies their frame owner.
         frames: list[tuple[int, float, float, tuple[float, float, float, float]]] = []
@@ -272,7 +273,8 @@ class AgentBrowserClient:
             indent = len(line) - len(line.lstrip())
             while frames and frames[-1][0] >= indent:
                 frames.pop()
-            line_refs = re.findall(r"\[ref=(@?e\d+)\]", line)
+            line_refs = [ref for attributes in re.findall(r"\[([^\]]*)\]", line)
+                for ref in re.findall(r"(?:^|[\s,])ref=(@?e\d+)(?=$|[\s,])", attributes)]
             if len(line_refs) != 1:
                 continue
             ref = self.action_ref(line_refs[0])
@@ -288,8 +290,8 @@ class AgentBrowserClient:
                 frames.append((indent, x, y, intersection))
             if intersection[2] > intersection[0] and intersection[3] > intersection[1]:
                 lines.append(line)
+                emitted_refs.add(ref)
         snapshot = "\n".join(lines) or "[No executable targets overlap the viewport.]"
-        emitted_refs = {self.action_ref(ref) for ref in re.findall(r"\[ref=(@?e\d+)\]", snapshot)}
         targets = {ref: target for ref, target in targets.items() if ref in emitted_refs}
         return snapshot, targets
 
@@ -328,8 +330,9 @@ class AgentBrowserClient:
         )
 
 
-    async def active_page(self, cdp: Any) -> AgentBrowserPage:
-        """Return the official agent-browser session's one active tab."""
+    async def active_page(self, cdp: Any, *, target_id: str | None = None) -> AgentBrowserPage:
+        """Resolve the CLI tab by exact CDP identity and optionally select it."""
+        requested_target_id = target_id
         arguments = ["tab", "list"]
         payload = await self._invoke(arguments)
         assert isinstance(payload, dict)
@@ -359,6 +362,16 @@ class AgentBrowserClient:
             )
         target_id = str(active.get("targetId", "")).strip()
         marker = ""
+        known_tab = cdp.target_registry.get(requested_target_id, {}).get("tab_id") if requested_target_id else None
+        if known_tab and known_tab != tab_id and any(str(tab.get("tabId", "")) == known_tab for tab in tabs if isinstance(tab, dict)):
+            # A cached unrelated tab may be stalled. Select a previously verified
+            # binding before evaluating that tab; still verify the exact ID.
+            await self._invoke(["tab", known_tab])
+            selected = await self.active_page(cdp)
+            if selected.target_id == requested_target_id:
+                return selected
+            cdp.target_registry[requested_target_id].pop("tab_id", None)
+            return await self.active_page(cdp, target_id=requested_target_id)
         if not target_id:
             from ..capture import LIVENESS_PROBE_SECONDS
             # The pinned CLI exposes neither targetId nor an isolated-world eval.
@@ -368,27 +381,51 @@ class AgentBrowserClient:
             source_url = "w8-recorder-binding:" + secrets.token_hex(32)
             cdp.identity_reads[source_url] = set()
             sessions = []
+            prepared = []
+            receipts = []
             try:
                 for candidate in list(cdp.target_registry):
-                    session_id = str((await asyncio.wait_for(cdp.call("Target.attachToTarget", {
-                        "targetId": candidate, "flatten": True}, attached=False),
-                        timeout=LIVENESS_PROBE_SECONDS))["sessionId"])
-                    sessions.append(session_id)
-                    await asyncio.wait_for(cdp.call("Debugger.enable", {"maxScriptsCacheSize": 0},
-                        session_id=session_id), timeout=LIVENESS_PROBE_SECONDS)
-                    await asyncio.wait_for(cdp.call("Debugger.setSkipAllPauses", {"skip": True},
-                        session_id=session_id), timeout=LIVENESS_PROBE_SECONDS)
+                    receipt = {"target_id": candidate, "started_at": time.time(), "stage": "attach"}
+                    try:
+                        session_id = str((await asyncio.wait_for(cdp.call("Target.attachToTarget", {
+                            "targetId": candidate, "flatten": True}, attached=False),
+                            timeout=LIVENESS_PROBE_SECONDS))["sessionId"])
+                        sessions.append(session_id)
+                        receipt["stage"] = "inspector_enable"
+                        await asyncio.wait_for(cdp.call("Debugger.enable", {"maxScriptsCacheSize": 0},
+                            session_id=session_id), timeout=LIVENESS_PROBE_SECONDS)
+                        await asyncio.wait_for(cdp.call("Debugger.setSkipAllPauses", {"skip": True},
+                            session_id=session_id), timeout=LIVENESS_PROBE_SECONDS)
+                        prepared.append((candidate, session_id))
+                        receipt["status"] = "prepared"
+                    except Exception as error:
+                        receipt.update(status="error", error_type=type(error).__name__)
+                        if cdp._page_failure is not None:
+                            raise cdp._page_failure
+                        if getattr(cdp, "_transport_error", None) is not None:
+                            raise cdp._transport_error
+                    finally:
+                        receipt["ended_at"] = time.time()
+                        receipts.append(receipt)
                 await self._invoke(["eval", "void 0\n//# sourceURL=" + source_url])
-                # Responses on this same CDP transport fence the preceding
-                # scriptParsed events, including when pages share URL/title.
-                for session_id in sessions:
-                    await asyncio.wait_for(cdp.call("Debugger.disable", session_id=session_id),
-                        timeout=LIVENESS_PROBE_SECONDS)
+                # Fences on prepared sessions flush scriptParsed events. Failure
+                # on an unrelated tab does not choose or invalidate the actor tab.
+                for candidate, session_id in prepared:
+                    try:
+                        await asyncio.wait_for(cdp.call("Debugger.disable", session_id=session_id),
+                            timeout=LIVENESS_PROBE_SECONDS)
+                    except Exception as error:
+                        receipts.append({"target_id": candidate, "stage": "inspector_disable",
+                            "status": "error", "error_type": type(error).__name__})
+                        if cdp._page_failure is not None:
+                            raise cdp._page_failure
+                        if getattr(cdp, "_transport_error", None) is not None:
+                            raise cdp._transport_error
                 matches = cdp.identity_reads[source_url]
                 if len(matches) != 1:
                     raise AgentBrowserError(arguments, "active page has no unique exact CDP target identity")
                 target_id = next(iter(matches))
-                marker = cdp.target_registry[target_id]["identity_marker"]
+                marker = cdp.target_registry.get(target_id, {}).get("identity_marker", "")
             finally:
                 cdp.identity_reads.pop(source_url, None)
                 for session_id in sessions:
@@ -396,16 +433,36 @@ class AgentBrowserClient:
                     try:
                         await asyncio.wait_for(cdp.call("Target.detachFromTarget", {
                             "sessionId": session_id}, attached=False), timeout=LIVENESS_PROBE_SECONDS)
-                    except Exception:
-                        pass
+                    except Exception as error:
+                        receipts.append({"session_id": session_id, "stage": "detach",
+                            "status": "error", "error_type": type(error).__name__})
+                if getattr(cdp, "recording_dir", None) is not None:
+                    from ..recorder_support import append_json_line
+                    for receipt in receipts:
+                        append_json_line(cdp.recording_dir / "target_identity.jsonl", receipt)
             # Reject a tab switch during the identity read, even if URLs match.
             repeated = await self._invoke(arguments)
             repeated_tabs = repeated.get("data", {}).get("tabs", []) if isinstance(repeated, dict) else []
             active_ids = [str(row.get("tabId", "")) for row in repeated_tabs if row.get("active") is True]
             if active_ids != [tab_id]:
                 raise AgentBrowserError(arguments, "active tab changed during exact target binding")
-        return AgentBrowserPage(tab_id=tab_id, url=url,
+        page = AgentBrowserPage(tab_id=tab_id, url=url,
             title=str(active.get("title", "")).strip(), target_id=target_id, identity_marker=marker)
+        if requested_target_id and target_id != requested_target_id:
+            # The CLI accepts tab IDs, not CDP target IDs. Resolve candidates
+            # through the same inspector identity; URL and title never select.
+            for tab in tabs:
+                if not isinstance(tab, dict) or str(tab.get("tabId", "")) == tab_id or tab.get("type", "page") != "page":
+                    continue
+                candidate_tab = str(tab.get("tabId", ""))
+                if not candidate_tab:
+                    continue
+                await self._invoke(["tab", candidate_tab])
+                candidate = await self.active_page(cdp)
+                if candidate.target_id == requested_target_id:
+                    return candidate
+            raise AgentBrowserError(arguments, "requested exact CDP target has no CLI tab")
+        return page
 
     @staticmethod
     def action_ref(value: Any) -> str:

@@ -167,7 +167,7 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
 
 @pytest.mark.usefixtures('no_network')
 @pytest.mark.parametrize('large_context', [False, True])
-def test_actor_list_price_estimate_uses_per_call_tiers_and_subsets(run_pair, large_context):
+def test_actor_list_price_estimate_uses_per_call_rates_and_subsets(run_pair, large_context):
     from w8bench.verifier.run_metrics import summarize
     paths, *_ = run_pair
     recording = inspect_recording(paths['dom'])
@@ -176,7 +176,7 @@ def test_actor_list_price_estimate_uses_per_call_tiers_and_subsets(run_pair, lar
             'input_tokens_details': {'cached_tokens': 40, 'cache_write_tokens': 20},
             'output_tokens_details': {'reasoning_tokens': 10}}
     priced = summarize(recording)['cost_streams']['actor']['cost']
-    per_call = ((300000 - 60) * 4 + 40 * .4 + 20 * 4 + 20 * 18) / 1000000 if large_context else .000368
+    per_call = (((300000 if large_context else 100) - 60) * .75 + 40 * .075 + 20 * .75 + 20 * 3.75) / 1000000
     assert priced['estimated_usd'] == pytest.approx(per_call * len(recording['decisions']))
     assert priced['priced_calls'] == len(recording['decisions'])
     assert priced['kind'] == 'estimated_from_list_prices'
@@ -443,7 +443,7 @@ def test_azure_chat_error_propagates_with_unknown_usage_and_closed_transport(mon
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
-@pytest.mark.parametrize("config_name", ["openai_gpt5_2.json", "google_gemini3_1_pro_preview.json", "google_gemini3_8_flash.json"])
+@pytest.mark.parametrize("config_name", ["openai_gpt5_2.json", "google_gemini3_1_pro_preview.json"])
 def test_pinned_client_config_metadata_preserves_sdk_defaults_and_wire_payload(monkeypatch, package, config_name):
     from pathlib import Path
     wrapper = importlib.import_module(f"w8bench.verifier.clients.providers")
@@ -647,7 +647,7 @@ def test_resumed_native_history_preserves_actor_model_and_usage_coverage(
     result = summarize(recording)
     for key in ("returned_actor_models", "turns_missing_usage", "cost_coverage", "token_usage"):
         assert result[key] == baseline[key]
-    assert result["returned_actor_models"] == ["gemini-3.1-pro-preview"]
+    assert result["returned_actor_models"] == ["gemini-3.8-flash"]
     history = result["judge_usage_streams"][f"{native}:gemini-3.8-flash"]
     assert history["known_calls"] == 1
     assert history["usage"]["total_tokens"] == 3
@@ -762,3 +762,49 @@ def test_native_usage_declarations_cannot_make_invalid_counts_complete(
     stream = summarize(recording)["judge_usage_streams"][f"{stage_name}:gemini-3.1-pro-preview"]
     assert stream["usage"]["input_tokens"] is None
     assert stream["usage_coverage"] != "complete"
+
+@pytest.mark.parametrize("model,input_tokens,expected", [
+    ("gemini-3.8-flash", 1000000, 0.75 + 3.75),
+    ("gemini-3.1-pro-preview", 100000, 0.2 + 12),
+    ("gemini-3.1-pro-preview", 200001, 0.800004 + 18),
+])
+def test_actor_and_native_judge_standard_prices_match_requested_models(model, input_tokens, expected):
+    from w8bench.verifier.run_metrics import _price_call
+    assumptions, sources = set(), set()
+    value = _price_call({"configured_model": model, "returned_model": model,
+        "usage": {"input_tokens": input_tokens, "output_tokens": 1000000,
+            "cached_input_tokens": 0, "cache_write_input_tokens": 0}}, {}, assumptions, sources)
+    assert value == pytest.approx(expected)
+    assert "https://ai.google.dev/gemini-api/docs/pricing" in sources
+
+@pytest.mark.parametrize("returned", ["gemini-3.8-flash", "gemini-3.8-flash-001", "gemini-3.8-flash-v2", "gemini-3.8-flash-2026-11-18"])
+def test_accepted_actor_model_versions_use_the_canonical_tariff(returned):
+    from w8bench.verifier.run_metrics import _price_call
+    value = _price_call({"configured_model": "gemini-3.8-flash", "returned_model": returned,
+        "usage": {"input_tokens": 100, "output_tokens": 20}}, {}, set(), set())
+    assert value == pytest.approx((100 * .75 + 20 * 3.75) / 1000000)
+
+
+def test_unrecognized_returned_model_is_not_priced_as_the_configured_actor():
+    from w8bench.verifier.run_metrics import _price_call
+    assert _price_call({"configured_model": "gemini-3.8-flash", "returned_model": "gemini-3.8-flash-mini",
+        "usage": {"input_tokens": 100, "output_tokens": 20}}, {}, set(), set()) is None
+
+
+@pytest.mark.usefixtures('no_network')
+def test_stall_advisory_counts_remain_private_and_aggregate_per_arm(run_pair):
+    paths, *_ = run_pair
+    pair, _ = compare(*(inspect_recording(paths[mode]) for mode in ('dom', 'screenshot')))
+    for mode, count in [('dom', 2), ('screenshot', 1)]:
+        recording = inspect_recording(paths[mode])
+        for index, decision in enumerate(recording['decisions']):
+            decision['stall_advisory'] = 'recent duplicate' if index < count else None
+        pair[mode] = summarize(recording)
+        assert pair[mode]['stall_advisory_matches'] == count
+        assert pair[mode]['stall_advisory_match_counts'] == {'recent duplicate': count}
+    result = aggregate([pair])
+    for mode, count in [('dom', 2), ('screenshot', 1)]:
+        summary = result['modes'][mode]
+        assert summary['stall_advisory_matches'] == count
+        assert summary['stall_advisory_match_counts'] == {'recent duplicate': count}
+        assert summary['stall_advisory_matches_per_run'] == [{'run': pair[mode]['run'], 'matches': count}]

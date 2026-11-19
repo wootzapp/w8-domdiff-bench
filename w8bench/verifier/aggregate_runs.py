@@ -236,7 +236,7 @@ def _run_catalog(root, manifest, run_name, tasks, catalog, expected_tasks, exclu
     return catalog, hashes, indexed
 
 
-def _recording_identity(root, project_root, run_name, alias, entry, indexed, recording_sources, recording_identities):
+def _recording_identity(root, project_root, run_name, alias, entry, indexed, recording_sources, recording_identities, *, allow_nonfresh=False):
     source = Path(indexed.get(alias, {}).get("recording") or f"recordings/{root.name}/{alias}")
     source = (project_root / source).resolve() if not source.is_absolute() else source.resolve()
     if not source.is_relative_to(project_root):
@@ -251,11 +251,21 @@ def _recording_identity(root, project_root, run_name, alias, entry, indexed, rec
         recording_identities[source_identity] = run_name
     if context and indexed.get(alias, {}).get("recording_sha256", context["recording_sha256"]) != context["recording_sha256"]:
         raise ValueError("Audit origin differs from evaluation recording receipt")
+    recorded = json.loads(source_manifest.read_text()) if source_manifest.is_file() else {}
+    profile = recorded.get("browser_profile_provenance") or {}
+    fresh = (profile.get("profile_fresh_at_run_start") is True
+        and profile.get("freshly_recreated_by_launcher") is True
+        and profile.get("launch_mode") == "fresh"
+        and type(profile.get("tasks_previously_run_in_container")) is int
+            and profile["tasks_previously_run_in_container"] == 0
+        and (profile.get("browser_environment") or {}).get("CHROMIUM_RESET_PROFILE") == "1")
+    entry["browser_profile_fresh"] = fresh
+    if not fresh and not allow_nonfresh:
+        raise ValueError("browser profile freshness is unverified; explicitly allow nonfresh runs to aggregate them")
     if source_manifest.is_file():
         if source in recording_sources and recording_sources[source] != run_name:
             raise ValueError(f"Recording source reused across runs: {alias}")
         recording_sources[source] = run_name
-        recorded = json.loads(source_manifest.read_text())
         started = recorded.get("started_at") or recorded.get("created_at")
         recorded_id = recorded.get("task_id")
         if started and recorded_id:
@@ -288,7 +298,7 @@ def _evidence_identity(alias, entry, identity, evidence_identities):
     evidence_identities[evidence_key] = identity
 
 
-def _validated_runs(roots, expected_tasks, excluded_tasks):
+def _validated_runs(roots, expected_tasks, excluded_tasks, *, allow_nonfresh=False):
     if not roots or len({Path(root).resolve() for root in roots}) != len(roots):
         raise ValueError("Provide distinct, complete run directories")
     if expected_tasks < 1:
@@ -308,7 +318,7 @@ def _validated_runs(roots, expected_tasks, excluded_tasks):
         tasks, reference_protocol = _audit_tasks(root, paths, evaluations, selected, run_name, driver_arms, reference_protocol)
         catalog, hashes, indexed = _run_catalog(root, manifest, run_name, tasks, catalog, expected_tasks, excluded_tasks, evaluations, unscored)
         for alias, entry in tasks.items():
-            identity = _recording_identity(root, project_root, run_name, alias, entry, indexed, recording_sources, recording_identities)
+            identity = _recording_identity(root, project_root, run_name, alias, entry, indexed, recording_sources, recording_identities, allow_nonfresh=allow_nonfresh)
             _evidence_identity(alias, entry, identity, evidence_identities)
         if reference_hashes is None:
             reference_hashes = hashes
@@ -375,8 +385,8 @@ def _panel_metrics(runs, aliases, clusters, run_names, resamples, seed):
     return per_run, categories, returned
 
 
-def aggregate_runs(roots: list[Path], *, expected_tasks: int, resamples: int = 20000, seed: int = 0, excluded_tasks: tuple[str, ...] = ()) -> tuple[dict, list[dict]]:
-    runs, reference_protocol, reference, run_names, driver_arms, catalog, unscored = _validated_runs(roots, expected_tasks, excluded_tasks)
+def aggregate_runs(roots: list[Path], *, expected_tasks: int, resamples: int = 20000, seed: int = 0, excluded_tasks: tuple[str, ...] = (), allow_nonfresh: bool = False) -> tuple[dict, list[dict]]:
+    runs, reference_protocol, reference, run_names, driver_arms, catalog, unscored = _validated_runs(roots, expected_tasks, excluded_tasks, allow_nonfresh=allow_nonfresh)
     common = set.intersection(*(set(tasks) for _, tasks in runs))
     aliases = sorted(common - set(excluded_tasks))
     if not aliases:
@@ -392,6 +402,9 @@ def aggregate_runs(roots: list[Path], *, expected_tasks: int, resamples: int = 2
     if any(len(values) > 1 for values in returned.values()):
         raise ValueError("Returned model versions differ across the selected audits")
     return {"schema_version": "recorded-run-comparison/v1", "created_at": datetime.now(timezone.utc).isoformat(),
+            "browser_profile_policy": {"allow_nonfresh": allow_nonfresh,
+                "override_used": any(not entry["browser_profile_fresh"] for _, tasks in runs for entry in tasks.values()),
+                "nonfresh_recordings": sum(not entry["browser_profile_fresh"] for _, tasks in runs for entry in tasks.values())},
             "aggregation": "mean_across_independent_recorded_runs", "protocol": reference_protocol,
             "run_names": [run_names[root] for root, _ in runs], "actor_arm": next(iter(driver_arms)) if driver_arms else None, "k": len(runs), "tasks_per_run": len(aliases),
             "catalog_tasks": expected_tasks,
@@ -517,7 +530,7 @@ def _exploratory_view(args, summary, categories, names):
     if args.exploratory_exclusions:
         excluded = tuple(value.strip() for value in args.exploratory_exclusions.split(",") if value.strip())
         subset, _ = aggregate_runs(args.runs, expected_tasks=args.expected_tasks,
-                                   resamples=args.resamples, seed=args.seed, excluded_tasks=excluded)
+                                   resamples=args.resamples, seed=args.seed, excluded_tasks=excluded, allow_nonfresh=args.allow_nonfresh)
         summary["exploratory_subset"] = {
             "excluded_task_ids": sorted(set(excluded)), "pre_specified": False,
             **{key: subset[key] for key in ("tasks_per_run", "criteria_per_run", "mean", "per_run",
@@ -574,7 +587,8 @@ def _file_size_summary(summary, population, outcomes):
 
 
 def _write_outputs(args, summary, categories):
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    from w8bench.run_paths import run_directory
+    args.output_dir = run_directory(args.output_dir.parent, args.output_dir.name, fresh=True)
     write_json(args.output_dir / "summary.json", summary)
     with (args.output_dir / "evidence_categories.tsv").open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=["run_name", "task", "criterion_index", "representation", "category", "rationale", "finding_sha256", "source"], delimiter="\t", lineterminator="\n")
@@ -680,6 +694,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Comma-separated catalog task aliases for a labelled exploratory view")
     parser.add_argument("--resamples", type=int, default=20000)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--allow-nonfresh", action="store_true",
+        help="explicitly include reused or unverified browser profiles and record the override")
     args = parser.parse_args(argv)
     if args.figures_dir:
         try:
@@ -688,13 +704,15 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("Figure rendering requires the test extra and the Cairo system library") from error
     readme_text, start, end = _read_readme(args.readme)
     summary, categories = aggregate_runs(args.runs, expected_tasks=args.expected_tasks,
-                                         resamples=args.resamples, seed=args.seed)
+                                         resamples=args.resamples, seed=args.seed, allow_nonfresh=args.allow_nonfresh)
     names = _category_annotations(args, categories, summary)
     _exploratory_view(args, summary, categories, names)
     population, outcomes = _recorded_population(args, summary)
     _file_size_summary(summary, population, outcomes)
     table = _write_outputs(args, summary, categories)
     if args.figures_dir:
+        from w8bench.run_paths import run_directory
+        args.figures_dir = run_directory(args.figures_dir.parent, args.figures_dir.name, fresh=True)
         _loss_figures(args.figures_dir, summary)
         _outcome_figures(args.figures_dir, summary)
         _representation_figure(args.figures_dir, population, svg2png)

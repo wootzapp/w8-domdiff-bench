@@ -28,7 +28,7 @@ from .recorder_support import (
 )
 from .capture import (
     CDPClient, CDPError, CaptureBundle, action_progress, action_observation_context,
-    agent_browser_target_identity, attach_agent_browser_observation,
+    agent_browser_target_identity,
     capture_bundle, capture_after_action_bundle, synchronize_recorder_target,
     renderer_versions,
 )
@@ -36,7 +36,7 @@ from .agent_browser import (
     AgentBrowserBaseError, AgentBrowserClient, agent_browser_session_name,
     container_agent_browser_command,
 )
-from .prompts import DOM_PROMPT, SCREENSHOT_PROMPT
+from .prompts import DOM_PROMPT, SCREENSHOT_PROMPT, DOM_PROMPT_VERSION, SCREENSHOT_PROMPT_VERSION
 from .trajectory import generate_trajectory_artifacts
 
 TASK_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -45,6 +45,8 @@ MAX_ACTION_THOUGHT_CHARS = 1200
 ACTOR_PROTOCOL = {"type": "json_schema", "name": "browser_action", "strict": True,
                   "policy": "baseline_with_budget_validation_v2", "output_message": "single_candidate_text"}
 MAX_CONSECUTIVE_REJECTIONS = 4
+ACTOR_INPUT_TOKEN_LIMIT = 1048576
+ACTOR_IMAGE_INPUT_TOKENS = {"HIGH": 1100, "ULTRA_HIGH": 2205}
 
 
 class ModelProtocolError(RunnerError):
@@ -82,8 +84,9 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
         return {
             "container_id": None,
             "container_created_at": None,
-            "profile_fresh_at_run_start": None,
+            "profile_fresh_at_run_start": False,
             "tasks_previously_run_in_container": None,
+            "freshly_recreated_by_launcher": False, "launch_mode": "raw",
         }
     try:
         value = json.loads(raw)
@@ -96,7 +99,7 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
         "tasks_previously_run_in_container",
     }
     if (not isinstance(value, dict) or not expected.issubset(value)
-        or set(value) - expected - {"browser_build", "browser_environment"}):
+        or set(value) - expected - {"browser_build", "browser_environment", "freshly_recreated_by_launcher", "launch_mode", "launcher_pid"}):
         raise RunnerError("RUNNER_BROWSER_PROFILE_PROVENANCE has invalid fields")
     if not isinstance(value["container_id"], str) or not value["container_id"]:
         raise RunnerError("w8-core container id is missing")
@@ -117,6 +120,16 @@ def browser_profile_provenance_from_environment() -> dict[str, Any]:
                     raise RunnerError("browser image digests must be a list of strings")
             elif item is not None and not isinstance(item, str):
                 raise RunnerError(f"browser build provenance {key} must be a string or null")
+    fresh = (value.get("freshly_recreated_by_launcher") is True and value.get("launch_mode") == "fresh"
+        and value.get("launcher_pid") == os.getppid()
+        and value["tasks_previously_run_in_container"] == 0
+        and (value.get("browser_environment") or {}).get("CHROMIUM_RESET_PROFILE") == "1")
+    value["profile_fresh_at_run_start"] = fresh
+    if value.get("launcher_pid") != os.getppid():
+        value["launch_mode"] = "raw"
+        value["freshly_recreated_by_launcher"] = False
+    value.setdefault("launch_mode", "raw")
+    value.setdefault("freshly_recreated_by_launcher", False)
     return value
 
 def load_env(path: Path) -> None:
@@ -142,6 +155,9 @@ def load_env(path: Path) -> None:
 
 def safe_task_id(value: str) -> str:
     """Validate a task id before it is used as part of a filesystem path."""
+    from w8bench.run_paths import TEMPORAL_NAME_PATTERN
+    if not re.fullmatch(r"[0-9a-fA-F]{64}", value) and TEMPORAL_NAME_PATTERN.search(value):
+        raise RunnerError("task IDs must use labels and sequence numbers without dates or times")
     if not TASK_ID_RE.fullmatch(value):
         raise RunnerError("task id may contain only letters, digits, '.', '_' and '-'")
     return value
@@ -285,6 +301,8 @@ class ModelClient:
         self.last_input_report: dict[str, Any] = {}
         self.last_response: dict[str, Any] | None = None
         self.transport_cancelled = False
+        self.model_input_limit: int | None = None
+        self.media_resolution = os.environ.get("ACTOR_MEDIA_RESOLUTION", "HIGH").strip().upper()
 
     @staticmethod
     def _gemini_usage(usage: Any) -> dict[str, Any]:
@@ -333,6 +351,133 @@ class ModelClient:
         request = urllib.request.Request(endpoint,
             data=json.dumps(native_payload).encode(), method="POST", headers=headers)
         actor = self.last_input_report.get("api_call_started") is True
+        if actor:
+            if self.transport_cancelled:
+                raise asyncio.CancelledError()
+            # Byte-based text estimation is conservative and excludes encoded image data.
+            self.last_input_report["api_call_started"] = False
+            estimated_payload = json.loads(json.dumps(native_payload))
+            image_tokens = 0
+            for content in estimated_payload.get("contents", []):
+                for part in content.get("parts", []):
+                    if "inlineData" in part:
+                        part["inlineData"].pop("data", None)
+                        level = part.get("mediaResolution", {}).get("level", "MEDIA_RESOLUTION_" + self.media_resolution)
+                        image_tokens += ACTOR_IMAGE_INPUT_TOKENS[level.removeprefix("MEDIA_RESOLUTION_")]
+            text = json.dumps(estimated_payload, ensure_ascii=False)
+            text_bytes = len(text.encode("utf-8", errors="surrogatepass"))
+            estimated_tokens = text_bytes + image_tokens
+            preflight = {"status": "started", "started_at": utc_now(), "configured_model": self.model,
+                "input_tokens": None, "estimated_input_tokens": estimated_tokens,
+                "text_characters": len(text), "text_utf8_bytes": text_bytes, "image_tokens": image_tokens,
+                "estimate_method": "utf8_bytes_plus_fixed_image/v1", "count_threshold_percent": 50,
+                "model_input_limit": self.model_input_limit or ACTOR_INPUT_TOKEN_LIMIT, "safe_input_limit": None,
+                "safe_input_percent": 95, "generation_attempted": False, "truncated": False,
+                "transport_attempts": []}
+            preflight_started = time.monotonic()
+            self.last_input_report["input_preflight"] = dict(preflight)
+            if getattr(self, "turn_dir", None) is not None:
+                write_json(self.turn_dir / "input_preflight.json", preflight)
+            try:
+                for stage in ("metadata", "count"):
+                    if self.transport_cancelled:
+                        raise asyncio.CancelledError()
+                    if stage == "metadata" and self.model_input_limit is not None:
+                        continue
+                    limit = self.model_input_limit or ACTOR_INPUT_TOKEN_LIMIT
+                    safe_limit = limit * 95 // 100
+                    preflight.update(model_input_limit=limit, safe_input_limit=safe_limit,
+                        input_limit_source="models.get" if self.model_input_limit else "configured_model_limit")
+                    if stage == "count" and estimated_tokens <= limit // 2:
+                        preflight.update(status="local_within_limit", decision_source="local_estimate")
+                        break
+                    if stage == "metadata":
+                        probe = urllib.request.Request(self.base_url + "/models/" + self.model, headers=headers)
+                    else:
+                        count_payload = {"generateContentRequest": {**native_payload, "model": "models/" + self.model}}
+                        probe = urllib.request.Request(self.base_url + "/models/" + self.model + ":countTokens",
+                            headers=headers, method="POST", data=json.dumps(count_payload).encode())
+                    data = None
+                    for number in range(1, 4):
+                        if self.transport_cancelled:
+                            raise asyncio.CancelledError()
+                        started = time.monotonic()
+                        attempt = {"stage": stage, "attempt": number, "status_code": None}
+                        transient = False
+                        try:
+                            with urllib.request.urlopen(probe, timeout=180) as response:
+                                attempt["status_code"] = getattr(response, "status", 200)
+                                data = json.loads(response.read())
+                            if self.transport_cancelled:
+                                raise asyncio.CancelledError()
+                            if stage == "metadata":
+                                value = data.get("inputTokenLimit")
+                                if type(value) is not int or value <= 0 or data.get("name") != "models/" + self.model:
+                                    raise ValueError("invalid model input-limit metadata")
+                                self.model_input_limit = value
+                            elif type(data.get("totalTokens")) is not int or data["totalTokens"] < 0:
+                                raise ValueError("input tokenizer returned no valid token count")
+                            attempt["status"] = "completed"
+                        except urllib.error.HTTPError as error:
+                            attempt.update(status="http_error", status_code=error.code, error_type=type(error).__name__)
+                            body = error.read().decode("utf-8", errors="backslashreplace") if error.fp is not None else ""
+                            lower = body.lower()
+                            permanent_quota = (any(word in lower for word in ("insufficient_quota", "credit_balance_exhausted",
+                                "insufficient credit", "exhausted credit", "billing", "daily quota", "per day"))
+                                or "quota" in lower and not any(word in lower for word in ("rate limit", "per minute", "per second")))
+                            if error.code in {401, 403} or permanent_quota:
+                                failure = RunnerError(f"actor input preflight returned HTTP {error.code}; no generation dispatched")
+                                failure.provider_failure_kind = ("provider_auth" if error.code in {401, 403}
+                                    else "provider_billing" if "billing" in lower else "provider_quota")
+                                raise failure from error
+                            transient = error.code in {429, 500, 502, 503, 504}
+                        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as error:
+                            transient = True
+                            attempt.update(status="transport_error", error_type=type(error).__name__)
+                        except (ValueError, TypeError, AttributeError) as error:
+                            attempt.update(status="invalid_response", error_type=type(error).__name__)
+                        finally:
+                            attempt["duration_seconds"] = round(time.monotonic() - started, 6)
+                        retry = transient and number < 3
+                        delay = ((2 if number == 1 else 8) + random.uniform(0, 0.5)) if retry else 0
+                        attempt.update(retryable=transient, will_retry=retry, backoff_seconds=delay)
+                        preflight["transport_attempts"].append(attempt)
+                        if attempt["status"] == "completed":
+                            break
+                        data = None
+                        if retry:
+                            time.sleep(delay)
+                        else:
+                            break
+                    if stage == "count":
+                        total = data["totalTokens"] if data is not None else estimated_tokens
+                        preflight.update(input_tokens=data["totalTokens"] if data is not None else None,
+                            status="within_limit" if data is not None else "local_fallback",
+                            decision_source="countTokens" if data is not None else "local_estimate")
+                        if total > safe_limit:
+                            preflight["status"] = "input_limit"
+                            failure = RunnerError(f"actor input {'has' if data is not None else 'is estimated at'} {total} tokens; safe input limit is {safe_limit} of {limit}; no generation dispatched")
+                            failure.technical_failure_class = "actor_input_limit"
+                            raise failure
+            except BaseException as error:
+                preflight.update(error_type=type(error).__name__)
+                if isinstance(error, (asyncio.CancelledError, KeyboardInterrupt, SystemExit)):
+                    preflight["status"] = "cancelled"
+                    raise
+                if preflight["status"] == "started": preflight["status"] = "error"
+                if getattr(error, "provider_failure_kind", None):
+                    raise
+                if not getattr(error, "technical_failure_class", None):
+                    failure = RunnerError(f"actor input preflight failed: {type(error).__name__}; no generation dispatched")
+                    failure.technical_failure_class = "actor_input_preflight"
+                    raise failure from error
+                raise
+            finally:
+                preflight.update(ended_at=utc_now(), duration_seconds=time.monotonic() - preflight_started)
+                if not self.transport_cancelled:
+                    self.last_input_report["input_preflight"] = dict(preflight)
+                    if getattr(self, "turn_dir", None) is not None:
+                        write_json(self.turn_dir / "input_preflight.json", preflight)
         attempts = 3 if actor else 1
         for number in range(1, attempts + 1):
             if actor and self.transport_cancelled:
@@ -348,6 +493,12 @@ class ModelClient:
             retryable = False
             result = None
             try:
+                if actor and number == 1:
+                    self.last_input_report["api_call_started"] = True
+                    preflight["generation_attempted"] = True
+                    self.last_input_report["input_preflight"] = dict(preflight)
+                    if getattr(self, "turn_dir", None) is not None:
+                        write_json(self.turn_dir / "input_preflight.json", preflight)
                 with urllib.request.urlopen(request, timeout=180) as response:
                     receipt["status_code"] = getattr(response, "status", 200)
                     raw = response.read().decode("utf-8", errors="backslashreplace")
@@ -434,8 +585,7 @@ class ModelClient:
         artifact = {"path": os.path.relpath(path, turn_dir),
                     "sha256": hashlib.sha256(observation_bytes).hexdigest()}
         if bundle.observation_mode == "dom":
-            prompt += (f"current_document_language: {bundle.document_language or 'unknown'}\n"
-                f"current_agent_browser_snapshot:\n{bundle.agent_browser_action_text}\n\n"
+            prompt += (f"current_agent_browser_snapshot:\n{bundle.agent_browser_action_text}\n\n"
                 f"current_chromiumrl_evidence:\n{chromiumrl_evidence_for_model(bundle.model_text)}")
             instructions = DOM_PROMPT
         else:
@@ -445,10 +595,29 @@ class ModelClient:
                 if screenshot.size != viewport:
                     raise RunnerError("screenshot dimensions differ from the coordinate viewport")
             instructions = SCREENSHOT_PROMPT
-            content.append({"inlineData": {"mimeType": "image/png", "data":
-                base64.b64encode(observation_bytes).decode()}})
-        prompt += (f"\n\nrecent_action_outcomes:\n{json.dumps(recent_actions[-6:], ensure_ascii=False)}\n\n"
-            "Use the recorded progress signals. If an action made no observable progress, "
+            image_part = {"inlineData": {"mimeType": "image/png", "data":
+                base64.b64encode(observation_bytes).decode()}}
+            if self.media_resolution == "ULTRA_HIGH":
+                image_part["mediaResolution"] = {"level": "MEDIA_RESOLUTION_ULTRA_HIGH"}
+            content.append(image_part)
+        if self.media_resolution not in {"HIGH", "ULTRA_HIGH"}:
+            raise RunnerError("ACTOR_MEDIA_RESOLUTION must be HIGH or ULTRA_HIGH")
+        actor_history = []
+        for outcome in recent_actions[-6:]:
+            public = {key: outcome[key] for key in ("model_turn", "action", "rejected_action", "reason") if key in outcome}
+            if "action" in public:
+                public["action"] = browser_decision(public["action"])
+                public["action_succeeded"] = outcome.get("action_succeeded") is True
+                public["delivery_status"] = "delivered" if public["action_succeeded"] else "failed"
+            elif "rejected_action" in public:
+                public["delivery_status"] = "not_executed"
+            if isinstance(outcome.get("progress"), dict):
+                public["progress"] = {key: outcome["progress"][key] for key in ("url_changed", "dom_changed",
+                    "agent_browser_observation_changed", "screenshot_changed", "observation_changed", "task_progress")
+                    if key in outcome["progress"]}
+            actor_history.append(public)
+        prompt += (f"\n\nrecent_action_outcomes:\n{json.dumps(actor_history, ensure_ascii=False)}\n\n"
+            "Use the recorded observation-change signals. If an action made no observable change, "
             "change strategy instead of assuming it worked. Return one JSON action and "
             "wait for the harness to execute it and supply the next observation.")
         content.insert(0, {"text": prompt})
@@ -465,11 +634,11 @@ class ModelClient:
 
     def _validated_action(self, response: dict[str, Any]) -> dict[str, Any]:
         returned_model = response.get("model")
-        if not isinstance(returned_model, str) or not re.fullmatch(
-                r"gemini-3\.1-pro-preview(?:-\d{2}-\d{2}|-\d{4}-\d{2}-\d{2})?", returned_model):
+        from w8bench.model_identity import match_model_id
+        if not match_model_id(self.model, returned_model)["matched"]:
             raise ModelProtocolError(
                 f"actor model mismatch: configured {self.model!r}, returned {returned_model!r}; "
-                "expected Gemini 3.1 Pro Preview; no action executed")
+                "expected Gemini 3.8 Flash; no action executed")
         if response.get("status") not in {None, "completed"}:
             raise ModelProtocolError(f"model response status is {response.get('status')!r}; no action executed")
         if any(isinstance(item, dict) and item.get("type") == "function_call"
@@ -485,8 +654,8 @@ class ModelClient:
         self.last_response = None
         self.last_input_report = {}
         configured_model = os.environ.get("ACTOR_MODEL", "").strip()
-        if configured_model != "gemini-3.1-pro-preview" or self.model != configured_model:
-            raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
+        if configured_model != "gemini-3.8-flash" or self.model != configured_model:
+            raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.8-flash configuration")
         if max_output_tokens != 10000:
             raise RunnerError("actor output limit must be exactly 10000 tokens")
         if not 1 <= max_steps <= 200:
@@ -499,7 +668,7 @@ class ModelClient:
         # bytes sent, avoiding another base64 copy in every turn directory.
         stored = json.loads(json.dumps(payload))
         if bundle.observation_mode == "screenshot":
-            stored["contents"][0]["parts"][1] = {"inlineData": {"mimeType": "image/png", "artifact": artifact}}
+            stored["contents"][0]["parts"][1]["inlineData"] = {"mimeType": "image/png", "artifact": artifact}
         write_json(turn_dir / "request.json", stored)
         self.last_input_report = {"observation_mode": bundle.observation_mode,
             "observation": artifact, "request": "request.json", "text_chars": len(prompt)}
@@ -510,7 +679,12 @@ class ModelClient:
         except BaseException as error:
             if isinstance(error, asyncio.CancelledError):
                 self.transport_cancelled = True
-            write_json(turn_dir / "failure.json", {"parser_stage": "transport_or_provider_json",
+                pending = self.last_input_report.get("input_preflight")
+                if pending is not None and pending.get("status") == "started":
+                    cancelled = {**pending, "status": "cancelled", "ended_at": utc_now()}
+                    self.last_input_report["input_preflight"] = cancelled
+                    write_json(turn_dir / "input_preflight.json", cancelled)
+            write_json(turn_dir / "failure.json", {"parser_stage": "input_preflight" if self.last_input_report.get("input_preflight", {}).get("status") in {"error", "input_limit", "cancelled"} else "transport_or_provider_json",
                 "error_type": type(error).__name__, "error": str(error).replace(self.api_key, "[redacted]"),
                 "usage": None, "response_received": self.last_input_report.get("model_response_received", False)})
             raise
@@ -542,7 +716,7 @@ def _action_schema_error(decision: dict[str, Any], action: Any) -> str:
 
 
 def _action_target_error(decision: dict[str, Any], action: str, available_refs: frozenset[str],
-                         observation_mode: str, viewport: tuple[int, int]) -> str:
+                         observation_mode: str) -> str:
     ref = decision.get("id")
     if ref is not None and (not isinstance(ref, str) or ref.startswith("@")):
         return "id must be a current e-ref without @"
@@ -606,51 +780,43 @@ def _termination_error(decision: dict[str, Any], action: str,
     return ""
 
 
-def _action_signature(value: dict[str, Any], context: dict[str, Any] | None = None) -> str:
+def _action_signature(value: dict[str, Any]) -> str:
     command = {k: v for k, v in browser_decision(value).items() if v is not None}
-    context = context or {}
     if command.get("action") == "scroll":
         pixels = command.get("pixels", 0)
         command["pixels"] = 1 if pixels > 0 else -1 if pixels < 0 else 0
-    if command.get("id") and context.get("control_signature"):
-        command.pop("id")
-        command["control_signature"] = context["control_signature"]
-        command["document_url"] = context.get("document_url", "")
     return json.dumps(command, sort_keys=True, ensure_ascii=False)
 
 
-def _stalled_action_error(decision: dict[str, Any], action: str,
-                          completed: list[dict[str, Any]],
-                          action_context: dict[str, Any] | None) -> str:
-    candidate = _action_signature(decision, action_context)
+def _stalled_action_advisory(decision: dict[str, Any], action: str,
+                            completed: list[dict[str, Any]]) -> str:
+    candidate = _action_signature(decision)
     if completed and action not in {"scroll", "wait", "terminate"}:
         last = completed[-1]
-        if (last["progress"].get("made_progress") is False
-                and _action_signature(last["action"], last.get("action_context")) == candidate):
-            return "exact consecutive duplicate activation made no observable progress"
+        if (last["progress"].get("observation_changed") is False
+                and _action_signature(last["action"]) == candidate):
+            return "exact consecutive duplicate activation made no observable change"
     if len(completed) >= 3:
         cycle = completed[-3:]
-        first, second, third = [_action_signature(item["action"], item.get("action_context")) for item in cycle]
-        if (all(item["progress"].get("made_progress") is False for item in cycle)
+        first, second, third = [_action_signature(item["action"]) for item in cycle]
+        if (all(item["progress"].get("observation_changed") is False for item in cycle)
                 and first == third and second == candidate and first != second):
-            return "action would repeat a two-action cycle without forward progress"
-    if len(completed) >= 2 and all(item["progress"].get("made_progress") is False for item in completed[-2:]):
-        if candidate in {_action_signature(item["action"], item.get("action_context")) for item in completed[-2:]}:
-            return "action would retry a recently stalled strategy without observable progress"
+            return "action would repeat a two-action cycle without an observed change"
+    if len(completed) >= 2 and all(item["progress"].get("observation_changed") is False for item in completed[-2:]):
+        if candidate in {_action_signature(item["action"]) for item in completed[-2:]}:
+            return "action would retry a recently stalled strategy without an observed change"
     return ""
 
 
 def action_rejection_reason(decision: dict[str, Any], available_refs: frozenset[str],
                             recent_actions: list[dict[str, Any]], *,
                             observation_mode: str = "dom",
-                            viewport: tuple[int, int] = (1365, 768),
-                            model_turn: int | None = None, max_turns: int | None = None,
-                            action_context: dict[str, Any] | None = None) -> str:
+                            model_turn: int | None = None, max_turns: int | None = None) -> str:
     action = decision.get("action")
     reason = _action_schema_error(decision, action)
     if reason:
         return reason
-    reason = _action_target_error(decision, action, available_refs, observation_mode, viewport)
+    reason = _action_target_error(decision, action, available_refs, observation_mode)
     if reason:
         return reason
     reason = _action_value_error(decision, action)
@@ -663,11 +829,11 @@ def action_rejection_reason(decision: dict[str, Any], available_refs: frozenset[
                  and isinstance(item.get("progress"), dict) and item.get("action_succeeded") is True]
     if action == "terminate" and decision.get("status") == "success" and not completed:
         return "successful termination requires at least one confirmed browser action, as in the baseline recorder"
-    return _stalled_action_error(decision, action, completed, action_context)
+    return ""
 
 
 def state_manifest_record(state_number: int, bundle: CaptureBundle, run_dir: Path) -> dict[str, Any]:
-    row = {"state": state_number, "directory": str(bundle.directory.relative_to(run_dir)),
+    row = {"state": state_number, "document_language": bundle.document_language or "unknown", "directory": str(bundle.directory.relative_to(run_dir)),
         "observation": str(bundle.observation_path.relative_to(run_dir)),
         "observation_sha256": hashlib.sha256(bundle.observation_path.read_bytes()).hexdigest()}
     row["capture"] = bundle.capture_metadata
@@ -763,6 +929,8 @@ def _validate_run_args(args: argparse.Namespace, mode: str) -> None:
         raise RunnerError("--settle-seconds must be finite and nonnegative")
     if not math.isfinite(args.agent_browser_timeout) or args.agent_browser_timeout <= 0:
         raise RunnerError("--agent-browser-timeout must be finite and positive")
+    if args.media_resolution not in {"HIGH", "ULTRA_HIGH"}:
+        raise RunnerError("ACTOR_MEDIA_RESOLUTION must be HIGH or ULTRA_HIGH")
     if args.snapshot_max_nodes <= 0 or args.snapshot_max_text_chars <= 0:
         raise RunnerError("invalid capture budget or settling delay")
     if not args.capture_only and not args.task:
@@ -771,8 +939,8 @@ def _validate_run_args(args: argparse.Namespace, mode: str) -> None:
         raise RunnerError("--start-url must be HTTP(S)")
     if not args.capture_only:
         configured_model = os.environ.get("ACTOR_MODEL", "").strip()
-        if configured_model != "gemini-3.1-pro-preview" or args.model != configured_model:
-            raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.1-pro-preview configuration")
+        if configured_model != "gemini-3.8-flash" or args.model != configured_model:
+            raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.8-flash configuration")
 
 
 def _recording_task(args, task_id, mode):
@@ -804,11 +972,12 @@ def _recording_task(args, task_id, mode):
 
 def _recording_manifest(args, task, profile, mode, viewport):
     manifest = {**task, "schema_version": "3.0", "created_at": utc_now(), "status": "running",
-        "model_input_policy": f"{mode}_only", "states": [], "steps": [], "model_turns": 0,
+        "model_input_policy": f"{mode}_only", "actor_prompt_version": DOM_PROMPT_VERSION if mode == "dom" else SCREENSHOT_PROMPT_VERSION, "states": [], "steps": [], "model_turns": 0,
         "browser_profile_provenance": profile,
         "configured_actor_model": args.model, "actor_provider": "google", "returned_actor_models": [], "reasoning_effort": "medium",
         "controls": {"model": args.model, "base_url": args.api_base_url,
             "reasoning_effort": "medium", "temperature": None, "memory_max_chars": MAX_TASK_MEMORY_CHARS,
+            "media_resolution": args.media_resolution,
             "max_turns": args.max_steps, "max_output_tokens": args.max_output_tokens,
             "viewport": list(viewport), "settle_seconds": args.settle_seconds,
             "snapshot_max_nodes": args.snapshot_max_nodes,
@@ -857,9 +1026,7 @@ async def _initial_capture(args, cdp, driver, manifest, run_dir, mode):
     await synchronize_recorder_target(cdp, driver if mode == "dom" else None)
     current = await capture_bundle(cdp, run_dir / "steps" / "step_001",
         max_nodes=args.snapshot_max_nodes, max_text_chars=args.snapshot_max_text_chars,
-        observation_mode=mode)
-    if mode == "dom" and not args.capture_only:
-        current = await attach_agent_browser_observation(current, driver, cdp)
+        observation_mode=mode, agent_browser=driver if mode == "dom" and not args.capture_only else None)
     manifest["states"].append(state_manifest_record(1, current, run_dir))
     write_json(run_dir / "manifest.json", manifest)
     return current
@@ -879,6 +1046,8 @@ def _finish_model_turn(
         row["transport_attempts"] = str((turn_dir / "transport_attempts.jsonl").relative_to(run_dir))
     row["latency_seconds"] = round(time.monotonic() - started, 6)
     row["model_input"] = model.last_input_report
+    if model.last_input_report.get("input_preflight") is not None:
+        manifest["last_actor_input_preflight"] = model.last_input_report["input_preflight"]
     row["usage"] = (model.last_response or {}).get("usage", {})
     response = model.last_response or {}
     row["configured_model"] = model.model
@@ -920,8 +1089,12 @@ async def _model_turn(
     decision = None
     try:
         decision, response = await model.decide(task=task['instruction'], step=turn, max_steps=args.max_steps, bundle=current, task_memory=state.memory, recent_actions=state.recent, turn_dir=turn_dir, viewport=viewport, max_output_tokens=args.max_output_tokens)
-        reason = action_rejection_reason(decision, current.agent_browser_refs, state.recent, observation_mode=mode, viewport=viewport, model_turn=turn, max_turns=args.max_steps, action_context=action_observation_context(decision, current) if mode == 'dom' else None)
-        row.update(decision=decision, rejection_reason=reason or None, accepted=not reason)
+        reason = action_rejection_reason(decision, current.agent_browser_refs, state.recent, observation_mode=mode, model_turn=turn, max_turns=args.max_steps)
+        completed = [item for item in state.recent if item.get("action_succeeded") is True
+            and isinstance(item.get("action"), dict) and isinstance(item.get("progress"), dict)]
+        advisory = _stalled_action_advisory(decision, decision["action"], completed)
+        row.update(decision=decision, rejection_reason=reason or None, accepted=not reason,
+            stall_advisory=advisory or None)
     except BaseException as error:
         row.update(accepted=False, error=type(error).__name__ + ': ' + str(error))
         if model.last_response is None or isinstance(error, (asyncio.CancelledError, ModelProtocolError)):
@@ -1004,8 +1177,6 @@ async def _observe_action(
         driver if mode == "dom" else None, run_dir / "steps" / f"step_{number:03d}",
         max_nodes=args.snapshot_max_nodes, max_text_chars=args.snapshot_max_text_chars,
         observation_mode=mode)
-    if mode == "dom":
-        next_state = await attach_agent_browser_observation(next_state, driver, cdp)
     if action_record["action_succeeded"]:
         state.memory = candidate_memory
     action_record.update(next_state=number, progress=action_progress(current, next_state))
@@ -1015,7 +1186,10 @@ async def _observe_action(
     write_json(current.directory / "action.json", action_record)
     manifest["states"].append(state_manifest_record(number, next_state, run_dir))
     write_json(run_dir / "manifest.json", manifest)
-    state.recent.append({'model_turn': action_record['model_turn'], 'action': action_record['action'], 'action_succeeded': action_record['action_succeeded'], 'action_error': action_record['action_error'], 'progress': action_record['progress'], **({'action_context': action_record['action_context']} if mode == 'dom' else {})})
+    state.recent.append({'model_turn': action_record['model_turn'], 'action': action_record['action'],
+        'action_succeeded': action_record['action_succeeded'],
+        'delivery_status': 'delivered' if action_record['action_succeeded'] else 'failed',
+        'progress': action_record['progress']})
     return next_state
 
 
@@ -1089,6 +1263,8 @@ async def run(args: argparse.Namespace) -> int:
     mode = args.observation_mode
     _validate_run_args(args, mode)
     model = None if args.capture_only else ModelClient(args.api_key, args.model, args.api_base_url)
+    if model is not None:
+        model.media_resolution = args.media_resolution
     task_id = safe_task_id(args.task_id or default_task_id(Path(args.output_dir)))
     run_dir = Path(args.output_dir).resolve() / task_id
     viewport = (args.viewport_width, args.viewport_height)
@@ -1155,7 +1331,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     known, _ = pre.parse_known_args(argv)
     load_env(Path(known.env_file))
 
-    parser = argparse.ArgumentParser(description="Record independent DOM-only or screenshot-only browser runs")
+    parser = argparse.ArgumentParser(description="Record independent DOM-only or screenshot-only browser runs",
+        epilog="ACTOR_MEDIA_RESOLUTION selects HIGH (default) or ULTRA_HIGH screenshot detail. Actor inputs above 95% of the model input limit end as technical failures without truncation.")
     parser.add_argument("--env-file", default=known.env_file)
     parser.add_argument(
         "--build-trajectory-run",
@@ -1220,7 +1397,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=os.environ.get("AGENT_BROWSER_TIMEOUT", "90"),
     )
     parser.add_argument("--output-dir")
-    parser.add_argument("--run-name", help="Experiment name; otherwise W8_RUN_NAME or run_1")
+    parser.add_argument("--run-name", help="Run name; otherwise W8_RUN_NAME or the next free run_N")
     parser.add_argument("--max-turns", "--max-steps", dest="max_steps", type=int, default=200,
         help="positive actor turn budget, at most 200")
     parser.add_argument("--settle-seconds", type=finite_nonnegative_float, default=os.environ.get("STEP_SETTLE_SECONDS", "1.0"))
@@ -1237,7 +1414,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--browser-accept-language",
         default=os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"),
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    args.media_resolution = os.environ.get("ACTOR_MEDIA_RESOLUTION", "HIGH").strip().upper()
+    return args
 
 
 
@@ -1284,7 +1463,11 @@ def main(argv: list[str] | None = None) -> int:
         args.run_name = resolve_run_name(args.run_name)
         if args.observation_mode not in {"dom", "screenshot"}:
             raise RunnerError("--observation-mode dom|screenshot is required")
-        args.output_dir = str(run_directory(args.output_dir, args.run_name) / args.observation_mode)
+        profile = browser_profile_provenance_from_environment()
+        launcher_owned = profile.get("launcher_pid") == os.getppid() and profile.get("launch_mode") in {"fresh", "reuse"}
+        directory = run_directory(args.output_dir, args.run_name, fresh=not launcher_owned)
+        args.run_name = directory.name
+        args.output_dir = str(directory / args.observation_mode)
         return asyncio.run(run_with_interrupt_handlers(args))
     except (AgentBrowserBaseError, RunnerError, CDPError, OSError, json.JSONDecodeError) as error:
         print(f"error: {error}", file=sys.stderr)

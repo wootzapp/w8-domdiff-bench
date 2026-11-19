@@ -784,3 +784,177 @@ def test_run_selection_and_no_double_nesting(monkeypatch):
     for value in ("", "..", "/tmp/other", "run/2", "a\\b"):
         with pytest.raises(ValueError):
             resolve_run_name(value)
+
+@pytest.mark.parametrize("name,existing,next_name", [
+    ("run_1", ("run_1", "run_2"), "run_3"),
+    ("pilot", ("pilot", "pilot_2"), "pilot_3"),
+])
+def test_new_run_reservation_uses_next_sequence_without_overwriting(tmp_path, name, existing, next_name):
+    for item in existing:
+        directory = tmp_path / item
+        directory.mkdir()
+        (directory / "sentinel.txt").write_text(item)
+    actual = run_directory(tmp_path, name, fresh=True)
+    assert actual == tmp_path / next_name and actual.is_dir()
+    assert all((tmp_path / item / "sentinel.txt").read_text() == item for item in existing)
+    assert run_directory(tmp_path, name) == tmp_path / name
+
+
+def test_comparison_requires_verified_fresh_launch_and_records_explicit_override():
+    from w8bench.verifier.compare_results import _validate_browser_pair
+    profile = {"profile_fresh_at_run_start": True, "freshly_recreated_by_launcher": False,
+        "launch_mode": "reuse", "tasks_previously_run_in_container": 0,
+        "browser_build": {"image_id": "same-image"},
+        "browser_environment": {"CHROMIUM_RESET_PROFILE": "1"}}
+    pair = [{"manifest": {"browser_profile_provenance": deepcopy(profile)}} for _ in range(2)]
+    with pytest.raises(ValueError, match="freshness"):
+        _validate_browser_pair(*pair)
+    policy = _validate_browser_pair(*pair, allow_nonfresh=True)
+    assert policy == {"allow_nonfresh": True, "nonfresh_arms": ["dom", "screenshot"], "override_used": True}
+    for recording in pair:
+        recording["manifest"]["browser_profile_provenance"].update(
+            freshly_recreated_by_launcher=True, launch_mode="fresh")
+    assert _validate_browser_pair(*pair)["override_used"] is False
+
+
+@pytest.mark.parametrize("reset", ["0", "1"])
+@pytest.mark.parametrize("recreated", [False, True])
+def test_profile_claim_requires_launcher_recreation_not_only_zero_counter(tmp_path, monkeypatch, reset, recreated):
+    profile = {"Config": {"Env": ["CHROMIUM_RESET_PROFILE=" + reset]}}
+    monkeypatch.setattr(task_cli, "_browser_profile_container", lambda name: (profile, "container", "created"))
+    monkeypatch.setattr(task_cli, "_browser_build", lambda container: {"image_id": "image"})
+    monkeypatch.setattr(task_cli, "_browser_profile_count", lambda *args: 0)
+    monkeypatch.setattr(task_cli, "_advance_browser_profile_count", lambda *args: None)
+    receipt = task_cli.claim_browser_profile_provenance("fixture", freshly_recreated=recreated)
+    assert receipt["profile_fresh_at_run_start"] is (recreated and reset == "1")
+    assert receipt["freshly_recreated_by_launcher"] is recreated
+    assert receipt["launch_mode"] == ("fresh" if recreated else "reuse")
+
+@pytest.mark.parametrize("name", ["run_2026-11-18", "trial_20261118", "report_12-34-56", "run_1795033000123"])
+def test_output_labels_reject_dates_and_times(name, tmp_path):
+    with pytest.raises(ValueError, match="dates or times"):
+        resolve_run_name(name)
+    with pytest.raises(ValueError, match="dates or times"):
+        run_directory(tmp_path / name, "run_1", fresh=True)
+    assert not (tmp_path / name).exists()
+
+
+def test_fresh_run_preview_does_not_create_or_overwrite_directories(tmp_path):
+    (tmp_path / "pilot").mkdir()
+    path = run_directory(tmp_path, "pilot", fresh=True, reserve=False)
+    assert path.name == "pilot_2" and not path.exists()
+
+@pytest.mark.usefixtures('no_network')
+def test_nonfresh_override_is_explicit_in_pair_and_ledger_reports(run_pair, tmp_path):
+    from w8bench.verifier.compare_results import main as compare_pair_main
+    paths, *_ = run_pair
+    manifest = json.loads((paths["dom"] / "manifest.json").read_text())
+    manifest["browser_profile_provenance"].update(profile_fresh_at_run_start=False,
+        freshly_recreated_by_launcher=False, launch_mode="reuse")
+    write_json(paths["dom"] / "manifest.json", manifest)
+    pair_args = ["--dom-run", str(paths["dom"]), "--screenshot-run", str(paths["screenshot"]),
+        "--output", str(tmp_path / "comparison.md")]
+    with pytest.raises(ValueError, match="freshness"):
+        compare_pair_main(pair_args)
+    assert compare_pair_main(pair_args + ["--allow-nonfresh"]) == 0
+    result = json.loads((tmp_path / "comparison.json").read_text())
+    assert result["browser_profile_policy"] == {"allow_nonfresh": True,
+        "nonfresh_arms": ["dom"], "override_used": True}
+    original = (tmp_path / "comparison.md").read_bytes()
+    assert compare_pair_main(pair_args + ["--allow-nonfresh"]) == 0
+    assert (tmp_path / "comparison_2.md").is_file()
+    assert (tmp_path / "comparison.md").read_bytes() == original
+    ledger = tmp_path / "ledger.jsonl"
+    write_attempt_ledger(ledger, {(1, mode): paths[mode] for mode in ("dom", "screenshot")}, 1)
+    with pytest.raises(ValueError, match="freshness"):
+        compare_main(["--ledger", str(ledger), "--output", str(tmp_path / "strict")])
+    assert compare_main(["--ledger", str(ledger), "--output", str(tmp_path / "allowed"), "--allow-nonfresh"]) == 0
+    summary = json.loads((tmp_path / "allowed" / "summary.json").read_text())
+    assert summary["browser_profile_policy"] == {"allow_nonfresh": True, "override_used": True}
+
+
+@pytest.mark.usefixtures('no_network')
+def test_aggregation_refuses_mixed_freshness_override_policies(run_pair):
+    paths, *_ = run_pair
+    pair, _ = compare(*(inspect_recording(paths[mode]) for mode in ("dom", "screenshot")))
+    pair["trial_id"] = "1"
+    other = deepcopy(pair)
+    other["trial_id"] = "2"
+    other["browser_profile_policy"]["allow_nonfresh"] = True
+    with pytest.raises(ValueError, match="profile comparison policies differ"):
+        aggregate([pair, other])
+
+@pytest.mark.parametrize("normalizer_name", ["normalize_dom_model", "normalize_screenshot"])
+def test_native_roles_using_one_model_keep_all_calls_and_tokens(pair_factory, tmp_path, normalizer_name):
+    from w8bench.verifier import normalize_results
+    from w8bench.verifier.common import CANONICAL_JUDGE_MODEL
+    pair = pair_factory()
+    rubric = json.loads(pair["rubric"].read_text())["precomputed_rubric"]
+    raw = {"task_id": pair["task"]["task_id"], "rubric_sha256": canonical_sha256(rubric),
+        "status": "ungraded", "ungraded_reason": "retained calls", "rubric_generation_calls": 0,
+        "token_usage": {"judge": {"prompt_tokens": 3, "completion_tokens": 1, "total_tokens": 4},
+                        "action_judge": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7}},
+        "call_metrics": {"judge": {"logical_calls": 1, "api_attempts": 1},
+                         "action_judge": {"logical_calls": 2, "api_attempts": 2}}}
+    path = tmp_path / "result.json"
+    write_json(path, raw)
+    normalized = getattr(normalize_results, normalizer_name)(path, input_task=pair["dom"],
+        rubric_file=pair["rubric"], generation_metrics=pair["metrics"], run_log=tmp_path / "run.log")
+    assert normalized["llm_calls"][CANONICAL_JUDGE_MODEL] == normalized["llm_calls"]["total"] == 3
+    assert normalized["token_usage"][CANONICAL_JUDGE_MODEL]["total_tokens"] == 11
+    assert normalized["token_usage"]["combined"]["total_tokens"] == 11
+    assert set(normalized["token_usage"]) == {CANONICAL_JUDGE_MODEL, "combined"}
+    assert normalized["provider_call_metrics"]["judge"]["logical_calls"] == 1
+    assert normalized["provider_call_metrics"]["action_judge"]["logical_calls"] == 2
+
+
+def test_digest_identifiers_are_not_mistaken_for_timestamps(tmp_path):
+    digest = 'a' * 10 + '1795033000123' + 'b' * 41
+    assert len(digest) == 64
+    assert resolve_run_name(digest) == digest
+    assert run_directory(tmp_path, digest, fresh=True).name == digest
+    assert run_directory(tmp_path, digest, fresh=True).name == digest + "_2"
+    assert resolve_run_name(digest + "_2") == digest + "_2"
+
+@pytest.mark.parametrize("native", ["dom_model", "screenshot_verifier"])
+def test_same_model_role_accounting_keeps_unknown_calls_and_partial_known_usage(
+    pair_factory, metric_recording_factory, metric_evaluation_factory, tmp_path, native
+):
+    from w8bench.verifier import normalize_results
+    from w8bench.verifier.common import CANONICAL_JUDGE_MODEL
+    pair = pair_factory()
+    rubric = json.loads(pair["rubric"].read_text())["precomputed_rubric"]
+    components = ("input_tokens", "output_tokens", "reasoning_tokens", "cached_input_tokens", "cache_write_input_tokens")
+    unknown = {"prompt_tokens": None, "completion_tokens": None, "total_tokens": None,
+        "cached_input_tokens": None, "reasoning_tokens": None, "cache_write_input_tokens": None,
+        "usage_known_calls": dict.fromkeys(components, 0), "calls_without_reported_usage": 1}
+    known = {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7,
+        "cached_input_tokens": 0, "reasoning_tokens": 0, "cache_write_input_tokens": 0,
+        "usage_known_calls": dict.fromkeys(components, 1), "calls_without_reported_usage": 0}
+    raw = {"task_id": pair["task"]["task_id"], "rubric_sha256": canonical_sha256(rubric),
+        "status": "ungraded", "ungraded_reason": "retained receipts", "rubric_generation_calls": 0,
+        "token_usage": {"judge": unknown, "action_judge": known},
+        "call_metrics": {"judge": {"logical_calls": 1, "api_attempts": 1, "calls": [{
+            "configured_model": CANONICAL_JUDGE_MODEL, "returned_model": None, "usage_reported": False}]},
+            "action_judge": {"logical_calls": 1, "api_attempts": 1, "calls": [{
+                "configured_model": CANONICAL_JUDGE_MODEL, "returned_model": CANONICAL_JUDGE_MODEL,
+                "usage_reported": True, "input_tokens": 5, "output_tokens": 2,
+                "cached_input_tokens": 0, "cache_write_input_tokens": 0}]}}}
+    path = tmp_path / "partial.json"
+    write_json(path, raw)
+    normalizer = normalize_results.normalize_dom_model if native == "dom_model" else normalize_results.normalize_screenshot
+    normalized = normalizer(path, input_task=pair["dom"], rubric_file=pair["rubric"],
+        generation_metrics=pair["metrics"], run_log=tmp_path / "run.log")
+    usage = normalized["token_usage"][CANONICAL_JUDGE_MODEL]
+    assert usage["input_tokens"] == 5 and usage["output_tokens"] == 2
+    assert usage["calls_without_reported_usage"] == 1 and usage["usage_known_calls"]["input_tokens"] == 1
+    assert normalized["llm_calls"][CANONICAL_JUDGE_MODEL] == 2
+    recording = metric_recording_factory()
+    metric_evaluation_factory(recording, stages={native: {"status": "ungraded", "usage_coverage": "partial",
+        "calls": normalized["llm_calls"], "usage": normalized["token_usage"],
+        "provider_call_metrics": normalized["provider_call_metrics"]}})
+    stream = summarize(recording)["judge_usage_streams"][native + ":" + CANONICAL_JUDGE_MODEL]
+    assert stream["calls"] == 2 and stream["usage_coverage"] == "partial"
+    assert stream["cost"]["estimated_usd"] is None
+    assert stream["cost"]["priced_calls"] == 1 and stream["cost"]["unpriced_calls"] == 1
+    assert stream["cost"]["known_usage_estimate_usd"] > 0
