@@ -232,9 +232,14 @@ observations.
 
 Every actor trial receives common completion grading, both auxiliary verifiers
 and the audit. Rubric generation and dependency checking use `gpt-5.2`.
-Both verifiers use `gemini-3.1-pro-preview` for relevance, evidence analysis,
+Both verifiers use `gemini-3.5-flash-lite` for relevance, evidence analysis,
 disambiguation, reality checks, rescoring, side effects, outcome and failure
 analysis, action-only scoring and both validity stages.
+The named `pro` profile uses `gemini-3.1-pro-preview` for these same native
+stages. Its outputs are isolated from primary results. The actor model is never
+a judge. Native profiles keep the same prompts, selection, scoring, validation
+and retry budgets.
+
 Inventory uses `gemini-3.1-pro-preview`; evidence-loss adjudication and common
 completion use `gpt-6.1-sol`. Verifier and audit output limits remain unset;
 the 115,000-token verifier input guard remains active. Images use high detail.
@@ -255,7 +260,7 @@ flagged for navigation. Missing-format states remain explicit gaps with their
 original IDs; full action history and observed URLs are preserved. This declared
 input-contract adaptation leaves top-K, scoring, penalties and citation rules
 unchanged, and contiguous runs preserve original loader behavior.
-The native JSON output contract is `native-rubric-output-contract/v2`: examples
+The native JSON output contract is `native-rubric-output-contract/v3`: examples
 use single JSON braces, criterion bounds are rendered, and unmet conditional
 criteria retain their response positions while contributing no points to totals.
 DOM `citation_checks` record state-ID and extractable exact-quote diagnostics,
@@ -276,8 +281,8 @@ full audit rather than being replaced with invented analyses.
 Outcome grading interprets dates from the task and recorded evidence. Unresolved
 years are disclosed in the reasoning rather than inferred from a collection year.
 
-Audit receipts use `automated-evidence-audit/v7` with prompt version
-`paired-capture-eligible-state-adjudication/v7`, identifying the shared-URL,
+Audit receipts use `automated-evidence-audit/v8` with prompt version
+`paired-capture-eligible-state-adjudication/v8`, identifying the shared-URL,
 eligible-state and response-acceptance contracts. Inventory and adjudication each
 allow three validation attempts; refusal, malformed output and exhausted repair
 retain their attempt receipts and usage. An ungraded audit has no pooled loss
@@ -296,3 +301,50 @@ mean/median/distributions by arm and category. Common success, auxiliary process
 scores, threshold success, outcome success and frozen full-score checks stay
 separate; runtime penalties and judge fallbacks have their own fields. All judge
 cost streams remain separate from actor costs.
+
+## Judge delivery
+
+| Stage | Model | Transport |
+| --- | --- | --- |
+| Actor, both arms | gemini-3.8-flash | Normal; input preflight unchanged |
+| Rubric generation and dependency check | gpt-5.2 | Normal |
+| Native screenshot and DOM verifiers, all stages | gemini-3.5-flash-lite | Batch; medium thinking |
+| Native Pro comparison profile, all stages | gemini-3.1-pro-preview | Batch; medium thinking |
+| Common paired completion | gpt-6.1-sol | Batch; medium reasoning |
+| Audit inventory | gemini-3.1-pro-preview | Batch; thinking unset |
+| Audit adjudication | gpt-6.1-sol | Batch; reasoning unset |
+
+`JUDGE_TRANSPORT` selects `batch` (default) or `normal` for judging. The actor,
+its countTokens preflight and rubric preparation keep normal transport. Each
+batch item contains the same request body as normal delivery. Ready calls share
+provider/model/stage rounds; relevance precedes selected-state analysis and
+global stages, and inventory precedes adjudication. Independent native verifiers
+and completion can have requests ready in the same round. Dependent rounds can
+take hours to days, even with each provider targeting a 24-hour window.
+
+Every item binds a recording, rubric source, native profile, stage, call identity
+and attempt. Submitted job IDs and raw responses are durable. Resume polls saved
+jobs and replays answered items through the same validators. Pending work is not
+an ungraded judgment or task failure. A cancelled collection cannot import late
+results or publish grades. An uncertain submission acknowledgement blocks
+resubmission until its actual provider ID is reconciled; batch creation is not
+idempotent. Known outstanding jobs are cancelled; an unknown job ID is reported
+for provider reconciliation.
+
+Native output settings, profile and transport are included in the effective
+settings guard. Common completion has no native-result input and is shared
+across judge profiles. Native results influence both audit prompts and audit
+availability, so the profile comparison repeats the audit independently under
+each native profile, always within the same actor recording. Its screenshot-only
+subsets are identified separately from each audit's screenshot-complete,
+DOM-incomplete coverage and confirmed DOM loss. Agreement is reported on both
+subsets, their union and intersection; missing audits leave those comparisons
+unavailable. These are judge-defined subsets requiring review, not human accuracy
+labels. Per-profile quality counts cover ungraded native results, observed repair
+events, explicit refusals, blocked audits and missing loss values. Primary and Pro
+grades never enter the same aggregate.
+
+Batch receipts identify the pricing mode. Actor, completion, each native verifier,
+inventory, adjudication and rubric preparation retain separate cost streams.
+Unknown item usage stays unknown, including failed items before a successful
+retry. [Cost assumptions](cost-estimate.md) are estimates, not measured spend.

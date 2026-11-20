@@ -233,7 +233,26 @@ native score fields remain null after scoring exhaustion. DOM citation diagnosti
 live in `citation_checks` and `dom_model_evidence_audit.citation_checks` in the
 native result. The controller copies them directly into the evaluation stage;
 normalization and audit inputs do not consume them. Audit receipts use
-`automated-evidence-audit/v7` and
-`paired-capture-eligible-state-adjudication/v7`; an ungraded audit supplies no loss
+`automated-evidence-audit/v8` and
+`paired-capture-eligible-state-adjudication/v8`; an ungraded audit supplies no loss
 rate. See the [effective settings contract](evaluation-protocol.md#effective-settings-contract)
 for the settings compared across resumes, arms and trials.
+
+## Judge profiles and batch receipts
+
+Controlled evaluation stores primary results beneath
+`evaluations/profiles/primary/<run>/<arm>/<task>/<recording-hash>/` and the
+comparison profile beneath `evaluations/profiles/pro/` with the same suffix.
+Their flat paired inputs preserve the same source hashes and validity date.
+The shared completion receipt is under `evaluations/common/` with that suffix;
+each profile records its bound `paired_completion.json`. Standalone completion
+also supports its recording-local receipt.
+
+`evaluations/batch_jobs/` contains unchanged request bodies, deterministic item
+IDs, input JSONL files, provider job receipts and raw item responses. Job and
+file names use sequence numbers. Functional submission/completion timestamps
+stay inside receipts. Requests identify their task, driving arm, trial, recording
+hash, rubric source hash, native profile, stage and attempt. Calls record
+`transport`, `batch_request_id`, `batch_job_id` and individual `batch_items` for
+cost coverage. Pending jobs are resumable; cancellation and uncertain submission
+receipts explicitly prevent unsafe result import or duplicate submission.

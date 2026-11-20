@@ -175,7 +175,7 @@ generation similarly records an ungraded task, continues other tasks and reports
 a partial catalog with a nonzero exit status.
 
 Native prompts identify their JSON output contract as
-`native-rubric-output-contract/v2`. Unmet conditional criteria remain in response
+`native-rubric-output-contract/v3`. Unmet conditional criteria remain in response
 order and are excluded from score totals. DOM `citation_checks` record supplied
 state identity and exact quoted-text checks without changing accepted analyses,
 requests, scores or audit feedback. Diagnostic records bypass score normalization;
@@ -190,8 +190,8 @@ Inventory and adjudication each have three validation attempts. Their returned
 IDs and completion status use the shared acceptance policy. Failed/refused
 attempts keep usage and error receipts; ungraded results have no evidence-loss
 rate and cannot enter pooled loss denominators. Audit schema
-`automated-evidence-audit/v7` and prompt
-`paired-capture-eligible-state-adjudication/v7` identify this contract. Judge repair
+`automated-evidence-audit/v8` and prompt
+`paired-capture-eligible-state-adjudication/v8` identify this contract. Judge repair
 calls, ungraded stages, citation diagnostics and unknown usage are reported
 separately.
 
@@ -297,3 +297,47 @@ specific file and execution contracts; completion on public tasks is assessed
 through recorded runs and independent grades. Sequential capture, page changes,
 grounding differences and judge uncertainty remain relevant when interpreting
 results.
+
+## Batch judging
+
+Judges use `JUDGE_TRANSPORT=batch` by default; `normal` sends the same request
+bodies synchronously. Actor requests and countTokens preflight, plus rubric
+preparation, stay normal. Both native pipelines use `gemini-3.5-flash-lite` for
+every stage. The isolated `pro` comparison profile uses `gemini-3.1-pro-preview`.
+Completion and audit assignments are listed in the [datacard](datacard.md#judge-delivery).
+
+The controller collects ready requests across selected recordings, preserving
+all evidence-selection and validation dependencies. Submission, provider job
+identity and item responses are durable. A pending round returns exit code 75;
+repeat the command to poll it and advance ready stages. Replaying a saved answer
+is not a new provider call. Invalid answers and failed items enter the existing
+validation/transport retry budgets, with new attempt IDs. Expiration keeps
+completed items and retries only unanswered work. No acceptance, citation,
+scoring, penalty or voting rule depends on transport.
+
+Creation acknowledgement can be uncertain because provider batch creation is
+not idempotent. Such a receipt blocks automatic resubmission until its job ID is
+reconciled. Cancellation records a terminal marker before cancelling known jobs;
+late results cannot be published. Unknown job IDs require provider reconciliation.
+Batch job files are split at provider file/request limits without dropping or
+truncating items. A single request that exceeds a provider's batch file limit is
+refused rather than altered; the operator can select normal transport in a
+separate evaluation with matching settings. Neither transport enlarges a model's
+input context or changes the 115,000-token native input guard.
+
+Primary and Pro outputs have separate profile roots, bound to the same recording
+and rubric. Common completion is shared because native results cannot affect it.
+Each profile repeats inventory and adjudication, since native evidence analyses
+and scores do reach those prompts. The comparison reports exact per-criterion
+point agreement and disagreements on each audit's screenshot-only subset and
+on their union and intersection, per-arm directional losses and coverage, and
+profile-specific tokens/costs. It also reports ungraded native results, observed
+repair events, explicit refusals, audits blocked by an unavailable native verifier
+and runs without loss values, including per-run receipts and per-arm counts. It
+does not infer accuracy from agreement alone. Missing/ungraded profile judgments
+remain unavailable rather than disagreements or zero loss.
+
+Costs use the recorded delivery mode and keep actor spending separate. Batch
+rates apply to actual batch items, including repeated paid attempts. Missing
+item usage prevents an exact total; known spending remains a labelled lower
+bound. Typical planning figures and assumptions are in [cost estimates](cost-estimate.md).

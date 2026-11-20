@@ -48,11 +48,18 @@ before recording.
 | --- | --- |
 | Browser actor, both arms | `gemini-3.8-flash` |
 | Rubric generation and dependency check | `gpt-5.2` |
-| Screenshot verifier | `gemini-3.1-pro-preview` |
-| DOM verifier | `gemini-3.1-pro-preview` |
+| Screenshot verifier | `gemini-3.5-flash-lite` |
+| DOM verifier | `gemini-3.5-flash-lite` |
 | Evidence inventory | `gemini-3.1-pro-preview` |
 | Evidence-loss adjudication | `gpt-6.1-sol` |
 | Common completion judge | `gpt-6.1-sol` |
+
+Judging uses Batch transport by default. Set `JUDGE_TRANSPORT=normal` for
+synchronous delivery. The `pro` native-judge profile uses `gemini-3.1-pro-preview`
+in a separate output location. Actor requests, their input preflight and rubric
+preparation use normal transport. See the [judging sequence](docs/runbook_next.md#batch-judging)
+for submission, resume, cancellation and the pilot profile comparison. Judging
+can take hours to days across dependent batch rounds.
 
 ## Record tasks
 

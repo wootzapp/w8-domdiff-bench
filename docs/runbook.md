@@ -352,3 +352,14 @@ live in `tests/conftest.py`; fixtures used by one division live in its own
 `conftest.py`. Select a division directory to run its tests. Model responses,
 browser transports and process execution are mocked in offline cases. The
 `live_browser` capture case runs only when `W8_CAPTURE_TEST_CDP` is explicitly set.
+
+## Judge delivery and profiles
+
+`JUDGE_TRANSPORT=batch` submits asynchronous judging requests; set it to `normal`
+for synchronous judging. Actor requests and rubric preparation remain normal.
+The native `primary` profile uses `gemini-3.5-flash-lite`; `pro` uses
+`gemini-3.1-pro-preview` with identical judging rules and separate output paths.
+The [batch judging sequence](runbook_next.md#batch-judging) covers the approval
+gates, synthetic smoke test, repeated polling, cancellation and pilot comparison.
+Dependent batch rounds can take hours to days. Exit code 75 means pending work,
+not a task or grading failure.

@@ -25,12 +25,16 @@ from collections import Counter
 from pathlib import Path
 from w8bench.task_recorder.runner import load_env, MAX_TASK_MEMORY_CHARS
 from w8bench.task_recorder.task_cli import parse_args, parse_task_catalog
-from w8bench.verifier.common import validate_endpoint_configs
+from w8bench.verifier.common import validate_endpoint_configs, native_judge_model
+from w8bench.verifier.batch import judge_transport
 from w8bench.verifier.audit_requests import resolve_audit_config
 from w8bench.verifier.package_manifests import require_local_packages
 load_env(Path('.env'))
 assert all(os.environ.get(k, '').strip() for k in ('OPENAI_API_KEY', 'GEMINI_API_KEY')), 'Missing credential'
 assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash', 'Unexpected actor model'
+assert judge_transport() == 'batch', 'Unexpected judge transport'
+assert os.environ.get('NATIVE_JUDGE_PROFILE', 'primary') == 'primary', 'Unexpected native profile'
+assert native_judge_model() == 'gemini-3.5-flash-lite', 'Unexpected native model'
 media = os.environ.get('ACTOR_MEDIA_RESOLUTION', 'HIGH').strip().upper()
 assert media in {'HIGH', 'ULTRA_HIGH'}, 'Unsupported actor media resolution'
 audit = resolve_audit_config()
@@ -49,7 +53,8 @@ require_local_packages()
 print(json.dumps({'status': 'offline_preflight_passed', 'tasks': len(rows),
     'catalog_sha256': hashlib.sha256(catalog.read_bytes()).hexdigest(),
     'actor': os.environ['ACTOR_MODEL'], 'completion': 'gpt-6.1-sol',
-    'rubric_model': 'gpt-5.2', 'verifier_models': ['gemini-3.1-pro-preview'], 'audit': audit,
+    'rubric_model': 'gpt-5.2', 'verifier_models': ['gemini-3.5-flash-lite'], 'audit': audit,
+    'judge_transport': judge_transport(), 'native_profile': 'primary',
     'max_output_tokens': settings.max_output_tokens, 'max_turns': settings.max_steps,
     'media_resolution': media,
     'memory_characters': MAX_TASK_MEMORY_CHARS}, indent=2))
@@ -104,7 +109,7 @@ status and correct schedule preview. **Model calls: 0.**
 Draft generation uses the existing screenshot verifier's rubric-generation and
 dependency-check prompts, with `gpt-5.2`. It receives the expanded catalog task and
 start URL, not an actor trajectory or result. The action-judge client is configured
-but is not normally called by these two preparation stages. The native JSON output contract is `native-rubric-output-contract/v2`; output
+but is not normally called by these two preparation stages. The native JSON output contract is `native-rubric-output-contract/v3`; output
 settings and response-repair budgets follow the verifier.
 
 First run the read-only preflight:
@@ -189,10 +194,10 @@ hash. **Model calls: 0.**
 
 ## 4. Small model compatibility gate
 
-This **paid** command dispatches seven nominal logical requests: two actor
-requests, two native/rubric model transport probes, one completion request and
+This **paid** command dispatches eight nominal logical requests: two actor
+requests, three native/rubric model transport probes, one completion request and
 one request through each actual inventory/adjudication transport. It uses
-`gpt-5.2`, `gemini-3.1-pro-preview`, `gemini-3.8-flash` and `gpt-6.1-sol`, with a
+`gpt-5.2`, `gemini-3.5-flash-lite`, `gemini-3.1-pro-preview`, `gemini-3.8-flash` and `gpt-6.1-sol`, with a
 PNG, strict actor/completion schemas and configured Gemini settings. The two
 audit probes use their actual system prompts with a synthetic marker response.
 These are transport compatibility diagnostics; the pilot exercises full native
@@ -212,6 +217,7 @@ from w8bench.verifier.clients.retry import GracefulRetryClient
 from w8bench.model_identity import match_model_id, response_acceptance
 from w8bench.verifier.audit_requests import _completion, SYSTEM_PROMPT, ADJUDICATION_SYSTEM_PROMPT
 load_env(Path('.env'))
+os.environ['JUDGE_TRANSPORT'] = 'normal'
 assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash'
 base = Path('internal/compatibility')
 sequence = 1
@@ -232,11 +238,12 @@ receipts, clients = [], []
 status = 'failed'
 native_roles = {
     'gpt-5.2': ['rubric_preparation.generation', 'rubric_preparation.dependency'],
-    'gemini-3.1-pro-preview': [f'{mode}.{stage}' for mode in ('dom_model', 'screenshot_verifier')
+    'gemini-3.5-flash-lite': [f'{mode}.{stage}' for mode in ('dom_model', 'screenshot_verifier')
         for stage in ('relevance', 'evidence_analysis', 'condition_disambiguation',
                       'reality_check', 'whole_rubric_rescore', 'per_criterion_rescore',
                       'side_effects', 'outcome', 'failure_analysis',
                       'action_only_scoring', 'task_validity', 'trajectory_validity')],
+    'gemini-3.1-pro-preview': ['native_pro.transport'],
 }
 def record_matches(receipt, model, returned, roles):
     ids = list(returned) or [None]
@@ -273,7 +280,7 @@ try:
             receipt['status'] = 'passed'
         finally:
             receipt.update(response=client.last_response, input_report=client.last_input_report)
-    for model in ('gpt-5.2', 'gemini-3.1-pro-preview'):
+    for model in ('gpt-5.2', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'):
         client = GracefulRetryClient.from_path('config', logger=logging.getLogger('compatibility'), eval_model=model, evidence_mode='screenshot_verifier')
         clients.append(client)
         calls = instrument_client_calls(client, receipt=True)
@@ -720,7 +727,7 @@ for every retained task. All-trial success reliability is reported separately.
 | Earlier technical-attempt costs | `cost_streams["technical_attempts:actor"]` and retained ledger `attempts` |
 | Current paired artifacts, capture ordering/timing, navigation flags, hashes and passive failures | Recording `manifest.json`, `steps/step_*/capture.json` and state files |
 | Frozen task settings, actor returned model IDs, action counts and final technical status | Recording `task.json`, `manifest.json`, `final.json` |
-| Independent paired completion and its judge usage | Recording `completion.json` and evaluation `paired_completion.json` |
+| Independent paired completion and its judge usage | Shared `evaluations/common/.../completion.json` and profile `paired_completion.json` |
 | Screenshot/DOM auxiliary scores, model-call/usage receipts, logs and validity diagnostics | The `evaluation.json` path in the ledger and its stage subdirectories |
 | Two within-run loss directions per actor run, four loss values across arms per task/trial, recovery and coverage | Evaluation `evidence_audit.json`, linked from `evaluation.json` |
 | Rubric-generation costs including prior attempts | `internal/rubrics/drafts/task_XX.metrics.json`; workflow `generation.json` |
@@ -743,3 +750,101 @@ are estimates at the recorded price schedule, not provider invoices.
 explicit cost/grade/audit coverage. **Model calls: 0.** Preserve the ledger,
 recordings, evaluation receipts, frozen rubrics and private preparation receipts
 needed to reproduce these counts.
+
+## Batch judging
+
+Set `JUDGE_TRANSPORT=batch` and `NATIVE_JUDGE_PROFILE=primary` before scheduling.
+The ledger binds these settings. Native judging uses `gemini-3.5-flash-lite`;
+`pro` selects `gemini-3.1-pro-preview` with separate result folders. Actor
+requests, their input preflight and rubric generation use normal transport.
+Judging can take hours to days across dependent rounds. Exit code 75 means a
+batch is pending. Repeating the same command polls existing jobs and never
+resubmits an answered or still-submitted item.
+
+Inspect the synthetic batch smoke plan offline:
+
+```sh
+.venv/bin/python -m w8bench.verifier.batch smoke \
+  --output-dir .runtime/judge_batch_smoke
+```
+
+**Gate:** explicit approval to submit the smoke batches. **Model calls: 0 for
+preflight; after approval, five tiny generation requests: three Google, two
+OpenAI.** These cover Flash-Lite and Pro OpenAI-compatible native requests,
+Google GenerateContent inventory, OpenAI Responses completion and Chat
+adjudication, including images, JSON output and the actual reasoning settings.
+After approval, submit and repeat later to poll:
+
+```sh
+.venv/bin/python -m w8bench.verifier.batch smoke \
+  --output-dir .runtime/judge_batch_smoke --execute || [ "$?" -eq 75 ]
+```
+
+Inspect `.runtime/judge_batch_smoke/smoke.json`, provider job IDs, returned model
+IDs and usage before approving pilot judging. Cancellation is explicit:
+
+```sh
+.venv/bin/python -m w8bench.verifier.batch smoke \
+  --output-dir .runtime/judge_batch_smoke --cancel --execute
+```
+
+For full evaluation or resume, select all finalized recordings from the saved
+ledger. This performs no actor work. Set `BENCH_EVALUATION_RUN` to the actual
+pilot or collection run name:
+
+```sh
+: "${BENCH_EVALUATION_RUN:?Set the saved pilot or collection run name}"
+.venv/bin/python - <<'PY'
+import json, os, subprocess, sys
+from pathlib import Path
+ledger = Path('recordings') / os.environ['BENCH_EVALUATION_RUN'] / 'ledger.jsonl'
+rows = [json.loads(line) for line in ledger.read_text().splitlines() if line.strip()]
+runs = [row['recording'] for row in rows if (Path(row['recording']) / 'final.json').is_file()]
+assert runs, 'No finalized recordings available for judging'
+command = [sys.executable, '-m', 'w8bench.verifier.run_comparison', '--run', *runs,
+    '--rubric', 'data/rubrics', '--judge-model', 'gpt-6.1-sol', '--judge-transport', 'batch', '--execute']
+result = subprocess.run(command, check=False)
+assert result.returncode in (0, 75), f'Evaluation needs attention: exit {result.returncode}'
+PY
+```
+
+**Gate:** approved rubrics and recorded pilot/collection. **Model calls:** every
+ready request from the existing full pipelines; polling/replay adds no generation
+calls. Invalid answers and failed/expired items retain the existing retry budgets.
+Repeat until completed, then resume the batch command to reconcile ledger status
+and aggregate. Use `--judge-transport normal` only for a separate evaluation with
+matching effective settings; it cannot silently resume Batch results.
+
+For the pilot judge comparison, use the same command with `--compare-profiles`:
+
+```sh
+.venv/bin/python - <<'PY'
+import json, os, subprocess, sys
+from pathlib import Path
+ledger = Path('recordings') / os.environ['BENCH_PILOT_RUN'] / 'ledger.jsonl'
+runs = [row['recording'] for row in map(json.loads, ledger.read_text().splitlines())
+        if (Path(row['recording']) / 'final.json').is_file()]
+assert runs, 'No finalized pilot recordings'
+result = subprocess.run([sys.executable, '-m', 'w8bench.verifier.run_comparison', '--run', *runs,
+    '--rubric', 'data/rubrics', '--judge-model', 'gpt-6.1-sol', '--judge-transport', 'batch',
+    '--compare-profiles', '--execute'], check=False)
+assert result.returncode in (0, 75), f'Judge comparison needs attention: exit {result.returncode}'
+PY
+```
+
+**Gate:** explicit approval for both judge profiles. **Model calls:** the primary
+full evaluation plus the Pro native pipelines and their own inventory/adjudication
+for every selected recording. Common completion is shared; no actor or rubric is
+rerun. The printed `profile_comparison.json` path contains per-arm/per-format
+criterion agreement, disagreements, agreement on each audit's screenshot-only
+subset and their union/intersection, each arm's two directional losses and coverage,
+and profile-specific usage/cost streams. Quality counts include ungraded native
+results, observed repair events, explicit refusals, audits blocked by an unavailable
+native verifier and runs without loss values.
+Primary and Pro outputs are never mixed in the primary aggregate.
+
+To cancel outstanding judging, use the selected recording paths and rubric with
+`--cancel --execute`. The controller records cancellation before requesting it
+from each provider and refuses late results. If submission acknowledgement was
+lost, do not recreate the job: reconcile its actual provider job ID in the saved
+`submission_uncertain` receipt first. Never delete that receipt to force a retry.
