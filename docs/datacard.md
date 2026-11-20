@@ -23,6 +23,7 @@ match for a comparison.
 | Ref-click scrolling | The action CLI can scroll a referenced target into view while resolving and clicking it. Supplied references pass viewport bounding-box filtering. | Coordinate clicks operate at the selected viewport point without reference-based scroll-into-view. |
 | Observation-change source | DOM text and interactive reference changes. | Decoded screenshot pixels. |
 | Content extent | Intersecting nodes and accessible labels can include text outside the painted viewport or from hidden/collapsed descendants. | Painted viewport pixels, including visual content without a text equivalent. |
+| Scrolled inline paragraphs | Visible-text extraction for clipped inline-rich `<p>` elements follows the visible characters; other inline-rich blocks retain their existing prefix behavior. | Painted text follows the viewport regardless of the containing element. |
 | Page structures | Frame and shadow-tree coverage follows the DOM and reference exporters. Canvas/image/CSS-generated content may have only labels or no text representation. | Rendered frame, shadow-tree, canvas, image and CSS content appears where it is painted. |
 
 Both actors receive the current URL as plain text, the task instruction, turn
@@ -170,9 +171,10 @@ at most 3 seconds. A live target permits one session reattachment and one retry
 of that observation; a dead target ends the attempt. Actions are never replayed.
 Uncertain action delivery ends the attempt as a technical failure.
 
-The pinned browser has a known `InspectorChromiumRLAgent::UnregisterAgent`
-teardown assertion. The recorder preserves crash evidence and applies the same
-fresh-attempt policy in both arms; the Chromium overlay is unchanged.
+The browser unregisters its capture component during session disposal. The
+assertion-enabled build uses `SYS_NICE` for renderer-priority changes when tabs
+switch. The recorder preserves crash evidence and applies the same fresh-attempt
+policy in both arms for browser failures.
 
 ## Task catalog and provenance
 
@@ -217,9 +219,10 @@ Screenshot pixels retain visible canvas, image, CSS, frame and shadow content
 that can be absent from the DOM projection. These are inherent properties of
 the recorded formats.
 
-A known open issue affects some scrolled rich inline text: the DOM projection
-can omit visible lines. Preserve the saved formats and report this omission;
-do not infer that all viewport text is represented. The within-run audit
+Visible-text extraction for scrolled inline-rich content covers `<p>` elements
+only. Other inline-rich blocks retain their existing first-500-character prefix
+behavior, which can omit visible lines after scrolling. Preserve the saved formats
+and do not infer that all viewport text is represented. The within-run audit
 uses paired source evidence to distinguish coverage from actor behaviour.
 Captures are sequential, so navigation flags and timestamps describe
 the interval rather than prove simultaneous content. Benchmark results include

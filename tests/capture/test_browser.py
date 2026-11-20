@@ -1551,3 +1551,48 @@ async def test_fairness_known_target_is_selected_before_querying_unrelated_cli_t
     page=await driver.active_page(cdp,target_id='desired')
     assert page.target_id=='desired' and page.tab_id=='t1'
     assert commands[1]==['tab','t1']
+
+
+@pytest.mark.parametrize('payload_matches_pin', [True, False])
+def test_browser_image_preflight_enforces_pinned_binary(tmp_path, monkeypatch, payload_matches_pin):
+    """The same copied/source binary must still match the declared build pin."""
+    import hashlib
+    root, chromium, overlay = (tmp_path / name for name in ('bench', 'chromium', 'overlay'))
+    protocol = b'domain ChromiumRL\n'
+    binary = b'pinned-browser' if payload_matches_pin else b'different-browser'
+    settings = {'chromium_version': '152.0.7948.0', 'overlay_revision': 'a' * 40,
+        'protocol_sha256': hashlib.sha256(protocol).hexdigest(),
+        'binary_sha256': hashlib.sha256(b'pinned-browser').hexdigest()}
+    for path, content in {
+        root / 'protocol/browser-build.json': json.dumps(settings).encode(),
+        root / 'protocol/ChromiumRL.pdl': protocol,
+        root / 'build/chrome': binary,
+        chromium / 'out/Release/chrome': binary,
+        chromium / 'chrome/VERSION': b'MAJOR=152\nMINOR=0\nBUILD=7948\nPATCH=0\n',
+        chromium / 'third_party/blink/public/devtools_protocol/domains/ChromiumRL.pdl': protocol,
+        overlay / 'src/overlay.cc': b'local-overlay', chromium / 'overlay.cc': b'local-overlay',
+    }.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    def local_git(command, **kwargs):
+        assert command[:2] == ['git', '-C']
+        if 'rev-parse' in command:
+            return 'a' * 40 if Path(command[2]) == overlay else 'b' * 40
+        if 'status' in command:
+            return ''
+        if 'ls-files' in command:
+            return b'src/overlay.cc\0'
+        raise AssertionError(f'Unexpected source operation: {command}')
+    monkeypatch.setattr(subprocess, 'check_output', local_git)
+    monkeypatch.setattr('sys.argv', ['preflight', str(root), str(chromium), str(overlay)])
+    script = (Path(__file__).resolve().parents[2] / 'scripts/build-browser-image').read_text()
+    program = script.split("<<'PY'\n", 1)[1].split('\nPY\n', 1)[0]
+    if payload_matches_pin:
+        exec(compile(program, 'browser-image-preflight', 'exec'), {})
+        receipt = json.loads((root / 'build/browser-build.json').read_text())
+        assert receipt['binary_sha256'] == settings['binary_sha256']
+        assert receipt['overlay_revision'] == settings['overlay_revision']
+    else:
+        with pytest.raises(SystemExit, match='Browser binary differs from protocol/browser-build.json'):
+            exec(compile(program, 'browser-image-preflight', 'exec'), {})
+        assert not (root / 'build/browser-build.json').exists()

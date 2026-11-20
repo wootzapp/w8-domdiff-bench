@@ -184,8 +184,7 @@ billing and other non-retryable errors stop without those retries.
 Read-only observation failures use a 3-second target liveness probe and at most
 one session reattachment/retry. Uncertain action delivery is never replayed.
 Browser, renderer, CDP/capture, reference-snapshot and recorder failures allow one
-fresh attempt. The known browser `InspectorChromiumRLAgent::UnregisterAgent`
-teardown assertion follows this policy. The final attempt supplies success,
+fresh attempt. The final attempt supplies success,
 turns and tokens; earlier technical-attempt costs stay separate.
 
 ## Evaluate a run
@@ -296,7 +295,10 @@ compiled Chromium Release build with the Wootzapp source overlay. Source,
 version and protocol pins are in
 [`protocol/browser-build.json`](../protocol/browser-build.json). The script checks
 the overlay revision, applied source files, Chromium version/protocol and copied
-Release binary before building the image with the [`Dockerfile`](../Dockerfile).
+Release binary against the pinned SHA-256 before building the image with the
+[`Dockerfile`](../Dockerfile). Overlay verification reads the local checkout;
+no overlay revision is fetched from a remote. The build receipt records the binary
+hash and source identities.
 
 With the patched Release build prepared, stage its runtime dependencies into an
 empty `build/` directory and package it:
@@ -324,7 +326,9 @@ recorder source hash.
 
 Set `IMAGE` in `.env` to the resulting tag or digest before scheduling tasks.
 Verify browser status and the required ChromiumRL capture commands, and keep
-one browser build throughout the comparison.
+one browser build throughout the comparison. The browser service grants `SYS_NICE`
+to the assertion-enabled build for renderer-priority changes during tab switching.
+Keep `cap_add: [SYS_NICE]` in Compose when recreating the service.
 
 ## Tests
 
