@@ -793,11 +793,11 @@ def test_public_catalog_has_only_eight_fields_and_shared_constraints():
     rows = [json.loads(line) for line in (root / "data/tasks.jsonl").read_text().splitlines()]
     fields = {"task_id", "task_name", "category", "difficulty", "instruction", "start_url",
         "stopping_condition", "constraints"}
-    assert len(rows) == 25
-    assert {row["task_id"] for row in rows} == {f"task_{number:02d}" for number in range(1, 26)}
-    assert Counter(row["difficulty"] for row in rows) == {"medium": 10, "hard": 10, "complex": 5}
+    assert len(rows) == 40
+    assert {row["task_id"] for row in rows} == {f"task_{number:02d}" for number in range(1, 41)}
+    assert Counter(row["difficulty"] for row in rows) == {"easy": 10, "medium": 10, "hard": 10, "complex": 10}
     constraints = rows[0]["constraints"]
-    assert len(constraints) >= 5 and all(isinstance(item, str) and item.strip() for item in constraints)
+    assert len(constraints) == 6 and all(isinstance(item, str) and item.strip() for item in constraints)
     for row in rows:
         assert set(row) == fields
         assert row["constraints"] == constraints

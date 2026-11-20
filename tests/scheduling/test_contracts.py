@@ -385,13 +385,16 @@ def test_published_catalog_has_exact_compact_schema():
     first_constraint = ("Only use the browser actions available to you. Do not open API endpoints, raw data files, "
         "view-source pages or downloads, and do not use external programs.")
     rows = [json.loads(line) for line in (root / "data/tasks.jsonl").read_text().splitlines()]
-    assert len(rows) == 25
+    assert len(rows) == 40
     assert all(set(row) == expected and row["constraints"][0] == first_constraint for row in rows)
     validity = json.loads((root / "internal/task_validity.json").read_text())
     assert set(validity) == {"catalog", "tasks"}
     assert validity["catalog"] == "data/tasks.jsonl"
     assert set(validity["tasks"]) == {row["task_id"] for row in rows}
     assert all(set(item) == {"valid_until"} for item in validity["tasks"].values())
+    pilot = {row["task_id"]: row["difficulty"] for row in rows
+             if row["task_id"] in {"task_26", "task_02", "task_19", "task_25"}}
+    assert pilot == {"task_26": "easy", "task_02": "medium", "task_19": "hard", "task_25": "complex"}
 
 @pytest.mark.usefixtures('no_network')
 def test_batch_resume_rejects_byte_changes_to_frozen_catalog(tmp_path, monkeypatch):
