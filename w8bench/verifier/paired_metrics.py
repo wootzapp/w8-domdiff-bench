@@ -233,9 +233,9 @@ def _category_groups(result, pairs):
                 "metrics": pair[mode].get("evidence_audit"), "coverage": pair[mode].get("evaluation_coverage")}
                 for mode in ("dom", "screenshot")}})
     groups = {"all": pairs}
-    for category in ("medium", "hard", "complex", "unknown"):
+    for category in ("easy", "medium", "hard", "complex", "unknown"):
         selected = [pair for pair in pairs if str(pair.get("difficulty") or pair.get("category") or "unknown").lower() == category
-            or category == "unknown" and str(pair.get("difficulty") or pair.get("category") or "unknown").lower() not in {"medium", "hard", "complex"}]
+            or category == "unknown" and str(pair.get("difficulty") or pair.get("category") or "unknown").lower() not in {"easy", "medium", "hard", "complex"}]
         if selected:
             groups[category] = selected
     return groups

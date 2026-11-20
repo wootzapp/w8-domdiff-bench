@@ -91,9 +91,9 @@ With all frozen rubrics present, this writes `recordings/benchmark/ledger.jsonl`
 without starting actors or judges. Otherwise, it writes a planning-only
 `schedule_preview.jsonl`; execution remains blocked until rubrics are frozen.
 Inspect task identities, trial count, arm order, configuration, rubric paths and
-output paths. Add positional catalog IDs such as `task_02 task_19 task_25` to
+output paths. Add positional catalog IDs such as `task_26 task_02 task_19 task_25` to
 select a subset; omit them to select all tasks. `TASK_CATALOG_FILE` defaults to
-`data/tasks.jsonl`, whose task IDs run from `task_01` through `task_25`.
+`data/tasks.jsonl`, whose task IDs run from `task_01` through `task_40`.
 
 With an executable ledger present, remove `--dry-run`, add `--resume`, and use
 the printed run name to record. A planning-only preview cannot be executed with

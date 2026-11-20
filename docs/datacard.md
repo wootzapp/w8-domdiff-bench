@@ -177,11 +177,16 @@ fresh-attempt policy in both arms; the Chromium overlay is unchanged.
 ## Task catalog and provenance
 
 The default catalog is [data/tasks.jsonl](../data/tasks.jsonl), containing
-`task_01` through `task_25`. Each row has eight fields: `task_id`, `task_name`,
+`task_01` through `task_40`. Each row has eight fields: `task_id`, `task_name`,
 `category`, `instruction`, `start_url`, `stopping_condition`, `constraints`,
-and `difficulty`. Difficulty is a declared
-`medium`, `hard` or `complex` label;
-it does not determine success or change the 200-turn cap.
+and `difficulty`. The catalog contains ten tasks at each level: `easy`, `medium`,
+`hard` and `complex`. Difficulty does not determine success or change the
+200-turn cap. Easy tasks use one site and one to three pages for a few facts or
+a simple search or filter (about 5–15 turns). Medium tasks combine filters,
+sorting or detail pages (about 15–40 turns). Hard tasks use deep navigation or
+two to three sites with constraints (about 40–100 turns). Complex tasks compare
+or calculate across many items and several sites, generally under 150 turns.
+These are workload guidelines, not measured task lengths.
 
 Constraints are shared browser, access and read-only policies. Task-specific
 scope and checkable deliverables belong in the instruction and stopping condition.

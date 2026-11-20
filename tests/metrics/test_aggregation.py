@@ -331,6 +331,23 @@ def test_aggregate_distributions_categories_and_missing_audit_coverage(run_pair)
     assert result["modes"]["screenshot"]["evidence_audit"]["screenshot_evidence_loss"]["rate"] is None
     assert len(result["audit_by_task_trial"]) == 2
 
+@pytest.mark.usefixtures("no_network")
+def test_difficulty_groups_keep_easy_separate_from_unknown(run_pair):
+    paths, *_ = run_pair
+    pair, _ = compare(*(inspect_recording(paths[mode]) for mode in ("dom", "screenshot")))
+    pairs = []
+    for difficulty in ("easy", "medium", "hard", "complex", "unclassified"):
+        item = deepcopy(pair)
+        item.update(task_id=f"{difficulty}_task", trial_id="1", difficulty=difficulty)
+        pairs.append(item)
+    result = aggregate(pairs)
+    assert set(result["categories"]) == {"easy", "medium", "hard", "complex", "unknown"}
+    for difficulty in ("easy", "medium", "hard", "complex", "unknown"):
+        for arm in ("dom", "screenshot"):
+            assert result["categories"][difficulty][arm]["attempted_runs"] == 1
+    assert result["task_metadata"]["easy_task"]["difficulty"] == "easy"
+
+
 @pytest.mark.parametrize("k", [1, 2, 5])
 def test_k_runs_means_are_not_majority_votes(tmp_path, k):
     roots = runs(tmp_path, k=k, flagged={(0, 0, 0, audit_aggregate.LOSS_FLAGS[0])})

@@ -1,6 +1,6 @@
 # Collection and evaluation runbook
 
-Run commands from the repository root using `.venv`. The catalog contains 25
+Run commands from the repository root using `.venv`. The catalog contains 40
 public, read-only tasks. Each task has independent DOM and screenshot actors;
 choose any positive trial count per arm. Actor requests use `gemini-3.8-flash`, a
 10,000-token output limit, medium reasoning, 8,000 memory characters and at most
@@ -21,6 +21,7 @@ precedence over `.env`.
 ```sh
 .venv/bin/python - <<'PY'
 import hashlib, json, os
+from collections import Counter
 from pathlib import Path
 from w8bench.task_recorder.runner import load_env, MAX_TASK_MEMORY_CHARS
 from w8bench.task_recorder.task_cli import parse_args, parse_task_catalog
@@ -40,7 +41,8 @@ assert settings.max_output_tokens == 10000 and settings.max_steps == 200
 assert MAX_TASK_MEMORY_CHARS == 8000
 catalog = Path('data/tasks.jsonl')
 rows = parse_task_catalog(catalog.read_text(), source=str(catalog))
-assert len(rows) == 25 and {r['task_id'] for r in rows} == {f'task_{n:02d}' for n in range(1, 26)}
+assert len(rows) == 40 and {r['task_id'] for r in rows} == {f'task_{n:02d}' for n in range(1, 41)}
+assert Counter(r['difficulty'] for r in rows) == dict.fromkeys(('easy', 'medium', 'hard', 'complex'), 10)
 assert Path('internal/task_validity.json').is_file(), 'Missing task-validity metadata'
 validate_endpoint_configs('config')
 require_local_packages()
@@ -78,7 +80,7 @@ Choose `BENCH_TRIALS` explicitly in your shell, then require it before planning:
 
 When any required frozen rubric is missing, this writes only
 `recordings/collection/catalog.jsonl` and
-`recordings/collection/schedule_preview.jsonl`. Inspect all `50 × k` task/arm/trial
+`recordings/collection/schedule_preview.jsonl`. Inspect all `80 × k` task/arm/trial
 rows, alternating arm order, intended output paths and controls. It is not the
 executable attempt ledger. Rubric-free planning cannot start an actor or judge.
 Execution requires approved frozen rubrics and creates `ledger.jsonl` separately.
@@ -151,8 +153,8 @@ then regenerate the review document. Keep task identity, expanded instruction an
 start URL unchanged. A changed draft resets its approval; unchanged approvals
 are retained and prior review versions are archived.
 
-**Gate:** all 25 valid drafts and a human review of every criterion. Generation
-normally needs **50 logical calls**: two per task, before existing retries or
+**Gate:** all 40 valid drafts and a human review of every criterion. Generation
+normally needs **80 logical calls**: two per task, before existing retries or
 repair iterations. Review needs **0**. Actual calls, transport attempts and token
 usage are in each `task_XX.metrics.json`, including prior attempts; unknown usage
 is not a measured zero.
@@ -182,7 +184,7 @@ file hash, and `internal/rubrics/freeze.json`. An identical repeat is harmless;
 a changed existing frozen rubric is refused. Reuse the same frozen criteria and
 weights across both arms, all trials and every grading stage.
 
-**Gate:** 25 frozen task rubrics, matching task definitions and approved review
+**Gate:** 40 frozen task rubrics, matching task definitions and approved review
 hash. **Model calls: 0.**
 
 ## 4. Small model compatibility gate
@@ -571,13 +573,14 @@ limit; estimates above 50% trigger free `countTokens` requests with transport
 retries and a recorded local-estimate fallback. Preflight requests do not consume
 actor model turns.
 
-## 5. Three-task pilot with full evaluation
+## 5. Four-task pilot with full evaluation
 
-The pilot uses `task_02` (medium), `task_19` (hard) and `task_25` (complex),
+The pilot uses `task_26` (easy), `task_02` (medium), `task_19` (hard) and
+`task_25` (complex),
 both arms, one trial each. It is separate from the full collection.
 
 ```sh
-./scripts/run-task task_02 task_19 task_25 --trials 1 \
+./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name pilot --dry-run
@@ -588,7 +591,7 @@ Set `BENCH_PILOT_RUN` to the run name printed above, such as `pilot` or
 
 ```sh
 : "${BENCH_PILOT_RUN:?Set the printed pilot run name}"
-./scripts/run-task task_02 task_19 task_25 --trials 1 \
+./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
   --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name "$BENCH_PILOT_RUN" --resume
@@ -603,20 +606,20 @@ and a within-run audit with inventory/adjudication. These compare saved formats
 from the same actor run; they do not pair the DOM actor's evidence with the
 screenshot actor's evidence. Passive capture failure is recorded separately.
 
-**Gate:** six scheduled rows have recorded final technical/evaluation outcomes;
+**Gate:** eight scheduled rows have recorded final technical/evaluation outcomes;
 inspect request isolation, capture hashes/timings, actor returned IDs, grading
 coverage, frozen rubric identity, judge receipts and the report. Genuine task
 failure is a result, not permission to rewrite a task. Resolve generic setup
 faults before authorizing the full collection. The pilot permits at most
-**1,200 final-attempt actor responses** (six × 200), plus up to 1,200 responses
+**1,600 final-attempt actor responses** (eight × 200), plus up to 1,600 responses
 from prior technical attempts. Up to three transport attempts per response gives
-a 7,200-attempt upper bound. Judge calls depend on states, criteria, selected
+a 9,600-attempt upper bound. Judge calls depend on states, criteria, selected
 evidence and existing retries; do not budget them as one per task.
 Aggregation itself uses **0 model calls**.
 
 ## 6. Full collection, resume and evaluation
 
-Supply any positive `BENCH_TRIALS`; omit positional selectors to use all 25 tasks:
+Supply any positive `BENCH_TRIALS`; omit positional selectors to use all 40 tasks:
 
 ```sh
 : "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
@@ -636,7 +639,7 @@ Set `BENCH_COLLECTION_RUN` to the printed run name, then execute that ledger:
   --output-dir recordings --run-name "$BENCH_COLLECTION_RUN" --resume
 ```
 
-The executable ledger has `50 × k` task/arm/trial rows, retaining startup
+The executable ledger has `80 × k` task/arm/trial rows, retaining startup
 failures and missing recordings. A row can have two actor attempts when its first
 attempt is technical. Task/arm/trial order alternates which arm runs first.
 Execution uses `--resume` and the existing ledger's printed run name; completed final attempts are
@@ -685,10 +688,10 @@ Native scoring exhaustion retains usage with null scores and a `judge_fallback`
 reason; ungraded audits have no pooled loss rate. Completion has one request per
 grading attempt; inventory and adjudication each allow three validation attempts.
 
-**Gate:** all `50 × k` ledger rows and their attempt histories are accounted for,
-with evaluation coverage reported. Final attempts permit at most **10,000 × k
-actor responses** (25 tasks × two arms × k × 200). Prior technical attempts can
-add the same number; the transport-attempt upper bound is **60,000 × k**. Full
+**Gate:** all `80 × k` ledger rows and their attempt histories are accounted for,
+with evaluation coverage reported. Final attempts permit at most **16,000 × k
+actor responses** (40 tasks × two arms × k × 200). Prior technical attempts can
+add the same number; the transport-attempt upper bound is **96,000 × k**. Full
 evaluation adds one primary completion request per final recording, variable
 original-verifier calls, and variable inventory/
 adjudication requests; existing retries can add transport attempts. Rubrics stay

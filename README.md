@@ -56,7 +56,7 @@ before recording.
 
 ## Record tasks
 
-The task catalog is [data/tasks.jsonl](data/tasks.jsonl), with IDs `task_01` through `task_25`.
+The task catalog is [data/tasks.jsonl](data/tasks.jsonl), with IDs `task_01` through `task_40`.
 See the [task catalog](data/README.md) and the
 [collection and evaluation sequence](docs/runbook_next.md).
 
@@ -87,7 +87,7 @@ to continue an existing ledger; completed final attempts are retained. Technical
 fresh attempt; both attempts remain recorded.
 Both actors of a task/trial run back to back, alternating which arm starts.
 
-For a subset, add positional IDs such as `task_02 task_19 task_25`.
+For a subset, add positional IDs such as `task_26 task_02 task_19 task_25`.
 The launcher accepts any frozen local catalog and task IDs. The schedule binds
 the selected definitions, rubric hashes, effective settings, browser source
 provenance and output paths. Use a separate run name for a different task set or
