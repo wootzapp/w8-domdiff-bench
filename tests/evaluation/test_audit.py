@@ -818,8 +818,8 @@ def test_post_adjudication_conflicts_are_recorded_not_overridden(pair_factory):
     final["criteria"][0]["screenshot_evidence_loss"] = _finding(True, modality="dom_model")
     final["criteria"][1]["dom_model_evidence_loss"] = _finding(True, modality="screenshot")
     result = _run(pair, _complete(inventory, final))
-    assert result["schema_version"] == "automated-evidence-audit/v7"
-    assert result["prompt_version"] == "paired-capture-eligible-state-adjudication/v7"
+    assert result["schema_version"] == "automated-evidence-audit/v8"
+    assert result["prompt_version"] == "paired-capture-eligible-state-adjudication/v8"
     assert result["criteria"][0]["screenshot_evidence_loss"] is True
     assert result["criteria"][1]["dom_model_evidence_loss"] is True
     assert all(r["coverage_conflict"] for r in result["criteria"])

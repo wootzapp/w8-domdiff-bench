@@ -5,6 +5,7 @@ import hashlib
 import importlib
 import json
 import os
+from .verifier.batch import judge_transport, POLICY_VERSION as BATCH_POLICY_VERSION
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -157,6 +158,7 @@ def completion_settings(recording, *, rubric_hash, judge_model, base_url, eviden
         "route": "responses", "base_url": base_url, "reasoning_effort": "medium", "temperature": None,
         "max_output_tokens": 10000, "max_attempts": 1, "evidence_policy": evidence_policy,
         "prompt_sha256": hashlib.sha256(JUDGE_PROMPT.encode()).hexdigest(), "schema_sha256": settings_hash(GRADE_SCHEMA),
+        "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
         "policy_version": COMPLETION_POLICY_VERSION, "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY})
 
 
@@ -166,19 +168,23 @@ def evaluation_settings(recording, *, eval_config, rubric_hash, judge_model, evi
     from .verifier.audit_requests import (ADJUDICATION_SYSTEM_PROMPT, SYSTEM_PROMPT, GEMINI_GENERATION_SETTINGS,
         OPENAI_GENERATION_SETTINGS, resolve_audit_config)
     from .verifier.evidence_audit import SCHEMA_VERSION, PROMPT_VERSION
-    from .verifier.common import CANONICAL_ACTION_MODEL, CANONICAL_JUDGE_MODEL, CANONICAL_RUBRIC_MODEL, CANONICAL_SETTINGS
+    from .verifier.common import native_judge_model, CANONICAL_RUBRIC_MODEL, CANONICAL_SETTINGS
     endpoints = endpoint_settings(eval_config)
     source = browser_source_version(recording.get("manifest"))
     stages = {"completion": {"models": [judge_model], "provider": "openai", "route": "responses",
         "base_url": os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"), "reasoning_effort": "medium",
         "temperature": None, "max_output_tokens": 10000, "max_attempts": 1,
         "prompt_sha256": hashlib.sha256(JUDGE_PROMPT.encode()).hexdigest(), "schema_sha256": settings_hash(GRADE_SCHEMA),
+        "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
         "policy_version": COMPLETION_POLICY_VERSION, "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY,
         "evidence_policy": evidence_policy}}
+    native_model = native_judge_model()
     for mode in ("screenshot_verifier", "dom_model"):
-        stages[mode] = {"models": [CANONICAL_ACTION_MODEL, CANONICAL_JUDGE_MODEL],
-            "endpoints": {model: endpoints.get(model, []) for model in (CANONICAL_ACTION_MODEL, CANONICAL_JUDGE_MODEL)},
+        stages[mode] = {"models": [native_model, native_model],
+            "endpoints": {model: endpoints.get(model, []) for model in (native_model,)},
             "prompt_sha256": _native_prompts(mode), "schema_version": "finite-earned-points/v2",
+            "judge_profile": os.environ.get("NATIVE_JUDGE_PROFILE", "primary"),
+            "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
             "scoring_controls": CANONICAL_SETTINGS, "input_token_limit": 115000, "validation_attempts": 5,
             "max_output_tokens": None, "temperature": None, "dom_state_char_budget": 350000 if mode == "dom_model" else None,
             "evidence_policy": mode}
@@ -195,10 +201,11 @@ def evaluation_settings(recording, *, eval_config, rubric_hash, judge_model, evi
             "generation_settings": GEMINI_GENERATION_SETTINGS if google else OPENAI_GENERATION_SETTINGS,
             "prompt_sha256": hashlib.sha256((SYSTEM_PROMPT if stage == "inventory" else ADJUDICATION_SYSTEM_PROMPT).encode()).hexdigest(),
             "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
+            "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
             "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY, "validation_attempts": 3, "evidence_policy": "eligible_same_run_paired"}
     stages["rubric_preparation"] = {"models": [CANONICAL_RUBRIC_MODEL], "endpoints": endpoints.get(CANONICAL_RUBRIC_MODEL, []),
         "prompt_sha256": _native_prompts("screenshot_verifier"), "schema_version": "frozen-rubric/v1",
-        "max_output_tokens": None, "evidence_policy": "task_instruction_and_start_url"}
+        "transport": "normal", "max_output_tokens": None, "evidence_policy": "task_instruction_and_start_url"}
     return normalized_settings({"schema_version": SETTINGS_VERSION,
         "actor": actor_settings(recording.get("manifest", {}).get("controls", {}), browser_source=source),
         "browser_source": source, "rubric_sha256": rubric_hash, "stages": stages})
@@ -234,6 +241,8 @@ def native_stage_settings(args, mode, *, rubric_hash):
     return normalized_settings({"schema_version": SETTINGS_VERSION, "rubric_sha256": rubric_hash,
         "models": models, "endpoints": {model: endpoints.get(model, []) for model in models},
         "prompt_sha256": _native_prompts(mode), "schema_version_policy": "finite-earned-points/v2",
+        "judge_profile": os.environ.get("NATIVE_JUDGE_PROFILE", "primary"),
+        "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
         "scoring_controls": controls, "validation_attempts": 5, "input_token_limit": 115000,
         "evidence_policy": mode, "browser_source": browser_source_version()})
 
@@ -259,6 +268,7 @@ def audit_settings(config, *, rubric_hash=None):
             "generation_settings": GEMINI_GENERATION_SETTINGS if google else OPENAI_GENERATION_SETTINGS,
             "prompt_sha256": hashlib.sha256((SYSTEM_PROMPT if name == "inventory" else ADJUDICATION_SYSTEM_PROMPT).encode()).hexdigest(),
             "schema_version": SCHEMA_VERSION, "prompt_version": PROMPT_VERSION,
+            "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
             "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY, "validation_attempts": 3,
             "evidence_policy": "eligible_same_run_paired"}
     return normalized_settings({"schema_version": SETTINGS_VERSION, "rubric_sha256": rubric_hash,

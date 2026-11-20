@@ -8,8 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .common import (
-    CANONICAL_ACTION_MODEL,
-    CANONICAL_JUDGE_MODEL,
+    native_judge_model,
     CANONICAL_SETTINGS,
     load_canonical_rubric,
     load_json,
@@ -131,8 +130,8 @@ def _metadata(raw, task, mode, frozen, input_task, generation_metrics):
         "frozen_rubric_sha256": frozen.sha256,
         "phase_a_generation_metrics": os.path.relpath(Path(generation_metrics).resolve(strict=True), Path(__file__).resolve().parents[2]),
         "judge_models": {
-            "judge": CANONICAL_JUDGE_MODEL,
-            "action_and_validity_judge": CANONICAL_ACTION_MODEL,
+            "judge": native_judge_model(),
+            "action_and_validity_judge": native_judge_model(),
         },
         "pipeline_settings": dict(CANONICAL_SETTINGS),
         "evaluation_context": raw.get("evaluation_context"),
@@ -181,7 +180,7 @@ def _ungraded_metrics(raw):
 
 def _llm_calls(combined_calls):
     return {
-        CANONICAL_JUDGE_MODEL: combined_calls["logical_calls"],
+        native_judge_model(): combined_calls["logical_calls"],
         "total": combined_calls["logical_calls"],
         "api_attempts": combined_calls["api_attempts"],
         "retries": combined_calls["retries"],
@@ -215,7 +214,7 @@ def _normalize(
         **({"penalty_criteria": penalties} if penalties else {}),
         "llm_calls": _llm_calls(combined_calls),
         "token_usage": {
-            CANONICAL_JUDGE_MODEL: combined_usage,
+            native_judge_model(): combined_usage,
             "combined": combined_usage,
         },
         "score_artifact": os.path.relpath(source, Path(__file__).resolve().parents[2]),

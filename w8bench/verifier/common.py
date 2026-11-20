@@ -12,8 +12,18 @@ from typing import Any, Iterable
 
 
 CANONICAL_RUBRIC_MODEL = "gpt-5.2"
-CANONICAL_JUDGE_MODEL = "gemini-3.1-pro-preview"
-CANONICAL_ACTION_MODEL = "gemini-3.1-pro-preview"
+CANONICAL_JUDGE_MODEL = "gemini-3.5-flash-lite"
+CANONICAL_ACTION_MODEL = "gemini-3.5-flash-lite"
+NATIVE_JUDGE_PROFILES = {"primary": CANONICAL_JUDGE_MODEL, "pro": "gemini-3.1-pro-preview"}
+
+
+def native_judge_model():
+    profile = os.environ.get("NATIVE_JUDGE_PROFILE", "primary")
+    if profile not in NATIVE_JUDGE_PROFILES:
+        raise ValueError("NATIVE_JUDGE_PROFILE must be primary or pro")
+    return NATIVE_JUDGE_PROFILES[profile]
+
+
 CANONICAL_SETTINGS = {
     "rubric_threshold": 0.8,
     "max_evidence_items_per_criterion": 5,
@@ -226,9 +236,10 @@ def validate_endpoint_configs(path: str | Path) -> dict[str, Any]:
         models.add(kwargs["model"])
         receipts.append({"path": os.path.relpath(source, Path(__file__).resolve().parents[2]),
                          "model": kwargs["model"], "provider": provider})
-    required = {CANONICAL_RUBRIC_MODEL, CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL}
-    if models != required:
-        raise ValueError(f"Endpoint models must be exactly {sorted(required)}, got {sorted(models)}")
+    required = {CANONICAL_RUBRIC_MODEL, native_judge_model()}
+    allowed = {CANONICAL_RUBRIC_MODEL, *NATIVE_JUDGE_PROFILES.values()}
+    if not required <= models or not models <= allowed:
+        raise ValueError(f"Endpoint models must include {sorted(required)} and stay within {sorted(allowed)}, got {sorted(models)}")
     return {"models": sorted(models), "files": receipts}
 
 
@@ -278,10 +289,13 @@ def require_openai_key() -> None:
 
 
 def write_json(path: str | Path, value: object) -> Path:
-    destination = Path(path)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8", errors="backslashreplace")
-    return destination
+    from .batch import publication
+    with publication():
+        destination = Path(path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8", errors="backslashreplace")
+        return destination
+
 
 
 def sum_usage(*rows: dict[str, Any]) -> dict[str, Any]:

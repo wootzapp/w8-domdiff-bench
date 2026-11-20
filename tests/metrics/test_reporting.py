@@ -53,7 +53,7 @@ def evaluation_for(recording, **overrides):
 def evaluation_path(recording):
     source = Path(recording["source"])
     task = recording["task"]
-    return (source.parent.parent / "evaluations" / task["run_name"] / task["observation_mode"]
+    return (source.parent.parent / "evaluations" / "profiles" / "primary" / task["run_name"] / task["observation_mode"]
             / task["source_task_id"] / recording["recording_sha256"] / "evaluation.json")
 
 def pair_for(recording):
@@ -251,8 +251,10 @@ def test_summary_refuses_secondary_completion_with_wrong_identity_or_policy(metr
 
 def test_primary_completion_must_match_the_evaluation_rubric(metric_recording_factory):
     recording = metric_recording_factory()
-    write_json(evaluation_path(recording), evaluation_for(recording, rubric_sha256="another-rubric"))
-    write_json(Path(recording["source"]) / "completion.json", completion_for(recording))
+    target = evaluation_path(recording).parent / "paired_completion.json"
+    write_json(target, completion_for(recording))
+    write_json(evaluation_path(recording), evaluation_for(recording, rubric_sha256="another-rubric",
+        stages={"paired_completion": {"result": str(target)}}))
     with pytest.raises(ValueError, match="frozen rubric hashes differ"):
         summarize(recording)
 
@@ -480,7 +482,7 @@ def test_aggregation_refuses_mixed_policy_versions_for_ungraded_receipts(
         for arm in ("dom", "screenshot"):
             recording = metric_recording_factory(arm=arm, trial=f"trial_{trial:04d}", usage={"input_tokens": 4, "output_tokens": 2})
             metric_evaluation_factory(recording, grade_usage={"input_tokens": 3, "output_tokens": 1})
-            path = Path(recording["source"]) / "completion.json"
+            path = evaluation_path(recording).parent / "paired_completion.json"
             grade = json.loads(path.read_text())
             grade.update(method="ungraded", verdict="ungraded")
             if trial == 1:
@@ -497,7 +499,7 @@ def test_aggregation_keeps_unstarted_placeholders_with_versioned_grades(
 ):
     recording = metric_recording_factory(usage={"input_tokens": 4, "output_tokens": 2})
     metric_evaluation_factory(recording, grade_usage={"input_tokens": 3, "output_tokens": 1})
-    path = Path(recording["source"]) / "completion.json"
+    path = evaluation_path(recording).parent / "paired_completion.json"
     grade = json.loads(path.read_text())
     grade.update(completion_policy_version="paired-completion/v4", acceptance_policy_version="returned-model-acceptance/v2")
     write_json(path, grade)

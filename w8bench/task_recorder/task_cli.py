@@ -983,28 +983,34 @@ def _run_batch_actor(
         f"{row['technical_outcome']}; grade={row['grade_outcome']}", flush=True)
 
 
-def _execute_batch_judge(
-    args: argparse.Namespace,
-    partner: dict[str, Any],
-    recording_path: Path,
-    grade_path: Path,
-) -> None:
-    """Run grading and bind the resulting evaluation to the inspected recording."""
-    with Path(partner["log"]).open("a", encoding="utf-8") as log:
-        grade = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
-            "--run", str(recording_path), "--rubric", partner["rubric"],
-            "--env-file", str(args.env_file.resolve()), "--judge-model", partner["judge_model"], "--execute"],
+def _execute_batch_judge(args: argparse.Namespace, partners: list[dict[str, Any]]) -> None:
+    """Advance ready judge requests across the recorded arms in one round."""
+    judge_models = {partner["judge_model"] for partner in partners}
+    if len(judge_models) != 1:
+        raise RunnerError("scheduled completion judge models differ")
+    log_path = Path(partners[0]["log"]).with_name(f"judge_round_{partners[-1]['sequence']:06d}.log")
+    with log_path.open("a", encoding="utf-8") as log:
+        result = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
+            "--run", *[partner["recording"] for partner in partners], "--rubric", str(args.rubric_dir.resolve()),
+            "--env-file", str(args.env_file.resolve()), "--judge-model", partners[0]["judge_model"], "--execute"],
             cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
-    partner["judge_exit_code"] = grade.returncode
-    partner["grade_outcome"] = (json.loads(grade_path.read_text())["verdict"]
-        if grade_path.is_file() else "grading_error")
     from .prepare_verifier_data import inspect_recording
-    checked = inspect_recording(recording_path)
-    evaluation_path = (recording_path.parent.parent / "evaluations" / partner["run_name"] /
-        partner["arm"] / partner["task_id"] / checked["recording_sha256"] / "evaluation.json")
-    partner["evaluation_path"] = str(evaluation_path)
-    partner["evaluation_outcome"] = (json.loads(evaluation_path.read_text())["status"]
-        if evaluation_path.is_file() else "unavailable")
+    for partner in partners:
+        recording_path = Path(partner["recording"])
+        checked = inspect_recording(recording_path)
+        evaluation_path = (recording_path.parent.parent / "evaluations" / "profiles" / "primary" / partner["run_name"] /
+            partner["arm"] / partner["task_id"] / checked["recording_sha256"] / "evaluation.json")
+        evaluation = json.loads(evaluation_path.read_text()) if evaluation_path.is_file() else {}
+        pending = evaluation.get("status") == "batch_pending" or result.returncode == 75 and not evaluation
+        if result.returncode == 130:
+            partner.update(judge_log=str(log_path), evaluation_path=str(evaluation_path),
+                evaluation_outcome="cancelled", grade_outcome="ungraded", judge_exit_code=130)
+            continue
+        partner.update(judge_log=str(log_path), evaluation_path=str(evaluation_path),
+            evaluation_outcome=evaluation.get("status", "batch_pending" if pending else "unavailable"),
+            grade_outcome=evaluation.get("stages", {}).get("paired_completion", {}).get("verdict",
+                "batch_pending" if pending else "grading_error"),
+            judge_exit_code=75 if pending else 0 if evaluation.get("status") == "complete" else result.returncode)
 
 
 def _grade_batch_pair(
@@ -1014,37 +1020,42 @@ def _grade_batch_pair(
     ledger_path: Path,
     batch_dir: Path,
 ) -> None:
-    """Grade the two recorded arms in their scheduled order."""
-    for partner in ledger[row["sequence"]-2:row["sequence"]]:
+    """Advance judging for all ready recordings after the current arm pair."""
+    partners = []
+    for partner in ledger[:row["sequence"]]:
         if partner["grade_completed"]:
             continue
         recording_path = Path(partner["recording"])
         if not (recording_path / "final.json").is_file():
             partner.update(grade_completed=True, grade_outcome="ungraded",
                 evaluation_outcome="unavailable", evaluation_reason="recording_not_finalized")
-            write_json_lines(ledger_path, ledger)
             continue
         if "log" not in partner:
             path = batch_dir / "logs" / f"attempt_{partner['sequence']:06d}.log"
             path.parent.mkdir(parents=True, exist_ok=True)
             partner["log"] = str(path)
-        grade_path = recording_path / "completion.json"
         if partner["grade_outcome"] == "running":
             partner["evaluation_previous_interruption"] = True
         partner.update(grade_outcome="running", evaluation_outcome="running", judge_started_at=utc_now())
-        write_json_lines(ledger_path, ledger)
-        try:
-            _execute_batch_judge(args, partner, recording_path, grade_path)
-        except KeyboardInterrupt:
+        partners.append(partner)
+    write_json_lines(ledger_path, ledger)
+    if not partners:
+        return
+    try:
+        _execute_batch_judge(args, partners)
+    except KeyboardInterrupt:
+        for partner in partners:
             partner.update(grade_outcome="interrupted", evaluation_outcome="interrupted",
                 grade_completed=False, judge_ended_at=utc_now())
-            write_json_lines(ledger_path, ledger)
-            raise
-        except Exception as error:
+        write_json_lines(ledger_path, ledger)
+        raise
+    except Exception as error:
+        for partner in partners:
             partner.update(grade_outcome="grading_error", evaluation_outcome="failed",
                 judge_error=f"{type(error).__name__}: {error}")
-        partner.update(grade_completed=True, judge_ended_at=utc_now())
-        write_json_lines(ledger_path, ledger)
+    for partner in partners:
+        partner.update(grade_completed=partner.get("judge_exit_code") != 75, judge_ended_at=utc_now())
+    write_json_lines(ledger_path, ledger)
 
 
 def _single_task_definition(args: argparse.Namespace, task_id: str) -> dict[str, Any]:

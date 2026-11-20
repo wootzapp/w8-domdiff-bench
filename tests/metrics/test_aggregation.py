@@ -288,7 +288,7 @@ def test_evaluation_join_checks_identity_and_keeps_four_directional_metrics(run_
     paths, *_ = run_pair
     recording = inspect_recording(paths["dom"])
     task = recording["task"]
-    root = paths["dom"].parent.parent / "evaluations" / str(task["run_name"]) / "dom" / task["source_task_id"] / recording["recording_sha256"]
+    root = paths["dom"].parent.parent / "evaluations" / "profiles" / "primary" / str(task["run_name"]) / "dom" / task["source_task_id"] / recording["recording_sha256"]
     metrics = {name: {"count": index, "denominator": 4, "rate": index/4} for index, name in enumerate((
         "screenshot_evidence_loss", "dom_model_evidence_loss", "screenshot_verifier_misses", "dom_model_verifier_misses"))}
     evaluation = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
@@ -662,7 +662,7 @@ def test_recorded_contracts_and_actual_browser_labels_match_the_schedule(setting
         recording["manifest"]["browser_profile_provenance"]["browser_build"]["overlay_revision"] = "another-overlay"
     else:
         source = Path(recording["source"])
-        path = source.parent.parent / "evaluations/trial_0001/screenshot/custom" / recording["recording_sha256"] / "evaluation.json"
+        path = source.parent.parent / "evaluations/profiles/primary/trial_0001/screenshot/custom" / recording["recording_sha256"] / "evaluation.json"
         value = json.loads(path.read_text())
         if kind == "missing_evaluation":
             value.pop("effective_settings")
@@ -694,7 +694,7 @@ def test_aggregation_refuses_new_and_unversioned_actual_contracts(settings_compa
         recording["manifest"].pop("effective_settings")
     else:
         source = Path(recording["source"])
-        path = source.parent.parent / "evaluations/trial_0001/screenshot/custom" / recording["recording_sha256"] / "evaluation.json"
+        path = source.parent.parent / "evaluations/profiles/primary/trial_0001/screenshot/custom" / recording["recording_sha256"] / "evaluation.json"
         value = json.loads(path.read_text()); value.pop("effective_settings"); write_json(path, value)
     with pytest.raises(ValueError, match="effective settings differ"):
         compare_case(case)
@@ -706,7 +706,7 @@ def test_all_unversioned_synthetic_contracts_still_aggregate(settings_comparison
         recording = case.recordings[row["recording"]]
         recording["manifest"].pop("effective_settings")
         source = Path(recording["source"])
-        path = source.parent.parent / "evaluations/trial_0001" / row["arm"] / "custom" / recording["recording_sha256"] / "evaluation.json"
+        path = source.parent.parent / "evaluations/profiles/primary/trial_0001" / row["arm"] / "custom" / recording["recording_sha256"] / "evaluation.json"
         value = json.loads(path.read_text()); value.pop("effective_settings"); write_json(path, value)
     assert compare_case(case) == 0
 
@@ -845,3 +845,33 @@ def test_audit_aggregation_requires_explicit_nonfresh_override(tmp_path):
     summary, _ = audit_aggregate.aggregate_runs(roots, expected_tasks=2, resamples=10, allow_nonfresh=True)
     assert summary["browser_profile_policy"] == {"allow_nonfresh": True,
         "override_used": True, "nonfresh_recordings": 1}
+
+
+@pytest.mark.parametrize('model,pin,pout',[('gemini-3.5-flash-lite',.30,2.50),('gemini-3.1-pro-preview',2,12),('gpt-6.1-sol',2,10)])
+def test_batch_judge_cost_and_unknown_attempt_usage(model,pin,pout):
+    from w8bench.verifier.run_metrics import _price_stream
+    def stream(mode):
+        return {'calls':1,'usage_coverage':'complete','call_records':[{'model':model,'transport':mode,
+            'usage':{'input_tokens':1000,'output_tokens':100,'reasoning_tokens':50}}]}
+    normal,batch=stream('normal'),stream('batch')
+    _price_stream(normal);_price_stream(batch)
+    assert batch['cost']['estimated_usd']==pytest.approx(normal['cost']['estimated_usd']/2)
+    assert batch['cost']['transport_modes']=={'batch':1}
+    assert batch['cost']['estimated_usd']==pytest.approx((1000*pin+100*pout)/2_000_000)
+    batch['call_records'][0]['batch_items']=[{'model':model,'transport':'batch','usage':None},
+        {'model':model,'transport':'batch','usage':{'input_tokens':1000,'output_tokens':100}}]
+    _price_stream(batch)
+    assert batch['cost']['estimated_usd'] is None and batch['cost']['unpriced_calls']==1
+    assert batch['cost']['known_usage_estimate_usd'] is not None
+
+
+def test_evidence_aggregation_refuses_mixed_native_judge_profiles(tmp_path):
+    roots=runs(tmp_path,k=2)
+    for root,profile,model in zip(roots,('primary','pro'),('gemini-3.5-flash-lite','gemini-3.1-pro-preview')):
+        for path in root.rglob('evidence_audit.json'):
+            value=json.loads(path.read_text())
+            value['native_verifier_profiles']={mode:{'profile':profile,'configured_models':[model,model]}
+                for mode in ('dom_model','screenshot_verifier')}
+            path.write_text(json.dumps(value))
+    with pytest.raises(ValueError,match='protocol|settings|configuration'):
+        audit_aggregate.aggregate_runs(roots,expected_tasks=2,resamples=20)

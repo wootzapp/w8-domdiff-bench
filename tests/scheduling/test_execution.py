@@ -198,8 +198,9 @@ def test_batch_grading_error_does_not_abort_or_replace_actor_outcome(tmp_path, m
         "--run-name", "judging", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]) == 0
     rows = [json.loads(line) for line in (output / "judging" / "ledger.jsonl").read_text().splitlines()]
     assert actors == ["dom", "screenshot"]
-    assert len(judges) == 2
-    assert events == ["actor", "actor", "judge", "judge"]
+    assert len(judges) == 1
+    assert len(judges[0][judges[0].index("--run") + 1:judges[0].index("--rubric")]) == 2
+    assert events == ["actor", "actor", "judge"]
     assert all(row["completed"] and row["technical_outcome"] == "completed" for row in rows)
     assert all(row["grade_outcome"] == "grading_error" for row in rows)
 
@@ -494,8 +495,8 @@ def test_batch_resume_uses_final_recording_and_tracks_judge_interruption(launche
         judges.append(command)
         recording = Path(command[command.index("--run") + 1])
         write_json(recording / "completion.json", {"verdict": "success"})
-        evaluation = recording.parent.parent / "evaluations" / first["run_name"] / first["arm"] / first["task_id"] / ("r" * 64) / "evaluation.json"
-        write_json(evaluation, {"status": "complete"})
+        evaluation = recording.parent.parent / "evaluations" / "profiles" / "primary" / first["run_name"] / first["arm"] / first["task_id"] / ("r" * 64) / "evaluation.json"
+        write_json(evaluation, {"status": "complete", "stages": {"paired_completion": {"verdict": "success"}}})
         return SimpleNamespace(returncode=0)
     monkeypatch.setattr(task_cli.subprocess, "run", judge)
     assert task_cli.main((args) + ["--resume"]) == 0

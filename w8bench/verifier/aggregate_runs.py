@@ -135,7 +135,8 @@ def _audit_protocol(value):
         require_same_settings({"rubric_sha256": value.get("frozen_rubric_sha256")},
             {"rubric_sha256": effective.get("rubric_sha256")}, label="audit frozen rubric")
     protocol = {**{key: value[key] for key in protocol_fields}, "generation_settings": stages,
-                "effective_settings": comparison_settings(effective)}
+                "effective_settings": comparison_settings(effective),
+                "native_verifier_profiles": value.get("native_verifier_profiles")}
     return protocol
 
 

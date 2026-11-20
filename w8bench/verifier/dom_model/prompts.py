@@ -1,4 +1,4 @@
-SCORING_PROMPT_VERSION = "native-rubric-output-contract/v2"
+SCORING_PROMPT_VERSION = "native-rubric-output-contract/v3"
 
 
 GROUNDING_POLICY_VERSION = "dom_model_evidence_grounding_v1"

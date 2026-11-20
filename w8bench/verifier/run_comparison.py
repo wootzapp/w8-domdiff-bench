@@ -16,10 +16,11 @@ from pathlib import Path
 from typing import Any
 
 from w8bench.task_recorder.prepare_verifier_data import inspect_recording, read_object, prepare_recording
-from w8bench.task_recorder.recorder_support import write_json
+from .common import write_json
 from w8bench.task_recorder.runner import load_env
 
-from .common import CANONICAL_ACTION_MODEL, CANONICAL_JUDGE_MODEL, CANONICAL_SETTINGS, load_json, canonical_sha256
+from .common import native_judge_model, NATIVE_JUDGE_PROFILES, CANONICAL_SETTINGS, load_json, canonical_sha256
+from .batch import BatchPending, BatchCancelled, BatchJobs, evaluation_scope, judge_transport
 
 from .completion import grade_run
 from w8bench.settings import evaluation_settings, stage_settings, require_same_settings, completion_settings
@@ -127,6 +128,10 @@ def _run_logged(command: list[str], log_path: Path) -> None:
     with log_path.open("a", encoding="utf-8") as stream:
         stream.write(f"\nEvaluation attempt: {datetime.now(timezone.utc).isoformat()}\n")
         stream.write(output)
+    if completed.returncode == 75:
+        raise BatchPending(str(log_path))
+    if completed.returncode == 130:
+        raise BatchCancelled()
     if completed.returncode:
         raise RuntimeError(
             f"Verifier failed with exit code {completed.returncode}; "
@@ -147,8 +152,8 @@ def commands(
             "--rubric-file", str(rubric_file),
             "--eval-config", str(eval_config),
             "--output", str(screenshot_output),
-            "--judge-model", CANONICAL_JUDGE_MODEL,
-            "--action-model", CANONICAL_ACTION_MODEL,
+            "--judge-model", native_judge_model(),
+            "--action-model", native_judge_model(),
             "--rubric-threshold", str(CANONICAL_SETTINGS["rubric_threshold"]),
             "--max-images-per-criterion", str(CANONICAL_SETTINGS["max_evidence_items_per_criterion"]),
             "--majority-vote-instances", str(CANONICAL_SETTINGS["majority_vote_instances"]),
@@ -162,8 +167,8 @@ def commands(
             "--generation-metrics", str(generation_metrics),
             "--eval-config", str(eval_config),
             "--output", str(dom_output),
-            "--judge-model", CANONICAL_JUDGE_MODEL,
-            "--action-model", CANONICAL_ACTION_MODEL,
+            "--judge-model", native_judge_model(),
+            "--action-model", native_judge_model(),
             "--rubric-threshold", str(CANONICAL_SETTINGS["rubric_threshold"]),
             "--max-evidence-per-criterion", str(CANONICAL_SETTINGS["max_evidence_items_per_criterion"]),
             "--min-relevance-threshold", str(CANONICAL_SETTINGS["min_relevance_threshold"]),
@@ -177,13 +182,17 @@ def commands(
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--run", type=Path, required=True)
+    parser.add_argument("--run", type=Path, nargs="+", required=True, help="one or more recordings; ready judge requests share batch rounds")
     parser.add_argument("--rubric", type=Path, required=True)
     parser.add_argument("--judge-model", required=True,
         help="gpt-6.1-sol completion judge; responses require its exact ID or a numeric/date/version suffix")
     parser.add_argument("--judge-evidence-policy", choices=["paired", "actor_native"], default="paired")
     parser.add_argument("--eval-config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--env-file", type=Path, default=REPOSITORY_ROOT / ".env")
+    parser.add_argument("--judge-transport", choices=("batch", "normal"), help="judge delivery; defaults to JUDGE_TRANSPORT or batch")
+    parser.add_argument("--judge-profile", choices=tuple(NATIVE_JUDGE_PROFILES), default=None)
+    parser.add_argument("--compare-profiles", action="store_true", help="evaluate primary and pro native profiles separately on the same recordings")
+    parser.add_argument("--cancel", action="store_true", help="cancel this collection's outstanding judge batches and forbid late result imports")
     parser.add_argument("--execute", action="store_true",
         help="evaluate the run; saved effective settings must match before any stage resumes")
     args = parser.parse_args(argv)
@@ -194,7 +203,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def _attempt_history(stage):
     history = list(stage.get("attempt_history", []))
-    if stage:
+    unfinished = {"batch_pending", "running", "interrupted"} if judge_transport() == "batch" else {"batch_pending"}
+    if stage and stage.get("status") not in unfinished:
         prior = {key: value for key, value in stage.items() if key not in {"attempt_history", "result_sha256"}}
         if prior.get("status") == "running":
             prior.update(status="interrupted", usage_coverage="unknown")
@@ -204,7 +214,7 @@ def _attempt_history(stage):
 
 def _prepare_inputs(run, recording):
     task = recording["task"]
-    output = run.parent.parent / "evaluations"
+    output = run.parent.parent / "evaluations" / "profiles" / os.environ.get("NATIVE_JUDGE_PROFILE", "primary")
     root = output / str(task.get("run_name") or recording["manifest"]["run_name"]) / task["observation_mode"] / task["source_task_id"] / recording["recording_sha256"]
     if root.exists():
         receipt = read_object(root / "input_receipt.json")
@@ -216,7 +226,17 @@ def _prepare_inputs(run, recording):
                 if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
                     raise ValueError("staged evaluation input changed")
     else:
-        prepare_recording(recording, output)
+        if os.environ.get("NATIVE_JUDGE_PROFILE", "primary") == "pro":
+            original = run.parent.parent / "evaluations" / "profiles" / "primary" / str(task.get("run_name") or recording["manifest"]["run_name"]) / task["observation_mode"] / task["source_task_id"] / recording["recording_sha256"]
+            if original.exists():
+                root.mkdir(parents=True)
+                for name in ("data-ss", "data-dom"):
+                    shutil.copytree(original / name, root / name)
+                shutil.copy2(original / "input_receipt.json", root / "input_receipt.json")
+            else:
+                prepare_recording(recording, output)
+        else:
+            prepare_recording(recording, output)
     screenshot_task = root / "data-ss" / task["source_task_id"]
     dom_task = root / "data-dom" / task["source_task_id"]
     return root, screenshot_task, dom_task
@@ -270,6 +290,9 @@ def _open_evaluation(root, recording, rubric_hash, effective_settings=None):
             for name, stage in evaluation["stages"].items():
                 require_same_settings(stage.get("effective_settings"), stage_settings(effective_settings, name), label=f"{name} resume")
         evaluation["effective_settings"] = effective_settings
+    if judge_transport() == "batch" and os.environ.get("W8_JUDGE_BATCH_ROOT"):
+        evaluation["batch_queue_context"] = {"root": os.environ["W8_JUDGE_BATCH_ROOT"],
+            "identity": json.loads(os.environ["W8_JUDGE_RUN_ID"])}
     evaluation.update(status="running", started_at=evaluation.get("started_at") or datetime.now(timezone.utc).isoformat())
     write_json(evaluation_file, evaluation)
     return evaluation_file, evaluation
@@ -278,6 +301,11 @@ def _open_evaluation(root, recording, rubric_hash, effective_settings=None):
 def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluation, evaluation_file):
     primary = root / "paired_completion.json"
     previous = evaluation["stages"].get("paired_completion", {})
+    common = Path(os.environ["W8_JUDGE_COMPLETION_TARGET"]) if os.environ.get("W8_JUDGE_COMPLETION_TARGET") else run / "completion.json"
+    if common.exists() and read_object(common).get("method") != "ungraded" and (
+            not primary.exists() or read_object(primary).get("method") == "ungraded"):
+        write_json(primary, read_object(common))
+
     grade = None
     if primary.exists():
         if previous.get("result_sha256") and hashlib.sha256(primary.read_bytes()).hexdigest() != previous["result_sha256"]:
@@ -291,7 +319,7 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
     history = list(previous.get("attempt_history", []))
     if grade is None or grade["method"] == "ungraded":
         history = _attempt_history(previous)
-        if previous and primary.exists():
+        if len(history) > len(previous.get("attempt_history", [])) and primary.exists():
             archived = root / "_attempts" / f"paired_completion_{len(history):04d}.json"
             archived.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(primary, archived)
@@ -299,20 +327,24 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
         evaluation["stages"]["paired_completion"] = {"status": "running", "usage_coverage": "unknown", "attempt_history": history,
             "effective_settings": stage_settings(evaluation.get("effective_settings"), "paired_completion")}
         write_json(evaluation_file, evaluation)
+        os.environ["W8_JUDGE_STAGE_ATTEMPT"] = str(len(history) + 1)
         try:
             grade = asyncio.run(grade_run(run, rubric, judge_model=args.judge_model,
                 api_key=os.environ["OPENAI_API_KEY"], base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
                 execute=True, evidence_policy="paired"))
         except BaseException as error:
-            evaluation["stages"]["paired_completion"].update(status="interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
+            evaluation["stages"]["paired_completion"].update(status="batch_pending" if isinstance(error, BatchPending) else "interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
                 error=f"{type(error).__name__}: {error}")
+            if isinstance(error, BatchPending):
+                evaluation["status"] = "batch_pending"
             write_json(evaluation_file, evaluation)
             raise
         write_json(primary, grade)
     evaluation["stages"]["paired_completion"] = {"status": grade["method"], "verdict": grade["verdict"],
         "result": str(primary), "result_sha256": hashlib.sha256(primary.read_bytes()).hexdigest(),
         "usage": grade.get("usage"), "calls": grade.get("judge_calls", 0),
-        "model_settings": grade.get("model_settings"), "attempt_history": history,
+        "model_settings": grade.get("model_settings"), "transport": grade.get("transport", judge_transport()),
+        "batch_items": grade.get("batch_items", []), "attempt_history": history,
         "effective_settings": stage_settings(evaluation.get("effective_settings"), "paired_completion"),
         "usage_coverage": "complete" if grade.get("judge_calls", 0) == 0 or all(
             valid_token_component((grade.get("usage") or {}).get(component))
@@ -351,8 +383,8 @@ def _prepare_generation(root, generation, frozen, screenshot_task, dom_task, val
             "maximum_points": [float(item["max_points"]) for item in frozen.rubric["items"]],
             "rubric_generation_calls": 0, "api_attempts": 0, "retries": 0, "http_attempts_complete": True,
             "call_metrics": {model: {"logical_calls": 0, "api_attempts": 0, "retries": 0} for model in
-                (CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL)},
-            "token_usage": {**{model: zero_usage for model in (CANONICAL_JUDGE_MODEL, CANONICAL_ACTION_MODEL)}, "combined": zero_usage}})
+                (native_judge_model(), native_judge_model())},
+            "token_usage": {**{model: zero_usage for model in (native_judge_model(), native_judge_model())}, "combined": zero_usage}})
     for projection in (screenshot_task, dom_task):
         task_path = projection / "task_data.json"
         payload = load_json(task_path)
@@ -399,7 +431,7 @@ def _prepare_verifiers(args, root, rubric, generation, frozen, screenshot_task, 
 
 def _verifier_history(stage, root, name):
     history = _attempt_history(stage)
-    if stage:
+    if len(history) > len(stage.get("attempt_history", [])):
         prior = history[-1]
         snapshots = {}
         for filename in ("result.json", "run_metrics.json", "run.log"):
@@ -416,6 +448,7 @@ def _verifier_history(stage, root, name):
 
 
 def _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, stage, run_commands, evaluation_file, evaluation):
+    os.environ["W8_JUDGE_STAGE_ATTEMPT"] = str(len(stage.get("attempt_history", [])) + 1)
     try:
         _run_logged(run_commands[name], root / name / "run.log")
         metrics = normalizer(root / name / "result.json", input_task=screenshot_task if name == "screenshot_verifier" else dom_task,
@@ -446,8 +479,10 @@ def _score_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, g
             fallback_events=[line for line in log.splitlines() if re.search(
                 r"(?:keeping baseline|falling back|fallback|Failed .* after|Failed after)", line, flags=re.I)])
     except BaseException as error:
-        stage.update(status="interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
+        stage.update(status="batch_pending" if isinstance(error, BatchPending) else "interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
             error=f"{type(error).__name__}: {error}", usage_coverage="unknown")
+        if isinstance(error, BatchPending):
+            evaluation["status"] = "batch_pending"
         write_json(evaluation_file, evaluation)
         if not isinstance(error, Exception):
             raise
@@ -485,7 +520,7 @@ def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, gen
             "effective_settings": current_settings}
         write_json(evaluation_file, evaluation)
         return
-    stage = {"status": "running", "configured_models": {"judge": CANONICAL_JUDGE_MODEL, "action": CANONICAL_ACTION_MODEL},
+    stage = {"status": "running", "configured_models": {"judge": native_judge_model(), "action": native_judge_model()},
         "effective_settings": current_settings,
         "result": str(root / name / "result.json"), "usage": None, "usage_coverage": "unknown",
         "attempt_history": history, "preflight": format_preflight,
@@ -497,6 +532,7 @@ def _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, gen
 
 def _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, evaluation_file, audit_history, run_evidence_audit):
     call_records = []
+    os.environ["W8_JUDGE_STAGE_ATTEMPT"] = str(len(audit_history) + 1)
     evaluation["stages"]["audit"] = {"status": "running", "calls": call_records,
         "usage_coverage": "unknown", "attempt_history": audit_history,
         "effective_settings": stage_settings(evaluation.get("effective_settings"), "audit")}
@@ -513,13 +549,15 @@ def _request_audit(root, screenshot_task, dom_task, rubric, task, evaluation, ev
             "metrics": audit["metrics"], "calls": call_records}
     except BaseException as error:
         refusal = isinstance(error, ModelResponseRefusal) or any(row.get("refusal_reason") for row in call_records)
-        audit_stage = {"status": "interrupted" if isinstance(error, KeyboardInterrupt) else "ungraded" if refusal else "failed",
+        audit_stage = {"status": "batch_pending" if isinstance(error, BatchPending) else "interrupted" if isinstance(error, KeyboardInterrupt) else "ungraded" if refusal else "failed",
             "reason": str(error) if refusal else None,
             "error": f"{type(error).__name__}: {error}", "calls": call_records, "usage_coverage": "unknown"}
         if not isinstance(error, Exception):
             audit_stage["attempt_history"] = audit_history
             audit_stage["effective_settings"] = stage_settings(evaluation.get("effective_settings"), "audit")
             evaluation["stages"]["audit"] = audit_stage
+            if isinstance(error, BatchPending):
+                evaluation["status"] = "batch_pending"
             write_json(evaluation_file, evaluation)
             raise
     return audit_stage
@@ -540,6 +578,8 @@ def _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, ev
         elif evaluation["preflight"]["status"] != "passed":
             audit_stage = {"status": "blocked", "reason": "paired_preflight_failed",
                 "error": evaluation["preflight"].get("error"), "calls": [], "usage_coverage": "complete"}
+        elif any(evaluation["stages"][name]["status"] == "batch_pending" for name in run_commands):
+            audit_stage = {"status": "batch_pending", "reason": "native_dependency_pending", "calls": [], "usage_coverage": "complete"}
         elif any(evaluation["stages"][name]["status"] != "complete" for name in run_commands):
             audit_stage = {"status": "blocked", "reason": "verifier_results_unavailable", "usage_coverage": "none"}
         else:
@@ -566,43 +606,120 @@ def _evaluate_recording(args, run, recording):
     current_settings = evaluation_settings(recording, eval_config=args.eval_config, rubric_hash=rubric_hash,
         judge_model=args.judge_model, evidence_policy="paired")
     evaluation_file, evaluation = _open_evaluation(root, recording, rubric_hash, current_settings)
-    grade = _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluation, evaluation_file)
+    pending = False
+    grade = None
+    try:
+        grade = _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluation, evaluation_file)
+    except BatchPending:
+        pending = True
     audit_configuration_error = _audit_configuration_error(resolve_audit_config)
     evaluation["audit_configuration_error"] = audit_configuration_error
     run_commands, auxiliary_control_error = _prepare_verifiers(args, root, rubric, generation, frozen, screenshot_task, dom_task, evaluation, evaluation_file, require_local_packages, validate_generation_metrics, validate_pair, validate_endpoint_configs)
     for name, normalizer in (("screenshot_verifier", normalize_screenshot), ("dom_model", normalize_dom_model)):
-        _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, evaluation, evaluation_file, run_commands, auxiliary_control_error, preflight_screenshot_task, preflight_dom_model_task)
-    _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, evaluation, evaluation_file, run_commands, audit_configuration_error, run_evidence_audit)
-    evaluation.update(status="complete" if all(evaluation["stages"][name].get("status") == "complete"
-        for name in ("screenshot_verifier", "dom_model", "audit")) and grade["method"] != "ungraded" else "incomplete",
+        try:
+            _run_verifier(name, normalizer, root, screenshot_task, dom_task, rubric, generation, evaluation, evaluation_file, run_commands, auxiliary_control_error, preflight_screenshot_task, preflight_dom_model_task)
+        except BatchPending:
+            pending = True
+    try:
+        _evaluate_audit(root, screenshot_task, dom_task, rubric, recording, task, evaluation, evaluation_file, run_commands, audit_configuration_error, run_evidence_audit)
+    except BatchPending:
+        pending = True
+    evaluation.update(status="batch_pending" if pending else "complete" if all(evaluation["stages"][name].get("status") == "complete"
+        for name in ("screenshot_verifier", "dom_model", "audit")) and grade is not None and grade["method"] != "ungraded" else "incomplete",
         completed_at=datetime.now(timezone.utc).isoformat())
     if inspect_recording(run)["recording_sha256"] != recording["recording_sha256"]:
         raise ValueError("actor recording changed during full evaluation")
     write_json(evaluation_file, evaluation)
     print(json.dumps({"completion": grade, "evaluation": str(evaluation_file), "status": evaluation["status"]}, indent=2))
+    if pending:
+        raise BatchPending(str(evaluation_file))
     return 0 if evaluation["status"] == "complete" else 1
 
 
 def main(argv: list[str] | None = None) -> int:
+    import copy
+    from .batch import compare_profiles
     args = parse_args(argv)
     load_env(args.env_file)
-    run = args.run.resolve(strict=True)
-    recording = inspect_recording(run)
-    if not args.execute:
-        provided = read_object(args.rubric)
-        if provided.get("task_id") != recording["task"]["source_task_id"]:
-            raise ValueError("rubric belongs to another task")
-        print(json.dumps({"status": "preflight", "recording_sha256": recording["recording_sha256"],
-            "coverage": recording["coverage"], "judge_model": args.judge_model,
-            "evidence_policy": args.judge_evidence_policy, "model_calls": 0, "writes_performed": False}, indent=2))
-        return 0
-    if args.judge_evidence_policy == "actor_native":
-        grade = asyncio.run(grade_run(run, args.rubric, judge_model=args.judge_model,
-            api_key=os.environ.get("OPENAI_API_KEY", ""), base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-            execute=args.execute, evidence_policy=args.judge_evidence_policy))
-        print(json.dumps(grade, indent=2))
-        return 0
-    return _evaluate_recording(args, run, recording)
+    previous_environment = {key: os.environ.get(key) for key in (
+        "JUDGE_TRANSPORT", "NATIVE_JUDGE_PROFILE", "W8_JUDGE_COMPLETION_TARGET")}
+    if args.judge_transport:
+        os.environ["JUDGE_TRANSPORT"] = args.judge_transport
+    runs = [path.resolve(strict=True) for path in args.run]
+    if len(set(runs)) != len(runs):
+        raise ValueError("duplicate recording in evaluation selection")
+    root = runs[0].parent.parent / "evaluations" / "batch_jobs"
+    profiles = ("primary", "pro") if args.compare_profiles else (args.judge_profile or os.environ.get("NATIVE_JUDGE_PROFILE", "primary"),)
+    jobs = BatchJobs(root)
+    from contextlib import nullcontext
+    try:
+        if args.cancel:
+            if not args.execute:
+                raise ValueError("cancelling provider jobs requires --execute")
+            with jobs.locked():
+                jobs.cancel()
+            return 130
+        with jobs.locked() if args.execute and judge_transport() == "batch" else nullcontext():
+            if args.execute and judge_transport() == "batch":
+                jobs.poll()
+            pending, failed = False, False
+            for profile in profiles:
+                os.environ["NATIVE_JUDGE_PROFILE"] = profile
+                for run in runs:
+                    selected = copy.copy(args)
+                    selected.run = run
+                    recording = inspect_recording(run)
+                    selected.rubric = (args.rubric / f"{recording['task']['source_task_id']}.json"
+                        if args.rubric.is_dir() else args.rubric)
+                    if not args.execute:
+                        provided = read_object(selected.rubric)
+                        if provided.get("task_id") != recording["task"]["source_task_id"]:
+                            raise ValueError("rubric belongs to another task")
+                        print(json.dumps({"status": "preflight", "recording_sha256": recording["recording_sha256"],
+                            "coverage": recording["coverage"], "judge_model": args.judge_model,
+                            "native_profile": profile, "native_model": native_judge_model(), "transport": judge_transport(),
+                            "evidence_policy": args.judge_evidence_policy, "model_calls": 0, "writes_performed": False}))
+                        continue
+                    identity = {"recording_sha256": recording["recording_sha256"], "task": recording["task"]["source_task_id"],
+                        "arm": recording["task"]["observation_mode"], "trial": recording["task"].get("run_name"), "profile": profile,
+                        "rubric_source_sha256": canonical_sha256(read_object(selected.rubric))}
+                    with evaluation_scope(root, identity):
+                        try:
+                            common = (run.parent.parent / "evaluations" / "common" /
+                                str(recording["task"].get("run_name") or recording["manifest"]["run_name"]) /
+                                recording["task"]["observation_mode"] / recording["task"]["source_task_id"] /
+                                recording["recording_sha256"] / ("completion_actor_native.json" if args.judge_evidence_policy == "actor_native" else "completion.json"))
+                            os.environ["W8_JUDGE_COMPLETION_TARGET"] = str(common)
+                            if args.judge_evidence_policy == "actor_native":
+                                os.environ.pop("W8_JUDGE_COMPLETION_TARGET", None)
+                                asyncio.run(grade_run(run, selected.rubric, judge_model=args.judge_model,
+                                    api_key=os.environ.get("OPENAI_API_KEY", ""), base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+                                    execute=True, evidence_policy="actor_native"))
+                            else:
+                                failed = bool(_evaluate_recording(selected, run, recording)) or failed
+                        except BatchPending:
+                            pending = True
+            if args.execute and judge_transport() == "batch":
+                submitted = jobs.submit()
+                print(json.dumps({"judge_transport": "batch", "submitted_jobs": submitted,
+                    "status": "batch_pending" if pending else "complete", "resume": "repeat the same evaluation command"}))
+        if args.compare_profiles and args.execute and not pending:
+            report = compare_profiles(runs, root.parent / "profile_comparison.json")
+            print(json.dumps({"profile_comparison": report["output"]}))
+        return 75 if pending else 1 if failed else 0
+    except (KeyboardInterrupt, BatchCancelled):
+        if judge_transport() == "normal":
+            raise
+        if judge_transport() == "batch":
+            with jobs.locked():
+                jobs.cancel()
+        return 130
+    finally:
+        for key, value in previous_environment.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
 
 
 if __name__ == "__main__":

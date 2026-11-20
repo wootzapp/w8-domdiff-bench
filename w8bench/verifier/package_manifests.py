@@ -34,6 +34,7 @@ def tree_receipt(package: str) -> dict[str, Any]:
              REPOSITORY_ROOT / "w8bench" / "usage.py",
              REPOSITORY_ROOT / "w8bench" / "verifier" / "__init__.py",
              REPOSITORY_ROOT / "w8bench" / "verifier" / "common.py",
+             REPOSITORY_ROOT / "w8bench" / "verifier" / "batch.py",
              REPOSITORY_ROOT / "w8bench" / "verifier" / "instrumentation.py",
              REPOSITORY_ROOT / "w8bench" / "verifier" / "rubric_agent.py",
              REPOSITORY_ROOT / "w8bench" / "verifier" / "rubric_scoring.py",

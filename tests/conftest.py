@@ -28,6 +28,8 @@ from w8bench.verifier.evidence_audit import SCHEMA_VERSION, PROMPT_VERSION, calc
 
 @pytest.fixture(autouse=True)
 def offline_model_access(monkeypatch):
+    monkeypatch.setenv("JUDGE_TRANSPORT", "normal")
+    monkeypatch.setenv("NATIVE_JUDGE_PROFILE", "primary")
     monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
     monkeypatch.setenv("ACTOR_MEDIA_RESOLUTION", "HIGH")
     monkeypatch.setenv("OPENAI_API_KEY", "offline-test-key")
@@ -187,12 +189,12 @@ def pair_factory(tmp_path):
         )
         _write_json(
             config / "action_judge.json",
-            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.1-pro-preview", "reasoning_effort": "medium"}},
+            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.5-flash-lite", "reasoning_effort": "medium"}},
         )
         _write_json(
             config / "judge.json",
             {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {
-                "model": "gemini-3.1-pro-preview", "reasoning_effort": "medium"}},
+                "model": "gemini-3.5-flash-lite", "reasoning_effort": "medium"}},
         )
         return {
             "staged": staged,

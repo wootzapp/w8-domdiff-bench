@@ -17,6 +17,7 @@ from openai import APIConnectionError, DefaultHttpxClient, OpenAI
 from w8bench.model_identity import MODEL_ACCEPTANCE_POLICY, ModelResponseRefusal, response_acceptance
 from w8bench.usage import known_token_component
 
+from .batch import judge_transport, http_transport
 from .audit_evidence import ordered_audit_screenshots, ordered_dom_states, verifier_action_history
 from .audit_validation import CITATION_KEYS, validate_audit_response, validate_adjudication_response
 
@@ -434,6 +435,7 @@ def adjudication_messages(
 
 def _audit_http_hooks(record, provider):
     def requested(request):
+        record["transport"] = judge_transport()
         record["api_attempts"].append({"status_code": None})
         try:
             payload = json.loads(request.content)
@@ -566,7 +568,8 @@ def _gemini_completion(model, messages, record, hooks):
         http_options=types.HttpOptions(
             api_version=GEMINI_API_VERSION,
             retry_options={"attempts": 1},
-            client_args={"event_hooks": hooks},
+            client_args={"event_hooks": hooks, **({"transport": http_transport("google", "audit.inventory", record)}
+                if judge_transport() == "batch" else {})},
         ),
     ) as client:
         record["generation_settings"] = settings.copy()
@@ -586,7 +589,8 @@ def _gemini_completion(model, messages, record, hooks):
 def _openai_completion(model, messages, record, hooks):
     settings = OPENAI_GENERATION_SETTINGS.copy()
     with OpenAI(
-        max_retries=0, http_client=DefaultHttpxClient(event_hooks=hooks)
+        max_retries=0, http_client=DefaultHttpxClient(event_hooks=hooks,
+            **({"transport": http_transport("openai", "audit.adjudication", record)} if judge_transport() == "batch" else {}))
     ) as client:
         record["generation_settings"] = settings.copy()
         response = _transport_request(

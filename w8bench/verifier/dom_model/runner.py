@@ -20,6 +20,7 @@ from ..rubric_scoring import FARA_ACTION_DEFINITIONS, UngradedVerifierError, ung
 from .prompts import SCORING_PROMPT_VERSION
 
 from ..common import (
+    native_judge_model,
     CanonicalRubric,
     CANONICAL_ACTION_MODEL,
     CANONICAL_JUDGE_MODEL,
@@ -302,8 +303,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--generation-metrics", required=True)
     parser.add_argument("--eval-config", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--judge-model", default=CANONICAL_JUDGE_MODEL)
-    parser.add_argument("--action-model", default=CANONICAL_ACTION_MODEL)
+    parser.add_argument("--judge-model", default=native_judge_model())
+    parser.add_argument("--action-model", default=native_judge_model())
     parser.add_argument("--rubric-threshold", type=float, default=0.8)
     parser.add_argument("--max-evidence-per-criterion", type=int, default=5)
     # Keep the baseline evidence-analysis behavior. A positive value
@@ -316,14 +317,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--redo-eval", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
-    if args.judge_model != "gemini-3.1-pro-preview" or args.action_model != "gemini-3.1-pro-preview":
-        parser.error("verifier models are pinned to judge gemini-3.1-pro-preview and action/validity gemini-3.1-pro-preview")
+    if args.judge_model != native_judge_model() or args.action_model != native_judge_model():
+        parser.error(f"verifier models are pinned to {native_judge_model()} for the selected native judge profile")
     return args
 
 
 def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s - %(message)s")
-    print(json.dumps(run(parse_args(argv)), ensure_ascii=False, indent=2, default=str))
+    from ..batch import BatchPending, BatchCancelled
+    try:
+        print(json.dumps(run(parse_args(argv)), ensure_ascii=False, indent=2, default=str))
+    except BatchPending:
+        raise SystemExit(75)
+    except BatchCancelled:
+        raise SystemExit(130)
+
 
 
 if __name__ == "__main__":

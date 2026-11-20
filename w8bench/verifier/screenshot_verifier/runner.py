@@ -21,7 +21,7 @@ from .models import Trajectory
 from ..rubric_scoring import FARA_ACTION_DEFINITIONS, UngradedVerifierError, ungraded_result
 from .prompts import SCORING_PROMPT_VERSION
 from .preflight import preflight_screenshot_task
-from ..common import load_frozen_rubric, require_matching_embedded_rubric, rubric_receipt
+from ..common import native_judge_model, load_frozen_rubric, require_matching_embedded_rubric, rubric_receipt
 from w8bench.settings import native_stage_settings, guard_result_settings
 
 
@@ -183,9 +183,11 @@ def _result_receipts(task_data, frozen, preflight, agent, action_client, judge_c
 
 def _write_result(result, output):
     output_dir = Path(output).resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "result.json"
-    output_path.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+    from ..batch import publication
+    with publication():
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
     result["result_path"] = os.path.relpath(output_path, Path(__file__).resolve().parents[3])
     return result
 
@@ -217,8 +219,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--rubric-file", required=True)
     parser.add_argument("--eval-config", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--judge-model", default="gemini-3.1-pro-preview")
-    parser.add_argument("--action-model", default="gemini-3.1-pro-preview",
+    parser.add_argument("--judge-model", default=native_judge_model())
+    parser.add_argument("--action-model", default=native_judge_model(),
                         help="Action/validity judge model")
     parser.add_argument("--rubric-threshold", type=float, default=0.8)
     parser.add_argument("--max-images-per-criterion", type=int, default=5)
@@ -226,8 +228,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--success", choices=("outcome", "process", "both"), default="outcome")
     parser.add_argument("--redo-eval", action="store_true")
     args = parser.parse_args(argv)
-    if args.judge_model != "gemini-3.1-pro-preview" or args.action_model != "gemini-3.1-pro-preview":
-        parser.error("verifier models are pinned to judge gemini-3.1-pro-preview and action/validity gemini-3.1-pro-preview")
+    if args.judge_model != native_judge_model() or args.action_model != native_judge_model():
+        parser.error(f"verifier models are pinned to {native_judge_model()} for the selected native judge profile")
     return args
 
 
@@ -236,7 +238,14 @@ def main(argv: list[str] | None = None) -> None:
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
     )
-    print(json.dumps(run(parse_args(argv)), indent=2, default=str))
+    from ..batch import BatchPending, BatchCancelled
+    try:
+        print(json.dumps(run(parse_args(argv)), indent=2, default=str))
+    except BatchPending:
+        raise SystemExit(75)
+    except BatchCancelled:
+        raise SystemExit(130)
+
 
 
 if __name__ == "__main__":

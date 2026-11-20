@@ -19,6 +19,7 @@ TOKEN_PRICES = {
     "gemini-3.8-flash": (0.75, 3.75, 0.075, 0.75, None),
     "gpt-5.2": (1.75, 14.0, 0.175, 1.75, None),
     "gemini-3.1-pro-preview": (2.0, 12.0, 0.2, 2.0, 200000),
+    "gemini-3.5-flash-lite": (0.30, 2.50, 0.03, 0.30, None),
 }
 
 
@@ -72,7 +73,7 @@ def _normalized_usage(value):
 
 
 def _load_receipts(recording, source, task, manifest, partial):
-    evaluation_path = (source.parent.parent / "evaluations" / str(task.get("run_name") or manifest.get("run_name"))
+    evaluation_path = (source.parent.parent / "evaluations" / "profiles" / "primary" / str(task.get("run_name") or manifest.get("run_name"))
         / task["observation_mode"] / task["source_task_id"] / str(recording.get("recording_sha256")) / "evaluation.json")
     evaluation = read_object(evaluation_path) if evaluation_path.is_file() and not partial else None
     if evaluation is not None and any(evaluation.get(key) != expected for key, expected in (
@@ -80,7 +81,7 @@ def _load_receipts(recording, source, task, manifest, partial):
             ("actor_arm", task["observation_mode"]), ("trial_id", str(task.get("run_name") or manifest.get("run_name"))))):
         raise ValueError("evaluation receipt belongs to a different task, arm, trial or recording")
     grade_path = source / "completion.json"
-    grade = read_object(grade_path) if grade_path.is_file() and not partial else None
+    grade = read_object(grade_path) if grade_path.is_file() and not partial and evaluation is None else None
     stages = (evaluation or {}).get("stages", {})
     if grade is None and stages.get("paired_completion", {}).get("result"):
         result = Path(stages["paired_completion"]["result"])
@@ -141,7 +142,9 @@ def _completion_streams(grade, secondary):
             normalized = _normalized_usage(item.get("usage"))
             streams[name] = {"model": item.get("judge_model"), "calls": calls, "usage": normalized,
                 "call_records": [{"model": item.get("judge_model"),
-                    "returned_model": item.get("returned_judge_model"), "usage": normalized}] if calls == 1 else [],
+                    "returned_model": item.get("returned_judge_model"), "usage": normalized,
+                    "transport": item.get("transport", "normal"), "batch_job_id": item.get("batch_job_id"),
+                    "batch_items": item.get("batch_items", [])}] if calls == 1 else [],
                 "usage_coverage": "complete" if not calls or all((normalized or {}).get(key) is not None for key in ("input_tokens", "output_tokens")) else "unknown"}
     return streams
 
@@ -222,7 +225,8 @@ def _append_attempt_history(streams, stages, evaluation_path):
                     "status": prior.get("status"),
                     "call_records": [{"model": "gpt-6.1-sol",
                         "returned_model": (prior.get("model_settings") or {}).get("returned_model"),
-                        "usage": prior_usage}] if prior.get("calls") == 1 else []})
+                        "transport": prior.get("transport", (prior.get("effective_settings") or {}).get("transport", "normal")),
+                        "batch_items": prior.get("batch_items", []), "usage": prior_usage}] if prior.get("calls") == 1 else []})
             else:
                 provider_metrics = prior.get("provider_call_metrics") or {}
                 snapshot = prior.get("artifact_snapshots", {}).get("run_metrics.json")
@@ -271,6 +275,30 @@ def _evaluation_streams(stages, evaluation, evaluation_path, grade, secondary):
     streams = _completion_streams(grade, secondary)
     _verifier_streams(streams, stages, evaluation_path)
     audit = _audit_streams(streams, stages)
+    context = (evaluation or {}).get("batch_queue_context")
+    if context:
+        from .batch import BatchJobs
+        jobs = BatchJobs(context["root"])
+        for name in ("paired_completion", "dom_model", "screenshot_verifier"):
+            stage = stages.get(name, {})
+            if stage.get("status") != "batch_pending":
+                continue
+            identity = dict(context["identity"])
+            prefix = f"{name}."
+            if name == "paired_completion":
+                identity["profile"] = "common"
+                prefix = "completion.paired"
+            records = jobs.records(identity, prefix, len(stage.get("attempt_history", [])) + 1)
+            if not records:
+                continue
+            key = name if name == "paired_completion" and name not in streams else f"{name}:pending_batch"
+            values = [_usage_values(record.get("usage")) for record in records]
+            usage = {field: sum(row[field] for row in values if row[field] is not None)
+                if any(row[field] is not None for row in values) else None for field in values[0]}
+            streams[key] = {"model": records[0]["model"], "calls": len(records), "call_records": records,
+                "usage": usage, "usage_coverage": "complete" if all(row["input_tokens"] is not None and row["output_tokens"] is not None
+                    for row in values) else "partial" if any(row["input_tokens"] is not None for row in values) else "unknown",
+                "scope": "Provider batch items from this pending stage attempt; earlier attempts remain separate."}
     _append_attempt_history(streams, stages, evaluation_path)
     _combine_attempt_usage(streams)
     if evaluation is not None:
@@ -312,6 +340,12 @@ def _price_call(call, stream, assumptions, price_sources):
     pin, pout, pcache, pwrite, threshold = TOKEN_PRICES[selected]
     if threshold is not None and input_tokens > threshold:
         pin, pout, pcache, pwrite = pin * 2, pout * 1.5, pcache * 2, pwrite * 2
+    transport = call.get("transport", "normal")
+    if transport not in {"normal", "batch"}:
+        return None
+    if transport == "batch":
+        pin, pout, pcache = pin / 2, pout / 2, pcache / 2
+        assumptions.add("batch_rates")
     write_details = _object(details.get("cache_write_tokens_details"))
     written_12h = write_details.get("ttl_12h_tokens", 0)
     if written and not write_details:
@@ -325,20 +359,23 @@ def _price_call(call, stream, assumptions, price_sources):
 def _price_stream(stream):
     estimate, priced, assumptions, price_sources = 0.0, 0, set(), set()
     records = stream.get("call_records", [])
-    for call in records:
+    billing_items = [item for call in records for item in (call.get("batch_items") or [call])]
+    for call in billing_items:
         amount = _price_call(call, stream, assumptions, price_sources)
         if amount is not None:
             estimate += amount
             priced += 1
     calls = stream.get("calls")
-    complete = (type(calls) is int and calls == priced and not stream.get("unknown_attempts")
+    complete = (type(calls) is int and len(records) == calls and len(billing_items) == priced and not stream.get("unknown_attempts")
         and stream.get("usage_coverage") == "complete")
     stream["cost"] = {"currency": "USD", "kind": "estimated_from_list_prices", "price_date": "2026-11-16",
+        "transport_modes": dict(Counter(call.get("transport", "normal") for call in records)),
         "sources": sorted(price_sources),
         "source": next(iter(price_sources)) if len(price_sources) == 1 else None,
         "estimated_usd": round(estimate, 8) if complete else None,
         "known_usage_estimate_usd": round(estimate, 8) if priced or calls == 0 and complete else None,
-        "priced_calls": priced, "unpriced_calls": max(0, calls - priced) if type(calls) is int else None,
+        "priced_calls": priced, "billing_items": len(billing_items),
+        "unpriced_calls": max(calls, len(billing_items)) - priced if type(calls) is int else None,
         "unknown_attempts": stream.get("unknown_attempts", 0), "coverage": "complete" if complete else "partial" if priced else "unknown",
         "assumptions": sorted(assumptions), "reason": None if complete else "missing_per_call_usage_or_attempt_coverage"}
 

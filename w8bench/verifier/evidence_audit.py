@@ -13,10 +13,10 @@ from . import audit_evidence, audit_requests, audit_validation
 from .common import CanonicalRubric, canonical_sha256, load_canonical_rubric, load_json
 
 
-SCHEMA_VERSION = "automated-evidence-audit/v7"
+SCHEMA_VERSION = "automated-evidence-audit/v8"
 
 
-PROMPT_VERSION = "paired-capture-eligible-state-adjudication/v7"
+PROMPT_VERSION = "paired-capture-eligible-state-adjudication/v8"
 
 
 def _criteria_payload(rubric: dict[str, Any]) -> list[dict[str, Any]]:
@@ -522,6 +522,11 @@ def _report_evidence(inputs: _AuditInputs, task_alias):
         "evidence_paths": _evidence_paths(inputs),
         "input_fingerprints": _fingerprints(inputs),
         "shared_trajectory": inputs.shared_trajectory,
+        "native_verifier_profiles": {mode: {
+            "profile": (raw.get("effective_settings") or {}).get("judge_profile"),
+            "configured_models": (raw.get("effective_settings") or {}).get("models")}
+            for mode, raw in (("screenshot_verifier", load_json(inputs.screenshot_result)),
+                              ("dom_model", load_json(inputs.dom_result)))},
         **(
             {
                 "capture_eligibility": {

@@ -1,4 +1,4 @@
-SCORING_PROMPT_VERSION = "native-rubric-output-contract/v2"
+SCORING_PROMPT_VERSION = "native-rubric-output-contract/v3"
 
 from pathlib import Path
 from ..error_taxonomy import (

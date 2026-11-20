@@ -104,7 +104,7 @@ def test_resume_checks_effective_policy_even_when_every_actor_is_completed(
 def test_resume_refuses_changed_endpoint_request_settings(effective_settings_batch):
     batch = effective_settings_batch
     assert task_cli.main(batch.arguments) == 0
-    endpoint = batch.config_root / "config/google_gemini3_1_pro_preview.json"
+    endpoint = batch.config_root / "config/google_gemini3_5_flash_lite.json"
     value = json.loads(endpoint.read_text())
     value["CHAT_COMPLETION_KWARGS_JSON"]["reasoning_effort"] = "low"
     endpoint.write_text(json.dumps(value))
@@ -717,7 +717,7 @@ def test_evaluation_resume_refuses_judge_config_drift_before_cached_stages(full_
     receipt = next(tmp_path.rglob("evaluation.json"))
     before = receipt.read_bytes()
     counts = {name: len(rows) for name, rows in calls.items()}
-    path = config / "google_gemini3_1_pro_preview.json"
+    path = config / "google_gemini3_5_flash_lite.json"
     changed = json.loads(path.read_text())
     changed["CHAT_COMPLETION_KWARGS_JSON"][field] = value
     path.write_text(json.dumps(changed))

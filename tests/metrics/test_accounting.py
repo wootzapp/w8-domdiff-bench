@@ -33,7 +33,7 @@ def _verifier_usage_recording(tmp_path):
         "manifest": {"controls": {"max_turns": 200}, "steps": [], "states": [], "run_name": "trial"},
         "decisions": [], "final": {"run_status": "completed"},
     }
-    folder = tmp_path / "evaluations/trial/dom/task" / fingerprint
+    folder = tmp_path / "evaluations/profiles/primary/trial/dom/task" / fingerprint
     metrics = folder / "dom_model/run_metrics.json"
     metrics.parent.mkdir(parents=True)
     calls = [{"configured_model": "gemini-3.1-pro-preview", "returned_model": "gemini-3.1-pro-preview", "usage_reported": True,
@@ -134,17 +134,17 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
     paths, *_ = run_pair
     recording = inspect_recording(paths["dom"])
     task = recording["task"]
-    root = paths["dom"].parent.parent / "evaluations" / str(task["run_name"]) / "dom" / task["source_task_id"] / recording["recording_sha256"]
+    root = paths["dom"].parent.parent / "evaluations" / "profiles" / "primary" / str(task["run_name"]) / "dom" / task["source_task_id"] / recording["recording_sha256"]
     root.mkdir(parents=True)
     grade = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "observation_mode": "dom", "rubric_sha256": "frozen", "evidence_policy": "paired",
         "method": "model_judge", "verdict": "success", "judge_model": "gpt-6.1-sol", "judge_calls": 1,
         "returned_judge_model": "gpt-6.1-sol-2026-10-01",
         "usage": {"input_tokens": 30, "output_tokens": 10}}
-    write_json(paths["dom"] / "completion.json", grade)
+    write_json(root / "paired_completion.json", grade)
     evaluation = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "actor_arm": "dom", "trial_id": str(task["run_name"]), "rubric_sha256": "frozen", "stages": {
-        "paired_completion": {"status": "model_judge", "attempt_history": [
+        "paired_completion": {"status": "model_judge", "result": str(root / "paired_completion.json"), "attempt_history": [
             {"status": "ungraded", "calls": 1, "usage": {"input_tokens": 20, "output_tokens": 5}, "usage_coverage": "complete",
                 "model_settings": {"returned_model": "gpt-6.1-sol-2026-10-01"}},
             {"status": "interrupted", "usage_coverage": "unknown"}]},

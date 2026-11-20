@@ -306,3 +306,61 @@ def catalog_case(tmp_path, monkeypatch):
         "frozen": tmp_path / "data/rubrics", "review": tmp_path / "internal/rubrics/review.json",
         "args": ["--catalog-file", str(catalog), "--draft-dir", str(tmp_path / "internal/rubrics/drafts"),
             "--rubric-dir", str(tmp_path / "data/rubrics")]}
+
+
+@pytest.fixture
+def batch_providers():
+    """In-memory official SDK surfaces; no provider requests are possible."""
+    class Dump:
+        def __init__(self, value):
+            self.value = value
+        def model_dump(self, **kwargs):
+            return self.value
+    class Files:
+        def __init__(self):
+            self.data = {}
+        def upload(self, *, file, config):
+            key = f"files/input_{len(self.data) + 1}"
+            self.data[key] = Path(file).read_bytes()
+            return SimpleNamespace(name=key)
+        def create(self, *, file, purpose):
+            result = self.upload(file=file.name, config={})
+            return SimpleNamespace(id=result.name)
+        def download(self, *, file):
+            return self.data[file]
+        def content(self, key):
+            return SimpleNamespace(content=self.data[key])
+    files = Files()
+    class Batches:
+        def __init__(self):
+            self.created, self.jobs, self.cancelled = [], {}, []
+        def create(self, **kwargs):
+            key = f"batches/job_{len(self.created) + 1}"
+            source = kwargs.get("src", kwargs.get("input_file_id"))
+            rows = [json.loads(line) for line in files.data[source].decode().splitlines()]
+            self.created.append({"id": key, "kwargs": kwargs, "rows": rows})
+            self.jobs[key] = {"id": key, "status": "in_progress", "state": "JOB_STATE_RUNNING"}
+            return SimpleNamespace(id=key, name=key)
+        def retrieve(self, key):
+            return Dump(self.jobs[key])
+        def get(self, *, name):
+            return self.retrieve(name)
+        def cancel(self, key=None, *, name=None):
+            self.cancelled.append(key or name)
+        def finish(self, number, *, status="completed", results=None):
+            created = self.created[number]
+            key = f"files/output_{number + 1}"
+            if results is None:
+                results = []
+                for row in created['rows']:
+                    ident = row.get('key', row.get('custom_id'))
+                    body = {"model": "gemini-3.5-flash-lite", "value": ident}
+                    results.append({"key": ident, "response": body} if 'key' in row else
+                        {"custom_id": ident, "response": {"status_code": 200, "body": body}})
+            files.data[key] = b''.join((json.dumps(row) + '\n').encode() for row in results)
+            native = 'src' in created['kwargs']
+            self.jobs[created['id']] = ({"state": {"completed": "JOB_STATE_SUCCEEDED", "expired": "JOB_STATE_EXPIRED", "failed": "JOB_STATE_FAILED"}[status],
+                "dest": {"file_name": key}} if native else {"status": status, "output_file_id": key})
+    batches = Batches()
+    client = SimpleNamespace(files=files, batches=batches)
+    return SimpleNamespace(clients={(p,n):client for p in ('google','openai') for n in (False,True)}, files=files, batches=batches)

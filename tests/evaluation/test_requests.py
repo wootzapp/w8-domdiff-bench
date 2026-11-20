@@ -521,9 +521,9 @@ def test_action_judge_model_matches_both_packages_and_endpoint_config():
     from w8bench.verifier.common import CANONICAL_ACTION_MODEL, validate_endpoint_configs
 
     root = Path(__file__).resolve().parents[2]
-    assert CANONICAL_ACTION_MODEL == dom_model == "gemini-3.1-pro-preview"
+    assert CANONICAL_ACTION_MODEL == dom_model == "gemini-3.5-flash-lite"
     validate_endpoint_configs(root / "config")
-    endpoint = json.loads((root / "config/google_gemini3_1_pro_preview.json").read_text())
+    endpoint = json.loads((root / "config/google_gemini3_5_flash_lite.json").read_text())
     assert endpoint["CHAT_COMPLETION_KWARGS_JSON"]["model"] == CANONICAL_ACTION_MODEL
 
 
@@ -534,8 +534,8 @@ def test_standalone_verifier_models_are_pinned(package):
                  "--eval-config", "config", "--output", "result.json"]
     if package == "dom_model":
         arguments += ["--generation-metrics", "metrics.json"]
-    assert module.parse_args(arguments).action_model == "gemini-3.1-pro-preview"
-    assert module.parse_args(arguments).judge_model == "gemini-3.1-pro-preview"
+    assert module.parse_args(arguments).action_model == "gemini-3.5-flash-lite"
+    assert module.parse_args(arguments).judge_model == "gemini-3.5-flash-lite"
     with pytest.raises(SystemExit):
         module.parse_args(arguments + ["--action-model", "gemini-3.8-flash"])
     with pytest.raises(SystemExit):
@@ -805,3 +805,122 @@ def test_audit_refusals_consume_the_stage_budget_without_losing_usage(monkeypatc
     assert len(records) == 3 and len(invalid) == (2 if eventually_valid else 3)
     assert sum(row["usage"]["prompt_tokens"] for row in records) == 27
     assert all(row["model_id_match"]["form"] == "refused" for row in records[:2])
+
+
+@pytest.mark.usefixtures('inline_sdk_header_initialization')
+@pytest.mark.parametrize('mode', ['dom_model', 'screenshot_verifier'])
+@pytest.mark.parametrize('json_output', [True, False])
+@pytest.mark.parametrize('stage', ['action_scoring', 'task_validity', 'trajectory_validity', 'relevance',
+    'selected_state_analysis', 'conditional_disambiguation', 'reality_check', 'criterion_rescore',
+    'global_rescore', 'side_effects', 'outcome', 'failure_analysis'])
+def test_native_batch_wire_body_matches_normal_for_every_stage(tmp_path, monkeypatch, mode, stage, json_output):
+    from w8bench.verifier import batch
+    from w8bench.verifier.clients.providers import OpenAIClientWrapper
+    messages = [{'role':'system', 'content': f'Judge {stage}; preserve the frozen rubric.'},
+        {'role':'user', 'content':[{'type':'text', 'text':'Frozen criterion: report Saved.\nState 1: Saved.'}]}]
+    if mode == 'screenshot_verifier':
+        image = io.BytesIO()
+        Image.new('RGB',(4,4),'white').save(image,format='PNG')
+        messages[1]['content'].append({'type':'image_url','image_url':{
+            'url':'data:image/png;base64,'+base64.b64encode(image.getvalue()).decode(),'detail':'high'}})
+    normal = []
+    def answer(wire):
+        normal.append(json.loads(wire.content))
+        return httpx.Response(200,json={'id':'tiny','object':'chat.completion','created':0,
+            'model':'gemini-3.5-flash-lite','choices':[{'index':0,'finish_reason':'stop',
+                'message':{'role':'assistant','content':'{"ok":true}'}}],
+            'usage':{'prompt_tokens':7,'completion_tokens':2,'total_tokens':9}})
+    async def create(transport):
+        monkeypatch.setenv('JUDGE_TRANSPORT',transport)
+        client=OpenAIClientWrapper(mode,model='gemini-3.5-flash-lite',reasoning_effort='medium',
+            api_key='offline-key',provider='google',http_client=httpx.AsyncClient(transport=httpx.MockTransport(answer)))
+        client._logical_stage.set((stage,))
+        try:
+            return await client.create(messages,json_output=json_output)
+        finally:
+            await client.close()
+    asyncio.run(create('normal'))
+    with batch.evaluation_scope(tmp_path, {'recording':'r','profile':'primary'}):
+        with pytest.raises(batch.BatchPending):
+            asyncio.run(create('batch'))
+    saved=json.loads(next((tmp_path/'requests').glob('*.json')).read_text())
+    assert saved['body']==normal[0]
+    assert saved['body']['reasoning_effort']=='medium'
+    assert saved['body'].get('response_format')==({'type':'json_object'} if json_output else None)
+    assert 'max_tokens' not in saved['body'] and 'max_output_tokens' not in saved['body']
+    assert len(normal)==1 and saved['stage']==f'{mode}.{stage}'
+
+
+def test_completion_batch_body_is_the_normal_payload(completion_case, tmp_path, monkeypatch):
+    from w8bench.verifier import batch
+    case=completion_case
+    criteria, ids=completion._completion_criteria(case.rubric)
+    expected=completion._judge_payload(case.run,case.recording,criteria,'gpt-6.1-sol','paired')
+    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
+    with batch.evaluation_scope(tmp_path/'jobs', {'recording':'completion'}):
+        with pytest.raises(batch.BatchPending):
+            asyncio.run(completion.grade_run(case.run,case.rubric_path,judge_model='gpt-6.1-sol',execute=True))
+    saved=json.loads(next((tmp_path/'jobs/requests').glob('*.json')).read_text())
+    assert saved['body']==expected and saved['endpoint']=='/v1/responses'
+    assert not (case.run/'completion.json').exists() and not case.requests
+
+
+@pytest.mark.parametrize('provider,stage,model', [('google','inventory','gemini-3.1-pro-preview'),
+    ('openai','adjudication','gpt-6.1-sol')])
+def test_audit_batch_wire_body_matches_normal(tmp_path,monkeypatch,provider,stage,model):
+    from w8bench.verifier import batch
+    from google.genai import types
+    from w8bench.verifier import audit_requests as audit
+    from openai import DefaultHttpxClient, OpenAI
+    captured=[]
+    def answer(wire):
+        captured.append(json.loads(wire.content))
+        body=({'candidates':[{'content':{'role':'model','parts':[{'text':'{"ok":true}'}]},'finishReason':'STOP'}],
+                'modelVersion':model,'usageMetadata':{'promptTokenCount':4,'candidatesTokenCount':2,'thoughtsTokenCount':0,'totalTokenCount':6}}
+            if provider=='google' else {'id':'audit','object':'chat.completion','created':0,'model':model,
+                'choices':[{'index':0,'finish_reason':'stop','message':{'role':'assistant','content':'{"ok":true}'}}],
+                'usage':{'prompt_tokens':4,'completion_tokens':2,'total_tokens':6}})
+        return httpx.Response(200,json=body,request=wire)
+    messages=[{'role':'system','content':audit.ADJUDICATION_SYSTEM_PROMPT if stage=='adjudication' else audit.SYSTEM_PROMPT},
+        {'role':'user','content':[{'type':'text','text':'Source 1: Saved.'},
+            {'type':'image_url','image_url':{'url':'data:image/png;base64,iVBORw0KGgo=','detail':'high'}}]}]
+    if provider=='google':
+        from google import genai
+        original=genai.Client
+        def constructor(**kwargs):
+            options=kwargs['http_options']
+            options.client_args={**(options.client_args or {}),'transport':
+                (batch.http_transport(provider,f'audit.{stage}',record) if batch.judge_transport()=='batch' else httpx.MockTransport(answer))}
+            return original(**kwargs)
+        monkeypatch.setattr(genai,'Client',constructor)
+    else:
+        original=DefaultHttpxClient
+        def http_client(**kwargs):
+            kwargs['transport']=(batch.http_transport(provider,f'audit.{stage}',record)
+                if batch.judge_transport()=='batch' else httpx.MockTransport(answer))
+            return original(**kwargs)
+        monkeypatch.setattr(audit,'DefaultHttpxClient',http_client)
+    monkeypatch.setenv('JUDGE_TRANSPORT','normal')
+    record={'api_attempts':[]}
+    assert audit._completion(model,messages,records=[])=={'ok':True}
+    expected=captured[0]
+    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
+    with batch.evaluation_scope(tmp_path,{'recording':'audit'}):
+        with pytest.raises(batch.BatchPending):
+            audit._completion(model,messages,records=[])
+    saved=json.loads(next((tmp_path/'requests').glob('*.json')).read_text())
+    assert saved['body']==expected and len(captured)==1
+
+
+@pytest.mark.parametrize('profile,model',[('primary','gemini-3.5-flash-lite'),('pro','gemini-3.1-pro-preview')])
+def test_native_named_profiles_pin_all_stages(monkeypatch,profile,model):
+    from w8bench.verifier.common import native_judge_model
+    monkeypatch.setenv('NATIVE_JUDGE_PROFILE',profile)
+    assert native_judge_model()==model and model!='gemini-3.8-flash'
+    for kind in ('dom_model','screenshot_verifier'):
+        module=importlib.import_module(f'w8bench.verifier.{kind}.runner')
+        args=['--input','task','--rubric-file','rubric.json','--eval-config','config','--output','result']
+        if kind=='dom_model':args+=['--generation-metrics','metrics.json']
+        parsed=module.parse_args(args)
+        assert parsed.action_model==parsed.judge_model==model
+        with pytest.raises(SystemExit):module.parse_args(args+['--judge-model','gemini-3.8-flash'])
