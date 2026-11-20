@@ -126,10 +126,9 @@ def request(body, *, provider, endpoint, stage, model=None, record=None):
             batch_policy_version=POLICY_VERSION, batch_evaluation_attempt=generation)
         usage = value["body"].get("usage")
         if "usageMetadata" in value["body"]:
-            from google.genai.types import GenerateContentResponse
             from .audit_requests import _record_gemini_response
             normalized = {}
-            _record_gemini_response(normalized, GenerateContentResponse.model_validate(value["body"]), {})
+            _record_gemini_response(normalized, value["body"], {})
             usage = normalized["usage"]
         record.setdefault("batch_items", []).append({"batch_request_id": key, "batch_job_id": value["job_id"],
             "model": item["model"], "usage": usage, "transport": "batch", "status_code": value["status_code"],
@@ -600,14 +599,14 @@ def main(argv=None):
                 raw = result["body"]
                 returned = raw.get("modelVersion", raw.get("model"))
                 if endpoint == "generateContent":
-                    from google.genai.types import GenerateContentResponse
                     from .audit_requests import _record_gemini_response
-                    content = _record_gemini_response(record, GenerateContentResponse.model_validate(raw), {})
+                    content = _record_gemini_response(record, raw, {})
                     acceptance_input = record
                 elif endpoint == "/v1/chat/completions":
                     choices = raw.get("choices") or []
                     content = (choices[0].get("message") or {}).get("content") if len(choices) == 1 else None
-                    acceptance_input = {"incomplete": len(choices) != 1 or choices[0].get("finish_reason") != "stop"}
+                    acceptance_input = {"incomplete": len(choices) != 1 or
+                        (choices[0].get("finish_reason") or choices[0].get("finishReason")) != "stop"}
                 else:
                     from w8bench.task_recorder.runner import response_text
                     content, acceptance_input = response_text(raw), raw

@@ -31,7 +31,7 @@ which supplies the catalog, configuration and Compose files.
 Set the actor through `ACTOR_MODEL` in `.env`; it must be `gemini-3.8-flash`.
 Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` and the audit models shown in
 `.env.example`. Completion uses an explicit `gpt-6.1-sol` judge.
-`ACTOR_MEDIA_RESOLUTION` accepts `HIGH` (default) or `ULTRA_HIGH` for screenshot
+`ACTOR_MEDIA_RESOLUTION` accepts `ULTRA_HIGH` (default) or `HIGH` for screenshot
 input. `GEMINI_BASE_URL` selects the actor endpoint; `OPENAI_BASE_URL` selects the
 OpenAI endpoint.
 Build the browser image as `w8-core:domdiff-bench`, the default `IMAGE` value,

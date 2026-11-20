@@ -504,6 +504,16 @@ def _gemini_messages(messages, types):
 
 
 def _record_gemini_response(record, response, settings):
+    if isinstance(response, dict):
+        from google.genai.types import GenerateContentResponse, GenerateContentResponseUsageMetadata
+        metadata_key = "usageMetadata" if "usageMetadata" in response else "usage_metadata"
+        metadata = response.get(metadata_key)
+        if isinstance(metadata, dict):
+            known_fields = {key for name, field in GenerateContentResponseUsageMetadata.model_fields.items()
+                for key in (name, field.alias)}
+            record["ignored_usage_fields"] = {key: value for key, value in metadata.items() if key not in known_fields}
+            response = {**response, metadata_key: {key: value for key, value in metadata.items() if key in known_fields}}
+        response = GenerateContentResponse.model_validate(response)
     usage = response.usage_metadata
     normalized = None
     if usage is not None:

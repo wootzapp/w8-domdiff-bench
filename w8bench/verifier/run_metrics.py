@@ -28,7 +28,11 @@ def _object(value):
 
 
 def _usage_values(value):
-    raw = _object(value)
+    raw = dict(_object(value))
+    for native, canonical in (("promptTokens", "prompt_tokens"),
+            ("completionTokens", "completion_tokens"), ("totalTokens", "total_tokens")):
+        if raw.get(canonical) is None and native in raw:
+            raw[canonical] = raw[native]
     inputs = _object(raw.get("input_tokens_details") or raw.get("prompt_tokens_details"))
     outputs = _object(raw.get("output_tokens_details") or raw.get("completion_tokens_details"))
     values = {
@@ -316,8 +320,8 @@ def _price_call(call, stream, assumptions, price_sources):
         or call.get("configured_model") or call.get("requested_model") or call.get("model") or stream.get("model"))
     selected = next((key for key in TOKEN_PRICES if match_model_id(key, model)["matched"]), None)
     raw = call.get("usage") if isinstance(call.get("usage"), dict) else call
-    input_tokens = raw.get("input_tokens", raw.get("prompt_tokens"))
-    output_tokens = raw.get("output_tokens", raw.get("completion_tokens"))
+    input_tokens = raw.get("input_tokens", raw.get("prompt_tokens", raw.get("promptTokens")))
+    output_tokens = raw.get("output_tokens", raw.get("completion_tokens", raw.get("completionTokens")))
     if (not selected or call.get("usage_reported") is False or
             any(not valid_token_component(value) for value in (input_tokens, output_tokens))):
         return None

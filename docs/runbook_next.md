@@ -35,7 +35,7 @@ assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash', 'Unexpected actor mo
 assert judge_transport() == 'batch', 'Unexpected judge transport'
 assert os.environ.get('NATIVE_JUDGE_PROFILE', 'primary') == 'primary', 'Unexpected native profile'
 assert native_judge_model() == 'gemini-3.5-flash-lite', 'Unexpected native model'
-media = os.environ.get('ACTOR_MEDIA_RESOLUTION', 'HIGH').strip().upper()
+media = os.environ.get('ACTOR_MEDIA_RESOLUTION', 'ULTRA_HIGH').strip().upper()
 assert media in {'HIGH', 'ULTRA_HIGH'}, 'Unsupported actor media resolution'
 audit = resolve_audit_config()
 assert audit['inventory'] == {'model': 'gemini-3.1-pro-preview', 'provider': 'google'}

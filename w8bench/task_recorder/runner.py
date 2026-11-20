@@ -302,7 +302,7 @@ class ModelClient:
         self.last_response: dict[str, Any] | None = None
         self.transport_cancelled = False
         self.model_input_limit: int | None = None
-        self.media_resolution = os.environ.get("ACTOR_MEDIA_RESOLUTION", "HIGH").strip().upper()
+        self.media_resolution = os.environ.get("ACTOR_MEDIA_RESOLUTION", "ULTRA_HIGH").strip().upper()
 
     @staticmethod
     def _gemini_usage(usage: Any) -> dict[str, Any]:
@@ -1080,15 +1080,27 @@ def _finish_model_turn(
 
 async def _model_turn(
     args, task, model, current, state, manifest, run_dir,
-    turn_dir, turn, mode, viewport,
+    turn_dir, turn, mode, viewport, cdp,
 ):
+    failure = getattr(cdp, "_page_failure", None) or getattr(cdp, "_transport_error", None)
+    if failure is not None:
+        failure.technical_failure_class = getattr(failure, "technical_failure_class", None) or "cdp_stall"
+        manifest["model_turns"] = turn - 1
+        write_json(run_dir / "manifest.json", manifest)
+        raise failure
     started = time.monotonic()
     row = {"model_turn": turn, "state": len(manifest["states"]), "recorded_at": utc_now(),
         "request": str((turn_dir / "request.json").relative_to(run_dir)),
         "task_memory_before": state.memory}
     decision = None
     try:
-        decision, response = await model.decide(task=task['instruction'], step=turn, max_steps=args.max_steps, bundle=current, task_memory=state.memory, recent_actions=state.recent, turn_dir=turn_dir, viewport=viewport, max_output_tokens=args.max_output_tokens)
+        try:
+            decision, response = await model.decide(task=task['instruction'], step=turn, max_steps=args.max_steps, bundle=current, task_memory=state.memory, recent_actions=state.recent, turn_dir=turn_dir, viewport=viewport, max_output_tokens=args.max_output_tokens)
+        finally:
+            failure = getattr(cdp, "_page_failure", None) or getattr(cdp, "_transport_error", None)
+            if failure is not None:
+                failure.technical_failure_class = getattr(failure, "technical_failure_class", None) or "cdp_stall"
+                raise failure
         reason = action_rejection_reason(decision, current.agent_browser_refs, state.recent, observation_mode=mode, model_turn=turn, max_turns=args.max_steps)
         completed = [item for item in state.recent if item.get("action_succeeded") is True
             and isinstance(item.get("action"), dict) and isinstance(item.get("progress"), dict)]
@@ -1097,7 +1109,7 @@ async def _model_turn(
             stall_advisory=advisory or None)
     except BaseException as error:
         row.update(accepted=False, error=type(error).__name__ + ': ' + str(error))
-        if model.last_response is None or isinstance(error, (asyncio.CancelledError, ModelProtocolError)):
+        if model.last_response is None or isinstance(error, (asyncio.CancelledError, ModelProtocolError)) or error is failure:
             raise
     finally:
         _finish_model_turn(args, model, row, manifest, run_dir, turn_dir, turn, started)
@@ -1207,6 +1219,10 @@ async def _accepted_turn(
     candidate_memory = decision.get("memory")
     candidate_memory = candidate_memory.strip() if isinstance(candidate_memory, str) and candidate_memory.strip() else state.memory
     if decision['action'] == 'terminate':
+        failure = getattr(cdp, "_page_failure", None) or getattr(cdp, "_transport_error", None)
+        if failure is not None:
+            failure.technical_failure_class = getattr(failure, "technical_failure_class", None) or "cdp_stall"
+            raise failure
         state.memory = candidate_memory
         return current, {"status": decision["status"],
             "termination_reason": decision["termination_reason"],
@@ -1233,7 +1249,7 @@ async def _actor_turns(
         write_json(run_dir / "manifest.json", manifest)
         decision, row = await _model_turn(
             args, task, model, current, state, manifest, run_dir,
-            turn_dir, turn, mode, viewport,
+            turn_dir, turn, mode, viewport, cdp,
         )
         if not row["accepted"]:
             rejected = _rejected_turn(args, state, row, decision, turn)
@@ -1332,7 +1348,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     load_env(Path(known.env_file))
 
     parser = argparse.ArgumentParser(description="Record independent DOM-only or screenshot-only browser runs",
-        epilog="ACTOR_MEDIA_RESOLUTION selects HIGH (default) or ULTRA_HIGH screenshot detail. Actor inputs above 95% of the model input limit end as technical failures without truncation.")
+        epilog="ACTOR_MEDIA_RESOLUTION selects ULTRA_HIGH (default) or HIGH screenshot detail. Actor inputs above 95% of the model input limit end as technical failures without truncation.")
     parser.add_argument("--env-file", default=known.env_file)
     parser.add_argument(
         "--build-trajectory-run",
@@ -1415,7 +1431,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"),
     )
     args = parser.parse_args(argv)
-    args.media_resolution = os.environ.get("ACTOR_MEDIA_RESOLUTION", "HIGH").strip().upper()
+    args.media_resolution = os.environ.get("ACTOR_MEDIA_RESOLUTION", "ULTRA_HIGH").strip().upper()
     return args
 
 

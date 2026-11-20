@@ -43,7 +43,7 @@ primitives use the shared action driver.
 | Maximum actor output | Exactly 10,000 tokens, including reasoning. |
 | Task memory | At most 8,000 characters. |
 | Reasoning effort | Explicitly `medium`. |
-| Actor image resolution | `ACTOR_MEDIA_RESOLUTION=HIGH` by default; `ULTRA_HIGH` selects the larger per-image budget. The configured value is shared and recorded in both arms; only screenshot requests contain images. |
+| Actor image resolution | `ACTOR_MEDIA_RESOLUTION=ULTRA_HIGH` by default; `HIGH` selects the smaller per-image budget. The configured value is shared and recorded in both arms; only screenshot requests contain images. |
 | Temperature | Unset in both arms. |
 | Viewport | 1365 × 768 CSS pixels by default. |
 | Settling interval | One second by default. |
@@ -169,7 +169,11 @@ Target and renderer crash/detach events stop calls to a failed page. A timed-out
 read-only observation or CDP internal error triggers a target liveness probe of
 at most 3 seconds. A live target permits one session reattachment and one retry
 of that observation; a dead target ends the attempt. Actions are never replayed.
-Uncertain action delivery ends the attempt as a technical failure.
+Uncertain action delivery ends the attempt as a technical failure. Known target
+destruction or transport closure is checked before and after an actor response
+and before a terminal answer is accepted. The received response and its usage
+remain recorded; a browser failure ends the attempt under the same technical
+rerun policy in both arms. No request is dispatched after a known failure.
 
 The browser unregisters its capture component during session disposal. The
 assertion-enabled build uses `SYS_NICE` for renderer-priority changes when tabs

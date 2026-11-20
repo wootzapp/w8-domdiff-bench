@@ -109,7 +109,7 @@ async def test_no_response_is_not_a_model_turn(actor_request_args, monkeypatch):
     root=directory.parents[1]
     manifest={'model_turns':1,'states':[{}],'returned_actor_models':[]}
     with pytest.raises(RunnerError):
-        await runner._model_turn(args,{'instruction':'inspect'},client,actor_request_args['bundle'],runner.ActorState(),manifest,root,directory,1,'dom',(1365,768))
+        await runner._model_turn(args,{'instruction':'inspect'},client,actor_request_args['bundle'],runner.ActorState(),manifest,root,directory,1,'dom',(1365,768),runner.CDPClient('http://offline.test'))
     assert manifest['model_turns']==0 and manifest['actor_transport_attempts']==3
     assert not (root/'decisions.jsonl').exists()
 
@@ -191,3 +191,87 @@ async def test_cancelled_transport_retains_pending_attempt_without_retry(actor_r
     pending=json.loads((actor_request_args['turn_dir']/'transport_pending.json').read_text())
     assert pending['attempt']==1 and pending['status']=='started' and pending['usage'] is None
     assert calls==[1] and client.transport_cancelled and client.last_response is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('arm', ['dom', 'screenshot'])
+@pytest.mark.parametrize('kind', ['target', 'transport'])
+@pytest.mark.parametrize('when', ['before', 'response', 'terminal'])
+async def test_last_tab_failure_cannot_accept_terminal_answer(actor_observation, tmp_path, monkeypatch, arm, kind, when):
+    from dataclasses import replace
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from w8bench.task_recorder.capture import CDPClient
+    cdp = CDPClient('http://offline.test')
+    failure = RunnerError('page target destroyed' if kind == 'target' else 'CDP websocket closed')
+    attribute = '_page_failure' if kind == 'target' else '_transport_error'
+    if kind == 'target': failure.technical_failure_class = 'cdp_stall'
+    terminal = {key: None for key in runner.ACTION_SCHEMA['properties']}
+    terminal.update(action='terminate', thought='The required fact was observed.', status='success',
+        termination_reason='completed', final_answer='Saved.')
+    current = replace(actor_observation, observation_mode=arm)
+    state = runner.ActorState(recent=[{'action_succeeded': True, 'action': {'action': 'click'},
+        'progress': {'url_changed': False}, 'model_turn': 1}])
+    assert not runner.action_rejection_reason(terminal, current.agent_browser_refs, state.recent,
+        observation_mode=arm, model_turn=2, max_turns=200)
+    args = SimpleNamespace(max_steps=200, max_output_tokens=10000)
+    model = runner.ModelClient('offline', 'gemini-3.8-flash', 'https://offline.test')
+    async def respond(**kwargs):
+        model.last_response = {'model': model.model, 'status': 'completed', 'usage': {'input_tokens': 7, 'output_tokens': 2}}
+        model.last_input_report = {'model_response_received': True}
+        if when == 'response': setattr(cdp, attribute, failure)
+        return terminal, model.last_response
+    model.decide = AsyncMock(side_effect=respond)
+    manifest = {'states': [{}], 'steps': [], 'model_turns': 0, 'returned_actor_models': []}
+    if when == 'before':
+        model.last_response = {'model': model.model, 'usage': {'input_tokens': 100, 'output_tokens': 50}}
+    if when in {'before', 'terminal'}: setattr(cdp, attribute, failure)
+    with pytest.raises(RunnerError, match='page target destroyed|CDP websocket closed') as caught:
+        if when == 'terminal':
+            await runner._accepted_turn(args, terminal, current, state, None, cdp, (1365, 768), manifest, tmp_path, 2, arm)
+        else:
+            await runner._actor_turns(args, {'instruction': 'Read Saved.'}, model, current, state, None, cdp,
+                (1365, 768), manifest, tmp_path, arm, {'status': 'failure'})
+    assert caught.value.technical_failure_class == 'cdp_stall'
+    assert model.decide.await_count == (1 if when == 'response' else 0)
+    if when == 'before':
+        assert manifest['model_turns'] == 0
+        assert not (tmp_path / 'decisions.jsonl').exists()
+    if when == 'response':
+        assert manifest['model_turns'] == 1
+        row = json.loads((tmp_path / 'decisions.jsonl').read_text())
+        assert row['usage'] == {'input_tokens': 7, 'output_tokens': 2}
+        assert row['accepted'] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('arm', ['dom', 'screenshot'])
+@pytest.mark.parametrize('kind', ['target', 'transport'])
+async def test_last_tab_during_actor_response_ends_run_as_technical_failure(actor_observation, tmp_path, monkeypatch, arm, kind):
+    from dataclasses import replace
+    from unittest.mock import AsyncMock
+    cdp = runner.CDPClient('http://offline.test')
+    monkeypatch.setattr(cdp, 'connect', AsyncMock())
+    monkeypatch.setattr(runner, 'CDPClient', lambda *args, **kwargs: cdp)
+    monkeypatch.setattr(runner.AgentBrowserClient, 'close', AsyncMock())
+    monkeypatch.setattr(runner, '_initial_capture', AsyncMock(return_value=replace(actor_observation, observation_mode=arm)))
+    async def decide(self, **kwargs):
+        self.last_response = {'model': self.model, 'usage': {'input_tokens': 7, 'output_tokens': 2}}
+        self.last_input_report = {'model_response_received': True}
+        failure = RunnerError('page target destroyed' if kind == 'target' else 'CDP websocket closed')
+        setattr(cdp, '_page_failure' if kind == 'target' else '_transport_error', failure)
+        return {'action': 'terminate', 'status': 'success', 'termination_reason': 'completed',
+            'final_answer': 'Saved.', 'thought': 'The fact was observed.'}, self.last_response
+    monkeypatch.setattr(runner.ModelClient, 'decide', decide)
+    def finalize(directory, manifest, final, *, health_only=False):
+        if not health_only:
+            write_json(directory / 'final.json', {**final, 'model_turns': manifest['model_turns']})
+            return final, {'status': 'complete'}
+    monkeypatch.setattr(runner, 'finalize_recording_artifacts', finalize)
+    args = runner.parse_args(['--env-file', str(tmp_path / 'absent.env'), '--observation-mode', arm,
+        '--task', 'Read the fixture fact.', '--task-id', 'fixture', '--api-key', 'offline',
+        '--output-dir', str(tmp_path / 'recordings'), '--settle-seconds', '0'])
+    assert await runner.run(args) == 2
+    final = json.loads((tmp_path / 'recordings/fixture/final.json').read_text())
+    assert final['run_status'] == 'technical_failure' and final['technical_failure_class'] == 'cdp_stall'
+    assert final['model_turns'] == 1 and final['status'] == 'failure'

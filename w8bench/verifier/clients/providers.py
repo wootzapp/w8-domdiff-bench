@@ -254,6 +254,11 @@ def _response_usage(response):
             "initial_input_tokens" in response or "output_tokens" in response):
         provider_usage = {"input_tokens": response.get("initial_input_tokens", 0),
                           "output_tokens": response.get("output_tokens", 0)}
+    provider_usage = dict(provider_usage)
+    for native, canonical in (("promptTokens", "prompt_tokens"),
+            ("completionTokens", "completion_tokens"), ("totalTokens", "total_tokens")):
+        if provider_usage.get(canonical) is None and native in provider_usage:
+            provider_usage[canonical] = provider_usage[native]
     return raw, provider_usage
 
 
@@ -278,7 +283,7 @@ def _record_openai_usage(response, client: ChatCompletionClient, *, record=None)
     client._total_usage += usage
     if record is not None:
         choices = raw.get("choices") or []
-        finish = choices[0].get("finish_reason") if choices else raw.get("status")
+        finish = (choices[0].get("finish_reason") or choices[0].get("finishReason")) if choices else raw.get("status")
         if finish is None and getattr(response, "choices", None):
             finish = response.choices[0].finish_reason
         returned_model = raw.get("model", getattr(response, "model", None))
@@ -297,8 +302,9 @@ def _record_openai_usage(response, client: ChatCompletionClient, *, record=None)
             cache_write_input_tokens=provider_usage.get("cache_creation_input_tokens",
                 input_details.get("cache_write_tokens")),
             reasoning_tokens=reasoning if output_details.get("reasoning_tokens") is not None else None,
-            total_tokens=prompt + completion if provider_usage.get("prompt_tokens", provider_usage.get("input_tokens")) is not None
-                or provider_usage.get("completion_tokens", provider_usage.get("output_tokens")) is not None else None,
+            total_tokens=provider_usage.get("total_tokens") if provider_usage.get("total_tokens") is not None else (
+                prompt + completion if provider_usage.get("prompt_tokens", provider_usage.get("input_tokens")) is not None
+                or provider_usage.get("completion_tokens", provider_usage.get("output_tokens")) is not None else None),
             usage_fields_reported={"input_tokens": provider_usage.get("prompt_tokens", provider_usage.get("input_tokens")) is not None,
                 "output_tokens": provider_usage.get("completion_tokens", provider_usage.get("output_tokens")) is not None,
                 "reasoning_tokens": output_details.get("reasoning_tokens") is not None,
@@ -373,7 +379,7 @@ class OpenAIClientWrapper(ChatCompletionClient):
         return CreateResult(
             content=msg.content if msg.content is not None else "",
             usage=usage,
-            finish_reason=response.choices[0].finish_reason,
+            finish_reason=record["finish_reason"],
             message=msg,
             tool_calls=list(msg.tool_calls) if getattr(msg, "tool_calls", None) else None,
         )

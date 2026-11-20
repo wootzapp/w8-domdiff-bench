@@ -188,7 +188,8 @@ def test_modes_capture_and_send_only_their_channel(run_pair):
         assert "DOM_ONLY_SECRET" in content[0]["text"]
     for payload in payloads["screenshot"]:
         content = payload["contents"][0]["parts"]
-        assert [list(c) for c in content] == [["text"], ["inlineData"]]
+        assert [list(c) for c in content] == [["text"], ["inlineData", "mediaResolution"]]
+        assert content[1]["mediaResolution"]["level"] == "MEDIA_RESOLUTION_ULTRA_HIGH"
         assert content[1]["inlineData"]["mimeType"] == "image/png"
         assert "DOM_ONLY_SECRET" not in json.dumps(payload)
         assert "[ref=e1]" not in json.dumps(payload)
@@ -908,3 +909,22 @@ def test_all_stall_rules_are_private_advisories_in_both_arms(actor_observation, 
         'Read the page.', 4, 200, bundle, '', history, tmp_path, (1365, 768), 10000)
     assert 'PRIVATE_LOOP_MARKER' not in json.dumps(payload)
     assert 'stall_advisory' not in json.dumps(payload)
+
+
+def test_screenshot_default_uses_ultra_high(actor_observation, tmp_path, monkeypatch):
+    from dataclasses import replace
+    monkeypatch.delenv('ACTOR_MEDIA_RESOLUTION', raising=False)
+    client = runner.ModelClient('offline', 'gemini-3.8-flash', 'https://offline.test')
+    args = runner.parse_args(['--env-file', str(tmp_path / 'absent.env')])
+    assert client.media_resolution == args.media_resolution == 'ULTRA_HIGH'
+    configured = settings.actor_settings({})
+    assert configured['media_resolution'] == 'ULTRA_HIGH'
+    assert configured['technical_retry_policy']['browser_failure_checks'] == [
+        'before_actor_request', 'after_actor_response', 'before_terminal_acceptance']
+    image = tmp_path / 'observation.png'
+    Image.new('RGB', (1365, 768)).save(image)
+    bundle = replace(actor_observation, observation_mode='screenshot', screenshot_path=image)
+    payload, _, _ = client._actor_request('Read the text.', 1, 200, bundle, '', [], tmp_path, (1365, 768), 10000)
+    assert payload['contents'][0]['parts'][1]['mediaResolution']['level'] == 'MEDIA_RESOLUTION_ULTRA_HIGH'
+    assert payload['generationConfig']['thinkingConfig'] == {'thinkingLevel': 'MEDIUM'}
+    assert payload['generationConfig']['maxOutputTokens'] == 10000

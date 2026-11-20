@@ -924,3 +924,101 @@ def test_native_named_profiles_pin_all_stages(monkeypatch,profile,model):
         parsed=module.parse_args(args)
         assert parsed.action_model==parsed.judge_model==model
         with pytest.raises(SystemExit):module.parse_args(args+['--judge-model','gemini-3.8-flash'])
+
+
+@pytest.mark.usefixtures('inline_sdk_header_initialization')
+@pytest.mark.parametrize('model,output,expected_cost', [
+    ('gemini-3.5-flash-lite', 5, 0.0001708), ('gemini-3.1-pro-preview', 9, 0.001151)])
+def test_google_chat_batch_camel_case_is_valid_and_priced(tmp_path, monkeypatch, model, output, expected_cost):
+    from w8bench.verifier import batch
+    from w8bench.verifier.clients.providers import OpenAIClientWrapper
+    from w8bench.verifier.run_metrics import _price_stream
+    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
+    async def create():
+        client = OpenAIClientWrapper('dom_model', model=model, provider='google', api_key='offline',
+            http_client=httpx.AsyncClient(transport=httpx.MockTransport(lambda wire: pytest.fail('network dispatch'))))
+        try:
+            result = await client.create([{'role': 'user', 'content': 'Return ok.'}], json_output=True)
+            return result, client._call_records[-1]
+        finally:
+            await client.close()
+    with batch.evaluation_scope(tmp_path, {'smoke': model}):
+        with pytest.raises(batch.BatchPending): asyncio.run(create())
+    request = json.loads(next((tmp_path / 'requests').glob('*.json')).read_text())
+    raw = {'id': 'saved', 'object': 'chat.completion', 'created': 0, 'model': model,
+        'choices': [{'index': 0, 'finishReason': 'stop', 'message': {'role': 'assistant', 'content': '{"ok":true}'}}],
+        'usage': {'promptTokens': 1097, 'completionTokens': output, 'totalTokens': 1097 + output}}
+    batch._save(tmp_path / 'responses' / (request['id'] + '.json'),
+        {'job_id': 'batches/saved', 'status_code': 200, 'body': raw})
+    with batch.evaluation_scope(tmp_path, {'smoke': model}):
+        result, record = asyncio.run(create())
+    assert json.loads(result.content) == {'ok': True}
+    assert result.finish_reason == record['finish_reason'] == 'stop'
+    assert record['input_tokens'] == result.usage.prompt_tokens == 1097
+    assert record['output_tokens'] == result.usage.completion_tokens == output
+    assert record['total_tokens'] == 1097 + output
+    assert record['cached_input_tokens'] is record['reasoning_tokens'] is None
+    stream = {'model': model, 'calls': 1, 'call_records': record['batch_items'], 'usage_coverage': 'complete'}
+    _price_stream(stream)
+    assert stream['cost']['estimated_usd'] == pytest.approx(expected_cost)
+    assert json.loads((tmp_path / 'responses' / (request['id'] + '.json')).read_text())['body'] == raw
+
+
+def test_native_batch_inventory_ignores_unknown_usage_without_losing_components(tmp_path, monkeypatch):
+    from copy import deepcopy
+    from w8bench.verifier import batch
+    from w8bench.verifier.audit_requests import _record_gemini_response
+    from w8bench.verifier.run_metrics import _price_stream
+    monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
+    raw = {'modelVersion': 'gemini-3.1-pro-preview', 'responseId': 'saved',
+        'candidates': [{'finishReason': 'STOP', 'content': {'parts': [{'text': '{"ok":true}'}]}}],
+        'usageMetadata': {'promptTokenCount': 1097, 'candidatesTokenCount': 3, 'thoughtsTokenCount': 2,
+            'totalTokenCount': 1102, 'cachedContentTokenCount': 20, 'serviceTier': 'SERVICE_TIER_STANDARD',
+            'promptTokensDetails': [{'modality': 'IMAGE', 'tokenCount': 1089}]}}
+    original = deepcopy(raw); body = {'contents': [{'parts': [{'text': 'ok'}]}]}
+    with batch.evaluation_scope(tmp_path, {'smoke': 'inventory'}):
+        with pytest.raises(batch.BatchPending): batch.request(body, provider='google', endpoint='generateContent', stage='audit.inventory')
+    request = json.loads(next((tmp_path / 'requests').glob('*.json')).read_text())
+    batch._save(tmp_path / 'responses' / (request['id'] + '.json'), {'job_id': 'batches/saved', 'status_code': 200, 'body': raw})
+    with batch.evaluation_scope(tmp_path, {'smoke': 'inventory'}):
+        record = {}; result = batch.request(body, provider='google', endpoint='generateContent', stage='audit.inventory', record=record)
+    assert json.loads(_record_gemini_response(record, result['body'], {})) == {'ok': True}
+    assert record['usage']['prompt_tokens'] == 1097 and record['usage']['completion_tokens'] == 5
+    assert record['usage']['reasoning_tokens'] == 2 and record['usage']['cached_input_tokens'] == 20
+    assert record['provider_usage']['prompt_tokens_details'][0]['token_count'] == 1089
+    assert record['ignored_usage_fields'] == {'serviceTier': 'SERVICE_TIER_STANDARD'}
+    stream = {'model': 'gemini-3.1-pro-preview', 'calls': 1, 'call_records': record['batch_items'], 'usage_coverage': 'complete'}
+    _price_stream(stream)
+    assert stream['cost']['estimated_usd'] == pytest.approx((1077 + 20 * .1 + 5 * 6) / 1e6)
+    assert raw == original == result['body']
+
+
+@pytest.mark.parametrize('metadata', [
+    {'promptTokenCount': 7, 'serviceTier': 'SERVICE_TIER_STANDARD'},
+    {'serviceTier': 'SERVICE_TIER_STANDARD'},
+])
+def test_native_unknown_usage_fields_do_not_fill_missing_usage(metadata):
+    from w8bench.verifier.audit_requests import _record_gemini_response
+    record = {}
+    _record_gemini_response(record, {'usageMetadata': metadata, 'candidates': [
+        {'finishReason': 'STOP', 'content': {'parts': [{'text': '{}'}]}}]}, {})
+    assert record['usage']['completion_tokens'] is None
+    assert record['usage']['total_tokens'] is None
+    assert record['usage']['prompt_tokens'] == metadata.get('promptTokenCount')
+    assert record['ignored_usage_fields'] == {'serviceTier': 'SERVICE_TIER_STANDARD'}
+
+
+def test_native_usage_filter_keeps_validation_of_known_and_nonusage_fields():
+    from w8bench.verifier.audit_requests import _record_gemini_response
+    for response in ({'usageMetadata': {'promptTokenCount': 'invalid', 'serviceTier': 'standard'}},
+                     {'unknownRootField': True, 'usageMetadata': {'serviceTier': 'standard'}}):
+        with pytest.raises(ValueError): _record_gemini_response({}, response, {})
+
+
+def test_google_chat_reported_total_does_not_fill_missing_input_or_output():
+    from w8bench.verifier.clients.providers import ChatCompletionClient, _record_openai_usage
+    record = {}
+    _record_openai_usage({'model': 'gemini-3.5-flash-lite', 'usage': {'totalTokens': 1102}},
+        ChatCompletionClient(), record=record)
+    assert record['total_tokens'] == 1102
+    assert record['input_tokens'] is record['output_tokens'] is None

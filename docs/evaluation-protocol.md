@@ -337,6 +337,11 @@ and runs without loss values, including per-run receipts and per-arm counts. It
 does not infer accuracy from agreement alone. Missing/ungraded profile judgments
 remain unavailable rather than disagreements or zero loss.
 
+Google Chat results accept snake_case and camelCase finish-reason and token
+fields. Native audit response validation retains all supported usage fields;
+unrecognized usage metadata is preserved in receipt diagnostics and excluded
+from SDK validation. Original provider responses remain unchanged.
+
 Costs use the recorded delivery mode and keep actor spending separate. Batch
 rates apply to actual batch items, including repeated paid attempts. Missing
 item usage prevents an exact total; known spending remains a labelled lower

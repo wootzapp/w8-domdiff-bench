@@ -65,7 +65,7 @@ explicit `--judge-model gpt-6.1-sol`. Configure
 | `CHROMIUM_HEADLESS` | Browser display mode. |
 | `CHROMIUM_RESET_PROFILE` | `1` clears the Chromium profile at startup; `0` preserves it. Browser history, cookies and site storage belong to this profile. Host-side recordings are separate. |
 | `ACTOR_MODEL`, `GEMINI_API_KEY`, `GEMINI_BASE_URL` | Actor model, Google credentials and endpoint. The key also serves the verifier and inventory stages. |
-| `ACTOR_MEDIA_RESOLUTION` | Screenshot per-image resolution: `HIGH` by default or `ULTRA_HIGH`; recorded in the shared actor settings. |
+| `ACTOR_MEDIA_RESOLUTION` | Screenshot per-image resolution: `ULTRA_HIGH` by default or `HIGH`; recorded in the shared actor settings. |
 | `OPENAI_API_KEY`, `OPENAI_BASE_URL` | OpenAI credentials and endpoint for rubric preparation, completion and evidence-loss adjudication. |
 | `EVIDENCE_AUDIT_MODEL`, `EVIDENCE_ADJUDICATOR_MODEL` | Explicit inventory and adjudication models. |
 | `TASK_CATALOG_FILE` | Default local task catalog. |

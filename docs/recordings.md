@@ -199,6 +199,9 @@ and one reattachment/retry for a live target. Crash events stop further calls to
 the failed page. An action with uncertain delivery ends the attempt; no action is
 replayed. The schedule retains one fresh technical rerun and uses its final
 attempt for success, turns and tokens, with earlier technical costs separate.
+Known target destruction or transport closure prevents another actor request
+and prevents terminal acceptance. A response received before the failure check
+remains in turn and usage accounting, while the attempt ends as technical failure.
 
 ## Integrity and export
 
