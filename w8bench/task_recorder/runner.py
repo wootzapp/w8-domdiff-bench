@@ -46,7 +46,7 @@ ACTOR_PROTOCOL = {"type": "json_schema", "name": "browser_action", "strict": Tru
                   "policy": "baseline_with_budget_validation_v2", "output_message": "single_candidate_text"}
 MAX_CONSECUTIVE_REJECTIONS = 4
 ACTOR_INPUT_TOKEN_LIMIT = 1048576
-ACTOR_IMAGE_INPUT_TOKENS = {"HIGH": 1100, "ULTRA_HIGH": 2205}
+ACTOR_IMAGE_INPUT_TOKENS = 1100
 
 
 class ModelProtocolError(RunnerError):
@@ -302,7 +302,6 @@ class ModelClient:
         self.last_response: dict[str, Any] | None = None
         self.transport_cancelled = False
         self.model_input_limit: int | None = None
-        self.media_resolution = os.environ.get("ACTOR_MEDIA_RESOLUTION", "ULTRA_HIGH").strip().upper()
 
     @staticmethod
     def _gemini_usage(usage: Any) -> dict[str, Any]:
@@ -362,8 +361,7 @@ class ModelClient:
                 for part in content.get("parts", []):
                     if "inlineData" in part:
                         part["inlineData"].pop("data", None)
-                        level = part.get("mediaResolution", {}).get("level", "MEDIA_RESOLUTION_" + self.media_resolution)
-                        image_tokens += ACTOR_IMAGE_INPUT_TOKENS[level.removeprefix("MEDIA_RESOLUTION_")]
+                        image_tokens += ACTOR_IMAGE_INPUT_TOKENS
             text = json.dumps(estimated_payload, ensure_ascii=False)
             text_bytes = len(text.encode("utf-8", errors="surrogatepass"))
             estimated_tokens = text_bytes + image_tokens
@@ -595,13 +593,8 @@ class ModelClient:
                 if screenshot.size != viewport:
                     raise RunnerError("screenshot dimensions differ from the coordinate viewport")
             instructions = SCREENSHOT_PROMPT
-            image_part = {"inlineData": {"mimeType": "image/png", "data":
-                base64.b64encode(observation_bytes).decode()}}
-            if self.media_resolution == "ULTRA_HIGH":
-                image_part["mediaResolution"] = {"level": "MEDIA_RESOLUTION_ULTRA_HIGH"}
-            content.append(image_part)
-        if self.media_resolution not in {"HIGH", "ULTRA_HIGH"}:
-            raise RunnerError("ACTOR_MEDIA_RESOLUTION must be HIGH or ULTRA_HIGH")
+            content.append({"inlineData": {"mimeType": "image/png", "data":
+                base64.b64encode(observation_bytes).decode()}})
         actor_history = []
         for outcome in recent_actions[-6:]:
             public = {key: outcome[key] for key in ("model_turn", "action", "rejected_action", "reason") if key in outcome}
@@ -929,8 +922,6 @@ def _validate_run_args(args: argparse.Namespace, mode: str) -> None:
         raise RunnerError("--settle-seconds must be finite and nonnegative")
     if not math.isfinite(args.agent_browser_timeout) or args.agent_browser_timeout <= 0:
         raise RunnerError("--agent-browser-timeout must be finite and positive")
-    if args.media_resolution not in {"HIGH", "ULTRA_HIGH"}:
-        raise RunnerError("ACTOR_MEDIA_RESOLUTION must be HIGH or ULTRA_HIGH")
     if args.snapshot_max_nodes <= 0 or args.snapshot_max_text_chars <= 0:
         raise RunnerError("invalid capture budget or settling delay")
     if not args.capture_only and not args.task:
@@ -977,7 +968,7 @@ def _recording_manifest(args, task, profile, mode, viewport):
         "configured_actor_model": args.model, "actor_provider": "google", "returned_actor_models": [], "reasoning_effort": "medium",
         "controls": {"model": args.model, "base_url": args.api_base_url,
             "reasoning_effort": "medium", "temperature": None, "memory_max_chars": MAX_TASK_MEMORY_CHARS,
-            "media_resolution": args.media_resolution,
+            "media_resolution": "HIGH",
             "max_turns": args.max_steps, "max_output_tokens": args.max_output_tokens,
             "viewport": list(viewport), "settle_seconds": args.settle_seconds,
             "snapshot_max_nodes": args.snapshot_max_nodes,
@@ -1279,8 +1270,6 @@ async def run(args: argparse.Namespace) -> int:
     mode = args.observation_mode
     _validate_run_args(args, mode)
     model = None if args.capture_only else ModelClient(args.api_key, args.model, args.api_base_url)
-    if model is not None:
-        model.media_resolution = args.media_resolution
     task_id = safe_task_id(args.task_id or default_task_id(Path(args.output_dir)))
     run_dir = Path(args.output_dir).resolve() / task_id
     viewport = (args.viewport_width, args.viewport_height)
@@ -1348,7 +1337,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     load_env(Path(known.env_file))
 
     parser = argparse.ArgumentParser(description="Record independent DOM-only or screenshot-only browser runs",
-        epilog="ACTOR_MEDIA_RESOLUTION selects ULTRA_HIGH (default) or HIGH screenshot detail. Actor inputs above 95% of the model input limit end as technical failures without truncation.")
+        epilog="Screenshot inputs use HIGH media resolution. Actor inputs above 95% of the model input limit end as technical failures without truncation.")
     parser.add_argument("--env-file", default=known.env_file)
     parser.add_argument(
         "--build-trajectory-run",
@@ -1431,7 +1420,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=os.environ.get("BROWSER_ACCEPT_LANGUAGE", "en-US,en;q=0.9"),
     )
     args = parser.parse_args(argv)
-    args.media_resolution = os.environ.get("ACTOR_MEDIA_RESOLUTION", "ULTRA_HIGH").strip().upper()
     return args
 
 

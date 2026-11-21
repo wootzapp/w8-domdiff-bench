@@ -65,7 +65,6 @@ explicit `--judge-model gpt-6.1-sol`. Configure
 | `CHROMIUM_HEADLESS` | Browser display mode. |
 | `CHROMIUM_RESET_PROFILE` | `1` clears the Chromium profile at startup; `0` preserves it. Browser history, cookies and site storage belong to this profile. Host-side recordings are separate. |
 | `ACTOR_MODEL`, `GEMINI_API_KEY`, `GEMINI_BASE_URL` | Actor model, Google credentials and endpoint. The key also serves the verifier and inventory stages. |
-| `ACTOR_MEDIA_RESOLUTION` | Screenshot per-image resolution: `ULTRA_HIGH` by default or `HIGH`; recorded in the shared actor settings. |
 | `OPENAI_API_KEY`, `OPENAI_BASE_URL` | OpenAI credentials and endpoint for rubric preparation, completion and evidence-loss adjudication. |
 | `EVIDENCE_AUDIT_MODEL`, `EVIDENCE_ADJUDICATOR_MODEL` | Explicit inventory and adjudication models. |
 | `TASK_CATALOG_FILE` | Default local task catalog. |
@@ -155,8 +154,8 @@ nonfresh. A zero task counter alone does not establish freshness.
 | Viewport | 1365 × 768 CSS pixels |
 | Settle wait | 1 second |
 
-Actor requests leave temperature unset. `ACTOR_MEDIA_RESOLUTION` controls
-per-image `HIGH` or `ULTRA_HIGH` processing, without changing viewport pixels.
+Actor requests leave temperature unset. The screenshot actor uses HIGH media
+resolution without changing viewport pixels.
 Each actor generation request uses a local size estimate. Estimates above 50%
 of the model input limit trigger `countTokens`, with transient transport retries.
 An unavailable tokenizer falls back to the recorded local estimate. Confirmed or

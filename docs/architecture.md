@@ -119,8 +119,7 @@ Per-call
 timings, events and failure health snapshots remain in the run folder.
 
 Actor requests use the same `gemini-3.8-flash` model and medium thinking level.
-The screenshot's per-image media resolution is selected by
-`ACTOR_MEDIA_RESOLUTION` (`HIGH` or `ULTRA_HIGH`); DOM requests contain no image.
+The screenshot actor uses HIGH media resolution; DOM requests contain no image.
 Local input estimation triggers `countTokens` above 50% of the model input
 limit; transient counting failures retry before using the recorded local estimate.
 Confirmed or estimated overflow is refused above 95% of the model metadata input

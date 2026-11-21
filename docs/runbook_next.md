@@ -27,6 +27,7 @@ from w8bench.task_recorder.runner import load_env, MAX_TASK_MEMORY_CHARS
 from w8bench.task_recorder.task_cli import parse_args, parse_task_catalog
 from w8bench.verifier.common import validate_endpoint_configs, native_judge_model
 from w8bench.verifier.batch import judge_transport
+from w8bench.settings import actor_settings
 from w8bench.verifier.audit_requests import resolve_audit_config
 from w8bench.verifier.package_manifests import require_local_packages
 load_env(Path('.env'))
@@ -35,8 +36,8 @@ assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash', 'Unexpected actor mo
 assert judge_transport() == 'batch', 'Unexpected judge transport'
 assert os.environ.get('NATIVE_JUDGE_PROFILE', 'primary') == 'primary', 'Unexpected native profile'
 assert native_judge_model() == 'gemini-3.5-flash-lite', 'Unexpected native model'
-media = os.environ.get('ACTOR_MEDIA_RESOLUTION', 'ULTRA_HIGH').strip().upper()
-assert media in {'HIGH', 'ULTRA_HIGH'}, 'Unsupported actor media resolution'
+media = actor_settings({})['media_resolution']
+assert media == 'HIGH', 'Unexpected actor media resolution'
 audit = resolve_audit_config()
 assert audit['inventory'] == {'model': 'gemini-3.1-pro-preview', 'provider': 'google'}
 assert audit['adjudication'] == {'model': 'gpt-6.1-sol', 'provider': 'openai'}
@@ -480,8 +481,8 @@ can add transport attempts. Complete the text calibration below before the pilot
 ### Screenshot text calibration
 
 With no task active, the following **paid** diagnostic reads four high-contrast
-strings at 8, 10, 12 and 14 CSS pixels. It sends the same saved PNG once at
-`HIGH` and once at `ULTRA_HIGH`, for **2 nominal actor responses**. The model
+strings at 8, 10, 12 and 14 CSS pixels. The screenshot actor uses HIGH and sends
+one saved PNG for **1 nominal actor response**. The model
 receives only the image and the reading instruction; expected strings are used
 only to score its response. No returned browser action is executed.
 
@@ -521,60 +522,57 @@ try:
     loop.run_until_complete(asyncio.sleep(1))
     screenshot = root / 'screenshot.png'
     screenshot.write_bytes(loop.run_until_complete(_capture_screenshot(cdp)))
-    for resolution in ('HIGH', 'ULTRA_HIGH'):
-        client.media_resolution = resolution
-        directory = root / resolution.lower()
-        directory.mkdir()
-        bundle = CaptureBundle(observation_mode='screenshot', screenshot_path=screenshot,
-            document_url=url)
-        decision, response = loop.run_until_complete(client.decide(
-            task='Read the exact string beside each 8 px, 10 px, 12 px and 14 px label. '
-                 'Return a wait action with seconds 0. Put a JSON object mapping '
-                 'the keys "8", "10", "12", "14" to the four strings in memory.',
-            step=1, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
-            turn_dir=directory, viewport=(1365,768), max_output_tokens=10000))
-        assert decision['action'] == 'wait' and decision['seconds'] == 0
-        sent = json.loads((directory/'request.json').read_text())
-        part = sent['contents'][0]['parts'][1]
-        effective_media = part.get('mediaResolution', {}).get('level', sent['generationConfig'].get('mediaResolution'))
-        assert effective_media == 'MEDIA_RESOLUTION_'+resolution
-        readings = json.loads(decision['memory'])
-        assert set(readings) == set(expected) and all(isinstance(v,str) for v in readings.values())
-        rows = []
-        for size, value in expected.items():
-            actual = readings[size]
-            previous = list(range(len(actual)+1))
-            for i, left in enumerate(value, 1):
-                current = [i]
-                for j, right in enumerate(actual, 1):
-                    current.append(min(current[-1]+1, previous[j]+1,
-                        previous[j-1] + (left != right)))
-                previous = current
-            rows.append({'font_css_pixels':int(size), 'expected':value, 'actual':actual,
-                'exact':actual == value, 'character_accuracy':max(0,1-previous[-1]/len(value))})
-        results.append({'media_resolution':resolution, 'rows':rows,
-            'exact_rows':sum(row['exact'] for row in rows),
-            'mean_character_accuracy':sum(row['character_accuracy'] for row in rows)/len(rows),
-            'returned_model':response.get('model'), 'usage':response.get('usage')})
-        print(json.dumps(results[-1]))
+    directory = root / 'turn'
+    directory.mkdir()
+    bundle = CaptureBundle(observation_mode='screenshot', screenshot_path=screenshot,
+        document_url=url)
+    decision, response = loop.run_until_complete(client.decide(
+        task='Read the exact string beside each 8 px, 10 px, 12 px and 14 px label. '
+             'Return a wait action with seconds 0. Put a JSON object mapping '
+             'the keys "8", "10", "12", "14" to the four strings in memory.',
+        step=1, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
+        turn_dir=directory, viewport=(1365,768), max_output_tokens=10000))
+    assert decision['action'] == 'wait' and decision['seconds'] == 0
+    sent = json.loads((directory/'request.json').read_text())
+    part = sent['contents'][0]['parts'][1]
+    assert set(part) == {'inlineData'}
+    assert sent['generationConfig']['mediaResolution'] == 'MEDIA_RESOLUTION_HIGH'
+    readings = json.loads(decision['memory'])
+    assert set(readings) == set(expected) and all(isinstance(v,str) for v in readings.values())
+    rows = []
+    for size, value in expected.items():
+        actual = readings[size]
+        previous = list(range(len(actual)+1))
+        for i, left in enumerate(value, 1):
+            current = [i]
+            for j, right in enumerate(actual, 1):
+                current.append(min(current[-1]+1, previous[j]+1,
+                    previous[j-1] + (left != right)))
+            previous = current
+        rows.append({'font_css_pixels':int(size), 'expected':value, 'actual':actual,
+            'exact':actual == value, 'character_accuracy':max(0,1-previous[-1]/len(value))})
+    results.append({'media_resolution':'HIGH', 'rows':rows,
+        'exact_rows':sum(row['exact'] for row in rows),
+        'mean_character_accuracy':sum(row['character_accuracy'] for row in rows)/len(rows),
+        'returned_model':response.get('model'), 'usage':response.get('usage')})
+    print(json.dumps(results[-1]))
 finally:
-    write_json(root/'result.json', {'nominal_actor_responses':2, 'results':results})
+    write_json(root/'result.json', {'nominal_actor_responses':1, 'results':results})
     loop.run_until_complete(cdp.close_owned_target_on_failure())
     loop.run_until_complete(cdp.close())
     loop.close()
     server.shutdown()
     server.server_close()
-assert len(results) == 2
+assert len(results) == 1
 PY
 ```
 
 **Gate:** complete responses, the configured returned model, correct resolution
 in each saved request, and reviewed per-size exact-match and character accuracy.
-Inspect `internal/screenshot_text_calibration/check_NNNN/result.json` and both
-requests/responses. This measures fixture OCR, not general page legibility. A
-higher media budget is a recorded actor setting; use one approved setting across
-compared arms and trials. The seven transport checks, six coordinate checks and
-two text checks make **15 nominal model checks**, plus any transport retries.
+Inspect `internal/screenshot_text_calibration/check_NNNN/result.json` and the
+request/response. This measures fixture OCR, not general page legibility. The
+screenshot actor uses HIGH. The seven transport checks, six coordinate checks
+and one text check make **14 nominal model checks**, plus any transport retries.
 Actor generation uses local input estimation. Cached model metadata sets the
 limit; estimates above 50% trigger free `countTokens` requests with transport
 retries and a recorded local-estimate fallback. Preflight requests do not consume

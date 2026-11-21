@@ -87,17 +87,18 @@ def actual_browser_source_version(manifest):
 def actor_settings(controls, *, browser_source=None):
     from .task_recorder.runner import ACTION_SCHEMA, SCREENSHOT_ACTION_SCHEMA, ACTOR_PROTOCOL, MAX_TASK_MEMORY_CHARS, ACTOR_INPUT_TOKEN_LIMIT, ACTOR_IMAGE_INPUT_TOKENS
     from .task_recorder.prompts import DOM_PROMPT, SCREENSHOT_PROMPT, SCREENSHOT_PROMPT_VERSION, DOM_PROMPT_VERSION
+    if controls.get("media_resolution", "HIGH") != "HIGH":
+        raise ValueError("Screenshot media resolution must be HIGH")
     defaults = {"model": controls.get("model") or os.environ.get("ACTOR_MODEL", ""), "provider": "google", "route": "models/{model}:generateContent",
         "base_url": "https://generativelanguage.googleapis.com/v1beta", "reasoning_effort": "medium",
         "max_output_tokens": 10000, "max_turns": 200, "memory_max_chars": MAX_TASK_MEMORY_CHARS,
-        "temperature": None, "media_resolution": os.environ.get("ACTOR_MEDIA_RESOLUTION", "ULTRA_HIGH").strip().upper(), "viewport": [1365, 768], "settle_seconds": 1.0,
+        "temperature": None, "media_resolution": "HIGH", "viewport": [1365, 768], "settle_seconds": 1.0,
         "browser_lang": "en-US", "browser_accept_language": "en-US,en;q=0.9",
         "snapshot_max_nodes": 7000, "snapshot_max_text_chars": 200000,
         "agent_browser_timeout": 90.0, "cdp_timeout": 90.0, "transport_timeout": 180.0,
         "max_consecutive_rejections": 4, "human_intervention": False, "automatic_redirects": False,
         "keep_existing_tabs": False}
     selected = {key: controls.get(key, value) for key, value in defaults.items()}
-    selected["media_resolution"] = str(selected["media_resolution"]).strip().upper()
     selected.update(schema_version=SETTINGS_VERSION, actor_protocol=ACTOR_PROTOCOL,
         schema_sha256=settings_hash(ACTION_SCHEMA),
         history_policy="actor-history/v2", progress_policy="observation-change/v2",

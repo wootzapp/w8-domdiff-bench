@@ -126,23 +126,20 @@ def _inspect_actor_request(source: Path, task: dict, manifest: dict, states: lis
             or len(request["contents"]) != 1 or set(request["contents"][0]) != {"role", "parts"}
             or request["contents"][0].get("role") != "user"):
         raise ValueError("actor request settings or instructions differ from its frozen policy")
-    _inspect_request_observation(source, mode, state, directory, content, controls.get("media_resolution", "HIGH"))
+    _inspect_request_observation(source, mode, state, directory, content)
     return state, content
 
 
-def _inspect_request_observation(source: Path, mode: str, state: dict, directory: Path, content: list, media_resolution: str) -> None:
+def _inspect_request_observation(source: Path, mode: str, state: dict, directory: Path, content: list) -> None:
     if mode == "dom":
         if len(content) != 1 or set(content[0]) != {"text"}:
             raise ValueError("DOM actor request contains an image or extra observation")
     else:
-        image_keys = {"inlineData", "mediaResolution"} if media_resolution == "ULTRA_HIGH" else {"inlineData"}
-        if len(content) != 2 or set(content[0]) != {"text"} or set(content[1]) != image_keys:
+        if len(content) != 2 or set(content[0]) != {"text"} or set(content[1]) != {"inlineData"}:
             raise ValueError("screenshot actor request lacks its image or has an unexpected media policy")
         artifact = content[1]["inlineData"]["artifact"]
         image = (directory / artifact["path"]).resolve(strict=True)
         expected_image = {"inlineData": {"mimeType": "image/png", "artifact": artifact}}
-        if media_resolution == "ULTRA_HIGH":
-            expected_image["mediaResolution"] = {"level": "MEDIA_RESOLUTION_ULTRA_HIGH"}
         if (image != source / state["observation"] or artifact["sha256"] != state["observation_sha256"]
                 or content[1] != expected_image):
             raise ValueError("model request references a different screenshot")

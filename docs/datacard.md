@@ -43,7 +43,7 @@ primitives use the shared action driver.
 | Maximum actor output | Exactly 10,000 tokens, including reasoning. |
 | Task memory | At most 8,000 characters. |
 | Reasoning effort | Explicitly `medium`. |
-| Actor image resolution | `ACTOR_MEDIA_RESOLUTION=ULTRA_HIGH` by default; `HIGH` selects the smaller per-image budget. The configured value is shared and recorded in both arms; only screenshot requests contain images. |
+| Actor image resolution | The screenshot actor uses HIGH, recorded in effective settings. Only screenshot requests contain images. |
 | Temperature | Unset in both arms. |
 | Viewport | 1365 × 768 CSS pixels by default. |
 | Settling interval | One second by default. |
@@ -88,7 +88,7 @@ per-call operational traces remain durable during capture for crash diagnosis.
 
 Actor input preflight estimates tokens locally as UTF-8 bytes of the request's
 text and structural fields, excluding base64 image data, plus 1,100 image tokens
-at HIGH or 2,205 at ULTRA_HIGH. One byte per text token is a conservative size
+at HIGH. One byte per text token is a conservative size
 estimate, not measured usage. Requests estimated at 50% or less of the model
 input limit skip `countTokens`. Larger estimates use the exact request tokenizer;
 transient failures allow the same three attempts and 2/8-second backoffs with

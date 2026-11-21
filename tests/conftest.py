@@ -31,7 +31,6 @@ def offline_model_access(monkeypatch):
     monkeypatch.setenv("JUDGE_TRANSPORT", "normal")
     monkeypatch.setenv("NATIVE_JUDGE_PROFILE", "primary")
     monkeypatch.setenv("ACTOR_MODEL", "gemini-3.8-flash")
-    monkeypatch.setenv("ACTOR_MEDIA_RESOLUTION", "ULTRA_HIGH")
     monkeypatch.setenv("OPENAI_API_KEY", "offline-test-key")
     monkeypatch.setenv("GEMINI_API_KEY", "offline-test-key")
     monkeypatch.setenv("TIKTOKEN_CACHE_DIR", str(Path(__file__).resolve().parents[1] / ".runtime" / "tiktoken_cache"))

@@ -188,8 +188,7 @@ def test_modes_capture_and_send_only_their_channel(run_pair):
         assert "DOM_ONLY_SECRET" in content[0]["text"]
     for payload in payloads["screenshot"]:
         content = payload["contents"][0]["parts"]
-        assert [list(c) for c in content] == [["text"], ["inlineData", "mediaResolution"]]
-        assert content[1]["mediaResolution"]["level"] == "MEDIA_RESOLUTION_ULTRA_HIGH"
+        assert [list(c) for c in content] == [["text"], ["inlineData"]]
         assert content[1]["inlineData"]["mimeType"] == "image/png"
         assert "DOM_ONLY_SECRET" not in json.dumps(payload)
         assert "[ref=e1]" not in json.dumps(payload)
@@ -632,7 +631,6 @@ def test_screenshot_request_rejects_image_viewport_mismatch(tmp_path):
 def test_fairness_actor_history_omits_private_context_and_diagnostics(actor_observation, tmp_path, monkeypatch, mode):
     from dataclasses import replace
     monkeypatch.setenv('ACTOR_MODEL', 'gemini-3.8-flash')
-    monkeypatch.setenv('ACTOR_MEDIA_RESOLUTION', 'HIGH')
     image = tmp_path/'actor_image.png'
     Image.new('RGB', (1365, 768)).save(image)
     bundle = replace(actor_observation, observation_mode=mode, document_language='fr', screenshot_path=image)
@@ -659,23 +657,23 @@ def test_fairness_duplicate_matches_are_advisory_in_both_arms(mode):
     assert runner._stalled_action_advisory(action, 'click', history)
 
 
-@pytest.mark.parametrize('resolution', ['HIGH', 'ULTRA_HIGH'])
-def test_fairness_media_resolution_is_explicit_and_guarded(actor_observation, tmp_path, monkeypatch, resolution):
+def test_screenshot_media_resolution_is_fixed_and_guarded(actor_observation, tmp_path):
     from dataclasses import replace
-    monkeypatch.setenv('ACTOR_MODEL', 'gemini-3.8-flash')
-    monkeypatch.setenv('ACTOR_MEDIA_RESOLUTION', resolution)
-    image = tmp_path/'actor_image.png'
+    image = tmp_path / 'actor_image.png'
     Image.new('RGB', (1365, 768)).save(image)
     bundle = replace(actor_observation, observation_mode='screenshot', screenshot_path=image)
     payload, _, _ = runner.ModelClient('unused', 'gemini-3.8-flash', 'https://offline.test')._actor_request(
         'Read visible text.', 1, 200, bundle, '', [], tmp_path, (1365, 768), 10000)
-    part = payload['contents'][0]['parts'][1]
-    if resolution == 'ULTRA_HIGH': assert part['mediaResolution']['level'] == 'MEDIA_RESOLUTION_ULTRA_HIGH'
-    else: assert payload['generationConfig']['mediaResolution'] == 'MEDIA_RESOLUTION_HIGH'
-    configured = settings.actor_settings({'model': 'gemini-3.8-flash', 'media_resolution': resolution})
-    assert configured['media_resolution'] == resolution
-    other = 'HIGH' if resolution == 'ULTRA_HIGH' else 'ULTRA_HIGH'
-    assert configured != settings.actor_settings({'model': 'gemini-3.8-flash', 'media_resolution': other})
+    assert payload['generationConfig']['mediaResolution'] == 'MEDIA_RESOLUTION_HIGH'
+    assert set(payload['contents'][0]['parts'][1]) == {'inlineData'}
+    configured = settings.actor_settings({'model': 'gemini-3.8-flash'})
+    assert configured['media_resolution'] == 'HIGH'
+    assert configured['observation_contracts']['screenshot']['media_resolution'] == 'HIGH'
+    assert configured['input_size_policy']['image_tokens'] == 1100
+    assert configured['technical_retry_policy']['browser_failure_checks'] == [
+        'before_actor_request', 'after_actor_response', 'before_terminal_acceptance']
+    with pytest.raises(ValueError, match='media resolution must be HIGH'):
+        settings.actor_settings({'media_resolution': 'LOW'})
 
 
 @pytest.mark.parametrize('total,allowed', [(950, True), (951, False)])
@@ -793,10 +791,8 @@ def test_input_preflight_counts_only_above_half_limit(monkeypatch, tmp_path, est
     assert receipt['generation_attempted'] is True
 
 
-@pytest.mark.parametrize('resolution,image_tokens', [('HIGH', 1100), ('ULTRA_HIGH', 2205)])
-def test_input_preflight_fixed_image_cost_excludes_base64(monkeypatch, resolution, image_tokens):
-    payload = {'contents': [{'parts': [{'text': 'é'}, {'inlineData': {'mimeType': 'image/png', 'data': 'a' * 10000},
-        'mediaResolution': {'level': 'MEDIA_RESOLUTION_' + resolution}}]}]}
+def test_input_preflight_fixed_image_cost_excludes_base64(monkeypatch):
+    payload = {'contents': [{'parts': [{'text': 'é'}, {'inlineData': {'mimeType': 'image/png', 'data': 'a' * 10000}}]}]}
     client = runner.ModelClient('offline', 'gemini-3.8-flash', 'https://offline.test')
     client.model_input_limit = 1048576
     client.last_input_report = {'api_call_started': True}
@@ -809,9 +805,9 @@ def test_input_preflight_fixed_image_cost_excludes_base64(monkeypatch, resolutio
     monkeypatch.setattr(runner.urllib.request, 'urlopen', respond)
     client._post(payload)
     receipt = client.last_input_report['input_preflight']
-    assert receipt['image_tokens'] == image_tokens
+    assert receipt['image_tokens'] == 1100
     assert receipt['text_utf8_bytes'] == receipt['text_characters'] + 1
-    assert receipt['estimated_input_tokens'] == receipt['text_utf8_bytes'] + image_tokens < 3000
+    assert receipt['estimated_input_tokens'] == receipt['text_utf8_bytes'] + 1100 < 3000
     assert len(seen) == 1
 
 
@@ -909,22 +905,3 @@ def test_all_stall_rules_are_private_advisories_in_both_arms(actor_observation, 
         'Read the page.', 4, 200, bundle, '', history, tmp_path, (1365, 768), 10000)
     assert 'PRIVATE_LOOP_MARKER' not in json.dumps(payload)
     assert 'stall_advisory' not in json.dumps(payload)
-
-
-def test_screenshot_default_uses_ultra_high(actor_observation, tmp_path, monkeypatch):
-    from dataclasses import replace
-    monkeypatch.delenv('ACTOR_MEDIA_RESOLUTION', raising=False)
-    client = runner.ModelClient('offline', 'gemini-3.8-flash', 'https://offline.test')
-    args = runner.parse_args(['--env-file', str(tmp_path / 'absent.env')])
-    assert client.media_resolution == args.media_resolution == 'ULTRA_HIGH'
-    configured = settings.actor_settings({})
-    assert configured['media_resolution'] == 'ULTRA_HIGH'
-    assert configured['technical_retry_policy']['browser_failure_checks'] == [
-        'before_actor_request', 'after_actor_response', 'before_terminal_acceptance']
-    image = tmp_path / 'observation.png'
-    Image.new('RGB', (1365, 768)).save(image)
-    bundle = replace(actor_observation, observation_mode='screenshot', screenshot_path=image)
-    payload, _, _ = client._actor_request('Read the text.', 1, 200, bundle, '', [], tmp_path, (1365, 768), 10000)
-    assert payload['contents'][0]['parts'][1]['mediaResolution']['level'] == 'MEDIA_RESOLUTION_ULTRA_HIGH'
-    assert payload['generationConfig']['thinkingConfig'] == {'thinkingLevel': 'MEDIUM'}
-    assert payload['generationConfig']['maxOutputTokens'] == 10000
