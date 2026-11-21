@@ -24,6 +24,7 @@ match for a comparison.
 | Observation-change source | DOM text and interactive reference changes. | Decoded screenshot pixels. |
 | Content extent | Intersecting nodes and accessible labels can include text outside the painted viewport or from hidden/collapsed descendants. | Painted viewport pixels, including visual content without a text equivalent. |
 | Scrolled inline paragraphs | Visible-text extraction for clipped inline-rich `<p>` elements follows the visible characters; other inline-rich blocks retain their existing prefix behavior. | Painted text follows the viewport regardless of the containing element. |
+| PDFs | A valid empty structured export is shown as `[No exportable DOM content]`; no OCR or PDF text is extracted. | The rendered PDF viewport is available as pixels. |
 | Page structures | Frame and shadow-tree coverage follows the DOM and reference exporters. Canvas/image/CSS-generated content may have only labels or no text representation. | Rendered frame, shadow-tree, canvas, image and CSS content appears where it is painted. |
 
 Both actors receive the current URL as plain text, the task instruction, turn
@@ -85,6 +86,18 @@ orders raw structured DOM, screenshot and DOM-arm references before producing
 stored text projections. Content/paint changes flag the interval; they do not
 automatically recapture it. Bulk artifact writes follow raw capture, while
 per-call operational traces remain durable during capture for crash diagnosis.
+
+Empty exports are valid observations, including PDF wrappers and loading or
+blank documents. They retain all paired files, raw snapshot statistics and the
+`[No exportable DOM content]` marker in `dom_model.txt`; they are not capture
+failures or format gaps. Both arms use `paired-capture/v2`. Before acquiring raw
+evidence for a new exact target/frame/loader, the recorder waits for
+DOMContentLoaded or interactive/complete readiness and then two animation frames.
+The existing 90-second CDP navigation timeout bounds this wait. Its expiry permits
+capture of the current state. Same-document updates do not repeat the wait.
+The existing settle interval remains in place. MIME type, readiness state and wait
+duration are private records, never actor hints. Real transport, target and
+capture faults retain their technical-failure handling.
 
 Actor input preflight estimates tokens locally as UTF-8 bytes of the request's
 text and structural fields, excluding base64 image data, plus 1,100 image tokens

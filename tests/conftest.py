@@ -242,6 +242,7 @@ class FakeCDP:
 
     def __init__(self, *args, observation_mode="dom", **kwargs):
         self.observation_mode = observation_mode
+        self.timeout = kwargs.get("timeout", 90.0)
         self._page_failure = None
         self.page_failure_event = asyncio.Event()
         self.calls = []
@@ -259,6 +260,10 @@ class FakeCDP:
 
     async def call(self, method, params=None, **kwargs):
         self.calls.append((method, params))
+        if method == "Page.createIsolatedWorld":
+            return {"executionContextId": 7}
+        if method == "Runtime.evaluate" and "document.readyState" in params.get("expression", ""):
+            return {"result": {"value": {"ready_state": "complete", "mime_type": "text/html"}}}
         if method == "ChromiumRL.captureStructuredSnapshot":
             return {"snapshot": {"url": "https://example.test", "nodes": []}}
         if method == "ChromiumRL.getModelDOM":
@@ -316,6 +321,31 @@ def run_pair(tmp_path, monkeypatch, no_network):
         assert asyncio.run(runner.run(args)) == 0
         paths[mode] = root / "task_01"
     return paths, payloads, connect, snapshot
+
+
+@pytest.fixture
+def empty_dom_pair(request, monkeypatch):
+    original = FakeCDP.call
+    async def call(self, method, params=None, **kwargs):
+        if method == "Page.getFrameTree":
+            return {"frameTree": {"frame": {"id": "one", "loaderId": "pdf-loader",
+                "url": "https://example.test", "mimeType": "application/pdf"}}}
+        if method == "Page.createIsolatedWorld":
+            return {"executionContextId": 7}
+        if method == "Runtime.evaluate":
+            if "document.readyState" in params.get("expression", ""):
+                return {"result": {"value": {"ready_state": "complete", "mime_type": "application/pdf"}}}
+            return {"result": {"value": {"count": 0, "openShadowRoots": 0}}}
+        if method == "ChromiumRL.captureStructuredSnapshot":
+            return {"snapshot": {"url": "https://example.test", "nodes": [],
+                "stats": {"rawNodes": 10, "returnedNodes": 0, "textChars": 0,
+                    "droppedHidden": 9, "truncated": False}}}
+        if method == "ChromiumRL.getModelDOM":
+            return {"modelDOM": {"rendererName": "chromiumrl-model-dom", "sections": [
+                {"name": "header", "lines": ["URL: https://example.test", "Title:"]}]}}
+        return await original(self, method, params, **kwargs)
+    monkeypatch.setattr(FakeCDP, "call", call)
+    return request.getfixturevalue("run_pair")
 
 
 def write_attempt_ledger(path, recordings, trials):

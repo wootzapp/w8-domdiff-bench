@@ -43,6 +43,8 @@ MODEL_DOM_RENDERER_NAME = "chromiumrl-model-dom"
 LIVENESS_PROBE_SECONDS = 3.0
 TARGET_IDENTITY_PROPERTY = "__w8_recorder_target_identity__"
 TARGET_IDENTITY_WORLD = "w8-recorder-identity"
+CAPTURE_POLICY_VERSION = "paired-capture/v2"
+EMPTY_DOM_MARKER = "[No exportable DOM content]"
 
 class CDPError(RunnerError):
     def __init__(self, method: str, error: Any):
@@ -270,40 +272,18 @@ async def capture_structured_snapshot(
     max_nodes: int,
     max_text_chars: int,
 ) -> dict[str, Any]:
-    """Capture viewport DOM, retrying empty snapshots of populated documents."""
+    """Capture viewport DOM, including valid exports with no selected nodes."""
     params: dict[str, Any] = {
         "inViewportOnly": True,
         "maxNodes": max_nodes,
         "maxTextChars": max_text_chars,
         "includeOffscreen": False,
     }
-    for capture_attempt in range(1, 4):
-        result = await capture_call(
-            cdp,
-            "ChromiumRL.captureStructuredSnapshot",
-            params,
-        )
-        snapshot = result.get("snapshot")
-        if not isinstance(snapshot, dict):
-            raise RunnerError(f"unexpected ChromiumRL snapshot response: {result}")
-
-        stats = snapshot.get("stats")
-        raw_nodes = stats.get("rawNodes") if isinstance(stats, dict) else None
-        returned_nodes = stats.get("returnedNodes") if isinstance(stats, dict) else None
-        if not (
-            isinstance(raw_nodes, int)
-            and raw_nodes > 0
-            and isinstance(returned_nodes, int)
-            and returned_nodes == 0
-        ):
-            return snapshot
-        if capture_attempt < 3:
-            await asyncio.sleep(0.25 * capture_attempt)
-
-    raise RunnerError(
-        "ChromiumRL.captureStructuredSnapshot returned zero nodes for a "
-        "non-empty document after 3 attempts"
-    )
+    result = await capture_call(cdp, "ChromiumRL.captureStructuredSnapshot", params)
+    snapshot = result.get("snapshot")
+    if not isinstance(snapshot, dict):
+        raise RunnerError(f"unexpected ChromiumRL snapshot response: {result}")
+    return snapshot
 
 
 async def model_dom_from_snapshot(
@@ -324,6 +304,14 @@ async def model_dom_from_snapshot(
     sections = model_dom.get("sections")
     if not isinstance(sections, list) or not sections:
         raise RunnerError(f"unexpected {MODEL_DOM_COMMAND} sections: {sections!r}")
+    if snapshot.get("nodes") == []:
+        content = next((section for section in sections if section.get("name") == "content"), None)
+        if content is not None:
+            content["lines"].append(EMPTY_DOM_MARKER)
+        else:
+            index = next((index for index, section in enumerate(sections)
+                if section.get("name") in {"media", "actions", "scroll_regions"}), len(sections))
+            sections.insert(index, {"name": "content", "lines": [EMPTY_DOM_MARKER]})
     return model_dom
 
 
@@ -387,6 +375,85 @@ async def _capture_frame(cdp: CDPClient, metadata: dict[str, Any], kind: str) ->
             raise
         metadata["metadata_errors"].append({"kind": kind, "error": f"{type(error).__name__}: {error}"})
         return {}
+    if kind == "url_before":
+        started = time.monotonic()
+        deadline = started + cdp.timeout
+        readiness = {"policy_version": "document-readiness/v1", "timeout_seconds": cdp.timeout,
+            "status": "unavailable", "navigation_changes": [], "animation_frames": None}
+        metadata["readiness"] = readiness
+        try:
+            while frame.get("id"):
+                key = (str(cdp.target.get("targetId", "")), frame["id"], frame.get("loaderId"))
+                readiness.update(target_id=key[0], frame_id=key[1], loader_id=key[2])
+                same_document = key == getattr(cdp, "_last_capture_document", None)
+                world = await capture_call(cdp, "Page.createIsolatedWorld", {"frameId": frame["id"],
+                    "worldName": TARGET_IDENTITY_WORLD, "grantUniveralAccess": False})
+                context = world["executionContextId"]
+                read_state = "({ready_state:document.readyState,mime_type:document.contentType})"
+                expression = ("(async()=>{if(document.readyState==='loading')await new Promise(resolve=>"
+                    "document.addEventListener('DOMContentLoaded',resolve,{once:true}));"
+                    "await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));"
+                    "return " + read_state + ";})()")
+                try:
+                    if same_document or time.monotonic() >= deadline:
+                        state = await capture_call(cdp, "Runtime.evaluate", {"contextId": context,
+                            "expression": read_state, "returnByValue": True})
+                        status = "same_document" if same_document else "timeout"
+                    else:
+                        try:
+                            state = await asyncio.wait_for(cdp.call("Runtime.evaluate", {
+                                "contextId": context, "expression": expression,
+                                "awaitPromise": True, "returnByValue": True}),
+                                timeout=max(0.0, deadline-time.monotonic()))
+                            status = "ready"
+                        except asyncio.TimeoutError:
+                            # Expiry of the readiness promise is not a failed CDP
+                            # observation. A fresh synchronous read still follows
+                            # the ordinary recovery/error policy.
+                            state = await capture_call(cdp, "Runtime.evaluate", {"contextId": context,
+                                "expression": read_state, "returnByValue": True})
+                            status = "timeout"
+                except CDPError as error:
+                    if not any(text in str(error) for text in (
+                            "Execution context was destroyed", "Cannot find context with specified id")):
+                        raise
+                    refreshed = await capture_call(cdp, "Page.getFrameTree", {})
+                    changed = refreshed.get("frameTree", {}).get("frame", {})
+                    if (key[0], changed.get("id"), changed.get("loaderId")) == key:
+                        raise
+                    readiness["navigation_changes"].append(list(key))
+                    response, frame = refreshed, changed
+                    if time.monotonic() >= deadline:
+                        readiness.update(status="timeout", frame_id=frame.get("id"),
+                            loader_id=frame.get("loaderId"), mime_type=frame.get("mimeType"), ready_state=None)
+                        metadata.update(document_mime_type=frame.get("mimeType"), document_ready_state=None)
+                        cdp._last_capture_document = (key[0], frame.get("id"), frame.get("loaderId"))
+                        break
+                    continue
+                value = state.get("result", {}).get("value")
+                if state.get("exceptionDetails") or not isinstance(value, dict):
+                    raise RunnerError("document readiness metadata unavailable")
+                refreshed = await capture_call(cdp, "Page.getFrameTree", {})
+                changed = refreshed.get("frameTree", {}).get("frame", {})
+                if (key[0], changed.get("id"), changed.get("loaderId")) != key:
+                    readiness["navigation_changes"].append(list(key))
+                    response, frame = refreshed, changed
+                    if time.monotonic() >= deadline:
+                        readiness.update(status="timeout", frame_id=frame.get("id"),
+                            loader_id=frame.get("loaderId"), mime_type=frame.get("mimeType"), ready_state=None)
+                        metadata.update(document_mime_type=frame.get("mimeType"), document_ready_state=None)
+                        cdp._last_capture_document = (key[0], frame.get("id"), frame.get("loaderId"))
+                        break
+                    continue
+                response, frame = refreshed, changed
+                readiness.update(status=status, ready_state=value.get("ready_state"),
+                    mime_type=value.get("mime_type"), animation_frames=2 if status == "ready" else None)
+                metadata.update(document_mime_type=value.get("mime_type"),
+                    document_ready_state=value.get("ready_state"))
+                cdp._last_capture_document = key
+                break
+        finally:
+            readiness["wait_seconds"] = time.monotonic()-started
     frames = []
     pending = [response.get("frameTree", {})]
     while pending:
@@ -590,6 +657,10 @@ async def _finish_capture(cdp: CDPClient, directory: Path, state: _CaptureState,
         or len(cdp.navigation_events) != navigation_start)
     metadata["navigation_events"] = cdp.navigation_events[navigation_start:]
     metadata.update(raw_capture_ended_at=utc_now(), raw_capture_duration_seconds=time.monotonic()-interval_started)
+    if state.dom_error is None:
+        empty = state.snapshot.get("nodes") == []
+        metadata["dom_export"] = {"status": "empty" if empty else "content",
+            "marker": EMPTY_DOM_MARKER if empty else None, "stats": state.snapshot.get("stats")}
     if state.screenshot_bytes is not None:
         state.screenshot_path = directory / "screenshot.png"
     action_path = None
@@ -622,17 +693,18 @@ async def capture_bundle(cdp: CDPClient, directory: Path, *, max_nodes: int,
     if observation_mode == "screenshot" and agent_browser is not None:
         raise RunnerError("accessibility observations are forbidden in screenshot mode")
     directory.mkdir(parents=True, exist_ok=False)
-    metadata = {"started_at": utc_now(), "target_id": str(cdp.target.get("targetId", "")),
+    metadata = {"policy_version": CAPTURE_POLICY_VERSION,
+        "started_at": utc_now(), "target_id": str(cdp.target.get("targetId", "")),
         "session_id": getattr(cdp, "session_id", ""), "captures": [],
         "capture_order": ["structured_dom", "screenshot"] + (["executable_refs"] if agent_browser is not None else []),
         "paired_complete": True, "navigation_during_capture": False,
         "content_changed_during_capture": None, "paint_changed_during_capture": None,
         "setup_errors": list(getattr(cdp, "capture_setup_errors", [])), "metadata_errors": []}
     interval_started = time.monotonic()
-    navigation_start = len(cdp.navigation_events)
     state = _CaptureState()
     try:
         frame = await _capture_frame(cdp, metadata, "url_before")
+        navigation_start = len(cdp.navigation_events)
         metadata["url_before"] = str(frame.get("url", cdp.target.get("url", "")))
         metadata["loader_id_before"] = frame.get("loaderId", "")
         for phase in metadata["capture_order"]:
@@ -833,6 +905,7 @@ class CDPClient:
         self.pending: dict[int, asyncio.Future[dict[str, Any]]] = {}
         self.session_id = ""
         self.navigation_events: list[dict[str, Any]] = []
+        self._last_capture_document: tuple[str, str, str | None] | None = None
         self.capture_setup_errors: list[dict[str, Any]] = []
         self.target: dict[str, Any] = {}
         self.connection_report: dict[str, Any] = {}

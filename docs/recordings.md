@@ -126,6 +126,26 @@ hash do not make it actor input.
 The order is `structured_dom`, `screenshot`, DOM-arm `executable_refs`, then
 `dom_model_artifacts` and the stored text projections.
 
+`policy_version` is `paired-capture/v2`. The private `readiness` record contains
+`target_id`, `frame_id`, `loader_id`, `timeout_seconds`, `wait_seconds`,
+`ready_state`, `mime_type`, `animation_frames`, `navigation_changes` and a status
+of `ready`, `timeout`, `same_document` or `unavailable`. A new document waits for
+DOMContentLoaded or interactive/complete and then two animation frames, within
+the existing CDP navigation timeout (90 seconds). The settle interval is unchanged.
+Timeout permits capture as-is; same-document updates skip the asynchronous wait.
+The interval duration includes readiness waiting; individual phase durations
+start afterward. Navigation during readiness is recorded separately from
+navigation during evidence acquisition.
+
+`document_mime_type` and `document_ready_state` describe the document before raw
+acquisition. `dom_export` records `status` (`empty` or `content`), the empty marker
+when applicable, and unmodified snapshot `stats`. An empty export still produces
+`dom.json`, `dom_full.txt`, `dom_model.json` and `dom_model.txt`; the model text
+contains `[No exportable DOM content]`. A saved screenshot plus that valid empty
+export is paired-complete. Missing capture files remain incomplete. These rules
+apply equally to active and passive evidence in both arms. MIME/readiness metadata
+never enters actor requests.
+
 The interval also records `url_before`, `url_after`, loader IDs,
 `navigation_events` and `navigation_during_capture`. `metadata_errors`,
 `setup_errors` and `url_metadata_complete` disclose metadata gaps. Available

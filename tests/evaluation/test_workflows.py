@@ -1247,3 +1247,40 @@ def test_profile_comparison_reports_both_subsets_and_quality(full_evaluation, tm
         assert row['screenshot_only_subsets'][name]['available'] is False
         assert row['screenshot_only_subsets'][name]['agreement'] is None
         assert row['screenshot_only_subsets'][name]['criteria'] is None
+
+@pytest.mark.parametrize("mode", ["dom", "screenshot"])
+def test_empty_exports_reach_completion_native_verifiers_and_audit(empty_dom_pair, tmp_path, mode):
+    from w8bench.task_recorder.capture import EMPTY_DOM_MARKER
+    from w8bench.verifier.audit_evidence import shared_trajectory_payload
+    from w8bench.verifier.dom_model.states import load_dom_model_states
+    from w8bench.verifier.validate_inputs import dataset_only_preflight
+    from tests.evaluation.conftest import _complete, _finding, _responses, _run, _source_decision
+    paths, *_ = empty_dom_pair
+    recording = inspect_recording(paths[mode])
+    exported = prepare_recording(recording, tmp_path/"staged")
+    ss, dom = Path(exported["screenshot_task"]), Path(exported["dom_task"])
+    dataset_only_preflight(ss, dom)
+    states = load_dom_model_states(dom, action_count=len(recording["manifest"]["steps"]))
+    assert len(states) == len(recording["manifest"]["states"])
+    assert all(EMPTY_DOM_MARKER in state.raw_text for state in states)
+    context = shared_trajectory_payload(ss, dom)["evaluation_context"]
+    assert context["audit_eligible_states"] == context["expected_state_ids"]
+    assert context["format_gaps"] == {"screenshot": [], "dom_model": []}
+    payload = completion._judge_payload(paths[mode], recording, [], "gpt-6.1-sol", "paired")
+    assert EMPTY_DOM_MARKER in json.dumps(payload)
+    assert "Recorder evidence unavailable" not in json.dumps(payload)
+    assert sum(part["type"] == "input_image" for part in payload["input"][0]["content"]) == len(states)
+    rubric = tmp_path/"rubric.json"
+    write_json(rubric, {"task_id": "task_01", "precomputed_rubric": RUBRIC})
+    inventory, adjudication = _responses()
+    for proposal, final in zip(inventory["criteria"], adjudication["criteria"]):
+        proposal.update(dom_model=_source_decision("dom_model", coverage="ABSENT"),
+            screenshot_evidence_loss=False, dom_model_evidence_loss=True,
+            explanation="The required visible fact is absent from the empty DOM export.")
+        final.update(dom_model_evidence_loss=_finding(True, evidence="Saved", modality="screenshot"),
+            explanation="Screenshot evidence establishes the fact; DOM has no exported content.")
+    pair = {"screenshot": ss, "dom": dom, "rubric": rubric, "staged": tmp_path,
+        "task": {"task_id": "task_01"}}
+    result = _run(pair, _complete(inventory, adjudication))
+    assert result["metrics"]["dom_model_evidence_loss"] == {"count": 2, "denominator": 2, "rate": 1.0}
+    assert result["metrics"]["screenshot_evidence_loss"] == {"count": 0, "denominator": 2, "rate": 0.0}

@@ -70,22 +70,16 @@ def test_model_dom_rejects_missing_or_ambiguous_capture_envelopes(payload):
         model_renderer.model_dom_from_envelope(payload)
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("empty_attempts", [0, 1, 2, 3])
-async def test_populated_empty_dom_snapshots_have_a_bounded_read_retry(monkeypatch, empty_attempts):
-    empty = {"snapshot": {"nodes": [], "stats": {"rawNodes": 5, "returnedNodes": 0}}}
-    populated = {"snapshot": {"nodes": [{"ref": "1"}], "stats": {"rawNodes": 5, "returnedNodes": 1}}}
-    call = AsyncMock(side_effect=[empty] * empty_attempts + [populated])
-    monkeypatch.setattr(capture.asyncio, "sleep", AsyncMock())
-    operation = capture.capture_structured_snapshot(SimpleNamespace(call=call), max_nodes=7000, max_text_chars=200000)
-    if empty_attempts == 3:
-        with pytest.raises(RunnerError, match="zero nodes.*after 3 attempts"):
-            await operation
-    else:
-        assert await operation == populated["snapshot"]
-    assert call.await_count == min(empty_attempts + 1, 3)
-    assert all(entry.args == ("ChromiumRL.captureStructuredSnapshot", {
-        "inViewportOnly": True, "maxNodes": 7000, "maxTextChars": 200000, "includeOffscreen": False,
-    }) for entry in call.await_args_list)
+@pytest.mark.parametrize("raw_nodes", [0, 5, 7000])
+async def test_empty_dom_export_is_accepted_without_retry(monkeypatch, raw_nodes):
+    empty = {"nodes": [], "stats": {"rawNodes": raw_nodes, "returnedNodes": 0}}
+    call = AsyncMock(return_value={"snapshot": empty})
+    sleep = AsyncMock()
+    monkeypatch.setattr(capture.asyncio, "sleep", sleep)
+    assert await capture.capture_structured_snapshot(SimpleNamespace(call=call),
+        max_nodes=7000, max_text_chars=200000) == empty
+    assert call.await_count == 1
+    sleep.assert_not_awaited()
 
 @pytest.mark.asyncio
 async def test_genuinely_empty_dom_snapshot_does_not_consume_retry_budget():
@@ -767,7 +761,7 @@ def test_capture_records_navigation_inside_interval(tmp_path, monkeypatch, navig
     async def call(self, method, params=None, **kwargs):
         if method == "Page.getFrameTree":
             frame_calls.append(method)
-            url = ("https://example.test/changed" if navigation_kind == "different_url" and len(frame_calls) > 1
+            url = ("https://example.test/changed" if navigation_kind == "different_url" and bool(self.navigation_events)
                 else "https://example.test")
             return {"frameTree": {"frame": {"id": "main", "url": url, "loaderId": "loader"}}}
         result = await original(self, method, params, **kwargs)
@@ -1379,6 +1373,8 @@ async def test_fairness_capture_change_counters_are_private_and_do_not_recapture
         nonlocal reads
         if method=='Page.getFrameTree':return {'frameTree':{'frame':{'id':'main','url':'https://example.test/','loaderId':'stable'}}}
         if method=='Page.createIsolatedWorld':return {'executionContextId':37}
+        if method=='Runtime.evaluate' and 'document.readyState' in params.get('expression', ''):
+            return {'result':{'value':{'ready_state':'complete','mime_type':'text/html'}}}
         if method=='Runtime.evaluate':
             assert params['contextId']==37
             assert '__w8CaptureChanges' in params['expression']
@@ -1497,6 +1493,8 @@ async def test_fairness_capture_observes_known_frames_and_open_shadow_roots_with
         if method=='Page.createIsolatedWorld':
             if params['frameId']=='remote':raise RunnerError('unavailable remote context')
             return {'executionContextId':1 if params['frameId']=='main' else 2}
+        if method=='Runtime.evaluate' and 'document.readyState' in params.get('expression', ''):
+            return {'result':{'value':{'ready_state':'complete','mime_type':'text/html'}}}
         if method=='Runtime.evaluate':
             assert "element.shadowRoot" in params['expression'] and "observer.observe(root" in params['expression']
             context=params['contextId'];reads[context]=reads.get(context,0)+1
@@ -1596,3 +1594,144 @@ def test_browser_image_preflight_enforces_pinned_binary(tmp_path, monkeypatch, p
         with pytest.raises(SystemExit, match='Browser binary differs from protocol/browser-build.json'):
             exec(compile(program, 'browser-image-preflight', 'exec'), {})
         assert not (root / 'build/browser-build.json').exists()
+
+@pytest.mark.parametrize("mode", ["dom", "screenshot"])
+def test_empty_pdf_export_is_paired_and_actor_continues(empty_dom_pair, mode):
+    from w8bench.task_recorder.prepare_verifier_data import inspect_recording
+    paths, payloads, *_ = empty_dom_pair
+    recording = inspect_recording(paths[mode])
+    assert recording["final"]["run_status"] == "completed"
+    assert len(payloads[mode]) > 1
+    assert recording["coverage"]["eligible_fraction"] == 1
+    assert recording["coverage"]["format_gaps"] == {"screenshot": [], "dom_model": []}
+    for state in recording["manifest"]["states"]:
+        info = state["capture"]
+        assert info["paired_complete"]
+        assert info["document_mime_type"] == "application/pdf"
+        assert info["document_ready_state"] == "complete"
+        assert info["dom_export"] == {"status": "empty", "marker": capture.EMPTY_DOM_MARKER,
+            "stats": {"rawNodes": 10, "returnedNodes": 0, "textChars": 0,
+                "droppedHidden": 9, "truncated": False}}
+        assert capture.EMPTY_DOM_MARKER in (paths[mode]/state["directory"]/"dom_model.txt").read_text()
+    wire = json.dumps(payloads[mode])
+    assert "application/pdf" not in wire and "readiness" not in wire
+    assert (capture.EMPTY_DOM_MARKER in wire) == (mode == "dom")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["dom", "screenshot"])
+@pytest.mark.parametrize("condition", ["pdf", "slow", "never", "same_document", "reload", "redirect"])
+async def test_document_readiness_before_both_capture_paths(tmp_path, monkeypatch, mode, condition):
+    client = capture.CDPClient("http://unused", timeout=.02, observation_mode=mode, viewport=(1365, 768))
+    client.target = {"targetId": "exact-target"}
+    calls, waited = [], []
+    state = {"ready": "loading" if condition in {"slow", "never"} else "complete", "loader": "first"}
+    original = FakeCDP(observation_mode=mode)
+    async def call(method, params=None, **kwargs):
+        calls.append((method, params))
+        if method == "Page.getFrameTree":
+            return {"frameTree": {"frame": {"id": "exact-frame", "loaderId": state["loader"],
+                "url": "https://example.test", "mimeType": "application/pdf" if condition == "pdf" else "text/html"}}}
+        if method == "Page.createIsolatedWorld":
+            assert params["frameId"] == "exact-frame"
+            return {"executionContextId": 42}
+        if method == "Runtime.evaluate":
+            if "document.readyState" not in params["expression"]:
+                return {"result": {"value": {"count": 0, "openShadowRoots": 0}}}
+            if params.get("awaitPromise"):
+                assert params["contextId"] == 42
+                assert "DOMContentLoaded" in params["expression"]
+                assert params["expression"].count("requestAnimationFrame") == 2
+                waited.append(state["loader"])
+                if condition == "never":
+                    await asyncio.Event().wait()
+                if condition == "slow":
+                    await asyncio.sleep(.001)
+                    state["ready"] = "interactive"
+                if condition == "redirect" and state["loader"] == "first":
+                    state["loader"] = "redirected"
+                    raise capture.CDPError(method, {"code": -32000, "message": "Execution context was destroyed"})
+            return {"result": {"value": {"ready_state": state["ready"],
+                "mime_type": "application/pdf" if condition == "pdf" else "text/html"}}}
+        if method == "ChromiumRL.captureStructuredSnapshot":
+            assert waited  # nothing is acquired until readiness completes or expires
+            return {"snapshot": {"url": "https://example.test", "nodes": [] if condition in {"pdf", "never"} else [{"ref": "n1"}],
+                "stats": {"rawNodes": 10, "returnedNodes": 0 if condition in {"pdf", "never"} else 1}}}
+        return await original.call(method, params, **kwargs)
+    monkeypatch.setattr(client, "call", call)
+    bundle = await capture.capture_bundle(client, tmp_path/"first", max_nodes=7000, max_text_chars=200000,
+        observation_mode=mode)
+    info = bundle.capture_metadata
+    assert info["paired_complete"]
+    assert info["readiness"]["timeout_seconds"] == client.timeout
+    assert info["readiness"]["status"] == ("timeout" if condition == "never" else "ready")
+    assert info["readiness"]["wait_seconds"] >= 0
+    assert info["document_ready_state"] == state["ready"]
+    assert info["dom_export"]["status"] == ("empty" if condition in {"pdf", "never"} else "content")
+    if condition in {"same_document", "reload", "never"}:
+        before = len(waited)
+        if condition == "reload":
+            state["loader"] = "second"
+        else:
+            client.navigation_events.append({"method": "Page.navigatedWithinDocument"})
+        following = await capture.capture_bundle(client, tmp_path/"following", max_nodes=7000,
+            max_text_chars=200000, observation_mode=mode)
+        assert len(waited) == before + (condition == "reload")
+        assert following.capture_metadata["readiness"]["status"] == ("ready" if condition == "reload" else "same_document")
+    if condition == "redirect":
+        assert waited == ["first", "redirected"]
+        assert info["readiness"]["loader_id"] == "redirected"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["dom", "screenshot"])
+@pytest.mark.parametrize("failure", ["internal", "crash", "transport", "destroyed"])
+async def test_readiness_never_swallows_real_browser_failures(tmp_path, monkeypatch, mode, failure):
+    client = capture.CDPClient("http://unused", observation_mode=mode)
+    client.target = {"targetId": "one"}
+    async def call(method, params=None, **kwargs):
+        if method == "Page.getFrameTree":
+            return {"frameTree": {"frame": {"id": "one", "loaderId": "doc"}}}
+        if method == "Page.createIsolatedWorld":
+            return {"executionContextId": 7}
+        if method == "Runtime.evaluate":
+            if failure == "internal":
+                raise capture.CDPError(method, {"code": -32603, "message": "internal failure"})
+            error = RunnerError({"crash": "page target crashed", "transport": "CDP websocket closed",
+                "destroyed": "page target destroyed"}[failure])
+            error.technical_failure_class = "browser_crash" if failure == "crash" else "cdp_stall"
+            raise error
+        return {}
+    monkeypatch.setattr(client, "call", call)
+    with pytest.raises((RunnerError, capture.CDPError)):
+        await capture.capture_bundle(client, tmp_path/"failed", max_nodes=7000, max_text_chars=200000,
+            observation_mode=mode)
+    assert not (tmp_path/"failed/screenshot.png").exists()
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["dom", "screenshot"])
+async def test_readiness_deadline_navigation_records_current_loader_without_waiting_again(tmp_path, monkeypatch, mode):
+    client = capture.CDPClient("http://unused", timeout=.01, observation_mode=mode)
+    client.target = {"targetId": "one"}
+    current = {"loader": "first", "waits": 0}
+    fallback = FakeCDP(observation_mode=mode)
+    async def call(method, params=None, **kwargs):
+        if method == "Page.getFrameTree":
+            return {"frameTree": {"frame": {"id": "main", "loaderId": current["loader"],
+                "mimeType": "text/html", "url": "https://example.test"}}}
+        if method == "Runtime.evaluate" and "document.readyState" in params.get("expression", ""):
+            if params.get("awaitPromise"):
+                current.update(loader="second", waits=current["waits"]+1)
+                await asyncio.Event().wait()
+            return {"result": {"value": {"ready_state": "loading", "mime_type": "text/html"}}}
+        return await fallback.call(method, params, **kwargs)
+    monkeypatch.setattr(client, "call", call)
+    first = await capture.capture_bundle(client, tmp_path/"first", max_nodes=7000,
+        max_text_chars=200000, observation_mode=mode)
+    assert first.capture_metadata["readiness"]["status"] == "timeout"
+    assert first.capture_metadata["readiness"]["loader_id"] == "second"
+    assert first.capture_metadata["paired_complete"]
+    again = await capture.capture_bundle(client, tmp_path/"again", max_nodes=7000,
+        max_text_chars=200000, observation_mode=mode)
+    assert again.capture_metadata["readiness"]["status"] == "same_document"
+    assert current["waits"] == 1

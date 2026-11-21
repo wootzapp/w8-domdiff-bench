@@ -85,6 +85,7 @@ def actual_browser_source_version(manifest):
 
 
 def actor_settings(controls, *, browser_source=None):
+    from .task_recorder.capture import CAPTURE_POLICY_VERSION, EMPTY_DOM_MARKER
     from .task_recorder.runner import ACTION_SCHEMA, SCREENSHOT_ACTION_SCHEMA, ACTOR_PROTOCOL, MAX_TASK_MEMORY_CHARS, ACTOR_INPUT_TOKEN_LIMIT, ACTOR_IMAGE_INPUT_TOKENS
     from .task_recorder.prompts import DOM_PROMPT, SCREENSHOT_PROMPT, SCREENSHOT_PROMPT_VERSION, DOM_PROMPT_VERSION
     if controls.get("media_resolution", "HIGH") != "HIGH":
@@ -103,8 +104,13 @@ def actor_settings(controls, *, browser_source=None):
         schema_sha256=settings_hash(ACTION_SCHEMA),
         history_policy="actor-history/v2", progress_policy="observation-change/v2",
         stall_policy={"mode": "advisory", "symmetric": True},
-        capture_policy={"raw_order": ["structured_dom", "screenshot", "executable_refs"],
-            "refs_dom_only": True, "projection_after_raw": True, "recapture": False},
+        capture_policy={"version": CAPTURE_POLICY_VERSION,
+            "raw_order": ["structured_dom", "screenshot", "executable_refs"],
+            "refs_dom_only": True, "projection_after_raw": True, "recapture": False,
+            "empty_export": {"valid": True, "marker": EMPTY_DOM_MARKER},
+            "readiness": {"version": "document-readiness/v1", "timeout": "cdp_timeout",
+                "identity": "target_frame_loader", "animation_frames": 2,
+                "timeout_result": "capture_current_state", "same_document_wait": False}},
         input_size_policy={"method": "local_estimate_then_countTokens/v1", "input_limit_source": "models.get_or_configured",
             "model_input_limit": ACTOR_INPUT_TOKEN_LIMIT, "estimate": "utf8_bytes_plus_fixed_image/v1",
             "image_tokens": ACTOR_IMAGE_INPUT_TOKENS, "count_threshold_percent": 50,

@@ -70,6 +70,15 @@ explicit `--judge-model gpt-6.1-sol`. Configure
 | `TASK_CATALOG_FILE` | Default local task catalog. |
 | `W8_RUN_NAME` | Default output run name. |
 
+The recorder uses `paired-capture/v2` in both arms. Empty DOM exports produce the
+normal paired artifacts and `[No exportable DOM content]`, including on PDF
+viewers. They do not trigger a technical rerun. New documents wait for
+DOMContentLoaded or interactive/complete and two animation frames within the
+existing 90-second CDP navigation timeout, after the configured settle interval.
+A readiness timeout captures the current page; same-document updates skip the
+wait. Inspect private `readiness`, MIME type and `dom_export` in `capture.json`.
+Real capture/transport/target faults retain the technical-rerun policy.
+
 ## Record a batch
 
 Choose the local catalog, selected tasks, positive trial count and task-specific

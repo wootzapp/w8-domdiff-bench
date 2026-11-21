@@ -26,6 +26,26 @@ must remain consistent across the selected tasks and trials. Requested model IDs
 and returned model IDs are both retained. Environment variables take precedence
 over `.env` values.
 
+## Empty observations and readiness
+
+`paired-capture/v2` accepts empty structured exports as valid observations in both
+arms. Their saved DOM model contains `[No exportable DOM content]`; no OCR or PDF
+text extraction supplements it. MIME type, readiness and wait duration stay
+private. Both arms retain the settle interval and use the existing CDP navigation
+timeout for a new target/frame/loader to reach DOMContentLoaded or
+interactive/complete, followed by two animation frames. Expiry captures the current
+state; same-document updates do not repeat the wait.
+
+Empty DOM content is not a missing capture. A complete pair remains eligible
+under the ordinary navigation and integrity rules. Completion and both native
+verifiers receive the saved empty DOM model and/or screenshot under their normal
+evidence policies. The audit compares the same run's formats: criterion-required
+facts established only by screenshots can yield DOM loss, while facts absent
+from both formats yield no directional loss. No score or loss is forced solely
+because an export is empty; shared context and evidence from other states still
+apply. Genuine missing captures remain gaps and are excluded from directional
+loss decisions under the existing coverage policy.
+
 ## Effective settings contract
 
 `effective-settings/v1` records the behavior that must remain consistent on

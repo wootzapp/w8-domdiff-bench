@@ -611,6 +611,16 @@ and a within-run audit with inventory/adjudication. These compare saved formats
 from the same actor run; they do not pair the DOM actor's evidence with the
 screenshot actor's evidence. Passive capture failure is recorded separately.
 
+Check `capture.json` for `paired-capture/v2`, private readiness timing/state,
+MIME type and raw `dom_export.stats`. Empty exports, including PDF wrappers, have
+`[No exportable DOM content]` in the saved DOM model and remain paired-complete
+when the screenshot was captured. They are not passive failures. Both arms use
+the existing 90-second CDP navigation timeout for DOMContentLoaded or
+interactive/complete and two animation frames; expiry captures as-is.
+Same-document updates do not repeat the wait; the settle interval is unchanged.
+The normal completion, native-verifier and same-run audit commands include these
+states under their existing integrity and navigation eligibility rules.
+
 **Gate:** eight scheduled rows have recorded final technical/evaluation outcomes;
 inspect request isolation, capture hashes/timings, actor returned IDs, grading
 coverage, frozen rubric identity, judge receipts and the report. Genuine task
