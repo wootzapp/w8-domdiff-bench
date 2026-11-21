@@ -1,370 +1,275 @@
 # Datacard
 
-`w8-domdiff-bench` records paired browser evidence for evidence-loss analysis
-and evaluates task completion, model turns and token usage under two
-page-observation policies. Each selected task has two independent
-actor arms and an explicitly chosen positive number of trials per arm. Task
+`w8-domdiff-bench` records paired browser evidence and compares task completion,
+model turns, token usage and evidence loss. Each task has independent DOM and
+screenshot arms, with an explicitly chosen positive trial count per arm. Task
 contracts and completion rubrics are fixed before execution.
 
-The recorder stores paired screenshot and DOM evidence in both arms. The actors
-receive only their selected page observation, while the completion judge uses a
-common evidence policy. Separate profiles, memory and action histories keep the
-runs independent.
+Each run privately records both formats; its actor receives only the permitted
+observation. Browser profiles, memory and action histories are independent.
+The [architecture glossary](architecture.md#terminology) defines the terms used
+throughout the documentation. The [runbook](runbook.md) gives the execution order
+and commands.
 
 ## Observation modes
 
-This table defines the permitted differences. All other recorded controls must
-match for a comparison.
+This table defines the permitted differences. Other effective settings must
+match across the compared arms.
 
 | Difference | DOM arm | Screenshot arm |
 | --- | --- | --- |
-| Page observation | Formatted `dom_model.txt` and viewport-filtered interactive reference text. Numeric ChromiumRL IDs are masked in actor text. | The saved `screenshot.png`, sent once per call at the configured per-image media resolution; no extracted DOM, accessibility text, selectors or references. |
+| Page observation | Formatted `dom_model.txt` and viewport-filtered interactive reference text. Numeric ChromiumRL IDs are masked in actor text. | The saved `screenshot.png`, sent once per call with global `MEDIA_RESOLUTION_HIGH`; no extracted DOM, accessibility text, selectors or references. |
 | Targeting | Current agent-browser `e` references for reference-targeted actions. | Integer coordinates from 0 to 1000, relative to screenshot width and height, converted once to CSS pixels for raw CDP input. |
-| Ref-click scrolling | The action CLI can scroll a referenced target into view while resolving and clicking it. Supplied references pass viewport bounding-box filtering. | Coordinate clicks operate at the selected viewport point without reference-based scroll-into-view. |
-| Observation-change source | DOM text and interactive reference changes. | Decoded screenshot pixels. |
+| Ref-click scrolling | The CLI can scroll a referenced target into view while resolving and clicking it. Supplied references pass viewport bounding-box filtering. | Coordinate clicks operate at the selected viewport point without reference-based scroll-into-view. |
+| Observation-change source | DOM text and reference text, ignoring ref-only renumbering. | Decoded screenshot pixels. |
 | Content extent | Intersecting nodes and accessible labels can include text outside the painted viewport or from hidden/collapsed descendants. | Painted viewport pixels, including visual content without a text equivalent. |
-| Scrolled inline paragraphs | Visible-text extraction for clipped inline-rich `<p>` elements follows the visible characters; other inline-rich blocks retain their existing prefix behavior. | Painted text follows the viewport regardless of the containing element. |
+| Scrolled inline paragraphs | Visible-text extraction for clipped inline-rich `<p>` elements follows visible characters; other inline-rich blocks can retain a text prefix. | Painted text follows the viewport regardless of its containing element. |
 | PDFs | A valid empty structured export is shown as `[No exportable DOM content]`; no OCR or PDF text is extracted. | The rendered PDF viewport is available as pixels. |
-| Page structures | Frame and shadow-tree coverage follows the DOM and reference exporters. Canvas/image/CSS-generated content may have only labels or no text representation. | Rendered frame, shadow-tree, canvas, image and CSS content appears where it is painted. |
+| Page structures | Frame and shadow-tree coverage follows the DOM and reference exporters. Canvas, images and CSS-generated content can have labels or no text representation. | Rendered frame, shadow-tree, canvas, image and CSS content appears where painted. |
 
-Both actors receive the current URL as plain text, the task instruction, turn
-budget, viewport dimensions, actor-maintained memory and recent action/rejection
-outcomes. Both receive the same URL-change field. Observation-change fields are
-modality-specific diagnostics, not proof of task progress. Recent outcomes omit
-private target descriptions and raw tool diagnostics; document-language metadata
-is not actor input. Navigation, keyboard input and non-reference browser
-primitives use the shared action driver.
+Both actors receive the task instruction, current URL, turn budget, viewport,
+actor-maintained memory and up to six recent action/rejection outcomes. Shared
+URL changes count as observation changes in both arms. Modality-specific changes
+are diagnostics, not proof of task progress. Actor history omits private target
+context, raw backend diagnostics and stall advisories; document language stays
+in records. Navigation, keyboard input and non-reference primitives use the
+shared action driver.
 
 ## Shared controls
 
 | Control | Configuration |
 | --- | --- |
-| Actor model and endpoint | `ACTOR_MODEL` is the sole actor-model configuration and must identify `gemini-3.8-flash`; the same value is used across arms. Returned IDs must match the configured model under the returned-model acceptance contract. `GEMINI_BASE_URL` selects the endpoint. |
+| Actor model | The sole `ACTOR_MODEL` value must identify `gemini-3.8-flash` in both arms. Returned IDs must satisfy the configured-model acceptance contract. |
+| Actor endpoint | `GEMINI_BASE_URL`, with `models/{model}:generateContent`. |
 | Model-turn budget | 200 by default and at most 200; lower positive budgets must match across compared runs. |
-| Maximum actor output | Exactly 10,000 tokens, including reasoning. |
+| Maximum actor output | Exactly 10,000 tokens, including thinking. |
 | Task memory | At most 8,000 characters. |
-| Reasoning effort | Explicitly `medium`. |
-| Actor image resolution | The screenshot actor uses HIGH, recorded in effective settings. Only screenshot requests contain images. |
-| Temperature | Unset in both arms. |
-| Viewport | 1365 × 768 CSS pixels by default. |
-| Settling interval | One second by default. |
-| Browser locale | English (`en-US`, `en-US,en;q=0.9`). |
-| Browser state | A launcher-recreated profile with reset enabled and no previous tasks, with build/environment provenance. |
-| Action contract | One strict JSON action per response; shared vocabulary, with modality-specific coordinate fields. |
+| Action thought | At most 1,200 characters, separate from memory. |
+| Consecutive rejected proposals | Four end the run as `invalid_action_limit`; advisory matches do not contribute. |
+| Thinking | `MEDIUM`, recorded as `medium`. |
+| Screenshot resolution | HIGH only, through global `MEDIA_RESOLUTION_HIGH`. No per-image override. |
+| Actor image allowance | 1,100 tokens per image for local input estimation; not measured provider usage. |
+| Temperature | Omitted. |
+| Viewport | 1365 × 768 CSS pixels by default, device pixel ratio 1; screenshot dimensions must match. |
+| Settling interval | One second by default, for initial and post-action capture. |
+| Readiness | Wait for the exact target/frame/loader to reach DOMContentLoaded or interactive/complete, then two animation frames. Same-document updates skip the asynchronous wait. |
+| Readiness deadline | Reuses the CDP navigation timeout, 90 seconds by default. Expiry permits capture as-is. |
+| CDP / agent-browser timeout | 90 seconds each by default. |
+| Actor HTTP timeout | 180 seconds per request. |
+| Browser locale | `en-US`, with `en-US,en;q=0.9` accepted. |
+| Browser state | Launcher recreation, profile reset and zero prior tasks establish freshness; raw/reused sessions are nonfresh. |
+| Action contract | One strict JSON action per received response, with modality-specific target fields. |
 | Intervention | No human intervention or automatic language redirects. |
 
-Comparison checks shared model settings, task contracts, budgets, schema,
-source/capture controls, browser build/environment, profile freshness and grading
-controls. Browser images should be selected by immutable identity; recorded image
-IDs establish the build used. Matching settings do not freeze live-site content.
-The [effective settings contract](evaluation-protocol.md#effective-settings-contract)
-binds request behavior and browser source provenance while excluding credentials,
-deployment names, ports and file locations.
+Comparison checks models, task contracts, budgets, schemas, capture policy,
+browser build/environment, freshness and grading settings. Matching controls do
+not freeze public-web content or model aliases. Credentials, ports, deployment
+names and file locations are excluded from the
+[effective settings contract](evaluation-protocol.md#effective-settings-contract).
+
+The browser build is pinned by [protocol/browser-build.json](../protocol/browser-build.json).
+
+| Browser setting | Value |
+| --- | --- |
+| Image tag | `w8-core:domdiff-bench`; run provenance also records the immutable image ID. |
+| Chromium version | `152.0.7948.0` |
+| Overlay revision | `79ef492157bd3089f27ab0f8453ecc5227677252` |
+| Release binary SHA-256 | `d1f8152bb72a0bca10d8b947bbb1128b77d45a52c07a05eb476f0e067846a53b` |
+| Preferred host ports | CDP 49335, noVNC 16191, VNC 15911; configure selects distinct free ports. |
+| Browser service capability | `SYS_NICE`, for renderer-priority changes in the assertion-enabled build. |
 
 ## Recording contract
 
-A complete state contains `dom.json`, `dom_full.txt`, `dom_model.json`,
-`dom_model.txt` and `screenshot.png`. DOM actor states also contain the filtered
-`agent_browser_actions.txt` reference snapshot. `dom_full.txt` renders the
-captured viewport-scoped DOM; it is not an unbounded whole-page dump. Snapshot
-limits default to 7,000 nodes and 200,000 requested text characters. The text
-threshold can mark aggregate overflow without making every projection a strict
-200,000-character slice.
+A paired-complete state contains `dom.json`, `dom_full.txt`, `dom_model.json`,
+`dom_model.txt` and `screenshot.png`. DOM-arm states also contain filtered
+`agent_browser_actions.txt`. The [recording guide](recordings.md) is the artifact
+schema and export reference.
 
-States record artifact paths/hashes, target and session identity, capture order,
-phase start/end times, interval URLs, navigation status and available
-content/paint-instability metadata. `content_change_monitor` covers the main
-document, known frame contexts and discovered open shadow roots; closed roots
-and unreported frames remain unobserved. `content_changed_during_capture` and
-`paint_changed_during_capture` are true when activity is observed and otherwise
-unknown. Partial coverage never certifies an unchanged page. The screenshot sent
-to the actor is the saved file. Passive evidence and capture errors do not enter
-actor prompts, memory, progress, stall checks or rejection feedback. A passive
-failure marks paired evidence incomplete while allowing a usable active
-observation to continue. Missing URL metadata is marked explicitly. Capture
-orders raw structured DOM, screenshot and DOM-arm references before producing
-stored text projections. Content/paint changes flag the interval; they do not
-automatically recapture it. Bulk artifact writes follow raw capture, while
-per-call operational traces remain durable during capture for crash diagnosis.
+| Capture property | Contract |
+| --- | --- |
+| Policy | `paired-capture/v2`, including `document-readiness/v1`. |
+| Acquisition order | Readiness, raw structured DOM, screenshot, DOM-arm references, then stored DOM projections and bulk writes. Operational traces remain durable during capture. |
+| Raw DOM budgets | 7,000 nodes and 200,000 requested text characters by default. The aggregate text threshold can mark overflow rather than make every projection an exact slice. |
+| Browser text fields | Direct text up to 240 characters, subtree text up to 500 and selected attribute values up to 160, subject to browser selection and truncation rules. |
+| Full text projection | `dom_full.txt` renders the captured viewport-scoped snapshot, with a default 1,200-character display cap per field. It is not an unbounded whole-page dump and is not the actor observation. |
+| Screenshot identity | The actor image is the saved PNG, verified against viewport dimensions. |
+| Empty export | A valid observation with the marker in model text and raw statistics retained; a captured screenshot plus the empty DOM export is paired-complete. |
+| Private readiness metadata | Target/frame/loader identity, MIME type, readiness state and wait duration. None becomes actor context or feedback. |
+| Missing capture | A failed phase remains distinct from an empty export and makes paired evidence incomplete. A usable active observation can continue after a passive failure. |
+| Instability | Navigation, content and paint activity are recorded without automatic recapture. Global absence of activity remains unknown where coverage is incomplete. |
 
-Empty exports are valid observations, including PDF wrappers and loading or
-blank documents. They retain all paired files, raw snapshot statistics and the
-`[No exportable DOM content]` marker in `dom_model.txt`; they are not capture
-failures or format gaps. Both arms use `paired-capture/v2`. Before acquiring raw
-evidence for a new exact target/frame/loader, the recorder waits for
-DOMContentLoaded or interactive/complete readiness and then two animation frames.
-The existing 90-second CDP navigation timeout bounds this wait. Its expiry permits
-capture of the current state. Same-document updates do not repeat the wait.
-The existing settle interval remains in place. MIME type, readiness state and wait
-duration are private records, never actor hints. Real transport, target and
-capture faults retain their technical-failure handling.
+Mutation monitoring covers known frame contexts and discovered open shadow roots.
+Closed roots and unreported remote frames remain unobserved. Passive artifacts
+and their errors never enter actor prompts, memory, progress, stall checks or
+rejection feedback. Missing or unverified URL metadata is explicit.
 
-Actor input preflight estimates tokens locally as UTF-8 bytes of the request's
-text and structural fields, excluding base64 image data, plus 1,100 image tokens
-at HIGH. One byte per text token is a conservative size
-estimate, not measured usage. Requests estimated at 50% or less of the model
-input limit skip `countTokens`. Larger estimates use the exact request tokenizer;
-transient failures allow the same three attempts and 2/8-second backoffs with
-jitter as actor transport. If token counting remains unavailable, the local
-estimate determines dispatch and `local_fallback` records the uncertainty.
-Confirmed or estimated input above 95% ends as `actor_input_limit`; evidence is
-never truncated. Model metadata is cached, with the configured 1,048,576-token
-limit as fallback. The 50% trigger is 524,288 and the 95% threshold is 996,147.
-Metadata/count requests do not consume model turns or generation tokens.
+Actor input preflight estimates the UTF-8 byte length of text and structural
+fields, excluding base64 image bytes, plus 1,100 tokens per image. It is a
+conservative estimate, not measured token usage. Successful model metadata is
+cached for that client; 1,048,576 input tokens is the configured fallback.
 
-The schedule is written before a batch starts and contains one row per
-`(task, arm, trial)`. It records task/configuration identity, trial count, arm
-order, intended recording path and technical/grading outcomes. Resume retains
-completed final attempts and reconciles orphaned started rows. A technical
-failure receives one fresh attempt under the same task, arm and trial; both
-attempt records are retained. Freshness claims require launcher recreation,
-profile reset and a zero prior-task count. Raw/reused browser sessions remain
-nonfresh; pooled comparisons refuse them unless `--allow-nonfresh` is explicitly
-selected and recorded.
-See the [recording guide](recordings.md) for the full artifact schema.
+| Input preflight condition | Behaviour |
+| --- | --- |
+| Local estimate at most 50% of the model limit | Skip `countTokens`. |
+| Local estimate above 50% | Request exact counting with the same transient transport retry policy. |
+| Counting remains unavailable | Use the local estimate and record `local_fallback`. |
+| Confirmed or estimated size above 95% | End technically with class `actor_input_limit`, without generation or truncation. |
+
+For the fallback limit, the count trigger is above 524,288 tokens and the safe
+limit is 996,147 tokens. Metadata/count requests consume neither actor model
+turns nor generation tokens. Their attempts and failures remain recorded.
+
+The ledger is written before execution with one row per `(task, arm, trial)` and
+records ordering, bindings and outcomes. Resume retains completed final attempts
+and reconciles interrupted work. Freshness and comparison overrides are defined
+in the [recording guide](recordings.md) and
+[evaluation protocol](evaluation-protocol.md); `--allow-nonfresh` records an
+explicit inclusion policy rather than changing provenance.
 
 ## Completion and metrics
 
-The primary `paired` grading policy uses the run's screenshots and saved model
-DOM text, action records, final answer and technical status. A frozen task rubric
-is reused across arms and trials. `completion.json` records criterion verdicts,
-evidence policy, rubric/prompt hashes, configured and returned judge models and
-judge usage. The judge must be explicitly set to `gpt-6.1-sol`, with 10,000 maximum output tokens and `medium` reasoning. It never falls back to the actor model.
-Completion makes one request per grading attempt. Returned IDs use the shared
-`returned-model-acceptance/v2` matcher: the exact case-sensitive configured ID or
-that ID followed by a numeric, date or `-vN`/`-VN` version suffix. For example,
-`gpt-6.1-sol-v2` matches; `gpt-6.1-sol-mini` does not.
-Missing IDs, mismatches and incomplete/truncated responses are ungraded; returned
-usage remains accounted for, and an explicit resume may retry the stage.
+Primary completion uses the run's screenshots plus model DOM text, shared action
+records, frozen criteria, final answer and technical status. The optional
+`actor_native` grade uses the actor's evidence format; it is not a replay of the
+exact actor prompt. Exact-final-answer controls support an offline answer check.
+The [evaluation protocol](evaluation-protocol.md) defines scoring, denominators,
+metric fields and the separation between technical outcomes, actor claims and
+independent completion.
 
-The optional `actor_native` policy uses the actor's observation type and writes
-`completion_actor_native.json`. It is a modality policy rather than a replay of
-the exact actor prompt. Exact-final-answer controls provide an offline answer check. Task rubrics are generated once from instruction and start URL, reviewed, then frozen for every arm and trial.
-
-A model turn is one received actor response, including rejected proposals,
-parsing failures and termination. Failed transport attempts are counted separately;
-they do not consume a model turn. Timeouts, connection errors and temporary HTTP
-429/500/502/503/504 responses allow two further transport attempts, with 2 and 8
-second backoffs plus up to 0.5 seconds of jitter. Auth, quota, billing and other
-4xx errors are not retried. Transport receipts preserve status, duration, parser
-stage and reported usage; unavailable usage stays unknown.
-
-Duplicate activation, two-action-cycle and recent-stall matches are advisory-only
-and symmetric in both arms. They never reject a proposal, stop a run or reach the
-actor through history, memory or rejection feedback. Action validation still
-checks schema, target, values and termination requirements; the shared invalid-
-proposal limit remains. Run reports expose `stall_advisory_matches` and reason
-counts; arm/category summaries sum them and list the per-run counts. Each matched
-proposal counts once, using the first matching advisory rule.
-
-Action attempts and captured states are counted separately. Input/output tokens
-per turn use received actor responses as the denominator. Cached input and
-reasoning are subsets, not extra totals. Missing response usage uses the labelled
-known-usage denominator. Actor costs disclose response and failed-transport components separately; judge costs remain separate.
-
-Browser/renderer crashes, CDP stalls, capture failures, exhausted reference
-snapshots, recorder errors and exhausted transient actor transport retries are
-technical failures. Website blocks, actor failure, turn caps and provider auth,
-quota or billing errors are separate outcomes. One fresh technical rerun is
-allowed per scheduled task/arm/trial in both arms. Success, turns and tokens use
-the final attempt; prior technical-attempt costs are retained separately. A second
-technical failure remains a technical outcome, outside agent-failure counts.
-
-Technical outcome, actor-reported success and independent completion remain
-separate. Ungraded and uncertain outcomes are not confirmed failures. Aggregation
-uses the full schedule, reports unmatched arms and grading coverage, and provides
-all-attempt costs, definitive-grade success rates, successful-pair efficiency and
-pass@k bounds. See the [evaluation protocol](evaluation-protocol.md).
+| Accounting rule | Contract |
+| --- | --- |
+| Model turn | A received actor response, including rejected proposals, parsing failures and termination. |
+| Failed transport attempt | Separate from turns; retains duration/status and reported usage, with missing usage unknown. |
+| Tokens per turn | Actor input/output are reported separately over received responses with known respective usage. Cached input and thinking are subsets. |
+| Stall advisory | Exact duplicate activation, two-action cycle or recent-stall matches are private, advisory-only and symmetric. They neither reject nor stop a run. The first match contributes one count. |
+| Costs | Actor, prior technical attempts and each judge stream stay separate; incomplete usage does not establish zero spend. |
 
 ## Browser recovery
 
-Target and renderer crash/detach events stop calls to a failed page. A timed-out
-read-only observation or CDP internal error triggers a target liveness probe of
-at most 3 seconds. A live target permits one session reattachment and one retry
-of that observation; a dead target ends the attempt. Actions are never replayed.
-Uncertain action delivery ends the attempt as a technical failure. Known target
-destruction or transport closure is checked before and after an actor response
-and before a terminal answer is accepted. The received response and its usage
-remain recorded; a browser failure ends the attempt under the same technical
-rerun policy in both arms. No request is dispatched after a known failure.
+Timed-out read-only observations and CDP internal errors use a liveness probe of
+at most three seconds. A live target permits one reattachment and retry of that
+observation. Actions are never replayed; uncertain delivery is technical failure.
+Known target destruction or transport closure is checked before and after actor
+responses and before accepting a terminal answer. Received responses and usage
+remain recorded.
 
-The browser unregisters its capture component during session disposal. The
-assertion-enabled build uses `SYS_NICE` for renderer-priority changes when tabs
-switch. The recorder preserves crash evidence and applies the same fresh-attempt
-policy in both arms for browser failures.
+Browser/renderer crashes, CDP stalls, capture failures, exhausted reference
+snapshots, recorder errors, exhausted transient actor transport retries and input
+preflight technical errors can receive one fresh attempt. The final attempt
+supplies success, turns and tokens; prior technical-attempt costs remain separate.
+A second technical failure is not counted as an actor failure. Website blocks,
+actor failure, turn caps and provider auth/quota/billing outcomes do not trigger
+this technical rerun.
+
+Actor timeouts, connection errors and temporary HTTP 429/500/502/503/504 allow two
+further transport attempts with 2/8-second backoffs and up to 0.5 seconds of
+jitter. Auth, quota, billing and other 4xx errors are not retried. Browser capture
+components unregister during session disposal; crash evidence and rerun policy
+remain shared between arms.
 
 ## Task catalog and provenance
 
-The default catalog is [data/tasks.jsonl](../data/tasks.jsonl), containing
-`task_01` through `task_40`. Each row has eight fields: `task_id`, `task_name`,
-`category`, `instruction`, `start_url`, `stopping_condition`, `constraints`,
-and `difficulty`. The catalog contains ten tasks at each level: `easy`, `medium`,
-`hard` and `complex`. Difficulty does not determine success or change the
-200-turn cap. Easy tasks use one site and one to three pages for a few facts or
-a simple search or filter (about 5–15 turns). Medium tasks combine filters,
-sorting or detail pages (about 15–40 turns). Hard tasks use deep navigation or
-two to three sites with constraints (about 40–100 turns). Complex tasks compare
-or calculate across many items and several sites, generally under 150 turns.
-These are workload guidelines, not measured task lengths.
+The catalog [data/tasks.jsonl](../data/tasks.jsonl) contains `task_01` through
+`task_40`, ten at each difficulty. Its SHA-256 is
+`1b21a93282a438f638b70dabc427b6d6cda48b196af7ab46425b8241785cbf67`.
+The [dataset README](../data/README.md) is the schema, constraints and difficulty
+reference. Workload guidance does not change the shared turn cap or determine
+success.
 
-Constraints are shared browser, access and read-only policies. Task-specific
-scope and checkable deliverables belong in the instruction and stopping condition.
+The pilot uses `task_26` (easy), `task_02` (medium), `task_19` (hard) and `task_25`
+(complex), both arms with one trial each. The full collection accepts any positive
+trial count per arm. Catalog and rubric hashes bind the schedule; run manifests
+retain the catalog hash, or `null` for a manual task without a catalog.
 
-The loader accepts any frozen local JSONL catalog using this task contract.
-The dataset [README](../data/README.md) describes the task fields and scope.
-Public, read-only tasks use bounded sets and
-checkable outcomes; recorded observations establish changing page values.
-Catalog and rubric hashes bind the schedule, and every run manifest retains
-the exact catalog SHA-256. Manual tasks without a catalog record `null`.
-
-Internal curation records date-sensitive task deadlines. Scheduling refuses a task
-after its inclusive UTC `valid_until` date unless `--allow-expired` is set. The
-schedule records the deadline and any override; the run manifest also records
-the check date. Historical search windows retain their specified dates; rolling
-runtime values have no preset expiry.
+Expiry metadata is committed in `internal/task_validity.json`. Scheduling refuses
+an expired task unless `--allow-expired` is explicitly set; the deadline, check
+and override remain recorded. Task scope and deliverables belong in the
+instruction and stopping condition, while the six constraints are shared access,
+browser and read-only policies.
 
 ## Scope
 
-Tasks target public-web research and extraction. Viewport limits, accessible
-labels, rendering, dynamic content and live-site changes affect the available
-evidence. Text from hidden or collapsed descendants, full accessible labels,
-`aria-label`/`aria-labelledby` and image alt text are inherent DOM-format
-properties; their text need not be painted in the viewport. A label may be
-sourced inside, near or outside the viewport while describing an intersecting
+Tasks target public-web research and extraction. Full accessible labels, hidden
+or collapsed descendants, `aria-label`/`aria-labelledby` and image alt text are
+real DOM-format content that need not be painted in the viewport. Labels can
+originate inside, near or outside the viewport while describing an intersecting
 control. Viewport bounding boxes do not prove absence of clipping or occlusion.
-Screenshot pixels retain visible canvas, image, CSS, frame and shadow content
-that can be absent from the DOM projection. These are inherent properties of
-the recorded formats.
+Screenshots retain visible canvas, image, CSS, frame and shadow content that can
+be absent from the DOM projection.
 
-Visible-text extraction for scrolled inline-rich content covers `<p>` elements
-only. Other inline-rich blocks retain their existing first-500-character prefix
-behavior, which can omit visible lines after scrolling. Preserve the saved formats
-and do not infer that all viewport text is represented. The within-run audit
-uses paired source evidence to distinguish coverage from actor behaviour.
-Captures are sequential, so navigation flags and timestamps describe
-the interval rather than prove simultaneous content. Benchmark results include
-targeting and action behavior as well as page interpretation.
-
-Retain source URLs, timestamps, task hashes and run provenance with exported
-observations.
+Visible-text extraction for scrolled inline-rich content covers `<p>` only.
+Other inline-rich blocks can retain a first-500-character prefix and omit visible
+lines after scrolling. Sequential capture does not prove simultaneous content;
+instability records describe the acquisition interval. Results therefore include
+targeting and action behaviour as well as observation interpretation.
 
 ## Verifiers and within-run audit
 
-Every actor trial receives common completion grading, both auxiliary verifiers
-and the audit. Rubric generation and dependency checking use `gpt-5.2`.
-Both verifiers use `gemini-3.5-flash-lite` for relevance, evidence analysis,
-disambiguation, reality checks, rescoring, side effects, outcome and failure
-analysis, action-only scoring and both validity stages.
-The named `pro` profile uses `gemini-3.1-pro-preview` for these same native
-stages. Its outputs are isolated from primary results. The actor model is never
-a judge. Native profiles keep the same prompts, selection, scoring, validation
-and retry budgets.
+Every finalized actor trial receives paired completion, both auxiliary verifiers
+and the audit when their required inputs and judgments are available. Failed
+actors with usable evidence remain auditable. All stages use the same frozen
+weighted rubric; native side-effect penalties stay separate from frozen-criterion
+full-score checks.
 
-Inventory uses `gemini-3.1-pro-preview`; evidence-loss adjudication and common
-completion use `gpt-6.1-sol`. Verifier and audit output limits remain unset;
-the 115,000-token verifier input guard remains active. Images use high detail.
-Task-only validity uses a recorded UTC date frozen from the run.
-Native verifier returned IDs are recorded for every call and compared with the
-same matcher as diagnostics. A native mismatch does not itself refuse a grade;
-completion, inventory and adjudication do refuse mismatches. Finite nonboolean
-earned points must lie between zero and the criterion's positive finite weight.
-Invalid numeric responses use the existing repair budget. Exhausted scoring or
-authentication produces an ungraded result with an explicit `judge_fallback`
-reason, null score fields and retained call/usage receipts; baseline scores never
-substitute for an unavailable rescore. Authentication refresh consumes the
-configured endpoint attempt budget and cannot loop indefinitely.
+Each native verifier receives every available state in its own format, preserving
+state IDs and full action history across gaps. Navigation-flagged states remain
+in both verifiers. Directional audit decisions use only same-ID states with
+complete paired capture and no navigation during acquisition. Empty DOM exports
+remain eligible. A screenshot-only required fact can establish DOM loss; shared
+absence does not establish directional loss. The audit never pairs two actor
+recordings. Each task/trial has four arm/direction values, with coverage retained.
 
-Staged screenshot and DOM inputs always originate from one recording hash.
-Each verifier sees every state available in its own format, including states
-flagged for navigation. Missing-format states remain explicit gaps with their
-original IDs; full action history and observed URLs are preserved. This declared
-input-contract adaptation leaves top-K, scoring, penalties and citation rules
-unchanged, and contiguous runs preserve original loader behavior.
-The native JSON output contract is `native-rubric-output-contract/v3`: examples
-use single JSON braces, criterion bounds are rendered, and unmet conditional
-criteria retain their response positions while contributing no points to totals.
-DOM `citation_checks` record state-ID and extractable exact-quote diagnostics,
-including quote coverage. Citations are not enforced. The diagnostic records
-bypass score normalization and do not alter requests, scores or audit feedback.
-DOM photo examples and taxonomy source headers retain their original text;
-photo examples cannot establish pixel facts absent from the DOM text.
-`action_definitions=None` is unsupported for programmatic calls outside the
-CLI runners, which supply explicit action definitions.
+The native input adaptation preserves top-five selection, scoring, penalties and
+citation rules; contiguous states follow the same loader contract. Task-only
+validity uses the run's frozen UTC date. DOM citation checks diagnose state IDs
+and extractable exact quotes without changing scores or audit feedback. The
+native JSON contract is `native-rubric-output-contract/v3`.
 
-Directional-loss decisions use the same state IDs for both formats, requiring a
-complete paired capture and no navigation during capture. Unverified URLs remain explicitly unavailable in both shared inputs.
-Record format gaps, navigation states, eligible IDs and coverage for each run.
-No eligible states means an ungraded audit with a reason, never zero loss. Failed
-actors with usable evidence remain auditable. Missing auxiliary results block the
-full audit rather than being replaced with invented analyses.
-
-Outcome grading interprets dates from the task and recorded evidence. Unresolved
-years are disclosed in the reasoning rather than inferred from a collection year.
-
-Audit receipts use `automated-evidence-audit/v8` with prompt version
-`paired-capture-eligible-state-adjudication/v8`, identifying the shared-URL,
-eligible-state and response-acceptance contracts. Inventory and adjudication each
-allow three validation attempts; refusal, malformed output and exhausted repair
-retain their attempt receipts and usage. An ungraded audit has no pooled loss
-rate. Resume may retry it without repeating actor execution.
-
-Screenshot loss and DOM loss are computed separately inside each actor run.
-Report all four values per task/trial side by side, retaining actor identity.
-Never pair observations across actor runs. Shared absence and temporal
-inconsistency do not automatically establish directional loss.
-
-Actor tokens per model turn include received responses for rejected proposals,
-parsing failures and termination. Failed transport attempts have a separate count.
-Report input/output averages separately; cached input and reasoning are subsets.
-Missing usage uses explicitly labelled known-usage denominators. Publish run
-mean/median/distributions by arm and category. Common success, auxiliary process
-scores, threshold success, outcome success and frozen full-score checks stay
-separate; runtime penalties and judge fallbacks have their own fields. All judge
-cost streams remain separate from actor costs.
+Completion, inventory and adjudication reject missing/mismatched returned model
+IDs and incomplete responses. Native model mismatches are recorded as diagnostics.
+Earned points must be finite nonboolean values in `0..max_points`; exhausted
+numeric repair or authentication leaves an ungraded native result with null
+scores and retained receipts. An unavailable native verifier blocks its audit.
+An ungraded or missing audit has no pooled loss rate, not zero loss.
+The [evaluation protocol](evaluation-protocol.md) defines response acceptance,
+auxiliary scores, directional loss and coverage.
 
 ## Judge delivery
 
-| Stage | Model | Transport |
-| --- | --- | --- |
-| Actor, both arms | gemini-3.8-flash | Normal; input preflight unchanged |
-| Rubric generation and dependency check | gpt-5.2 | Normal |
-| Native screenshot and DOM verifiers, all stages | gemini-3.5-flash-lite | Batch; medium thinking |
-| Native Pro comparison profile, all stages | gemini-3.1-pro-preview | Batch; medium thinking |
-| Common paired completion | gpt-6.1-sol | Batch; medium reasoning |
-| Audit inventory | gemini-3.1-pro-preview | Batch; thinking unset |
-| Audit adjudication | gpt-6.1-sol | Batch; reasoning unset |
+| Stage | Model | Transport | Thinking/reasoning | Output cap |
+| --- | --- | --- | --- | --- |
+| Actor, both arms | `gemini-3.8-flash` | Normal | MEDIUM | 10,000 |
+| Rubric generation and dependency check | `gpt-5.2` | Normal | Unset | Unset |
+| Native screenshot and DOM verifiers, all stages | `gemini-3.5-flash-lite` | Batch | Medium | Unset |
+| Native Pro comparison profile, all stages | `gemini-3.1-pro-preview` | Batch | Medium | Unset |
+| Paired completion and optional actor-native grade | `gpt-6.1-sol` | Batch | Medium | 10,000 |
+| Audit inventory | `gemini-3.1-pro-preview` | Batch | Unset | Unset |
+| Audit adjudication | `gpt-6.1-sol` | Batch | Unset | Unset |
 
-`JUDGE_TRANSPORT` selects `batch` (default) or `normal` for judging. The actor,
-its countTokens preflight and rubric preparation keep normal transport. Each
-batch item contains the same request body as normal delivery. Ready calls share
-provider/model/stage rounds; relevance precedes selected-state analysis and
-global stages, and inventory precedes adjudication. Independent native verifiers
-and completion can have requests ready in the same round. Dependent rounds can
-take hours to days, even with each provider targeting a 24-hour window.
+`JUDGE_TRANSPORT` selects `batch` by default or `normal` for judging. Actors,
+actor preflight and rubric preparation stay normal. Native stages retain the
+115,000-token input guard. Judge image requests specify high detail. Temperature
+is omitted in the listed configurations.
 
-Every item binds a recording, rubric source, native profile, stage, call identity
-and attempt. Submitted job IDs and raw responses are durable. Resume polls saved
-jobs and replays answered items through the same validators. Pending work is not
-an ungraded judgment or task failure. A cancelled collection cannot import late
-results or publish grades. An uncertain submission acknowledgement blocks
-resubmission until its actual provider ID is reconciled; batch creation is not
-idempotent. Known outstanding jobs are cancelled; an unknown job ID is reported
-for provider reconciliation.
+Batch items contain the normal request body inside the provider envelope. Ready
+calls share provider/model/stage rounds; stage dependencies remain ordered.
+Submitted IDs and raw responses are durable. Repeating the same command polls
+saved jobs and replays answered items through the same validators. Pending work
+is not an ungraded judgment or task failure. Cancellation forbids late imports;
+uncertain submission acknowledgement blocks resubmission until its actual job ID
+is reconciled. See the [Batch controls](runbook.md#controls-and-outputs).
 
-Native output settings, profile and transport are included in the effective
-settings guard. Common completion has no native-result input and is shared
-across judge profiles. Native results influence both audit prompts and audit
-availability, so the profile comparison repeats the audit independently under
-each native profile, always within the same actor recording. Its screenshot-only
-subsets are identified separately from each audit's screenshot-complete,
-DOM-incomplete coverage and confirmed DOM loss. Agreement is reported on both
-subsets, their union and intersection; missing audits leave those comparisons
-unavailable. These are judge-defined subsets requiring review, not human accuracy
-labels. Per-profile quality counts cover ungraded native results, observed repair
-events, explicit refusals, blocked audits and missing loss values. Primary and Pro
-grades never enter the same aggregate.
+Common completion has no native-result input and is shared across profiles.
+Each profile runs its own native verifiers and audit on each identical actor
+recording. The comparison reports criterion agreement, both audits' screenshot-
+only subsets and their union/intersection, directional-loss differences,
+usage/cost and judgment-quality counts. These subsets are judge-defined, not
+human accuracy labels. Profiles are isolated in output and primary aggregation.
 
-Batch receipts identify the pricing mode. Actor, completion, each native verifier,
-inventory, adjudication and rubric preparation retain separate cost streams.
-Unknown item usage stays unknown, including failed items before a successful
-retry. [Cost assumptions](cost-estimate.md) are estimates, not measured spend.
+Completion allows one request per grading attempt; inventory and adjudication
+allow three validation attempts each. Native repairs and endpoint retries retain
+their receipts. Audit receipts identify `automated-evidence-audit/v8` and
+`paired-capture-eligible-state-adjudication/v8`. Authentication refresh consumes
+the endpoint attempt budget. Effective settings bind profile, transport and
+output policy for resume and comparison. [Cost assumptions](cost-estimate.md)
+are planning estimates, not measured results.

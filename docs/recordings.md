@@ -6,13 +6,15 @@ evidence formats. The [datacard](datacard.md#observation-modes) defines
 which observations reach each actor; passive artifacts remain recorder and judge
 data.
 
-The batch ledger accounts for every scheduled attempt, including attempts that
-create no recording directory. Use it with the recording manifest to follow
-execution order, technical outcomes, grading and available cost information.
-New output directories use numeric collision suffixes. `--resume` continues an
-existing executable ledger and never chooses a different run implicitly.
-Comparison output records its `browser_profile_policy`, including any explicit
-nonfresh override; other browser build and environment checks still apply.
+The batch ledger accounts for every scheduled run, including runs that create no
+recording directory. Use it with the recording manifest to follow execution
+order, technical outcomes, grading and available cost information. Output
+directories use numeric collision suffixes. `--resume` selects an existing ledger
+or schedule preview and never chooses a different run implicitly. A preview is
+not an execution ledger; rubric availability determines whether scheduling can
+create the executable ledger. Comparison
+output records its `browser_profile_policy`, including any explicit nonfresh
+override; other browser build and environment checks still apply.
 
 ## Locate an attempt
 
@@ -27,16 +29,21 @@ recordings/<batch-name>/
 ```
 
 Trial count is an explicitly chosen positive integer with no default. Each
-`(task, arm, trial)` has a distinct recording path, retained for that attempt.
-A standalone one-arm task uses `recordings/<run-name>/<arm>/<task-id>/` and a
-local ledger under `recordings/<run-name>/attempt_ledgers/<arm>/<task-id>.jsonl`.
-A technical rerun has its own recording directory; neither attempt is overwritten.
+`(task, arm, trial)` has a distinct recording path, retained for that attempt. A
+standalone one-arm task uses `recordings/<run-name>/<arm>/<task-id>/` and a
+local ledger under
+`recordings/<run-name>/attempt_ledgers/<arm>/<task-id>.jsonl`. A technical rerun
+has its own recording directory; neither attempt is overwritten. Batch reruns
+use `<batch-name>/technical_attempt_02/<trial-name>/<arm>/<task-id>/`.
+Standalone reruns use
+`recordings/technical_attempt_02/<run-name>/<arm>/<task-id>/`.
 
-`ledger.jsonl` contains one JSON object per scheduled attempt. `sequence`,
-`task_id`, `arm`, `trial`, `trials`, `arm_order`, `run_name` and `recording` identify
-its place in the schedule. Rows also freeze expanded task data, catalog hash,
-`configuration`, rubric path/file hash and judge model. Both arms of a task/trial
-are adjacent and finish their final attempts before their judges.
+`ledger.jsonl` contains one JSON object per scheduled `(task, arm, trial)` run;
+technical attempts remain in that row’s `attempts` list. `sequence`, `task_id`,
+`arm`, `trial`, `trials`, `arm_order`, `run_name` and `recording` identify its
+place in the schedule. Rows also freeze expanded task data, catalog hash,
+`configuration`, rubric path/file hash and judge model. Both arms of a
+task/trial are adjacent and finish their final attempts before their judges.
 
 `technical_outcome` and `completed` track actor execution. `grade_outcome` and
 `grade_completed` track grading. Rows may also contain launcher PID, start/end
@@ -44,11 +51,11 @@ timestamps, exit codes, log paths, judge timestamps and errors. An interruption
 during judging preserves the completed actor outcome.
 
 Resume retains completed final attempts. A row's `attempts` list retains each
-attempt number, recording path and outcome; one technical failure permits a fresh
-attempt. Resume reconciles an orphaned attempt and continues a pending rerun
-before moving to unstarted work. A live owned recorder or grader blocks resume. Runtime
-ownership markers are checked for staleness before they are used. See the
-[runbook](runbook.md#resume) for commands.
+attempt number, recording path and outcome; one technical failure permits a
+fresh attempt. Resume reconciles an orphaned attempt and continues a pending
+rerun before moving to unstarted work. A live owned recorder or grader blocks
+resume. Runtime ownership markers are checked for staleness before they are
+used. See the [runbook](runbook.md#resume-a-recording) for commands.
 
 ## Run-level artifacts
 
@@ -62,7 +69,7 @@ in the ledger.
 | `manifest.json` | Task identity, schema/timestamps, `status`, `controls`, `states`, `steps`, turn/model metadata, provenance and `trajectory_export`. | Indexes the recording; finalization embeds the same `final` object as `final.json`. |
 | `final.json` | Actor `status`, technical `run_status`, final answer, action/turn counts, termination metadata or error when applicable. | Actor output and recorder outcome, separately from independent grading. Its `completion_grade` field remains an ungraded placeholder. |
 | `decisions.jsonl` | One row per received actor response: turn/state, decision, acceptance/rejection/error, prior memory, usage, response metadata, latency and `model_input`. | Includes invalid proposals and termination. Transport failures have separate receipts and do not add a model turn. |
-| `turns/turn_NNNNNN/request.json` | Serialized text, instructions, schema and API settings, including per-image media resolution; images use a relative saved-artifact path/hash. | The API request encodes those image bytes as base64; the file avoids storing duplicate base64 per turn. |
+| `turns/turn_NNNNNN/request.json` | Serialized text, instructions, schema and API settings, including global `MEDIA_RESOLUTION_HIGH`; images use a relative saved-artifact path/hash. | The API request encodes those image bytes as base64; the file avoids storing duplicate base64 per turn. |
 | `turns/turn_NNNNNN/response.json` | Raw provider response, returned model, output items and usage. | Present when a response was received; no response is fabricated for a transport failure. |
 | `turns/turn_NNNNNN/result.json` | Decision-log row, including response status, incomplete details and output-limit flag. | Mirrors the received-response decision. A request directory can exist even when dispatch did not occur. |
 | `turns/turn_NNNNNN/input_preflight.json` | Local text/image estimate, model input limit, optional countTokens attempts, dispatch decision and status. | Estimates at or below 50% skip counting. Unavailable counting uses the recorded estimate; confirmed or estimated overflow above 95% prevents generation. |
@@ -73,8 +80,8 @@ in the ledger.
 | `failure_health.json`, `interruption.json` | Available container health, bounded log tail and interruption status. | Missing diagnostics remain unavailable; credentials are redacted. |
 | `trajectory.jsonl` | Normalized action transitions, execution status/error, before/after observations, paired artifacts and capture metadata. | Exported during finalization; missing after-states make the export incomplete. |
 | `web_surfer.log` | JSONL WebSurfer-style action events, model turns, arguments and delivery status. | Derived action log, not additional actor input or model calls. |
-| `completion.json` | Primary `paired` grade, recording/rubric/prompt hashes, model IDs, criteria/verdict and judge usage. | Produced by independent grading. Missing, uncertain and ungraded are distinct from confirmed failure. |
-| `completion_actor_native.json` | Optional secondary grade using `actor_native` evidence. | Does not overwrite the primary grade. Both saved grades contribute to separate judge cost accounting. |
+| `completion.json` | Primary `paired` grade, recording/rubric/prompt hashes, model IDs, criteria/verdict and judge usage. | Standalone completion can write beside the recording; controlled evaluation keeps the shared receipt outside the recording, as described below. Missing, uncertain and ungraded are distinct from confirmed failure. |
+| `completion_actor_native.json` | Optional secondary grade using `actor_native` evidence. | The secondary policy writes beside the recording and does not overwrite the primary grade. Both saved grades contribute to separate judge cost accounting. |
 | `capture_failures.jsonl` | Attempt, directory, timestamp, active error and partial capture metadata. | Failed after-action capture directories are retained under the next free `step_NNN_capture_attempt_XX` name before an existing transport retry. |
 | `steps/step_NNN/` | One committed captured state. | `step_001` is the initial state; subsequent states follow executable action attempts. |
 
@@ -100,10 +107,10 @@ capture metadata. The DOM arm also saves executable reference text.
 | File | Meaning |
 |---|---|
 | `dom.json` | ChromiumRL structured snapshot under `result.snapshot`. |
-| `dom_full.txt` | Detailed rendering of the viewport-scoped snapshot, subject to node/text limits. “Full” refers to that captured snapshot, not whole-page HTML or all offscreen content. |
-| `dom_model.json` | ChromiumRL model-oriented representation under `result.modelDOM`. |
-| `dom_model.txt` | Text rendering of the model-oriented representation. Actor formatting masks ChromiumRL numeric IDs. |
-| `screenshot.png` | Viewport PNG. In the screenshot arm, these exact bytes are supplied to the actor at high detail. |
+| `dom_full.txt` | Detailed rendering of the viewport-scoped snapshot, with a default 1,200-character display cap per text field in addition to snapshot limits. “Full” refers to that captured snapshot, not whole-page HTML or all offscreen content. |
+| `dom_model.json` | Model-oriented projection under `result.modelDOM`, including the explicit marker for an empty export. |
+| `dom_model.txt` | Text rendering of the model-oriented representation. Actor formatting masks ChromiumRL numeric IDs and filters its inactive targeting/scroll instructions; the saved text remains intact. |
+| `screenshot.png` | Viewport PNG at device pixel ratio 1. The screenshot actor receives these exact bytes with global `MEDIA_RESOLUTION_HIGH`. |
 | `capture.json` | Interval, phase timing, target identity and completeness metadata, also stored under the manifest state's `capture` field. |
 | `agent_browser_actions.txt` | DOM arm only: viewport-filtered interactive snapshot supplying executable `e` references. It is recorded agent-browser output, not code written by the actor. |
 | `action.json` | Action attempted **from this state**, model turn, delivery status/error, timing and subsequent progress/state link; DOM target metadata where applicable. Screenshot actions keep raw model coordinates and executed CSS coordinates. |
@@ -128,14 +135,15 @@ The order is `structured_dom`, `screenshot`, DOM-arm `executable_refs`, then
 
 `policy_version` is `paired-capture/v2`. The private `readiness` record contains
 `target_id`, `frame_id`, `loader_id`, `timeout_seconds`, `wait_seconds`,
-`ready_state`, `mime_type`, `animation_frames`, `navigation_changes` and a status
-of `ready`, `timeout`, `same_document` or `unavailable`. A new document waits for
-DOMContentLoaded or interactive/complete and then two animation frames, within
-the existing CDP navigation timeout (90 seconds). The settle interval is unchanged.
-Timeout permits capture as-is; same-document updates skip the asynchronous wait.
-The interval duration includes readiness waiting; individual phase durations
-start afterward. Navigation during readiness is recorded separately from
-navigation during evidence acquisition.
+`ready_state`, `mime_type`, `animation_frames`, `navigation_changes` and a
+status of `ready`, `timeout`, `same_document` or `unavailable`. A different
+target/frame/loader waits for DOMContentLoaded or interactive/complete and then
+two animation frames, within the existing CDP navigation timeout (90 seconds).
+The settle interval is unchanged. Timeout permits capture as-is; same-document
+updates skip the asynchronous wait. The interval duration includes readiness
+waiting; individual phase durations start afterward. `navigation_changes`
+identifies document-identity changes encountered during readiness.
+Evidence-acquisition navigation has separate flags.
 
 `document_mime_type` and `document_ready_state` describe the document before raw
 acquisition. `dom_export` records `status` (`empty` or `content`), the empty marker
@@ -164,12 +172,13 @@ writes remain durable during raw capture for crash receipts. Captures are sequen
 changes; they do not detect every DOM mutation or animation. Timing and flags
 therefore matter when interpreting the two evidence formats for a state.
 
-A passive capture error sets `paired_complete: false`, removes the failed phase's
-partial files and records its error. When the active observation is usable, the
-actor continues without that error entering memory, prompt, progress or rejection
-feedback. Such a state can lack passive artifacts. An active observation error
-can end the run or trigger a bounded read-only transport retry. A capture retry
-does not replay an executed action.
+A passive capture error sets `paired_complete: false`, removes the failed
+phase's partial files and records its error. When the active observation is
+usable, the actor continues without that error entering memory, prompt, progress
+or rejection feedback. Valid empty exports do not enter this failure path. Such
+a state can lack passive artifacts. An active observation error can end the run
+or trigger a bounded read-only transport retry. A capture retry does not replay
+an executed action.
 
 ## Follow actions and model calls
 
@@ -182,9 +191,10 @@ missing transition.
 `action_succeeded` confirms browser input delivery. Page progress and task
 completion are assessed separately. Actor-facing history includes standardized
 execution outcomes and observation-change diagnostics, with no private target
-descriptions or raw backend advice. Model turns can exceed action counts because
-received rejected proposals, parsing failures and termination consume model turns
-without executing browser actions. Failed transport attempts do not consume a turn.
+descriptions, private stall advisories or raw backend advice. Model turns can
+exceed action counts because received rejected proposals, parsing failures and
+termination consume model turns without executing browser actions. Failed
+transport attempts do not consume a turn.
 
 Each decision records `response_status`, `incomplete_details`, `output_limit_hit`,
 `returned_model`, `reasoning` and `usage`. Inspect response status and incomplete
@@ -207,12 +217,12 @@ the hash against the schedule and across arms and trials.
 Date-sensitive catalog tasks also record `valid_until`, `expiry_checked_at` and
 `expiry_override`; these scheduling controls are not actor instructions.
 
-Call timing files record CDP and agent-browser method, status, duration and error
-metadata. Browser events include target/renderer crashes, detach and dialog
-notifications. Failure receipts include available container memory, shared-memory
-use, process count and a bounded log tail; unavailable diagnostics are recorded
-as unavailable. Interruption receipts preserve partial attempt status. Credentials
-are excluded from these files.
+Call timing files record CDP and agent-browser method, status, duration and
+error metadata. Browser events include target/renderer crashes, detach and
+dialog notifications. Failure receipts include available container memory,
+shared-memory use, process count and a bounded log tail; unavailable diagnostics
+are recorded as unavailable. Interruption receipts preserve partial attempt
+status. Credential values are sanitized from diagnostic output.
 
 Read-only observation timeouts/internal errors permit a 3-second liveness probe
 and one reattachment/retry for a live target. Crash events stop further calls to
@@ -263,19 +273,39 @@ for the settings compared across resumes, arms and trials.
 
 ## Judge profiles and batch receipts
 
-Controlled evaluation stores primary results beneath
-`evaluations/profiles/primary/<run>/<arm>/<task>/<recording-hash>/` and the
-comparison profile beneath `evaluations/profiles/pro/` with the same suffix.
-Their flat paired inputs preserve the same source hashes and validity date.
-The shared completion receipt is under `evaluations/common/` with that suffix;
-each profile records its bound `paired_completion.json`. Standalone completion
-also supports its recording-local receipt.
+Evaluation roots are relative to the selected recording: let `B` be
+`recording_path.parent.parent / "evaluations"`. For a batch recording beneath
+`recordings/<collection>/trial_0001/<arm>/<task-id>/`, `B` is
+`recordings/<collection>/trial_0001/evaluations/`.
 
-`evaluations/batch_jobs/` contains unchanged request bodies, deterministic item
-IDs, input JSONL files, provider job receipts and raw item responses. Job and
-file names use sequence numbers. Functional submission/completion timestamps
-stay inside receipts. Requests identify their task, driving arm, trial, recording
-hash, rubric source hash, native profile, stage and attempt. Calls record
-`transport`, `batch_request_id`, `batch_job_id` and individual `batch_items` for
-cost coverage. Pending jobs are resumable; cancellation and uncertain submission
-receipts explicitly prevent unsafe result import or duplicate submission.
+| Output | Location |
+| --- | --- |
+| Primary native evaluation | `B/profiles/primary/<run-name>/<arm>/<task-id>/<recording-hash>/` |
+| Pro native evaluation | `B/profiles/pro/<run-name>/<arm>/<task-id>/<recording-hash>/` |
+| Shared primary completion | `B/common/<run-name>/<arm>/<task-id>/<recording-hash>/completion.json` |
+| Profile-bound copy of primary completion | Each profile's `paired_completion.json` |
+| Batch queue | `B/batch_jobs/`, selected from the first recording passed to one evaluation command |
+| Profile comparison | `B/profile_comparison.json`, with a numeric collision suffix when needed |
+
+The two profiles preserve the same source hashes and validity date. Model
+assignments belong in the [datacard](datacard.md#judge-delivery); invocation and
+resume commands belong in the [runbook](runbook.md#controls-and-outputs).
+
+The Batch queue contains unchanged request bodies, deterministic item IDs, input
+JSONL files, provider job receipts and raw item responses. Functional submission
+and completion timestamps stay inside receipts. Requests identify task, driving
+arm, trial, recording hash, rubric source hash, profile, stage and attempt.
+Keep evaluation selections grouped by their Batch queue root and retain the same
+first recording when polling. Receipts in another group's queue are not searched;
+combining already-submitted groups can submit the same work again. See the
+[evaluation protocol](evaluation-protocol.md#batch-judging) for pending and
+cancellation behavior.
+Calls record `transport`, `batch_request_id`, `batch_job_id` and individual
+`batch_items` for cost coverage.
+
+Pending jobs are resumable. A cancellation applies to the entire selected shared
+queue, including recordings and profiles using it, and is terminal for that
+queue; late results cannot be imported. A submission whose acknowledgement is
+uncertain blocks automatic resubmission until its actual provider job ID is
+reconciled. The [evaluation protocol](evaluation-protocol.md#batch-judging)
+defines these rules.

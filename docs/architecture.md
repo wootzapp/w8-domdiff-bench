@@ -13,10 +13,28 @@ A task's two arms use separate browser profiles, memory and trajectories. Their
 permitted differences are defined in the
 [datacard](datacard.md#observation-modes).
 
+## Terminology
+
+| Term | Meaning |
+| --- | --- |
+| Task | A catalog instruction, start URL, stopping condition and constraints, bound to one frozen rubric. |
+| Trial | One repetition of a task in both arms; the requested trial count is any positive integer. |
+| DOM arm | The actor receives DOM text and executable references as page observation; screenshots are recorded privately. |
+| Screenshot arm | The actor receives the saved viewport image as page observation; DOM evidence is recorded privately. Shared task context and URL are still supplied. |
+| Run | One scheduled `(task, arm, trial)` execution, including its technical-attempt history. |
+| Attempt / recording | One actor execution and its saved evidence. A technical rerun is a separate fresh attempt within the same run. |
+| State | One recorded browser observation, initially or after an executable action, with artifact and capture metadata. |
+| Paired state | Screenshot and DOM artifacts from one state's capture interval in one attempt. A valid empty DOM export is paired; artifacts from different arms are not a pair. |
+| Completion | The independent verdict on frozen task criteria, separate from the actor's claimed outcome and recorder status. |
+| Evidence loss | Criterion-required support preserved by one format but absent or disconnected in the other, assessed within the same recording using shared context. Absence from both formats is not directional loss. |
+| Profile | A native-judge model assignment with isolated evaluation outputs, such as `primary` or `pro`; it is not an actor arm. |
+
+## Components
+
 | Component | Responsibility | Main implementation |
 | --- | --- | --- |
 | Task launcher | Load task definitions, create the schedule, start fresh browser profiles, record attempt outcomes and resume unfinished schedules. | [`task_cli.py`](../w8bench/task_recorder/task_cli.py) |
-| Browser runtime | Configure the container, CDP endpoint, viewport and locale; record browser build and profile provenance. | [`browser_runtime.py`](../w8bench/task_recorder/browser_runtime.py), [`docker-compose.yml`](../docker-compose.yml) |
+| Browser runtime | Configure isolated container names and ports and verify browser services; the launcher records build and profile provenance. | [`browser_runtime.py`](../w8bench/task_recorder/browser_runtime.py), [`docker-compose.yml`](../docker-compose.yml) |
 | Capture | Save structured DOM, readable DOM, model DOM and screenshot evidence with timing and identity metadata. | [`capture.py`](../w8bench/task_recorder/capture.py), [renderers](../w8bench/task_recorder/renderers/) |
 | Actor loop | Build the selected observation request, validate one proposed action, execute it and record model usage and state transitions. | [`runner.py`](../w8bench/task_recorder/runner.py), [`prompts.py`](../w8bench/task_recorder/prompts.py) |
 | Action driver | Execute reference-targeted actions and shared browser input primitives. | [`agent_browser/client.py`](../w8bench/task_recorder/agent_browser/client.py) |
@@ -31,9 +49,9 @@ permitted differences are defined in the
 | Rubric scoring | Validate criteria, combine scores, select median results and check action arguments. | [`rubric_scoring.py`](../w8bench/verifier/rubric_scoring.py) |
 | Verifier trajectories | Parse logs and answers with shared accounting and native field declarations. | [`trajectory.py`](../w8bench/verifier/trajectory.py), [`dom_model/models.py`](../w8bench/verifier/dom_model/models.py), [`screenshot_verifier/models.py`](../w8bench/verifier/screenshot_verifier/models.py) |
 | Task validity | Classify task ambiguity and validity using each scorer’s prompt, date and logger. | [`validity.py`](../w8bench/verifier/validity.py) |
-| Verifier taxonomy | Parse failure categories and Template variables from each scorer’s policy resource. | [`error_taxonomy.py`](../w8bench/verifier/error_taxonomy.py) |
+| Verifier taxonomy | Parse failure categories and template variables from each scorer’s policy resource. | [`error_taxonomy.py`](../w8bench/verifier/error_taxonomy.py) |
 | DOM state loading and packing | Parse chronological DOM states and pack complete evidence records within the configured budget. | [`dom_model/states.py`](../w8bench/verifier/dom_model/states.py) |
-| Evidence audit | Compare both formats within one run and distinguish source loss from judge interpretation errors. | [`evidence_audit.py`](../w8bench/verifier/evidence_audit.py), [`audit_evidence.py`](../w8bench/verifier/audit_evidence.py), [`audit_requests.py`](../w8bench/verifier/audit_requests.py), [`audit_validation.py`](../w8bench/verifier/audit_validation.py) |
+| Evidence audit | Compare both formats within one recording and distinguish source loss from judge interpretation errors. | [`evidence_audit.py`](../w8bench/verifier/evidence_audit.py), [`audit_evidence.py`](../w8bench/verifier/audit_evidence.py), [`audit_requests.py`](../w8bench/verifier/audit_requests.py), [`audit_validation.py`](../w8bench/verifier/audit_validation.py) |
 | Comparison | Validate matching controls and aggregate scheduled outcomes, turns, tokens and completion statistics. | [`compare_results.py`](../w8bench/verifier/compare_results.py), [`run_full_comparison.py`](../w8bench/verifier/run_full_comparison.py), [`run_metrics.py`](../w8bench/verifier/run_metrics.py), [`paired_metrics.py`](../w8bench/verifier/paired_metrics.py) |
 
 ## Execution flow
@@ -65,26 +83,35 @@ continues a pending rerun without repeating a completed final attempt.
 Each actor request contains the task, current URL, turn budget, viewport,
 bounded task memory, standardized recent action outcomes and its selected page
 observation. Private target descriptions and raw tool diagnostics are retained
-with the recording rather than included in actor history. Shared URL changes
-and modality-specific observation changes remain diagnostic; approximate stall
-matches are advisory and do not reject otherwise valid actions.
-Each received response consumes one model turn. Failed transport attempts have
-separate receipts and a bounded retry policy. Rejected proposals do not execute
-browser input or create a new state. Screenshot coordinates are integers from
-0 to 1000; the executor converts them once using the captured viewport size. Normally, `N` action attempts
-produce `N + 1` captured states: the initial state and one after each action.
-A state's `action.json` describes the action taken from that state.
+with the recording rather than included in actor history. Shared URL changes and
+modality-specific observation changes remain diagnostic; approximate stall
+matches are private advisories: they neither reject otherwise valid actions nor
+reach actor history. Each received response consumes one model turn. Failed
+transport attempts have separate receipts and a bounded retry policy. Rejected
+proposals do not execute browser input or create another state. Screenshot
+coordinates are integers from 0 to 1000; the executor converts them once using
+the captured viewport size. Normally, `N` action attempts produce `N + 1`
+captured states: the initial state and one after each action. A state's
+`action.json` describes the action taken from that state.
 
 ## Capture and actor isolation
 
 After browser input, the recorder waits for the configured settling interval,
-synchronizes the target, and captures in this order:
+synchronizes the exact target, and follows this order:
 
-1. Raw structured DOM.
-2. The viewport screenshot.
-3. Executable references when required by the actor.
-4. DOM model artifacts and stored text projections from the captured DOM.
-5. The committed state record, artifact hashes and capture metadata.
+1. Private document-readiness wait for the target/frame/loader, then two animation frames.
+2. Raw structured DOM.
+3. The viewport screenshot.
+4. Executable references in the DOM arm.
+5. DOM model artifacts and stored text projections from the captured DOM.
+6. The committed state record, artifact hashes and capture metadata.
+
+The readiness wait reuses the CDP navigation timeout and captures the current
+state on expiry. Same-document changes do not repeat that asynchronous wait. An
+empty structured export is valid: the DOM observation contains `[No exportable
+DOM content]`, while the screenshot remains the painted viewport. No OCR or PDF
+text extraction supplements it. The [recording
+guide](recordings.md#capture-intervals) defines these records.
 
 Every complete state contains `dom.json`, `dom_full.txt`, `dom_model.json`,
 `dom_model.txt` and `screenshot.png`. The reference snapshot is saved as
@@ -109,44 +136,47 @@ true on observed activity and otherwise unknown; partial coverage does not
 certify stability. Bulk evidence writes follow raw capture, while per-call
 operational traces remain durable throughout it.
 
-A crash or renderer detach ends calls to that page. Read-only timeout/internal
-errors use a short liveness probe and, for a live target, one reattachment and
-observation retry. An action with uncertain delivery is not replayed. Exact target
-IDs and a tab/opener registry bind observation to the selected page. Private
-identity values live in an isolated JavaScript world. The CLI's active target is
-verified through CDP inspector metadata without reading or writing page globals.
-Per-call
-timings, events and failure health snapshots remain in the run folder.
+A known active-target crash or destruction stops further attached calls. A
+detached observation session can be reattached. Read-only timeout/internal
+errors use a liveness probe and, for a live target, one reattachment and
+observation retry. An action with uncertain delivery is not replayed. Exact
+target IDs and a tab/opener registry bind observation to the selected page.
+Private identity values live in an isolated JavaScript world. The CLI's active
+target is verified through CDP inspector metadata without reading or writing
+page globals. Per-call timings, events and failure health snapshots remain in
+the run folder.
 
-Actor requests use the same `gemini-3.8-flash` model and medium thinking level.
-The screenshot actor uses HIGH media resolution; DOM requests contain no image.
-Local input estimation triggers `countTokens` above 50% of the model input
-limit; transient counting failures retry before using the recorded local estimate.
-Confirmed or estimated overflow is refused above 95% of the model metadata input
-limit, without truncation or generation. The outcome is technical and the
-preflight receipt remains in the recording.
+Actor requests share the model, reasoning and limits in the
+[datacard](datacard.md#shared-controls). The screenshot actor uses HIGH media
+resolution; DOM requests contain no image. Local input estimation conditionally
+uses `countTokens`; an input overflow ends technically without truncating
+evidence. The [recording guide](recordings.md#run-level-artifacts) describes the
+receipts.
 
 ## DOM representation
 
 The structured snapshot is viewport-scoped, with default limits of 7,000 nodes
-and 200,000 text characters. `dom_full.txt` is a detailed rendering of that
-bounded snapshot. `ChromiumRL.getModelDOM` organizes its content into
-`dom_model.json`, and the text renderer creates `dom_model.txt`.
+and 200,000 requested aggregate text characters; the aggregate threshold can
+flag overflow without making every field a strict slice. `dom_full.txt` is a
+detailed rendering of that bounded snapshot. `ChromiumRL.getModelDOM` organizes
+its content into `dom_model.json`, and the text renderer creates
+`dom_model.txt`.
 
 Stored model DOM retains the browser's identifiers. Actor-facing text masks
-numeric ChromiumRL IDs so they cannot be mistaken for executable references.
-The reference snapshot is filtered by viewport bounding-box overlap; partially
-visible targets can retain complete accessible labels. Overlap does not itself
-prove that a target is unobscured or clickable.
+numeric ChromiumRL IDs and filters inactive targeting/scroll instructions so
+they cannot be mistaken for executable references. The saved projection remains
+intact. The reference snapshot is filtered by viewport bounding-box overlap;
+partially visible targets can retain complete accessible labels. Overlap does
+not itself prove that a target is unobscured or clickable.
 
 ## Grading and results
 
 The primary judge policy combines screenshots and model DOM text from the same
-run with its action records, final answer and technical status. Both actor arms
+recording with its action records, final answer and technical status. Both actor arms
 use the same task rubric and judge controls. The optional actor-native policy
 writes a separate secondary grade.
 
-Both auxiliary verifiers grade each run independently using its own evidence.
+Both auxiliary verifiers grade each final recording using its own evidence.
 The DOM package packs and analyses DOM-model text; the screenshot package
 selects and analyses images. They use native process/outcome policies and
 separate runtime penalties. The audit inventories both source formats and
@@ -160,12 +190,14 @@ attempt usage remains in receipts; ungraded audits have no pooled loss rate.
 
 Available states retain their source IDs and remain in their own verifier even
 when the other format is missing. Directional audit decisions use only complete,
-stable paired states. Staged evidence, judge results and coverage live outside
-the immutable actor recording and are bound by hashes.
-Resume and comparison use the normalized
-[effective settings contract](evaluation-protocol.md#effective-settings-contract),
-including request policies, prompt/schema identities, rubric bindings and browser
-source provenance. Credentials and deployment locations are excluded from this
+paired states with no navigation inside the evidence-acquisition interval.
+Content/paint change flags are diagnostics, not another eligibility filter.
+Staged evidence, judge results and coverage live outside the immutable actor
+recording and are bound by hashes. Resume and comparison use the normalized
+[effective settings
+contract](evaluation-protocol.md#effective-settings-contract), including request
+policies, prompt/schema identities, rubric bindings and browser source
+provenance. Credentials and deployment locations are excluded from this
 behavioral contract.
 
 Actor-reported success, technical outcome and independent completion are

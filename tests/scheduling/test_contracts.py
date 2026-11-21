@@ -777,3 +777,117 @@ def test_audit_refusal_is_ungraded_and_has_no_directional_values(full_evaluation
     assert stage["status"] == "ungraded" and stage["reason"]
     assert "metrics" not in stage
     assert stage["calls"][0]["usage"]["prompt_tokens"] == 8
+
+
+def test_documentation_links_resolve():
+    import html
+    import re
+    import subprocess
+    from urllib.parse import unquote, urlsplit
+    root = Path(__file__).resolve().parents[2]
+    sources = [root/name for name in subprocess.check_output(
+        ['git', 'ls-files', '*.md'], cwd=root, text=True).splitlines() if (root/name).is_file()]
+    assert not (root/'docs/runbook_next.md').exists()
+    errors = []
+    for source in sources:
+        text = re.sub(r'^```[^\n]*\n.*?^```\s*$', '', source.read_text(), flags=re.M|re.S)
+        targets = re.findall(r'(?<!!)\[[^\]]*\]\(([^\n)]+)\)', text)
+        targets += re.findall(r'^\[[^\]]+\]:\s*(\S+)', text, flags=re.M)
+        for target in targets:
+            target = target.strip().split(' "', 1)[0].strip('<>')
+            parsed = urlsplit(html.unescape(target))
+            if parsed.scheme or parsed.netloc:
+                continue
+            path = (source.parent/unquote(parsed.path)).resolve() if parsed.path else source
+            if not path.exists():
+                errors.append(f'{source.relative_to(root)}: {target} does not exist')
+                continue
+            if parsed.fragment and path.suffix == '.md':
+                body = re.sub(r'^```[^\n]*\n.*?^```\s*$', '', path.read_text(), flags=re.M|re.S)
+                anchors, occurrences = set(), {}
+                for heading in re.findall(r'^#{1,6}\s+(.+?)\s*#*$', body, flags=re.M):
+                    heading = re.sub(r'\[([^]]+)\]\([^)]*\)', r'\1', heading)
+                    slug = re.sub(r'[^\w\- ]', '', html.unescape(heading).lower()).replace(' ', '-')
+                    number = occurrences.get(slug, 0)
+                    anchors.add(slug + (f'-{number}' if number else ''))
+                    occurrences[slug] = number+1
+                anchors.update(re.findall(r'<a\s+(?:name|id)=["\']([^"\']+)', body))
+                if unquote(parsed.fragment) not in anchors:
+                    errors.append(f'{source.relative_to(root)}: {target} has no matching anchor')
+    assert not errors, '\n'.join(errors)
+
+
+def test_runbook_commands_parse_without_execution(monkeypatch):
+    import ast
+    import importlib
+    import re
+    import shlex
+    import subprocess
+    from copy import deepcopy
+    root = Path(__file__).resolve().parents[2]
+    text = (root/'docs/runbook.md').read_text()
+    expected = ['Requirements', 'Browser build', 'Get the benchmark and install Python',
+        'Create the local browser image', 'Environment configuration', 'Browser runtime',
+        'Record a task', 'Recording and evaluation inputs', 'Score a prepared task',
+        'View a remote browser', 'Tests', 'Runtime checks']
+    assert re.findall(r'^## (.+)$', text, flags=re.M) == expected
+    monkeypatch.setenv('ACTOR_MODEL', 'gemini-3.8-flash')
+    modules = {'./scripts/run-task': 'w8bench.task_recorder.task_cli',
+        './scripts/run-comparison': 'w8bench.verifier.run_full_comparison'}
+    checked, shell_count, python_count = [], 0, 0
+    commands = []
+    for shell in re.findall(r'^```(?:bash|sh)\n(.*?)^```', text, flags=re.M|re.S):
+        subprocess.run(['bash', '-n'], input=shell, text=True, check=True, capture_output=True)
+        shell_count += 1
+        for snippet in re.findall(r"<<'PY'\n(.*?)\nPY(?:\n|$)", shell, flags=re.S):
+            tree = ast.parse(snippet)
+            python_count += 1
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.List):
+                    continue
+                literals = [item.value if isinstance(item, ast.Constant) and isinstance(item.value, str)
+                    else 'recordings/example' if isinstance(item, ast.Starred) else '.venv/bin/python'
+                    for item in node.elts]
+                if '-m' in literals and literals.index('-m')+1 < len(literals):
+                    module = literals[literals.index('-m')+1]
+                    if module.startswith('w8bench.'):
+                        commands.append((module, literals[literals.index('-m')+2:]))
+        plain = re.sub(r"<<'PY'\n.*?\nPY(?:\n|$)", "<<'PY'\nPY\n", shell, flags=re.S)
+        plain = plain.replace('\\\n', ' ')
+        for line in plain.splitlines():
+            if not line.startswith(('.venv/bin/python -m w8bench.', './scripts/')):
+                continue
+            parts = shlex.split(line.split(' || ', 1)[0])
+            if parts[0] in modules:
+                commands.append((modules[parts[0]], parts[1:]))
+            elif '-m' in parts:
+                i = parts.index('-m')
+                commands.append((parts[i+1], parts[i+2:]))
+    for module_name, values in commands:
+        module = importlib.import_module(module_name)
+        args = [re.sub(r'\$\{?(BENCH_\w+)\}?', lambda match:
+            '2' if match[1] == 'BENCH_TRIALS' else 'task_02' if match[1] == 'BENCH_TASK_ID'
+            else 'example', value) for value in values]
+        parser = getattr(module, 'parse_args', None)
+        if parser is None:
+            source = ast.parse(Path(module.__file__).read_text())
+            function = deepcopy(next(node for node in source.body
+                if isinstance(node, ast.FunctionDef) and node.name == 'main'))
+            end = next(index for index, node in enumerate(function.body)
+                if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name)
+                    and target.id == 'args' for target in node.targets))
+            function.body = function.body[:end+1] + [ast.Return(value=ast.Name(id='args', ctx=ast.Load()))]
+            tree = ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[]))
+            namespace = dict(vars(module))
+            exec(compile(tree, module.__file__, 'exec'), namespace)
+            parser = namespace['main']
+        parsed = parser(args)
+        assert parsed is not None
+        if module_name == 'w8bench.task_recorder.task_cli' and parsed.task:
+            assert len(parsed.task_id) == 1 and parsed.start_url and parsed.observation_mode
+        checked.append(module_name)
+    assert shell_count >= 30 and python_count >= 5
+    assert {'w8bench.task_recorder.task_cli', 'w8bench.task_recorder.browser_runtime',
+        'w8bench.task_recorder.prepare_verifier_data', 'w8bench.verifier.generate_frozen_rubric',
+        'w8bench.verifier.run_comparison', 'w8bench.verifier.run_full_comparison',
+        'w8bench.verifier.batch'} <= set(checked)

@@ -1,8 +1,8 @@
 # Browser tasks
 
 `tasks.jsonl` contains 40 public, read-only browser tasks: 10 each at easy, medium,
-hard and complex difficulty. Each task starts at its `start_url` and ends when its
-`stopping_condition` is satisfied.
+hard and complex difficulty. Each task identifies a `start_url` and a
+`stopping_condition` describing the required final deliverables.
 
 | Field | Description |
 | --- | --- |
@@ -26,4 +26,6 @@ turn cap. The turn ranges below are planning guidance, not measured task lengths
 | Complex | Several sites, comparing or calculating across many items. | Generally under 150 |
 
 Report changing values as observed during the run and cite the source
-pages used.
+pages used. The actor receives the instruction, stopping condition and constraints
+together. See the [runbook](../docs/runbook.md) for catalog validation, rubric
+preparation and recording commands.

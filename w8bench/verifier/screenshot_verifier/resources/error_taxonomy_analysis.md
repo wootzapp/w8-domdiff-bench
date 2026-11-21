@@ -1,6 +1,5 @@
-<!-- SOURCE OF TRUTH: This file is loaded at runtime by prompts.py via
-     error_taxonomy_loader.py. Changes here automatically propagate to
-     all rubric agent prompts. Do not duplicate taxonomy text in prompts.py. -->
+<!-- Runtime taxonomy sections are loaded by prompts.py through
+     w8bench.verifier.error_taxonomy. Keep taxonomy text in this resource. -->
 
 # Error Taxonomy for Computer-Use Agent Trajectories
 

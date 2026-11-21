@@ -11,9 +11,16 @@ accessible labels. Child-frame boxes are translated and clipped. Geometry errors
 fail closed. Occlusion is not determined by this filter. The recorder saves the
 snapshot as `agent_browser_actions.txt`.
 
-`execute()` requires the recorder CDP client. Current reference clicks use the CLI;
-reference scrolls issue hover followed by scroll so nested panes can receive input.
-Actions without a reference use CDP navigation, mouse and keyboard commands.
+`execute()` requires the recorder CDP client. Targeting follows the action's
+reference or coordinates:
+
+| Action | Execution |
+| --- | --- |
+| Executable reference | CLI click, or hover followed by scroll so nested panes can receive input. |
+| Coordinates | CDP pointer input; integer `x` and `y` values from 0 to 1000 map to viewport CSS pixels, with the result clipped to the viewport. |
+| Navigation, typing, keypresses and waits | CDP navigation or keyboard input, or a local wait. |
+
+Coordinate action records keep both model coordinates and executed CSS coordinates.
 Dispatch results record input delivery. The action schema includes
 `navigate`, `back`, `click`, `type`, `press`, `scroll`, `wait`, and
 `terminate`; termination is handled by the recorder.
@@ -26,4 +33,5 @@ the commands available to the actor.
 The launcher uses the container's CDP port for the CLI and the published host port
 for recorder CDP. Container name and CLI command remain configurable. The DOM run
 manifest records `action_driver_version`; all runs record browser build provenance,
-shared settings and the source hash of the recorder implementation.
+shared settings and the source hash of the recorder implementation. See the
+[runbook](../../../docs/runbook.md) for browser configuration and recording commands.

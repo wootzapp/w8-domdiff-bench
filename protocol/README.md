@@ -6,6 +6,8 @@ inside the browser build; the recorder does not execute this source file.
 
 Source repository: `https://github.com/wootzapp/wootzapp-browser`
 
-Source revision: `02bf5a35c5a7d02371deb6afa6adb57cc73aae72` (the overlay pin in
-`protocol/browser-build.json`).
+Source revision: `79ef492157bd3089f27ab0f8453ecc5227677252` (the overlay pin in
+[`browser-build.json`](browser-build.json)). The build also checks the protocol
+and browser binary hashes from that file. See the [runbook](../docs/runbook.md)
+for browser image build and configuration commands.
 

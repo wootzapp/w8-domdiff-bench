@@ -1,150 +1,71 @@
 # w8-domdiff-bench
 
-`w8-domdiff-bench` records browser tasks with DOM and screenshot observations.
-Paired state artifacts support evidence-loss analysis alongside model turns,
-token usage, tokens per model turn and independently graded task completion. Each actor receives its
-selected page observation, while the recorder saves both formats for each state.
+`w8-domdiff-bench` compares browser task execution with DOM and screenshot
+observations. Each task runs in both arms with an explicit positive number of
+trials. The actors receive only their selected page observation; the recorder
+privately saves both formats for each state.
 
-Tasks run in both arms with an explicit number of trials. A schedule ledger
-records execution order and outcomes, and the comparison reports all scheduled
-attempts. See the [datacard](docs/datacard.md) for observation policies and shared
-settings, the [runbook](docs/runbook.md) for commands, and the
-[architecture](docs/architecture.md), [evaluation protocol](docs/evaluation-protocol.md)
-and [recording contract](docs/recordings.md) for implementation details.
+The catalog contains 40 public, read-only tasks: 10 each at easy, medium, hard
+and complex difficulty. Both arms use the same actor settings and frozen task
+criteria. A ledger records paired alternating order, fresh-browser attempts,
+technical outcomes and grading coverage.
+
+Evaluation measures completion, model turns, token usage, tokens per model turn
+and evidence loss. Completion uses common paired evidence. Each recording's evidence
+loss compares only its own screenshots with its DOM; the two driving arms
+remain separate. Actor usage and judge usage are accounted for separately.
+
+## Documentation
+
+| Read in order | What it covers |
+| --- | --- |
+| [Architecture](docs/architecture.md) | Components, execution flow and terminology. |
+| [Datacard](docs/datacard.md) | Observation policies, model settings, limits and permitted arm differences. |
+| [Task catalog](data/README.md) | Task schema, difficulty, constraints and catalog identity. |
+| [Runbook](docs/runbook.md) | Setup, browser build, offline checks, rubric approval, pilot, collection, judging and reporting commands. |
+| [Recordings](docs/recordings.md) | Ledgers, state artifacts, call receipts, provenance and export contracts. |
+| [Evaluation protocol](docs/evaluation-protocol.md) | Completion, native profiles, evidence-loss decisions, denominators and metrics. |
+| [Cost estimate](docs/cost-estimate.md) | Token and pricing assumptions, per-stage estimates and measured cost accounting. |
+| [Browser protocol](protocol/README.md) | ChromiumRL source, binary and protocol pins. |
 
 ## Setup
 
-Requirements: Linux or WSL 2, Python 3.10+, Git, Docker Engine with Compose, and
-network access for dependencies, browser images, task pages and model calls.
+Use Linux or WSL 2, Python 3.10 or higher, Git and Docker Engine with Compose.
+Run commands from the repository root:
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[test]'
+.venv/bin/python -m pip install -e ".[test]"
 [ -f .env ] || cp .env.example .env
 ```
 
-Source and wheel distributions include the verifier integrity manifests in
-`manifests/`. Verifier preflight checks these against the native packages and
-their shared dependencies. Run benchmark commands from the repository root,
-which supplies the catalog, configuration and Compose files.
+Set credentials and models in `.env`, using `.env.example` as a reference,
+then follow the
+[runbook](docs/runbook.md#environment-configuration) for isolated browser names
+and ports. The browser image is `w8-core:domdiff-bench`; its build uses the local
+Chromium and overlay checkouts bound by
+[protocol/browser-build.json](protocol/browser-build.json).
 
-Set the actor through `ACTOR_MODEL` in `.env`; it must be `gemini-3.8-flash`.
-Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` and the audit models shown in
-`.env.example`. Completion uses an explicit `gpt-6.1-sol` judge.
-The screenshot actor uses HIGH media resolution. `GEMINI_BASE_URL` selects the actor endpoint; `OPENAI_BASE_URL` selects the
-OpenAI endpoint.
-Build the browser image as `w8-core:domdiff-bench`, the default `IMAGE` value,
-using the [image build instructions](docs/runbook.md#browser-image-build).
-An explicit tag or immutable digest can select another prepared browser build.
-
-The default container is `w8-core-browser-engine`, with CDP on 49335, noVNC on
-16191 and VNC on 15911. The launcher starts each attempt with a fresh browser
-profile and verifies service ownership. Script wrappers use this directory's
-`.venv/bin/python`. Check [browser status](docs/runbook.md#browser-runtime)
-before recording.
-
-| Component | Model |
-| --- | --- |
-| Browser actor, both arms | `gemini-3.8-flash` |
-| Rubric generation and dependency check | `gpt-5.2` |
-| Screenshot verifier | `gemini-3.5-flash-lite` |
-| DOM verifier | `gemini-3.5-flash-lite` |
-| Evidence inventory | `gemini-3.1-pro-preview` |
-| Evidence-loss adjudication | `gpt-6.1-sol` |
-| Common completion judge | `gpt-6.1-sol` |
-
-Judging uses Batch transport by default. Set `JUDGE_TRANSPORT=normal` for
-synchronous delivery. The `pro` native-judge profile uses `gemini-3.1-pro-preview`
-in a separate output location. Actor requests, their input preflight and rubric
-preparation use normal transport. See the [judging sequence](docs/runbook_next.md#batch-judging)
-for submission, resume, cancellation and the pilot profile comparison. Judging
-can take hours to days across dependent batch rounds.
-
-## Record tasks
-
-The task catalog is [data/tasks.jsonl](data/tasks.jsonl), with IDs `task_01` through `task_40`.
-See the [task catalog](data/README.md) and the
-[collection and evaluation sequence](docs/runbook_next.md).
-
-Set `BENCH_TRIALS` to a positive integer. Without positional task IDs, the command
-selects every task in the explicit local catalog. Each batch requires frozen
-rubrics and the completion judge. After each adjacent actor pair, every run gets
-common completion, both auxiliary verifiers and a within-run evidence-loss audit.
-Returned completion/audit model IDs and complete responses are validated;
-refusals remain ungraded with their usage retained. Native model mismatches and
-DOM citation checks are diagnostics. Exhausted native scoring has null scores
-with an explicit reason. See the [evaluation protocol](docs/evaluation-protocol.md)
-for acceptance, repair budgets and coverage.
-
-```sh
-: "${BENCH_TRIALS:?Set a positive trial count per arm}"
-./scripts/run-task \
-  --trials "$BENCH_TRIALS" \
-  --catalog-file data/tasks.jsonl \
-  --output-dir recordings --run-name benchmark \
-  --rubric-dir data/rubrics \
-  --judge-model gpt-6.1-sol
-```
-
-Use `--dry-run` to write and inspect the schedule without starting tasks. A new
-command reserves its output directory; name collisions choose the next numeric
-suffix without overwriting prior runs. Add `--resume` and the printed run name
-to continue an existing ledger; completed final attempts are retained. Technical failures receive at most one
-fresh attempt; both attempts remain recorded.
-Both actors of a task/trial run back to back, alternating which arm starts.
-
-For a subset, add positional IDs such as `task_26 task_02 task_19 task_25`.
-The launcher accepts any frozen local catalog and task IDs. The schedule binds
-the selected definitions, rubric hashes, effective settings, browser source
-provenance and output paths. Use a separate run name for a different task set or
-configuration.
+The [pilot](docs/runbook.md#record-the-pilot) uses `task_26`, `task_02`, `task_19`
+and `task_25`, both arms, one trial each. Review it before the full collection.
+Actor calls and rubric preparation use normal transport; judging defaults to
+Batch. Pending judging returns 75; repeat the same evaluation command to poll.
+The [judging instructions](docs/runbook.md#controls-and-outputs) cover profiles,
+queue cancellation and uncertain submission receipts.
 
 ## Outputs
 
-```text
-recordings/benchmark/ledger.jsonl
-recordings/benchmark/logs/attempt_000001.log
-recordings/benchmark/trial_0001/dom/<task>/
-recordings/benchmark/trial_0001/screenshot/<task>/
-```
+| Location | Contents |
+| --- | --- |
+| `recordings/<collection>/ledger.jsonl` | Scheduled tasks, arms, trials, attempts and execution/evaluation outcomes. |
+| `recordings/<collection>/trial_NNNN/<arm>/<task>/` | Decisions, paired states, browser receipts and actor outcome. |
+| `recording.parent.parent / "evaluations"` | Bound verifier inputs, common completion, profile-specific verifier and audit results, and Batch receipts. |
+| `reports/<collection>/` | Offline aggregation, paired comparisons, metrics, costs and coverage. |
 
-| Artifact | Contents |
-|---|---|
-| `ledger.jsonl` | Task, arm, trial, order, configuration, attempt history, final output path, technical outcome and grading outcome. |
-| `task.json`, `manifest.json`, `final.json` | Task definition, controls, browser provenance, captured states, actions and actor outcome. |
-| `decisions.jsonl` | One row per received actor response, including rejected proposals, malformed responses and termination. Transport attempts are counted separately. |
-| `turns/turn_NNNNNN/` | Request, response and result, including usage, model ID, latency and output-limit status. Screenshot requests reference the saved image by path and SHA-256. |
-| `cdp_calls.jsonl`, `agent_browser_calls.jsonl`, `browser_events.jsonl`, `failure_health.json`, `interruption.json` | Call timings, target/crash/detach/dialog events and available container diagnostics. |
-| `steps/step_NNN/` | Screenshot, structured DOM, readable DOM projections, capture metadata and outgoing action record. DOM states also contain executable references. |
-| `trajectory.jsonl`, `web_surfer.log` | Ordered actions and execution outcomes; trajectories include capture-artifact references. |
-| `completion.json` | Primary independent completion grade using paired evidence from the run. |
-| `completion_actor_native.json` | Optional secondary grade using the actor's observation format. |
-| Sibling `evaluations/` tree | Hash-bound flat evidence inputs, rubric/import receipts, both verifier results, audit, quality diagnostics and separate judge usage. |
-
-Capture metadata records timing, navigation and passive-capture errors. A usable
-active observation allows the actor to continue when passive capture fails;
-paired completeness is recorded separately. Technical outcomes, actor-reported
-status and independently graded completion are separate result fields.
-
-## Compare results
-
-```sh
-./scripts/run-comparison \
-  --ledger recordings/benchmark/ledger.jsonl \
-  --output reports/benchmark
-```
-
-Comparison runs offline and includes startup failures and missing recordings in
-the scheduled denominator. Reports contain completion, turns, tokens, grading
-coverage, unmatched arms, tokens per turn, directional losses by driver/category and pass@k. Shared settings, browser provenance, capture
-policies and grading controls are checked across arms and trials.
-The [effective settings contract](docs/evaluation-protocol.md#effective-settings-contract)
-binds model routes, request limits, prompts, rubrics and browser source provenance;
-credentials, ports, deployment names and file locations do not define that contract.
-
-Actor and judge usage are reported separately. Cached-input and reasoning tokens
-are subsets of provider totals. Incomplete recordings or missing usage produce
-cost lower bounds; exact averages require complete coverage.
+The [recording guide](docs/recordings.md) defines exact paths, including technical
+attempts. The [evaluation protocol](docs/evaluation-protocol.md) defines what the
+reports calculate. Results require completed recordings and grading; task success
+is not inferred from an actor's terminal response alone.
 
 ## Tests
 
@@ -152,11 +73,6 @@ cost lower bounds; exact averages require complete coverage.
 .venv/bin/python -m pytest -q tests
 ```
 
-Tests are grouped in `tests/actors`, `tests/capture`, `tests/scheduling`,
-`tests/evaluation` and `tests/metrics`. Select one directory to run a division.
-Shared fixtures live in `tests/conftest.py`; division fixtures live beside their
-tests. Browser capture checks use the `live_browser` marker and require an
-explicit `W8_CAPTURE_TEST_CDP`; the default suite stays offline.
-
-The suite uses offline browser/model fixtures. The runbook includes a
-[browser capture check](docs/runbook.md#tests) for scroll and focus preservation.
+The suite uses offline fixtures. Browser checks require an explicitly selected
+idle browser; their commands and approval gates are in the
+[runbook](docs/runbook.md#tests).
