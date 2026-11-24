@@ -162,9 +162,9 @@ def completion_settings(recording, *, rubric_hash, judge_model, base_url, eviden
     from .model_identity import MODEL_ACCEPTANCE_POLICY
     from .verifier.completion import COMPLETION_POLICY_VERSION, GRADE_SCHEMA, JUDGE_PROMPT
     return normalized_settings({"schema_version": SETTINGS_VERSION, "rubric_sha256": rubric_hash,
-        "browser_source": browser_source_version(), "models": [judge_model], "provider": "openai",
-        "route": "responses", "base_url": base_url, "reasoning_effort": "medium", "temperature": None,
-        "max_output_tokens": 10000, "max_attempts": 1, "evidence_policy": evidence_policy,
+        "browser_source": browser_source_version(), "models": [judge_model], "provider": "google",
+        "route": "models/{model}:generateContent", "base_url": base_url, "reasoning_effort": "medium", "temperature": None,
+        "max_output_tokens": 10000, "media_resolution": "HIGH", "max_attempts": 1, "evidence_policy": evidence_policy,
         "prompt_sha256": hashlib.sha256(JUDGE_PROMPT.encode()).hexdigest(), "schema_sha256": settings_hash(GRADE_SCHEMA),
         "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
         "policy_version": COMPLETION_POLICY_VERSION, "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY})
@@ -179,9 +179,9 @@ def evaluation_settings(recording, *, eval_config, rubric_hash, judge_model, evi
     from .verifier.common import native_judge_model, CANONICAL_RUBRIC_MODEL, CANONICAL_SETTINGS
     endpoints = endpoint_settings(eval_config)
     source = browser_source_version(recording.get("manifest"))
-    stages = {"completion": {"models": [judge_model], "provider": "openai", "route": "responses",
-        "base_url": os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"), "reasoning_effort": "medium",
-        "temperature": None, "max_output_tokens": 10000, "max_attempts": 1,
+    stages = {"completion": {"models": [judge_model], "provider": "google", "route": "models/{model}:generateContent",
+        "base_url": os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"), "reasoning_effort": "medium",
+        "temperature": None, "max_output_tokens": 10000, "media_resolution": "HIGH", "max_attempts": 1,
         "prompt_sha256": hashlib.sha256(JUDGE_PROMPT.encode()).hexdigest(), "schema_sha256": settings_hash(GRADE_SCHEMA),
         "transport": judge_transport(), "batch_policy_version": BATCH_POLICY_VERSION,
         "policy_version": COMPLETION_POLICY_VERSION, "acceptance_policy_version": MODEL_ACCEPTANCE_POLICY,
@@ -231,7 +231,7 @@ def preparation_settings(eval_config, *, task_hash=None):
     from .verifier.screenshot_verifier.prompts import RUBRIC_GENERATION_PROMPT_TEMPLATE, RUBRIC_DEPENDENCY_CHECKING_PROMPT, SCORING_PROMPT_VERSION
     endpoints = endpoint_settings(eval_config)
     return normalized_settings({"schema_version": SETTINGS_VERSION, "task_sha256": task_hash,
-        "models": [CANONICAL_RUBRIC_MODEL], "endpoints": endpoints.get(CANONICAL_RUBRIC_MODEL, []),
+        "models": [CANONICAL_RUBRIC_MODEL], "endpoints": endpoints.get(CANONICAL_RUBRIC_MODEL, []), "transport": "normal",
         "prompt_sha256": settings_hash({"generation": RUBRIC_GENERATION_PROMPT_TEMPLATE, "dependency": RUBRIC_DEPENDENCY_CHECKING_PROMPT}),
         "prompt_version": SCORING_PROMPT_VERSION, "schema_version_policy": "frozen-rubric/v1",
         "max_output_tokens": None, "validation_attempts": 5, "input_token_limit": 115000,

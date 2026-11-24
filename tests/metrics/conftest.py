@@ -63,7 +63,7 @@ def metric_evaluation_factory():
                 "task_id": task["source_task_id"], "observation_mode": task["observation_mode"],
                 "rubric_sha256": "frozen-rubric", "evidence_policy": "paired",
                 "method": "model_judge", "verdict": "success", "criteria": [],
-                "judge_model": "gpt-6.1-sol", "returned_judge_model": "gpt-6.1-sol",
+                "judge_model": "gemini-3.6-flash", "returned_judge_model": "gemini-3.6-flash",
                 "judge_calls": 1, "usage": grade_usage,
             })
             evaluation["stages"].setdefault("paired_completion", {})["result"] = str(root / "paired_completion.json")
@@ -85,7 +85,7 @@ def settings_comparison_case(tmp_path, monkeypatch, metric_recording_factory, me
              "browser_source": {"overlay_revision": "overlay-one", "protocol_sha256": "protocol-one"}}
     contract = {"schema_version": "effective-settings/v1", "actor": actor,
                 "browser_source": deepcopy(actor["browser_source"]), "rubric_sha256": "rubric-custom",
-                "stages": {"completion": {"models": ["gpt-6.1-sol"], "reasoning_effort": "medium", "max_output_tokens": 10000},
+                "stages": {"completion": {"models": ["gemini-3.6-flash"], "reasoning_effort": "medium", "max_output_tokens": 10000},
                            "dom_model": {"models": ["gemini-3.1-pro-preview"], "reasoning_effort": "medium", "max_output_tokens": None,
                                          "config_sha256": "config-content", "base_url": "https://judge.example:443/v1"},
                            "inventory": {"prompt_sha256": "inventory-prompt", "validation_attempts": 3}}}

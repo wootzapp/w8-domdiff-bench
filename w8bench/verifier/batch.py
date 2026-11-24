@@ -366,9 +366,15 @@ class BatchJobs:
                 response = self.root / "responses" / f"{key}.json"
                 value = json.loads(response.read_text()) if response.exists() else {}
                 body = value.get("body") or {}
+                usage = body.get("usage")
+                if "usageMetadata" in body:
+                    from .audit_requests import _record_gemini_response
+                    normalized = {}
+                    _record_gemini_response(normalized, body, {})
+                    usage = normalized["usage"]
                 records.append({"batch_request_id": key, "batch_job_id": job.get("job_id"),
                     "model": job["model"], "returned_model": body.get("modelVersion", body.get("model")),
-                    "stage": job["stage"], "transport": "batch", "usage": body.get("usage"),
+                    "stage": job["stage"], "transport": "batch", "usage": usage,
                     "status": "answered" if value else "submission_uncertain" if not job.get("job_id") else "submitted"})
         return records
 
@@ -559,11 +565,11 @@ def main(argv=None):
     messages = [{"role": "user", "content": [{"type": "text", "text": 'Return only {"ok":true}.'},
         {"type": "image_url", "image_url": {"url": image, "detail": "high"}}]}]
     cases = [
-        ("openai", "/v1/responses", "gpt-6.1-sol", "completion", {"model": "gpt-6.1-sol",
-            "input": [{"role": "user", "content": [{"type": "input_text", "text": 'Return only {"ok":true}.'},
-                {"type": "input_image", "image_url": image, "detail": "high"}]}],
-            "reasoning": {"effort": "medium"}, "max_output_tokens": 10000,
-            "text": {"format": {"type": "json_schema", "name": "smoke", "strict": True, "schema": schema}}}),
+        ("google", "generateContent", "gemini-3.6-flash", "completion", {
+            "contents": [{"role": "user", "parts": [{"text": 'Return only {"ok":true}.'},
+                {"inlineData": {"mimeType": "image/png", "data": image.split(",", 1)[1]}}]}],
+            "generationConfig": {"thinkingConfig": {"thinkingLevel": "MEDIUM"}, "maxOutputTokens": 10000,
+                "mediaResolution": "MEDIA_RESOLUTION_HIGH", "responseMimeType": "application/json", "responseJsonSchema": schema}}),
         ("openai", "/v1/chat/completions", "gpt-6.1-sol", "adjudication", {"model": "gpt-6.1-sol", "messages": messages,
             "response_format": {"type": "json_object"}}),
         ("google", "/v1/chat/completions", "gemini-3.5-flash-lite", "native_primary", {"model": "gemini-3.5-flash-lite",
@@ -576,7 +582,7 @@ def main(argv=None):
     ]
     if not args.execute:
         print(json.dumps({"status": "offline_preflight", "model_calls": 0, "writes_performed": False,
-            "generation_requests_if_approved": {"google": 3, "openai": 2},
+            "generation_requests_if_approved": {"google": 4, "openai": 1},
             "approval_required": True, "cases": [{"provider": p, "endpoint": e, "model": m, "stage": stage, "body": body}
                 for p, e, m, stage, body in cases]}, indent=2))
         return 0

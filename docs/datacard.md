@@ -239,10 +239,10 @@ auxiliary scores, directional loss and coverage.
 | Stage | Model | Transport | Thinking/reasoning | Output cap |
 | --- | --- | --- | --- | --- |
 | Actor, both arms | `gemini-3.8-flash` | Normal | MEDIUM | 10,000 |
-| Rubric generation and dependency check | `gpt-5.2` | Normal | Unset | Unset |
+| Rubric generation and dependency check | `gemini-3.1-pro-preview` | Normal | Medium | Unset |
 | Native screenshot and DOM verifiers, all stages | `gemini-3.5-flash-lite` | Batch | Medium | Unset |
 | Native Pro comparison profile, all stages | `gemini-3.1-pro-preview` | Batch | Medium | Unset |
-| Paired completion and optional actor-native grade | `gpt-6.1-sol` | Batch | Medium | 10,000 |
+| Paired completion and optional actor-native grade | `gemini-3.6-flash` | Batch | Medium | 10,000 |
 | Audit inventory | `gemini-3.1-pro-preview` | Batch | Unset | Unset |
 | Audit adjudication | `gpt-6.1-sol` | Batch | Unset | Unset |
 
@@ -271,5 +271,4 @@ allow three validation attempts each. Native repairs and endpoint retries retain
 their receipts. Audit receipts identify `automated-evidence-audit/v8` and
 `paired-capture-eligible-state-adjudication/v8`. Authentication refresh consumes
 the endpoint attempt budget. Effective settings bind profile, transport and
-output policy for resume and comparison. [Cost assumptions](cost-estimate.md)
-are planning estimates, not measured results.
+output policy for resume and comparison.

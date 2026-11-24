@@ -288,9 +288,8 @@ def catalog_case(tmp_path, monkeypatch):
     monkeypatch.setattr(generator, "require_local_packages", lambda: {})
     monkeypatch.setattr(generator, "validate_endpoint_configs", lambda path: {})
     monkeypatch.setattr(generator, "load_env_file", lambda path: None)
-    monkeypatch.setattr(generator, "require_openai_key", lambda: None)
     def rubric_client(*args, **kwargs):
-        assert kwargs["eval_model"] == "gpt-5.2"
+        assert kwargs["eval_model"] == "gemini-3.1-pro-preview"
         return _Client()
     monkeypatch.setattr(generator.GracefulRetryClient, "from_path", rubric_client)
 

@@ -1,4 +1,4 @@
-"""Check the configured model transports with eight paid logical requests."""
+"""Check the configured model transports with seven paid logical requests."""
 
 import argparse
 
@@ -41,13 +41,12 @@ loop = asyncio.new_event_loop()
 receipts, clients = [], []
 status = 'failed'
 native_roles = {
-    'gpt-5.2': ['rubric_preparation.generation', 'rubric_preparation.dependency'],
     'gemini-3.5-flash-lite': [f'{mode}.{stage}' for mode in ('dom_model', 'screenshot_verifier')
         for stage in ('relevance', 'evidence_analysis', 'condition_disambiguation',
                       'reality_check', 'whole_rubric_rescore', 'per_criterion_rescore',
                       'side_effects', 'outcome', 'failure_analysis',
                       'action_only_scoring', 'task_validity', 'trajectory_validity')],
-    'gemini-3.1-pro-preview': ['native_pro.transport'],
+    'gemini-3.1-pro-preview': ['rubric_preparation.generation', 'rubric_preparation.dependency', 'native_pro.transport'],
 }
 def record_matches(receipt, model, returned, roles):
     ids = list(returned) or [None]
@@ -84,7 +83,7 @@ try:
             receipt['status'] = 'passed'
         finally:
             receipt.update(response=client.last_response, input_report=client.last_input_report)
-    for model in ('gpt-5.2', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'):
+    for model in ('gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'):
         client = GracefulRetryClient.from_path('config', logger=logging.getLogger('compatibility'), eval_model=model, evidence_mode='screenshot_verifier')
         clients.append(client)
         calls = instrument_client_calls(client, receipt=True)
@@ -99,19 +98,21 @@ try:
             receipt['status']='passed'
         finally:
             receipt['usage']=usage_dict(client)
-    client = ModelClient(os.environ['OPENAI_API_KEY'], 'gpt-6.1-sol',
-        os.environ.get('OPENAI_BASE_URL','https://api.openai.com/v1'))
-    receipt={'stage':'completion','configured_model':'gpt-6.1-sol'}
+    client = ModelClient(os.environ['GEMINI_API_KEY'], 'gemini-3.6-flash',
+        os.environ.get('GEMINI_BASE_URL','https://generativelanguage.googleapis.com/v1beta'))
+    receipt={'stage':'completion','configured_model':'gemini-3.6-flash'}
     receipts.append(receipt)
     response = None
     try:
-        response=client._post({'model':'gpt-6.1-sol','instructions':'Return the supplied compatibility criterion as success, reason marker visible, states [1].',
-            'input':[{'role':'user','content':[{'type':'input_text','text':'Criterion id: compatibility. State 1 contains COMPATIBILITY_OK.'},
-                {'type':'input_image','image_url':url,'detail':'high'}]}], 'max_output_tokens':10000,
-            'reasoning':{'effort':'medium'},'text':{'format':{'type':'json_schema','name':'completion_grade','strict':True,'schema':GRADE_SCHEMA}}})
-        acceptance=response_acceptance('gpt-6.1-sol', response.get('model'), response, output_cap=10000)
+        response=client._post({'model':'gemini-3.6-flash',
+            'systemInstruction':{'parts':[{'text':'Return the supplied compatibility criterion as success, reason marker visible, states [1].'}]},
+            'contents':[{'role':'user','parts':[{'text':'Criterion id: compatibility. State 1 contains COMPATIBILITY_OK.'},
+                {'inlineData':{'mimeType':'image/png','data':url.split(',',1)[1]}}]}],
+            'generationConfig':{'maxOutputTokens':10000,'thinkingConfig':{'thinkingLevel':'MEDIUM'},
+                'mediaResolution':'MEDIA_RESOLUTION_HIGH','responseMimeType':'application/json','responseJsonSchema':GRADE_SCHEMA}})
+        acceptance=response_acceptance('gemini-3.6-flash', response.get('model'), response, output_cap=10000)
         receipt['acceptance']=acceptance
-        record_matches(receipt, 'gpt-6.1-sol', [response.get('model')], ['completion'])
+        record_matches(receipt, 'gemini-3.6-flash', [response.get('model')], ['completion'])
         assert response.get('status')=='completed'
         assert acceptance['accepted'], acceptance['refusal_reason']
         value=json.loads(response_text(response))
@@ -147,7 +148,7 @@ except BaseException as error:
         receipts[-1].update(status='failed', error_type=type(error).__name__, error=str(error))
     raise
 finally:
-    write_json(root/'result.json', {'status':status,'nominal_logical_calls':8,'receipts':receipts})
+    write_json(root/'result.json', {'status':status,'nominal_logical_calls':7,'receipts':receipts})
     for client in clients:
         loop.run_until_complete(client.close())
     loop.close()

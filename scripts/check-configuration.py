@@ -39,8 +39,8 @@ validate_endpoint_configs('config')
 require_local_packages()
 print(json.dumps({'status': 'offline_preflight_passed', 'tasks': len(rows),
     'catalog_sha256': hashlib.sha256(catalog.read_bytes()).hexdigest(),
-    'actor': os.environ['ACTOR_MODEL'], 'completion': 'gpt-6.1-sol',
-    'rubric_model': 'gpt-5.2', 'verifier_models': ['gemini-3.5-flash-lite'], 'audit': audit,
+    'actor': os.environ['ACTOR_MODEL'], 'completion': 'gemini-3.6-flash',
+    'rubric_model': 'gemini-3.1-pro-preview', 'verifier_models': ['gemini-3.5-flash-lite'], 'audit': audit,
     'judge_transport': judge_transport(), 'native_profile': 'primary',
     'max_output_tokens': settings.max_output_tokens, 'max_turns': settings.max_steps,
     'media_resolution': media,

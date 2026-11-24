@@ -60,7 +60,7 @@ def test_batch_schedules_arbitrary_trials_before_start_and_resumes(tmp_path, mon
             "criteria": [{"id": "heading", "description": "Read the heading."}]})
     output = tmp_path / "recordings"
     arguments = ["--trials", str(trials), "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--judge-model", "gemini-3.6-flash", "--output-dir", str(output),
         "--run-name", "batch", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]
     ledger = output / "batch" / "ledger.jsonl"
     calls = []
@@ -129,7 +129,7 @@ def test_batch_resume_retains_dead_started_attempt_and_runs_pending_rows(tmp_pat
             "criteria": [{"id": "heading", "description": "Read the heading."}]})
     output = tmp_path / "recordings"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--judge-model", "gemini-3.6-flash", "--output-dir", str(output),
         "--run-name", "resumed", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]
     assert task_cli.main(arguments + ["--dry-run"]) == 0
     ledger = output / "resumed" / "ledger.jsonl"
@@ -194,7 +194,7 @@ def test_batch_grading_error_does_not_abort_or_replace_actor_outcome(tmp_path, m
         return SimpleNamespace(returncode=1)
     monkeypatch.setattr(task_cli.subprocess, "run", run)
     assert task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog),
-        "--rubric-dir", str(rubrics), "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--rubric-dir", str(rubrics), "--judge-model", "gemini-3.6-flash", "--output-dir", str(output),
         "--run-name", "judging", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]) == 0
     rows = [json.loads(line) for line in (output / "judging" / "ledger.jsonl").read_text().splitlines()]
     assert actors == ["dom", "screenshot"]
@@ -231,7 +231,7 @@ def test_batch_keyboard_interrupt_during_judge_preserves_actor_outcome(tmp_path,
     monkeypatch.setattr(task_cli.subprocess, "run", run)
     with pytest.raises(KeyboardInterrupt):
         task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-            "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "interrupted_judge",
+            "--judge-model", "gemini-3.6-flash", "--output-dir", str(output), "--run-name", "interrupted_judge",
             "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"])
     assert events == ["actor", "actor", "judge"]
     rows = [json.loads(line) for line in (output / "interrupted_judge" / "ledger.jsonl").read_text().splitlines()]
@@ -254,7 +254,7 @@ def test_batch_resume_refuses_live_owned_recorder(tmp_path, monkeypatch):
             "criteria": [{"id": "heading", "description": "Read the heading."}]})
     output = tmp_path / "recordings"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--judge-model", "gemini-3.6-flash", "--output-dir", str(output),
         "--run-name", "live", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]
     assert task_cli.main(arguments + ["--dry-run"]) == 0
     ledger = output / "live" / "ledger.jsonl"
@@ -283,7 +283,7 @@ def test_batch_completion_judge_is_explicit_and_cannot_fall_back_to_actor(tmp_pa
     assert not (tmp_path/"out").exists()
 
 @pytest.mark.usefixtures('no_network')
-@pytest.mark.parametrize("dry_run,judge", [(False, None), (False, "gpt-6.1-sol"), (True, None)])
+@pytest.mark.parametrize("dry_run,judge", [(False, None), (False, "gemini-3.6-flash"), (True, None)])
 def test_batch_execution_requires_frozen_rubrics_and_planning_requires_judge(tmp_path, judge, dry_run):
     arguments = ["--trials", "1", "--env-file", str(tmp_path / "absent.env"), "--output-dir", str(tmp_path / "recordings")]
     if judge is not None:

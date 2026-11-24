@@ -98,6 +98,8 @@ CDP_HOST_PORT={values['CDP_HOST_PORT']}
 NOVNC_HOST_PORT={values['NOVNC_HOST_PORT']}
 VNC_HOST_PORT={values['VNC_HOST_PORT']}
 
+# Google credentials: actors, rubrics, completion, native verifiers and inventory.
+# OpenAI credentials: audit adjudication.
 OPENAI_API_KEY={values['OPENAI_API_KEY']}
 ACTOR_MODEL={values['ACTOR_MODEL']}
 OPENAI_BASE_URL={values.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')}
@@ -107,13 +109,13 @@ TASK_CATALOG_FILE={values.get('TASK_CATALOG_FILE', '')}
 
 EVIDENCE_AUDIT_MODEL={values.get('EVIDENCE_AUDIT_MODEL', '')}
 EVIDENCE_ADJUDICATOR_MODEL={values.get('EVIDENCE_ADJUDICATOR_MODEL', '')}
-EVIDENCE_AUDIT_PROVIDER={values.get('EVIDENCE_AUDIT_PROVIDER', '')}
-EVIDENCE_ADJUDICATOR_PROVIDER={values.get('EVIDENCE_ADJUDICATOR_PROVIDER', '')}
 GEMINI_API_KEY={values.get('GEMINI_API_KEY', '')}
 
 CHROMIUM_HEADLESS=0
 CHROMIUM_RESET_PROFILE=1
 """
+    content += "".join(f"{key}={values[key]}\n" for key in
+        ("EVIDENCE_AUDIT_PROVIDER", "EVIDENCE_ADJUDICATOR_PROVIDER") if values.get(key))
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(content, encoding="utf-8")
     os.chmod(temporary, 0o600)

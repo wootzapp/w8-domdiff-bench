@@ -31,7 +31,6 @@ from .common import (
     canonical_sha256,
     ensure_under,
     load_env_file,
-    require_openai_key,
     validate_endpoint_configs,
     validate_rubric,
     write_json,
@@ -98,6 +97,8 @@ def _generate_draft(args: argparse.Namespace, task: dict, expected: dict, draft_
     clients = {}
     calls = {}
     agent = None
+    previous_transport = os.environ.get("JUDGE_TRANSPORT")
+    os.environ["JUDGE_TRANSPORT"] = "normal"
     try:
         agent = _rubric_agent(args, clients, calls)
         rubric = asyncio.run(agent._generate_rubric(task["instruction"],
@@ -116,6 +117,10 @@ def _generate_draft(args: argparse.Namespace, task: dict, expected: dict, draft_
             receipt.update(ungraded_reason=str(error), judge_fallback={"stage": error.stage, "reason": error.reason})
         raise
     finally:
+        if previous_transport is None:
+            os.environ.pop("JUDGE_TRANSPORT", None)
+        else:
+            os.environ["JUDGE_TRANSPORT"] = previous_transport
         receipt.update(call_metrics=calls, token_usage={model: usage_dict(client) for model, client in clients.items()},
             rubric_generation_calls=sum(value["logical_calls"] for value in calls.values()),
             generation_trace=getattr(agent, "rubric_generation_trace", []))
@@ -160,7 +165,8 @@ def _draft_catalog(args: argparse.Namespace, tasks: list, catalog_hash: str, dra
     if any(frozen.glob("*.json")):
         raise ValueError("Frozen rubrics exist; choose a distinct rubric version before drafting")
     load_env_file(args.env_file)
-    require_openai_key()
+    if not os.environ.get("GEMINI_API_KEY", "").strip():
+        raise ValueError("GEMINI_API_KEY is not set or is empty")
     workflow = {**preflight, "status": "running", "tasks": []}
     write_json(metrics_path, workflow)
     for task in tasks:

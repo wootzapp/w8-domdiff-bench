@@ -29,6 +29,7 @@ from w8bench.verifier.validate_inputs import validate_pair
 import asyncio
 import hashlib
 import json
+import os
 import pytest
 import subprocess
 import sys
@@ -73,14 +74,14 @@ def test_optional_judge_uses_only_its_runs_channel(run_pair, tmp_path, monkeypat
     payloads = []
     def post(self, payload):
         payloads.append(payload)
-        return {"model": "gpt-6.1-sol", "output_text": json.dumps({"criteria": [
+        return {"model": "gemini-3.6-flash", "output_text": json.dumps({"criteria": [
             {"id": "C1", "verdict": "uncertain", "reason": "insufficient support", "states": [1]}]})}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
     for mode, path in paths.items():
-        grade = asyncio.run(grade_run(path, rubric, judge_model="gpt-6.1-sol", api_key="offline-placeholder", execute=True, evidence_policy="actor_native"))
+        grade = asyncio.run(grade_run(path, rubric, judge_model="gemini-3.6-flash", api_key="offline-placeholder", execute=True, evidence_policy="actor_native"))
         assert grade["verdict"] == "uncertain" and grade["judge_calls"] == 1
-        content = payloads[-1]["input"][0]["content"]
-        assert any(c["type"] == "input_image" for c in content) == (mode == "screenshot")
+        content = payloads[-1]["contents"][0]["parts"]
+        assert any("inlineData" in c for c in content) == (mode == "screenshot")
         assert ("DOM_ONLY_SECRET" in json.dumps(content)) == (mode == "dom")
     receipt, _ = compare(*(inspect_recording(paths[m]) for m in ("dom", "screenshot")))
     assert receipt["successful_pair_turn_delta"] is None
@@ -96,19 +97,19 @@ def test_common_judge_evidence_and_secondary_policy(run_pair, tmp_path, monkeypa
     seen = []
     def post(self, payload):
         seen.append(payload)
-        return {"model": "gpt-6.1-sol", "output_text": json.dumps({"criteria": [
+        return {"model": "gemini-3.6-flash", "output_text": json.dumps({"criteria": [
             {"id": "result", "verdict": "success", "reason": "Observed", "states": [1]}]}),
             "usage": {"input_tokens": 100, "output_tokens": 10}}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
     for mode in ("dom", "screenshot"):
-        grade = asyncio.run(grade_run(paths[mode], rubric, judge_model="gpt-6.1-sol", api_key="test", execute=True))
-        content = seen[-1]["input"][0]["content"]
+        grade = asyncio.run(grade_run(paths[mode], rubric, judge_model="gemini-3.6-flash", api_key="test", execute=True))
+        content = seen[-1]["contents"][0]["parts"]
         assert grade["evidence_policy"] == "paired"
-        assert any(item["type"] == "input_image" for item in content)
+        assert any("inlineData" in item for item in content)
         assert "DOM_ONLY_SECRET" in json.dumps(content)
         assert "[ref=e1]" not in json.dumps(content)
     primary = (paths["dom"] / "completion.json").read_bytes()
-    grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gpt-6.1-sol", api_key="test", execute=True,
+    grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gemini-3.6-flash", api_key="test", execute=True,
         evidence_policy="actor_native"))
     assert grade["evidence_policy"] == "actor_native"
     assert (paths["dom"] / "completion_actor_native.json").exists()
@@ -127,16 +128,16 @@ def test_judge_failure_is_ungraded_and_keeps_its_usage_separate(run_pair, tmp_pa
     write_json(rubric, {"task_id": "task_01", "instruction": "Report done.", "start_url": "https://example.test",
         "criteria": [{"id": "result", "description": "The result is established."}]})
     def post(self, payload):
-        return {"id": "failed-judge-response", "model": "gpt-6.1-sol", "status": "incomplete" if failure == "incomplete" else "completed",
+        return {"id": "failed-judge-response", "model": "gemini-3.6-flash", "status": "incomplete" if failure == "incomplete" else "completed",
             "incomplete_details": {"reason": "max_output_tokens"} if failure == "incomplete" else None,
             "output_text": "malformed judge JSON", "usage": {"input_tokens": 101, "output_tokens": 17,
                 "output_tokens_details": {"reasoning_tokens": 11}}}
     monkeypatch.setattr(runner.ModelClient, "_post", post)
-    grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gpt-6.1-sol", api_key="test", execute=True))
+    grade = asyncio.run(grade_run(paths["dom"], rubric, judge_model="gemini-3.6-flash", api_key="test", execute=True))
     assert grade["method"] == "ungraded" and grade["verdict"] == "ungraded"
     assert grade["judge_calls"] == 1 and grade["judge_error"]
     assert grade["usage"]["input_tokens"] == 101 and grade["usage"]["output_tokens"] == 17
-    assert grade["returned_judge_model"] == "gpt-6.1-sol"
+    assert grade["returned_judge_model"] == "gemini-3.6-flash"
     assert grade["evidence_policy"] == "paired"
     assert json.loads((paths["dom"] / "completion.json").read_text()) == grade
     receipt, _ = compare(*(inspect_recording(paths[mode]) for mode in ("dom", "screenshot")))
@@ -199,7 +200,7 @@ def test_recording_cli_dry_run_never_enters_paid_or_batch_paths(tmp_path, monkey
         return {"method": "ungraded", "judge_calls": 0}
     monkeypatch.setattr(comparison, "grade_run", grade)
     monkeypatch.setattr(comparison, "_run_logged", lambda *args: pytest.fail("Paid scorer path entered"))
-    assert comparison_main(["--run", str(recording), "--rubric", str(rubric), "--judge-model", "gpt-6.1-sol"]) == 0
+    assert comparison_main(["--run", str(recording), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash"]) == 0
     receipt = json.loads(capsys.readouterr().out)
     assert receipt["model_calls"] == 0 and receipt["writes_performed"] is False
     assert seen == []
@@ -211,7 +212,7 @@ def test_recording_cli_dry_run_never_enters_paid_or_batch_paths(tmp_path, monkey
 def test_full_pipeline_freezes_inputs_grades_both_formats_and_resumes(full_evaluation, tmp_path, mode):
     paths, rubric, calls = full_evaluation
     before = comparison.inspect_recording(paths[mode])["recording_sha256"]
-    args = ["--run", str(paths[mode]), "--rubric", str(rubric), "--judge-model", "gpt-6.1-sol", "--execute"]
+    args = ["--run", str(paths[mode]), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash", "--execute"]
     assert comparison.main(args) == 0
     output = next(tmp_path.rglob("evaluation.json"))
     value = json.loads(output.read_text())
@@ -262,7 +263,7 @@ def test_completely_missing_passive_format_keeps_primary_and_available_verifier(
         capture_path.write_text(json.dumps(state["capture"]))
         state["artifacts"]["capture.json"]["sha256"] = hashlib.sha256(capture_path.read_bytes()).hexdigest()
     (source / "manifest.json").write_text(json.dumps(manifest))
-    assert comparison.main(["--run", str(source), "--rubric", str(rubric), "--judge-model", "gpt-6.1-sol", "--execute"]) == 1
+    assert comparison.main(["--run", str(source), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash", "--execute"]) == 1
     output = next(tmp_path.rglob("evaluation.json"))
     value = json.loads(output.read_text())
     available, absent = ("dom_model", "screenshot_verifier") if mode == "dom" else ("screenshot_verifier", "dom_model")
@@ -278,7 +279,7 @@ def test_completely_missing_passive_format_keeps_primary_and_available_verifier(
 @pytest.mark.parametrize("interrupted_stage", ["paired_completion", "screenshot_verifier", "audit"])
 def test_interrupted_judge_stages_retain_attempt_cost_history_on_resume(full_evaluation, tmp_path, monkeypatch, interrupted_stage):
     paths, rubric, calls = full_evaluation
-    args = ["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gpt-6.1-sol", "--execute"]
+    args = ["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash", "--execute"]
     if interrupted_stage == "paired_completion":
         original = completion.ModelClient._post
         def interrupt(self, payload):
@@ -344,7 +345,7 @@ def test_existing_fallback_warnings_are_disclosed_without_rewriting_scores(full_
                 "Failed outcome verification after 5 attempts.\n"
                 "Failed to analyze criterion 0, screenshot 1 after 5 attempts.\n")
     monkeypatch.setattr(comparison, "_run_logged", score)
-    assert comparison.main(["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gpt-6.1-sol", "--execute"]) == 0
+    assert comparison.main(["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash", "--execute"]) == 0
     stage = json.loads(next(tmp_path.rglob("evaluation.json")).read_text())["stages"]["screenshot_verifier"]
     assert stage["judgment_quality"] == "fallback_observed"
     assert stage["fallback_counts"] == {"zero_relevance": 1, "baseline_rescore": 1,
@@ -366,7 +367,7 @@ def test_dom_initial_url_guard_does_not_block_primary_or_screenshot_judge(full_e
     artifact["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
     manifest_path.write_text(json.dumps(manifest))
     before = comparison.inspect_recording(source)["recording_sha256"]
-    args = ["--run", str(source), "--rubric", str(rubric), "--judge-model", "gpt-6.1-sol", "--execute"]
+    args = ["--run", str(source), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash", "--execute"]
     assert comparison.main(args) == 1
     output = next(tmp_path.rglob("evaluation.json"))
     evaluation = json.loads(output.read_text())
@@ -392,14 +393,14 @@ def test_dom_initial_url_guard_does_not_block_primary_or_screenshot_judge(full_e
 @pytest.mark.usefixtures("no_network")
 def test_missing_audit_credential_does_not_block_primary_or_original_verifiers(full_evaluation, tmp_path, monkeypatch):
     paths, rubric, calls = full_evaluation
-    monkeypatch.delenv("GEMINI_API_KEY")
-    assert comparison.main(["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gpt-6.1-sol", "--execute"]) == 1
+    monkeypatch.delenv("OPENAI_API_KEY")
+    assert comparison.main(["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash", "--execute"]) == 1
     evaluation = json.loads(next(tmp_path.rglob("evaluation.json")).read_text())
     assert evaluation["stages"]["paired_completion"]["verdict"] == "success"
     assert evaluation["stages"]["screenshot_verifier"]["status"] == "complete"
     assert evaluation["stages"]["dom_model"]["status"] == "complete"
     assert evaluation["stages"]["audit"]["reason"] == "audit_configuration_failed"
-    assert "Google credentials" in evaluation["stages"]["audit"]["error"]
+    assert "OpenAI credentials" in evaluation["stages"]["audit"]["error"]
     assert len(calls["primary"]) == 1 and len(calls["scorers"]) == 2 and calls["audit"] == []
 
 
@@ -416,7 +417,7 @@ def test_primary_usage_coverage_requires_both_reported_components(full_evaluatio
         return response
     monkeypatch.setattr(completion.ModelClient, "_post", respond)
     assert comparison.main(["--run", str(paths["dom"]), "--rubric", str(rubric),
-        "--judge-model", "gpt-6.1-sol", "--execute"]) == 0
+        "--judge-model", "gemini-3.6-flash", "--execute"]) == 0
     stage = json.loads(next(tmp_path.rglob("evaluation.json")).read_text())["stages"]["paired_completion"]
     assert stage["usage_coverage"] == coverage
 
@@ -432,17 +433,17 @@ def test_completion_combines_frozen_criteria_with_failure_precedence(completion_
     case = completion_case
     case.responses.append(judge_response(verdicts))
     result = asyncio.run(completion.grade_run(case.run, case.rubric_path,
-        judge_model="gpt-6.1-sol", api_key="offline-key", execute=True))
+        judge_model="gemini-3.6-flash", api_key="offline-key", execute=True))
     assert result["verdict"] == expected
     assert [row["id"] for row in result["criteria"]] == ["saved", "source"]
     assert result["usage"]["total_tokens"] == 28 and result["judge_calls"] == 1
     payload, = case.requests
-    content = payload["input"][0]["content"]
+    content = payload["contents"][0]["parts"]
     shared = json.loads(content[0]["text"])
     assert shared["frozen_criteria"] == case.rubric["criteria"]
     assert shared["observed_url_timeline"] == case.recording["coverage"]["observed_url_timeline"]
     assert any(part.get("text") == "Marker: SAVED\n" for part in content)
-    assert any(part["type"] == "input_image" for part in content)
+    assert any("inlineData" in part for part in content)
     assert all("[ref=e1]" not in part.get("text", "") for part in content)
     assert json.loads((case.run / "completion.json").read_text())["verdict"] == expected
 
@@ -452,7 +453,7 @@ def test_completion_rejects_success_without_real_integer_state_citations(complet
     case = completion_case
     case.responses.append(judge_response(("success", "success"), states=states))
     result = asyncio.run(completion.grade_run(case.run, case.rubric_path,
-        judge_model="gpt-6.1-sol", api_key="offline-key", execute=True))
+        judge_model="gemini-3.6-flash", api_key="offline-key", execute=True))
     assert result["method"] == result["verdict"] == "ungraded"
     assert "judge_error" in result
     assert result["usage"]["total_tokens"] == 28 and result["judge_calls"] == 1
@@ -468,7 +469,7 @@ def test_completion_refuses_task_rubric_drift_before_transport(completion_case, 
     case.rubric_path.write_text(json.dumps(case.rubric))
     with pytest.raises(ValueError, match="differs from the task"):
         asyncio.run(completion.grade_run(case.run, case.rubric_path,
-            judge_model="gpt-6.1-sol", api_key="offline-key", execute=True))
+            judge_model="gemini-3.6-flash", api_key="offline-key", execute=True))
     assert case.requests == []
     assert not (case.run / "completion.json").exists()
 
@@ -492,11 +493,11 @@ def test_completion_retains_a_missing_passive_format_as_unavailable(completion_c
     case.recording["manifest"]["states"][0]["artifacts"].pop("screenshot.png")
     case.responses.append(judge_response(("uncertain", "uncertain"), states=[]))
     result = asyncio.run(completion.grade_run(case.run, case.rubric_path,
-        judge_model="gpt-6.1-sol", api_key="offline-key", execute=True))
+        judge_model="gemini-3.6-flash", api_key="offline-key", execute=True))
     assert result["verdict"] == "uncertain"
-    content = case.requests[0]["input"][0]["content"]
-    assert {"type": "input_text", "text": "Recorder evidence unavailable: screenshot.png"} in content
-    assert all(part["type"] != "input_image" for part in content)
+    content = case.requests[0]["contents"][0]["parts"]
+    assert {"text": "Recorder evidence unavailable: screenshot.png"} in content
+    assert all("inlineData" not in part for part in content)
 
 
 def test_completion_refuses_to_save_if_source_identity_changes(completion_case, monkeypatch):
@@ -506,7 +507,7 @@ def test_completion_refuses_to_save_if_source_identity_changes(completion_case, 
     monkeypatch.setattr(completion, "inspect_recording", lambda path: snapshots.pop(0))
     with pytest.raises(ValueError, match="recording changed during grading"):
         asyncio.run(completion.grade_run(case.run, case.rubric_path,
-            judge_model="gpt-6.1-sol", api_key="offline-key", execute=True))
+            judge_model="gemini-3.6-flash", api_key="offline-key", execute=True))
     assert not (case.run / "completion.json").exists()
     assert len(case.requests) == 1
 
@@ -643,7 +644,6 @@ def test_rubric_draft_catalog_continues_after_auth_ungraded_task(monkeypatch, tm
     agent = SimpleNamespace(_generate_rubric=create, rubric_generation_trace=[{"stage": "rubric_generation", "accepted": False}])
     monkeypatch.setattr(generation, "_rubric_agent", lambda *args: agent)
     monkeypatch.setattr(generation, "load_env_file", lambda *args: None)
-    monkeypatch.setattr(generation, "require_openai_key", lambda: "offline")
     tasks = [{"task_id": name, "instruction": "Save marker", "start_url": "https://example.test"}
         for name in ["first", "second"]]
     args = SimpleNamespace(env_file="offline", eval_config=str(pair_factory()["config"]))
@@ -687,7 +687,7 @@ def test_catalog_draft_dry_preflight_has_no_calls_or_writes(catalog_case, monkey
     assert generator.main(catalog_case["args"] + ["--stage", "draft"]) == 0
     preflight = json.loads(capsys.readouterr().out)
     assert preflight["paid_calls_authorized"] is False
-    assert preflight["models"] == ["gpt-5.2"]
+    assert preflight["models"] == ["gemini-3.1-pro-preview"]
     assert not catalog_case["drafts"].exists()
     assert not catalog_case["frozen"].exists()
 
@@ -698,12 +698,49 @@ def test_catalog_drafts_use_original_workflow_then_resume_without_calls(catalog_
     for number in (1, 2):
         receipt = json.loads((catalog_case["drafts"] / f"task_{number:02d}.metrics.json").read_text())
         assert receipt["status"] == "complete" and receipt["rubric_generation_calls"] == 2
-        assert receipt["token_usage"]["gpt-5.2"]["total_tokens"] == 10
-        assert set(receipt["token_usage"]) == {"gpt-5.2"}
+        assert receipt["token_usage"]["gemini-3.1-pro-preview"]["total_tokens"] == 10
+        assert set(receipt["token_usage"]) == {"gemini-3.1-pro-preview"}
     monkeypatch.setattr(generator.GracefulRetryClient, "from_path",
         lambda *args, **kwargs: pytest.fail("completed rubric was regenerated"))
     assert generator.main(args) == 0
     assert not catalog_case["frozen"].exists()
+
+
+@pytest.mark.parametrize("previous_transport", [None, "normal", "batch"])
+@pytest.mark.parametrize("fails", [False, True])
+def test_rubric_preparation_uses_google_and_restores_transport(catalog_case, monkeypatch, previous_transport, fails):
+    from w8bench.verifier.batch import judge_transport
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    if previous_transport is None:
+        monkeypatch.delenv("JUDGE_TRANSPORT", raising=False)
+    else:
+        monkeypatch.setenv("JUDGE_TRANSPORT", previous_transport)
+    original = generator.GracefulRetryClient.from_path
+    def client(*args, **kwargs):
+        assert judge_transport() == "normal"
+        assert kwargs["eval_model"] == "gemini-3.1-pro-preview"
+        if fails:
+            raise ValueError("synthetic client failure")
+        return original(*args, **kwargs)
+    monkeypatch.setattr(generator.GracefulRetryClient, "from_path", client)
+    args = catalog_case["args"] + ["--stage", "draft", "--execute"]
+    if fails:
+        with pytest.raises(ValueError, match="synthetic client failure"):
+            generator.main(args)
+    else:
+        assert generator.main(args) == 0
+        receipt = json.loads((catalog_case["drafts"] / "task_01.metrics.json").read_text())
+        assert receipt["effective_settings"]["transport"] == "normal"
+        assert receipt["effective_settings"]["models"] == ["gemini-3.1-pro-preview"]
+    assert os.environ.get("JUDGE_TRANSPORT") == previous_transport
+
+
+def test_rubric_preparation_requires_google_credentials_before_writing(catalog_case, monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        generator.main(catalog_case["args"] + ["--stage", "draft", "--execute"])
+    assert not catalog_case["drafts"].exists()
+    assert not (catalog_case["drafts"].parent / "generation.json").exists()
 
 
 def test_catalog_freeze_requires_review_approval_and_preserves_weights(catalog_case):
@@ -765,7 +802,7 @@ def test_failed_draft_preserves_calls_and_resume_attempt_history(catalog_case, m
     path = catalog_case["drafts"] / "task_02.metrics.json"
     receipt = json.loads(path.read_text())
     assert receipt["status"] == "interrupted" and receipt["rubric_generation_calls"] == 1
-    assert receipt["token_usage"]["gpt-5.2"]["total_tokens"] == 5
+    assert receipt["token_usage"]["gemini-3.1-pro-preview"]["total_tokens"] == 5
     assert not (catalog_case["drafts"] / "task_02.json").exists()
     monkeypatch.setattr(generator.MMRubricAgent, "_generate_rubric", original)
     generator.main(catalog_case["args"] + ["--stage", "draft", "--execute"])
@@ -849,7 +886,7 @@ def test_native_ungraded_blocks_audit_and_excludes_loss_rates(
 
     monkeypatch.setattr(comparison, "_run_logged", score)
     assert comparison.main(["--run", str(paths["dom"]), "--rubric", str(rubric),
-        "--judge-model", "gpt-6.1-sol", "--execute"]) == 1
+        "--judge-model", "gemini-3.6-flash", "--execute"]) == 1
     receipt = next(tmp_path.rglob("evaluation.json"))
     evaluation = json.loads(receipt.read_text())
     assert evaluation["status"] == "incomplete"
@@ -983,7 +1020,7 @@ def test_batch_rounds_preserve_dependencies_and_collect_ready_runs(run_pair,tmp_
                 endpoint='/v1/chat/completions',stage=stage)
         return 0
     monkeypatch.setattr(pipeline,'_evaluate_recording',evaluate)
-    args=['--run',*[str(p) for p in paths.values()],'--rubric',str(rubric),'--judge-model','gpt-6.1-sol','--execute']
+    args=['--run',*[str(p) for p in paths.values()],'--rubric',str(rubric),'--judge-model','gemini-3.6-flash','--execute']
     for index,stage in enumerate(stages):
         assert pipeline.main(args)==75
         created=batch_providers.batches.created[index]
@@ -1000,16 +1037,17 @@ def test_invalid_batch_answer_uses_existing_completion_refusal(completion_case,t
     case=completion_case
     monkeypatch.setenv('JUDGE_TRANSPORT','batch')
     identity={'run':'r','profile':'primary'}
-    args=dict(judge_model='gpt-6.1-sol',execute=True)
+    args=dict(judge_model='gemini-3.6-flash',execute=True)
     with batch.evaluation_scope(tmp_path/'queue',identity):
         with pytest.raises(batch.BatchPending):asyncio.run(completion.grade_run(case.run,case.rubric_path,**args))
     item=json.loads(next((tmp_path/'queue/requests').glob('*.json')).read_text())
     batch._save(tmp_path/'queue/responses'/f"{item['id']}.json",{'job_id':'job','status_code':200,'body':{
-        'model':'wrong-model','status':'completed','usage':{'input_tokens':7,'output_tokens':2},'output_text':'{"criteria":[]}'}})
+        'modelVersion':'wrong-model','usageMetadata':{'promptTokenCount':7,'candidatesTokenCount':2,'thoughtsTokenCount':0,'totalTokenCount':9},
+        'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':'{"criteria":[]}'}]}}]}})
     with batch.evaluation_scope(tmp_path/'queue',identity):
         grade=asyncio.run(completion.grade_run(case.run,case.rubric_path,**args))
     assert grade['method']==grade['verdict']=='ungraded'
-    assert grade['usage']=={'input_tokens':7,'output_tokens':2}
+    assert grade['usage']['input_tokens']==7 and grade['usage']['output_tokens']==2
     assert grade['transport']=='batch' and grade['refusal_reason']
     # A new grading attempt has its own ID; it never re-submits the answered item.
     with batch.evaluation_scope(tmp_path/'queue',identity):
@@ -1021,7 +1059,7 @@ def test_invalid_batch_answer_uses_existing_completion_refusal(completion_case,t
 def test_native_profile_comparison_reuses_completion_and_separates_outputs(full_evaluation,tmp_path,monkeypatch):
     from w8bench.verifier import run_comparison as pipeline
     paths,rubric,calls=full_evaluation
-    args=['--run',*[str(path) for path in paths.values()],'--rubric',str(rubric),'--judge-model','gpt-6.1-sol',
+    args=['--run',*[str(path) for path in paths.values()],'--rubric',str(rubric),'--judge-model','gemini-3.6-flash',
         '--judge-transport','normal','--compare-profiles','--execute']
     assert pipeline.main(args)==0
     assert len(calls['primary'])==2  # One shared grade per independent recording.
@@ -1043,7 +1081,7 @@ def test_batch_preflight_is_read_only_for_each_profile(full_evaluation,tmp_path)
     from w8bench.verifier import run_comparison as pipeline
     paths,rubric,calls=full_evaluation
     assert pipeline.main(['--run',*[str(path) for path in paths.values()],'--rubric',str(rubric),
-        '--judge-model','gpt-6.1-sol','--compare-profiles','--judge-transport','batch'])==0
+        '--judge-model','gemini-3.6-flash','--compare-profiles','--judge-transport','batch'])==0
     assert not list(tmp_path.rglob('batch_jobs')) and not list(tmp_path.rglob('evaluation.json'))
     assert all(not value for value in calls.values())
 
@@ -1053,16 +1091,16 @@ def test_batch_transport_and_profile_are_bound_but_actor_is_unchanged(run_pair,m
     from w8bench.verifier import batch
     paths,*_=run_pair;recording=inspect_recording(paths['dom'])
     monkeypatch.setenv('JUDGE_TRANSPORT','normal')
-    normal=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gpt-6.1-sol')
+    normal=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gemini-3.6-flash')
     monkeypatch.setenv('JUDGE_TRANSPORT','batch')
-    current=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gpt-6.1-sol')
+    current=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gemini-3.6-flash')
     assert normal['actor']==current['actor']
     assert current['stages']['rubric_preparation']['transport']=='normal'
     for name in ('completion','screenshot_verifier','dom_model','inventory','adjudication'):
         assert current['stages'][name]['transport']=='batch'
     with pytest.raises(ValueError,match='transport'):require_same_settings(normal,current)
     monkeypatch.setenv('NATIVE_JUDGE_PROFILE','pro')
-    pro=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gpt-6.1-sol')
+    pro=evaluation_settings(recording,eval_config='config',rubric_hash='r',judge_model='gemini-3.6-flash')
     assert pro['actor']==current['actor']
     assert pro['stages']['completion']==current['stages']['completion']
     assert pro['stages']['inventory']==current['stages']['inventory']
@@ -1109,10 +1147,10 @@ def test_invalid_batch_inventory_response_uses_original_validation_budget(pair_f
 
 def test_shared_completion_is_queued_once_across_native_profiles(tmp_path,batch_providers):
     from w8bench.verifier import batch
-    body={'model':'gpt-6.1-sol','input':'same paired recording'}
+    body={'contents':[{'role':'user','parts':[{'text':'same paired recording'}]}]}
     for profile in ('primary','pro'):
         with batch.evaluation_scope(tmp_path,{'recording':'r','profile':profile}):
-            with pytest.raises(batch.BatchPending):batch.request(body,provider='openai',endpoint='/v1/responses',stage='completion.paired')
+            with pytest.raises(batch.BatchPending):batch.request(body,provider='google',endpoint='generateContent',model='gemini-3.6-flash',stage='completion.paired')
     assert len(list((tmp_path/'requests').glob('*.json')))==1
     jobs=batch.BatchJobs(tmp_path,clients=batch_providers.clients)
     assert jobs.submit()==1 and len(batch_providers.batches.created[0]['rows'])==1
@@ -1157,12 +1195,44 @@ def test_rejected_batch_creation_can_resume_without_an_accepted_job(tmp_path,mon
     assert len(batch_providers.batches.created)==1
 
 
+@pytest.mark.parametrize('complete_usage', [False, True])
+def test_answered_google_batch_usage_survives_before_stage_consumption(tmp_path, monkeypatch, batch_providers, complete_usage):
+    from w8bench.verifier import batch
+    from w8bench.verifier.run_metrics import _price_call
+    monkeypatch.setenv('JUDGE_TRANSPORT','batch')
+    identity = {'recording':'r','profile':'common'}
+    body = {'contents':[{'role':'user','parts':[{'text':'result'}]}]}
+    with batch.evaluation_scope(tmp_path, identity):
+        with pytest.raises(batch.BatchPending):
+            batch.request(body, provider='google', endpoint='generateContent', model='gemini-3.6-flash', stage='completion.paired')
+    jobs = batch.BatchJobs(tmp_path, clients=batch_providers.clients)
+    assert jobs.submit() == 1
+    item = batch_providers.batches.created[0]['rows'][0]
+    usage = {'promptTokenCount':10, 'candidatesTokenCount':3}
+    if complete_usage:
+        usage.update(thoughtsTokenCount=2,totalTokenCount=15,cachedContentTokenCount=2)
+    batch_providers.batches.finish(0, results=[{'key':item['key'],'response':{
+        'modelVersion':'gemini-3.6-flash-001','usageMetadata':usage,
+        'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':'{}'}]}}]}}])
+    jobs.poll()
+    records = jobs.records(identity, 'completion.', '1')
+    assert len(records) == 1 and records[0]['status'] == 'answered'
+    assert records[0]['returned_model'] == 'gemini-3.6-flash-001'
+    assert records[0]['usage']['prompt_tokens'] == 10
+    assert records[0]['usage']['completion_tokens'] == (5 if complete_usage else None)
+    amount = _price_call(records[0], {}, set(), set())
+    if complete_usage:
+        assert amount == pytest.approx(.00001245)
+    else:
+        assert amount is None
+
+
 def test_pending_completion_keeps_its_attempt_identity_on_resume(full_evaluation, tmp_path, monkeypatch, batch_providers):
     from w8bench.verifier import batch
     paths, rubric, _ = full_evaluation
     monkeypatch.setattr(comparison, 'BatchJobs', lambda root: batch.BatchJobs(root, clients=batch_providers.clients))
     args = ['--run', str(paths['dom']), '--rubric', str(rubric), '--judge-model',
-        'gpt-6.1-sol', '--judge-transport', 'batch', '--execute']
+        'gemini-3.6-flash', '--judge-transport', 'batch', '--execute']
     monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
     assert comparison.main(args) == 75
     jobs = len(batch_providers.batches.created)
@@ -1174,11 +1244,11 @@ def test_pending_completion_keeps_its_attempt_identity_on_resume(full_evaluation
     assert {p.name for p in tmp_path.rglob('requests/*.json')} == requests
     assert evaluation['stages']['paired_completion']['attempt_history'] == []
     item = batch_providers.batches.created[0]['rows'][0]
-    batch_providers.batches.finish(0, results=[{'custom_id': item['custom_id'], 'response': {
-        'status_code': 200, 'body': {'model': 'gpt-6.1-sol', 'status': 'completed',
-            'output_text': json.dumps({'criteria': [{'id': 'done', 'verdict': 'success',
-                'reason': 'Recorded result', 'states': [1]}]}),
-            'usage': {'input_tokens': 50, 'output_tokens': 20}}}}])
+    batch_providers.batches.finish(0, results=[{'key': item['key'], 'response': {
+        'modelVersion': 'gemini-3.6-flash',
+        'candidates': [{'finishReason':'STOP', 'content':{'parts':[{'text':json.dumps({'criteria': [
+            {'id':'done','verdict':'success','reason':'Recorded result','states':[1]}]})}]}}],
+        'usageMetadata': {'promptTokenCount':50,'candidatesTokenCount':20,'thoughtsTokenCount':0,'totalTokenCount':70}}}])
     assert comparison.main(args) == 0
     assert comparison.main(args) == 0
     assert len(batch_providers.batches.created) == jobs
@@ -1195,7 +1265,7 @@ def test_profile_comparison_reports_both_subsets_and_quality(full_evaluation, tm
     from w8bench.verifier import batch
     paths, rubric, _ = full_evaluation
     assert comparison.main(['--run', str(paths['dom']), '--rubric', str(rubric),
-        '--judge-model', 'gpt-6.1-sol', '--compare-profiles', '--execute']) == 0
+        '--judge-model', 'gemini-3.6-flash', '--compare-profiles', '--execute']) == 0
     for file in tmp_path.rglob('evaluation.json'):
         profile = 'pro' if '/profiles/pro/' in str(file) else 'primary'
         evaluation = json.loads(file.read_text())
@@ -1266,10 +1336,10 @@ def test_empty_exports_reach_completion_native_verifiers_and_audit(empty_dom_pai
     context = shared_trajectory_payload(ss, dom)["evaluation_context"]
     assert context["audit_eligible_states"] == context["expected_state_ids"]
     assert context["format_gaps"] == {"screenshot": [], "dom_model": []}
-    payload = completion._judge_payload(paths[mode], recording, [], "gpt-6.1-sol", "paired")
+    payload = completion._judge_payload(paths[mode], recording, [], "paired")
     assert EMPTY_DOM_MARKER in json.dumps(payload)
     assert "Recorder evidence unavailable" not in json.dumps(payload)
-    assert sum(part["type"] == "input_image" for part in payload["input"][0]["content"]) == len(states)
+    assert sum("inlineData" in part for part in payload["contents"][0]["parts"]) == len(states)
     rubric = tmp_path/"rubric.json"
     write_json(rubric, {"task_id": "task_01", "precomputed_rubric": RUBRIC})
     inventory, adjudication = _responses()

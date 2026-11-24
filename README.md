@@ -25,7 +25,6 @@ remain separate. Actor usage and judge usage are accounted for separately.
 | [Runbook](docs/runbook.md) | Setup, browser build, offline checks, rubric approval, pilot, collection, judging and reporting commands. |
 | [Recordings](docs/recordings.md) | Ledgers, state artifacts, call receipts, provenance and export contracts. |
 | [Evaluation protocol](docs/evaluation-protocol.md) | Completion, native profiles, evidence-loss decisions, denominators and metrics. |
-| [Cost estimate](docs/cost-estimate.md) | Token and pricing assumptions, per-stage estimates and measured cost accounting. |
 | [Browser protocol](protocol/README.md) | ChromiumRL source, binary and protocol pins. |
 
 ## Setup

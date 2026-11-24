@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-CANONICAL_RUBRIC_MODEL = "gpt-5.2"
+CANONICAL_RUBRIC_MODEL = "gemini-3.1-pro-preview"
 CANONICAL_JUDGE_MODEL = "gemini-3.5-flash-lite"
 CANONICAL_ACTION_MODEL = "gemini-3.5-flash-lite"
 NATIVE_JUDGE_PROFILES = {"primary": CANONICAL_JUDGE_MODEL, "pro": "gemini-3.1-pro-preview"}
@@ -281,11 +281,6 @@ def load_env_file(path: str | Path) -> None:
             value = value[1:-1]
         if key.strip() and key.strip() not in os.environ:
             os.environ[key.strip()] = value
-
-
-def require_openai_key() -> None:
-    if not os.environ.get("OPENAI_API_KEY", "").strip():
-        raise ValueError("OPENAI_API_KEY is not set or is empty")
 
 
 def write_json(path: str | Path, value: object) -> Path:

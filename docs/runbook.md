@@ -211,17 +211,16 @@ TASK_CATALOG_FILE=data/tasks.jsonl
 | Stage | Model |
 | --- | --- |
 | Both actors | `gemini-3.8-flash` |
-| Rubric generation and dependency check | `gpt-5.2` |
+| Rubric generation and dependency check | `gemini-3.1-pro-preview` |
 | Both native verifiers, every stage, primary profile | `gemini-3.5-flash-lite` |
 | Both native verifiers, every stage, Pro profile | `gemini-3.1-pro-preview` |
-| Paired completion and optional actor-native grade | `gpt-6.1-sol` |
+| Paired completion and optional actor-native grade | `gemini-3.6-flash` |
 | Audit inventory | `gemini-3.1-pro-preview` |
 | Audit adjudication | `gpt-6.1-sol` |
 
-Completion requires an explicit `--judge-model gpt-6.1-sol`; it does not inherit
-the actor model. Judge endpoint settings remain in `config/`. Google credentials
-serve actors, native verifiers and inventory; OpenAI credentials serve rubric
-preparation, completion and adjudication. Dependencies are installed above.
+Judge endpoint settings remain in `config/`. Google credentials serve actors,
+rubric preparation, completion, native verifiers and inventory. OpenAI credentials
+serve audit adjudication. Dependencies are installed above.
 
 | Setting | Purpose |
 | --- | --- |
@@ -230,8 +229,7 @@ preparation, completion and adjudication. Dependencies are installed above.
 | `CDP_HOST_PORT`, `NOVNC_HOST_PORT`, `VNC_HOST_PORT` | Published browser-control and viewing ports. |
 | `CHROMIUM_HEADLESS` | Browser display mode. |
 | `CHROMIUM_RESET_PROFILE` | `1` clears history, cookies and site storage at startup; `0` preserves the profile. Host recordings are separate. |
-| `GEMINI_BASE_URL`, `OPENAI_BASE_URL` | Optional provider endpoints. |
-| `EVIDENCE_AUDIT_PROVIDER`, `EVIDENCE_ADJUDICATOR_PROVIDER` | Optional explicit provider overrides. |
+| `GEMINI_BASE_URL`, `OPENAI_BASE_URL` | Actor/normal completion and adjudication endpoints respectively. Batch completion uses the default Google endpoint. |
 | `W8_RUN_NAME` | Default run name. |
 
 Configuration prefers CDP 49335, noVNC 16191 and VNC 15911, choosing distinct
@@ -302,7 +300,7 @@ Choose `BENCH_TRIALS` explicitly in your shell, then require it before planning:
 ./scripts/run-task --trials "$BENCH_TRIALS" \
   --catalog-file data/tasks.jsonl --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name collection \
-  --judge-model gpt-6.1-sol --dry-run
+  --judge-model gemini-3.6-flash --dry-run
 ```
 
 When any required frozen rubric is missing, this writes only
@@ -330,7 +328,7 @@ settings, browser status and schedule preview have passed inspection. **Model ca
 ### Generate and review rubrics
 
 Draft generation uses the existing screenshot verifier's rubric-generation and
-dependency-check prompts, with `gpt-5.2`. It receives the expanded catalog task and
+dependency-check prompts, with `gemini-3.1-pro-preview`. It receives the expanded catalog task and
 start URL, not an actor trajectory or result. The action-judge client is configured
 but is not normally called by these two preparation stages. The native JSON output contract is `native-rubric-output-contract/v3`; output
 settings and response-repair budgets follow the verifier.
@@ -460,10 +458,10 @@ turns and tokens; earlier technical-attempt costs stay separate.
 
 ### Check model compatibility
 
-This **paid** command dispatches eight nominal logical requests: two actor
-requests, three native/rubric model transport probes, one completion request and
+This **paid** command dispatches seven nominal logical requests: two actor
+requests, two native/rubric model transport probes, one completion request and
 one request through each actual inventory/adjudication transport. It uses
-`gpt-5.2`, `gemini-3.5-flash-lite`, `gemini-3.1-pro-preview`, `gemini-3.8-flash` and `gpt-6.1-sol`, with a
+`gemini-3.1-pro-preview`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`, `gemini-3.8-flash` and `gpt-6.1-sol`, with a
 PNG, strict actor/completion schemas and configured Gemini settings. The two
 audit probes use their actual system prompts with a synthetic marker response.
 These are transport compatibility diagnostics; the pilot exercises full native
@@ -476,10 +474,10 @@ stage and audit payloads. The transport check launches no browser or action.
 The [transport check](../scripts/check-model-compatibility.py) constructs the
 synthetic requests and writes the receipts described below.
 
-Do not continue unless all eight checks pass with permitted returned IDs, complete
+Do not continue unless all seven checks pass with permitted returned IDs, complete
 responses, valid schema/JSON and readable image markers. Inspect
 `internal/compatibility/check_NNNN/result.json` and the actor requests/responses. Normally
-**8 logical calls**; existing SDK/client retry policies can increase HTTP attempts.
+**7 logical calls**; existing SDK/client retry policies can increase HTTP attempts.
 Each native transport probe lists all default native stage roles for its model,
 including both rubric preparation roles. Every role records and prints its
 configured ID, returned ID and the shared matcher's `exact`, `suffix` or `refused`
@@ -528,7 +526,7 @@ image, real actor request path and browser executor.
 Do not continue unless all six targets are hit with valid normalized coordinates,
 permitted returned model IDs and complete responses. Review `internal/coordinate_calibration/check_NNNN/result.json`
 and saved requests, responses and transport receipts. The transport gate plus
-coordinate calibration makes **14 nominal model checks**; transient failures
+coordinate calibration makes **13 nominal model checks**; transient failures
 can add transport attempts. Complete the text calibration below before the pilot.
 
 ### Screenshot text calibration
@@ -550,8 +548,8 @@ Do not continue unless responses are complete, returned IDs match, saved request
 use HIGH, and per-size exact-match and character accuracy have been reviewed.
 Inspect `internal/screenshot_text_calibration/check_NNNN/result.json` and the
 request/response. This measures fixture OCR, not general page legibility. The
-screenshot actor uses HIGH. The eight transport checks, six coordinate checks
-and one text check make **15 nominal model checks**, plus any transport retries.
+screenshot actor uses HIGH. The seven transport checks, six coordinate checks
+and one text check make **14 nominal model checks**, plus any transport retries.
 Actor generation uses local input estimation. Cached model metadata sets the
 limit; estimates above 50% trigger `countTokens` requests with transport
 retries and a recorded local-estimate fallback. Preflight requests do not consume
@@ -575,9 +573,9 @@ Inspect the synthetic batch smoke plan offline:
 ```
 
 Obtain explicit approval before submitting the smoke batches. **Model calls: 0 for
-preflight; after approval, five tiny generation requests: three Google, two
+preflight; after approval, five tiny generation requests: four Google, one
 OpenAI.** These cover Flash-Lite and Pro OpenAI-compatible native requests,
-Google GenerateContent inventory, OpenAI Responses completion and Chat
+Google GenerateContent inventory/completion and OpenAI Chat
 adjudication, including images, JSON output and the actual reasoning settings.
 After approval, submit and repeat later to poll:
 
@@ -603,7 +601,7 @@ both arms, one trial each. It is separate from the full collection.
 ```bash
 ./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
-  --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
+  --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name pilot --dry-run
 ```
 
@@ -615,7 +613,7 @@ Set `BENCH_PILOT_RUN` to the run name printed above, such as `pilot` or
 export BENCH_PILOT_RUN
 ./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
-  --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
+  --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name "$BENCH_PILOT_RUN" --resume
 
 ./scripts/run-comparison --ledger "recordings/$BENCH_PILOT_RUN/ledger.jsonl" \
@@ -657,7 +655,7 @@ Supply any positive `BENCH_TRIALS`; omit positional selectors to use all 40 task
 : "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
 ./scripts/run-task --trials "$BENCH_TRIALS" \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
-  --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
+  --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name collection --dry-run
 ```
 
@@ -667,7 +665,7 @@ Set `BENCH_COLLECTION_RUN` to the printed run name, then execute that ledger:
 : "${BENCH_COLLECTION_RUN:?Set the printed collection run name}"
 ./scripts/run-task --trials "$BENCH_TRIALS" \
   --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
-  --judge-model gpt-6.1-sol --max-turns 200 --max-output-tokens 10000 \
+  --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name "$BENCH_COLLECTION_RUN" --resume
 ```
 
@@ -803,11 +801,11 @@ execution, use the recording path stored in its ledger row:
 : "${BENCH_TASK_ID:?Set its task_XX catalog identity}"
 .venv/bin/python -m w8bench.verifier.run_comparison \
   --run "$BENCH_RECORDING" --rubric "data/rubrics/$BENCH_TASK_ID.json" \
-  --judge-model gpt-6.1-sol
+  --judge-model gemini-3.6-flash
 
 .venv/bin/python -m w8bench.verifier.run_comparison \
   --run "$BENCH_RECORDING" --rubric "data/rubrics/$BENCH_TASK_ID.json" \
-  --judge-model gpt-6.1-sol --execute
+  --judge-model gemini-3.6-flash --execute
 ```
 
 The first command is a read-only evaluation preflight. The second reuses completed
@@ -916,7 +914,7 @@ Cancel the evaluation queue selected by the first recording path:
 : "${BENCH_TASK_ID:?Set its task_XX catalog identity}"
 .venv/bin/python -m w8bench.verifier.run_comparison \
   --run "$BENCH_RECORDING" --rubric "data/rubrics/$BENCH_TASK_ID.json" \
-  --judge-model gpt-6.1-sol --judge-transport batch --cancel --execute
+  --judge-model gemini-3.6-flash --judge-transport batch --cancel --execute
 ```
 
 Cancellation returns 130 and applies to the entire shared Batch queue, including
@@ -1006,8 +1004,8 @@ locations do not define behavioural settings. Public-web changes and model
 aliases remain sources of variation.
 
 The [evaluation protocol](evaluation-protocol.md#repeated-trial-results) defines
-pass@k and uncertain-grade bounds. The
-[cost estimate](cost-estimate.md) describes the configured pricing assumptions.
+pass@k and uncertain-grade bounds. Configured pricing is defined in
+[run_metrics.py](../w8bench/verifier/run_metrics.py).
 
 ## View a remote browser
 

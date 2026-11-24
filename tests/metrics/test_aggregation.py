@@ -266,7 +266,7 @@ def test_batch_partial_recording_is_not_zero_cost_startup_failure(tmp_path, monk
         return SimpleNamespace(returncode=1)
     monkeypatch.setattr(task_cli.subprocess, "run", run)
     assert task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--judge-model", "gemini-3.6-flash", "--output-dir", str(output),
         "--run-name", "partial", "--env-file", str(tmp_path / "absent.env"), "--model", "gemini-3.8-flash"]) == 0
     ledger = output / "partial" / "ledger.jsonl"
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
@@ -847,7 +847,7 @@ def test_audit_aggregation_requires_explicit_nonfresh_override(tmp_path):
         "override_used": True, "nonfresh_recordings": 1}
 
 
-@pytest.mark.parametrize('model,pin,pout',[('gemini-3.5-flash-lite',.30,2.50),('gemini-3.1-pro-preview',2,12),('gpt-6.1-sol',2,10)])
+@pytest.mark.parametrize('model,pin,pout',[('gemini-3.5-flash-lite',.30,2.50),('gemini-3.1-pro-preview',2,12),('gemini-3.6-flash',.75,3.75),('gpt-6.1-sol',2,10)])
 def test_batch_judge_cost_and_unknown_attempt_usage(model,pin,pout):
     from w8bench.verifier.run_metrics import _price_stream
     def stream(mode):

@@ -149,7 +149,7 @@ records, final answer and technical run status from the same recording. Primary
 grading does not add executable-reference snapshots or another run's evidence.
 Missing passive artifacts are identified as unavailable rather than substituted.
 
-The judge is explicitly selected as `--judge-model gpt-6.1-sol`; it never derives
+The judge is explicitly selected as `--judge-model gemini-3.6-flash`; it never derives
 from the actor. Model grading uses medium reasoning, a 10,000-token output budget
 and no action tools. Completion has one request per grading attempt and no
 automatic response-repair loop. `--execute` enables full evaluation;
@@ -173,8 +173,8 @@ checked again before saving the grade. A failed, malformed or incomplete judge
 response yields an ungraded result with `judge_error` and any returned usage.
 The shared `returned-model-acceptance/v2` policy accepts the exact case-sensitive
 configured ID or that ID with a numeric/date/version suffix, such as
-`gpt-6.1-sol-v2`. A different family such as
-`gpt-6.1-sol-mini`, an absent ID, incomplete status or truncation is refused.
+`gemini-3.6-flash-001`. A different family such as
+`gemini-3.6-flash-mini`, an absent ID, incomplete status or truncation is refused.
 Refused attempts retain their usage and reason. An explicit evaluation resume may
 retry the ungraded stage under the same effective settings.
 
@@ -416,4 +416,4 @@ from SDK validation. Original provider responses remain unchanged.
 Costs use the recorded delivery mode and keep actor spending separate. Batch
 rates apply to actual batch items, including repeated paid attempts. Missing
 item usage prevents an exact total; known spending remains a labelled lower
-bound. Typical planning figures and assumptions are in [cost estimates](cost-estimate.md).
+bound. Pricing is defined in [run_metrics.py](../w8bench/verifier/run_metrics.py).

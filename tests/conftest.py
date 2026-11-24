@@ -183,8 +183,8 @@ def pair_factory(tmp_path):
             )
         config = tmp_path / "endpoints"
         _write_json(
-            config / "gpt.json",
-            {"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-5.2"}},
+            config / "rubric.json",
+            {"CHAT_COMPLETION_PROVIDER": "google", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gemini-3.1-pro-preview", "reasoning_effort": "medium"}},
         )
         _write_json(
             config / "action_judge.json",
@@ -382,7 +382,7 @@ def full_evaluation(run_pair, tmp_path, monkeypatch):
     monkeypatch.setattr(comparison, "load_env", lambda path: None)
     def grade_post(self, payload):
         calls["primary"].append(payload)
-        return {"id": "grade-response", "model": "gpt-6.1-sol", "status": "completed",
+        return {"id": "grade-response", "model": "gemini-3.6-flash", "status": "completed",
             "output_text": json.dumps({"criteria": [{"id": "done", "verdict": "success", "reason": "Mock established result", "states": [1]}]}),
             "usage": {"input_tokens": 50, "output_tokens": 20, "total_tokens": 70}}
     monkeypatch.setattr(completion.ModelClient, "_post", grade_post)
@@ -426,7 +426,7 @@ def full_evaluation(run_pair, tmp_path, monkeypatch):
 
 
 def judge_response(verdicts, *, states=None):
-    return {"id": "offline-grade", "model": "gpt-6.1-sol", "status": "completed",
+    return {"id": "offline-grade", "model": "gemini-3.6-flash", "status": "completed",
         "usage": {"input_tokens": 20, "output_tokens": 8, "total_tokens": 28},
         "output_text": json.dumps({"criteria": [
             {"id": identity, "verdict": verdict, "reason": "Recorded marker evidence.",

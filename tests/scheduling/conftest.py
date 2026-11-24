@@ -39,7 +39,7 @@ def launcher_batch(tmp_path, monkeypatch):
     monkeypatch.setattr(task_cli.subprocess, "run", lambda *args, **kwargs: pytest.fail("unexpected batch process"))
     output = tmp_path / "recordings"
     args = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "collection",
+        "--judge-model", "gemini-3.6-flash", "--output-dir", str(output), "--run-name", "collection",
         "--env-file", str(tmp_path / "absent.env")]
     return args, output / "collection" / "ledger.jsonl", catalog, rubrics
 
@@ -72,7 +72,7 @@ def effective_settings_batch(tmp_path, monkeypatch):
     write_json(rubrics / "custom.json", {"task_id": "custom", "criteria": [{"id": "heading", "description": "Report the heading."}]})
     output = tmp_path / "recordings"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "settings",
+        "--judge-model", "gemini-3.6-flash", "--output-dir", str(output), "--run-name", "settings",
         "--env-file", str(tmp_path / "absent.env"), "--dry-run"]
     return SimpleNamespace(arguments=arguments, ledger=output / "settings/ledger.jsonl", catalog=catalog,
         rubric_dir=rubrics, config_root=config_root)

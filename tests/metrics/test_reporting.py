@@ -31,8 +31,8 @@ def completion_for(recording, **overrides):
         "evidence_policy": "paired",
         "method": "model_judge",
         "verdict": "success",
-        "judge_model": "gpt-6.1-sol",
-        "returned_judge_model": "gpt-6.1-sol",
+        "judge_model": "gemini-3.6-flash",
+        "returned_judge_model": "gemini-3.6-flash",
         "judge_calls": 1,
         "criteria": [{"id": "title", "verdict": "success"}],
         "usage": {"input_tokens": 10, "output_tokens": 5},
@@ -123,15 +123,15 @@ def test_comparison_rejects_grade_not_bound_to_schedule(run_pair, tmp_path, monk
     write_json(rubric, {"task_id": "task_01", "instruction": "Report done.", "start_url": "https://example.test",
         "criteria": [{"id": "result", "description": "The result is established."}]})
     monkeypatch.setattr(runner.ModelClient, "_post", lambda self, payload: {
-        "model": "gpt-6.1-sol", "output_text": json.dumps({"criteria": [{"id": "result", "verdict": "success",
+        "model": "gemini-3.6-flash", "output_text": json.dumps({"criteria": [{"id": "result", "verdict": "success",
             "reason": "Observed", "states": [1]}]}), "usage": {"input_tokens": 100, "output_tokens": 10}})
     for path in paths.values():
-        asyncio.run(grade_run(path, rubric, judge_model="gpt-6.1-sol", api_key="test", execute=True))
+        asyncio.run(grade_run(path, rubric, judge_model="gemini-3.6-flash", api_key="test", execute=True))
     ledger = tmp_path / "ledger.jsonl"
     rows = write_attempt_ledger(ledger, {(1, mode): path for mode, path in paths.items()}, 1)
     for row in rows:
         row.update(rubric=str(rubric), rubric_sha256=hashlib.sha256(rubric.read_bytes()).hexdigest(),
-            judge_model="gpt-6.1-sol")
+            judge_model="gemini-3.6-flash")
         row[binding] = "0" * 64 if binding == "rubric_sha256" else "different-judge"
     write_json_lines(ledger, rows)
     with pytest.raises(ValueError, match="rubric|judge|grading"):

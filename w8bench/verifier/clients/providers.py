@@ -353,7 +353,7 @@ class OpenAIClientWrapper(ChatCompletionClient):
         kwargs = self._chat_request(messages, tools, json_output, extra_create_args)
         record = {"configured_model": self.model, "requested_model": kwargs["model"],
             "provider": self.metadata.get("provider"),
-            "transport": "normal" if self.model == "gpt-5.2" else judge_transport(),
+            "transport": judge_transport(),
             "reasoning_effort": kwargs.get("reasoning_effort", (kwargs.get("reasoning") or {}).get("effort")),
             "temperature": kwargs.get("temperature"),
             "max_output_tokens": kwargs.get("max_completion_tokens", kwargs.get("max_output_tokens", kwargs.get("max_tokens"))),
@@ -361,7 +361,7 @@ class OpenAIClientWrapper(ChatCompletionClient):
             "usage_reported": False, "returned_model": None, "error_type": None}
         token = self._start_call(record)
         try:
-            if self.model != "gpt-5.2" and judge_transport() == "batch":
+            if judge_transport() == "batch":
                 async with self.client.with_options(http_client=httpx.AsyncClient(
                     transport=http_transport(self.metadata.get("provider", "openai"),
                         f"{self._evidence_mode}.{record['stage']}", record),

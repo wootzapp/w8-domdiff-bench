@@ -21,7 +21,7 @@ from w8bench.verifier.common import canonical_sha256
 
 
 def evaluation_args(paths, rubric, config):
-    return ["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gpt-6.1-sol",
+    return ["--run", str(paths["dom"]), "--rubric", str(rubric), "--judge-model", "gemini-3.6-flash",
         "--eval-config", str(config), "--execute"]
 
 def test_each_actor_reads_the_frozen_catalog_when_the_original_changes(tmp_path, monkeypatch):
@@ -46,7 +46,7 @@ def test_each_actor_reads_the_frozen_catalog_when_the_original_changes(tmp_path,
         return SimpleNamespace(returncode=1)
     monkeypatch.setattr(task_cli.subprocess, "run", launch)
     assert task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog),
-        "--rubric-dir", str(rubrics), "--judge-model", "gpt-6.1-sol", "--output-dir", str(output),
+        "--rubric-dir", str(rubrics), "--judge-model", "gemini-3.6-flash", "--output-dir", str(output),
         "--run-name", "collection", "--env-file", str(tmp_path / "absent.env")]) == 0
     frozen = output / "collection" / "catalog.jsonl"
     ledger = [json.loads(line) for line in (frozen.parent / "ledger.jsonl").read_text().splitlines()]
@@ -300,7 +300,7 @@ def test_launcher_refuses_expired_before_scheduling_and_allows_explicit_override
     output = tmp_path / "recordings"
     args = [row["task_id"], "--catalog-file", str(catalog), "--output-dir", str(output),
         "--run-name", "expiry", "--env-file", str(tmp_path / "absent.env"), "--dry-run"]
-    args += ["--trials", "2", "--judge-model", "gpt-6.1-sol"] if batch else ["--observation-mode", "dom"]
+    args += ["--trials", "2", "--judge-model", "gemini-3.6-flash"] if batch else ["--observation-mode", "dom"]
     with pytest.raises(RunnerError, match="expired catalog task"):
         task_cli.main(args)
     assert not output.exists()
@@ -355,7 +355,7 @@ def test_pre_rubric_planning_is_separate_and_cannot_resume_as_execution(tmp_path
     monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
     catalog = tmp_path / "catalog.jsonl"
     catalog.write_text(json.dumps({"task_id": "custom", "instruction": "Read heading.", "start_url": "https://example.test"}) + "\n")
-    args = ["--trials", "2", "--catalog-file", str(catalog), "--judge-model", "gpt-6.1-sol",
+    args = ["--trials", "2", "--catalog-file", str(catalog), "--judge-model", "gemini-3.6-flash",
         "--env-file", str(tmp_path / "absent.env"), "--output-dir", str(tmp_path / "recordings"), "--run-name", "plan"]
     monkeypatch.setattr(task_cli.subprocess, "run", lambda *args, **kwargs: pytest.fail("planning launched a child"))
     assert task_cli.main(args + ["--dry-run"]) == 0
@@ -407,7 +407,7 @@ def test_batch_resume_rejects_byte_changes_to_frozen_catalog(tmp_path, monkeypat
     monkeypatch.setattr(task_cli, "read_active_run", lambda: None)
     output = tmp_path / "output"
     arguments = ["custom", "--trials", "1", "--catalog-file", str(catalog), "--rubric-dir", str(rubrics),
-        "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "hash-check",
+        "--judge-model", "gemini-3.6-flash", "--output-dir", str(output), "--run-name", "hash-check",
         "--env-file", str(tmp_path / "absent.env"), "--dry-run"]
     assert task_cli.main(arguments) == 0
     frozen = output / "hash-check/catalog.jsonl"
@@ -442,8 +442,8 @@ def test_remote_catalog_hash_uses_one_download_and_forwards_frozen_bytes(tmp_pat
     (["one"], ["--observation-mode", "dom", "--task", "Read heading."], "manual tasks require both"),
     (["one"], ["--observation-mode", "dom", "--start-url", "https://example.test"], "manual tasks require both"),
     (["one"], ["--observation-mode", "dom"], "task selection requires"),
-    (["one"], ["--observation-mode", "dom", "--judge-model", "gpt-6.1-sol"], "batch grading options require --trials"),
-    (["one"], ["--observation-mode", "dom", "--rubric-dir", "rubrics", "--judge-model", "gpt-6.1-sol"], "batch grading options require --trials"),
+    (["one"], ["--observation-mode", "dom", "--judge-model", "gemini-3.6-flash"], "batch grading options require --trials"),
+    (["one"], ["--observation-mode", "dom", "--rubric-dir", "rubrics", "--judge-model", "gemini-3.6-flash"], "batch grading options require --trials"),
     (["one"], ["--previous-run-stop-timeout", "-1"], "must be finite and positive"),
 ])
 def test_launcher_validates_selection_before_launch(tmp_path, monkeypatch, capsys, selectors, options, message):
@@ -599,7 +599,7 @@ def test_launcher_expiry_is_inclusive_and_checked_in_utc(tmp_path, monkeypatch, 
     output = tmp_path / "recordings"
     args = ["dated", "--catalog-file", str(catalog), "--output-dir", str(output), "--run-name", "expiry",
             "--env-file", str(tmp_path / "absent.env"), "--dry-run"]
-    args += ["--trials", "1", "--judge-model", "gpt-6.1-sol"] if batch else ["--observation-mode", "dom"]
+    args += ["--trials", "1", "--judge-model", "gemini-3.6-flash"] if batch else ["--observation-mode", "dom"]
     if day > 17:
         with pytest.raises(RunnerError, match="expired catalog task"):
             task_cli.main(args)
@@ -623,7 +623,7 @@ def test_schedule_binds_one_frozen_task_rubric_across_arms_and_trials(tmp_path, 
         (rubric_dir / f"{row['task_id']}.json").write_text(json.dumps({**row, "criteria": [{"id": "title", "description": row["instruction"]}]}))
     output = tmp_path / "recordings"
     args = ["--catalog-file", str(catalog), "--trials", "3", "--rubric-dir", str(rubric_dir),
-            "--judge-model", "gpt-6.1-sol", "--output-dir", str(output), "--run-name", "frozen",
+            "--judge-model", "gemini-3.6-flash", "--output-dir", str(output), "--run-name", "frozen",
             "--env-file", str(tmp_path / "absent.env"), "--dry-run"]
     assert task_cli.main(args) == 0
     ledger = output / "frozen" / "ledger.jsonl"
@@ -696,7 +696,7 @@ def test_judge_settings_bind_rubric_prompts_schema_and_each_stage(monkeypatch):
     monkeypatch.setenv("EVIDENCE_AUDIT_MODEL", "gemini-3.1-pro-preview")
     monkeypatch.setenv("EVIDENCE_ADJUDICATOR_MODEL", "gpt-6.1-sol")
     recording = {"manifest": {"controls": {"model": "gemini-3.8-flash"}}, "task": {}}
-    settings = evaluation_settings(recording, eval_config="config", rubric_hash="one", judge_model="gpt-6.1-sol")
+    settings = evaluation_settings(recording, eval_config="config", rubric_hash="one", judge_model="gemini-3.6-flash")
     assert settings["rubric_sha256"] == "one"
     assert set(settings["stages"]) == {"completion", "screenshot_verifier", "dom_model", "inventory", "adjudication", "rubric_preparation"}
     for stage in settings["stages"].values():
@@ -964,7 +964,7 @@ def test_ledger_evaluator_preserves_queue_groups_and_selection(tmp_path, monkeyp
     for command, selected in zip(commands, [[runs[0], runs[2]], [runs[1]], [runs[3]]]*2):
         assert command[command.index('--run')+1:command.index('--rubric')] == list(map(str, selected))
         assert command[command.index('--rubric')+1] == str(tmp_path/'rubrics')
-        assert command[command.index('--judge-model')+1] == 'gpt-6.1-sol'
+        assert command[command.index('--judge-model')+1] == 'gemini-3.6-flash'
         assert command[command.index('--judge-transport')+1] == 'batch'
         assert ('--execute' in command) == execute
         assert ('--compare-profiles' in command) == compare_profiles

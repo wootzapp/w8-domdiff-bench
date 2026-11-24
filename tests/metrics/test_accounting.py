@@ -20,6 +20,31 @@ from w8bench.verifier.run_full_comparison import main as compare_main
 from w8bench.verifier.run_metrics import summarize
 
 
+@pytest.mark.parametrize('metadata', ['configured', 'prior_settings', 'stage_settings', 'unknown'])
+@pytest.mark.parametrize('transport', ['normal', 'batch'])
+def test_completion_attempt_history_prices_only_the_recorded_model(tmp_path, metadata, transport):
+    from w8bench.verifier.run_metrics import _append_attempt_history, _price_call
+    prior = {'calls':1,'usage':{'input_tokens':1000,'output_tokens':1000},'transport':transport,
+        'usage_coverage':'complete','status':'ungraded'}
+    stage = {'attempt_history':[prior]}
+    if metadata == 'configured':
+        prior['model_settings'] = {'configured_model':'gemini-3.6-flash','returned_model':None}
+    elif metadata == 'prior_settings':
+        prior['effective_settings'] = {'models':['gemini-3.6-flash']}
+    elif metadata == 'stage_settings':
+        stage['effective_settings'] = {'models':['gemini-3.6-flash']}
+    streams = {}
+    _append_attempt_history(streams, {'paired_completion':stage}, tmp_path/'evaluation.json')
+    stream = streams['paired_completion']
+    call = stream['history_attempts'][0]['call_records'][0]
+    amount = _price_call(call, stream, set(), set())
+    if metadata == 'unknown':
+        assert call['model'] is None and amount is None
+    else:
+        assert call['model'] == 'gemini-3.6-flash'
+        assert amount == pytest.approx(.0045 if transport == 'normal' else .00225)
+
+
 def _verifier_usage_recording(tmp_path):
     import hashlib
 
@@ -138,15 +163,15 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
     root.mkdir(parents=True)
     grade = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "observation_mode": "dom", "rubric_sha256": "frozen", "evidence_policy": "paired",
-        "method": "model_judge", "verdict": "success", "judge_model": "gpt-6.1-sol", "judge_calls": 1,
-        "returned_judge_model": "gpt-6.1-sol-2026-10-01",
+        "method": "model_judge", "verdict": "success", "judge_model": "gemini-3.6-flash", "judge_calls": 1,
+        "returned_judge_model": "gemini-3.6-flash-2026-10-01",
         "usage": {"input_tokens": 30, "output_tokens": 10}}
     write_json(root / "paired_completion.json", grade)
     evaluation = {"recording_sha256": recording["recording_sha256"], "task_id": task["source_task_id"],
         "actor_arm": "dom", "trial_id": str(task["run_name"]), "rubric_sha256": "frozen", "stages": {
         "paired_completion": {"status": "model_judge", "result": str(root / "paired_completion.json"), "attempt_history": [
             {"status": "ungraded", "calls": 1, "usage": {"input_tokens": 20, "output_tokens": 5}, "usage_coverage": "complete",
-                "model_settings": {"returned_model": "gpt-6.1-sol-2026-10-01"}},
+                "model_settings": {"returned_model": "gemini-3.6-flash-2026-10-01"}},
             {"status": "interrupted", "usage_coverage": "unknown"}]},
         "dom_model": {"status": "complete", "usage_coverage": "complete", "calls": {"gpt-5.2": 2},
             "usage": {"gpt-5.2": {"input_tokens": 60, "output_tokens": 15}}, "attempt_history": [
@@ -158,7 +183,7 @@ def test_resumed_judge_attempt_costs_keep_known_history_and_unknown_coverage(run
     assert stream["usage"]["total_tokens"] == 65
     assert stream["calls"] is None and stream["known_calls"] == 2
     assert stream["unknown_attempts"] == 1 and stream["usage_coverage"] == "partial"
-    assert {row["returned_model"] for row in stream["call_records"]} == {"gpt-6.1-sol-2026-10-01"}
+    assert {row["returned_model"] for row in stream["call_records"]} == {"gemini-3.6-flash-2026-10-01"}
     auxiliary = result["judge_usage_streams"]["dom_model:gpt-5.2"]
     assert auxiliary["usage"]["input_tokens"] == 70 and auxiliary["usage"]["output_tokens"] == 17
     assert auxiliary["calls"] == 3 and auxiliary["usage_coverage"] == "complete"
@@ -443,13 +468,14 @@ def test_azure_chat_error_propagates_with_unknown_usage_and_closed_transport(mon
 
 @pytest.mark.usefixtures('inline_sdk_header_initialization')
 @pytest.mark.parametrize("package", ["dom_model", "screenshot_verifier"])
-@pytest.mark.parametrize("config_name", ["openai_gpt5_2.json", "google_gemini3_1_pro_preview.json"])
+@pytest.mark.parametrize("config_name", ["openai", "google_gemini3_1_pro_preview.json"])
 def test_pinned_client_config_metadata_preserves_sdk_defaults_and_wire_payload(monkeypatch, package, config_name):
     from pathlib import Path
     wrapper = importlib.import_module(f"w8bench.verifier.clients.providers")
     factory = importlib.import_module(f"w8bench.verifier.clients.factory")
     common = importlib.import_module("w8bench.verifier.common")
-    configuration = json.loads((Path(common.__file__).resolve().parents[2] / "config" / config_name).read_text())
+    configuration = ({"CHAT_COMPLETION_PROVIDER": "openai", "CHAT_COMPLETION_KWARGS_JSON": {"model": "gpt-6.1-sol"}}
+        if config_name == "openai" else json.loads((Path(common.__file__).resolve().parents[2] / "config" / config_name).read_text()))
     configuration["CHAT_COMPLETION_KWARGS_JSON"]["api_key"] = "offline-test"
     configuration["CHAT_COMPLETION_KWARGS_JSON"].update(model_capabilities={"function_calling": True, "json_output": True, "vision": True}, max_retries=5)
     minimal = json.loads(json.dumps(configuration))

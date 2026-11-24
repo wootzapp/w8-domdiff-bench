@@ -26,7 +26,7 @@ for run in runs:
 pending = False
 for queue, selected_runs in groups.items():
     command = [sys.executable, "-m", "w8bench.verifier.run_comparison", "--run", *selected_runs,
-        "--rubric", str(args.rubric_dir), "--judge-model", "gpt-6.1-sol",
+        "--rubric", str(args.rubric_dir), "--judge-model", "gemini-3.6-flash",
         "--judge-transport", "batch"]
     if args.compare_profiles:
         command.append("--compare-profiles")

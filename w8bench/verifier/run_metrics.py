@@ -17,6 +17,7 @@ from w8bench.settings import actual_browser_source_version
 TOKEN_PRICES = {
     "gpt-6.1-sol": (2.0, 10.0, 0.1, 2.5, 272000),
     "gemini-3.8-flash": (0.75, 3.75, 0.075, 0.75, None),
+    "gemini-3.6-flash": (0.75, 3.75, 0.075, 0.75, None),
     "gpt-5.2": (1.75, 14.0, 0.175, 1.75, None),
     "gemini-3.1-pro-preview": (2.0, 12.0, 0.2, 2.0, 200000),
     "gemini-3.5-flash-lite": (0.30, 2.50, 0.03, 0.30, None),
@@ -222,12 +223,17 @@ def _append_attempt_history(streams, stages, evaluation_path):
         for prior in stages.get(name, {}).get("attempt_history", []):
             prior_usage = prior.get("usage") or {}
             if name == "paired_completion":
-                member = streams.setdefault(name, {"model": "gpt-6.1-sol", "calls": 0,
+                configured = (prior.get("model_settings") or {}).get("configured_model") or prior.get("judge_model")
+                models = (prior.get("effective_settings") or stages[name].get("effective_settings") or {}).get("models", [])
+                if not configured and isinstance(models, list) and len(models) == 1:
+                    configured = models[0]
+                configured = configured or streams.get(name, {}).get("model")
+                member = streams.setdefault(name, {"model": configured, "calls": 0,
                     "usage": None, "usage_coverage": "complete", "_history_only": True})
                 member.setdefault("history_attempts", []).append({"usage": prior_usage or None,
                     "calls": prior.get("calls"), "usage_coverage": prior.get("usage_coverage", "unknown"),
                     "status": prior.get("status"),
-                    "call_records": [{"model": "gpt-6.1-sol",
+                    "call_records": [{"model": configured,
                         "returned_model": (prior.get("model_settings") or {}).get("returned_model"),
                         "transport": prior.get("transport", (prior.get("effective_settings") or {}).get("transport", "normal")),
                         "batch_items": prior.get("batch_items", []), "usage": prior_usage}] if prior.get("calls") == 1 else []})
@@ -339,8 +345,8 @@ def _price_call(call, stream, assumptions, price_sources):
         return None
     price_sources.add("https://ai.google.dev/gemini-api/docs/pricing" if selected.startswith("gemini-")
         else "https://developers.openai.com/api/docs/pricing")
-    if selected == "gemini-3.8-flash":
-        assumptions.add("gemini_3_8_flash_introductory_rates_through_2026_12_31")
+    if selected in {"gemini-3.8-flash", "gemini-3.6-flash"}:
+        assumptions.add(f"{selected.replace('-', '_').replace('.', '_')}_introductory_rates_through_2026_12_31")
     pin, pout, pcache, pwrite, threshold = TOKEN_PRICES[selected]
     if threshold is not None and input_tokens > threshold:
         pin, pout, pcache, pwrite = pin * 2, pout * 1.5, pcache * 2, pwrite * 2

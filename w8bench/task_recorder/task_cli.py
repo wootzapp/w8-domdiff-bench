@@ -662,7 +662,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("task_id", nargs="*", help="catalog task selectors; omitted in a batch means the full catalog")
     parser.add_argument("--trials", type=int, help="positive trial count per arm; required to schedule a batch")
     parser.add_argument("--rubric-dir", type=Path, help="frozen task rubrics; required for full evaluation of every batch recording")
-    parser.add_argument("--judge-model", help="explicit gpt-6.1-sol completion judge; required for batches")
+    parser.add_argument("--judge-model", help="explicit gemini-3.6-flash completion judge; required for batches")
     parser.add_argument("--task", help="complete manual task instruction and constraints")
     parser.add_argument("--start-url", help="absolute HTTP(S) starting URL for a manual task")
     catalog_group = parser.add_mutually_exclusive_group()
@@ -1222,8 +1222,8 @@ def run_batch(args: argparse.Namespace) -> int:
     """Schedule and resume paired actor attempts and their evaluation."""
     if args.trials <= 0 or args.observation_mode or args.task or args.start_url or args.no_browser_start or args.catalog_url:
         raise RunnerError("a batch requires positive --trials, catalog tasks, fresh profiles and both arms")
-    if args.judge_model != "gpt-6.1-sol" or not args.dry_run and args.rubric_dir is None:
-        raise RunnerError("every batch trial requires explicit --judge-model gpt-6.1-sol and execution requires --rubric-dir")
+    if args.judge_model != "gemini-3.6-flash" or not args.dry_run and args.rubric_dir is None:
+        raise RunnerError("every batch trial requires explicit --judge-model gemini-3.6-flash and execution requires --rubric-dir")
     from w8bench.run_paths import run_directory, resolve_run_name
     catalog_path, catalog_bytes, catalog_hash, definitions = _batch_definitions(args)
     planning_only = args.dry_run and (args.rubric_dir is None or any(
@@ -1381,9 +1381,9 @@ def main(argv: list[str] | None = None) -> int:
         raise RunnerError("actor model must match the single ACTOR_MODEL=gemini-3.8-flash configuration")
     args.model = configured_model
     if args.rubric_dir and not args.judge_model:
-        raise RunnerError("completion grading requires explicit --judge-model gpt-6.1-sol; actor fallback is forbidden")
-    if args.judge_model and args.judge_model != "gpt-6.1-sol":
-        raise RunnerError("completion judge must be explicitly configured as gpt-6.1-sol")
+        raise RunnerError("completion grading requires explicit --judge-model gemini-3.6-flash; actor fallback is forbidden")
+    if args.judge_model and args.judge_model != "gemini-3.6-flash":
+        raise RunnerError("completion judge must be explicitly configured as gemini-3.6-flash")
     if args.max_steps <= 0 or min(args.viewport_width, args.viewport_height, args.max_output_tokens) <= 0:
         raise RunnerError("turn budget, viewport and output budget must be positive")
     if args.max_output_tokens != 10000:

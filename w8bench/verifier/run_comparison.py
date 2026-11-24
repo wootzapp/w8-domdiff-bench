@@ -185,7 +185,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--run", type=Path, nargs="+", required=True, help="one or more recordings; ready judge requests share batch rounds")
     parser.add_argument("--rubric", type=Path, required=True)
     parser.add_argument("--judge-model", required=True,
-        help="gpt-6.1-sol completion judge; responses require its exact ID or a numeric/date/version suffix")
+        help="gemini-3.6-flash completion judge; responses require its exact ID or a numeric/date/version suffix")
     parser.add_argument("--judge-evidence-policy", choices=["paired", "actor_native"], default="paired")
     parser.add_argument("--eval-config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--env-file", type=Path, default=REPOSITORY_ROOT / ".env")
@@ -196,8 +196,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--execute", action="store_true",
         help="evaluate the run; saved effective settings must match before any stage resumes")
     args = parser.parse_args(argv)
-    if args.judge_model != "gpt-6.1-sol":
-        parser.error("completion judge must be explicitly set to gpt-6.1-sol")
+    if args.judge_model != "gemini-3.6-flash":
+        parser.error("completion judge must be explicitly set to gemini-3.6-flash")
     return args
 
 
@@ -314,7 +314,7 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
         if grade["recording_sha256"] != recording["recording_sha256"] or grade["rubric_sha256"] != rubric_hash:
             raise ValueError("saved primary grade belongs to different inputs")
         current = completion_settings(recording, rubric_hash=rubric_hash, judge_model=args.judge_model,
-            base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"), evidence_policy="paired")
+            base_url=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"), evidence_policy="paired")
         require_same_settings(grade.get("effective_settings"), current, label="saved completion")
     history = list(previous.get("attempt_history", []))
     if grade is None or grade["method"] == "ungraded":
@@ -330,7 +330,7 @@ def _primary_completion(args, run, root, recording, rubric, rubric_hash, evaluat
         os.environ["W8_JUDGE_STAGE_ATTEMPT"] = str(len(history) + 1)
         try:
             grade = asyncio.run(grade_run(run, rubric, judge_model=args.judge_model,
-                api_key=os.environ["OPENAI_API_KEY"], base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+                api_key=os.environ["GEMINI_API_KEY"], base_url=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
                 execute=True, evidence_policy="paired"))
         except BaseException as error:
             evaluation["stages"]["paired_completion"].update(status="batch_pending" if isinstance(error, BatchPending) else "interrupted" if isinstance(error, KeyboardInterrupt) else "failed",
@@ -364,6 +364,8 @@ def _audit_configuration_error(resolve_audit_config):
             raise ValueError("audit inventory must be Google gemini-3.1-pro-preview and adjudication must be OpenAI gpt-6.1-sol")
         if not os.environ.get("GEMINI_API_KEY"):
             raise ValueError("Google credentials are required for the evidence inventory and both verifiers")
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise ValueError("OpenAI credentials are required for audit adjudication")
     except Exception as error:
         audit_configuration_error = f"{type(error).__name__}: {error}"
     return audit_configuration_error
@@ -598,8 +600,8 @@ def _evaluate_recording(args, run, recording):
     from .dom_model.runner import preflight_dom_model_task
     from .screenshot_verifier.preflight import preflight_screenshot_task
     from .normalize_results import normalize_dom_model, normalize_screenshot
-    if not os.environ.get("OPENAI_API_KEY"):
-        raise ValueError("primary model grading requires an explicitly configured OpenAI credential")
+    if not os.environ.get("GEMINI_API_KEY"):
+        raise ValueError("primary model grading requires an explicitly configured Google credential")
     task = recording["task"]
     root, screenshot_task, dom_task = _prepare_inputs(run, recording)
     rubric, generation, frozen, rubric_hash = _prepare_rubric(args, root, task, load_canonical_rubric)
@@ -693,7 +695,7 @@ def main(argv: list[str] | None = None) -> int:
                             if args.judge_evidence_policy == "actor_native":
                                 os.environ.pop("W8_JUDGE_COMPLETION_TARGET", None)
                                 asyncio.run(grade_run(run, selected.rubric, judge_model=args.judge_model,
-                                    api_key=os.environ.get("OPENAI_API_KEY", ""), base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+                                    api_key=os.environ.get("GEMINI_API_KEY", ""), base_url=os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
                                     execute=True, evidence_policy="actor_native"))
                             else:
                                 failed = bool(_evaluate_recording(selected, run, recording)) or failed

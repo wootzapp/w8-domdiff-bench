@@ -308,6 +308,8 @@ def test_runtime_configuration_uses_project_defaults_and_distinct_available_port
     assert values["IMAGE"] == "w8-core:domdiff-bench"
     assert values["COMPOSE_PROJECT_NAME"] == "w8-recorder-fixture"
     assert values["CONTAINER_NAME"] == "w8-core-browser-fixture-3"
+    assert "EVIDENCE_AUDIT_PROVIDER" not in values
+    assert "EVIDENCE_ADJUDICATOR_PROVIDER" not in values
     assert [values[name] for name in ("CDP_HOST_PORT", "NOVNC_HOST_PORT", "VNC_HOST_PORT")] == [
         "49100" if occupied else "49335", "16191", "15911",
     ]
