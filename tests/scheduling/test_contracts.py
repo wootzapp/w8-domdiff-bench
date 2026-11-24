@@ -831,6 +831,11 @@ def test_runbook_commands_parse_without_execution(monkeypatch):
         'Record a task', 'Recording and evaluation inputs', 'Score a prepared task',
         'View a remote browser', 'Tests', 'Runtime checks']
     assert re.findall(r'^## (.+)$', text, flags=re.M) == expected
+    browser_steps = re.findall(r'^### (\d+)\. (.+)$', text, flags=re.M)
+    assert browser_steps == [('1', 'Create the build workspace and install `depot_tools`'),
+        ('2', 'Fetch Chromium'), ('3', 'Build the pinned Chromium revision'),
+        ('4', 'Apply the overlay and rebuild')]
+    assert 'checkout --detach' not in text and 'cat-file -e' not in text
     monkeypatch.setenv('ACTOR_MODEL', 'gemini-3.8-flash')
     modules = {'./scripts/run-task': 'w8bench.task_recorder.task_cli',
         './scripts/run-comparison': 'w8bench.verifier.run_full_comparison'}

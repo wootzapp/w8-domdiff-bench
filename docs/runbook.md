@@ -84,32 +84,20 @@ autoninja -C out/Release chrome
 
 Do not continue unless this build succeeds.
 
-### 4. Prepare the Wootzapp Browser source overlay
+### 4. Apply the overlay and rebuild
 
-After the first build, return to the directory containing
-`w8-browser-build`, then use the local browser overlay checkout:
+After the first build, return to the directory containing `w8-browser-build`
+and copy the local Wootzapp Browser source overlay into Chromium:
 
 ```bash
 cd ../../..
-git -C wootzapp-browser rev-parse --show-toplevel
-git -C wootzapp-browser cat-file -e 79ef492157bd3089f27ab0f8453ecc5227677252^{commit}
-git -C wootzapp-browser checkout --detach 79ef492157bd3089f27ab0f8453ecc5227677252
-```
-
-The overlay revision is pinned in `protocol/browser-build.json`. The image
-build reads the local checkout and does not fetch it from a remote. Do not
-continue if that checkout lacks the revision or has modified source.
-
-### 5. Apply the overlay and rebuild
-
-Copy the maintained source overlay into Chromium:
-
-```bash
 cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
 ```
 
 Only files below `wootzapp-browser/src/` are applied. The destination must be
-writable by the build user.
+writable by the build user. Use a clean overlay checkout matching the source
+revision in `protocol/browser-build.json`. The image build verifies the checked-out
+revision and applied files without fetching or switching the overlay checkout.
 
 ```bash
 cd w8-browser-build/chromium

@@ -1552,8 +1552,9 @@ async def test_fairness_known_target_is_selected_before_querying_unrelated_cli_t
 
 
 @pytest.mark.parametrize('payload_matches_pin', [True, False])
-def test_browser_image_preflight_enforces_pinned_binary(tmp_path, monkeypatch, payload_matches_pin):
-    """The same copied/source binary must still match the declared build pin."""
+@pytest.mark.parametrize('overlay_matches_pin', [True, False])
+def test_browser_image_preflight_enforces_source_and_binary_pins(tmp_path, monkeypatch, payload_matches_pin, overlay_matches_pin):
+    """Verify the selected source and binary without switching the overlay checkout."""
     import hashlib
     root, chromium, overlay = (tmp_path / name for name in ('bench', 'chromium', 'overlay'))
     protocol = b'domain ChromiumRL\n'
@@ -1575,7 +1576,7 @@ def test_browser_image_preflight_enforces_pinned_binary(tmp_path, monkeypatch, p
     def local_git(command, **kwargs):
         assert command[:2] == ['git', '-C']
         if 'rev-parse' in command:
-            return 'a' * 40 if Path(command[2]) == overlay else 'b' * 40
+            return ('a' if overlay_matches_pin else 'c') * 40 if Path(command[2]) == overlay else 'b' * 40
         if 'status' in command:
             return ''
         if 'ls-files' in command:
@@ -1585,7 +1586,11 @@ def test_browser_image_preflight_enforces_pinned_binary(tmp_path, monkeypatch, p
     monkeypatch.setattr('sys.argv', ['preflight', str(root), str(chromium), str(overlay)])
     script = (Path(__file__).resolve().parents[2] / 'scripts/build-browser-image').read_text()
     program = script.split("<<'PY'\n", 1)[1].split('\nPY\n', 1)[0]
-    if payload_matches_pin:
+    if not overlay_matches_pin:
+        with pytest.raises(SystemExit, match='Browser overlay revision differs from protocol/browser-build.json'):
+            exec(compile(program, 'browser-image-preflight', 'exec'), {})
+        assert not (root / 'build/browser-build.json').exists()
+    elif payload_matches_pin:
         exec(compile(program, 'browser-image-preflight', 'exec'), {})
         receipt = json.loads((root / 'build/browser-build.json').read_text())
         assert receipt['binary_sha256'] == settings['binary_sha256']

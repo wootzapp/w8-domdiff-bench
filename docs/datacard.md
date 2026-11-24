@@ -73,7 +73,7 @@ The browser build is pinned by [protocol/browser-build.json](../protocol/browser
 | --- | --- |
 | Image tag | `w8-core:domdiff-bench`; run provenance also records the immutable image ID. |
 | Chromium version | `152.0.7948.0` |
-| Overlay revision | `79ef492157bd3089f27ab0f8453ecc5227677252` |
+| Overlay revision | `c519a1fb70d156aff4a12d4c1460e39bf9adf547` |
 | Release binary SHA-256 | `d1f8152bb72a0bca10d8b947bbb1128b77d45a52c07a05eb476f0e067846a53b` |
 | Preferred host ports | CDP 49335, noVNC 16191, VNC 15911; configure selects distinct free ports. |
 | Browser service capability | `SYS_NICE`, for renderer-priority changes in the assertion-enabled build. |
