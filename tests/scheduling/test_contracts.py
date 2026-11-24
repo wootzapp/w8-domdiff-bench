@@ -835,7 +835,7 @@ def test_runbook_commands_parse_without_execution(monkeypatch):
     modules = {'./scripts/run-task': 'w8bench.task_recorder.task_cli',
         './scripts/run-comparison': 'w8bench.verifier.run_full_comparison'}
     checked, shell_count, python_count = [], 0, 0
-    commands = []
+    commands, script_commands = [], []
     for shell in re.findall(r'^```(?:bash|sh)\n(.*?)^```', text, flags=re.M|re.S):
         subprocess.run(['bash', '-n'], input=shell, text=True, check=True, capture_output=True)
         shell_count += 1
@@ -855,10 +855,12 @@ def test_runbook_commands_parse_without_execution(monkeypatch):
         plain = re.sub(r"<<'PY'\n.*?\nPY(?:\n|$)", "<<'PY'\nPY\n", shell, flags=re.S)
         plain = plain.replace('\\\n', ' ')
         for line in plain.splitlines():
-            if not line.startswith(('.venv/bin/python -m w8bench.', './scripts/')):
+            if not line.startswith(('.venv/bin/python -m w8bench.', '.venv/bin/python scripts/', './scripts/')):
                 continue
             parts = shlex.split(line.split(' || ', 1)[0])
-            if parts[0] in modules:
+            if parts[0] == '.venv/bin/python' and parts[1].startswith('scripts/'):
+                script_commands.append((parts[1], parts[2:]))
+            elif parts[0] in modules:
                 commands.append((modules[parts[0]], parts[1:]))
             elif '-m' in parts:
                 i = parts.index('-m')
@@ -886,8 +888,115 @@ def test_runbook_commands_parse_without_execution(monkeypatch):
         if module_name == 'w8bench.task_recorder.task_cli' and parsed.task:
             assert len(parsed.task_id) == 1 and parsed.start_url and parsed.observation_mode
         checked.append(module_name)
-    assert shell_count >= 30 and python_count >= 5
+    script_names = set()
+    for name, values in script_commands:
+        source = ast.parse((root/name).read_text())
+        end = next(index for index, node in enumerate(source.body)
+            if any(isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and isinstance(call.func.value, ast.Name) and call.func.value.id == 'parser'
+                and call.func.attr == 'parse_args' for call in ast.walk(node)))
+        tree = ast.fix_missing_locations(ast.Module(body=source.body[:end], type_ignores=[]))
+        namespace = {}
+        exec(compile(tree, str(root/name), 'exec'), namespace)
+        parsed = namespace['parser'].parse_args(values)
+        assert parsed is not None
+        script_names.add(name)
+    assert script_names == {'scripts/check-configuration.py', 'scripts/check-model-compatibility.py',
+        'scripts/calibrate-coordinates.py', 'scripts/calibrate-text.py', 'scripts/evaluate-ledger.py'}
+    assert shell_count >= 30 and python_count >= 1
     assert {'w8bench.task_recorder.task_cli', 'w8bench.task_recorder.browser_runtime',
         'w8bench.task_recorder.prepare_verifier_data', 'w8bench.verifier.generate_frozen_rubric',
         'w8bench.verifier.run_comparison', 'w8bench.verifier.run_full_comparison',
         'w8bench.verifier.batch'} <= set(checked)
+
+
+@pytest.mark.parametrize('script', ['check-model-compatibility.py', 'calibrate-coordinates.py', 'calibrate-text.py'])
+@pytest.mark.parametrize('arguments,exit_code', [([], 2), (['--help'], 0)])
+@pytest.mark.usefixtures('no_network')
+def test_paid_runbook_diagnostics_require_explicit_execution(tmp_path, monkeypatch, script, arguments, exit_code):
+    import runpy
+    import sys
+    path = Path(__file__).resolve().parents[2]/'scripts'/script
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, 'argv', [str(path), *arguments])
+    with pytest.raises(SystemExit) as error:
+        runpy.run_path(str(path), run_name='__main__')
+    assert error.value.code == exit_code
+    assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize('compare_profiles', [False, True])
+@pytest.mark.parametrize('execute', [False, True])
+@pytest.mark.usefixtures('no_network')
+def test_ledger_evaluator_preserves_queue_groups_and_selection(tmp_path, monkeypatch, compare_profiles, execute):
+    import runpy
+    import subprocess
+    import sys
+    script = Path(__file__).resolve().parents[2]/'scripts/evaluate-ledger.py'
+    # Interleave trials in the ledger so grouping must retain the first recording
+    # and row order within each queue, including a finalized technical attempt.
+    runs = [tmp_path/'trial_0001/dom/task_02', tmp_path/'trial_0002/screenshot/task_02',
+        tmp_path/'trial_0001/screenshot/task_02', tmp_path/'technical_attempt_02/trial_0001/dom/task_19']
+    for run in runs:
+        write_json(run/'final.json', {})
+    ledger = tmp_path/'ledger.jsonl'
+    write_json_lines(ledger, [{'recording': str(run)} for run in runs] +
+        [{'recording': str(tmp_path/'unfinished')}])
+    commands = []
+    monkeypatch.setattr(subprocess, 'run', lambda command, **kwargs:
+        (commands.append(command) or SimpleNamespace(returncode=0)))
+    arguments = [str(script), '--ledger', str(ledger), '--rubric-dir', str(tmp_path/'rubrics')]
+    if compare_profiles:
+        arguments.append('--compare-profiles')
+    if execute:
+        arguments.append('--execute')
+    monkeypatch.setattr(sys, 'argv', arguments)
+    for _ in range(2):
+        with pytest.raises(SystemExit) as error:
+            runpy.run_path(str(script), run_name='__main__')
+        assert error.value.code == 0
+    assert commands[:3] == commands[3:]
+    for command, selected in zip(commands, [[runs[0], runs[2]], [runs[1]], [runs[3]]]*2):
+        assert command[command.index('--run')+1:command.index('--rubric')] == list(map(str, selected))
+        assert command[command.index('--rubric')+1] == str(tmp_path/'rubrics')
+        assert command[command.index('--judge-model')+1] == 'gpt-6.1-sol'
+        assert command[command.index('--judge-transport')+1] == 'batch'
+        assert ('--execute' in command) == execute
+        assert ('--compare-profiles' in command) == compare_profiles
+
+
+@pytest.mark.parametrize('statuses,expected,count', [([75, 0], 75, 2), ([0, 75], 75, 2),
+    ([1, 0], 1, 1), ([130, 0], 130, 1)])
+@pytest.mark.usefixtures('no_network')
+def test_ledger_evaluator_preserves_pending_and_stops_on_errors(tmp_path, monkeypatch, statuses, expected, count):
+    import runpy
+    import subprocess
+    import sys
+    script = Path(__file__).resolve().parents[2]/'scripts/evaluate-ledger.py'
+    runs = [tmp_path/f'trial_{trial:04d}/dom/task_02' for trial in (1, 2)]
+    for run in runs:
+        write_json(run/'final.json', {})
+    ledger = tmp_path/'ledger.jsonl'
+    write_json_lines(ledger, [{'recording': str(run)} for run in runs])
+    commands = []
+    monkeypatch.setattr(subprocess, 'run', lambda command, **kwargs:
+        (commands.append(command) or SimpleNamespace(returncode=statuses[len(commands)-1])))
+    monkeypatch.setattr(sys, 'argv', [str(script), '--ledger', str(ledger), '--execute'])
+    with pytest.raises(SystemExit) as error:
+        runpy.run_path(str(script), run_name='__main__')
+    assert error.value.code == expected and len(commands) == count
+
+
+@pytest.mark.usefixtures('no_network')
+def test_ledger_evaluator_refuses_empty_selection(tmp_path, monkeypatch):
+    import runpy
+    import subprocess
+    import sys
+    script = Path(__file__).resolve().parents[2]/'scripts/evaluate-ledger.py'
+    ledger = tmp_path/'ledger.jsonl'
+    write_json_lines(ledger, [{'recording': str(tmp_path/'unfinished')}])
+    monkeypatch.setattr(subprocess, 'run', lambda *args, **kwargs: pytest.fail('no evaluator should start'))
+    monkeypatch.setattr(sys, 'argv', [str(script), '--ledger', str(ledger), '--execute'])
+    with pytest.raises(SystemExit) as error:
+        runpy.run_path(str(script), run_name='__main__')
+    assert error.value.code == 2

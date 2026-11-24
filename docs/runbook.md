@@ -279,6 +279,8 @@ require explicit approval. Run preflight first, approve the frozen rubrics and
 compatibility checks, then complete the pilot before the full collection.
 A dry command makes no model calls. Stop at a failed check and inspect its
 receipts before continuing. Commands use the repository root unless stated.
+The diagnostic scripts support `--help` without opening the browser or contacting
+a provider. Paid diagnostics require `--execute` after approval.
 
 ### Check the configuration and schedule
 
@@ -287,48 +289,11 @@ credentials out of terminal output and version control. Environment values take
 precedence over `.env`.
 
 ```bash
-.venv/bin/python - <<'PY'
-import hashlib, json, os
-from collections import Counter
-from pathlib import Path
-from w8bench.task_recorder.runner import load_env, MAX_TASK_MEMORY_CHARS
-from w8bench.task_recorder.task_cli import parse_args, parse_task_catalog
-from w8bench.verifier.common import validate_endpoint_configs, native_judge_model
-from w8bench.verifier.batch import judge_transport
-from w8bench.settings import actor_settings
-from w8bench.verifier.audit_requests import resolve_audit_config
-from w8bench.verifier.package_manifests import require_local_packages
-load_env(Path('.env'))
-assert all(os.environ.get(k, '').strip() for k in ('OPENAI_API_KEY', 'GEMINI_API_KEY')), 'Missing credential'
-assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash', 'Unexpected actor model'
-assert judge_transport() == 'batch', 'Unexpected judge transport'
-assert os.environ.get('NATIVE_JUDGE_PROFILE', 'primary') == 'primary', 'Unexpected native profile'
-assert native_judge_model() == 'gemini-3.5-flash-lite', 'Unexpected native model'
-media = actor_settings({})['media_resolution']
-assert media == 'HIGH', 'Unexpected actor media resolution'
-audit = resolve_audit_config()
-assert audit['inventory'] == {'model': 'gemini-3.1-pro-preview', 'provider': 'google'}
-assert audit['adjudication'] == {'model': 'gpt-6.1-sol', 'provider': 'openai'}
-settings = parse_args(['--output-dir', 'recordings'])
-assert settings.max_output_tokens == 10000 and settings.max_steps == 200
-assert MAX_TASK_MEMORY_CHARS == 8000
-catalog = Path('data/tasks.jsonl')
-rows = parse_task_catalog(catalog.read_text(), source=str(catalog))
-assert len(rows) == 40 and {r['task_id'] for r in rows} == {f'task_{n:02d}' for n in range(1, 41)}
-assert Counter(r['difficulty'] for r in rows) == dict.fromkeys(('easy', 'medium', 'hard', 'complex'), 10)
-assert Path('internal/task_validity.json').is_file(), 'Missing task-validity metadata'
-validate_endpoint_configs('config')
-require_local_packages()
-print(json.dumps({'status': 'offline_preflight_passed', 'tasks': len(rows),
-    'catalog_sha256': hashlib.sha256(catalog.read_bytes()).hexdigest(),
-    'actor': os.environ['ACTOR_MODEL'], 'completion': 'gpt-6.1-sol',
-    'rubric_model': 'gpt-5.2', 'verifier_models': ['gemini-3.5-flash-lite'], 'audit': audit,
-    'judge_transport': judge_transport(), 'native_profile': 'primary',
-    'max_output_tokens': settings.max_output_tokens, 'max_turns': settings.max_steps,
-    'media_resolution': media,
-    'memory_characters': MAX_TASK_MEMORY_CHARS}, indent=2))
-PY
+.venv/bin/python scripts/check-configuration.py
 ```
+
+The [configuration check](../scripts/check-configuration.py) validates settings,
+credential presence, catalog balance and package integrity locally.
 
 A requested output name already on disk selects the next available numeric
 suffix. Read the printed schedule path and use its actual run name for later
@@ -517,152 +482,11 @@ These are transport compatibility diagnostics; the pilot exercises full native
 stage and audit payloads. The transport check launches no browser or action.
 
 ```bash
-.venv/bin/python - <<'PY'
-import asyncio, base64, json, logging, os
-from pathlib import Path
-from PIL import Image, ImageDraw
-from w8bench.task_recorder.capture import CaptureBundle
-from w8bench.task_recorder.runner import ModelClient, load_env, response_text, action_rejection_reason
-from w8bench.task_recorder.recorder_support import write_json
-from w8bench.verifier.instrumentation import instrument_client_calls, usage_dict
-from w8bench.verifier.completion import GRADE_SCHEMA
-from w8bench.verifier.clients.retry import GracefulRetryClient
-from w8bench.model_identity import match_model_id, response_acceptance
-from w8bench.verifier.audit_requests import _completion, SYSTEM_PROMPT, ADJUDICATION_SYSTEM_PROMPT
-load_env(Path('.env'))
-os.environ['JUDGE_TRANSPORT'] = 'normal'
-assert os.environ.get('ACTOR_MODEL') == 'gemini-3.8-flash'
-base = Path('internal/compatibility')
-sequence = 1
-root = base / f'check_{sequence:04d}'
-while root.exists():
-    sequence += 1
-    root = base / f'check_{sequence:04d}'
-root.mkdir(parents=True)
-print('Compatibility receipts:', root)
-image = Image.new('RGB', (1365, 768), 'white')
-ImageDraw.Draw(image).text((40, 40), 'COMPATIBILITY_OK', fill='black')
-image.save(root / 'screenshot.png')
-(root / 'dom.json').write_text('{}')
-(root / 'dom_model.txt').write_text('URL: https://example.test/\nVisible text: COMPATIBILITY_OK\n')
-url = 'data:image/png;base64,' + base64.b64encode((root / 'screenshot.png').read_bytes()).decode()
-loop = asyncio.new_event_loop()
-receipts, clients = [], []
-status = 'failed'
-native_roles = {
-    'gpt-5.2': ['rubric_preparation.generation', 'rubric_preparation.dependency'],
-    'gemini-3.5-flash-lite': [f'{mode}.{stage}' for mode in ('dom_model', 'screenshot_verifier')
-        for stage in ('relevance', 'evidence_analysis', 'condition_disambiguation',
-                      'reality_check', 'whole_rubric_rescore', 'per_criterion_rescore',
-                      'side_effects', 'outcome', 'failure_analysis',
-                      'action_only_scoring', 'task_validity', 'trajectory_validity')],
-    'gemini-3.1-pro-preview': ['native_pro.transport'],
-}
-def record_matches(receipt, model, returned, roles):
-    ids = list(returned) or [None]
-    receipt['model_checks'] = [dict(stage_role=role, **match_model_id(model, identity))
-        for role in roles for identity in ids]
-    for check in receipt['model_checks']:
-        print(json.dumps(check))
-    assert all(check['matched'] for check in receipt['model_checks']), 'Missing or refused returned model ID'
-try:
-    for arm in ('dom', 'screenshot'):
-        client = ModelClient(os.environ['GEMINI_API_KEY'], os.environ['ACTOR_MODEL'],
-            os.environ.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'))
-        bundle = CaptureBundle(snapshot_path=root/'dom.json', screenshot_path=root/'screenshot.png',
-            model_text=(root/'dom_model.txt').read_text(), observation_mode=arm,
-            document_url='https://example.test/', document_language='en',
-            agent_browser_action_text='- button "COMPATIBILITY_OK" [ref=e1]',
-            agent_browser_refs=frozenset({'e1'}))
-        turn = root / arm
-        turn.mkdir()
-        receipt = {'stage': 'actor', 'arm': arm, 'configured_model': client.model}
-        receipts.append(receipt)
-        try:
-            decision, response = loop.run_until_complete(client.decide(
-                task='Synthetic compatibility check only. Read the visible marker and return a wait '
-                     'proposal with seconds 0 and thought COMPATIBILITY_OK. Set unused fields '
-                     'to null. The proposal will not be executed.',
-                step=1, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
-                turn_dir=turn, viewport=(1365,768), max_output_tokens=10000))
-            assert not action_rejection_reason(decision, bundle.agent_browser_refs, [],
-                observation_mode=arm, model_turn=1, max_turns=200)
-            assert decision['action']=='wait' and decision['seconds']==0
-            assert 'COMPATIBILITY_OK' in decision['thought']
-            record_matches(receipt, client.model, [response.get('model')], [f'actor.{arm}'])
-            receipt['status'] = 'passed'
-        finally:
-            receipt.update(response=client.last_response, input_report=client.last_input_report)
-    for model in ('gpt-5.2', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'):
-        client = GracefulRetryClient.from_path('config', logger=logging.getLogger('compatibility'), eval_model=model, evidence_mode='screenshot_verifier')
-        clients.append(client)
-        calls = instrument_client_calls(client, receipt=True)
-        receipt = {'stage':'native_transport', 'configured_model':model, 'stage_roles':native_roles[model], 'call_metrics':calls}
-        receipts.append(receipt)
-        try:
-            result = loop.run_until_complete(client.create(messages=[{'role':'user','content':[
-                {'type':'text','text':'Read the visible marker. Return JSON {"marker":"COMPATIBILITY_OK"}.'},
-                {'type':'image_url','image_url':{'url':url,'detail':'high'}}]}], json_output=True))
-            assert result.finish_reason=='stop' and json.loads(result.content)=={'marker':'COMPATIBILITY_OK'}
-            record_matches(receipt, model, calls['returned_models'], native_roles[model])
-            receipt['status']='passed'
-        finally:
-            receipt['usage']=usage_dict(client)
-    client = ModelClient(os.environ['OPENAI_API_KEY'], 'gpt-6.1-sol',
-        os.environ.get('OPENAI_BASE_URL','https://api.openai.com/v1'))
-    receipt={'stage':'completion','configured_model':'gpt-6.1-sol'}
-    receipts.append(receipt)
-    response = None
-    try:
-        response=client._post({'model':'gpt-6.1-sol','instructions':'Return the supplied compatibility criterion as success, reason marker visible, states [1].',
-            'input':[{'role':'user','content':[{'type':'input_text','text':'Criterion id: compatibility. State 1 contains COMPATIBILITY_OK.'},
-                {'type':'input_image','image_url':url,'detail':'high'}]}], 'max_output_tokens':10000,
-            'reasoning':{'effort':'medium'},'text':{'format':{'type':'json_schema','name':'completion_grade','strict':True,'schema':GRADE_SCHEMA}}})
-        acceptance=response_acceptance('gpt-6.1-sol', response.get('model'), response, output_cap=10000)
-        receipt['acceptance']=acceptance
-        record_matches(receipt, 'gpt-6.1-sol', [response.get('model')], ['completion'])
-        assert response.get('status')=='completed'
-        assert acceptance['accepted'], acceptance['refusal_reason']
-        value=json.loads(response_text(response))
-        assert set(value)==set(GRADE_SCHEMA['required']) and isinstance(value['criteria'],list) and len(value['criteria'])==1
-        criterion=value['criteria'][0]
-        assert set(criterion)==set(GRADE_SCHEMA['properties']['criteria']['items']['required'])
-        assert criterion['id']=='compatibility' and criterion['verdict']=='success'
-        assert isinstance(criterion['reason'],str) and criterion['reason']
-        assert isinstance(criterion['states'],list) and all(type(index) is int for index in criterion['states'])
-        assert criterion['states']==[1]
-        receipt['status']='passed'
-    finally:
-        receipt.update(response=response, usage=response.get('usage') if response else None)
-    for stage, model, provider, system in (
-        ('inventory', 'gemini-3.1-pro-preview', 'google', SYSTEM_PROMPT),
-        ('adjudication', 'gpt-6.1-sol', 'openai', ADJUDICATION_SYSTEM_PROMPT),
-    ):
-        records=[]
-        receipt={'stage':stage, 'configured_model':model, 'provider':provider, 'call_records':records}
-        receipts.append(receipt)
-        try:
-            value=_completion(model, [{'role':'system','content':system},
-                {'role':'user','content':[{'type':'text','text':'Synthetic transport compatibility only. The supplied state contains COMPATIBILITY_OK. Return only JSON {"marker":"COMPATIBILITY_OK"}; no criterion audit is requested.'},
-                    {'type':'image_url','image_url':{'url':url,'detail':'high'}}]}], records=records, provider=provider)
-            record_matches(receipt, model, [record.get('response_model') for record in records], [stage])
-            assert value=={'marker':'COMPATIBILITY_OK'}
-            receipt.update(status='passed', response=value)
-        finally:
-            receipt['usage']=[record.get('usage') for record in records]
-    status='passed'
-except BaseException as error:
-    if receipts and receipts[-1].get('status') != 'passed':
-        receipts[-1].update(status='failed', error_type=type(error).__name__, error=str(error))
-    raise
-finally:
-    write_json(root/'result.json', {'status':status,'nominal_logical_calls':8,'receipts':receipts})
-    for client in clients:
-        loop.run_until_complete(client.close())
-    loop.close()
-print('Compatibility gate:', status)
-PY
+.venv/bin/python scripts/check-model-compatibility.py --execute
 ```
+
+The [transport check](../scripts/check-model-compatibility.py) constructs the
+synthetic requests and writes the receipts described below.
 
 Do not continue unless all eight checks pass with permitted returned IDs, complete
 responses, valid schema/JSON and readable image markers. Inspect
@@ -707,83 +531,11 @@ container and deleted afterward. Its file URL does not expose the HTML source. I
 only to score the click afterwards. Run this before the pilot, with no task active:
 
 ```bash
-.venv/bin/python - <<'PY'
-import asyncio, json, os, subprocess, time
-from pathlib import Path
-from w8bench.task_recorder.capture import CDPClient, CaptureBundle, _capture_screenshot
-from w8bench.task_recorder.agent_browser import AgentBrowserClient
-from w8bench.task_recorder.runner import ModelClient, load_env, action_rejection_reason
-from w8bench.task_recorder.recorder_support import write_json
-load_env(Path('.env'))
-base = Path('internal/coordinate_calibration')
-sequence = 1
-root = base / f'check_{sequence:04d}'
-while root.exists():
-    sequence += 1
-    root = base / f'check_{sequence:04d}'
-root.mkdir(parents=True)
-print('Coordinate receipts:', root)
-container = os.environ['CONTAINER_NAME']
-fixture_path = f'/tmp/w8-coordinate-{root.name}.html'
-fixture_html = Path('tests/fixtures/coordinate_calibration.html').read_text()
-subprocess.run(['docker', 'exec', '-i', container, 'python3', '-c',
-    'import sys; from pathlib import Path; '
-    'Path(sys.argv[1]).open("x", encoding="utf-8").write(sys.stdin.read())', fixture_path],
-    input=fixture_html, text=True, check=True)
-url = 'file://' + fixture_path
-loop = asyncio.new_event_loop()
-cdp = CDPClient('http://127.0.0.1:' + os.environ['CDP_HOST_PORT'],
-    observation_mode='screenshot', viewport=(1365, 768))
-driver = AgentBrowserClient('unused', session='coordinate-calibration',
-    cdp_url=cdp.http_url, timeout=90)
-client = ModelClient(os.environ['GEMINI_API_KEY'], os.environ['ACTOR_MODEL'],
-    os.environ.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'))
-results = []
-targets = [('North west (NW)', 'north-west'), ('North east (NE)', 'north-east'),
-    ('South west (SW)', 'south-west'), ('South east (SE)', 'south-east'),
-    ('Small (+)', 'small'), ('Scrolled (S)', 'scrolled')]
-try:
-    loop.run_until_complete(cdp.connect())
-    loop.run_until_complete(cdp.call('Page.navigate', {'url': url}))
-    for index, (label, target) in enumerate(targets, 1):
-        if target == 'scrolled':
-            loop.run_until_complete(driver.execute({'action':'scroll', 'x':500,
-                'y':500, 'pixels':1000}, cdp=cdp, viewport=(1365,768)))
-        time.sleep(1)
-        directory = root / f'turn_{index:06d}'
-        directory.mkdir()
-        screenshot = directory / 'screenshot.png'
-        screenshot.write_bytes(loop.run_until_complete(_capture_screenshot(cdp)))
-        loop.run_until_complete(cdp.call('Runtime.evaluate', {'expression':'hitTargets = []'}))
-        bundle = CaptureBundle(observation_mode='screenshot', screenshot_path=screenshot,
-            document_url=url)
-        decision, response = loop.run_until_complete(client.decide(
-            task=f'Click the visible button labelled {label}. Return one click action.',
-            step=index, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
-            turn_dir=directory, viewport=(1365,768), max_output_tokens=10000))
-        rejection = action_rejection_reason(decision, frozenset(), [],
-            observation_mode='screenshot', model_turn=index, max_turns=200)
-        execution = None
-        if not rejection and decision['action'] == 'click':
-            execution = loop.run_until_complete(driver.execute(decision, cdp=cdp, viewport=(1365,768)))
-        actual = loop.run_until_complete(cdp.call('Runtime.evaluate',
-            {'expression':'hitTargets.at(-1) || null', 'returnByValue':True}))['result'].get('value')
-        results.append({'target':target, 'actual':actual, 'hit':actual == target,
-            'rejection':rejection, 'decision':decision, 'execution':execution,
-            'returned_model':response.get('model'), 'usage':response.get('usage')})
-        print(json.dumps(results[-1]))
-finally:
-    write_json(root / 'result.json', {'hits':sum(item['hit'] for item in results),
-        'targets':len(targets), 'results':results})
-    loop.run_until_complete(cdp.close_owned_target_on_failure())
-    loop.run_until_complete(cdp.close())
-    loop.close()
-    subprocess.run(['docker', 'exec', container, 'python3', '-c',
-        'from pathlib import Path; import sys; Path(sys.argv[1]).unlink(missing_ok=True)',
-        fixture_path], check=True)
-assert len(results) == len(targets) and all(item['hit'] for item in results)
-PY
+.venv/bin/python scripts/calibrate-coordinates.py --execute
 ```
+
+The [coordinate check](../scripts/calibrate-coordinates.py) uses the saved fixture
+image, real actor request path and browser executor.
 
 Do not continue unless all six targets are hit with valid normalized coordinates,
 permitted returned model IDs and complete responses. Review `internal/coordinate_calibration/check_NNNN/result.json`
@@ -800,87 +552,11 @@ receives only the image and the reading instruction; expected strings are used
 only to score its response. No returned browser action is executed.
 
 ```bash
-.venv/bin/python - <<'PY'
-import asyncio, json, os, subprocess
-from pathlib import Path
-from w8bench.task_recorder.capture import CDPClient, CaptureBundle, _capture_screenshot
-from w8bench.task_recorder.runner import ModelClient, load_env
-from w8bench.task_recorder.recorder_support import write_json
-load_env(Path('.env'))
-base = Path('internal/screenshot_text_calibration')
-sequence = 1
-root = base / f'check_{sequence:04d}'
-while root.exists():
-    sequence += 1
-    root = base / f'check_{sequence:04d}'
-root.mkdir(parents=True)
-print('Text calibration receipts:', root)
-container = os.environ['CONTAINER_NAME']
-fixture_path = f'/tmp/w8-text-{root.name}.html'
-fixture_html = Path('tests/fixtures/screenshot_text_calibration.html').read_text()
-subprocess.run(['docker', 'exec', '-i', container, 'python3', '-c',
-    'import sys; from pathlib import Path; '
-    'Path(sys.argv[1]).open("x", encoding="utf-8").write(sys.stdin.read())', fixture_path],
-    input=fixture_html, text=True, check=True)
-url = 'file://' + fixture_path
-expected = {'8':'J7M4Q2R9', '10':'V3K8T5N6', '12':'P9D2W7X4', '14':'F6C1Y8H3'}
-loop = asyncio.new_event_loop()
-cdp = CDPClient('http://127.0.0.1:' + os.environ['CDP_HOST_PORT'],
-    observation_mode='screenshot', viewport=(1365,768))
-client = ModelClient(os.environ['GEMINI_API_KEY'], os.environ['ACTOR_MODEL'],
-    os.environ.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'))
-results = []
-try:
-    loop.run_until_complete(cdp.connect())
-    loop.run_until_complete(cdp.call('Page.navigate', {'url':url}))
-    loop.run_until_complete(asyncio.sleep(1))
-    screenshot = root / 'screenshot.png'
-    screenshot.write_bytes(loop.run_until_complete(_capture_screenshot(cdp)))
-    directory = root / 'turn'
-    directory.mkdir()
-    bundle = CaptureBundle(observation_mode='screenshot', screenshot_path=screenshot,
-        document_url=url)
-    decision, response = loop.run_until_complete(client.decide(
-        task='Read the exact string beside each 8 px, 10 px, 12 px and 14 px label. '
-             'Return a wait action with seconds 0. Put a JSON object mapping '
-             'the keys "8", "10", "12", "14" to the four strings in memory.',
-        step=1, max_steps=200, bundle=bundle, task_memory='', recent_actions=[],
-        turn_dir=directory, viewport=(1365,768), max_output_tokens=10000))
-    assert decision['action'] == 'wait' and decision['seconds'] == 0
-    sent = json.loads((directory/'request.json').read_text())
-    part = sent['contents'][0]['parts'][1]
-    assert set(part) == {'inlineData'}
-    assert sent['generationConfig']['mediaResolution'] == 'MEDIA_RESOLUTION_HIGH'
-    readings = json.loads(decision['memory'])
-    assert set(readings) == set(expected) and all(isinstance(v,str) for v in readings.values())
-    rows = []
-    for size, value in expected.items():
-        actual = readings[size]
-        previous = list(range(len(actual)+1))
-        for i, left in enumerate(value, 1):
-            current = [i]
-            for j, right in enumerate(actual, 1):
-                current.append(min(current[-1]+1, previous[j]+1,
-                    previous[j-1] + (left != right)))
-            previous = current
-        rows.append({'font_css_pixels':int(size), 'expected':value, 'actual':actual,
-            'exact':actual == value, 'character_accuracy':max(0,1-previous[-1]/len(value))})
-    results.append({'media_resolution':'HIGH', 'rows':rows,
-        'exact_rows':sum(row['exact'] for row in rows),
-        'mean_character_accuracy':sum(row['character_accuracy'] for row in rows)/len(rows),
-        'returned_model':response.get('model'), 'usage':response.get('usage')})
-    print(json.dumps(results[-1]))
-finally:
-    write_json(root/'result.json', {'nominal_actor_responses':1, 'results':results})
-    loop.run_until_complete(cdp.close_owned_target_on_failure())
-    loop.run_until_complete(cdp.close())
-    loop.close()
-    subprocess.run(['docker', 'exec', container, 'python3', '-c',
-        'from pathlib import Path; import sys; Path(sys.argv[1]).unlink(missing_ok=True)',
-        fixture_path], check=True)
-assert len(results) == 1
-PY
+.venv/bin/python scripts/calibrate-text.py --execute
 ```
+
+The [text check](../scripts/calibrate-text.py) writes exact-match and character
+accuracy results for each font size.
 
 Do not continue unless responses are complete, returned IDs match, saved requests
 use HIGH, and per-size exact-match and character accuracy have been reviewed.
@@ -1092,37 +768,10 @@ individual startup, recorder or grading errors. The current catalog is
 
 The recorder output and verifier input are different contracts.
 
-The recorder writes numbered step directories and a ledger:
-
-```text
-recordings/<collection>/
-  catalog.jsonl
-  ledger.jsonl
-  logs/attempt_000001_01.log
-  trial_0001/
-    dom/task_02/
-      task.json
-      manifest.json
-      decisions.jsonl
-      final.json
-      trajectory.jsonl
-      web_surfer.log
-      steps/step_001/
-        capture.json
-        dom.json
-        dom_full.txt
-        dom_model.json
-        dom_model.txt
-        screenshot.png
-        agent_browser_actions.txt
-        action.json
-    screenshot/task_02/
-```
-
-Both arms privately save both formats. Only DOM states have the reference
-snapshot. The first state precedes action 1; each later state follows an action,
-and the terminal state can have no `action.json`. Normally N actions supply N+1
-states. The [recording contract](recordings.md) defines the files.
+The [recording guide](recordings.md#locate-an-attempt) describes the ledger,
+attempt directories and [state artifacts](recordings.md#state-artifacts).
+Both arms privately save both formats; only DOM states include executable refs.
+Normally N actions supply N+1 states, starting before the first action.
 
 Validate and stage flat verifier inputs from the recording tree:
 
@@ -1140,24 +789,9 @@ Use an output directory outside the source tree. See the
 [recording contract](recordings.md#integrity-and-export) for
 validation and incomplete-recording behavior.
 
-The export is flat within each bound task folder:
-
-```text
-exported/<collection>/<trial>/dom/task_02/<recording-hash>/
-  input_receipt.json
-  data-ss/task_02/
-    task_data.json
-    final_answer.json
-    web_surfer.log
-    screenshot1.png
-    screenshot2.png
-  data-dom/task_02/
-    task_data.json
-    final_answer.json
-    web_surfer.log
-    dom_model1.txt
-    dom_model2.txt
-```
+Each bound task folder contains `input_receipt.json` and flat `data-ss/<task-id>/`
+and `data-dom/<task-id>/` projections. The
+[export contract](recordings.md#integrity-and-export) describes their files.
 
 Add `--dry-run` to validate without staging. Keep each run's formats together;
 never pair screenshots from one recording with another recording's DOM. Empty
@@ -1228,34 +862,21 @@ pending. The task launcher can return 0 with pending judging recorded as
 `grade_completed: false`. Inspect the ledger rather than treating launcher exit
 0 as completed evaluation.
 
-For full evaluation or resume, select all finalized recordings from the saved
-ledger. This performs no actor work. Set `BENCH_EVALUATION_RUN` to the actual
-pilot or collection run name:
+For full evaluation or resume, select finalized recordings from the saved
+ledger. Set `BENCH_EVALUATION_RUN` to the actual pilot or collection run name.
+Inspect the selection without dispatching requests:
 
 ```bash
 : "${BENCH_EVALUATION_RUN:?Set the saved pilot or collection run name}"
-export BENCH_EVALUATION_RUN
-.venv/bin/python - <<'PY'
-import json, os, subprocess, sys
-from pathlib import Path
-ledger = Path('recordings') / os.environ['BENCH_EVALUATION_RUN'] / 'ledger.jsonl'
-rows = [json.loads(line) for line in ledger.read_text().splitlines() if line.strip()]
-runs = [row['recording'] for row in rows if (Path(row['recording']) / 'final.json').is_file()]
-assert runs, 'No finalized recordings available for judging'
-groups = {}
-for run in runs:
-    queue = Path(run).resolve().parent.parent / 'evaluations' / 'batch_jobs'
-    groups.setdefault(str(queue), []).append(run)
-pending = False
-for queue, selected_runs in groups.items():
-    command = [sys.executable, '-m', 'w8bench.verifier.run_comparison', '--run', *selected_runs,
-        '--rubric', 'data/rubrics', '--judge-model', 'gpt-6.1-sol', '--judge-transport', 'batch', '--execute']
-    result = subprocess.run(command, check=False)
-    assert result.returncode in (0, 75), f'Evaluation needs attention: exit {result.returncode}'
-    pending = pending or result.returncode == 75
-    print(json.dumps({'queue': queue, 'exit_code': result.returncode}))
-sys.exit(75 if pending else 0)
-PY
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl"
+```
+
+After approval, evaluate or poll the same selection:
+
+```bash
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --execute
 ```
 
 Continue only with approved rubrics and finalized pilot or collection recordings. **Model calls:** every
@@ -1267,25 +888,20 @@ any group is pending. Retain each group and its first recording when polling; do
 not merge or reorder groups containing submitted jobs. Repeat until completed,
 then resume the launcher to reconcile ledger status and aggregate. Use `--judge-transport normal` only for a separate evaluation with
 matching effective settings; it cannot silently resume Batch results.
+The [ledger evaluator](../scripts/evaluate-ledger.py) preserves ledger order and
+queue groups for both primary evaluation and profile comparison. An error or
+cancellation exit is passed through without starting another group.
 
-For the pilot judge comparison, use the same command with `--compare-profiles`:
+For the pilot judge comparison, add `--compare-profiles`. Without `--execute`,
+the command checks inputs without model calls:
 
 ```bash
 : "${BENCH_PILOT_RUN:?Set the saved pilot run name}"
-export BENCH_PILOT_RUN
-.venv/bin/python - <<'PY'
-import json, os, subprocess, sys
-from pathlib import Path
-ledger = Path('recordings') / os.environ['BENCH_PILOT_RUN'] / 'ledger.jsonl'
-runs = [row['recording'] for row in map(json.loads, ledger.read_text().splitlines())
-        if (Path(row['recording']) / 'final.json').is_file()]
-assert runs, 'No finalized pilot recordings'
-result = subprocess.run([sys.executable, '-m', 'w8bench.verifier.run_comparison', '--run', *runs,
-    '--rubric', 'data/rubrics', '--judge-model', 'gpt-6.1-sol', '--judge-transport', 'batch',
-    '--compare-profiles', '--execute'], check=False)
-assert result.returncode in (0, 75), f'Judge comparison needs attention: exit {result.returncode}'
-sys.exit(result.returncode)
-PY
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_PILOT_RUN/ledger.jsonl" --compare-profiles
+
+.venv/bin/python scripts/evaluate-ledger.py \
+  --ledger "recordings/$BENCH_PILOT_RUN/ledger.jsonl" --compare-profiles --execute
 ```
 
 Obtain explicit approval before evaluating both judge profiles. **Model calls:** the primary
@@ -1321,6 +937,8 @@ other recordings and native profiles using that queue. The queue is rooted at
 not restrict cancellation to its own requests. The cancellation receipt prevents
 late imports and further work through that queue. Do not delete requests,
 responses, settings or cancellation receipts to force continuation.
+
+### Batch job reconciliation
 
 If submission acknowledgement is lost, inspect the saved job receipt:
 
@@ -1399,18 +1017,9 @@ records the comparison fields; credentials, ports, deployment names and file
 locations do not define behavioural settings. Public-web changes and model
 aliases remain sources of variation.
 
-For n scheduled trials, c confirmed successes and `1 <= k <= n`:
-
-```text
-pass@k = 1 - C(n-c, k) / C(n, k)
-```
-
-The numerator is zero when `n-c < k`. Unknown grades give lower and upper bounds
-using c and c+u. Average over the same scheduled tasks and report all-trial
-reliability separately. Preserve startup failures, unmatched arms, missing usage
-and uncertain grades in their stated coverage fields rather than assigning zero.
-See the [evaluation protocol](evaluation-protocol.md) for denominators and
-[cost estimate](cost-estimate.md) for the configured pricing assumptions.
+The [evaluation protocol](evaluation-protocol.md#repeated-trial-results) defines
+pass@k and uncertain-grade bounds. The
+[cost estimate](cost-estimate.md) describes the configured pricing assumptions.
 
 ## View a remote browser
 

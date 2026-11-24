@@ -255,6 +255,14 @@ descriptions or actor notes. Export output must remain outside its source record
 Validation establishes file consistency, while answer correctness is assessed by
 the independent completion grade.
 
+Each bound export folder contains `input_receipt.json` and the following flat
+task projections:
+
+| Projection | Files |
+| --- | --- |
+| `data-ss/<task-id>/` | `task_data.json`, `final_answer.json`, `web_surfer.log`, `screenshot<state-id>.png` |
+| `data-dom/<task-id>/` | `task_data.json`, `final_answer.json`, `web_surfer.log`, `dom_model<state-id>.txt` |
+
 Full evaluation writes `evaluation.json`, the imported/frozen rubric and its
 receipt, `paired_completion.json`, both verifier result/metrics/log folders and
 `evidence_audit.json` in the sibling evaluation tree. Completed result hashes are
