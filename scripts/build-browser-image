@@ -35,6 +35,7 @@ import hashlib
 import json
 import os
 import selectors
+import signal
 import subprocess
 import sys
 import tempfile
@@ -107,6 +108,7 @@ try:
                      "--disable-extensions", "--no-first-run", "--no-default-browser-check",
                      f"--user-data-dir={profile}", "--remote-debugging-pipe", "about:blank"],
                     pass_fds=(command_read, response_write), stdout=log, stderr=log,
+                    start_new_session=True,
                 )
             finally:
                 os.close(command_read)
@@ -175,11 +177,20 @@ try:
                 print(log.read().decode("utf-8", errors="replace"), file=sys.stderr)
                 raise
             finally:
-                browser.terminate()
                 try:
-                    browser.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    browser.kill()
+                    try:
+                        commands.write(json.dumps({"id": len(methods) + 1, "method": "Browser.close"}).encode() + b"\0")
+                    except OSError:
+                        pass
+                    try:
+                        browser.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        pass
+                finally:
+                    try:
+                        os.killpg(browser.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
                     browser.wait(timeout=5)
     receipt = {
         **settings,

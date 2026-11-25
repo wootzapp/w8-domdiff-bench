@@ -1598,6 +1598,7 @@ def test_browser_image_preflight_enforces_source_pins_and_payload_integrity(tmp_
     monkeypatch.setattr(subprocess, 'check_output', local_git)
     def staged_browser(command, **kwargs):
         assert '--remote-debugging-pipe' in command and '--headless' in command
+        assert kwargs['start_new_session'] is True
         assert str(root / 'build/chrome') in command
         reader = os.dup(kwargs['pass_fds'][0])
         snapshot = {'nodes': [{'directText': 'ChromiumRL build check'}]}
@@ -1610,7 +1611,14 @@ def test_browser_image_preflight_enforces_source_pins_and_payload_integrity(tmp_
             replies[3] = {'error': {'code': -32601, 'message': "'ChromiumRL.enable' wasn't found"}}
         os.write(kwargs['pass_fds'][1], b''.join(
             json.dumps({'id': index, **reply}).encode() + b'\0' for index, reply in enumerate(replies, 1)))
-        return SimpleNamespace(terminate=lambda: None, wait=lambda timeout: os.close(reader), kill=lambda: None)
+        def stop_group(pid, action):
+            import signal
+            assert pid == 987654321 and action == signal.SIGKILL
+            requests = [json.loads(row) for row in os.read(reader, 65536).split(b'\0') if row]
+            assert requests[-1]['method'] == 'Browser.close'
+            os.close(reader)
+        monkeypatch.setattr(os, 'killpg', stop_group)
+        return SimpleNamespace(pid=987654321, wait=lambda timeout: 0)
     monkeypatch.setattr(subprocess, 'Popen', staged_browser)
     monkeypatch.setattr('sys.argv', ['preflight', str(root), str(chromium), str(overlay)])
     script = (Path(__file__).resolve().parents[2] / 'scripts/build-browser-image').read_text()
