@@ -25,7 +25,7 @@ remain separate. Actor usage and judge usage are accounted for separately.
 | [Runbook](docs/runbook.md) | Setup, browser build, offline checks, rubric approval, pilot, collection, judging and reporting commands. |
 | [Recordings](docs/recordings.md) | Ledgers, state artifacts, call receipts, provenance and export contracts. |
 | [Evaluation protocol](docs/evaluation-protocol.md) | Completion, native profiles, evidence-loss decisions, denominators and metrics. |
-| [Browser protocol](protocol/README.md) | ChromiumRL source, binary and protocol pins. |
+| [Browser protocol](protocol/README.md) | ChromiumRL source and protocol pins, and binary build records. |
 
 ## Setup
 
@@ -46,7 +46,7 @@ Chromium and overlay checkouts bound by
 [protocol/browser-build.json](protocol/browser-build.json).
 
 The [pilot](docs/runbook.md#record-the-pilot) uses `task_26`, `task_02`, `task_19`
-and `task_25`, both arms, one trial each. Review it before the full collection.
+and `task_25`, both arms, one trial each.
 Actor calls and rubric preparation use normal transport; judging defaults to
 Batch. Pending judging returns 75; repeat the same evaluation command to poll.
 The [judging instructions](docs/runbook.md#controls-and-outputs) cover profiles,
@@ -73,5 +73,5 @@ is not inferred from an actor's terminal response alone.
 ```
 
 The suite uses offline fixtures. Browser checks require an explicitly selected
-idle browser; their commands and approval gates are in the
+idle browser; their commands are in the
 [runbook](docs/runbook.md#tests).

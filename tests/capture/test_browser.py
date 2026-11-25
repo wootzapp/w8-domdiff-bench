@@ -1553,21 +1553,20 @@ async def test_fairness_known_target_is_selected_before_querying_unrelated_cli_t
     assert commands[1]==['tab','t1']
 
 
-@pytest.mark.parametrize('payload_matches_pin', [True, False])
+@pytest.mark.parametrize('binary', [b'reference-build', b'recompiled-browser'])
+@pytest.mark.parametrize('payload_matches_source', [True, False])
 @pytest.mark.parametrize('overlay_matches_pin', [True, False])
-def test_browser_image_preflight_enforces_source_and_binary_pins(tmp_path, monkeypatch, payload_matches_pin, overlay_matches_pin):
-    """Verify the selected source and binary without switching the overlay checkout."""
+def test_browser_image_preflight_enforces_source_pins_and_payload_integrity(tmp_path, monkeypatch, binary, payload_matches_source, overlay_matches_pin):
+    """Accept rebuilt binaries only when the staged payload matches the verified source build."""
     import hashlib
     root, chromium, overlay = (tmp_path / name for name in ('bench', 'chromium', 'overlay'))
     protocol = b'domain ChromiumRL\n'
-    binary = b'pinned-browser' if payload_matches_pin else b'different-browser'
     settings = {'chromium_version': '152.0.7948.0', 'overlay_revision': 'a' * 40,
-        'protocol_sha256': hashlib.sha256(protocol).hexdigest(),
-        'binary_sha256': hashlib.sha256(b'pinned-browser').hexdigest()}
+        'protocol_sha256': hashlib.sha256(protocol).hexdigest()}
     for path, content in {
         root / 'protocol/browser-build.json': json.dumps(settings).encode(),
         root / 'protocol/ChromiumRL.pdl': protocol,
-        root / 'build/chrome': binary,
+        root / 'build/chrome': binary if payload_matches_source else b'different-staged-browser',
         chromium / 'out/Release/chrome': binary,
         chromium / 'chrome/VERSION': b'MAJOR=152\nMINOR=0\nBUILD=7948\nPATCH=0\n',
         chromium / 'third_party/blink/public/devtools_protocol/domains/ChromiumRL.pdl': protocol,
@@ -1592,13 +1591,13 @@ def test_browser_image_preflight_enforces_source_and_binary_pins(tmp_path, monke
         with pytest.raises(SystemExit, match='Browser overlay revision differs from protocol/browser-build.json'):
             exec(compile(program, 'browser-image-preflight', 'exec'), {})
         assert not (root / 'build/browser-build.json').exists()
-    elif payload_matches_pin:
+    elif payload_matches_source:
         exec(compile(program, 'browser-image-preflight', 'exec'), {})
         receipt = json.loads((root / 'build/browser-build.json').read_text())
-        assert receipt['binary_sha256'] == settings['binary_sha256']
+        assert receipt['binary_sha256'] == hashlib.sha256(binary).hexdigest()
         assert receipt['overlay_revision'] == settings['overlay_revision']
     else:
-        with pytest.raises(SystemExit, match='Browser binary differs from protocol/browser-build.json'):
+        with pytest.raises(SystemExit, match='Copied browser differs from the Chromium Release binary'):
             exec(compile(program, 'browser-image-preflight', 'exec'), {})
         assert not (root / 'build/browser-build.json').exists()
 

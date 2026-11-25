@@ -89,11 +89,10 @@ try:
         binary_hashes.append(digest.hexdigest())
     if binary_hashes[0] != binary_hashes[1]:
         raise ValueError("Copied browser differs from the Chromium Release binary")
-    if binary_hashes[0] != settings["binary_sha256"]:
-        raise ValueError("Browser binary differs from protocol/browser-build.json")
     receipt = {
         **settings,
         "chromium_revision": chromium_revision,
+        "binary_sha256": binary_hashes[0],
         "source_verification": "overlay files and Release payload matched at image creation",
     }
     (root / "build/browser-build.json").write_text(json.dumps(receipt, indent=2) + "\n")
