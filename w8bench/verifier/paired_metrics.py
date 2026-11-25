@@ -52,7 +52,7 @@ def validate_completion_policy_versions(rows):
     signatures = set()
     for row in rows:
         grade = row.get("completion") or {}
-        if not row.get("completion_grade_available") and set(grade) <= {"method", "verdict"}:
+        if not row.get("completion_grade_available") and set(grade) <= {"method", "verdict", "reason"}:
             continue
         signatures.add(tuple(grade.get(key) for key in ("completion_policy_version", "acceptance_policy_version")))
     if len(signatures) > 1:
@@ -509,7 +509,7 @@ def aggregate(pairs: list[dict[str, Any]], *, pass_k: list[int] | None = None) -
     pairs = [{**pair, "both_successful": pair["both_successful"] and not any(pair[mode].get("technical_failure") for mode in ("dom", "screenshot")),
         "successful_pair_turn_delta": None if any(pair[mode].get("technical_failure") for mode in ("dom", "screenshot")) else pair.get("successful_pair_turn_delta"),
         **{mode: {**pair[mode],
-        "technical_completion_diagnostic": pair[mode]["completion"],
+        "technical_completion_diagnostic": pair[mode].get("technical_completion_diagnostic", pair[mode]["completion"]),
         "completion": {"method": "ungraded", "verdict": "ungraded", "reason": "technical_failure"}}
         for mode in ("dom", "screenshot") if pair[mode].get("technical_failure")}} for pair in pairs]
     profile_policies = {pair.get("browser_profile_policy", {}).get("allow_nonfresh", False) for pair in pairs}

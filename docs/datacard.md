@@ -76,6 +76,7 @@ The browser source, version and protocol are pinned by
 | Chromium version | `152.0.7948.0` |
 | Overlay revision | `c519a1fb70d156aff4a12d4c1460e39bf9adf547` |
 | Release binary SHA-256 | Computed for each build, checked against the staged payload and recorded in `build/browser-build.json` inside the image. |
+| Image verification | The staged executable must capture structured DOM, model DOM and a PNG from a local fixture before Docker builds the image. Health and runtime status require the ChromiumRL capture commands. |
 | Preferred host ports | CDP 49335, noVNC 16191, VNC 15911; configure selects distinct free ports. |
 | Browser service capability | `SYS_NICE`, for renderer-priority changes in the assertion-enabled build. |
 
@@ -176,7 +177,7 @@ remain shared between arms.
 
 ## Task catalog and provenance
 
-The catalog [data/tasks.jsonl](../data/tasks.jsonl) contains `task_01` through
+The [catalog](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/blob/paired-capture/tasks.jsonl) contains `task_01` through
 `task_40`, ten at each difficulty. Its SHA-256 is
 `1b21a93282a438f638b70dabc427b6d6cda48b196af7ab46425b8241785cbf67`.
 The [dataset README](../data/README.md) is the schema, constraints and difficulty

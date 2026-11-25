@@ -80,8 +80,10 @@ if args.stage == "adjudicate":
 if not runs:
     parser.error("no finalized recordings available for judging")
 groups = {}
+from w8bench.verifier.batch import BatchJobs
 for run in runs:
-    queue = Path(run).resolve().parent.parent / "evaluations" / "batch_jobs"
+    queue = BatchJobs(Path(run).resolve().parent.parent / "evaluations" / "batch_jobs",
+                      recordings=[run]).root
     groups.setdefault(str(queue), []).append(run)
 pending = False
 deferred = False

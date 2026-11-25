@@ -389,7 +389,7 @@ def test_batch_requires_bound_unique_tasks_and_rubrics(launcher_batch, monkeypat
     args, ledger, catalog, rubrics = launcher_batch
     if case == "missing_catalog":
         catalog.unlink()
-        message = "needs a frozen local --catalog-file"
+        message = "needs an existing local --catalog-file"
     elif case == "changed_catalog":
         fetch = task_cli.fetch_catalog_task
         def selected(*args, **kwargs):

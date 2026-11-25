@@ -505,10 +505,12 @@ def test_aggregation_keeps_unstarted_placeholders_with_versioned_grades(
     write_json(path, grade)
     graded = summarize(recording)
     placeholder = deepcopy(graded)
-    placeholder.update(completion={"method": "ungraded", "verdict": "ungraded"}, completion_grade_available=False)
+    placeholder.update(completion={"method": "ungraded", "verdict": "ungraded", "reason": "technical_failure"},
+        completion_grade_available=False, technical_failure=True)
     result = aggregate([{"task_id": "custom", "trial_id": "1", "shared_controls": {}, "dom": graded,
                          "screenshot": placeholder, "both_successful": False, "successful_pair_turn_delta": None}])
     assert result["modes"]["screenshot"]["completion_counts"] == {"ungraded": 1}
+    assert result["modes"]["screenshot"]["agent_failure_runs"] == 0
 
 @pytest.mark.parametrize("native", ["dom_model", "screenshot_verifier"])
 def test_ungraded_native_results_keep_costs_and_stay_out_of_score_means(

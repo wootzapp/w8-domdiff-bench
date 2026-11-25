@@ -102,7 +102,7 @@ VNC_HOST_PORT={values['VNC_HOST_PORT']}
 ACTOR_MODEL={values['ACTOR_MODEL']}
 GEMINI_BASE_URL={values.get('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')}
 W8_RUN_NAME={values.get('W8_RUN_NAME', 'run_1')}
-TASK_CATALOG_FILE={values.get('TASK_CATALOG_FILE', '')}
+TASK_CATALOG_URL={values.get('TASK_CATALOG_URL', '')}
 
 EVIDENCE_AUDIT_MODEL={values.get('EVIDENCE_AUDIT_MODEL', '')}
 EVIDENCE_ADJUDICATOR_MODEL={values.get('EVIDENCE_ADJUDICATOR_MODEL', '')}
@@ -112,7 +112,7 @@ CHROMIUM_HEADLESS=0
 CHROMIUM_RESET_PROFILE=1
 """
     content += "".join(f"{key}={values[key]}\n" for key in
-        ("EVIDENCE_AUDIT_PROVIDER", "EVIDENCE_ADJUDICATOR_PROVIDER") if values.get(key))
+        ("EVIDENCE_AUDIT_PROVIDER", "EVIDENCE_ADJUDICATOR_PROVIDER", "TASK_CATALOG_FILE") if values.get(key))
     temporary = path.with_name(f".{path.name}.tmp")
     temporary.write_text(content, encoding="utf-8")
     os.chmod(temporary, 0o600)
@@ -134,11 +134,11 @@ def _configuration_values(existing: dict, defaults: dict, suffix: str, container
             "ACTOR_MODEL", defaults["ACTOR_MODEL"]
         ),
         "GEMINI_BASE_URL": existing.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta"),
-        "TASK_CATALOG_FILE": existing.get("TASK_CATALOG_FILE", defaults.get("TASK_CATALOG_FILE", "")),
+        "TASK_CATALOG_URL": existing.get("TASK_CATALOG_URL", defaults.get("TASK_CATALOG_URL", "")),
         "W8_RUN_NAME": existing.get("W8_RUN_NAME", "run_1"),
     }
     for key in ("EVIDENCE_AUDIT_MODEL", "EVIDENCE_ADJUDICATOR_MODEL",
-                "EVIDENCE_AUDIT_PROVIDER", "EVIDENCE_ADJUDICATOR_PROVIDER", "GEMINI_API_KEY"):
+                "EVIDENCE_AUDIT_PROVIDER", "EVIDENCE_ADJUDICATOR_PROVIDER", "GEMINI_API_KEY", "TASK_CATALOG_FILE"):
         values[key] = existing.get(key, defaults.get(key, ""))
     return values
 
@@ -234,6 +234,13 @@ def status(env_path: Path) -> int:
     version = get_json(f"http://127.0.0.1:{cdp_port}/json/version")
     browser_version = version.get("Browser", "unknown")
     print(f"CDP: ready ({browser_version})")
+    protocol = get_json(f"http://127.0.0.1:{cdp_port}/json/protocol")
+    commands = {command.get("name") for domain in protocol.get("domains", [])
+                if domain.get("domain") == "ChromiumRL" for command in domain.get("commands", [])}
+    missing = {"enable", "captureStructuredSnapshot", "getModelDOM"} - commands
+    if missing:
+        raise RuntimeError(f"Browser lacks required ChromiumRL commands: {', '.join(sorted(missing))}")
+    print("ChromiumRL: ready (structured capture and model DOM)")
 
     container_env = dict(entry.split("=", 1) for entry in document.get("Config", {}).get("Env", [])
         if isinstance(entry, str) and "=" in entry)
@@ -272,7 +279,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="preserve credentials and identity while selecting new free ports",
     )
-    subparsers.add_parser("status", help="verify container, CDP, noVNC, and agent-browser")
+    subparsers.add_parser("status", help="verify container, CDP, ChromiumRL, noVNC, and agent-browser")
     return parser.parse_args(argv)
 
 

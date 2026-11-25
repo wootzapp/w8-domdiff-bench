@@ -34,6 +34,13 @@ def test_each_actor_reads_the_frozen_catalog_when_the_original_changes(tmp_path,
     row = {"task_id": "custom", "instruction": "Read the heading.", "start_url": "https://example.test/"}
     original = (json.dumps(row) + "\n").encode()
     catalog.write_bytes(original)
+    remote = 'https://example.test/resolve/paired-capture/tasks.jsonl'
+    downloads = []
+    def download(request, timeout):
+        assert request.full_url == remote
+        downloads.append(request.full_url)
+        return io.BytesIO(catalog.read_bytes())
+    monkeypatch.setattr(task_cli.urllib.request, 'urlopen', download)
     rubrics = tmp_path / "rubrics"
     write_json(rubrics / "custom.json", {"task_id": "custom", "criteria": [{"id": "heading", "description": "Report the heading."}]})
     output = tmp_path / "recordings"
@@ -45,7 +52,7 @@ def test_each_actor_reads_the_frozen_catalog_when_the_original_changes(tmp_path,
         catalog.write_text(json.dumps({**row, "instruction": "A different task."}) + "\n")
         return SimpleNamespace(returncode=1)
     monkeypatch.setattr(task_cli.subprocess, "run", launch)
-    assert task_cli.main(["custom", "--trials", "1", "--catalog-file", str(catalog),
+    assert task_cli.main(["custom", "--trials", "1", "--catalog-url", remote,
         "--rubric-dir", str(rubrics), "--judge-model", "gemini-3.6-flash", "--output-dir", str(output),
         "--run-name", "collection", "--env-file", str(tmp_path / "absent.env")]) == 0
     frozen = output / "collection" / "catalog.jsonl"
@@ -54,6 +61,7 @@ def test_each_actor_reads_the_frozen_catalog_when_the_original_changes(tmp_path,
     assert [selected for selected, _, _ in launches] == [frozen, frozen]
     assert [instruction for _, instruction, _ in launches] == [row["instruction"], row["instruction"]]
     assert [digest for _, _, digest in launches] == [entry["catalog_sha256"] for entry in ledger]
+    assert downloads == [remote]
 
 def test_scheduled_rows_include_full_stage_and_actor_policy(effective_settings_batch):
     batch = effective_settings_batch
@@ -341,7 +349,7 @@ def test_runner_expiry_refusal_override_and_inclusive_utc_date(run_pair, curated
     assert manifest["expiry_checked_at"].endswith("+00:00")
     assert "expiry_" not in json.dumps(calls) and "valid_until" not in json.dumps(calls)
     today = runner.datetime.now(runner.timezone.utc).date().isoformat()
-    write_json(tmp_path / "internal" / "task_validity.json", {"catalog": "data/tasks.jsonl",
+    write_json(tmp_path / "internal" / "task_validity.json", {"catalog_sha256": hashlib.sha256(catalog.read_bytes()).hexdigest(),
         "tasks": {row["task_id"]: {"valid_until": today}}})
     args[args.index("--output-dir") + 1] = str(tmp_path / "inclusive-date-run")
     assert asyncio.run(runner.run(runner.parse_args(args))) == 0
@@ -388,8 +396,8 @@ def test_published_catalog_has_exact_compact_schema():
     assert len(rows) == 40
     assert all(set(row) == expected and row["constraints"][0] == first_constraint for row in rows)
     validity = json.loads((root / "internal/task_validity.json").read_text())
-    assert set(validity) == {"catalog", "tasks"}
-    assert validity["catalog"] == "data/tasks.jsonl"
+    assert set(validity) == {"catalog_sha256", "tasks"}
+    assert validity["catalog_sha256"] == hashlib.sha256((root/'data/tasks.jsonl').read_bytes()).hexdigest()
     assert set(validity["tasks"]) == {row["task_id"] for row in rows}
     assert all(set(item) == {"valid_until"} for item in validity["tasks"].values())
     pilot = {row["task_id"]: row["difficulty"] for row in rows
@@ -595,7 +603,7 @@ def test_launcher_expiry_is_inclusive_and_checked_in_utc(tmp_path, monkeypatch, 
     catalog.write_text(json.dumps({"task_id": "dated", "instruction": "Read title.", "start_url": "https://example.test"}) + "\n")
     internal = tmp_path / "internal"
     internal.mkdir()
-    (internal / "task_validity.json").write_text(json.dumps({"catalog": "tasks.jsonl", "tasks": {"dated": {"valid_until": "2026-11-17"}}}))
+    (internal / "task_validity.json").write_text(json.dumps({"catalog_sha256": hashlib.sha256(catalog.read_bytes()).hexdigest(), "tasks": {"dated": {"valid_until": "2026-11-17"}}}))
     output = tmp_path / "recordings"
     args = ["dated", "--catalog-file", str(catalog), "--output-dir", str(output), "--run-name", "expiry",
             "--env-file", str(tmp_path / "absent.env"), "--dry-run"]
@@ -833,8 +841,12 @@ def test_runbook_commands_parse_without_execution(monkeypatch):
     assert re.findall(r'^## (.+)$', text, flags=re.M) == expected
     browser_steps = re.findall(r'^### (\d+)\. (.+)$', text, flags=re.M)
     assert browser_steps == [('1', 'Create the build workspace and install `depot_tools`'),
-        ('2', 'Fetch Chromium'), ('3', 'Build the pinned Chromium revision'),
-        ('4', 'Apply the overlay and rebuild')]
+        ('2', 'Fetch Chromium'), ('3', 'Apply the browser overlay'),
+        ('4', 'Build Chromium')]
+    assert text.index('cp -r wootzapp-browser/src/.') < text.index('autoninja -C out/Release chrome')
+    assert text.count('autoninja -C out/Release chrome') == 1
+    assert 'sudo chmod -R u+w' in text and 'gn desc out/Release //chrome:chrome runtime_deps' in text
+    assert '--force-recreate w8-core' in text
     assert 'checkout --detach' not in text and 'cat-file -e' not in text
     monkeypatch.setenv('ACTOR_MODEL', 'gemini-3.8-flash')
     modules = {'./scripts/run-task': 'w8bench.task_recorder.task_cli',
@@ -947,6 +959,21 @@ def test_ledger_evaluator_preserves_queue_groups_and_selection(tmp_path, monkeyp
     ledger = tmp_path/'ledger.jsonl'
     write_json_lines(ledger, [{'recording': str(run)} for run in runs] +
         [{'recording': str(tmp_path/'unfinished')}])
+    from w8bench.verifier.batch import BatchJobs
+    assert BatchJobs(tmp_path/'fallback', recordings=runs).root == tmp_path/'evaluations/batch_jobs'
+    for index, run in enumerate(runs):
+        queue = tmp_path / ('queue_b' if index == 1 else 'queue_a')
+        queue.mkdir(exist_ok=True)
+        task = {'source_task_id': run.name, 'observation_mode': run.parent.name,
+            'run_name': run.parent.parent.name}
+        write_json(run/'task.json', task)
+        receipt = run.parent.parent/'evaluations/profiles/primary'/task['run_name']/task['observation_mode']/run.name/('a'*64)/'evaluation.json'
+        identity = {'task': run.name, 'arm': task['observation_mode'], 'trial': task['run_name'],
+            'recording_sha256': 'a'*64, 'profile': 'primary'}
+        write_json(receipt, {'task_id': run.name, 'actor_arm': task['observation_mode'],
+            'trial_id': task['run_name'], 'recording_sha256': 'a'*64,
+            'batch_queue_context': {'root': str(queue), 'identity': identity}})
+    monkeypatch.setattr(task_cli, '_execute_batch_judge', lambda *args, **kwargs: None)
     commands = []
     monkeypatch.setattr(subprocess, 'run', lambda command, **kwargs:
         (commands.append(command) or SimpleNamespace(returncode=0)))
@@ -960,8 +987,8 @@ def test_ledger_evaluator_preserves_queue_groups_and_selection(tmp_path, monkeyp
         with pytest.raises(SystemExit) as error:
             runpy.run_path(str(script), run_name='__main__')
         assert error.value.code == 0
-    assert commands[:3] == commands[3:]
-    for command, selected in zip(commands, [[runs[0], runs[2]], [runs[1]], [runs[3]]]*2):
+    assert commands[:2] == commands[2:]
+    for command, selected in zip(commands, [[runs[0], runs[2], runs[3]], [runs[1]]]*2):
         assert command[command.index('--run')+1:command.index('--rubric')] == list(map(str, selected))
         assert command[command.index('--rubric')+1] == str(tmp_path/'rubrics')
         assert command[command.index('--judge-model')+1] == 'gemini-3.6-flash'
@@ -983,6 +1010,16 @@ def test_ledger_evaluator_preserves_pending_and_stops_on_errors(tmp_path, monkey
         write_json(run/'final.json', {})
     ledger = tmp_path/'ledger.jsonl'
     write_json_lines(ledger, [{'recording': str(run)} for run in runs])
+    for index, run in enumerate(runs):
+        queue = tmp_path / f'queue_{index}'
+        queue.mkdir()
+        trial = run.parent.parent.name
+        write_json(run/'task.json', {'source_task_id': 'task_02', 'observation_mode': 'dom', 'run_name': trial})
+        write_json(run.parent.parent/'evaluations/profiles/primary'/trial/'dom/task_02'/('a'*64)/'evaluation.json', {
+            'task_id': 'task_02', 'actor_arm': 'dom', 'trial_id': trial, 'recording_sha256': 'a'*64,
+            'batch_queue_context': {'root': str(queue), 'identity': {'task': 'task_02', 'arm': 'dom',
+                'trial': trial, 'profile': 'primary', 'recording_sha256': 'a'*64}}})
+    monkeypatch.setattr(task_cli, '_execute_batch_judge', lambda *args, **kwargs: None)
     commands = []
     monkeypatch.setattr(subprocess, 'run', lambda command, **kwargs:
         (commands.append(command) or SimpleNamespace(returncode=statuses[len(commands)-1])))

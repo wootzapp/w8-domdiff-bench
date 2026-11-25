@@ -1,6 +1,7 @@
 """Shared scheduling fixtures."""
 
 import json
+import hashlib
 import os
 from pathlib import Path
 
@@ -21,7 +22,7 @@ def curated_catalog(tmp_path, monkeypatch):
     catalog = tmp_path / "data" / "tasks.jsonl"
     catalog.parent.mkdir()
     catalog.write_bytes((json.dumps(row) + "\r\n").encode())
-    write_json(tmp_path / "internal" / "task_validity.json", {"catalog": "data/tasks.jsonl",
+    write_json(tmp_path / "internal" / "task_validity.json", {"catalog_sha256": hashlib.sha256(catalog.read_bytes()).hexdigest(),
         "tasks": {"task_19": {"valid_until": "2000-12-31"}}})
     return catalog, row
 

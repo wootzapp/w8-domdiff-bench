@@ -292,8 +292,8 @@ Evaluation roots are relative to the selected recording: let `B` be
 | Pro native evaluation | `B/profiles/pro/<run-name>/<arm>/<task-id>/<recording-hash>/` |
 | Shared primary completion | `B/common/<run-name>/<arm>/<task-id>/<recording-hash>/completion.json` |
 | Profile-bound copy of primary completion | Each profile's `paired_completion.json` |
-| Batch queue | `B/batch_jobs/`, selected from the first recording passed to one evaluation command |
-| Profile comparison | `B/profile_comparison.json`, with a numeric collision suffix when needed |
+| Batch queue | `recordings/<collection>/evaluations/batch_jobs/` for a scheduled collection; evaluation receipts retain the owner of submitted work |
+| Profile comparison | Beside the owning queue, in `profile_comparison.json`, with a numeric collision suffix when needed |
 
 Each profile evaluation root also contains `audit_inventory.json`. Its content
 hash, source/native/rubric fingerprints, accepted inventory response and usage
@@ -332,9 +332,11 @@ The Batch queue contains unchanged request bodies, deterministic item IDs, input
 JSONL files, provider job receipts and raw item responses. Functional submission
 and completion timestamps stay inside receipts. Requests identify task, driving
 arm, trial, recording hash, rubric source hash, profile, stage and attempt.
-Keep evaluation selections grouped by their Batch queue root and retain the same
-first recording when polling. Receipts in another group's queue are not searched;
-combining already-submitted groups can submit the same work again. See the
+Each `evaluation.json` stores `batch_queue_context`, including an identity and a
+relative path to its owning queue. Resume resolves this binding before polling
+or submission. The launcher and ledger evaluator group recordings by the saved
+owner; a direct selection containing different owners is refused. Missing or
+conflicting owners are refused rather than creating another copy. See the
 [evaluation protocol](evaluation-protocol.md#batch-judging) for pending and
 cancellation behavior.
 Calls record `transport`, `batch_request_id`, `batch_job_id` and individual

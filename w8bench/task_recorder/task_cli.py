@@ -361,10 +361,9 @@ def _bind_task_validity(definition: dict[str, Any], catalog_hash: str) -> None:
     validity_path = ROOT / "internal" / "task_validity.json"
     if validity_path.is_file():
         validity = json.loads(validity_path.read_text(encoding="utf-8"))
-        curated_catalog = (ROOT / validity["catalog"]).resolve(strict=True)
-        if not curated_catalog.is_relative_to(ROOT.resolve()):
-            raise RunnerError("task validity catalog must remain inside this checkout")
-        if hashlib.sha256(curated_catalog.read_bytes()).hexdigest() == catalog_hash:
+        if not re.fullmatch(r"[0-9a-f]{64}", str(validity.get("catalog_sha256", ""))):
+            raise RunnerError("task validity requires a catalog SHA-256")
+        if validity["catalog_sha256"] == catalog_hash:
             valid_until = validity["tasks"].get(definition["source_task_id"], {}).get("valid_until")
             if valid_until is not None and (not isinstance(valid_until, str) or
                     date.fromisoformat(valid_until).isoformat() != valid_until):
@@ -709,12 +708,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def _batch_definitions(args: argparse.Namespace) -> tuple[Path, bytes, str, list[dict[str, Any]]]:
     """Read and bind catalog tasks, then enforce their inclusive UTC expiry dates."""
-    catalog_path = args.catalog_file or Path(os.environ.get("TASK_CATALOG_FILE", ""))
-    if not catalog_path.is_file():
-        raise RunnerError("a batch needs a frozen local --catalog-file")
-    catalog_bytes = catalog_path.read_bytes()
-    raw_catalog = catalog_bytes.decode("utf-8")
+    source = ((str(args.catalog_file) if args.catalog_file is not None else None)
+              or args.catalog_url or os.environ.get("TASK_CATALOG_FILE") or os.environ.get("TASK_CATALOG_URL"))
+    if not source:
+        raise RunnerError("a batch requires a configured task catalog")
+    if not urlsplit(source).scheme and not Path(source).expanduser().is_file():
+        raise RunnerError("a batch needs an existing local --catalog-file or an HTTP(S) catalog URL")
+    url, catalog_bytes, raw_catalog, remote_scheme = _catalog_content(
+        source, os.environ.get("TASK_CATALOG_TOKEN", os.environ.get("HF_TOKEN", "")))
     catalog_hash = hashlib.sha256(catalog_bytes).hexdigest()
+    catalog_path = Path(_freeze_remote_catalog(catalog_hash, catalog_bytes) if remote_scheme else url)
     selectors = args.task_id or [str(json.loads(line)["task_id"]) for line in raw_catalog.splitlines() if line.strip()]
     definitions = [fetch_catalog_task(str(catalog_path), selector) for selector in selectors]
     if any(definition["catalog_sha256"] != catalog_hash for definition in definitions):
@@ -985,19 +988,35 @@ def _run_batch_actor(
 
 def _execute_batch_judge(args: argparse.Namespace, partners: list[dict[str, Any]], *, reconcile_only: bool = False) -> None:
     """Advance judging or reconcile its bound receipts without dispatching work."""
+    results = {}
     if not reconcile_only:
+        from w8bench.verifier.batch import BatchJobs
         judge_models = {partner["judge_model"] for partner in partners}
         if len(judge_models) != 1:
             raise RunnerError("scheduled completion judge models differ")
-        log_path = Path(partners[0]["log"]).with_name(f"judge_round_{partners[-1]['sequence']:06d}.log")
-        with log_path.open("a", encoding="utf-8") as log:
-            result = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
-                "--run", *[partner["recording"] for partner in partners], "--rubric", str(args.rubric_dir.resolve()),
-                "--env-file", str(args.env_file.resolve()), "--judge-model", partners[0]["judge_model"], "--execute"],
-                cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+        groups = {}
+        for partner in partners:
+            source = Path(partner["recording"]).resolve()
+            queue = BatchJobs(source.parent.parent / "evaluations" / "batch_jobs", recordings=[source]).root
+            groups.setdefault(queue, []).append(partner)
+        for selected in groups.values():
+            log_path = Path(selected[0]["log"]).with_name(f"judge_round_{selected[-1]['sequence']:06d}.log")
+            with log_path.open("a", encoding="utf-8") as log:
+                result = subprocess.run([sys.executable, "-m", "w8bench.verifier.run_comparison",
+                    "--run", *[partner["recording"] for partner in selected], "--rubric", str(args.rubric_dir.resolve()),
+                    "--env-file", str(args.env_file.resolve()), "--judge-model", selected[0]["judge_model"], "--execute"],
+                    cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+            results.update({partner["recording"]: (result, log_path) for partner in selected})
+            if result.returncode not in (0, 75):
+                break
     from .prepare_verifier_data import inspect_recording
     for partner in partners:
         recording_path = Path(partner["recording"])
+        if not reconcile_only:
+            if partner["recording"] not in results:
+                partner.update(grade_outcome="not_started", evaluation_outcome="not_started", judge_exit_code=75)
+                continue
+            result, log_path = results[partner["recording"]]
         if reconcile_only and (not partner.get("completed") or not (recording_path / "final.json").is_file()):
             continue
         if reconcile_only and not (recording_path.parent.parent / "evaluations" / "profiles" / "primary").is_dir():
@@ -1249,7 +1268,7 @@ def _wait_single_run(process: subprocess.Popen[str], timeout: float) -> int:
 
 def run_batch(args: argparse.Namespace) -> int:
     """Schedule and resume paired actor attempts and their evaluation."""
-    if args.trials <= 0 or args.observation_mode or args.task or args.start_url or args.no_browser_start or args.catalog_url:
+    if args.trials <= 0 or args.observation_mode or args.task or args.start_url or args.no_browser_start:
         raise RunnerError("a batch requires positive --trials, catalog tasks, fresh profiles and both arms")
     if args.judge_model != "gemini-3.6-flash" or not args.dry_run and args.rubric_dir is None:
         raise RunnerError("every batch trial requires explicit --judge-model gemini-3.6-flash and execution requires --rubric-dir")

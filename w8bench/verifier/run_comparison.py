@@ -295,7 +295,15 @@ def _open_evaluation(root, recording, rubric_hash, effective_settings=None):
                 require_same_settings(stage.get("effective_settings"), stage_settings(effective_settings, name), label=f"{name} resume")
         evaluation["effective_settings"] = effective_settings
     if judge_transport() == "batch" and os.environ.get("W8_JUDGE_BATCH_ROOT"):
-        evaluation["batch_queue_context"] = {"root": os.environ["W8_JUDGE_BATCH_ROOT"],
+        queue_root = Path(os.environ["W8_JUDGE_BATCH_ROOT"]).resolve()
+        previous = evaluation.get("batch_queue_context")
+        if previous:
+            owner = ((Path(recording["source"]) / previous["relative_root"]).resolve()
+                     if previous.get("relative_root") else Path(previous["root"]).resolve())
+            if owner != queue_root:
+                raise ValueError("Evaluation cannot change its saved Batch queue")
+        evaluation["batch_queue_context"] = {"root": str(queue_root),
+            "relative_root": os.path.relpath(queue_root, recording["source"]),
             "identity": json.loads(os.environ["W8_JUDGE_RUN_ID"])}
     evaluation.update(status="running", started_at=evaluation.get("started_at") or datetime.now(timezone.utc).isoformat())
     write_json(evaluation_file, evaluation)
@@ -702,7 +710,8 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("duplicate recording in evaluation selection")
     root = runs[0].parent.parent / "evaluations" / "batch_jobs"
     profiles = ("primary", "pro") if args.compare_profiles else (args.judge_profile or os.environ.get("NATIVE_JUDGE_PROFILE", "primary"),)
-    jobs = BatchJobs(root)
+    jobs = BatchJobs(root, recordings=runs)
+    root = jobs.root
     from contextlib import nullcontext
     try:
         if args.cancel:

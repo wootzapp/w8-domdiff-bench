@@ -1033,7 +1033,7 @@ def test_batch_rounds_preserve_dependencies_and_collect_ready_runs(run_pair,tmp_
     from w8bench.verifier import batch,run_comparison as pipeline
     paths,*_=run_pair
     monkeypatch.setenv('JUDGE_TRANSPORT','batch')
-    monkeypatch.setattr(pipeline,'BatchJobs',lambda root:batch.BatchJobs(root,clients=batch_providers.clients))
+    monkeypatch.setattr(pipeline,'BatchJobs',lambda root, **kwargs:batch.BatchJobs(root,clients=batch_providers.clients, **kwargs))
     rubric=tmp_path/'criteria.json';rubric.write_text(json.dumps({'task_id':'task_01'}))
     stages=['relevance','selected_state_analysis','global_rescore','inventory','adjudication']
     def evaluate(args,run,recording):
@@ -1260,7 +1260,7 @@ def test_answered_google_batch_usage_survives_before_stage_consumption(tmp_path,
 def test_pending_completion_keeps_its_attempt_identity_on_resume(full_evaluation, tmp_path, monkeypatch, batch_providers):
     from w8bench.verifier import batch
     paths, rubric, _ = full_evaluation
-    monkeypatch.setattr(comparison, 'BatchJobs', lambda root: batch.BatchJobs(root, clients=batch_providers.clients))
+    monkeypatch.setattr(comparison, 'BatchJobs', lambda root, **kwargs: batch.BatchJobs(root, clients=batch_providers.clients, **kwargs))
     args = ['--run', str(paths['dom']), '--rubric', str(rubric), '--judge-model',
         'gemini-3.6-flash', '--judge-transport', 'batch', '--execute']
     monkeypatch.setenv('JUDGE_TRANSPORT', 'batch')
@@ -1269,6 +1269,9 @@ def test_pending_completion_keeps_its_attempt_identity_on_resume(full_evaluation
     requests = {p.name for p in tmp_path.rglob('requests/*.json')}
     evaluation = json.loads(next(tmp_path.rglob('evaluation.json')).read_text())
     assert evaluation['stages']['paired_completion']['status'] == 'batch_pending'
+    owner = Path(evaluation['batch_queue_context']['root'])
+    assert batch.BatchJobs(tmp_path/'different_queue', recordings=[paths['dom']]).root == owner
+    assert (paths['dom']/evaluation['batch_queue_context']['relative_root']).resolve() == owner
     assert comparison.main(args) == 75
     assert len(batch_providers.batches.created) == jobs
     assert {p.name for p in tmp_path.rglob('requests/*.json')} == requests

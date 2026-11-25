@@ -154,9 +154,58 @@ def http_transport(provider, stage, record):
 class BatchJobs:
     """Submit each durable request once and import terminal item responses."""
 
-    def __init__(self, root, *, clients=None):
+    def __init__(self, root, *, clients=None, recordings=()):
         self.root = Path(root)
         self.clients = clients or {}
+        owners, collections = set(), set()
+        for recording in recordings:
+            source = Path(recording).resolve()
+            for parent in source.parents:
+                ledger = parent / "ledger.jsonl"
+                if ledger.is_file():
+                    rows = [json.loads(line) for line in ledger.read_text().splitlines() if line.strip()]
+                    if any(Path(row.get("recording", "")).resolve() == source for row in rows):
+                        collections.add(parent / "evaluations" / "batch_jobs")
+                        break
+            task_path = source / "task.json"
+            if not task_path.is_file():
+                continue
+            task = json.loads(task_path.read_text())
+            manifest_path = source / "manifest.json"
+            manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else {}
+            trial = str(task.get("run_name") or manifest.get("run_name"))
+            arm, task_id = task.get("observation_mode"), task.get("source_task_id")
+            if not all(isinstance(value, str) and value for value in (trial, arm, task_id)):
+                continue
+            profiles = source.parent.parent / "evaluations" / "profiles"
+            for receipt_path in profiles.glob(f"*/{trial}/{arm}/{task_id}/*/evaluation.json"):
+                receipt = json.loads(receipt_path.read_text())
+                if any(receipt.get(key) != expected for key, expected in (
+                        ("task_id", task_id), ("actor_arm", arm), ("trial_id", trial),
+                        ("recording_sha256", receipt_path.parent.name))):
+                    raise ValueError(f"Batch owner receipt belongs to different inputs: {receipt_path}")
+                context = receipt.get("batch_queue_context")
+                if context is None:
+                    continue
+                identity = context.get("identity") or {}
+                if any(identity.get(key) != expected for key, expected in (
+                        ("task", task_id), ("arm", arm), ("trial", task.get("run_name")),
+                        ("recording_sha256", receipt["recording_sha256"]),
+                        ("profile", receipt_path.relative_to(profiles).parts[0]))):
+                    raise ValueError(f"Batch owner identity differs from its evaluation: {receipt_path}")
+                owner = ((source / context["relative_root"]).resolve() if context.get("relative_root")
+                         else Path(context["root"]).resolve())
+                if not owner.is_dir():
+                    raise ValueError(f"Saved Batch queue is unavailable: {owner}")
+                owners.add(owner)
+        if len(owners) > 1:
+            raise ValueError("Selected recordings belong to different saved Batch queues; evaluate each queue separately")
+        if owners:
+            self.root = owners.pop()
+        elif len(collections) == 1:
+            self.root = collections.pop()
+        elif len(collections) > 1:
+            raise ValueError("Selected recordings belong to different collections; evaluate each collection separately")
 
     @contextmanager
     def locked(self):

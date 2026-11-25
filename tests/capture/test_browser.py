@@ -267,7 +267,9 @@ def test_runtime_status_checks_each_service_without_launching_a_browser(
             }]), stderr="")
         return SimpleNamespace(returncode=int(failure == "driver"), stdout="agent-browser 0.27.3", stderr="driver unavailable")
     monkeypatch.setattr(browser_runtime, "run", command)
-    monkeypatch.setattr(browser_runtime, "get_json", lambda url: urls.append(url) or {"Browser": "Fixture Chromium"})
+    monkeypatch.setattr(browser_runtime, "get_json", lambda url: urls.append(url) or {
+        "Browser": "Fixture Chromium", "domains": [{"domain": "ChromiumRL", "commands": [
+            {"name": name} for name in ("enable", "captureStructuredSnapshot", "getModelDOM")]}]})
     monkeypatch.setattr(browser_runtime, "get_page", lambda url: urls.append(url) or (503 if failure == "novnc" else 200))
     code = browser_runtime.main(["--env-file", str(runtime_configuration), "status"])
     assert code == int(failure is not None)
@@ -277,7 +279,8 @@ def test_runtime_status_checks_each_service_without_launching_a_browser(
     if failure in {None, "driver"}:
         assert commands[-1] == ["docker", "exec", "fixture-browser", "agent-browser", "--version"]
         assert urls[0] == "http://127.0.0.1:49335/json/version"
-        assert urls[1].startswith("http://127.0.0.1:16191/vnc.html?")
+        assert urls[1] == "http://127.0.0.1:49335/json/protocol"
+        assert urls[2].startswith("http://127.0.0.1:16191/vnc.html?")
 
 @pytest.mark.parametrize("port", ["0", "65536", "not-a-port"])
 def test_runtime_refuses_invalid_ports_before_container_access(runtime_configuration, monkeypatch, port):
@@ -327,9 +330,12 @@ def test_container_healthcheck_reports_cdp_errors_and_closes_transport(monkeypat
         def __init__(self, host, port, timeout):
             calls.append((host, port, timeout))
         def request(self, method, path):
+            self.path = path
             calls.append((method, path))
         def getresponse(self):
-            return SimpleNamespace(status=code, read=lambda: body)
+            payload = json.dumps({"domains": [{"domain": "ChromiumRL", "commands": [
+                {"name": name} for name in ("enable", "captureStructuredSnapshot", "getModelDOM")]}]}).encode()
+            return SimpleNamespace(status=code, read=lambda: payload if self.path == "/json/protocol" else body)
         def close(self):
             calls.append("closed")
     monkeypatch.setattr(runtime_status.http.client, "HTTPConnection", Connection)
@@ -340,7 +346,10 @@ def test_container_healthcheck_reports_cdp_errors_and_closes_transport(monkeypat
     assert runtime_status.main() == int(not healthy)
     report = json.loads(capsys.readouterr().out)
     assert report["cdp_ready"] is healthy and report["novnc_url"] is None
-    assert calls == [("fixture-browser", 9222, 0.5), ("GET", "/json/version"), "closed"]
+    expected = [("fixture-browser", 9222, 0.5), ("GET", "/json/version"), "closed"]
+    if healthy:
+        expected += [("fixture-browser", 9222, 0.5), ("GET", "/json/protocol"), "closed"]
+    assert calls == expected
     if healthy:
         assert report["browser"] == "Fixture Chromium"
     else:
@@ -403,7 +412,9 @@ def test_headless_status_needs_no_novnc_port_or_service(tmp_path, monkeypatch, h
             "Config": {"Env": [f"CHROMIUM_HEADLESS={headless}"]},
         }]) if argv[1] == "inspect" else "agent-browser fixture")
     monkeypatch.setattr(browser_runtime, "run", command)
-    monkeypatch.setattr(browser_runtime, "get_json", lambda url: {"Browser": "Fixture Chromium"})
+    monkeypatch.setattr(browser_runtime, "get_json", lambda url: {
+        "Browser": "Fixture Chromium", "domains": [{"domain": "ChromiumRL", "commands": [
+            {"name": name} for name in ("enable", "captureStructuredSnapshot", "getModelDOM")]}]})
     monkeypatch.setattr(browser_runtime, "get_page", lambda url: pytest.fail("headless mode has no noVNC service"))
     assert browser_runtime.main(["--env-file", str(env), "status"]) == 0
     assert commands[-1] == ["docker", "exec", "fixture", "agent-browser", "--version"]
@@ -416,7 +427,9 @@ def test_inspected_headed_mode_requires_novnc_despite_host_override(runtime_conf
         }]) if argv[1] == "inspect" else "agent-browser fixture")
     checked = []
     monkeypatch.setattr(browser_runtime, "run", command)
-    monkeypatch.setattr(browser_runtime, "get_json", lambda url: {})
+    monkeypatch.setattr(browser_runtime, "get_json", lambda url: {
+        "domains": [{"domain": "ChromiumRL", "commands": [
+            {"name": name} for name in ("enable", "captureStructuredSnapshot", "getModelDOM")]}]})
     monkeypatch.setattr(browser_runtime, "get_page", lambda url: checked.append(url) or 503)
     assert browser_runtime.main(["--env-file", str(runtime_configuration), "status"]) == 1
     assert len(checked) == 1
@@ -1556,7 +1569,7 @@ async def test_fairness_known_target_is_selected_before_querying_unrelated_cli_t
 @pytest.mark.parametrize('payload_matches_source', [True, False])
 @pytest.mark.parametrize('overlay_matches_pin', [True, False])
 def test_browser_image_preflight_enforces_source_pins_and_payload_integrity(tmp_path, monkeypatch, binary, payload_matches_source, overlay_matches_pin):
-    """Accept rebuilt binaries only when the staged payload matches the verified source build."""
+    """Require source integrity and functional capture from the staged executable."""
     import hashlib
     root, chromium, overlay = (tmp_path / name for name in ('bench', 'chromium', 'overlay'))
     protocol = b'domain ChromiumRL\n'
@@ -1583,6 +1596,22 @@ def test_browser_image_preflight_enforces_source_pins_and_payload_integrity(tmp_
             return b'src/overlay.cc\0'
         raise AssertionError(f'Unexpected source operation: {command}')
     monkeypatch.setattr(subprocess, 'check_output', local_git)
+    def staged_browser(command, **kwargs):
+        assert '--remote-debugging-pipe' in command and '--headless' in command
+        assert str(root / 'build/chrome') in command
+        reader = os.dup(kwargs['pass_fds'][0])
+        snapshot = {'nodes': [{'directText': 'ChromiumRL build check'}]}
+        replies = [{'result': {'targetId': 'fixture'}}, {'result': {'sessionId': 'session'}},
+            {'result': {'result': {'value': True}}}, {'result': {'sessionId': 'trace'}},
+            {'result': {'snapshot': snapshot}}, {'result': {'modelDOM': {
+                'sections': [{'name': 'content', 'lines': ['ChromiumRL build check']}]}}},
+            {'result': {'data': base64.b64encode(b'\x89PNG\r\n\x1a\n').decode()}}]
+        if binary == b'reference-build':
+            replies[3] = {'error': {'code': -32601, 'message': "'ChromiumRL.enable' wasn't found"}}
+        os.write(kwargs['pass_fds'][1], b''.join(
+            json.dumps({'id': index, **reply}).encode() + b'\0' for index, reply in enumerate(replies, 1)))
+        return SimpleNamespace(terminate=lambda: None, wait=lambda timeout: os.close(reader), kill=lambda: None)
+    monkeypatch.setattr(subprocess, 'Popen', staged_browser)
     monkeypatch.setattr('sys.argv', ['preflight', str(root), str(chromium), str(overlay)])
     script = (Path(__file__).resolve().parents[2] / 'scripts/build-browser-image').read_text()
     program = script.split("<<'PY'\n", 1)[1].split('\nPY\n', 1)[0]
@@ -1590,15 +1619,22 @@ def test_browser_image_preflight_enforces_source_pins_and_payload_integrity(tmp_
         with pytest.raises(SystemExit, match='Browser overlay revision differs from protocol/browser-build.json'):
             exec(compile(program, 'browser-image-preflight', 'exec'), {})
         assert not (root / 'build/browser-build.json').exists()
-    elif payload_matches_source:
+    elif not payload_matches_source:
+        with pytest.raises(SystemExit, match='Copied browser differs from the Chromium Release binary'):
+            exec(compile(program, 'browser-image-preflight', 'exec'), {})
+        assert not (root / 'build/browser-build.json').exists()
+    elif binary == b'reference-build':
+        with pytest.raises(SystemExit, match='Staged browser ChromiumRL.enable failed'):
+            exec(compile(program, 'browser-image-preflight', 'exec'), {})
+        assert not (root / 'build/browser-build.json').exists()
+    else:
         exec(compile(program, 'browser-image-preflight', 'exec'), {})
         receipt = json.loads((root / 'build/browser-build.json').read_text())
         assert receipt['binary_sha256'] == hashlib.sha256(binary).hexdigest()
         assert receipt['overlay_revision'] == settings['overlay_revision']
-    else:
-        with pytest.raises(SystemExit, match='Copied browser differs from the Chromium Release binary'):
-            exec(compile(program, 'browser-image-preflight', 'exec'), {})
-        assert not (root / 'build/browser-build.json').exists()
+        assert receipt['capability_check'] == {'methods': ['ChromiumRL.enable',
+            'ChromiumRL.captureStructuredSnapshot', 'ChromiumRL.getModelDOM', 'Page.captureScreenshot'],
+            'local_fixture': 'passed'}
 
 @pytest.mark.parametrize("mode", ["dom", "screenshot"])
 def test_empty_pdf_export_is_paired_and_actor_continues(empty_dom_pair, mode):

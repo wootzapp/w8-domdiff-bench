@@ -30,19 +30,27 @@ def env_int(name: str, default: int) -> int:
 def request_version(timeout: float) -> dict[str, Any]:
     host = os.environ.get("CDP_PROBE_HOST", "127.0.0.1")
     port = env_int("CDP_PORT", 9222)
-    conn = http.client.HTTPConnection(host, port, timeout=timeout)
-    try:
-        conn.request("GET", "/json/version")
-        response = conn.getresponse()
-        body = response.read().decode("utf-8", errors="replace")
-    finally:
-        conn.close()
-    if response.status < 200 or response.status >= 300:
-        raise RuntimeError(f"HTTP {response.status}: {body[:300]}")
-    payload = json.loads(body)
-    if not isinstance(payload, dict):
-        raise RuntimeError("/json/version did not return an object")
-    return payload
+    documents = {}
+    for path in ("/json/version", "/json/protocol"):
+        conn = http.client.HTTPConnection(host, port, timeout=timeout)
+        try:
+            conn.request("GET", path)
+            response = conn.getresponse()
+            body = response.read().decode("utf-8", errors="replace")
+        finally:
+            conn.close()
+        if response.status < 200 or response.status >= 300:
+            raise RuntimeError(f"{path} HTTP {response.status}: {body[:300]}")
+        payload = json.loads(body)
+        if not isinstance(payload, dict):
+            raise RuntimeError(f"{path} did not return an object")
+        documents[path] = payload
+    commands = {command.get("name") for domain in documents["/json/protocol"].get("domains", [])
+                if domain.get("domain") == "ChromiumRL" for command in domain.get("commands", [])}
+    missing = {"enable", "captureStructuredSnapshot", "getModelDOM"} - commands
+    if missing:
+        raise RuntimeError(f"Browser lacks required ChromiumRL commands: {', '.join(sorted(missing))}")
+    return documents["/json/version"]
 
 
 def main() -> int:

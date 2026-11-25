@@ -5,8 +5,8 @@ DOM/screenshot evidence. Use the [README](../README.md) for the project overview
 
 | Workflow | Sections |
 | --- | --- |
-| Record tasks | Requirements → Browser build → Install Python → Create image → Configure environment → Browser runtime → Record a task |
-| Evaluate recordings | Requirements → Install Python → Configure environment → Recording and evaluation inputs → Score a prepared task |
+| Record tasks | Requirements → Browser build → Get the benchmark and install Python → Create the local browser image → Environment configuration → Browser runtime → Record a task |
+| Evaluate recordings | Requirements → Get the benchmark and install Python → Environment configuration → Recording and evaluation inputs → Score a prepared task |
 
 ## Requirements
 
@@ -26,7 +26,7 @@ Create the workspace:
 mkdir -p w8-browser-build
 cd w8-browser-build
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-export PATH="$PATH:$(pwd)/depot_tools"
+export PATH="$(pwd)/depot_tools:$PATH"
 ```
 
 Run the `export` command from `w8-browser-build` in every build terminal.
@@ -45,49 +45,42 @@ gclient sync --nohooks \
 If interrupted, restore the `depot_tools` path and repeat `gclient sync` from
 `chromium`. For an HTTP 429, allow a cooldown and retry with `--jobs=1`.
 
-### 3. Build the pinned Chromium revision
+### 3. Apply the browser overlay
+
+From `w8-browser-build/chromium`, return to the shared workspace, clone
+Wootzapp Browser and copy its `src/` overlay:
 
 ```bash
-cd src
-./build/install-build-deps.sh
-gclient runhooks
-gn gen out/Release --args='is_debug=false
+cd ../..
+git clone https://github.com/wootzapp/wootzapp-browser.git
+sudo chmod -R u+w w8-browser-build/chromium/src
+cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
+```
+
+### 4. Build Chromium
+
+Compile the overlaid source:
+
+```bash
+(
+  set -euo pipefail
+  export PATH="$(pwd)/w8-browser-build/depot_tools:$PATH"
+  cd w8-browser-build/chromium/src
+  ./build/install-build-deps.sh
+  gclient runhooks
+  gn gen out/Release --args='is_debug=false
 is_component_build=false
 symbol_level=0
 blink_symbol_level=0
 v8_symbol_level=0
 proprietary_codecs=true
 ffmpeg_branding="Chrome"'
-autoninja -C out/Release chrome
-./out/Release/chrome --version
+  autoninja -C out/Release chrome
+  ./out/Release/chrome --version
+)
 ```
 
-Do not continue unless the build succeeds.
-
-### 4. Apply the overlay and rebuild
-
-Return to the shared workspace, clone Wootzapp Browser and copy its `src/` overlay:
-
-```bash
-cd ../../..
-git clone https://github.com/wootzapp/wootzapp-browser.git
-sudo chmod -R u+w w8-browser-build/chromium/src
-cp -r wootzapp-browser/src/. w8-browser-build/chromium/src/
-```
-
-Rebuild using the arguments retained in `out/Release`:
-
-```bash
-cd w8-browser-build/chromium
-gclient runhooks
-cd src
-gn gen out/Release
-autoninja -C out/Release chrome
-./out/Release/chrome --version
-cd ../../..
-```
-
-The final command returns to the shared workspace.
+Require a successful build. The shell stays in the shared workspace.
 
 ## Get the benchmark and install Python
 
@@ -109,6 +102,22 @@ source .venv/bin/activate
 
 The wrappers use this checkout's `.venv/bin/python`. Installations include the
 verifier integrity manifests; preflight verifies both packages and shared dependencies.
+
+Install the Hugging Face CLI and download the catalog and frozen rubrics:
+
+```bash
+curl -LsSf https://hf.co/cli/install.sh | bash
+export PATH="$HOME/.local/bin:$PATH"
+hf download WootzappLab/browser-agent-tasks tasks.jsonl \
+  --type dataset --revision paired-capture --local-dir data
+hf download WootzappLab/browser-agent-tasks --include "rubrics/*.json" \
+  --type dataset --revision paired-capture --local-dir data
+```
+
+The [dataset branch](https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/tree/paired-capture)
+stores published data. The launcher fetches tasks from `TASK_CATALOG_URL` and
+freezes the catalog once per batch. `--catalog-file` selects an explicit local
+snapshot; the local `data/` copy serves offline checks and rubric preparation.
 
 ## Create the local browser image
 
@@ -136,8 +145,11 @@ From the benchmark repository, stage the Release runtime files and build the ima
 ```
 
 The [build script](../scripts/build-browser-image) verifies the local source/protocol
-[pins](../protocol/browser-build.json) and copied binary, recording its actual
-SHA-256 in the image's `browser-build.json`. It does not fetch or switch the overlay.
+[pins](../protocol/browser-build.json) and copied binary. It launches the staged
+executable with a temporary profile and checks structured capture, model DOM and
+screenshot capture on a local fixture before building the image. The image's
+`browser-build.json` records the binary SHA-256 and capability result. The script
+does not fetch or switch the overlay.
 Set `.env`'s `IMAGE` to the built tag/digest, retain `SYS_NICE` in Compose, and keep
 one browser build throughout the comparison.
 
@@ -165,7 +177,7 @@ JUDGE_TRANSPORT=batch
 NATIVE_JUDGE_PROFILE=primary
 EVIDENCE_AUDIT_MODEL=gemini-3.1-pro-preview
 EVIDENCE_ADJUDICATOR_MODEL=gemini-4-argon
-TASK_CATALOG_FILE=data/tasks.jsonl
+TASK_CATALOG_URL=https://huggingface.co/datasets/WootzappLab/browser-agent-tasks/resolve/paired-capture/tasks.jsonl
 ```
 
 Models and judge endpoints are listed in the [datacard](datacard.md#judge-delivery)
@@ -179,6 +191,7 @@ and `config/`. Model stages use Google's GenerateContent API in normal or Batch 
 | `CHROMIUM_HEADLESS` | Display mode |
 | `CHROMIUM_RESET_PROFILE` | `1` clears browser history, cookies and storage at startup; host recordings are separate |
 | `GEMINI_BASE_URL` | Actor and normal completion endpoint |
+| `TASK_CATALOG_URL` | Hugging Face catalog source for task selection |
 | `W8_RUN_NAME` | Default recording name |
 
 Configure creates isolated service names and free ports, preferring CDP 49335,
@@ -190,18 +203,19 @@ Start and check the service:
 
 ```bash
 docker compose --env-file .env config --quiet
-docker compose --env-file .env up -d --wait w8-core
+docker compose --env-file .env up -d --wait --force-recreate w8-core
 .venv/bin/python -m w8bench.task_recorder.browser_runtime status
 docker compose --env-file .env ps
 ```
 
-Require healthy status and ChromiumRL capture. The launcher checks Compose ownership
-and creates a fresh browser per attempt. Run one batch at a time without other
+Require healthy status and `ChromiumRL: ready`. Runtime health and status check
+the required ChromiumRL commands as well as CDP reachability. The launcher checks
+Compose ownership and creates a fresh browser per attempt. Run one batch at a time without other
 recordings or fixture checks on its browser; headless status skips noVNC.
 
 ## Record a task
 
-Commands below use the repository root. Rubrics are frozen before recording.
+Commands below use the repository root. Scheduled paired runs require frozen rubrics.
 Diagnostics use `--execute` to submit provider requests; `--help` makes no browser
 or provider calls.
 
@@ -224,7 +238,7 @@ Set `BENCH_TRIALS` to any positive integer and inspect the schedule:
 ```bash
 : "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
 ./scripts/run-task --trials "$BENCH_TRIALS" \
-  --catalog-file data/tasks.jsonl --max-turns 200 --max-output-tokens 10000 \
+  --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name collection \
   --judge-model gemini-3.6-flash --dry-run
 ```
@@ -240,6 +254,11 @@ Expiry uses the inclusive UTC date in `internal/task_validity.json`; an explicit
 need a readiness reason/receipt, never a poor score. **Model calls: 0.**
 
 ### Generate and review rubrics
+
+The catalog's frozen rubrics are in `data/rubrics` and are reused for recording
+and evaluation. Preparation requires an empty frozen-output directory. For a
+separate rubric version, use separate draft and rubric directories consistently
+in preparation, recording and evaluation commands.
 
 The generator sends expanded task text and start URL to `gemini-3.1-pro-preview`,
 using the native rubric and dependency prompts without actor results.
@@ -273,8 +292,9 @@ Create the offline review file:
 
 Review coverage, constraints, observability, weights, overlap and run-time values in
 `internal/rubrics/review.md`. Correct drafts without changing task identity/text/URL,
-then regenerate the review; changed drafts lose approval. Generation normally uses
-**80 calls**; review uses **0**. `task_XX.metrics.json` retains usage and unknown costs.
+then regenerate the review; changed drafts lose approval. Generation uses
+**80 nominal calls** before retries; review uses **0**. `task_XX.metrics.json`
+retains usage and unknown costs.
 
 ### Approve and freeze rubrics
 
@@ -363,7 +383,7 @@ Require six hits, valid coordinates/IDs and complete responses in
 ### Screenshot text calibration
 
 With the browser idle, read fixture strings at 8, 10, 12 and 14 CSS pixels
-using HIGH (**1 paid response**, no browser action executed):
+using HIGH (**1 paid response**, no actor action executed):
 
 ```bash
 .venv/bin/python scripts/calibrate-text.py --execute
@@ -408,7 +428,7 @@ arms, one trial each. Plan first:
 
 ```bash
 ./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
-  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
+  --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name pilot --dry-run
 ```
@@ -419,7 +439,7 @@ Set `BENCH_PILOT_RUN` to the printed name, then execute and inspect:
 : "${BENCH_PILOT_RUN:?Set the printed pilot run name}"
 export BENCH_PILOT_RUN
 ./scripts/run-task task_26 task_02 task_19 task_25 --trials 1 \
-  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
+  --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name "$BENCH_PILOT_RUN" --resume
 
@@ -430,7 +450,8 @@ export BENCH_PILOT_RUN
 Each task/trial records both arms before completion, native verification and
 inventory; formats are paired only within a run. Batch polling uses the
 [ledger evaluator](#controls-and-outputs), and loss decisions use
-[final adjudication](#final-adjudication). The ledger contains all eight attempts. Per-run artifacts record
+[final adjudication](#final-adjudication). The ledger contains eight scheduled rows,
+with technical rerun attempts nested in each row. Per-run artifacts record
 isolation, capture integrity, returned IDs, rubric bindings, grades, coverage
 and costs. The pilot allows up to
 1,600 final-attempt responses, another 1,600 for technical reruns and 9,600 transport
@@ -445,7 +466,7 @@ Use any positive `BENCH_TRIALS`; omit task selectors for all 40 tasks:
 ```bash
 : "${BENCH_TRIALS:?Set a positive integer trial count per arm}"
 ./scripts/run-task --trials "$BENCH_TRIALS" \
-  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
+  --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name collection --dry-run
 ```
@@ -455,7 +476,7 @@ Set `BENCH_COLLECTION_RUN` to the printed name and execute its ledger:
 ```bash
 : "${BENCH_COLLECTION_RUN:?Set the printed collection run name}"
 ./scripts/run-task --trials "$BENCH_TRIALS" \
-  --catalog-file data/tasks.jsonl --rubric-dir data/rubrics \
+  --rubric-dir data/rubrics \
   --judge-model gemini-3.6-flash --max-turns 200 --max-output-tokens 10000 \
   --output-dir recordings --run-name "$BENCH_COLLECTION_RUN" --resume
 ```
@@ -463,7 +484,7 @@ Set `BENCH_COLLECTION_RUN` to the printed name and execute its ledger:
 The ledger retains all `80 × k` rows and attempts, alternates arm order and continues
 after individual errors. Reconcile every row and evaluation coverage. The response
 budget is 16,000 × k for final attempts plus the same for technical reruns, with up
-to 96,000 × k transport attempts. Every final recording gets completion, native
+to 96,000 × k actor-generation transport attempts. Every final recording gets completion, native
 verification and inventory with frozen rubrics. The [final adjudication command](#final-adjudication)
 uses saved inventories; evidence and retries determine judge work.
 
@@ -482,7 +503,6 @@ A single-task command selects one arm and keeps a local attempt ledger:
 
 ```bash
 ./scripts/run-task task_02 --observation-mode dom \
-  --catalog-file data/tasks.jsonl \
   --output-dir recordings --run-name single_task
 ```
 
@@ -554,6 +574,12 @@ inventory. It returns **75** while Batch work is pending and **0** when the
 inventory is ready with `evaluation_outcome: awaiting_adjudication`. The launcher
 uses this stage. A launcher exit 0 can still contain pending judge rows.
 
+Batch queue ownership is bound in evaluation receipts. The launcher and ledger
+evaluator retain that owner across trials, technical attempts and profiles.
+Collections use `recordings/<collection>/evaluations/batch_jobs/`; independent
+queues are evaluated separately. Missing or ambiguous saved ownership is refused
+before submission.
+
 Set `BENCH_EVALUATION_RUN` to the saved pilot/collection name and preview selection:
 
 ```bash
@@ -569,10 +595,11 @@ Evaluate or poll:
   --ledger "recordings/$BENCH_EVALUATION_RUN/ledger.jsonl" --stage evaluate --execute
 ```
 
-The [ledger evaluator](../scripts/evaluate-ledger.py) retains ledger order and Batch
-queue groups. Repeat it until complete; polling does not resubmit pending/answered
-items, but can submit dependent stages and budgeted repairs. Preserve group order
-and the first recording; errors/cancellation stop further groups. The command
+The [ledger evaluator](../scripts/evaluate-ledger.py) retains ledger order.
+Within a matching queue, repeat the evaluation command until complete;
+polling does not resubmit pending/answered items, but can submit dependent stages
+and budgeted repairs. Saved queues retain their requests and imported answers;
+errors/cancellation stop further groups. The command
 reconciles the ledger from bound receipts. `--judge-transport normal` requires a
 separate evaluation with matching settings; it cannot resume Batch results.
 
@@ -623,8 +650,8 @@ Cancel a queue using a finalized recording and its matching rubric:
   --judge-model gemini-3.6-flash --judge-transport batch --cancel --execute
 ```
 
-Cancellation returns **130** and affects the entire shared queue, including other
-recordings/profiles, rooted at `runs[0].parent.parent/evaluations/batch_jobs`.
+Cancellation returns **130** and affects the entire saved shared queue, including
+other recordings and profiles using that queue.
 It records cancellation before contacting providers and refuses late imports.
 Preserve cancellation and submission receipts; do not erase them to force continuation.
 
@@ -688,6 +715,8 @@ same-run audit. The opposite verifier and all other evaluation streams remain
 visible as overhead, with all cost streams retained for full-experiment accounting; see the
 [token accounting contract](evaluation-protocol.md#token-accounting).
 USD figures are estimates, not invoices.
+
+Publish finalized collections using the [data storage commands](../data/README.md#storage).
 
 ## View a remote browser
 

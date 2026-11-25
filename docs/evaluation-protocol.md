@@ -439,11 +439,13 @@ smoke command return 75 for pending work; repeat the same command to poll it and
 advance ready stages. The task launcher can return 0 after recording while its
 ledger still has `judge_exit_code=75`, `evaluation_outcome=batch_pending` and
 `grade_completed=false`. Its exit status does not establish completed judging.
-The first recording selects the Batch queue at
-`recording_path.parent.parent / "evaluations" / "batch_jobs"`. Keep recordings
-grouped by that queue root and retain the same first recording when polling.
-Combining groups that already submitted to separate queues can leave their
-receipts undiscovered and cause duplicate submission; do not combine them.
+Scheduled collections use one Batch queue at
+`recordings/<collection>/evaluations/batch_jobs/`. Evaluation receipts bind each
+recording and profile to the saved queue, with a relative path for relocation.
+Resume resolves that owner before polling or submission. The launcher and
+ledger evaluator preserve queue groups across trials and technical attempts;
+direct selections with conflicting owners are refused. An unavailable bound
+queue is an error and does not authorize resubmission.
 Replaying a saved answer does not make another provider call. Invalid answers
 and failed items enter the existing validation/transport retry budgets, with
 distinct attempt IDs. Expiration keeps completed items and retries only
@@ -454,7 +456,7 @@ Creation acknowledgement can be uncertain because provider batch creation is not
 idempotent. Such a receipt blocks automatic resubmission until its job ID is
 reconciled. Cancellation records a terminal marker before cancelling known jobs;
 late results cannot be published. Its scope is the entire shared Batch queue
-selected from the first recording, including other recordings/profiles using it.
+bound to the selected recording, including other recordings/profiles using it.
 It returns 130 and is terminal for that queue, rather than a pause/resume
 action. Unknown job IDs require provider reconciliation. There is no CLI switch
 that clears a cancellation or identifies an unacknowledged job automatically.
